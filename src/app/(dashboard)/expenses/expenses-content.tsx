@@ -23,7 +23,6 @@ import {
   overUnderTextColor,
 } from "@/lib/utils/colors";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -100,7 +99,6 @@ export function ExpensesContent() {
 
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
 
   // The active profile for both budget and contribution — this page has no
   // local picker of its own, so localSelection is always null (single
@@ -129,16 +127,6 @@ export function ExpensesContent() {
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    // Tiers — the shape every budget caller sends (docs/DESIGN.md "Profile
-    // Resolution").
-    contributionProfile: {
-      localSelectionId: null,
-      globalDefaultId: activeContribProfileId,
-    },
-    salaryProfile: {
-      localSelectionId: null,
-      globalDefaultId: rawActiveSalaryProfileId,
-    },
   });
 
   const paycheckInput = {

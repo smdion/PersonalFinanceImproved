@@ -6,13 +6,8 @@ import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection";
 import type { RequestScope } from "@/server/data/request-scope";
-
-/** A request's picks of the two; absent = the active one, null = none. */
-type PayProfilePicks = {
-  contribution?: number | null;
-  salary?: number | null;
-};
 
 export type ProfilePair = {
   contribProfileId: number | null;
@@ -21,7 +16,7 @@ export type ProfilePair = {
 
 export async function resolveProfileSelection(
   scope: Pick<RequestScope, "db">,
-  selection: PayProfilePicks = {},
+  selection: PayProfileSelection = {},
 ): Promise<ProfilePair> {
   const { contribution, salary } = selection;
   if (contribution !== undefined && salary !== undefined)

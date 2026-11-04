@@ -25,6 +25,17 @@ export const profileSelectionSchema = z
 
 export type ProfileSelection = z.infer<typeof profileSelectionSchema>;
 
+/** The picks a budget or savings request takes: its pay profiles. Null is
+ *  "none", which only Compare Plans sends, for a Plan missing that kind. */
+export const payProfileSelectionSchema = z
+  .object({
+    contribution: z.number().int().nullable().optional(),
+    salary: z.number().int().nullable().optional(),
+  })
+  .strict();
+
+export type PayProfileSelection = z.infer<typeof payProfileSelectionSchema>;
+
 /** A page's picks, each null or absent when it shows the active one. */
 type ProfilePicks = {
   contributionProfileId?: number | null;

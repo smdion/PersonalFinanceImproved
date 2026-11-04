@@ -27,11 +27,7 @@ import {
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
 import { paycheckRouter } from "./paycheck";
-import {
-  budgetRouter,
-  profileResolutionTiersSchema,
-  type ProfileResolutionTiers,
-} from "./budget";
+import { budgetRouter } from "./budget";
 import {
   toNumber,
   computeBudgetAnnualTotal,
@@ -489,37 +485,12 @@ function resolveEfundTierIndex(
 async function computeLiveMaxMonthlyFunding(
   ctx: Context,
   profileId?: number,
-  /** The caller's already-resolved Contribution/Salary Profile selection
-   *  (savings/page.tsx's effectiveContribProfileId/effectiveSalaryProfileId
-   *  — the SAME precedence chain, column profile > local selection >
-   *  active, computeActiveSummary's own contributionProfile/salaryProfile
-   *  tiers resolve against) — the paycheck.computeSummary
-   *  call below had NO such resolution at all — it always used whichever
-   *  contribution/salary profile is globally active, regardless of what
-   *  column/profile the caller was actually viewing. A household with any
-   *  non-default (column-pinned or locally-selected) Contribution/Salary
-   *  Profile saw recalculateAllocation/lockInAllocationPercent silently
-   *  compute against the WRONG live pool — the preview (built client-side
-   *  from the correct effective profile) showed a real change, but the
-   *  persisted write, computed here against the household's default profile
-   *  instead, could match the already-stored value almost exactly and look
-   *  like a complete no-op (`updated: N` returned, nothing actually moved).
-   *  budgetCaller.computeActiveSummary ALSO needs the caller's raw
-   *  contribution/salary TIERS (not just a resolved id) passed as its own
-   *  `contributionProfile`/`salaryProfile` input — leaving that call bare
-   *  (as the first fix here did) makes it
-   *  fall back to NO_PROFILE_TIERS (column profiles only, no active
-   *  default), so contribution-linked budget items resolve against a
-   *  DIFFERENT profile than the client's own top-level maxMonthlyFunding
-   *  query used (savings/page.tsx passes contributionProfileTiers/
-   *  salaryProfileTiers there) — budgetMonthlyTotal, and so the persisted
-   *  live pool, still silently diverged from the preview even after the
-   *  paycheck-side fix. */
+  /** The page's Contribution/Salary Profile ids for the paycheck side. The
+   *  budget side runs on the active profiles, as the page's own
+   *  computeActiveSummary query does, so the pool matches its preview. */
   income?: {
     contributionProfileId?: number;
     salaryProfileId?: number;
-    contributionProfileTiers?: ProfileResolutionTiers;
-    salaryProfileTiers?: ProfileResolutionTiers;
   },
 ): Promise<number | null> {
   const paycheckCaller = createCallerFactory(paycheckRouter)(internalCtx(ctx));
@@ -536,15 +507,7 @@ async function computeLiveMaxMonthlyFunding(
     paycheckCaller.computeSummary(
       Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
     ),
-    budgetCaller.computeActiveSummary({
-      ...(profileId ? { profileId } : {}),
-      ...(income?.contributionProfileTiers
-        ? { contributionProfile: income.contributionProfileTiers }
-        : {}),
-      ...(income?.salaryProfileTiers
-        ? { salaryProfile: income.salaryProfileTiers }
-        : {}),
-    }),
+    budgetCaller.computeActiveSummary(profileId ? { profileId } : {}),
   ]);
   const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetSummary);
   return paycheckData && budgetMonthlyTotal !== null
@@ -2105,8 +2068,6 @@ export const savingsRouter = createTRPCRouter({
           // can't silently diverge from what its own preview showed.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
-          contributionProfileTiers: profileResolutionTiersSchema.optional(),
-          salaryProfileTiers: profileResolutionTiersSchema.optional(),
         })
         .optional(),
     )
@@ -2146,8 +2107,6 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
-          contributionProfileTiers: input?.contributionProfileTiers,
-          salaryProfileTiers: input?.salaryProfileTiers,
         },
       );
       if (maxMonthlyFunding === null) {
@@ -2203,8 +2162,6 @@ export const savingsRouter = createTRPCRouter({
           // See computeLiveMaxMonthlyFunding's `income` param docblock.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
-          contributionProfileTiers: profileResolutionTiersSchema.optional(),
-          salaryProfileTiers: profileResolutionTiersSchema.optional(),
         })
         .optional(),
     )
@@ -2240,8 +2197,6 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
-          contributionProfileTiers: input?.contributionProfileTiers,
-          salaryProfileTiers: input?.salaryProfileTiers,
         },
       );
       if (maxMonthlyFunding === null) {

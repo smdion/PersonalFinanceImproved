@@ -577,10 +577,10 @@ a tier — applying it changes the active profiles.
 
 Budget columns have **no profiles of their own**: every column uses the
 same (Contribution, Salary) pair — the page's local selection → the active
-one. `budget.computeActiveSummary` takes two-tier
-`{ localSelectionId, globalDefaultId }` objects (`profileResolutionTiersSchema`
-/ `profileFromTiers`) with no column tier; callers with no page context use
-`resolveProfileSelection` (`server/services/profile-selection.ts`). A linked item's dollars are computed once
+one. `budget.computeActiveSummary` takes a `selection` of the page's
+Contribution/Salary picks (absent = the active one), with no column tier,
+resolved by `resolveProfileSelection` (`server/services/profile-selection.ts`);
+callers with no page context pick none. A linked item's dollars are computed once
 (`resolveLinkedBudgetItemAmounts(db, items, n, pair)`) and repeated across
 columns. Migration 0009 dropped the old per-column profile ids. Never add a
 per-column profile back — a different set of profiles is a different Plan.

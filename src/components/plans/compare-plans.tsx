@@ -45,16 +45,11 @@ function PlanColumn({
   onApply?: () => void;
   applying: boolean;
 }) {
-  const tiers = (id: number | null) => ({
-    localSelectionId: id,
-    globalDefaultId: id,
-  });
   const budget = trpc.budget.computeActiveSummary.useQuery(
     {
       selectedColumn: 0,
       ...(ids.budget != null ? { profileId: ids.budget } : {}),
-      contributionProfile: tiers(ids.contribution),
-      salaryProfile: tiers(ids.salary),
+      selection: { contribution: ids.contribution, salary: ids.salary },
     },
     { enabled: ids.budget != null },
   );

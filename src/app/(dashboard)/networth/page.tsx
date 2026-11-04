@@ -57,11 +57,7 @@ const TaxLocationPie = dynamic(
 import { SpreadsheetView } from "@/components/networth/spreadsheet/spreadsheet-view";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
-import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
-import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_BUDGET_ACTIVE_COLUMN,
-} from "@/lib/constants/settings-keys";
+import { SK_BUDGET_ACTIVE_COLUMN } from "@/lib/constants/settings-keys";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
@@ -80,21 +76,8 @@ export default function NetWorthPage() {
     SK_BUDGET_ACTIVE_COLUMN,
     0,
   );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
-  );
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
-    contributionProfile: {
-      localSelectionId: null,
-      globalDefaultId: activeContribProfileId,
-    },
-    salaryProfile: {
-      localSelectionId: null,
-      globalDefaultId: rawActiveSalaryProfileId,
-    },
   });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const [useMarketValue, setUseMarketValue] = useState(true);

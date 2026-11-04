@@ -2,19 +2,19 @@
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 430,
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1067,
-    "src/app/(dashboard)/budget/budget-content.tsx": 671,
-    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 403,
+    "src/app/(dashboard)/budget/budget-content.tsx": 653,
+    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 390,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
-    "src/app/(dashboard)/budget/what-if-tab.tsx": 1375,
+    "src/app/(dashboard)/budget/what-if-tab.tsx": 1367,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
-    "src/app/(dashboard)/expenses/expenses-content.tsx": 825,
+    "src/app/(dashboard)/expenses/expenses-content.tsx": 813,
     "src/app/(dashboard)/historical/page.tsx": 1026,
     "src/app/(dashboard)/house/page.tsx": 746,
-    "src/app/(dashboard)/networth/page.tsx": 465,
+    "src/app/(dashboard)/networth/page.tsx": 448,
     "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
-    "src/app/(dashboard)/savings/page.tsx": 952,
+    "src/app/(dashboard)/savings/page.tsx": 935,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1023,
     "src/app/(dashboard)/tools/page.tsx": 585,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
@@ -26,7 +26,7 @@
     "src/components/cards/coast-fire-card.tsx": 408,
     "src/components/cards/dashboard/contributions-card.tsx": 655,
     "src/components/cards/dashboard/linked-balance-card.tsx": 451,
-    "src/components/cards/dashboard/living-costs-card.tsx": 683,
+    "src/components/cards/dashboard/living-costs-card.tsx": 674,
     "src/components/cards/dashboard/retirement-card.tsx": 448,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,
     "src/components/cards/mc-simulation-assumptions.tsx": 1071,
@@ -76,7 +76,7 @@
     "src/components/retirement/retirement-profile-tab.tsx": 610,
     "src/components/retirement/sections/taxes.tsx": 569,
     "src/components/savings/all-transactions-tab.tsx": 1457,
-    "src/components/savings/api-sync-section.tsx": 646,
+    "src/components/savings/api-sync-section.tsx": 634,
     "src/components/savings/contribution-grid.tsx": 471,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1260,
     "src/components/savings/fund-card.tsx": 1042,
@@ -151,7 +151,7 @@
     "src/server/retirement/build-engine-payload.ts": 1415,
     "src/server/retirement/payload/profile-switches.ts": 505,
     "src/server/routers/assets.ts": 528,
-    "src/server/routers/budget.ts": 2183,
+    "src/server/routers/budget.ts": 2149,
     "src/server/routers/contribution-profiles.ts": 914,
     "src/server/routers/contribution.ts": 1436,
     "src/server/routers/demo.ts": 663,
@@ -170,7 +170,7 @@
     "src/server/routers/projection/tax-optimization.ts": 538,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 694,
-    "src/server/routers/savings.ts": 2895,
+    "src/server/routers/savings.ts": 2850,
     "src/server/routers/settings/admin.ts": 423,
     "src/server/routers/settings/paycheck.ts": 734,
     "src/server/routers/settings/tax-limits.ts": 784,
@@ -191,13 +191,13 @@
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 593
+      "BudgetContent": 575
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-      "useBudgetDerivedData": 328
+      "useBudgetDerivedData": 322
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
-      "useBudgetPageState": 207
+      "useBudgetPageState": 198
     },
     "src/app/(dashboard)/budget/what-if-editors.tsx": {
       "WhatIfContributionsEditor": 176,
@@ -205,7 +205,7 @@
     },
     "src/app/(dashboard)/budget/what-if-tab.tsx": {
       "useSandboxState": 234,
-      "WhatIfTab": 839
+      "WhatIfTab": 831
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
       "ContributionsContent": 887,
@@ -216,7 +216,7 @@
       "DataBrowserContent": 249
     },
     "src/app/(dashboard)/expenses/expenses-content.tsx": {
-      "ExpensesContent": 589
+      "ExpensesContent": 578
     },
     "src/app/(dashboard)/historical/page.tsx": {
       "HistoricalPage": 191,
@@ -233,7 +233,7 @@
       "MilestonesContent": 223
     },
     "src/app/(dashboard)/networth/page.tsx": {
-      "NetWorthPage": 400
+      "NetWorthPage": 387
     },
     "src/app/(dashboard)/paycheck/page.tsx": {
       "PaycheckPage": 645,
@@ -253,7 +253,7 @@
       "RetirementContent": 309
     },
     "src/app/(dashboard)/savings/page.tsx": {
-      "SavingsPage": 871
+      "SavingsPage": 854
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
@@ -330,7 +330,7 @@
       "LinkedBalanceCardImpl": 210
     },
     "src/components/cards/dashboard/living-costs-card.tsx": {
-      "LivingCostsCardImpl": 587
+      "LivingCostsCardImpl": 579
     },
     "src/components/cards/dashboard/retirement-card.tsx": {
       "RetirementCardImpl": 400
@@ -537,9 +537,6 @@
     "src/components/performance/year-row.tsx": {
       "YearRow": 719,
       "YearRow.map()": 379
-    },
-    "src/components/plans/compare-plans.tsx": {
-      "PlanColumn": 155
     },
     "src/components/portfolio/account-balance-overview.tsx": {
       "AccountBalanceOverview": 238
@@ -869,7 +866,7 @@
       "assetsRouter.computeSummary.query()": 241
     },
     "src/server/routers/budget.ts": {
-      "budgetRouter.computeActiveSummary.query()": 274,
+      "budgetRouter.computeActiveSummary.query()": 266,
       "budgetRouter.syncBudgetToApi.mutation()": 160
     },
     "src/server/routers/contribution-profiles.ts": {

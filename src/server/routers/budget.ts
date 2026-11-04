@@ -67,6 +67,10 @@ import type {
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import type { DbOrTx } from "@/lib/db";
+import {
+  payProfileSelectionSchema,
+  type PayProfileSelection,
+} from "@/lib/pure/household/profile-selection";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
@@ -116,33 +120,6 @@ async function renumberItems(
 }
 
 /**
- * docs/DESIGN.md's profile precedence as the caller supplies it: its own
- * local selection (What-If), else the active profile. Both fields are
- * required (nullable) so a caller can't silently omit one.
- */
-export const profileResolutionTiersSchema = z.object({
-  /** The calling page's own local selection / preview pick, if it has one. */
-  localSelectionId: z.number().int().nullable(),
-  /** The globally-active profile id for this axis. */
-  globalDefaultId: z.number().int().nullable(),
-});
-
-export type ProfileResolutionTiers = z.infer<
-  typeof profileResolutionTiersSchema
->;
-
-/** The profile a page's tiers resolve to: its own local selection (What-If
- *  sandbox), else the active one. Without tiers, the active profile. */
-async function profileFromTiers(
-  db: DbOrTx,
-  tiers: ProfileResolutionTiers | undefined,
-  kind: "contribProfileId" | "salaryProfileId",
-): Promise<number | null> {
-  if (tiers) return tiers.localSelectionId ?? tiers.globalDefaultId;
-  return (await resolveProfileSelection({ db }))[kind];
-}
-
-/**
  * Which Contribution Profile a budget-linked item edit writes into — the
  * one the page shows. Throws rather than silently writing nowhere:
  * contributionValue/Method have no account-level fallback (see
@@ -151,9 +128,12 @@ async function profileFromTiers(
  */
 async function resolveEffectiveContribProfileIdForItem(
   db: DbOrTx,
-  tiers: ProfileResolutionTiers | undefined,
+  selection: PayProfileSelection | undefined,
 ): Promise<number> {
-  const resolvedId = await profileFromTiers(db, tiers, "contribProfileId");
+  const { contribProfileId: resolvedId } = await resolveProfileSelection(
+    { db },
+    selection,
+  );
   if (resolvedId == null) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -596,12 +576,9 @@ export const budgetRouter = createTRPCRouter({
         .object({
           selectedColumn: z.number().optional(),
           profileId: z.number().optional(),
-          /**
-           * The caller's resolution tiers for each profile axis (local
-           * selection → active); omitted = the active profiles.
-           */
-          contributionProfile: profileResolutionTiersSchema.optional(),
-          salaryProfile: profileResolutionTiersSchema.optional(),
+          /** The page's own Contribution/Salary picks (What-If); absent =
+           *  the active profiles. */
+          selection: payProfileSelectionSchema.optional(),
           /** The What-If tab's hand-edited salary/bonus entries — see
            *  paycheckRouter.computeSummary's identical field. Threaded into
            *  every paycheck.computeSummary call this procedure makes
@@ -714,18 +691,10 @@ export const budgetRouter = createTRPCRouter({
       // pair the page shows: its own local selection (What-If), else the
       // active profiles. A budget column is a spending level, so the pair is
       // the same for every column (and matches use-budget-derived-data.ts).
-      const profiles = {
-        contribProfileId: await profileFromTiers(
-          ctx.db,
-          input?.contributionProfile,
-          "contribProfileId",
-        ),
-        salaryProfileId: await profileFromTiers(
-          ctx.db,
-          input?.salaryProfile,
-          "salaryProfileId",
-        ),
-      };
+      const profiles = await resolveProfileSelection(
+        ctx.scope,
+        input?.selection,
+      );
       // Resolved through the SAME helper listProfiles uses above
       // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
       // its own independent copy of this exact resolution (the only
@@ -910,7 +879,7 @@ export const budgetRouter = createTRPCRouter({
         id: z.number().int(),
         colIndex: z.number().int(),
         amount: z.number(),
-        contributionProfile: profileResolutionTiersSchema.optional(),
+        selection: payProfileSelectionSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -937,10 +906,7 @@ export const budgetRouter = createTRPCRouter({
         // before, is strictly worse than that convention for no reason.
         await ctx.db.transaction(async (tx) => {
           const contribProfileId =
-            await resolveEffectiveContribProfileIdForItem(
-              tx,
-              input.contributionProfile,
-            );
+            await resolveEffectiveContribProfileIdForItem(tx, input.selection);
           await applyContributionAccountEdit(
             tx,
             accountId,
@@ -979,7 +945,7 @@ export const budgetRouter = createTRPCRouter({
             amount: z.number(),
           }),
         ),
-        contributionProfile: profileResolutionTiersSchema.optional(),
+        selection: payProfileSelectionSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1079,7 +1045,7 @@ export const budgetRouter = createTRPCRouter({
             const contribProfileId =
               await resolveEffectiveContribProfileIdForItem(
                 tx,
-                input.contributionProfile,
+                input.selection,
               );
             contributionEdits.push({
               contributionAccountId: item.contributionAccountId,

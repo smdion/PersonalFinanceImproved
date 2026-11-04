@@ -91,8 +91,7 @@ describe("ComparePlans", () => {
     expect(queryCalls(BUDGET)).toContainEqual(
       expect.objectContaining({
         profileId: 3,
-        contributionProfile: expect.objectContaining({ localSelectionId: 2 }),
-        salaryProfile: expect.objectContaining({ localSelectionId: 1 }),
+        selection: { contribution: 2, salary: 1 },
       }),
     );
     // The dashboard's input, with this Plan's profiles where they differ.

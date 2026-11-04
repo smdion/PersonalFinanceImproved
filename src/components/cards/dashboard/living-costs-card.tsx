@@ -30,7 +30,6 @@ import {
 } from "@/lib/calculators/paycheck";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
-import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { SK_BUDGET_ACTIVE_COLUMN } from "@/lib/constants/settings-keys";
@@ -100,9 +99,8 @@ function LivingCostsCardImpl() {
   );
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
   const {
-    contributionProfileId: activeContribProfileId,
+    contributionProfileId: effectiveContribId,
     queryInput: contribProfileInput,
   } = useEffectiveContribProfileId();
   // Budget Profile axis — the active row, through the shared resolver.
@@ -120,7 +118,7 @@ function LivingCostsCardImpl() {
   const activeBudgetProfileName = budgetProfilesList?.find(
     (p) => p.id === displayBudgetProfileId,
   )?.name;
-  // Same tiers used by the paycheck query below, so the budget total and the
+  // Same profiles as the paycheck query below, so the budget total and the
   // income figure on this card never disagree about which Salary /
   // Contribution Profile is in effect.
   const { data: budgetData, isLoading: isBudgetLoading } =
@@ -129,14 +127,7 @@ function LivingCostsCardImpl() {
       ...(displayBudgetProfileId != null
         ? { profileId: displayBudgetProfileId }
         : {}),
-      contributionProfile: {
-        localSelectionId: null,
-        globalDefaultId: activeContribProfileId,
-      },
-      salaryProfile: {
-        localSelectionId: null,
-        globalDefaultId: rawActiveSalaryProfileId,
-      },
+      selection: { contribution: effectiveContribId },
     });
   // Spent this month in the linked budget app (YNAB/Actual) — the "how am
   // I actually doing" line next to the plan.

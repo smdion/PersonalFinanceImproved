@@ -112,26 +112,8 @@ export function BudgetContent({
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
   );
-  // One shared tier object per axis, fed to BOTH the server query and the
-  // client-side payroll breakdown so they cannot resolve differently.
-  const contributionProfileTiers = useMemo(
-    () => ({
-      localSelectionId: null,
-      globalDefaultId: activeContribProfileId,
-    }),
-    [activeContribProfileId],
-  );
-  const salaryProfileTiers = useMemo(
-    () => ({
-      localSelectionId: null,
-      globalDefaultId: activeSalaryProfileIdSetting,
-    }),
-    [activeSalaryProfileIdSetting],
-  );
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
-    contributionProfile: contributionProfileTiers,
-    salaryProfile: salaryProfileTiers,
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
@@ -250,7 +232,6 @@ export function BudgetContent({
     nameColWidth,
     setNameColWidth,
     updateBatch,
-    contributionProfileTiers,
   });
 
   const {
@@ -274,8 +255,9 @@ export function BudgetContent({
     data,
     savingsGoals,
     apiActualsData,
-    contributionProfileTiers,
-    salaryProfileTiers,
+    // The active profiles, as computeActiveSummary resolves them unpicked.
+    contribProfileId: activeContribProfileId,
+    salaryProfileId: activeSalaryProfileIdSetting,
     editMode,
     getDraft,
     visibleCount,

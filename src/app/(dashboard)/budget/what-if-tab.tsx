@@ -627,21 +627,14 @@ export function WhatIfTab({
   });
 
   // ── Budget panel ──
-  // The tab's picks go into the LOCAL SELECTION tier of the documented
-  // precedence — the tier that exists for exactly this sandbox.
-  const contributionProfileTiers = useMemo(
+  // The tab's picks are the request's selection; one it hasn't resolved
+  // falls back to the active profile, server and client alike.
+  const selection = useMemo(
     () => ({
-      localSelectionId: contribId,
-      globalDefaultId: activeContribSetting,
+      ...(contribId != null && { contribution: contribId }),
+      ...(salaryId != null && { salary: salaryId }),
     }),
-    [contribId, activeContribSetting],
-  );
-  const salaryProfileTiers = useMemo(
-    () => ({
-      localSelectionId: salaryId,
-      globalDefaultId: activeSalarySetting,
-    }),
-    [salaryId, activeSalarySetting],
+    [contribId, salaryId],
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
@@ -655,8 +648,7 @@ export function WhatIfTab({
   const computeActiveSummaryInput = useDebouncedValue(
     {
       selectedColumn: activeColumn,
-      contributionProfile: contributionProfileTiers,
-      salaryProfile: salaryProfileTiers,
+      selection,
       ...(budgetId != null ? { profileId: budgetId } : {}),
       ...(Object.keys(sandbox.salaryEntries).length > 0
         ? { sandboxSalaryEntries: sandbox.salaryEntries }
@@ -712,8 +704,8 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    contributionProfileTiers,
-    salaryProfileTiers,
+    contribProfileId: contribId ?? activeContribSetting,
+    salaryProfileId: salaryId ?? activeSalarySetting,
     editMode: true,
     getDraft: sandbox.getDraft,
     // No pagination in the sandbox — a "load more" sentinel that never

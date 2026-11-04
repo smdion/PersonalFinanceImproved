@@ -1831,9 +1831,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     },
@@ -2226,7 +2223,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
@@ -6140,7 +6137,7 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 32
+      "count": 31
     },
     "ratchet/no-history-comment": {
       "count": 3

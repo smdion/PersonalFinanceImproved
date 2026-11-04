@@ -126,20 +126,8 @@ export default function SavingsPage() {
 
   // Independent Salary Profile axis — the active one.
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  // Tiers, the same shape every budget caller sends (docs/RULES.md
-  // "Profile Resolution").
-  const contributionProfileTiers = {
-    localSelectionId: null,
-    globalDefaultId: rawActiveContribProfileId,
-  };
-  const salaryProfileTiers = {
-    localSelectionId: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
-    contributionProfile: contributionProfileTiers,
-    salaryProfile: salaryProfileTiers,
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
 
@@ -193,11 +181,6 @@ export default function SavingsPage() {
     ...(effectiveSalaryProfileId != null
       ? { salaryProfileId: effectiveSalaryProfileId }
       : {}),
-    // Threaded through so budget.computeActiveSummary's own resolution
-    // (inside computeLiveMaxMonthlyFunding, savings.ts) matches exactly
-    // what this page's own maxMonthlyFunding query above used.
-    contributionProfileTiers: contributionProfileTiers,
-    salaryProfileTiers: salaryProfileTiers,
   };
 
   // ── Cross-section coordination ──

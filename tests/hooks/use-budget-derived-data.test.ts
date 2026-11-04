@@ -87,14 +87,8 @@ function setup(editMode: boolean, rawItems: RawItem[] = [rawItem]) {
       },
       savingsGoals: undefined,
       apiActualsData: null,
-      contributionProfileTiers: {
-        localSelectionId: null,
-        globalDefaultId: null,
-      },
-      salaryProfileTiers: {
-        localSelectionId: null,
-        globalDefaultId: null,
-      },
+      contribProfileId: null,
+      salaryProfileId: null,
       editMode,
       getDraft: (_id, _col, original) => original,
       visibleCount: 10,
