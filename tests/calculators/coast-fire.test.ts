@@ -5,7 +5,10 @@
  * already-retired) and the binary-search earliest-age guarantee.
  */
 import { planRetirementAge } from "@/lib/pure/household-timeline";
-import { withConsistentStart } from "./fixtures/engine-fixtures";
+import {
+  withConsistentStart,
+  makeAccumulationDefaults,
+} from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import type { EngineAccumulationYear } from "@/lib/calculators/types";
 import {
@@ -22,10 +25,7 @@ const AS_OF = new Date("2025-03-07");
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
-      accumulationDefaults: {
-        contributionRate: 0.25,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -33,8 +33,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: {
         withdrawalRate: 0.04,
         withdrawalRoutingMode: "waterfall",
@@ -419,10 +418,8 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
     overrides: Partial<ProjectionInput> = {},
   ): ProjectionInput {
     return withCapsAge({
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.29,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
         accountSplits: {
           "401k": 0.5,
           "403b": 0,
@@ -430,8 +427,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
           ira: 0.15,
           brokerage: 0.3,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: {
         withdrawalRate: 0.04,
         withdrawalRoutingMode: "percentage",
@@ -622,10 +618,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
     overrides: Partial<ProjectionInput> = {},
   ): ProjectionInput {
     return withCapsAge({
-      accumulationDefaults: {
-        contributionRate: 0.25,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -633,8 +626,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: {
         withdrawalRate: 0.04,
         withdrawalRoutingMode: "waterfall",
@@ -834,10 +826,7 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
     overrides: Partial<ProjectionInput> = {},
   ): ProjectionInput {
     return withCapsAge({
-      accumulationDefaults: {
-        contributionRate: 0.25,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -845,8 +834,7 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: {
         withdrawalRate: 0.04,
         withdrawalRoutingMode: "waterfall",

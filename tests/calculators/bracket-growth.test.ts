@@ -15,7 +15,10 @@ import {
 } from "@/lib/calculators/engine/tax-estimation";
 import { computeLtcgTax } from "@/lib/config/tax-tables";
 import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
-import { TEST_BRACKETS } from "./fixtures/engine-fixtures";
+import {
+  TEST_BRACKETS,
+  makeAccumulationDefaults,
+} from "./fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
@@ -266,10 +269,8 @@ function makeInput(
   } = {},
 ): ProjectionInput {
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: {
         "401k": 0.7,
         "403b": 0,
@@ -278,7 +279,7 @@ function makeInput(
         brokerage: 0.2,
       },
       taxSplits: { "401k": 0.9, ira: 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "bracket_filling",
@@ -444,10 +445,8 @@ function makeLtcgHeavyInput(
   preTax = 200000,
 ): ProjectionInput {
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: {
         "401k": 0.2,
         "403b": 0,
@@ -456,7 +455,7 @@ function makeLtcgHeavyInput(
         brokerage: 0.7,
       },
       taxSplits: { "401k": 0.9, ira: 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "bracket_filling",
@@ -752,10 +751,8 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: {
         "401k": 0.2,
         "403b": 0,
@@ -764,7 +761,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
         brokerage: 0.7,
       },
       taxSplits: { "401k": 0.9, ira: 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "bracket_filling",
@@ -926,10 +923,8 @@ function makeAcaHouseholdInput(): ProjectionInput {
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: {
         "401k": 0.2,
         "403b": 0,
@@ -938,7 +933,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
         brokerage: 0.7,
       },
       taxSplits: { "401k": 0.9, ira: 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "bracket_filling",

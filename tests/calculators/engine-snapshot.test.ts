@@ -23,6 +23,7 @@
 import {
   startingBalanceGaps,
   withConsistentStart,
+  makeAccumulationDefaults,
 } from "./fixtures/engine-fixtures";
 import { expectFirstRmdAndClaimYears } from "./fixtures/retirement-milestones";
 import { describe, it, expect } from "vitest";
@@ -53,10 +54,7 @@ const AS_OF = new Date("2025-03-07");
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
-      accumulationDefaults: {
-        contributionRate: 0.25,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -64,8 +62,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: {
         withdrawalRate: 0.04,
         withdrawalRoutingMode: "waterfall",
@@ -303,10 +300,8 @@ describe("engine snapshot parity", () => {
 
   it("fixture 3: all accounts maxed, overflow to brokerage", () => {
     const input = makeInput({
-      accumulationDefaults: {
-        contributionRate: 0.5, // Very high rate to force overflow
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
+        contributionRate: 0.5,
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -314,8 +309,7 @@ describe("engine snapshot parity", () => {
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       currentSalary: 300000,
     });
     const result = calculateProjection(input);
@@ -380,13 +374,11 @@ describe("engine snapshot parity", () => {
 
   it("fixture 5: zero balances, zero contributions", () => {
     const input = makeInput({
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
         accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
         taxSplits: { "401k": 0, ira: 0 },
-      },
+      }),
       currentSalary: 100000,
       employerMatchRateByCategory: {
         "401k": 0,
@@ -1073,10 +1065,8 @@ describe("engine snapshot parity", () => {
           basis: 350000,
         },
       },
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
         accountSplits: {
           "401k": 0.1,
           "403b": 0,
@@ -1084,8 +1074,7 @@ describe("engine snapshot parity", () => {
           ira: 0.1,
           brokerage: 0.75,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -3346,10 +3335,8 @@ describe("engine snapshot parity", () => {
       currentSalary: 180000,
       filingStatus: "MFJ",
       birthYear: 1966,
-      accumulationDefaults: {
-        contributionRate: 0.3, // Aggressive final-5-years savings
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
+        contributionRate: 0.3,
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -3357,8 +3344,7 @@ describe("engine snapshot parity", () => {
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       startingBalances: {
         preTax: 800000,
         taxFree: 150000,

@@ -6,7 +6,10 @@ import type {
 } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { withConsistentStart } from "./engine-fixtures";
+import {
+  withConsistentStart,
+  makeAccumulationDefaults,
+} from "./engine-fixtures";
 
 const AS_OF = new Date("2026-03-07");
 
@@ -43,13 +46,11 @@ export function household(
   });
   const afterTax = sum("brokerage", "afterTax");
   const input: Partial<ProjectionInput> = {
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
       taxSplits: { "401k": 1, ira: 1 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "waterfall",

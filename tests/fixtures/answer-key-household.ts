@@ -27,6 +27,7 @@ import type {
 } from "@/lib/calculators/types";
 import { readTaxData, shippedTaxTables } from "../helpers/tax-data";
 import { runOneYear } from "./answer-key";
+import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";
 
 const YEAR = 2026;
 
@@ -244,13 +245,11 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
   );
 
   return {
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: zero(),
       taxSplits: { "401k": 0, "403b": 0, ira: 0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "waterfall",

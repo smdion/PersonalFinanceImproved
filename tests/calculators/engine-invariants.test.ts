@@ -10,6 +10,7 @@
 import {
   startingBalanceGaps,
   withConsistentStart,
+  makeAccumulationDefaults,
 } from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
@@ -55,10 +56,8 @@ function asAccumulation(y: EngineYearProjection): EngineAccumulationYear {
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.15,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -66,8 +65,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: {
         withdrawalRate: 0.04,
         withdrawalRoutingMode: "waterfall",
@@ -195,10 +193,8 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
         salaryGrowthRate: r.salaryGrowthRate,
         annualExpenses: Math.min(r.annualExpenses, r.salary),
         returnRates: [{ label: `Age ${r.currentAge}`, rate: r.returnRate }],
-        accumulationDefaults: {
+        accumulationDefaults: makeAccumulationDefaults({
           contributionRate: r.contributionRate,
-          routingMode: "waterfall",
-          accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
           accountSplits: {
             "401k": 0.5,
             "403b": 0,
@@ -206,8 +202,7 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
             ira: 0.1,
             brokerage: 0.3,
           },
-          taxSplits: { "401k": 0.5, ira: 1.0 },
-        },
+        }),
         startingBalances: {
           preTax: r.preTaxBalance,
           taxFree: r.rothBalance,
