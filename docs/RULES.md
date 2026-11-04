@@ -57,7 +57,12 @@ These stop the failure this codebase is most prone to: maintenance by addition, 
 
 Rules below state the target. These parts aren't true yet; don't build on them.
 
-- **"One config entry" for an account type.** Early access is identity branches.
+- **"One config entry" for an account type,** until v0.11: some lists and router schemas are still built at module load (the `it.fails` cases in `tests/lint/violations.test.ts`).
+- **Early access has two behaviors,** until v0.11: the engine reads each type's `earlyAccessRule`; Tax Buckets still branches on IRA and HSA by name.
+- **The engine keys an account by its display name** (with category, tax type and owner), so two same-named accounts of one owner merge (`el-h5`), until it keys by id (v0.11).
+- **A date of birth is parsed two ways,** UTC midnight (`ageOnDate`) and local midnight (milestones, holdings), until one parse (v0.11).
+- **The W-4 status stands in for the return status** when a year has none, in one function (`w4StandInForReturn`), until the return status is asked for (v0.11).
+- **Two MAGI sites in the Roth conversion optimizer keep their own term order,** until `yearMagi` rounds to cents (v0.11).
 - **Calculations are answer-keyed only in part.** [CALCULATIONS.md](CALCULATIONS.md) lists every calculation: its Tested column says which rows have hand-worked answer-key cases, and its Gaps column is where calculation bugs are listed. A row with no case has only its pinned tests, which can move with the code. A figure changes only with its source and its cause in dollars.
 - **There is no named layer for composition that needs I/O.** It lives in router procedures and `src/server/helpers/`, and some routers call others. Don't add more; a shared service layer is planned.
 - **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** Both are recorded layer breaks (§ Pure Business Logic Boundary); don't extend them.
@@ -77,7 +82,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Inflation shocks are independent year to year,** so long-run inflation spread is understated, until persistent inflation is modelled (decision F4, v0.11).
 - **Missing data still becomes $0 in many money paths** (`?? 0`, `return 0`), until each gets a real absent state (§ The Holistic Rule, rule 1). Don't add one.
 - **Some helpers still default `asOfDate = new Date()`,** until every caller passes its request's date (§ Time Resolution, rule 2). Don't add one.
-- **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11).
+- **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11). The Simulation's colour tones (`simulationRateTone`) also mark 75% amber and colour the stability rates.
 
 ## Data-Driven Architecture
 

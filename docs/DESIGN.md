@@ -606,13 +606,22 @@ The rules are RULES.md § Data-Driven Architecture.
 
 ### Key Files
 
-| File                                    | Role                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `src/lib/config/account-types.ts`       | `ACCOUNT_TYPE_CONFIG`, `AccountCategory` (its keys) + every derived helper and predicate |
-| `src/lib/config/account-balance.ts`     | Balance-structure helpers (Traditional, Roth, basis)                                     |
-| `src/lib/config/display-labels.ts`      | Label maps and performance-category constants                                            |
-| `src/lib/config/account-types.types.ts` | `AccountTypeConfig` (the entry shape), `AccountBalance` union                            |
-| `src/lib/constants.ts`                  | App-wide defaults and thresholds                                                         |
+| File                                                | Role                                                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `src/lib/config/account-types.ts`                   | `ACCOUNT_TYPE_CONFIG`, `AccountCategory` (its keys) + every derived helper and predicate         |
+| `src/lib/config/account-balance.ts`                 | Balance-structure helpers (Traditional, Roth, basis)                                             |
+| `src/lib/config/display-labels.ts`                  | Label maps and performance-category constants                                                    |
+| `src/lib/config/account-types.types.ts`             | `AccountTypeConfig` (the entry shape), `AccountBalance` union                                    |
+| `src/lib/constants.ts`                              | App-wide defaults and thresholds                                                                 |
+| `src/lib/config/filing-status.ts`                   | Return and W-4 filing statuses (types, schemas, order) and the per-status rules table            |
+| `src/lib/config/age-rules.ts`                       | `AGE_RULES`: each age rule and how it is measured (tests go through `lib/pure/household/age.ts`) |
+| `src/lib/config/magi-definitions.ts`                | `MAGI_DEFINITIONS`: what each rule's MAGI counts of Social Security                              |
+| `src/lib/config/permissions.ts`                     | `PERMISSIONS` and `Permission`, shared by the server and the client                              |
+| `src/lib/budget-api/providers.ts`                   | `BUDGET_PROVIDERS`: one entry per budget service, with its client                                |
+| `src/lib/pure/tax/year-income.ts`                   | `YearIncome` (one year's income by stream) and `yearMagi`                                        |
+| `src/lib/pure/contributions/contribution-amount.ts` | A contribution's yearly dollars, `Fraction` and `EmployerMatch`                                  |
+| `src/server/data/request-scope.ts`                  | `RequestScope`: a procedure call's db, instant and household day                                 |
+| `src/lib/pure/simulation/dollars.ts`                | The Simulation's outcomes in a view's dollars (today's or nominal)                               |
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
@@ -891,7 +900,8 @@ on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
 also drops the columns the migration drops. A new migration's tag reaches
 `KNOWN_SCHEMA_VERSIONS` from the drizzle journal, so only a data-changing
-one needs a transform. Pending migrations apply
+one needs a transform. The journal has two read paths: `version-logic.ts`
+reads it from disk at startup, `backup-transforms.ts` bundles it. Pending migrations apply
 strictly, all in one transaction, and the schema is checked against the
 latest snapshot (every table, column and index) before it commits: a failed
 statement or a missing object rolls everything back and records nothing.
