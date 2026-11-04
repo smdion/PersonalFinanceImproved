@@ -626,10 +626,10 @@ about the account, and read the config field that says it (RULES.md
 1. If a field and its helper exist (`getLimitGroup` reads `irsLimitGroup`,
    `isOverflowTarget`, `tracksCostBasis`), call the helper. Don't reach into
    `ACCOUNT_TYPE_CONFIG[cat].field` from the call site.
-2. If not, add a field to `AccountTypeConfig` named for the behavior (the
-   planned `earlyAccessRule` and `qcdEligible` are examples), set it on
-   every entry, and add its helper in `src/lib/config/account-types.ts`
-   with a one-line doc comment naming the field.
+2. If not, add a field to `AccountTypeConfig` named for the behavior (as
+   `earlyAccessRule` and `qcdEligible` are), set it on every entry, and add
+   its helper in `src/lib/config/account-types.ts` with a one-line doc
+   comment naming the field.
 3. Update every call site to use it.
 
 Never add a predicate that names an account type (`isHsaCategory`,

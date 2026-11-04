@@ -14,6 +14,8 @@ import {
   HSA_NON_MEDICAL_PENALTY_AGE,
   HSA_NON_MEDICAL_PENALTY_RATE,
 } from "@/lib/constants";
+import type { EarlyAccessRule } from "@/lib/config/account-types.types";
+import { assertNever } from "@/lib/utils/assert-never";
 import { formatPercent } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
 
@@ -282,4 +284,48 @@ export function computeHsaAccess(
       taxFree: false,
     },
   ];
+}
+
+/** One account's slices under its type's early-access rule; null for a rule
+ *  with no age or employer gate, where the whole balance is penalty-free. */
+export function earlyAccessSlices(
+  rule: EarlyAccessRule,
+  account: {
+    balance: number;
+    currentAge: number;
+    currentYear: number;
+    isRoth: boolean;
+    /** This account's Rule of 55 result for the year (employer plans). */
+    ruleOf55Eligible: boolean;
+    contributionBasis: number;
+    conversionBasis: number;
+    latestConversionYear: number | null;
+  },
+): EarlyAccessSlice[] | null {
+  const { balance, currentAge, isRoth, ruleOf55Eligible } = account;
+  switch (rule) {
+    case "ira_59_half":
+      return isRoth
+        ? computeRothIraAccess(account)
+        : computeTraditionalIraAccess(balance, currentAge);
+    case "employer_plan":
+      return isRoth
+        ? computeEmployerPlanRothAccess(
+            balance,
+            currentAge,
+            ruleOf55Eligible,
+            account.contributionBasis + account.conversionBasis,
+          )
+        : computeEmployerPlanPreTaxAccess(
+            balance,
+            currentAge,
+            ruleOf55Eligible,
+          );
+    case "hsa_non_medical":
+      return computeHsaAccess(balance, currentAge);
+    case "none":
+      return null;
+    default:
+      return assertNever(rule);
+  }
 }

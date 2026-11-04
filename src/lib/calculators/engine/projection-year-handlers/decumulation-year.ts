@@ -21,8 +21,8 @@ import {
   isOverflowTarget,
   isRetirementMoney,
   isPreTaxType,
-  isIraCategory,
-  isHsaCategory,
+  isQcdEligible,
+  nonMedicalPenaltyRate,
   addTraditional,
 } from "../../../config/account-types";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
@@ -305,7 +305,7 @@ export function runDecumulationYear(
     const iraTradByPerson = new Map<number, number>();
     for (const ia of indAccts) {
       if (
-        isIraCategory(ia.category) &&
+        isQcdEligible(ia.category) &&
         rmdOwnerOf(ia, ctx.primaryPersonId) != null &&
         isPreTaxType(ia.taxType) &&
         // A Portfolio-parented IRA (nothing prevents one existing)
@@ -351,7 +351,7 @@ export function runDecumulationYear(
         if (qcdAmount <= 0) continue;
         const personIraAccts = indAccts.filter(
           (ia) =>
-            isIraCategory(ia.category) &&
+            isQcdEligible(ia.category) &&
             rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
             isPreTaxType(ia.taxType) &&
             isRetirementMoney(ia.parentCategory),
@@ -1580,13 +1580,8 @@ export function runDecumulationYear(
     penaltyLockedStillExcluded: eligibility
       ? roundToCents(
           sumBy(
-            (
-              Object.entries(eligibility.penaltyExposedTotalStillExcluded) as [
-                string,
-                number,
-              ][]
-            ).filter(([cat]) => !isHsaCategory(cat)),
-            ([, v]) => v,
+            getAllCategories().filter((c) => nonMedicalPenaltyRate(c) == null),
+            (c) => eligibility.penaltyExposedTotalStillExcluded[c],
           ),
         )
       : undefined,

@@ -85,6 +85,8 @@ import {
 import { routePercentage } from "@/lib/calculators/engine/contribution-routing";
 import { resolveAccumulationConfig } from "@/lib/calculators/engine/override-resolution";
 import { routeWithdrawalsPercentage } from "@/lib/calculators/engine/withdrawal-routing";
+import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 import {
   makeAccountBalances,
   makeAccumulationConfig,
@@ -1678,6 +1680,34 @@ describe("one config entry adds an account type", () => {
         [{ year: 2030, accountCaps }],
       );
       expect(Reflect.get(config.accountCaps, SYNTHETIC_CATEGORY)).toBe(500);
+    });
+  });
+
+  it("early access and its penalty follow the entry's fields, not its name", () => {
+    withSyntheticCategory(() => {
+      // An HSA-like entry: locked for non-medical use before 65, at 20%.
+      Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+        ...ACCOUNT_TYPE_CONFIG.hsa,
+      });
+      const account = {
+        name: "Synthetic",
+        category: "hsa" as const,
+        taxType: "hsa",
+        ownerBirthYear: 1980,
+      };
+      Reflect.set(account, "category", SYNTHETIC_CATEGORY);
+      const exposure = computeWithdrawalEligibility({
+        year: 2030,
+        indAccts: [account],
+        indBal: new Map([["k", 1000]]),
+        indKey: () => "k",
+      });
+      expect(exposure.byKey.get("k")?.penaltyFreeAmount).toBe(0);
+      const { penaltyCost } = computeEarlyWithdrawalPenalty({
+        exposure,
+        withdrawnByKey: new Map([["k", 100]]),
+      });
+      expect(penaltyCost).toBe(20);
     });
   });
 

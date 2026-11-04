@@ -33,6 +33,9 @@ import {
   type AccountCategory,
   type AccountBalance,
   isPreTaxTreatment,
+  isHsaCategory,
+  isIraCategory,
+  isRuleOf55EligibleCategory,
 } from "@/lib/config/account-types";
 import {
   CONTRIBUTION_METHOD_LABELS,
@@ -508,6 +511,24 @@ describe("display labels", () => {
     expect(displayLabel(TAX_TREATMENT_LABELS, "unknown_type")).toBe(
       "unknown_type",
     );
+  });
+});
+
+describe("early-access behavior fields reproduce the identity branches", () => {
+  // Before the fields: IRA → 59½/Roth IRA rules and QCD, a Rule-of-55
+  // category → employer-plan rules, HSA → 20% non-medical penalty before 65.
+  it.each(getAllCategories())("%s", (cat) => {
+    const cfg = ACCOUNT_TYPE_CONFIG[cat];
+    const expected = isIraCategory(cat)
+      ? "ira_59_half"
+      : isRuleOf55EligibleCategory(cat)
+        ? "employer_plan"
+        : isHsaCategory(cat)
+          ? "hsa_non_medical"
+          : "none";
+    expect(cfg.earlyAccessRule).toBe(expected);
+    expect(cfg.qcdEligible).toBe(isIraCategory(cat));
+    expect(cfg.nonMedicalPenaltyRate).toBe(isHsaCategory(cat) ? 0.2 : null);
   });
 });
 

@@ -28,12 +28,14 @@ export {
 
 import type {
   AccountTypeConfig,
+  EarlyAccessRule,
   DisplayGroup,
   AccountBalance,
   AccountSegment,
 } from "./account-types.types";
 
 import { zeroBalanceForStructure } from "./account-balance";
+import { HSA_NON_MEDICAL_PENALTY_RATE } from "@/lib/constants";
 import {
   PERF_CATEGORY_HSA,
   PERF_CATEGORY_BROKERAGE,
@@ -65,6 +67,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "pro_rata",
     ruleOf55Eligible: true,
+    earlyAccessRule: "employer_plan",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -117,6 +122,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "pro_rata",
     ruleOf55Eligible: true,
+    earlyAccessRule: "employer_plan",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -169,6 +177,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "basis_first",
     ruleOf55Eligible: false,
+    earlyAccessRule: "ira_59_half",
+    qcdEligible: true,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -218,6 +229,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     supportedTaxTreatments: ["hsa"],
     rothOrderingRules: null,
     ruleOf55Eligible: false,
+    earlyAccessRule: "hsa_non_medical",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -275,6 +289,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     supportedTaxTreatments: ["after_tax"],
     rothOrderingRules: null,
     ruleOf55Eligible: false,
+    earlyAccessRule: "none",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -456,18 +473,9 @@ export function categoriesWithTaxPreference(): AccountCategory[] {
   );
 }
 
-/** `getEngineCategories() ∩ categoriesWithTaxPreference()` — the
- *  Traditional-preference categories that actually participate in engine
- *  routing:
- *  the two source filters are independently maintained and coincide
- *  today by coincidence, not by construction (every category currently
- *  has `participatesInEngine: true, engineParent: null`), so a future
- *  account type with `engineParent` set could silently diverge them.
- *  Single source of truth for "which Traditional categories does
- *  bracket_filling's Phase 1 (and its matching UI order editor) actually
- *  care about" — used by both `withdrawal-routing.ts`'s Phase 1/Roth-tier
- *  loops and `decumulation-config.tsx`'s "Traditional Account Order"
- *  sub-control, so the two can't drift on which categories are in scope. */
+/** The Traditional-preference categories that take part in engine routing
+ *  (`getEngineCategories() ∩ categoriesWithTaxPreference()`), for
+ *  bracket_filling's Phase 1 and the Traditional order editor. */
 export function tradPreferenceEngineCategories(): AccountCategory[] {
   const engineCats = new Set(getEngineCategories());
   return categoriesWithTaxPreference().filter((c) => engineCats.has(c));
@@ -559,33 +567,39 @@ export function tracksRothBasis(category: string): boolean {
   return cfg?.balanceStructure === "roth_traditional";
 }
 
-/** Check if a category is HSA. This file is the one place allowed to know
- *  literal category strings (it's where they're defined as dictionary
- *  keys) — a direct `category === "hsa"` check here, not a check against
- *  balanceStructure/rothOrderingRules or another incidental structural
- *  property that HAPPENS to be unique to HSA today (those checks are
- *  fragile to a future account type that
- *  legitimately reuses the same structural value for unrelated reasons). */
+/** Identity checks, kept for the callers not yet on behavior fields
+ *  (RULES.md § Data-Driven Architecture, rule 10); new code reads a field. */
 export function isHsaCategory(category: string): boolean {
   return category === "hsa";
 }
 
-/** Check if a category is IRA — see isHsaCategory's docblock for why this
- *  is a direct identity check rather than a structural-property check. */
+/** See isHsaCategory. */
 export function isIraCategory(category: string): boolean {
   return category === "ira";
 }
 
-/** Check if a category is eligible for the Rule of 55 exception (401k/403b
- *  — IRC §72(t)(2)(A)(v)). Reads `ruleOf55Eligible` directly rather than
- *  the coincidentally-equivalent `rothOrderingRules === "pro_rata"` — Roth
- *  distribution ordering and Rule-of-55 eligibility are legally distinct
- *  concepts (IRC §72(t)(2)(A)(v) vs. IRS Notice 2009-68) that happen to
- *  coincide for today's 5 categories; a future account type where they
- *  diverge needs its own field read, not a borrowed one. */
+/** Rule of 55 applies (IRC §72(t)(2)(A)(v)): `ruleOf55Eligible`, a legal
+ *  fact distinct from the Roth ordering rules. */
 export function isRuleOf55EligibleCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
   return cfg?.ruleOf55Eligible ?? false;
+}
+
+/** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */
+export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
+  return ACCOUNT_TYPE_CONFIG[category].earlyAccessRule;
+}
+
+/** A QCD can come from this category (`qcdEligible`). */
+export function isQcdEligible(category: AccountCategory): boolean {
+  return ACCOUNT_TYPE_CONFIG[category].qcdEligible;
+}
+
+/** The non-medical withdrawal penalty rate, or null where there is none. */
+export function nonMedicalPenaltyRate(
+  category: AccountCategory,
+): number | null {
+  return ACCOUNT_TYPE_CONFIG[category].nonMedicalPenaltyRate;
 }
 
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
@@ -850,33 +864,9 @@ export function getDefaultDecumulationOrder(): AccountCategory[] {
   );
 }
 
-/**
- * The Retirement page's DEFAULT (un-customized) decumulation withdrawal
- * config — shared so the page's own form-state defaults
- * (use-projection-form-state.ts) and any other consumer that needs to
- * reproduce the SAME default engine input (e.g. the dashboard Retirement
- * tile's cache-key-matching "peek" queries) can never independently drift.
- * The persistent projection cache hashes the full built engine input, so
- * even a cosmetic difference here (a category order, a fallback value)
- * would silently turn into a permanent cache miss for one of the two call
- * sites.
- *
- * NO `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits` key —
- * none of those are request-level defaults any more. The real household
- * defaults live in `retirement_settings` (`.withdrawal_routing_mode`,
- * `.withdrawal_order`, `.withdrawal_splits`) and a caller must OMIT each
- * field to reach them (buildDecumulationDefaults,
- * server/routers/projection/_shared.ts). This function returning a
- * hardcoded copy here would make this "shared so callers can't drift"
- * object itself the drift: `retirement-card.tsx`'s peek query spreads it
- * unconditionally (it can't know about a session override, so it was never
- * a candidate for touched-gating), so it would keep SENDING the config
- * default — silently overruling any household's saved
- * waterfall/percentage/custom-order choice for the dashboard tile's FI year
- * / Coast FIRE age, while the Retirement page (which
- * omits these fields until the user touches its Configure editors) resolved
- * the real setting. Two different answers to the same question from what's
- * supposed to be one shared default. */
+/** The Retirement page's default decumulation input, shared with the
+ *  dashboard tile's peek queries so both hash to one cache key. No routing
+ *  mode, order or splits: omitted, they come from retirement_settings. */
 export function defaultDecumulationConfig(): {
   withdrawalTaxPreference: Partial<
     Record<AccountCategory, "traditional" | "roth">

@@ -41,6 +41,10 @@ type ColorSet = {
 // Account type config shape
 // ---------------------------------------------------------------------------
 
+/** Which early-access rule an account type's withdrawals follow. */
+export type EarlyAccessRule =
+  "ira_59_half" | "employer_plan" | "hsa_non_medical" | "none";
+
 export type AccountTypeConfig = {
   // --- Identity ---
   displayLabel: string;
@@ -66,6 +70,15 @@ export type AccountTypeConfig = {
    *  no Rule-of-55 equivalent (only SEPP/72(t)); brokerage/HSA have no early-
    *  withdrawal penalty concept this flag applies to. */
   ruleOf55Eligible: boolean;
+  /** The early-access rule a withdrawal follows: an IRA's 59½ and Roth
+   *  ordering, an employer plan's 59½ or Rule of 55, an HSA's age for
+   *  non-medical use, or none. */
+  earlyAccessRule: EarlyAccessRule;
+  /** A Qualified Charitable Distribution can come from it (IRC 408(d)(8)). */
+  qcdEligible: boolean;
+  /** The penalty rate on an early non-medical withdrawal, in place of the
+   *  10% early-withdrawal one (IRC 223(f)(4)); null where there is none. */
+  nonMedicalPenaltyRate: number | null;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;

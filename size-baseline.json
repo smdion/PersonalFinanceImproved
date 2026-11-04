@@ -96,7 +96,7 @@
     "src/lib/calculators/engine/individual-account-tracking.ts": 1478,
     "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 740,
     "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 855,
-    "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1629,
+    "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1624,
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/calculators/engine/rmd-enforcement.ts": 468,
     "src/lib/calculators/engine/tax-estimation.ts": 515,
@@ -109,7 +109,7 @@
     "src/lib/calculators/relocation.ts": 490,
     "src/lib/calculators/types/engine-config.ts": 803,
     "src/lib/calculators/types/engine-projection.ts": 725,
-    "src/lib/config/account-types.ts": 901,
+    "src/lib/config/account-types.ts": 891,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 779,
     "src/lib/constants.ts": 382,
@@ -133,7 +133,7 @@
     "src/lib/pure/performance.ts": 599,
     "src/lib/pure/roth-ira.ts": 543,
     "src/lib/pure/tax-bucket-projection.ts": 527,
-    "src/lib/pure/withdrawal-eligibility.ts": 527,
+    "src/lib/pure/withdrawal-eligibility.ts": 484,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 495,
     "src/lib/simplefin/ingest.ts": 534,
@@ -760,7 +760,7 @@
       "buildProjectionContext": 188
     },
     "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 1527
+      "runDecumulationYear": 1522
     },
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 438
@@ -826,7 +826,7 @@
       "computeTaxBucketBreakdown": 243
     },
     "src/lib/pure/withdrawal-eligibility.ts": {
-      "computeWithdrawalEligibility": 219
+      "computeWithdrawalEligibility": 182
     },
     "src/lib/sec/facts-sync.ts": {
       "refreshOne": 205

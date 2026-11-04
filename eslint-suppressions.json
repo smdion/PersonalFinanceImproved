@@ -3091,9 +3091,6 @@
     }
   },
   "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -3463,10 +3460,10 @@
       "count": 16
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 3
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/config/account-types.types.ts": {
@@ -4404,7 +4401,7 @@
   },
   "src/lib/pure/early-withdrawal-penalty.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/pure/feed-data-date.ts": {
@@ -4949,7 +4946,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 22
+      "count": 19
     },
     "ratchet/no-history-comment": {
       "count": 1

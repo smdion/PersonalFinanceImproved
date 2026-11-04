@@ -41,19 +41,13 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   isTaxFreeBucket,
-  isHsaCategory,
-  isIraCategory,
-  isRuleOf55EligibleCategory,
+  earlyAccessRuleOf,
   isRetirementMoney,
   getAllCategories,
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
 import {
-  computeTraditionalIraAccess,
-  computeEmployerPlanPreTaxAccess,
-  computeEmployerPlanRothAccess,
-  computeRothIraAccess,
-  computeHsaAccess,
+  earlyAccessSlices,
   penaltyFreePrefixAmount,
   type EarlyAccessSlice,
 } from "@/lib/pure/early-access";
@@ -281,27 +275,37 @@ export function computeWithdrawalEligibility(input: {
     // joint-account handling.
     if (birthYear != null) {
       const currentAge = ageInYear(birthYear, year);
-      if (isIraCategory(ia.category)) {
-        // IRA-type: 59½ flat age gate, or Roth IRA's own contribution/
-        // conversion/growth ordering (contribution basis is always
-        // penalty-free regardless of age).
-        const isRoth = isTaxFreeBucket(ia.taxType);
-        const slices = isRoth
-          ? computeRothIraAccess({
-              balance,
-              currentAge,
-              currentYear: year,
-              contributionBasis,
-              conversionBasis,
-              latestConversionYear,
+      const rule = earlyAccessRuleOf(ia.category);
+      const isRoth = isTaxFreeBucket(ia.taxType);
+      // Rule of 55 projected to `year` with the resolver the Tax Buckets
+      // "at retirement" view uses.
+      const projected =
+        rule === "employer_plan"
+          ? projectRuleOf55(ia.ruleOf55 ?? null, year, birthYear, {
+              forceIneligible: ia.ruleOf55ForceIneligible,
+              ownerRetirementYear: ia.ownerRetirementYear,
             })
-          : computeTraditionalIraAccess(balance, currentAge);
+          : null;
+      const ruleOf55Eligible = projected?.eligible ?? false;
+      const slices = earlyAccessSlices(rule, {
+        balance,
+        currentAge,
+        currentYear: year,
+        isRoth,
+        ruleOf55Eligible,
+        contributionBasis,
+        conversionBasis,
+        latestConversionYear,
+      });
+      if (slices) penaltyFreeAmount = penaltyFreePrefixAmount(slices);
+      if (isRoth && (rule === "ira_59_half" || rule === "employer_plan")) {
+        basisRemaining = roundToCents(contributionBasis + conversionBasis);
+        basisUncertain = trackedBasis?.stale || trackedBasis?.isSeeded;
+      }
+      if (rule === "ira_59_half" && slices) {
+        // 59½, or a Roth IRA's own ordering: contribution basis is always
+        // penalty-free regardless of age.
         const locked = allSlicesLocked(slices);
-        penaltyFreeAmount = penaltyFreePrefixAmount(slices);
-        if (isRoth) {
-          basisRemaining = roundToCents(contributionBasis + conversionBasis);
-          basisUncertain = trackedBasis?.stale || trackedBasis?.isSeeded;
-        }
         const growthExposed = roundToCents(
           Math.max(0, balance - penaltyFreeAmount),
         );
@@ -310,53 +314,14 @@ export function computeWithdrawalEligibility(input: {
         } else if (isRoth && !locked && growthExposed <= 0.005) {
           reason = `Eligible — ${formatCurrency(basisRemaining ?? 0)} basis remaining, always penalty-free`;
         } else if (isRoth && !locked) {
-          // Some of this account is reachable (contribution/conversion
-          // basis) and some is not (growth, locked until 59½) — say so
-          // plainly rather than "Eligible", which reads as the whole
-          // balance being reachable when it isn't.
+          // Part reachable (basis), part locked until 59½ (growth).
           reason = `Partially eligible — ${formatCurrency(basisRemaining ?? 0)} basis penalty-free, ${formatCurrency(growthExposed)} growth locked until 59½`;
         } else if (isRoth) {
           reason = "Locked until age 59½ — no basis remaining";
         } else {
           reason = `Locked until age 59½ (currently ${currentAge})`;
         }
-      } else if (isRuleOf55EligibleCategory(ia.category)) {
-        // 401k/403b: Rule of 55 (projected to `year`, reusing the same
-        // resolver the Tax Buckets "at retirement" view uses) OR 59½.
-        // Dispatches on cfg.ruleOf55Eligible (a static, category-level
-        // "is IRC §72(t)(2)(A)(v) even applicable to this account type"
-        // fact), not the coincidentally-equivalent
-        // `rothOrderingRules === "pro_rata"` (a Roth-distribution-ordering
-        // concept, legally distinct).
-        const projected = projectRuleOf55(
-          ia.ruleOf55 ?? null,
-          year,
-          birthYear,
-          {
-            forceIneligible: ia.ruleOf55ForceIneligible,
-            ownerRetirementYear: ia.ownerRetirementYear,
-          },
-        );
-        const ruleOf55Eligible = projected?.eligible ?? false;
-        const isRoth = isTaxFreeBucket(ia.taxType);
-        const enteredBasis = contributionBasis + conversionBasis;
-        const slices = isRoth
-          ? computeEmployerPlanRothAccess(
-              balance,
-              currentAge,
-              ruleOf55Eligible,
-              enteredBasis,
-            )
-          : computeEmployerPlanPreTaxAccess(
-              balance,
-              currentAge,
-              ruleOf55Eligible,
-            );
-        penaltyFreeAmount = penaltyFreePrefixAmount(slices);
-        if (isRoth) {
-          basisRemaining = roundToCents(enteredBasis);
-          basisUncertain = trackedBasis?.stale || trackedBasis?.isSeeded;
-        }
+      } else if (rule === "employer_plan") {
         if (ruleOf55Eligible) {
           reason =
             projected?.separationYear != null
@@ -369,21 +334,13 @@ export function computeWithdrawalEligibility(input: {
         } else {
           reason = `Locked until Rule of 55 or age 59½ (currently ${currentAge})`;
         }
-      } else if (isHsaCategory(ia.category)) {
-        const slices = computeHsaAccess(balance, currentAge);
-        penaltyFreeAmount = penaltyFreePrefixAmount(slices);
+      } else if (rule === "hsa_non_medical" && slices) {
         reason = allSlicesLocked(slices)
           ? `Locked until age 65 — non-medical withdrawal penalty (currently ${currentAge})`
           : "Eligible — age 65 or older";
       } else {
-        // Brokerage (tracksCostBasis) and any category with no
-        // early-access concept at all: fully penalty-free.
-        // computeBrokerageAccess (early-access.ts) always returns
-        // penaltyFree: true for both its slices regardless of age or cost
-        // basis — brokerage has no age/employer gate at all — so there is
-        // no predicate call whose result this branch would need;
-        // `penaltyFreeAmount = balance` here is that fact, not a shortcut
-        // around it.
+        // Rule "none" (brokerage): no age or employer gate, so the whole
+        // balance stays penalty-free.
         reason = "Always accessible — no age or employer restriction";
       }
     }

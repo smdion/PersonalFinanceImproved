@@ -1,27 +1,11 @@
 /**
- * Early-withdrawal penalty cost.
- * Sibling of `roth-distribution-tax.ts`: consumes an already-computed
- * per-account penalty-exposure partition (`withdrawal-eligibility.ts`'s
- * `EligibilityRecord`) and an already-routed per-account withdrawal map —
- * it never re-slices or re-derives eligibility, it only multiplies.
- *
- * Deviation from the locked design doc, factual not judgment-based: the
- * doc calls for one uniform `EARLY_WITHDRAWAL_PENALTY_RATE = 0.10` "across
- * every account type this engine models." That is correct for Traditional/
- * Roth IRA and 401k/403b (IRC §72(t)) but wrong for HSA, whose non-medical
- * early-withdrawal penalty is legally 20% (IRC §223(f)(4)) — already
- * documented in this codebase's own `computeHsaAccess` docblock before this
- * pass existed. Applying 10% to HSA would understate a real cost for
- * exactly the account type this feature changes the most (see the design
- * doc's § S2 HSA caveat). See `HSA_NON_MEDICAL_PENALTY_RATE` in
- * `@/lib/constants` for the correction.
+ * Early-withdrawal penalty cost: prices the dollars drawn beyond each
+ * account's penalty-free amount in the eligibility record, at 10% (IRC
+ * §72(t)) or the type's non-medical penalty (HSA's 20%, IRC §223(f)(4)).
  */
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
-import { isHsaCategory } from "@/lib/config/account-types";
-import {
-  EARLY_WITHDRAWAL_PENALTY_RATE,
-  HSA_NON_MEDICAL_PENALTY_RATE,
-} from "@/lib/constants";
+import { nonMedicalPenaltyRate } from "@/lib/config/account-types";
+import { EARLY_WITHDRAWAL_PENALTY_RATE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 
 type EarlyWithdrawalPenalty = {
@@ -65,9 +49,9 @@ export function computeEarlyWithdrawalPenalty(input: {
       Math.max(0, withdrawn - acctExposure.penaltyFreeAmount),
     );
     if (penalized <= 0) continue;
-    const rate = isHsaCategory(acctExposure.category)
-      ? HSA_NON_MEDICAL_PENALTY_RATE
-      : EARLY_WITHDRAWAL_PENALTY_RATE;
+    const rate =
+      nonMedicalPenaltyRate(acctExposure.category) ??
+      EARLY_WITHDRAWAL_PENALTY_RATE;
     const cost = roundToCents(penalized * rate);
     byKey.set(key, {
       penalizedAmount: penalized,
