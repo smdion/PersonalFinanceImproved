@@ -9,8 +9,7 @@
  *
  * The parent owns all state + tRPC mutations. This component receives
  * plain primitive props and event callbacks — no queries, no mutations,
- * no data-shape narrowing. Prop types are hand-rolled (no `@/server/*`
- * imports) per eslint.config.mjs no-restricted-imports rule.
+ * no data-shape narrowing.
  *
  * Stable per-context values are consumed from BudgetPageContext, and the
  * remaining props grouped into bundles.

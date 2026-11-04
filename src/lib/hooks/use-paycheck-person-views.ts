@@ -42,17 +42,15 @@ import {
   categoriesWithIrsLimit,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { RouterInputs } from "@/lib/trpc";
 
-/** Mirrors the server's SalaryEntryMap shape (server/helpers/salary.ts) —
- *  duplicated rather than imported since that file is server-only. */
-export type SandboxSalaryEntries = Record<
-  string,
-  {
-    salary?: number;
-    bonusPercent?: number;
-    bonusMultiplier?: number;
-    monthsInBonusYear?: number;
-  }
+/** The What-If tab's hand-edited salary entries, as paycheck.computeSummary
+ *  takes them. */
+export type SandboxSalaryEntries = NonNullable<
+  Exclude<
+    RouterInputs["paycheck"]["computeSummary"],
+    void
+  >["sandboxSalaryEntries"]
 >;
 
 /** Per-contribution computed figures the contribution cards render. */

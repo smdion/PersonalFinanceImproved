@@ -21,7 +21,7 @@
     "src/app/(dashboard)/versions/page.tsx": 954,
     "src/components/budget/budget-summary-table.tsx": 772,
     "src/components/budget/contribution-profile-manager.tsx": 2063,
-    "src/components/budget/salary-profile-manager.tsx": 1031,
+    "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
     "src/components/cards/dashboard/contributions-card.tsx": 655,
@@ -474,7 +474,7 @@
       "AssetsLiabilitiesCards": 225
     },
     "src/components/networth/spreadsheet/spreadsheet-view.tsx": {
-      "SpreadsheetView": 194
+      "SpreadsheetView": 190
     },
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
       "SpreadsheetYearOverYearTable": 300,

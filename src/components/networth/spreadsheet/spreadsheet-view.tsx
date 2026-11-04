@@ -18,7 +18,6 @@ import { JourneyToAbundanceChart } from "@/components/networth/journey-to-abunda
 import { NetWorthLocationPie } from "@/components/networth/net-worth-location-pie";
 import { TaxLocationPie } from "@/components/networth/tax-location-pie";
 import type { HistoryRow } from "@/components/networth/types";
-import type { DetailedHistoryRow } from "./types";
 
 type SpreadsheetViewProps = {
   /** Chart-ready history rows (from listHistory). */
@@ -114,15 +113,11 @@ export function SpreadsheetView({
 
   // Find history rows for selected years
   const yearARow = useMemo(
-    () =>
-      detailedData?.years.find((h) => h.year === effectiveYearA) as
-        DetailedHistoryRow | undefined,
+    () => detailedData?.years.find((h) => h.year === effectiveYearA),
     [detailedData, effectiveYearA],
   );
   const yearBRow = useMemo(
-    () =>
-      detailedData?.years.find((h) => h.year === effectiveYearB) as
-        DetailedHistoryRow | undefined,
+    () => detailedData?.years.find((h) => h.year === effectiveYearB),
     [detailedData, effectiveYearB],
   );
 
