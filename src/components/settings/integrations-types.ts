@@ -1,6 +1,6 @@
 /** Shared TypeScript types, interfaces, and style constants for the budget API integration sub-components (YNAB/Actual). */
 
-import type { BudgetApiService } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import type { RouterOutputs } from "@/lib/trpc";
 
 export type Service = BudgetApiService;

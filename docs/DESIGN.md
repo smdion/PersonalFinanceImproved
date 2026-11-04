@@ -613,10 +613,12 @@ The rules are RULES.md § Data-Driven Architecture.
 | `src/lib/config/display-labels.ts`                  | Label maps and performance-category constants                                                    |
 | `src/lib/config/account-types.types.ts`             | `AccountTypeConfig` (the entry shape), `AccountBalance` union                                    |
 | `src/lib/constants.ts`                              | App-wide defaults and thresholds                                                                 |
-| `src/lib/config/filing-status.ts`                   | Return and W-4 filing statuses (types, schemas, order) and the per-status rules table            |
+| `src/lib/config/filing-status.ts`                   | Return and W-4 filing statuses (types, order) and the per-status rules table; no Zod             |
+| `src/lib/config/filing-status.schema.ts`            | The two filing-status Zod schemas, apart so client bundles skip Zod                              |
 | `src/lib/config/age-rules.ts`                       | `AGE_RULES`: each age rule and how it is measured (tests go through `lib/pure/household/age.ts`) |
 | `src/lib/config/magi-definitions.ts`                | `MAGI_DEFINITIONS`: what each rule's MAGI counts of Social Security                              |
 | `src/lib/config/permissions.ts`                     | `PERMISSIONS` and `Permission`, shared by the server and the client                              |
+| `src/lib/config/budget-apps.ts`                     | `BUDGET_API_SERVICE_VALUES`, `BUDGET_SERVICES` labels, `isBudgetApiService`; no Zod              |
 | `src/lib/budget-api/providers.ts`                   | `BUDGET_PROVIDERS`: one entry per budget service, with its client                                |
 | `src/lib/pure/tax/year-income.ts`                   | `YearIncome` (one year's income by stream) and `yearMagi`                                        |
 | `src/lib/pure/contributions/contribution-amount.ts` | A contribution's yearly dollars, `Fraction` and `EmployerMatch`                                  |

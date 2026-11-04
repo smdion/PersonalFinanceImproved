@@ -17,7 +17,7 @@ import {
   zDecimal,
   ROTH_IRA_ROUTE_VALUES,
 } from "@/lib/config/enum-values";
-import { w4FilingStatusSchema } from "@/lib/config/filing-status";
+import { w4FilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 
 // ── Primitives & re-usable fragments ────────────────────────────

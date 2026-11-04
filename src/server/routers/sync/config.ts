@@ -12,7 +12,7 @@ import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import type { ActualConfig } from "@/lib/budget-api";
 import { readMaybeEncrypted } from "@/lib/crypto";
-import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/enum-values";
+import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { serviceEnum } from "./_shared";
 
 const YNAB_APP_URL = "https://app.youneedabudget.com/";

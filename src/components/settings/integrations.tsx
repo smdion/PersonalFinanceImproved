@@ -22,7 +22,7 @@ import {
   BUDGET_API_SERVICE_VALUES,
   BUDGET_SERVICES,
   isBudgetApiService,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/budget-apps";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
 import { TiingoCard } from "./integrations-tiingo";

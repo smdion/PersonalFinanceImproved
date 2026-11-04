@@ -26,7 +26,7 @@ import { BudgetApiError } from "@/lib/budget-api/errors";
 import {
   BUDGET_API_SERVICE_VALUES,
   type BudgetApiService,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/budget-apps";
 import {
   ynabAccount,
   ynabCategory,

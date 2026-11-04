@@ -11,7 +11,6 @@ import {
 import { sql } from "drizzle-orm";
 
 import type {
-  BudgetApiService,
   InvestmentTransactionKind,
   SecurityKind,
   SecurityFactSource,
@@ -21,6 +20,7 @@ import type {
   StandInPreview,
   TaxDataUpdateStatus,
 } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { mortgageLoans } from "./mortgages";
 import { performanceAccounts } from "./performance";
 import type { AccountMapping, ApiConfig } from "./tax-tables";

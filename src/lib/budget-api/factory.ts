@@ -3,7 +3,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { isBudgetApiService } from "@/lib/config/enum-values";
+import { isBudgetApiService } from "@/lib/config/budget-apps";
 import type { BudgetAPIClient } from "./interface";
 import type { ActiveBudgetApi, BudgetApiService } from "./types";
 import { BUDGET_PROVIDERS } from "./providers";

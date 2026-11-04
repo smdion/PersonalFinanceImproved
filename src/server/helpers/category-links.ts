@@ -15,10 +15,8 @@
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type {
-  BudgetApiService,
-  ApiSyncDirection,
-} from "@/lib/config/enum-values";
+import type { ApiSyncDirection } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import type { Db } from "@/lib/db";
 
 type SavingsGoalLinkRole = "primary" | "reimbursement";

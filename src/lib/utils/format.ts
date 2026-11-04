@@ -1,7 +1,7 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { parseLocalDateOnly } from "@/lib/utils/date";
 import { SAVINGS_RATE_DECIMALS } from "@/lib/constants";
-import { BUDGET_SERVICES, isBudgetApiService } from "@/lib/config/enum-values";
+import { BUDGET_SERVICES, isBudgetApiService } from "@/lib/config/budget-apps";
 
 /** Short month labels (index 0 = January), for compact axis/table labels. */
 export const MONTH_NAMES_SHORT = [

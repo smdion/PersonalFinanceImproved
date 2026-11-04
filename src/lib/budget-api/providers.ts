@@ -3,7 +3,7 @@
 
 import "server-only";
 import { readMaybeEncrypted } from "@/lib/crypto";
-import type { BudgetApiService } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import type { BudgetAPIClient } from "./interface";
 import type { YnabConfig, ActualConfig } from "./types";
 import { YnabClient } from "./ynab-client";

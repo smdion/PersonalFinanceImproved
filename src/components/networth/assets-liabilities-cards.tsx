@@ -7,7 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { SyncBadge } from "@/components/ui/sync-badge";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
-import type { BudgetApiService } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 
 export function AssetsLiabilitiesCards({
   portfolioTotal,

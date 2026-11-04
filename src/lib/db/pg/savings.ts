@@ -13,7 +13,7 @@ import {
   index,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
-import type { BudgetApiService } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { budgetProfiles } from "./budget";
 import { jobs } from "./people";
 

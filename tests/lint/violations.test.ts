@@ -94,11 +94,11 @@ import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
 import { engineHousehold } from "../fixtures/answer-key-household";
 import {
-  BUDGET_API_SERVICE_VALUES,
   DOLLAR_BASIS_VALUES,
   PAY_PERIOD_VALUES,
   PORTFOLIO_TAX_TYPE_VALUES,
 } from "@/lib/config/enum-values";
+import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import {
   RETURN_FILING_STATUS_VALUES,
   W4_FILING_STATUS_VALUES,
@@ -292,7 +292,7 @@ const CLOSED_SETS: ClosedSet[] = [
   {
     name: "budget service",
     members: () => BUDGET_API_SERVICE_VALUES,
-    definedIn: "src/lib/config/enum-values.ts",
+    definedIn: "src/lib/config/budget-apps.ts",
     use: "BUDGET_API_SERVICE_VALUES / BUDGET_PROVIDERS",
   },
   {

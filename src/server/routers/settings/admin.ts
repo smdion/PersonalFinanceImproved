@@ -2,7 +2,7 @@ import {
   SK_SIMULATION_PRESET,
   SK_TAX_FILING_STATUS,
 } from "@/lib/constants/settings-keys";
-import { returnFilingStatusSchema } from "@/lib/config/filing-status";
+import { returnFilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { z } from "zod/v4";
 import {
   parseCurrentGlidePath,

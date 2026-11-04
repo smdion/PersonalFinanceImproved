@@ -24,7 +24,7 @@ import {
   reconcileReferenceData,
 } from "@/lib/db/reference-data";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
-import * as filing from "@/lib/config/filing-status";
+import * as filing from "@/lib/config/filing-status.schema";
 import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax-data-status";
 import { pendingUpdate } from "./tax-data-sync";

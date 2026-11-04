@@ -10,10 +10,8 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-import type {
-  BudgetApiService,
-  ApiSyncDirection,
-} from "@/lib/config/enum-values";
+import type { ApiSyncDirection } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { contributionAccounts } from "./contributions";
 import { mortgageLoans } from "./mortgages";
 
