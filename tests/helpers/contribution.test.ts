@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-// Mock DB schema and config to avoid pg driver import
+// Mock DB schema to avoid pg driver import; the account-types config is real
 vi.mock("@/lib/db/schema", () => ({
   contributionAccounts: {},
   jobs: {},
@@ -9,20 +9,6 @@ vi.mock("@/lib/db/schema", () => ({
   contributionProfiles: {},
 }));
 vi.mock("@/lib/db", () => ({ db: {} }));
-vi.mock("@/lib/config/account-types", () => ({
-  isTaxFree: (t: string) => t === "roth" || t === "after_tax",
-  buildCategoryRecord: (fn: () => unknown) => {
-    const cats = ["401k", "ira", "brokerage", "hsa"];
-    return Object.fromEntries(cats.map((c) => [c, fn()]));
-  },
-  categoriesWithTaxPreference: () => ["401k", "ira"],
-  getAllCategories: () => ["401k", "ira", "brokerage", "hsa"],
-  getDisplayGroup: () => "retirement",
-  getParentCategory: (c: string) => c,
-}));
-vi.mock("@/lib/config/display-labels", () => ({
-  TAX_TREATMENT_TO_TAX_TYPE: { pre_tax: "traditional", roth: "roth" },
-}));
 
 import {
   computeAnnualContribution,

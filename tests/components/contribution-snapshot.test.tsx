@@ -19,19 +19,6 @@ vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ viewMode: "projected" }),
 }));
 
-vi.mock("@/lib/config/account-types", () => {
-  const mk = (matchCountsTowardLimit = false) => ({
-    matchCountsTowardLimit,
-    irsLimitKeys: {},
-  });
-  return {
-    categoriesWithIrsLimit: () => ["401k", "hsa"],
-    getAccountTypeConfig: (cat: string) => mk(cat === "hsa" ? true : false),
-    isRetirementParent: (pc: string) => pc === "Retirement",
-    isPortfolioParent: (pc: string) => pc === "Portfolio",
-  };
-});
-
 vi.mock("@/lib/utils/colors", () => ({
   accountColor: () => "bg-blue-500",
   accountMatchColor: () => "bg-blue-200",

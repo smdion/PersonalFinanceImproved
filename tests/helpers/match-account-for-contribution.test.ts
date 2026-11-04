@@ -18,7 +18,8 @@
 import { describe, it, expect, vi } from "vitest";
 
 // Same shims the sibling contribution.test.ts uses — importing the module
-// pulls in the db/config barrels; the function under test touches none of them.
+// pulls in the db barrels; the function under test touches neither. The
+// account-types config is the real one.
 vi.mock("@/lib/db/schema", () => ({
   contributionAccounts: {},
   jobs: {},
@@ -27,20 +28,6 @@ vi.mock("@/lib/db/schema", () => ({
   contributionProfiles: {},
 }));
 vi.mock("@/lib/db", () => ({ db: {} }));
-vi.mock("@/lib/config/account-types", () => ({
-  isTaxFree: (t: string) => t === "roth" || t === "after_tax",
-  buildCategoryRecord: (fn: () => unknown) =>
-    Object.fromEntries(
-      ["401k", "ira", "brokerage", "hsa"].map((c) => [c, fn()]),
-    ),
-  categoriesWithTaxPreference: () => ["401k", "ira"],
-  getAllCategories: () => ["401k", "ira", "brokerage", "hsa"],
-  getDisplayGroup: () => "retirement",
-  getParentCategory: (c: string) => c,
-}));
-vi.mock("@/lib/config/display-labels", () => ({
-  TAX_TREATMENT_TO_TAX_TYPE: { pre_tax: "traditional", roth: "roth" },
-}));
 
 import {
   matchAccountForContribution,
