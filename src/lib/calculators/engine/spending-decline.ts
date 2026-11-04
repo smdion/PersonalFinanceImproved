@@ -17,8 +17,7 @@ export function applySpendingDecline(
   input: SpendingStrategyInput,
 ): SpendingStrategyResult {
   const { crossYearState } = input;
-  const annualDeclineRate =
-    (params as SpendingDeclineParams).annualDeclineRate ?? 0.02;
+  const { annualDeclineRate } = params as SpendingDeclineParams;
 
   // First decumulation year: capture initial amount
   // decumulationYearCount is 0 on first year (orchestrator increments after strategy runs)
