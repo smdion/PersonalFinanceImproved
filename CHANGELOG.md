@@ -17,8 +17,8 @@ v0.10.0's own work is structure: checks that stop the code from drifting, a test
 ### Upgrading from v0.9.x
 
 - **Pull the new image and restart.** v0.10.0 itself has no database changes. Coming from an earlier v0.9.x, the start applies the migrations from v0.9.2–v0.9.7 that you don't have yet, after its usual pre-upgrade backup. It upgrades from any v0.9.x.
-- **Self-hosting with the sample compose files:** your `.env` must set `NEXTAUTH_SECRET`, `CRON_SECRET` and `ENCRYPTION_KEY` (and `POSTGRES_PASSWORD` for PostgreSQL). Compose refuses to start and names the one that's missing; `pnpm setup` fills them in.
-- **Behind a reverse proxy that doesn't overwrite `X-Real-IP`, or with no proxy,** set `TRUSTED_PROXY_HEADER` so sign-in and rate limits see each visitor's real address.
+- **Self-hosting with the sample Docker Compose files:** your settings file must set `NEXTAUTH_SECRET`, `CRON_SECRET` and `ENCRYPTION_KEY` (and `POSTGRES_PASSWORD` for PostgreSQL). Ledgr refuses to start and names the one that's missing.
+- **Behind a reverse proxy that doesn't set the visitor's real address, or with no proxy,** set `TRUSTED_PROXY_HEADER` so sign-in and rate limits see each visitor's real address.
 - **Rotate your budget and market-data keys** if you ran a version before v0.9.5: until then the change log stored saved API keys and tokens in plain text. The upgrade scrubs them, but rotate the Actual and Tiingo keys and revoke any YNAB token you connected.
 - **Expect retirement figures to move** if you're coming from v0.9.4 or earlier: Social Security now grows with inflation and its taxable share is taxed, each person's RMD, raise and ages are their own, years with one paycheck draw from your accounts, and the Simulation follows your own inflation. The sections below say how.
 
@@ -28,7 +28,7 @@ v0.10.0's own work is structure: checks that stop the code from drifting, a test
 - **Ledgr ships its Simulation presets** (Default, Aggressive, Conservative), so a new install, a reset and the demo can run the Simulation; installs that already have presets keep theirs. A new install also gets its first Retirement profile the first time you save retirement settings, so "Save as a new Plan" works.
 - **When something can't run, it says why:** the Simulation names what's missing instead of reporting "unreachable", projections ask for a return rate first, and "Save as a new Plan" says why it's disabled.
 - One disclaimer on every advice and projection page; "Print Advisor Report" is now **"Print Full Report"**.
-- A new public `docs/OPS.md` covers install, backups, release and rollback in generic terms.
+- A new install and operations guide in the docs covers installing, backups, upgrading and rolling back.
 
 ### Retirement projections
 
@@ -52,7 +52,7 @@ v0.10.0's own work is structure: checks that stop the code from drifting, a test
 - **Paychecks match payroll more closely:** a bonus is withheld at 22% on its taxable amount, Additional Medicare shows on each check past $200,000, a job started this year is paid from its start date, and the pay-stub check compares bonus checks.
 - **Two tax tables held the wrong year's figures** (2025 capital-gains brackets and 2026 IRMAA brackets) and are corrected; a figure you changed yourself stays yours.
 - **Every tax figure links to its source document**, tax data is one file per year with contributor tooling, and new years are checked strictly: a table identical to last year's is rejected as an unupdated copy.
-- **The answer key:** about 650 test cases worked by hand from IRS, SSA, CMS and HHS publications, plus `docs/CALCULATIONS.md`, a register of every calculation Ledgr does with its source and known gaps. Cases Ledgr gets wrong today are recorded with the correct figure for a later fix.
+- **The answer key:** about 650 test cases worked by hand from IRS, SSA, CMS and HHS publications, and a public register of every calculation Ledgr does with its source and known gaps. Cases Ledgr gets wrong today are recorded with the correct figure for a later fix.
 
 ### Budget-app and data-feed sync
 
@@ -77,7 +77,7 @@ v0.10.0's own work is structure: checks that stop the code from drifting, a test
 
 ### Removed
 
-- **The Settings → API tab.** It listed the server's procedures for admins; that list lives in `docs/API_ROUTERS.md`. A saved API tab opens General.
+- **The Settings → API tab.** It listed the server's internal calls for admins; the same list is in the project's documentation. If it was your saved tab, Settings opens on General.
 - **The in-app test runner** (Settings → Debug). It could never run in the Docker image, which ships no tests; the Diagnostics switch stays.
 - **The 30- and 90-day balance change** behind the old Live Balance card. No screen has shown it since Current Balances replaced that card in v0.9.5, so nothing on screen changes.
 
@@ -86,14 +86,15 @@ v0.10.0's own work is structure: checks that stop the code from drifting, a test
 - Saved credentials no longer land in the change log (and old entries are scrubbed); backup previews need the Backups permission and never show credentials.
 - Failed local-admin sign-ins are rate-limited, two people can't both create the first admin, restoring or resetting can't reopen "Create the first admin", Dev Login exists only in development builds, and rate limits use the address the proxy saw.
 - The scheduled-job endpoints share one secret check and refuse anything but a valid secret.
-- Runs on Node.js 26.13.0.
+- The container runs on Node.js 26.13.0.
 
 ### Under the hood
 
-- **Checks that only tighten:** file and function sizes and ESLint rule counts are recorded at today's level and may only go down; layer rules (dependency-cruiser) keep calculation code out of server and UI code; every calculation must appear in `docs/CALCULATIONS.md`; each page has a download-size budget; and dead code, including code only tests used, fails CI.
-- **A behavior baseline** records the numbers every query returns for 17 invented households on both SQLite and PostgreSQL, the rows a YNAB or Actual sync writes, and a seeded Simulation run, so later restructuring can't move a figure unnoticed.
-- **CI on PostgreSQL:** migrations from empty, seeded queries, a backup round trip and a constraint snapshot (keys and indexes) now run on PostgreSQL; the image's compose boot test signs in through the first-run wizard on both databases; and the deploy script refuses without a green CI run.
-- RULES.md is split into RULES, DESIGN, TESTING, CONTRIBUTING and OPS; unused code, re-export files and the jsdom test dependency are removed; v0.7.11 and earlier changelog entries move to `docs/CHANGELOG-pre-0.8.md`.
+- **Your figures can't move by accident.** Every figure the app shows is recorded for 17 sample households, on SQLite and on PostgreSQL, along with the rows a YNAB or Actual sync writes and a fixed Simulation run. A change that moves any of them is stopped before release.
+- **PostgreSQL is tested on every change**, as SQLite already was: installing from empty, upgrading, backup and restore, and the same figures as SQLite.
+- **The sample Docker Compose install is tested on every change:** it must start on an empty volume and let a first admin sign in, on both databases.
+- **Nothing is deployed without passing all of that.** Code-quality checks only ever tighten: file sizes, rule exceptions and the boundaries between parts of the app can't grow, and every calculation must be listed with its source.
+- Unused code was removed and the oldest changelog entries (v0.7.11 and earlier) moved to their own file in the docs.
 
 ---
 
