@@ -9,7 +9,10 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-import type { W4FilingStatus } from "@/lib/config/filing-status";
+import type {
+  ReturnFilingStatus,
+  W4FilingStatus,
+} from "@/lib/config/filing-status";
 import { referenceOriginColumns } from "./contributions";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -61,7 +64,7 @@ export const ltcgBrackets = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     taxYear: integer("tax_year").notNull(),
-    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    filingStatus: text("filing_status").$type<ReturnFilingStatus>().notNull(),
     brackets: text("brackets", { mode: "json" })
       .$type<LtcgBracketEntry[]>()
       .notNull(),
@@ -87,7 +90,7 @@ export const irmaaBrackets = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     taxYear: integer("tax_year").notNull(),
-    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    filingStatus: text("filing_status").$type<ReturnFilingStatus>().notNull(),
     brackets: text("brackets", { mode: "json" })
       .$type<IrmaaBracketEntry[]>()
       .notNull(),

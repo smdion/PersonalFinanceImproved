@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 
 export const RETURN_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
 export type ReturnFilingStatus = (typeof RETURN_FILING_STATUS_VALUES)[number];
+export const returnFilingStatusSchema = z.enum(RETURN_FILING_STATUS_VALUES);
 
 export const W4_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
 export type W4FilingStatus = (typeof W4_FILING_STATUS_VALUES)[number];

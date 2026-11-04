@@ -8,9 +8,9 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   BracketTableEditor,
   numericCell,
-  type BracketFilingStatus,
   type BracketRow,
 } from "./bracket-table-editor";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 type LtcgEntry = { threshold: number | null; rate: number };
 
@@ -91,7 +91,7 @@ export function LtcgBracketsSettings({ year }: { year: number }) {
         updateMutation.mutate({
           id: rowId,
           taxYear: row.taxYear,
-          filingStatus: row.filingStatus as BracketFilingStatus,
+          filingStatus: row.filingStatus as ReturnFilingStatus,
           brackets,
         });
       }}

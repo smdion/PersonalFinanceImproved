@@ -5,6 +5,7 @@ import {
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
 import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
+import { returnFilingStatusSchema } from "@/lib/config/filing-status";
 import type { CapPassed } from "@/lib/pure/contribution-caps";
 import {
   redundantReturnRateIds,
@@ -131,7 +132,7 @@ const retirementSettingsInput = z.object({
   householdSize: z.number().int().min(1).max(HOUSEHOLD_SIZE_MAX).optional(),
   socialSecurityMonthly: zDecimal.optional(),
   ssStartAge: z.number().int().min(62).max(70).optional(),
-  filingStatus: z.enum(["MFJ", "Single", "HOH"]).nullable().optional(),
+  filingStatus: returnFilingStatusSchema.nullable().optional(),
 });
 
 // retirementScenarioInput removed with the retirementScenarios router
@@ -396,7 +397,6 @@ export const retirementRouter = createTRPCRouter({
       const referenceDate = snapshotData?.snapshot.snapshotDate
         ? new Date(snapshotData.snapshot.snapshotDate)
         : new Date();
-      // Age as of reference date (calendar-accurate)
       const age = ageOnDate(primaryPerson.dateOfBirth, referenceDate);
 
       // Portfolio — only retirement-category accounts from latest balance snapshot

@@ -7,9 +7,9 @@ import { formatCurrency } from "@/lib/utils/format";
 import {
   BracketTableEditor,
   numericCell,
-  type BracketFilingStatus,
   type BracketRow,
 } from "./bracket-table-editor";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 type IrmaaEntry = { magiThreshold: number; annualSurcharge: number };
 
@@ -86,7 +86,7 @@ export function IrmaaBracketsSettings({ year }: { year: number }) {
         updateMutation.mutate({
           id: rowId,
           taxYear: row.taxYear,
-          filingStatus: row.filingStatus as BracketFilingStatus,
+          filingStatus: row.filingStatus as ReturnFilingStatus,
           brackets,
         });
       }}

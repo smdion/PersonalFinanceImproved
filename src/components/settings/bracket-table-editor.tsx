@@ -14,11 +14,12 @@
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
+import {
+  FILING_STATUS_ORDER,
+  type ReturnFilingStatus,
+} from "@/lib/config/filing-status";
 
-export type BracketFilingStatus = "MFJ" | "Single" | "HOH";
-
-const STATUS_LABELS: Record<BracketFilingStatus, string> = {
+const STATUS_LABELS: Record<ReturnFilingStatus, string> = {
   MFJ: "Married Filing Jointly",
   Single: "Single",
   HOH: "Head of Household",
@@ -92,7 +93,7 @@ type Props<TEntry> = {
   onUpdateRow: (rowId: number, brackets: TEntry[]) => void;
   onCreateRow: (
     taxYear: number,
-    filingStatus: BracketFilingStatus,
+    filingStatus: ReturnFilingStatus,
     brackets: TEntry[],
   ) => Promise<unknown>;
   onDeleteRow: (rowId: number) => Promise<unknown>;
@@ -140,7 +141,7 @@ export function BracketTableEditor<TEntry>({
       for (const row of rows.filter((r) => r.taxYear === effectiveCopyFrom)) {
         await onCreateRow(
           year,
-          row.filingStatus as BracketFilingStatus,
+          row.filingStatus as ReturnFilingStatus,
           row.brackets,
         );
       }

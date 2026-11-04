@@ -7,7 +7,10 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
+import {
+  W4_FILING_STATUS_VALUES,
+  type W4FilingStatus,
+} from "@/lib/config/filing-status";
 
 type BracketEntry = {
   threshold: number;
@@ -92,7 +95,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
     updateMutation.mutate({
       id: tbId,
       taxYear: tb.taxYear,
-      filingStatus: tb.filingStatus as "MFJ" | "Single" | "HOH",
+      filingStatus: tb.filingStatus as W4FilingStatus,
       w4Checkbox: tb.w4Checkbox,
       brackets: newBrackets,
     });
@@ -109,7 +112,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
       for (const tb of sourceData) {
         await createMutation.mutateAsync({
           taxYear: activeYear,
-          filingStatus: tb.filingStatus as "MFJ" | "Single" | "HOH",
+          filingStatus: tb.filingStatus as W4FilingStatus,
           w4Checkbox: tb.w4Checkbox,
           brackets: tb.brackets as BracketEntry[],
           carried: true, // replaced when the real tables ship

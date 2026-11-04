@@ -6,6 +6,16 @@ import { FieldRow } from "@/components/ui/field-row";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
+import {
+  W4_FILING_STATUS_VALUES,
+  type W4FilingStatus,
+} from "@/lib/config/filing-status";
+
+const W4_BOX_LABELS: Record<W4FilingStatus, string> = {
+  MFJ: "Married jointly",
+  Single: "Single",
+  HOH: "Head of household",
+};
 
 /**
  * W-4 tax-input controls. Deliberately a separate section from
@@ -48,9 +58,11 @@ export function TaxWithholdingSection({
             disabled={!editable}
             className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
           >
-            <option value="MFJ">Married jointly</option>
-            <option value="Single">Single</option>
-            <option value="HOH">Head of household</option>
+            {W4_FILING_STATUS_VALUES.map((s) => (
+              <option key={s} value={s}>
+                {W4_BOX_LABELS[s]}
+              </option>
+            ))}
           </select>
         </FieldRow>
         <FieldRow
