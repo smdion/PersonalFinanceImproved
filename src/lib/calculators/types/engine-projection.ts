@@ -516,8 +516,8 @@ export type EngineDecumulationYear = {
    *  floor, so a rounding-scale residual can read as `unmetNeed > 0`
    *  without being material). UI alerting (chart marker, table line, KPI
    *  urgency) must all key off THIS field rather than re-deriving their
-   *  own materiality threshold — see decumulation-year.ts's
-   *  `shortfallMaterialityFloor` for why $50-or-1%-of-need is the bar. */
+   *  own materiality threshold — see `SHORTFALL_MATERIALITY` (constants.ts)
+   *  for why $50-or-1%-of-need is the bar. */
   unmetNeedMaterial?: boolean;
   /** The bar `unmetNeedMaterial` uses: $50 or 1% of the year's need,
    *  whichever is greater. Also what counts as "no money left" for the

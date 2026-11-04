@@ -353,13 +353,12 @@ function evaluateCost(
 }
 
 /** Rounds of the routing fixed point below, and how close (dollars) the
- *  share routing saw must come to the share the trial priced. Solver
- *  parameters, not figures: stopping short of the tolerance costs routing
- *  quality (bracket caps a little off), never correctness, because the real
- *  year routes with the same figure the accepted trial did and so
- *  reproduces it either way. */
+ *  share routing saw must come to the share the trial priced: solver
+ *  parameters, where falling short costs routing quality, never correctness. */
 const SS_ROUTING_ROUNDS = 6;
 const SS_ROUTING_TOLERANCE = 1;
+/** The first trial's flat 85% share (a seed, not the statutory tier-2 rate). */
+const FIRST_TRIAL_SS_SHARE = 0.85;
 
 /**
  * `evaluateCost` at W, with routing's bracket caps reading W's OWN taxable
@@ -400,7 +399,7 @@ function fixedWithdrawalEstimate(
 ): TaxEstimationResult {
   const { ssIncome, totalBalance } = input;
   const W = roundToCents(Math.max(0, Math.min(amount, totalBalance)));
-  const evalResult = evaluateAtOwnSS(W, ssIncome * 0.85, input);
+  const evalResult = evaluateAtOwnSS(W, ssIncome * FIRST_TRIAL_SS_SHARE, input);
   const taxableSS = evalResult.routedWithSS;
   const effectiveTaxRate = W > 0 ? evalResult.totalCost / W : 0;
   const derivedAfterTaxNeed = roundToCents(
@@ -481,13 +480,12 @@ export function estimateWithdrawalTaxCost(
   const proceedsOf = (t: Trial) => deliveredOf(t) - t.e.netCost;
   const residualOf = (t: Trial) => roundToCents(afterTaxNeed - proceedsOf(t));
 
-  // Seeded with the flat 85% estimate. Proceeds at W = need can't exceed
-  // the need (cost is never negative), so this trial under-delivers or
-  // converges.
+  // At W = need the proceeds can't exceed the need (cost is never
+  // negative), so this first trial under-delivers or converges.
   const W0 = roundToCents(Math.max(0, Math.min(afterTaxNeed, totalBalance)));
   let trial: Trial = {
     W: W0,
-    e: evaluateAtOwnSS(W0, ssIncome * 0.85, input),
+    e: evaluateAtOwnSS(W0, ssIncome * FIRST_TRIAL_SS_SHARE, input),
   };
 
   let lo: Trial | null = null;

@@ -173,11 +173,7 @@ export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
 export const DEFAULT_STRATEGY_FLOOR_PERCENT = 0.9;
 
 /** Default rolling-average window (years) for the endowment withdrawal
- *  strategy. the UI config previously defaulted this
- *  to 5 while the engine and server fallback both used 10 — a real,
- *  user-facing divergence. Standardized on 10 (majority — engine, server
- *  fallback, and methodology docs all already agreed) and wired all three
- *  layers to this one constant so they can't drift apart again. */
+ *  strategy: the engine, the server fallback and the UI all read it. */
 export const DEFAULT_ENDOWMENT_ROLLING_YEARS = 10;
 
 // ---------------------------------------------------------------------------
@@ -217,14 +213,9 @@ export const DEFAULT_MC_INFLATION_RISK = { stdDev: 0.012 };
  *  floor on inflation, which would bias it up. */
 export const MC_INFLATION_GROWTH_FLOOR = 0.5;
 
-/** Default number of trials for a Monte Carlo simulation run. Dropped from
- *  1000 → 500 (after the worker-thread offload
- *  fixed the real motivation for a cut — it no longer needs to trade
- *  precision for a shorter server-wide freeze, since MC no longer blocks
- *  the event loop at all). Standard error scales as 1/sqrt(n): a true 90%
- *  success rate has ~±1.3 percentage points of noise at 500 trials vs
- *  ~±1% at 1000 — accepted as fine since results display rounded to whole
- *  percentage points anyway. */
+/** Default number of trials for a Monte Carlo simulation run. A true 90%
+ *  success rate carries about ±1.3 points of noise at 500 trials, fine for
+ *  a figure shown to whole points. */
 export const MC_DEFAULT_TRIALS = 500;
 
 /** The Simulation presets; Custom is the household's own values. */
@@ -260,6 +251,14 @@ export const PROJECTION_DEBOUNCE_MS = 600;
 
 /** Allocation tolerance — allocations summing within this of 1.0 are acceptable. */
 export const ALLOCATION_TOLERANCE = 0.01;
+
+/** A year's funding gap is unmet need only above the greater of these. NIIT
+ *  and the conversion-year LTCG recompute run after routing, so a small gap
+ *  is expected; a real shortfall is a large share of the need. */
+export const SHORTFALL_MATERIALITY = {
+  minimum: 50,
+  shareOfNeed: 0.01,
+} as const;
 
 /** A share below this shows as 0% (whole-percent display) — too small to draw or mention. */
 export const NEGLIGIBLE_SHARE = 0.005;

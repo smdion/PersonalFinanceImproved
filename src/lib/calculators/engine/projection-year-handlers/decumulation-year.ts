@@ -32,6 +32,7 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
 } from "../../../constants";
+import { gapShortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
@@ -1238,17 +1239,8 @@ export function runDecumulationYear(
       ? Math.max(0, state.portfolioWithdrawal - totalWithdrawal)
       : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
   );
-  // Materiality floor, not a correctness tolerance. NIIT and the
-  // conversion-year LTCG recompute both run
-  // AFTER routing and are accepted, documented residual-gap sources (the
-  // gross-up estimate can't have grossed up for a cost that didn't exist
-  // yet when it ran) -- a $0.01 floor here flagged UNMET NEED on every
-  // ordinary NIIT year in an otherwise fully-solvent plan, drowning out
-  // the signal a REAL shortfall (balance exhaustion, hard-exclusion) is
-  // for. The greater of $50 or 1% of the need itself scales with plan
-  // size while still catching genuine shortfalls, which tend to be a
-  // large fraction of afterTaxNeed, not a rounding-scale sliver of it.
-  const shortfallMaterialityFloor = Math.max(50, afterTaxNeed * 0.01);
+  // Materiality floor, not a correctness tolerance (SHORTFALL_MATERIALITY).
+  const shortfallMaterialityFloor = gapShortfallFloor(afterTaxNeed);
   const finalUnmetNeed =
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
