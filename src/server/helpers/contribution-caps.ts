@@ -14,7 +14,7 @@ import {
 } from "@/lib/pure/contribution-caps";
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
-import { thisYearFilingStatus } from "./filing-status";
+import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import type { FilingStatusSource } from "@/lib/pure/filing-status";
 import { accountDisplayName } from "@/lib/utils/format";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -252,7 +252,7 @@ export async function loadCapHousehold(
     resolveRetirementProfileIdFrom(appSettings, retProfiles),
     getPrimaryPerson([...people])?.id ?? null,
   );
-  // This year's return (server/helpers/filing-status.ts); unknown —
+  // This year's return (server/services/tax/filing-status.ts); unknown —
   // married rules off, never assumed.
   const thisYear = await thisYearFilingStatus(db, {
     appSettings,

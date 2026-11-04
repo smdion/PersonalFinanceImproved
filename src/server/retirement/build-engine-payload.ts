@@ -21,7 +21,7 @@ import { emptyTaxBucketMap } from "@/lib/config/enum-values";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { retirementFilingStatus } from "@/lib/pure/filing-status";
-import { thisYearFilingStatus } from "@/server/helpers/filing-status";
+import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {

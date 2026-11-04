@@ -5298,11 +5298,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/filing-status.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/helpers/fill-ledger.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3

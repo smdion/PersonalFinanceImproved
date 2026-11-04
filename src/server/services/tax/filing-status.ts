@@ -1,15 +1,15 @@
-/**
- * This year's filing status (lib/pure/filing-status.ts has the whole
- * chain): the household setting, else the active Retirement Profile's,
- * else a W-4 — with where it came from. One resolver for the paycheck, the
- * caps and the retirement engine.
- */
+// This year's filing status and where it came from (the whole chain is in
+// lib/pure/filing-status.ts): one resolver for the paycheck, the caps and
+// the retirement engine.
 import type { W4FilingStatus } from "@/lib/config/filing-status";
 import {
   taxFilingStatusSetting,
   type FilingStatusSource,
 } from "@/lib/pure/filing-status";
-import { w4FilingStatusOf, type SalaryProfileActiveMap } from "./salary";
+import {
+  w4FilingStatusOf,
+  type SalaryProfileActiveMap,
+} from "@/server/helpers/salary";
 import type { Db } from "@/lib/db";
 
 /** People ids, the primary person first (whose W-4 stands in first). */

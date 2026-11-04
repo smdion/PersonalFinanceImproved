@@ -2,7 +2,7 @@
  * Filing status, one chain for every reader:
  * - THIS year's return: the household setting (SK_TAX_FILING_STATUS), else
  *   the active Retirement Profile's, else a W-4 (the primary person's
- *   first) — server/helpers/filing-status.ts resolves it. The household
+ *   first) — server/services/tax/filing-status.ts resolves it. The household
  *   tax, the Roth IRA check and the IRS-limit caps read it.
  * - Retirement years: the active Retirement Profile's, or "Auto" (null) —
  *   this year's.
