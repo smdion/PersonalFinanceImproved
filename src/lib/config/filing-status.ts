@@ -4,7 +4,9 @@
 import { z } from "zod/v4";
 
 export const RETURN_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
-export type ReturnFilingStatus = (typeof RETURN_FILING_STATUS_VALUES)[number];
+/** The spelling both statuses share: per-status tables are keyed by it. */
+export type FilingStatusKey = (typeof RETURN_FILING_STATUS_VALUES)[number];
+export type ReturnFilingStatus = FilingStatusKey;
 export const returnFilingStatusSchema = z.enum(RETURN_FILING_STATUS_VALUES);
 
 export const W4_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
@@ -19,11 +21,13 @@ export type FilingStatusRules = {
 };
 
 /** One row per return status. */
-export const FILING_STATUS_RULES = {
+export const FILING_STATUS_RULES: Readonly<
+  Record<FilingStatusKey, FilingStatusRules>
+> = {
   MFJ: { peopleOnReturn: 2, order: 0 },
   Single: { peopleOnReturn: 1, order: 1 },
   HOH: { peopleOnReturn: 1, order: 2 },
-} as const satisfies Record<ReturnFilingStatus, FilingStatusRules>;
+};
 
 /** Every return status, in `order`: each per-status tax table has all. */
 export const FILING_STATUS_ORDER: readonly ReturnFilingStatus[] = [
@@ -35,4 +39,13 @@ export function parseReturnFilingStatus(
   value: unknown,
 ): ReturnFilingStatus | null {
   return RETURN_FILING_STATUS_VALUES.find((s) => s === value) ?? null;
+}
+
+/** A per-status table's entry for a status, either kind. */
+export function filingTable<V>(
+  table: Readonly<Record<FilingStatusKey, V>>,
+  status: ReturnFilingStatus | W4FilingStatus,
+): V {
+  const key: FilingStatusKey = status;
+  return table[key];
 }

@@ -24,7 +24,7 @@ import {
 import { computeLtcgTax, toLtcgTaxableIncome } from "../../config/tax-tables";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
-  SS_TAX_THRESHOLDS,
+  ssTaxThresholdsFor,
   SS_TAX_TIER1_INCLUSION_RATE,
   SS_TAX_TIER2_INCLUSION_RATE,
 } from "../../config/ss-tax";
@@ -222,7 +222,7 @@ export function computeTaxableSS(
 ): number {
   if (ssIncome <= 0) return 0;
 
-  const thresholds = SS_TAX_THRESHOLDS[filingStatus];
+  const thresholds = ssTaxThresholdsFor(filingStatus);
   if (!thresholds) return ssIncome * SS_TAX_TIER2_INCLUSION_RATE; // fallback
 
   // IRS Pub 915: provisional income includes tax-exempt interest (e.g. municipal bonds)

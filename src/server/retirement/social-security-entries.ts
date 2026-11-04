@@ -22,6 +22,7 @@ import {
 import { parseAnnualPia } from "@/lib/config/social-security";
 import {
   FILING_STATUS_RULES,
+  filingTable,
   parseReturnFilingStatus,
 } from "@/lib/config/filing-status";
 import { toNumber } from "@/server/helpers/transforms";
@@ -105,7 +106,7 @@ export function buildSocialSecurityEntries(
   const status = parseReturnFilingStatus(filingStatus);
   const isMfjCouple =
     status !== null &&
-    FILING_STATUS_RULES[status].peopleOnReturn === 2 &&
+    filingTable(FILING_STATUS_RULES, status).peopleOnReturn === 2 &&
     people.length === 2;
 
   return people.map((ps, i) => {

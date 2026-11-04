@@ -10,13 +10,17 @@
 // guard (tests/lint/violations.test.ts) covers it, and so it has the same
 // home every other tax figure in the app has.
 
-import type { ReturnFilingStatus } from "./filing-status";
+import {
+  filingTable,
+  type FilingStatusKey,
+  type ReturnFilingStatus,
+} from "./filing-status";
 
 /** Provisional-income thresholds by filing status, in dollars. */
 type SsTaxThresholds = { tier1: number; tier2: number };
 
 /** SS taxation thresholds by filing status (unchanged since 1993). */
-export const SS_TAX_THRESHOLDS: Record<ReturnFilingStatus, SsTaxThresholds> = {
+export const SS_TAX_THRESHOLDS: Record<FilingStatusKey, SsTaxThresholds> = {
   MFJ: { tier1: 32000, tier2: 44000 },
   Single: { tier1: 25000, tier2: 34000 },
   HOH: { tier1: 25000, tier2: 34000 }, // Same as Single
@@ -26,3 +30,10 @@ export const SS_TAX_THRESHOLDS: Record<ReturnFilingStatus, SsTaxThresholds> = {
 export const SS_TAX_TIER1_INCLUSION_RATE = 0.5;
 /** Fraction of SS income taxable above tier2. */
 export const SS_TAX_TIER2_INCLUSION_RATE = 0.85;
+
+/** A return status's SS taxation thresholds. */
+export function ssTaxThresholdsFor(
+  status: ReturnFilingStatus,
+): SsTaxThresholds {
+  return filingTable(SS_TAX_THRESHOLDS, status);
+}

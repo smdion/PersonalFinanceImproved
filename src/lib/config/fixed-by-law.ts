@@ -41,7 +41,7 @@ import {
   getFullRetirementAge,
 } from "./social-security";
 import { ACCOUNT_TYPE_CONFIG } from "./account-types";
-import type { ReturnFilingStatus } from "./filing-status";
+import type { FilingStatusKey } from "./filing-status";
 
 type FixedByLawItem = {
   label: string;
@@ -56,7 +56,7 @@ const pct = (r: number) =>
   formatPercent(r, Number.isInteger(Math.round(r * 1e6) / 1e4) ? 0 : 1);
 /** 59.5 → "59½". */
 const age = (a: number) => (a % 1 === 0.5 ? `${Math.floor(a)}½` : `${a}`);
-const byStatus = (t: Record<ReturnFilingStatus, number>) =>
+const byStatus = (t: Record<FilingStatusKey, number>) =>
   `${money(t.MFJ)} married filing jointly · ${money(t.Single)} single · ${money(t.HOH)} head of household`;
 const fra = (y: number) => {
   const f = getFullRetirementAge(y);
