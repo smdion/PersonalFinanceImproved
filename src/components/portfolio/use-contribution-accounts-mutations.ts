@@ -13,49 +13,14 @@ import type {
   RothIraRoute,
   TaxTreatment,
 } from "@/lib/config/enum-values";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import type { AccountCategory } from "@/lib/config/account-types";
 
-// Minimal record shapes — hand-rolled so we avoid importing from @/server/*.
-// Fields match the tRPC query shapes used in the partial-updater helpers.
+type ContribRecord =
+  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
 
-type ContribRecord = {
-  id: number;
-  personId: number | null;
-  jobId: number | null;
-  accountType: string;
-  taxTreatment: string;
-  employerMatchType: string;
-  employerMatchValue: string | null;
-  employerMaxMatchPct: string | null;
-  employerMatchTaxTreatment: string;
-  hsaCoverageType: string | null;
-  autoMaximize: boolean;
-  isActive: boolean;
-  ownership: string;
-  performanceAccountId: number | null;
-  targetAnnual: string | null;
-  allocationPriority: number | null;
-  notes: string | null;
-  isPayrollDeducted: boolean | null;
-};
-
-type PerfAccountRecord = {
-  id: number;
-  institution: string;
-  accountType: string;
-  subType: string | null;
-  label: string | null;
-  displayName: string | null;
-  ownerPersonId: number | null;
-  ownershipType: string;
-  parentCategory: string;
-  isActive: boolean;
-  displayOrder: number;
-  retirementBehavior: string | null;
-  contributionScaling: string | null;
-  allowPenalizedWithdrawals?: boolean | null;
-};
+type PerfAccountRecord =
+  RouterOutputs["performance"]["performanceAccounts"]["list"][number];
 
 /** Contribution-account fields a Contribution Profile can own (see
  *  contribAccountActiveFieldsSchema) that this page also exposes editors

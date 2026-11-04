@@ -1526,14 +1526,6 @@
       "count": 2
     }
   },
-  "src/components/networth/spreadsheet/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/components/onboarding/onboarding-wizard.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -2516,16 +2508,13 @@
   },
   "src/components/settings/integrations-types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/components/settings/integrations.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 2
     },
@@ -2753,11 +2742,6 @@
   },
   "src/components/tools/relocation/scenarios-controls.tsx": {
     "ratchet/no-raw-input": {
-      "count": 1
-    }
-  },
-  "src/components/tools/relocation/types.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6336,6 +6320,24 @@
     }
   },
   "src/workers/monte-carlo-worker.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/components/budget/types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/components/networth/spreadsheet/types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/components/tools/relocation/types.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

@@ -7,7 +7,7 @@
 import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
@@ -58,22 +58,8 @@ const PortfolioChart = dynamic(
 // Grouping helpers for snapshot display (expanded snapshot history rows)
 // ---------------------------------------------------------------------------
 
-type SnapshotAccountWithPerf = {
-  id: number;
-  institution: string;
-  taxType: string;
-  accountType: string;
-  subType: string | null;
-  label: string | null;
-  amount: number;
-  ownerPersonId: number | null;
-  ownerName: string | null;
-  performanceAccountId: number | null;
-  perfAccountLabel: string | null;
-  perfDisplayName: string | null;
-  perfAccountType: string | null;
-  perfOwnerPersonId: number | null;
-};
+type SnapshotAccountWithPerf =
+  RouterOutputs["networth"]["listSnapshots"]["snapshots"][number]["accounts"][number];
 
 type AccountGroup = {
   key: string;

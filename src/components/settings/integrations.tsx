@@ -17,7 +17,7 @@ import {
   type IntegrationsSectionKey,
 } from "@/lib/config/settings-sections";
 import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys";
-import type { Service, PreviewData } from "./integrations-types";
+import type { Service } from "./integrations-types";
 import {
   BUDGET_API_SERVICE_VALUES,
   BUDGET_SERVICES,
@@ -505,7 +505,7 @@ function ServiceCard({
         {/* Preview panel — shows after sync, before or after activation */}
         {isConnected && preview?.synced && (
           <PreviewPanel
-            preview={preview as PreviewData}
+            preview={preview}
             isActive={isActive}
             service={service}
           />

@@ -14,6 +14,7 @@
  * reappearing.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { RouterOutputs } from "@/lib/trpc";
 import { renderHook } from "@testing-library/react";
 import {
   holdMutation,
@@ -49,12 +50,18 @@ beforeEach(() => {
 /** Every utils call a successful mutation should have made. */
 const invalidated = (path: string) => utilsCalls(path).length > 0;
 
-const basePerfAccount = {
+type PerfAccount =
+  RouterOutputs["performance"]["performanceAccounts"]["list"][number];
+type Contrib =
+  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
+
+const basePerfAccount: PerfAccount = {
   id: 1,
   institution: "Fidelity",
   accountType: "401k",
   subType: null,
   label: null,
+  accountLabel: "Fidelity 401k",
   displayName: null,
   ownerPersonId: 5,
   ownershipType: "individual",
@@ -63,16 +70,23 @@ const basePerfAccount = {
   displayOrder: 0,
   retirementBehavior: "stops_at_owner_retirement",
   contributionScaling: "scales_with_salary",
+  costBasis: "0",
+  separationDate: null,
+  allowPenalizedWithdrawals: false,
+  createdAt: "2026-01-01T00:00:00.000Z",
 };
 
-const baseContrib = {
+const baseContrib: Contrib = {
   id: 1,
   personId: 5,
   jobId: 10,
   accountType: "401k",
+  subType: null,
+  label: null,
+  parentCategory: "Retirement",
+  priorYearContribAmount: "0",
+  priorYearContribYear: null,
   taxTreatment: "pre_tax",
-  contributionMethod: "percent_of_salary",
-  contributionValue: "10",
   employerMatchType: "none",
   employerMatchValue: null,
   employerMaxMatchPct: null,
