@@ -26,7 +26,7 @@ import { flatten, numberTree, type NumberTree } from "./numbers";
 const BASELINE_DIR = path.join(__dirname, "__baseline__");
 
 /** The clock every run reads: Saturday 2026-03-07, noon in Chicago. */
-const BASELINE_NOW = new Date("2026-03-07T18:00:00.000Z");
+export const BASELINE_NOW = new Date("2026-03-07T18:00:00.000Z");
 
 /** Set to rewrite the files from this run (SQLite only). See the header of
  *  router-baseline.test.ts for the one case that allows it. */

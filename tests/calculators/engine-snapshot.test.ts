@@ -26,7 +26,8 @@ import {
 } from "./fixtures/engine-fixtures";
 import { expectFirstRmdAndClaimYears } from "./fixtures/retirement-milestones";
 import { describe, it, expect } from "vitest";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection as runEngine } from "@/lib/calculators/engine";
+import { recordDrift } from "./fixtures/drift";
 
 const LAST_REVIEWED_AT = "2026-08-27";
 const FRESHNESS_DAYS = 180;
@@ -37,6 +38,10 @@ import type {
 } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+
+/** Every projection here is checked for indBal/acctBal drift (end of file). */
+const drift = recordDrift(runEngine);
+const calculateProjection = drift.calculate;
 
 const AS_OF = new Date("2025-03-07");
 
@@ -4143,4 +4148,34 @@ describe("snapshot freshness guard", () => {
       );
     }
   });
+});
+
+/** Fixtures whose two balance tracks drift today. */
+const KNOWN_DRIFT = [
+  "fixture 39: Individual account tracking through full projection",
+  "fixture 52: 3+ individual accounts with unequal balances in same category",
+];
+
+describe("the two balance tracks agree", () => {
+  const warningsOf = (fixture: string) =>
+    [...drift.byTest].filter(([name]) => name.endsWith(fixture));
+
+  it("no other projection above drifts by more than $1 (indBal vs acctBal)", () => {
+    expect(drift.byTest.size).toBeGreaterThan(0);
+    const unknown = drift
+      .drifting()
+      .map(([name]) => name)
+      .filter((name) => !KNOWN_DRIFT.some((k) => name.endsWith(k)));
+    expect(unknown).toEqual([]);
+  });
+
+  for (const fixture of KNOWN_DRIFT)
+    it.fails(
+      `${fixture}: no drift (v0.11 Engine: two balance tracks become one)`,
+      () => {
+        const ran = warningsOf(fixture);
+        expect(ran).toHaveLength(1);
+        expect(ran[0]![1]).toEqual([]);
+      },
+    );
 });
