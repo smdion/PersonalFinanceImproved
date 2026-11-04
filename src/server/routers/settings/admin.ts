@@ -37,7 +37,7 @@ import {
   nextDismissals,
   parseDismissals,
 } from "@/lib/pure/recommendation-dismissals";
-import { isCalendarDate, localDateStr } from "@/lib/utils/date";
+import { isCalendarDate } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
@@ -288,7 +288,7 @@ export const adminProcedures = {
       )
       .mutation(({ ctx, input }) =>
         mergeSettingAtomically(ctx.db, SK_RECOMMENDATION_DISMISSALS, (stored) =>
-          nextDismissals(parseDismissals(stored), localDateStr(), input),
+          nextDismissals(parseDismissals(stored), ctx.scope.today, input),
         ),
       ),
     delete: adminProcedure
