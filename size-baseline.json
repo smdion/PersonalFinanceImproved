@@ -166,8 +166,8 @@
     "src/server/routers/projection/monte-carlo.ts": 577,
     "src/server/routers/projection/relocation.ts": 666,
     "src/server/routers/projection/scenarios.ts": 512,
-    "src/server/routers/projection/strategy.ts": 876,
-    "src/server/routers/projection/tax-optimization.ts": 552,
+    "src/server/routers/projection/strategy.ts": 849,
+    "src/server/routers/projection/tax-optimization.ts": 538,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 694,
     "src/server/routers/savings.ts": 2895,
@@ -919,8 +919,8 @@
       "scenariosRouter.computeProjection.query()": 390
     },
     "src/server/routers/projection/strategy.ts": {
-      "strategyRouter.analyzeStrategy.query()": 421,
-      "strategyRouter.computeStrategyComparison.query()": 287
+      "strategyRouter.analyzeStrategy.query()": 415,
+      "strategyRouter.computeStrategyComparison.query()": 280
     },
     "src/server/routers/retirement.ts": {
       "retirementRouter.computeRelocationAnalysis.query()": 399

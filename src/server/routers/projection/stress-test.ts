@@ -18,6 +18,10 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import type { ProjectionInput } from "@/lib/calculators/types";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 export const stressTestRouter = createTRPCRouter({
   /**
@@ -35,35 +39,21 @@ export const stressTestRouter = createTRPCRouter({
   computeStressTest: protectedProcedure
     .input(
       z
-        .object({
-          contributionProfileId: z.number().int().optional(),
-          /** Optional Salary Profile — the independent "what if I earned X" axis. */
-          salaryProfileId: z.number().int().optional(),
-          accumulationBudgetProfileId: z.number().int().optional(),
-          accumulationBudgetColumn: z.number().int().min(0).optional(),
-          accumulationExpenseOverride: z.number().min(0).optional(),
-          decumulationBudgetProfileId: z.number().int().optional(),
-          decumulationBudgetColumn: z.number().int().min(0).optional(),
-          decumulationExpenseOverride: z.number().min(0).optional(),
+        .strictObject({
+          selection: profileSelectionSchema.optional(),
           snapshotId: z.number().int().optional(),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input?.selection);
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input?.snapshotId,
-        contributionProfileId: input?.contributionProfileId,
-        salaryProfileId: input?.salaryProfileId,
+        contributionProfileId: profiles.contributionProfileId,
+        salaryProfileId: profiles.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input?.contributionProfileId,
-        salaryProfileId: input?.salaryProfileId,
-        accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input?.accumulationBudgetColumn,
-        accumulationExpenseOverride: input?.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input?.decumulationBudgetColumn,
-        decumulationExpenseOverride: input?.decumulationExpenseOverride,
+        ...profiles,
       });
       if (!payload) return { scenarios: [], retirementAge: null };
 

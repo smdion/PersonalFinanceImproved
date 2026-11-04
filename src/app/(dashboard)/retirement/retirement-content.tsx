@@ -38,6 +38,7 @@ const WithdrawalComparisonCard = dynamic(
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { PlanHealthCard } from "@/components/cards/plan-health";
 import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 export function RetirementContent() {
   const user = useUser();
@@ -71,17 +72,14 @@ export function RetirementContent() {
     salaryProfileId: effectiveSalaryProfileId,
     snapshotId,
   } = plan.ids;
-  const decBudgetProfileId = plan.input.decumulationBudgetProfileId ?? null;
-  const decBudgetCol = plan.input.decumulationBudgetColumn ?? null;
-  const decExpenseOverride = plan.input.decumulationExpenseOverride ?? null;
+  const dec = plan.input;
   const [, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
   );
   const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
   const snapshotOptions = snapshotTotalsQuery.data ?? [];
-  // Shared across engineInput and comparisonInput below — the plan input
-  // without the withdrawal-editor defaults (these queries don't take them).
+  // The plan input minus the withdrawal-editor defaults these queries skip.
   const baseInput = useMemo(() => {
     const { decumulationDefaults: _decumulationDefaults, ...rest } = plan.input;
     return rest;
@@ -109,7 +107,11 @@ export function RetirementContent() {
   // The same preset the page's Simulation uses.
   const [simulationPreset] = useSimulationPreset();
   const comparisonInput = useMemo(
-    () => ({ ...baseInput, preset: simulationPreset }),
+    () => ({
+      snapshotId: baseInput.snapshotId,
+      selection: profileSelectionFrom(baseInput),
+      preset: simulationPreset,
+    }),
     [baseInput, simulationPreset],
   );
   const { data: comparisonData, isLoading: comparisonLoading } =
@@ -153,7 +155,6 @@ export function RetirementContent() {
   }
 
   const { settings, people: peopleLookup, perPersonSettings } = data;
-
   // Resolve active budget column label for subtitle
   const accProfileSummary = data.budgetProfileSummaries?.find(
     (p: { id: number; isActive: boolean }) =>
@@ -327,9 +328,9 @@ export function RetirementContent() {
             <ProjectionCard
               people={peopleLookup}
               withdrawalRate={parseFloat(settings.withdrawalRate) * 100}
-              decumulationBudgetProfileId={decBudgetProfileId ?? undefined}
-              decumulationBudgetColumn={decBudgetCol ?? undefined}
-              decumulationExpenseOverride={decExpenseOverride ?? undefined}
+              decumulationBudgetProfileId={dec.decumulationBudgetProfileId}
+              decumulationBudgetColumn={dec.decumulationBudgetColumn}
+              decumulationExpenseOverride={dec.decumulationExpenseOverride}
               parentCategoryFilter="Retirement"
               contributionProfileId={effectiveContribProfileId ?? undefined}
               salaryProfileId={effectiveSalaryProfileId ?? undefined}

@@ -80,6 +80,10 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/helpers/projection-cache";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -91,21 +95,11 @@ export const strategyRouter = createTRPCRouter({
   computeStrategyComparison: protectedProcedure
     .input(
       z
-        .object({
+        .strictObject({
           /** Simulation preset (the page's selector); the Default preset
            *  when absent. */
           preset: z.enum(SIMULATION_PRESET_KEYS).optional(),
-          contributionProfileId: z.number().int().optional(),
-          /** Optional Salary Profile — the independent "what if I earned X" axis. */
-          salaryProfileId: z.number().int().optional(),
-          /** View a non-active Retirement Profile (phase 4 assumptions band). */
-          retirementProfileId: z.number().int().optional(),
-          decumulationBudgetProfileId: z.number().int().optional(),
-          decumulationBudgetColumn: z.number().int().min(0).optional(),
-          decumulationExpenseOverride: z.number().min(0).optional(),
-          accumulationBudgetProfileId: z.number().int().optional(),
-          accumulationBudgetColumn: z.number().int().min(0).optional(),
-          accumulationExpenseOverride: z.number().min(0).optional(),
+          selection: profileSelectionSchema.optional(),
           snapshotId: z.number().int().optional(),
           /** Bypass the projection cache and force a fresh comparison — the explicit "Refresh" action, not the default query path. */
           forceRefresh: z.boolean().optional(),
@@ -113,6 +107,7 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -132,22 +127,14 @@ export const strategyRouter = createTRPCRouter({
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input?.snapshotId,
-          contributionProfileId: input?.contributionProfileId,
-          salaryProfileId: input?.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input?.contributionProfileId,
-        salaryProfileId: input?.salaryProfileId,
-        accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input?.accumulationBudgetColumn,
-        accumulationExpenseOverride: input?.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input?.decumulationBudgetColumn,
-        decumulationExpenseOverride: input?.decumulationExpenseOverride,
-        retirementProfileId: input?.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { strategies: [], activeStrategy: null };
       if (payload.notConfigured)
@@ -405,24 +392,17 @@ export const strategyRouter = createTRPCRouter({
     .use(expensiveRateLimitMiddleware)
     .input(
       z
-        .object({
+        .strictObject({
           /** Simulation preset (the page's selector); the Default preset
            *  when absent. */
           preset: z.enum(SIMULATION_PRESET_KEYS).optional(),
-          contributionProfileId: z.number().int().optional(),
-          /** Optional Salary Profile — the independent "what if I earned X" axis. */
-          salaryProfileId: z.number().int().optional(),
-          accumulationBudgetProfileId: z.number().int().optional(),
-          accumulationBudgetColumn: z.number().int().min(0).optional(),
-          accumulationExpenseOverride: z.number().min(0).optional(),
-          decumulationBudgetProfileId: z.number().int().optional(),
-          decumulationBudgetColumn: z.number().int().min(0).optional(),
-          decumulationExpenseOverride: z.number().min(0).optional(),
+          selection: profileSelectionSchema.optional(),
           snapshotId: z.number().int().optional(),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -442,21 +422,14 @@ export const strategyRouter = createTRPCRouter({
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input?.snapshotId,
-          contributionProfileId: input?.contributionProfileId,
-          salaryProfileId: input?.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
       const payloadOpts = {
-        contributionProfileId: input?.contributionProfileId,
-        salaryProfileId: input?.salaryProfileId,
-        accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input?.accumulationBudgetColumn,
-        accumulationExpenseOverride: input?.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input?.decumulationBudgetColumn,
-        decumulationExpenseOverride: input?.decumulationExpenseOverride,
+        ...profiles,
       };
       const payload = await buildEnginePayload(ctx.db, data, payloadOpts);
       if (!payload)

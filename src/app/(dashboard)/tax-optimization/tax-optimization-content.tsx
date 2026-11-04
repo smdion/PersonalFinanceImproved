@@ -56,7 +56,7 @@ export function TaxOptimizationContent() {
   const selection = useMemo(
     () =>
       effectiveRetirementProfileId != null
-        ? { retirementProfileId: effectiveRetirementProfileId }
+        ? { selection: { retirement: effectiveRetirementProfileId } }
         : {},
     [effectiveRetirementProfileId],
   );
@@ -66,7 +66,10 @@ export function TaxOptimizationContent() {
   // Settings / per-person settings for the assumptions band — metadataOnly
   // skips the heavy projection, same call the Retirement page uses.
   const metaQuery = trpc.projection.computeProjection.useQuery(
-    { metadataOnly: true as const, ...selection },
+    {
+      metadataOnly: true as const,
+      retirementProfileId: effectiveRetirementProfileId ?? undefined,
+    },
     { placeholderData: (prev) => prev },
   );
   const meta = metaQuery.data;

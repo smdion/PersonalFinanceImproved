@@ -345,11 +345,9 @@ describe("SocialSecuritySection smoke", () => {
       // ClaimingAgeExplorer/social-security.tsx docblocks) — NOT
       // cosmetic, the sweep endpoint's docblock says omitting these
       // silently resolves against the wrong profile/pin. This test
-      // doesn't pass contributionProfileId/salaryProfileId, so they come
-      // through undefined; retirementProfileId comes from settings.profileId.
-      retirementProfileId: 1,
-      contributionProfileId: undefined,
-      salaryProfileId: undefined,
+      // doesn't pass contributionProfileId/salaryProfileId, so they're
+      // left out; the retirement profile comes from settings.profileId.
+      selection: { retirement: 1 },
     };
     expect(sweepCalls()).toContainEqual([
       expectedQueryInput,
@@ -404,9 +402,11 @@ describe("SocialSecuritySection smoke", () => {
       {
         personId: 1,
         pia: 38400,
-        retirementProfileId: baseSettings.profileId,
-        contributionProfileId: 42,
-        salaryProfileId: 7,
+        selection: {
+          retirement: baseSettings.profileId,
+          contribution: 42,
+          salary: 7,
+        },
       },
       expect.objectContaining({ enabled: false }),
     ]);

@@ -39,10 +39,7 @@ import {
 import { WITHDRAWAL_ROUTING_MODE_LABELS } from "@/lib/config/withdrawal-routing";
 
 type Selection = Partial<
-  Pick<
-    RouterInputs["projection"]["compareWithdrawalStrategies"],
-    "retirementProfileId"
-  >
+  Pick<RouterInputs["projection"]["compareWithdrawalStrategies"], "selection">
 >;
 
 // Orders are read from config when called. The default decumulation order
