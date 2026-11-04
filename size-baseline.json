@@ -13,7 +13,7 @@
     "src/app/(dashboard)/networth/page.tsx": 465,
     "src/app/(dashboard)/paycheck/page.tsx": 719,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
-    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 909,
+    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 907,
     "src/app/(dashboard)/savings/page.tsx": 952,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1024,
     "src/app/(dashboard)/tools/page.tsx": 585,
@@ -161,7 +161,7 @@
     "src/server/routers/networth.ts": 1481,
     "src/server/routers/paycheck.ts": 945,
     "src/server/routers/performance.ts": 1895,
-    "src/server/routers/projection/_shared.ts": 371,
+    "src/server/routers/projection/_shared.ts": 369,
     "src/server/routers/projection/coast-fire.ts": 506,
     "src/server/routers/projection/monte-carlo.ts": 577,
     "src/server/routers/projection/relocation.ts": 666,
@@ -243,7 +243,7 @@
       "PerformanceContent": 811
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 752,
+      "PortfolioContent": 750,
       "PortfolioContent.map()": 263
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
