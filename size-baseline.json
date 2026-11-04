@@ -39,7 +39,7 @@
     "src/components/cards/projection/projection-table-accum-row.tsx": 1450,
     "src/components/cards/projection/projection-table-decum-row.tsx": 1629,
     "src/components/cards/projection/projection-table.tsx": 427,
-    "src/components/cards/projection/report/report-assumptions-summary.tsx": 423,
+    "src/components/cards/projection/report/report-assumptions-summary.tsx": 380,
     "src/components/cards/projection/spending-stability-chart.tsx": 557,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 641,
@@ -111,7 +111,7 @@
     "src/lib/calculators/types/engine-projection.ts": 725,
     "src/lib/config/account-types.ts": 901,
     "src/lib/config/milestones.ts": 691,
-    "src/lib/config/withdrawal-strategies.ts": 781,
+    "src/lib/config/withdrawal-strategies.ts": 779,
     "src/lib/constants.ts": 404,
     "src/lib/db/backup-transforms.ts": 1118,
     "src/lib/db/json-schemas.ts": 459,
@@ -165,10 +165,10 @@
     "src/server/routers/projection/coast-fire.ts": 506,
     "src/server/routers/projection/monte-carlo.ts": 577,
     "src/server/routers/projection/relocation.ts": 666,
-    "src/server/routers/projection/scenarios.ts": 519,
+    "src/server/routers/projection/scenarios.ts": 512,
     "src/server/routers/projection/strategy.ts": 876,
     "src/server/routers/projection/tax-optimization.ts": 552,
-    "src/server/routers/retirement.ts": 1457,
+    "src/server/routers/retirement.ts": 1452,
     "src/server/routers/salary-profiles.ts": 738,
     "src/server/routers/savings.ts": 2895,
     "src/server/routers/settings/admin.ts": 423,
@@ -391,7 +391,7 @@
       "ProjectionTable": 392
     },
     "src/components/cards/projection/report/report-assumptions-summary.tsx": {
-      "ReportAssumptionsSummary": 298
+      "ReportAssumptionsSummary": 269
     },
     "src/components/cards/projection/spending-stability-chart.tsx": {
       "SpendingStabilityChart": 514
@@ -916,7 +916,7 @@
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 487
     },
     "src/server/routers/projection/scenarios.ts": {
-      "scenariosRouter.computeProjection.query()": 411
+      "scenariosRouter.computeProjection.query()": 390
     },
     "src/server/routers/projection/strategy.ts": {
       "strategyRouter.analyzeStrategy.query()": 421,

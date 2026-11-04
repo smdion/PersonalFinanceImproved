@@ -38,6 +38,7 @@ import {
 } from "@/lib/pure/engine";
 import {
   getAllStrategyKeys,
+  getStrategyDefaults,
   getStrategyMeta,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
@@ -158,9 +159,7 @@ export function buildStrategyParams(
   for (const key of getAllStrategyKeys()) {
     const meta = getStrategyMeta(key);
     if (meta.paramFields.length === 0) continue;
-    const params: Record<string, number | boolean> = {
-      ...meta.defaultParams,
-    };
+    const params: Record<string, number | boolean> = getStrategyDefaults(key);
     for (const field of meta.paramFields) {
       const stored = settings[field.column];
       if (stored == null) continue;

@@ -11,7 +11,11 @@ import { filingStatusLabel } from "@/lib/config/display-labels";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import type {
+  StrategyParamColumn,
+  StrategyParamField,
+  WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
 import { parseAnnualPia } from "@/lib/config/social-security";
 
 /** Numeric fields on the echo'd settings object come back as decimal
@@ -52,31 +56,13 @@ export type ReportEngineSettings = {
   standardDeduction?: NumLike | null;
   /** What happens to RMD-forced excess beyond stated spending need. */
   rmdExcessHandling?: string | null;
-  // Per-strategy params — one strategy's fields are
-  // actually read at a time, keyed by WITHDRAWAL_STRATEGY_CONFIG's
-  // paramFields for the active withdrawalStrategy, same source
-  // strategy-params.tsx uses so this can't drift from the real fields.
-  gkUpperGuardrail?: NumLike | null;
-  gkLowerGuardrail?: NumLike | null;
-  gkIncreasePct?: NumLike | null;
-  gkDecreasePct?: NumLike | null;
-  sdAnnualDeclineRate?: NumLike | null;
-  cpWithdrawalPercent?: NumLike | null;
-  cpFloorPercent?: NumLike | null;
-  enWithdrawalPercent?: NumLike | null;
-  enRollingYears?: NumLike | null;
-  enFloorPercent?: NumLike | null;
-  vdBasePercent?: NumLike | null;
-  vdCeilingPercent?: NumLike | null;
-  vdFloorPercent?: NumLike | null;
-  rmdMultiplier?: NumLike | null;
-  vpwCap?: NumLike | null;
-  vpwEndAge?: NumLike | null;
-  cpSsInAmount?: boolean | null;
-  enSsInAmount?: boolean | null;
-  vdSsInAmount?: boolean | null;
-  rmdSsInAmount?: boolean | null;
-  vpwSsInAmount?: boolean | null;
+} & {
+  // Per-strategy params, one column per config param field.
+  [C in StrategyParamColumn]?:
+    | (Extract<StrategyParamField, { column: C }>["type"] extends "boolean"
+        ? boolean
+        : NumLike)
+    | null;
 };
 
 /** `null`/`undefined` → `undefined`; otherwise coerce to a real number. */
@@ -160,40 +146,11 @@ export function ReportAssumptionsSummary({
     : undefined;
   const strategyLabel =
     strategyCfg?.label ?? settings.withdrawalStrategy ?? "—";
-  // The strategy's own real params — same
-  // paramFields strategy-params.tsx renders for editing, read-only here.
-  // Explicit lookup (not a cast off `settings`) so this stays typed to the
-  // fields ReportEngineSettings actually declares.
-  // Keyed by column (`paramFields[].column`).
-  const strategyParamValues: Record<
-    string,
-    NumLike | boolean | null | undefined
-  > = {
-    gkUpperGuardrail: settings.gkUpperGuardrail,
-    gkLowerGuardrail: settings.gkLowerGuardrail,
-    gkIncreasePct: settings.gkIncreasePct,
-    gkDecreasePct: settings.gkDecreasePct,
-    sdAnnualDeclineRate: settings.sdAnnualDeclineRate,
-    cpWithdrawalPercent: settings.cpWithdrawalPercent,
-    cpFloorPercent: settings.cpFloorPercent,
-    enWithdrawalPercent: settings.enWithdrawalPercent,
-    enRollingYears: settings.enRollingYears,
-    enFloorPercent: settings.enFloorPercent,
-    vdBasePercent: settings.vdBasePercent,
-    vdCeilingPercent: settings.vdCeilingPercent,
-    vdFloorPercent: settings.vdFloorPercent,
-    rmdMultiplier: settings.rmdMultiplier,
-    vpwCap: settings.vpwCap,
-    vpwEndAge: settings.vpwEndAge,
-    cpSsInAmount: settings.cpSsInAmount,
-    enSsInAmount: settings.enSsInAmount,
-    vdSsInAmount: settings.vdSsInAmount,
-    rmdSsInAmount: settings.rmdSsInAmount,
-    vpwSsInAmount: settings.vpwSsInAmount,
-  };
+  // The strategy's own params, read-only: the paramFields
+  // strategy-params.tsx renders for editing, each from its own column.
   const strategyParamRows = (strategyCfg?.paramFields ?? [])
     .map((f) => {
-      const stored = strategyParamValues[f.column];
+      const stored = settings[f.column];
       if (f.type === "boolean") {
         const on = stored == null ? f.default === true : stored === true;
         // The Social Security switch reads as a sentence; other switches

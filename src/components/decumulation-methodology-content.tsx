@@ -3,13 +3,13 @@
 import { ProseSection } from "@/components/ui/prose-section";
 import {
   getAllStrategyKeys,
-  WITHDRAWAL_STRATEGY_CONFIG,
+  getStrategyDefaults,
 } from "@/lib/config/withdrawal-strategies";
 import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
 import { formatPercent } from "@/lib/utils/format";
 
 /** VPW's defaults, as the paragraph below quotes them. */
-const vpw = WITHDRAWAL_STRATEGY_CONFIG.vpw.defaultParams;
+const vpw = getStrategyDefaults("vpw");
 
 export function DecumulationMethodologyContent() {
   return (

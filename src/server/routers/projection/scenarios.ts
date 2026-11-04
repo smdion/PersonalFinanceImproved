@@ -31,6 +31,10 @@ import {
   categoriesWithTaxPreference,
 } from "@/lib/config/account-types";
 import { portfolioTaxTypeOf } from "@/lib/config/enum-values";
+import {
+  strategyParamFields,
+  type StrategyParamColumn,
+} from "@/lib/config/withdrawal-strategies";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   fetchRetirementData,
@@ -44,6 +48,16 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+
+/** A settings row's strategy param columns, as stored. */
+function pickStrategyParamColumns<
+  T extends Partial<Record<StrategyParamColumn, unknown>>,
+>(row: T): Pick<T, StrategyParamColumn> {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the keys are exactly the param columns
+  return Object.fromEntries(
+    strategyParamFields().map((f) => [f.column, row[f.column]]),
+  ) as Pick<T, StrategyParamColumn>;
+}
 
 export const scenariosRouter = createTRPCRouter({
   /**
@@ -455,28 +469,7 @@ export const scenariosRouter = createTRPCRouter({
           withdrawalRoutingMode: settings.withdrawalRoutingMode,
           withdrawalOrder: settings.withdrawalOrder,
           withdrawalSplits: settings.withdrawalSplits,
-          gkUpperGuardrail: settings.gkUpperGuardrail,
-          gkLowerGuardrail: settings.gkLowerGuardrail,
-          gkIncreasePct: settings.gkIncreasePct,
-          gkDecreasePct: settings.gkDecreasePct,
-          gkSkipInflationAfterLoss: settings.gkSkipInflationAfterLoss,
-          sdAnnualDeclineRate: settings.sdAnnualDeclineRate,
-          cpWithdrawalPercent: settings.cpWithdrawalPercent,
-          cpFloorPercent: settings.cpFloorPercent,
-          enWithdrawalPercent: settings.enWithdrawalPercent,
-          enRollingYears: settings.enRollingYears,
-          enFloorPercent: settings.enFloorPercent,
-          vdBasePercent: settings.vdBasePercent,
-          vdCeilingPercent: settings.vdCeilingPercent,
-          vdFloorPercent: settings.vdFloorPercent,
-          rmdMultiplier: settings.rmdMultiplier,
-          vpwCap: settings.vpwCap,
-          vpwEndAge: settings.vpwEndAge,
-          cpSsInAmount: settings.cpSsInAmount,
-          enSsInAmount: settings.enSsInAmount,
-          vdSsInAmount: settings.vdSsInAmount,
-          rmdSsInAmount: settings.rmdSsInAmount,
-          vpwSsInAmount: settings.vpwSsInAmount,
+          ...pickStrategyParamColumns(settings),
           rmdExcessHandling: settings.rmdExcessHandling,
           rmdExcessTargetPerformanceAccountId:
             settings.rmdExcessTargetPerformanceAccountId,
