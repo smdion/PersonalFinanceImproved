@@ -21,8 +21,8 @@ const W4_BOX_LABELS: Record<FilingStatusKey, string> = {
  * W-4 tax-input controls. Deliberately a separate section from
  * BonusSection, so they're always reachable.
  *
- * These fields live on the Salary Profile entry (see SalaryProfileEntry in
- * server/helpers/salary.ts), the same axis salary and bonus terms are on —
+ * These fields live on the Salary Profile entry (see SalaryEntry in
+ * lib/db/salary-entry-defaults.ts), the same axis salary and bonus terms are on —
  * so, like BonusSection, they gate on `salaryReadOnly` as well as
  * `readOnly`.
  */

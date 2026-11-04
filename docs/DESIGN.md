@@ -724,10 +724,11 @@ data of its own any more — it is pure identity/lifecycle (`id`, `personId`,
 `startDate`, `endDate`, `isSpeculative`, `employerName`, `title`). Every
 number and election a job needs for a live calculation comes from a
 **Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
-a **complete entry**:
+a **complete entry**, `SalaryEntry` (`z.infer` of `salaryEntrySchema` in
+`src/lib/db/json-schemas.ts`):
 
 ```ts
-type SalaryProfileEntry = {
+type SalaryEntry = {
   salary: number;
   bonusPercent: number; // fraction, 0.12 = 12%
   bonusMultiplier: number;

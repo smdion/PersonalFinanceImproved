@@ -24,11 +24,8 @@ import {
   resolveProfile,
   buildProfileContribData,
 } from "@/server/helpers";
-import type {
-  SalaryEntryMap,
-  SalaryProfileEntry,
-  SalaryProfileActiveMap,
-} from "@/server/helpers";
+import type { SalaryEntryMap, SalaryProfileActiveMap } from "@/server/helpers";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import type { AccountCategory, ProfileSwitch } from "@/lib/calculators/types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { FALLBACK_CONTRIBUTION_RATE } from "@/lib/constants";
@@ -317,7 +314,7 @@ export function buildProfileSwitches<
       "additionalFedWithholding",
       "bonusMonth",
       "bonusDayOfMonth",
-    ] as const satisfies readonly (keyof SalaryProfileEntry)[];
+    ] as const satisfies readonly (keyof SalaryEntry)[];
     const nonCompFields: Record<string, unknown> = {};
     let allNonCompFieldsResolved = true;
     for (const field of NON_COMP_FIELDS) {
@@ -328,7 +325,7 @@ export function buildProfileSwitches<
       }
       nonCompFields[field] = value;
     }
-    const ownEntryNormalized: SalaryProfileEntry | undefined =
+    const ownEntryNormalized: SalaryEntry | undefined =
       ownBaseSalary !== undefined &&
       ownTotalComp !== undefined &&
       allNonCompFieldsResolved
@@ -338,10 +335,10 @@ export function buildProfileSwitches<
             bonusMultiplier: ownEntry?.bonusMultiplier ?? 1,
             monthsInBonusYear: ownEntry?.monthsInBonusYear ?? 12,
             // Never carry a current-year pin into projection/contribution
-            // math — see SalaryProfileEntry.bonusOverride's docblock.
+            // math — see SalaryEntry.bonusOverride's docblock.
             bonusOverride: null,
             ...nonCompFields,
-          } as SalaryProfileEntry)
+          } as SalaryEntry)
         : undefined;
     const switchedSalaryProfileActiveMap =
       ownJob && ownEntryNormalized !== undefined

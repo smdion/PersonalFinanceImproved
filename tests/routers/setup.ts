@@ -25,7 +25,7 @@ import type { Permission } from "@/lib/config/permissions";
 import { releaseTopLevelTestDb, setTopLevelTestDb } from "./setup-mocks";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import type { SalaryProfileEntry } from "@/server/helpers/salary";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
 // Import schema for SQLite
@@ -253,7 +253,7 @@ export async function seedBudgetProfile(
 function seedDefaultSalaryProfileEntry(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   jobId: number,
-  entry: SalaryProfileEntry,
+  entry: SalaryEntry,
 ): number {
   const settingRow = db
     .select()
@@ -271,7 +271,7 @@ function seedDefaultSalaryProfileEntry(
 
   if (activeProfile) {
     const salaries = {
-      ...(activeProfile.salaries as Record<string, SalaryProfileEntry>),
+      ...(activeProfile.salaries as Record<string, SalaryEntry>),
       [String(jobId)]: entry,
     };
     db.update(sqliteSchema.salaryProfiles)
@@ -328,12 +328,12 @@ type JobColumnOverrides = Omit<
 >;
 
 /** Convenience overrides for the Salary Profile entry seedJob writes for
- *  its job — every field on SalaryProfileEntry, plus the pre-existing
+ *  its job — every field on SalaryEntry, plus the pre-existing
  *  string-typed comp convenience fields (annualSalary/bonusPercent/
  *  bonusMultiplier) this helper always accepted. */
 type SalaryEntryOverrides = Partial<
   Omit<
-    SalaryProfileEntry,
+    SalaryEntry,
     "salary" | "bonusPercent" | "bonusMultiplier" | "monthsInBonusYear"
   >
 > & {

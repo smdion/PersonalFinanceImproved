@@ -272,7 +272,7 @@ export const salaryProfileRouter = createTRPCRouter({
           monthsInBonusYear:
             entry?.monthsInBonusYear ?? BLANK_SALARY_ENTRY.monthsInBonusYear,
           /** This year's actual paid-out bonus, pinned on the same entry —
-           *  see SalaryProfileEntry.bonusOverride's docblock. */
+           *  see SalaryEntry.bonusOverride's docblock. */
           bonusOverride:
             entry?.bonusOverride ?? BLANK_SALARY_ENTRY.bonusOverride,
           /** Pay schedule, W-4 elections and bonus pay date — fields that

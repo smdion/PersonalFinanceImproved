@@ -85,7 +85,7 @@ The pinned `toBe` figures don't update with `-u` — change them from the failur
   columns left to read
 - A pinned salary being treated as excluding bonus, or total compensation
   computed anywhere other than `resolveCompensation()`
-- Any field of `SalaryProfileEntry` reappearing in a Contribution Profile
+- Any field of `SalaryEntry` reappearing in a Contribution Profile
   active-field bucket — the `jobs` bucket there is deleted, only
   `contributionAccounts`/`deductions` remain; any per-job bucket; any second
   bonus-contribution gate besides `takesFromBonusCheck`; an inline

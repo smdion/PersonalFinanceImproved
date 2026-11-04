@@ -11,7 +11,7 @@
     "src/app/(dashboard)/historical/page.tsx": 1026,
     "src/app/(dashboard)/house/page.tsx": 746,
     "src/app/(dashboard)/networth/page.tsx": 465,
-    "src/app/(dashboard)/paycheck/page.tsx": 716,
+    "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
     "src/app/(dashboard)/savings/page.tsx": 952,
@@ -146,10 +146,10 @@
     "src/server/helpers/contribution-caps.ts": 560,
     "src/server/helpers/contribution.ts": 1826,
     "src/server/helpers/projection-cache.ts": 556,
-    "src/server/helpers/salary.ts": 549,
+    "src/server/helpers/salary.ts": 507,
     "src/server/helpers/snapshot.ts": 1218,
     "src/server/retirement/build-engine-payload.ts": 1415,
-    "src/server/retirement/payload/profile-switches.ts": 508,
+    "src/server/retirement/payload/profile-switches.ts": 505,
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2184,
     "src/server/routers/contribution-profiles.ts": 914,
@@ -236,8 +236,8 @@
       "NetWorthPage": 400
     },
     "src/app/(dashboard)/paycheck/page.tsx": {
-      "PaycheckPage": 673,
-      "PaycheckPage.map()": 322
+      "PaycheckPage": 645,
+      "PaycheckPage.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
       "PerformanceContent": 811

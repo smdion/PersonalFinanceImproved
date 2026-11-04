@@ -4,7 +4,7 @@
  * Tests the contribution computation pipeline with various data states.
  */
 import "./setup-mocks";
-import type { SalaryProfileEntry } from "@/server/helpers/salary";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
@@ -29,8 +29,8 @@ type TestDb = BetterSQLite3Database<typeof schema>;
 
 /** A complete 16-field Salary Profile entry — every field required. */
 function completeSalaryEntry(
-  overrides: Partial<SalaryProfileEntry> = {},
-): SalaryProfileEntry {
+  overrides: Partial<SalaryEntry> = {},
+): SalaryEntry {
   return {
     extraPaycheckRouting: null,
     salary: 0,

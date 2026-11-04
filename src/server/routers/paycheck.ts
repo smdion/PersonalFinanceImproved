@@ -415,7 +415,7 @@ export const paycheckRouter = createTRPCRouter({
           contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
         );
         // This year's actual paid-out bonus, if pinned on the Salary
-        // Profile entry (SalaryProfileEntry.bonusOverride).
+        // Profile entry (SalaryEntry.bonusOverride).
         const paycheckInput = buildPaycheckInputForJob(job, {
           salary,
           bonusTerms,

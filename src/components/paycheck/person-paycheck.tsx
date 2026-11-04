@@ -134,7 +134,7 @@ export function PersonPaycheck({
     title: string | null;
     /** These 7 fields no longer live on the raw job row — they resolve
      *  through the active Salary Profile's entry for this job (see
-     *  SalaryProfileEntry in server/helpers/salary.ts). paycheck.ts's
+     *  SalaryEntry in lib/db/salary-entry-defaults.ts). paycheck.ts's
      *  computeSummary still merges them flat onto `job` for the client
      *  (the same pattern use-paycheck-person-views.ts's `job: any` and
      *  household-income-card.tsx already rely on), so they're read the

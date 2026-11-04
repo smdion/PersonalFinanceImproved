@@ -24,7 +24,7 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "./settings/paycheck";
-import type { SalaryProfileEntry } from "../helpers/salary";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "../helpers/retirement-profile";
 
 /** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
@@ -79,7 +79,7 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // extraPaycheckRouting) to give it in
   // a demo Salary Profile below — a profile entry is all-or-nothing, never
   // a partial pin (mirrors the "Demo Contribution" profile pattern).
-  const salaryPinsByJobId: Record<string, SalaryProfileEntry> = {};
+  const salaryPinsByJobId: Record<string, SalaryEntry> = {};
   const jobIdByEmployer = new Map<string, number>();
   for (const j of profile.jobs) {
     const [createdJob] = await db

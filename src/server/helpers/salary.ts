@@ -6,17 +6,17 @@
  *   - `historical_salaries` — a direct, per-person-per-year fact (past
  *     years), edited on the Historical page. See routers/historical.ts.
  *   - The active Salary Profile's entry for a job — a COMPLETE,
- *     all-or-nothing number for the live/current picture (see
- *     SalaryProfileEntry below). No partial/pinned state, no fallback to
+ *     all-or-nothing number for the live/current picture (see SalaryEntry,
+ *     lib/db/salary-entry-defaults.ts). No partial/pinned state, no fallback to
  *     "the job's live value" — a job has none.
  */
 import { and, eq, inArray } from "drizzle-orm";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type {
-  BonusDestination,
   PayPeriod,
   PayWeek,
 } from "@/lib/config/enum-values";
@@ -126,54 +126,12 @@ export function applySandboxSalaryEntries(
 // Salary Profile resolution — complete entries, no pinning
 // ---------------------------------------------------------------------------
 
-/**
- * One job's entry in a Salary Profile's `salaries` map. Always complete —
- * a profile either has ALL FIVE of these fields for a job, or (no key at
- * all) says nothing about it. There is no partial state, no "resolves
- * live," no revert-to-something-else. A profile is its own self-contained
- * world; if you want different numbers, use a different profile.
- *
- * `bonusPercent` is a FRACTION (0.12 = 12%).
- *
- * `bonusOverride`: this year's actual paid-out bonus, pinned once known —
- * an orthogonal fact from the bonusPercent/bonusMultiplier/monthsInBonusYear
- * formula, not a replacement for it. Only the current-year LIVE paycheck
- * display reads it (via resolveCompensation's returned `bonusOverride`);
- * growth/projection math always uses the formula fields untouched, so
- * pinning one year's actual number never distorts future-year compounding.
- * Still lives on this same entry — never a separate table/fallback.
- */
-export type SalaryProfileEntry = {
-  salary: number;
-  bonusPercent: number;
-  bonusMultiplier: number;
-  monthsInBonusYear: number;
-  bonusOverride: number | null;
-  payPeriod: PayPeriod;
-  payWeek: PayWeek;
-  anchorPayDate: string | null;
-  budgetPeriodsPerMonth: number | null;
-  w4FilingStatus: W4FilingStatus;
-  w4Box2cChecked: boolean;
-  additionalFedWithholding: number;
-  bonusMonth: number | null;
-  bonusDayOfMonth: number | null;
-  /** Where this job's extra (3rd biweekly) paycheck gets routed — a
-   *  comp-layer decision about this job's pay, not a job identity fact. `null` is a real, complete value ("no
-   *  routing configured"). See ExtraPaycheckRoutingData (schema-pg.ts). */
-  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-  /** Where the bonus goes: the budget (absent) or extra spending. */
-  bonusDestination?: BonusDestination;
-  /** Other pay per check, by paycheck_earnings id — absent = none. */
-  otherEarnings?: Record<string, number>;
-};
-
 /** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
  *  a profile targets a specific job's terms. */
-export type SalaryEntryMap = Record<string, SalaryProfileEntry>;
+export type SalaryEntryMap = Record<string, SalaryEntry>;
 
 /** jobId → that job's complete entry in the active Salary Profile, if any. */
-export type SalaryProfileActiveMap = Map<number, SalaryProfileEntry>;
+export type SalaryProfileActiveMap = Map<number, SalaryEntry>;
 
 /** The bonus terms computeBonusGross takes, in its own argument types. */
 export type BonusTerms = {
@@ -465,7 +423,7 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
  * check is its own election — bonusCheckContribution). Pass the pinned `bonusOverride` for THIS YEAR's figures
  * (paycheck, contribution summary, this year's contribution lines); leave it
  * out for anything that grows forward (projection) — see
- * SalaryProfileEntry.bonusOverride. Contribution amounts are then
+ * SalaryEntry.bonusOverride. Contribution amounts are then
  * annualContributionWithBonus (server/helpers/contribution.ts).
  */
 export function contributionPay(

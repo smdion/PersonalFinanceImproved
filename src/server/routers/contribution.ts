@@ -589,7 +589,7 @@ export const contributionRouter = createTRPCRouter({
           // set to, fromBonus) —
           // the paycheck's way (contributionPay / bonusCheckContribution).
           // This year's figures: the pinned bonus when there is one, like
-          // the paycheck (SalaryProfileEntry.bonusOverride).
+          // the paycheck (SalaryEntry.bonusOverride).
           const pay = contributionPay(dbSalary, bonusTerms, comp.bonusOverride);
           const salary = pay.salary;
           // Total compensation this year (salary + this year's bonus) — the

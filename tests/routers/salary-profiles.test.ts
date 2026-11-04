@@ -10,7 +10,7 @@
  * no salary of its own to fall back to.
  */
 import "./setup-mocks";
-import type { SalaryProfileEntry } from "@/server/helpers/salary";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { vi, describe, it, expect } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -36,9 +36,7 @@ import {
 import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
 
 /** A complete entry — every field required, matching the stored shape. */
-function entry(
-  overrides: Partial<SalaryProfileEntry> = {},
-): SalaryProfileEntry {
+function entry(overrides: Partial<SalaryEntry> = {}): SalaryEntry {
   return {
     salary: 0,
     bonusPercent: 0,
