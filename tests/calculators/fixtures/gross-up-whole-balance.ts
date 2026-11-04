@@ -14,12 +14,11 @@
  *  stepped to billions, capped at the balance and accepted that trial:
  *  it withdrew all $1,643,726.52 and the plan failed in 2059. */
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { makeAccumulationDefaults } from "./engine-fixtures";
 
 const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =
   {
-    accumulationDefaults: {
-      contributionRate: 0.25,
-      routingMode: "waterfall",
+    accumulationDefaults: makeAccumulationDefaults({
       accountOrder: ["401k", "403b", "ira", "hsa", "brokerage"],
       accountSplits: {
         "401k": 0,
@@ -33,7 +32,7 @@ const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =
         "403b": 1,
         ira: 1,
       },
-    },
+    }),
     currentAge: 57,
     retirementYear: 2025,
     projectionEndYear: 2069,

@@ -1,16 +1,20 @@
-/**
- * This year's filing status (lib/pure/filing-status.ts has the whole
- * chain): the household setting, else the active Retirement Profile's,
- * else a W-4 — with where it came from. One resolver for the paycheck, the
- * caps and the retirement engine.
- */
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+// This year's filing status and where it came from (the whole chain is in
+// lib/pure/filing-status.ts): one resolver for the paycheck, the caps and
+// the retirement engine.
+import type {
+  FilingStatusKey,
+  ReturnFilingStatus,
+  W4FilingStatus,
+} from "@/lib/config/filing-status";
 import {
   taxFilingStatusSetting,
   type FilingStatusSource,
 } from "@/lib/pure/filing-status";
-import { w4FilingStatusOf, type SalaryProfileActiveMap } from "./salary";
-import type { Db } from "./transforms";
+import {
+  w4FilingStatusOf,
+  type SalaryProfileActiveMap,
+} from "@/server/helpers/salary";
+import type { Db } from "@/lib/db";
 
 /** People ids, the primary person first (whose W-4 stands in first). */
 function primaryFirst(
@@ -21,18 +25,25 @@ function primaryFirst(
     .map((p) => p.id);
 }
 
+/** A W-4 box standing in for the return's status, called only here: a W-4
+ *  is a withholding choice, used for the return when nothing else says. */
+function w4StandInForReturn(w4: W4FilingStatus): ReturnFilingStatus {
+  const spelling: FilingStatusKey = w4;
+  return spelling;
+}
+
 export async function thisYearFilingStatus(
   db: Db,
   args: {
     appSettings: readonly { key: string; value: unknown }[];
     /** The active Retirement Profile's (null = Auto / none). */
-    profileStatus: W4FilingStatus | null | undefined;
+    profileStatus: ReturnFilingStatus | null | undefined;
     people: readonly { id: number; isPrimaryUser: boolean }[];
     /** The request's Salary Profile (What-If included); absent = active. */
     salaryProfileActiveMap?: SalaryProfileActiveMap;
   },
 ): Promise<{
-  status: W4FilingStatus | null;
+  status: ReturnFilingStatus | null;
   source: FilingStatusSource | null;
 }> {
   const household = taxFilingStatusSetting(args.appSettings);
@@ -44,5 +55,7 @@ export async function thisYearFilingStatus(
     primaryFirst(args.people),
     args.salaryProfileActiveMap,
   );
-  return w4 ? { status: w4, source: "w4" } : { status: null, source: null };
+  return w4
+    ? { status: w4StandInForReturn(w4), source: "w4" }
+    : { status: null, source: null };
 }

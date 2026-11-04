@@ -13,7 +13,7 @@ import {
   getTransactionCoverageStart,
   getWindowLimitDays,
 } from "@/lib/simplefin/sync";
-import { addDays, localDateStr, utcDayOf } from "@/lib/utils/date";
+import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   estimateTaxableInvestmentIncome,
   investmentIncomeGaps,
@@ -94,12 +94,12 @@ export const investmentTaxInputsRouter = createTRPCRouter({
             voided: r.voided,
           })),
         taxYear: input.taxYear,
-        today: localDateStr(),
+        today: ctx.scope.today,
       });
       const preTax = preTaxIraByPerson(subs);
       // A deposit waiting in a pre-tax IRA part, from its own feed's
       // balances (the part's feed is linked by the part's key).
-      const today = localDateStr();
+      const today = ctx.scope.today;
       const windowStart = addDays(today, -PENDING_CONVERSION_WINDOW_DAYS);
       const pendingByPerson = new Map<number, number>();
       for (const sub of subs) {

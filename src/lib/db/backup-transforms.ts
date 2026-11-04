@@ -11,6 +11,10 @@
 
 import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "./v0810-profile-sets";
+import pgJournal from "../../../drizzle/meta/_journal.json";
+
+/** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
+const CURRENT_LINE_TAGS = pgJournal.entries.map((e) => e.tag);
 
 // ---------------------------------------------------------------------------
 // Known schema versions
@@ -90,20 +94,8 @@ const V08_SCHEMA_TAGS = [
   "0014_v090_tax_data_updates",
   "0015_v090_utility_feed",
   "0016_v090_debts",
-  "0000_v9_initial_schema", // PG + SQLite: v0.9.0 squash of the v0.8 line — the v0.8.15 schema, no change; a backup at it is current-shape
-  "0001_v090_tax_data_origin", // PG + SQLite: origin ('user'), source_version, confirmed_at on the five reference tables — older backups restore as 'user' and never confirmed; the reference reconcile then recognises shipped values
-  "0002_v090_tax_data_updates", // PG + SQLite: tax_data_updates (not backed up) — no transform needed
-  "0003_v090_utility_feed", // PG + SQLite: utility_service.budget_api_category_id / billing_lag_months (default 0), utility_reading.source (null = typed in) — older backups restore with the defaults; no transform needed
-  "0004_v090_debts", // PG + SQLite: debts table — older backups restore with no debts; no transform needed
-  "0005_v092_filing_status_auto", // PG + SQLite: retirement_settings.filing_status may be null (= Auto) — older backups restore with their stored status; no transform needed
-  "0006_v095_milestones", // PG + SQLite: debts purchase_price / term_months / api_balance(_date) (nullable); retirement_settings vpw_cap / vpw_end_age (null = config default) and the per-strategy *_ss_in_amount switches — older backups restore with the four existing switches on (transformV095SsInAmount), as the migration sets a live database
-  "0007_v095_redact_change_log", // PG + SQLite: data only — credentials scrubbed from change_log, which backups don't carry; no transform needed
-  "0008_v095_irmaa_budget", // PG + SQLite: retirement_settings.irmaa_on_top_of_budget (default false) — older backups restore with the default; no transform needed
-  "0009_v095_holding_reports", // PG + SQLite: holding_observations unique per report (balance_date), not per as_of — index only; older backups' rows already differ by balance_date, no transform needed
-  "0010_v095_market_closes", // PG + SQLite: market_closes (Tiingo cache, excluded from backups) — nothing to restore, no transform needed
-  "0011_v096_budget_mortgage_link", // PG + SQLite: budget_items.mortgage_loan_id (nullable) — older backups restore with no line linked, no transform
-  "0012_v096_gap_year_settings", // PG + SQLite: retirement_settings.gap_year_stop_saving / gap_year_draws (defaults) — older backups restore with today's behavior, no transform
-  "0013_v097_loan_feed", // PG + SQLite: simplefin_accounts.linked_loan_id (nullable) — older backups restore with no feed on a loan, no transform
+  // The current line, from the journal: a new migration needs no edit here.
+  ...CURRENT_LINE_TAGS,
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

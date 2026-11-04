@@ -1,6 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { vi } from "vitest";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  type MockOutput,
+} from "./trpc-mock";
 
 // Direct math-verification test for
 // src/components/cards/dashboard/living-costs-card.tsx — until now this card
@@ -100,33 +106,31 @@ const savingsQuery = {
 
 const extraPaycheckQuery = { isLoading: false, data: [] };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    settings: { appSettings: { list: { useQuery: () => ({ data: [] }) } } },
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    budget: {
-      computeActiveSummary: { useQuery: () => budgetQuery },
-      listProfiles: { useQuery: () => ({ data: [] }) },
-      listApiActuals: { useQuery: () => ({ data: undefined }) },
-    },
-    paycheck: { computeSummary: { useQuery: () => paycheckQuery } },
-    contribution: { computeSummary: { useQuery: () => contribQuery } },
-    savings: {
-      computeSummary: { useQuery: () => savingsQuery },
-      extraPaycheckRouting: { list: { useQuery: () => extraPaycheckQuery } },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+// Registered by reference: a test that edits a fixture's data in place
+// changes what the query answers, as before.
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("settings.appSettings.list", []);
+  setQuery("salaryProfile.list", []);
+  setQuery("contributionProfile.list", []);
+  holdMutation("salaryProfile.setActive");
+  holdMutation("contributionProfile.setActive");
+  setQuery("budget.computeActiveSummary", budgetQuery.data);
+  setQuery("budget.listProfiles", []);
+  setQuery("budget.listApiActuals", undefined);
+  // The fixture is a loose record the tests edit in place.
+  setQuery(
+    "paycheck.computeSummary",
+    paycheckQuery.data as MockOutput<"paycheck.computeSummary">,
+  );
+  setQuery("contribution.computeSummary", contribQuery.data);
+  setQuery("savings.computeSummary", savingsQuery.data);
+  setQuery("savings.extraPaycheckRouting.list", extraPaycheckQuery.data);
+});
 
 import { LivingCostsCard } from "@/components/cards/dashboard/living-costs-card";
 

@@ -591,7 +591,7 @@ export const paycheckProcedures = {
             message: `Prior-year contributions are not supported for ${row.accountType} accounts`,
           });
         }
-        const priorYear = new Date().getFullYear() - 1;
+        const priorYear = ctx.scope.asOf.getFullYear() - 1;
         return ctx.db
           .update(schema.contributionAccounts)
           .set({

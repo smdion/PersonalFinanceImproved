@@ -7,7 +7,8 @@ import {
   formatPercent,
   MONTH_NAMES_SHORT,
 } from "@/lib/utils/format";
-import { GoalProjection, monthKey } from "./types";
+import { GoalProjection } from "./types";
+import { monthKey } from "@/lib/pure/savings-projection";
 import { FUND_COLORS } from "@/lib/utils/colors";
 import { safeDivide } from "@/lib/utils/math";
 
@@ -343,7 +344,6 @@ export function ContributionGrid({
               </td>
             </tr>
           </thead>
-
           <tbody>
             {monthDates.map((date, rowIdx) => {
               const mk = monthKey(date);

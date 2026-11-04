@@ -121,10 +121,10 @@ describe("projection router — retirementProfileId (view a non-active Retiremen
       decumulationOverrides: [],
     });
     const viewed = await caller.projection.computeMonteCarloProjection({
+      selection: { retirement: secondProfileId },
       numTrials: 100,
       accumulationOverrides: [],
       decumulationOverrides: [],
-      retirementProfileId: secondProfileId,
     });
 
     expect(active.simulationInputs?.retirementAge).toBe(65);
@@ -137,9 +137,9 @@ describe("projection router — retirementProfileId (view a non-active Retiremen
       decumulationOverrides: [],
     });
     const viewed = await caller.projection.computeCoastFire({
+      selection: { retirement: secondProfileId },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      retirementProfileId: secondProfileId,
     });
 
     // Different retirement ages produce different accumulation windows, so
@@ -162,9 +162,9 @@ describe("projection router — retirementProfileId (view a non-active Retiremen
       decumulationOverrides: [],
     });
     const viewed = await caller.projection.computeWithdrawalBracketOptimizer({
+      selection: { retirement: secondProfileId },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      retirementProfileId: secondProfileId,
     });
 
     // Different retirement ages produce different accumulation windows

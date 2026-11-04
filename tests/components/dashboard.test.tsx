@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { resetTrpcMock, setQuery } from "./trpc-mock";
 
 // Mock all dashboard card components to isolate the page test
 vi.mock("@/components/cards/dashboard/household-income-card", () => ({
@@ -58,20 +59,16 @@ vi.mock("@/components/onboarding/onboarding-wizard", () => ({
 }));
 
 // Mock tRPC
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { invalidate: vi.fn() },
-    }),
-    settings: {
-      isOnboardingComplete: {
-        useQuery: () => ({ data: { complete: true } }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 describe("DashboardPage", () => {
+  beforeEach(() => {
+    resetTrpcMock();
+    setQuery("settings.isOnboardingComplete", { complete: true });
+  });
+
   it("renders all dashboard cards", async () => {
     const { default: DashboardPage } =
       await import("@/app/(dashboard)/dashboard-content").then((m) => ({

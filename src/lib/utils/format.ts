@@ -1,6 +1,7 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { parseLocalDateOnly } from "@/lib/utils/date";
 import { SAVINGS_RATE_DECIMALS } from "@/lib/constants";
+import { BUDGET_SERVICES, isBudgetApiService } from "@/lib/config/budget-apps";
 
 /** Short month labels (index 0 = January), for compact axis/table labels. */
 export const MONTH_NAMES_SHORT = [
@@ -347,8 +348,7 @@ export function accountDisplayName(
 export function budgetApiServiceLabel(
   service: string | null | undefined,
 ): string {
-  if (service === "actual") return "Actual Budget";
-  if (service === "ynab") return "YNAB";
+  if (isBudgetApiService(service)) return BUDGET_SERVICES[service].label;
   if (service === "simplefin") return "SimpleFIN";
   return "the budget API";
 }

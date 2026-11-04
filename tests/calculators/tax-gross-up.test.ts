@@ -16,13 +16,12 @@ import { describe, it, expect } from "vitest";
 import { estimateWithdrawalTaxCost } from "@/lib/calculators/engine/tax-gross-up";
 import { routeForMode } from "@/lib/calculators/engine/withdrawal-routing";
 import { computeTaxFromSlots } from "@/lib/calculators/engine/tax-estimation";
+import { getAllCategories, zeroBalance } from "@/lib/config/account-types";
 import {
-  getAllCategories,
   setBalance,
   setBasis,
   setTraditional,
-  zeroBalance,
-} from "@/lib/config/account-types";
+} from "@/lib/config/account-balance";
 import type { AccountBalances } from "@/lib/calculators/types";
 
 import {

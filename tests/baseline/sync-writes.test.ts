@@ -44,6 +44,10 @@ const ACTUAL_SERVER = "https://actual.baseline.example";
 /** Not written: timestamps, and the connection config (encrypted with a
  *  fresh random IV every save). */
 const NOT_PINNED = /At$|^config$/;
+/** Not a sync write: the change log's audit row for the syncAll call itself
+ *  (logMutation, trpc.ts), which reaches the test db since setup-mocks
+ *  forwards the top-level db to it. Pinned before that, so left out. */
+const NOT_PINNED_TABLES = new Set(["change_log"]);
 
 function recording(service: Service): Recording {
   return JSON.parse(
@@ -82,6 +86,7 @@ function tableRows(db: Db): Map<string, string[]> {
   const out = new Map<string, string[]>();
   for (const table of Object.values(sqliteSchema)) {
     if (!is(table, SQLiteTable)) continue;
+    if (NOT_PINNED_TABLES.has(getTableConfig(table).name)) continue;
     const rows = db.select().from(table).all() as Record<string, unknown>[];
     out.set(
       getTableConfig(table).name,

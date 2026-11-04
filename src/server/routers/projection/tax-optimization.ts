@@ -47,10 +47,12 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /**
  * `RoutingMode` as a Zod enum — the withdrawal-sequencing strategies the
@@ -80,22 +82,11 @@ const zRoutingMode = z.enum(ROUTING_MODES);
  * input (`scenarios.ts:61-108`); it deliberately carries no assumption
  * values (see the file docblock).
  */
-const taxOptimizationBaseInput = z.object({
+const taxOptimizationBaseInput = z.strictObject({
   decumulationDefaults: decumulationDefaultsInputSchema,
   accumulationOverrides: accumulationOverrideSchema,
   decumulationOverrides: decumulationOverrideSchema,
-  contributionProfileId: z.number().int().optional(),
-  /** Independent "what if I earned X" axis. */
-  salaryProfileId: z.number().int().optional(),
-  /** View a non-active Retirement Profile — same "view without activating"
-   *  contract as `computeProjection`. */
-  retirementProfileId: z.number().int().optional(),
-  accumulationBudgetProfileId: z.number().int().optional(),
-  accumulationBudgetColumn: z.number().int().min(0).optional(),
-  accumulationExpenseOverride: z.number().min(0).optional(),
-  decumulationBudgetProfileId: z.number().int().optional(),
-  decumulationBudgetColumn: z.number().int().min(0).optional(),
-  decumulationExpenseOverride: z.number().min(0).optional(),
+  selection: profileSelectionSchema.optional(),
   snapshotId: z.number().int().optional(),
 });
 
@@ -139,21 +130,14 @@ async function runProjection(
   input: TaxOptimizationBaseInput,
   extraDecumulationOverrides: DecumulationOverride[] = [],
 ) {
+  const profiles = engineProfileOptions(input.selection);
   const data = await fetchRetirementData(db, {
     snapshotId: input.snapshotId,
-    contributionProfileId: input.contributionProfileId,
-    salaryProfileId: input.salaryProfileId,
+    contributionProfileId: profiles.contributionProfileId,
+    salaryProfileId: profiles.salaryProfileId,
   });
   const payload = await buildEnginePayload(db, data, {
-    contributionProfileId: input.contributionProfileId,
-    salaryProfileId: input.salaryProfileId,
-    retirementProfileId: input.retirementProfileId,
-    accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-    accumulationBudgetColumn: input.accumulationBudgetColumn,
-    accumulationExpenseOverride: input.accumulationExpenseOverride,
-    decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-    decumulationBudgetColumn: input.decumulationBudgetColumn,
-    decumulationExpenseOverride: input.decumulationExpenseOverride,
+    ...profiles,
   });
   if (!payload) return null;
   if (payload.notConfigured) return payload.notConfigured;

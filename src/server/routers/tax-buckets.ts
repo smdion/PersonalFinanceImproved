@@ -22,23 +22,19 @@ import { toNumber } from "@/server/helpers/transforms";
 import { zDecimal } from "@/server/routers/settings/_shared";
 import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
-import type { db as appDb } from "@/lib/db";
 import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";
 import {
   buildCurrentRothBasisMap,
   selectCurrentRothBasisRow,
 } from "@/lib/pure/roth-basis-rollover";
 import type { AccountCategory } from "@/lib/calculators/types";
-
-/** Accepts both the main db instance and transaction handles. */
-type DbType =
-  typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
+import type { DbOrTx } from "@/lib/db";
 
 /** Stamp basis_last_updated in app_settings — mirrors performance.ts's
  *  stampPerformanceUpdated. Called on every real basis write (single or
  *  batch) so the sidebar Data Freshness display and the Performance page
  *  subtitle stay current automatically. */
-async function stampBasisUpdated(db: DbType) {
+async function stampBasisUpdated(db: DbOrTx) {
   const now = new Date().toISOString();
   await db
     .insert(schema.appSettings)
@@ -148,7 +144,7 @@ export const taxBucketsRouter = createTRPCRouter({
         name: p.name,
         birthYear: new Date(p.dateOfBirth).getUTCFullYear(),
       })),
-      currentDate: new Date(),
+      currentDate: ctx.scope.asOf,
     });
 
     return {
@@ -210,7 +206,7 @@ export const taxBucketsRouter = createTRPCRouter({
             isFinalized: r.isFinalized,
           })),
         );
-        targetYear = current?.year ?? new Date().getFullYear();
+        targetYear = current?.year ?? ctx.scope.asOf.getFullYear();
       }
 
       await ctx.db

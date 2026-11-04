@@ -15,14 +15,14 @@ import { roundToCents } from "../../utils/math";
 import type { AccountBalances } from "../types";
 import {
   categoriesWithTaxPreference,
-  getTraditionalBalance,
   isPreTaxType,
   isRetirementMoney,
 } from "../../config/account-types";
+import { getTraditionalBalance } from "../../config/account-balance";
 import { computeRmdAmount } from "../../config/rmd-tables";
 import { RMD_EXCISE_TAX_RATE } from "../../constants";
 import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
-import type { IndKeyFn } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------
 // Types

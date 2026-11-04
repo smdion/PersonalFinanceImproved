@@ -21,19 +21,19 @@ import {
   isOverflowTarget,
   isRetirementMoney,
   isPreTaxType,
-  isIraCategory,
-  isHsaCategory,
-  addTraditional,
+  isQcdEligible,
+  nonMedicalPenaltyRate,
 } from "../../../config/account-types";
+import { addTraditional } from "../../../config/account-balance";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeObbbaSeniorDeduction } from "../obbba-senior-deduction";
 import {
   MAX_BROKERAGE_RAMP_YEARS,
-  QCD_MIN_ELIGIBILITY_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
-  MEDICARE_START_AGE,
 } from "../../../constants";
+import { shortfallFloor } from "../gap-year-draw";
+import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
   getLtcgRate,
@@ -90,6 +90,7 @@ import type {
 } from "./types";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
+import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
 // Decumulation year handler
@@ -135,7 +136,7 @@ export function runDecumulationYear(
     indBasis,
     brokBasis,
     spendingState,
-    magiHistory,
+    incomeHistory,
     depletionTracked,
     accountDepletions,
   } = state;
@@ -287,7 +288,7 @@ export function runDecumulationYear(
   // Only meaningful with individual accounts tracked (same limitation
   // per-person RMD itself already has).
   //
-  // Eligibility is QCD_MIN_ELIGIBILITY_AGE (70), NOT rmdByPerson's
+  // Eligibility is AGE_RULES.qcd (70), NOT rmdByPerson's
   // RMD-start-age gate -- QCD eligibility
   // predates SECURE 2.0's RMD-age delay, so someone with startAge 75 is
   // still QCD-eligible for years before any RMD is even required. Built
@@ -299,17 +300,14 @@ export function runDecumulationYear(
   const qcdEligiblePersonIds =
     hasIndividualAccounts && rmdStartAgeByPerson.size > 0
       ? Array.from(rmdStartAgeByPerson.entries())
-          .filter(
-            ([, { birthYear }]) =>
-              ageInYear(birthYear, year) >= QCD_MIN_ELIGIBILITY_AGE,
-          )
+          .filter(([, { birthYear }]) => reachesAgeRule(birthYear, "qcd", year))
           .map(([personId]) => personId)
       : [];
   if (qcdEligiblePersonIds.length > 0) {
     const iraTradByPerson = new Map<number, number>();
     for (const ia of indAccts) {
       if (
-        isIraCategory(ia.category) &&
+        isQcdEligible(ia.category) &&
         rmdOwnerOf(ia, ctx.primaryPersonId) != null &&
         isPreTaxType(ia.taxType) &&
         // A Portfolio-parented IRA (nothing prevents one existing)
@@ -355,7 +353,7 @@ export function runDecumulationYear(
         if (qcdAmount <= 0) continue;
         const personIraAccts = indAccts.filter(
           (ia) =>
-            isIraCategory(ia.category) &&
+            isQcdEligible(ia.category) &&
             rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
             isPreTaxType(ia.taxType) &&
             isRetirementMoney(ia.parentCategory),
@@ -463,16 +461,16 @@ export function runDecumulationYear(
   // OBBBA temporary senior deduction (2025-2028) — same injection point as
   // §63(f) above (folded in BEFORE routing/tax estimation runs; see
   // obbba-senior-deduction.ts's docblock for why it can't be applied later).
-  // Uses LAST YEAR's MAGI (magiHistory, not yet pushed for `year` at this
+  // Uses LAST YEAR's MAGI (incomeHistory, not yet pushed for `year` at this
   // point in the function) as the phaseout basis, the same 1-year-lag
   // circularity-breaking pattern IRMAA's 2-year lookback uses further below.
-  // Decumulation year 1 has no MAGI history yet ⇒ $0 that year only, a
+  // Decumulation year 1 has no prior year's income ⇒ $0 that year only, a
   // deliberate, understood, self-healing gap (not a silent omission) —
   // real accuracy resumes from year 2 on.
+  const lastYearIncome = incomeHistory.at(-1);
   const obbbaAddon = computeObbbaSeniorDeduction({
     seniorCount,
-    magi:
-      magiHistory.length > 0 ? magiHistory[magiHistory.length - 1] : undefined,
+    magi: lastYearIncome && yearMagi(lastYearIncome, "seniorDeduction"),
     perPerson: taxRates.obbbaSeniorDeductionPerPerson,
     phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
     phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,
@@ -547,13 +545,12 @@ export function runDecumulationYear(
     tableYears.fpl,
   );
 
-  const personsAge65Plus =
-    perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.filter((by) => year - by >= MEDICARE_START_AGE)
-          .length
-      : age >= MEDICARE_START_AGE
-        ? 1
-        : 0;
+  const personsAge65Plus = countReachingAgeRule(
+    perPersonBirthYears,
+    age,
+    "medicare",
+    year,
+  );
   // IRMAA paid on top of the budget joins a need-sized year's need, so the
   // gross-up, shortfall and RMD excess all see it. It's a cost beside the
   // need: never in projectedExpenses (a strategy would carry it forward)
@@ -565,13 +562,13 @@ export function runDecumulationYear(
   if (
     input.irmaaOnTopOfBudget === true &&
     state.portfolioWithdrawal === null &&
-    magiHistory.length >= 2
+    incomeHistory.length >= 2
   ) {
     const irmaaInNeed = checkHouseholdIrmaa({
       enableIrmaaAwareness,
       filingStatus,
       personsAge65Plus,
-      projectedMagi: magiHistory[magiHistory.length - 2]!,
+      projectedMagi: yearMagi(incomeHistory.at(-2)!, "irmaa"),
       rothConversionAmount: 0,
       irmaaBrackets: grownIrmaaBracketsForCheck,
     }).irmaaCost;
@@ -640,17 +637,9 @@ export function runDecumulationYear(
   // deriveBasisRankingInputs's docblock for why the basis-derived fields
   // are shared with tax-gross-up.ts's estimate.
   //
-  // magiBeforeThisDraw is intentionally OMITTED here. Was previously
-  // magiHistory's prior-YEAR MAGI, a real
-  // bug: NIIT's MAGI test has no lookback, unlike IRMAA's genuine 2-year
-  // lookback that magiHistory exists for; RouteBracketInfo's own docblock
-  // says "MAGI before THIS YEAR'S gains/growth," which prior-year data
-  // never was). Omitting it lets withdrawal-routing.ts's own `??
-  // baseOrdinaryFloor` fallback apply -- the correct current-year
-  // pre-this-draw figure (taxableSS + totalTradWithdrawn +
-  // conversionReservedRoom) -- which is also exactly what
-  // tax-gross-up.ts's estimate already falls back to, so the two paths
-  // can no longer disagree on this number.
+  // magiBeforeThisDraw is omitted: NIIT's MAGI has no lookback, so the
+  // router's `?? baseOrdinaryFloor` (this year's pre-draw figure) applies,
+  // as in tax-gross-up.ts's estimate.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
@@ -1204,19 +1193,17 @@ export function runDecumulationYear(
             : taxRates.brokerage;
   }
 
+  const income: YearIncome = {
+    traditionalDraws: totalTraditionalWithdrawal,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
+    rothConversions: rothConversionAmount,
+    realizedGains: brokerageGainsPortion,
+    socialSecurity: { gross: ssIncome, taxable: taxableSS },
+  };
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
   // Applies to lesser of net investment income or MAGI exceeding threshold.
   // Roth conversions raise MAGI but are NOT net investment income.
-  // Non-qualified Roth growth income
-  // (taxFromSlots.rothTaxableGrowth) was missing here too, understating
-  // MAGI fed into NIIT, the 2-year IRMAA lookback, and the ACA subsidy
-  // check below — same root cause as the taxCost recompute fix above.
-  const currentYearMagi =
-    totalTraditionalWithdrawal +
-    taxFromSlots.rothTaxableGrowth +
-    rothConversionAmount +
-    brokerageGainsPortion +
-    taxableSS;
+  const currentYearMagi = yearMagi(income, "niit");
   const niitAmount = filingStatus
     ? computeNiit(currentYearMagi, brokerageGainsPortion, filingStatus)
     : 0;
@@ -1252,17 +1239,8 @@ export function runDecumulationYear(
       ? Math.max(0, state.portfolioWithdrawal - totalWithdrawal)
       : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
   );
-  // Materiality floor, not a correctness tolerance. NIIT and the
-  // conversion-year LTCG recompute both run
-  // AFTER routing and are accepted, documented residual-gap sources (the
-  // gross-up estimate can't have grossed up for a cost that didn't exist
-  // yet when it ran) -- a $0.01 floor here flagged UNMET NEED on every
-  // ordinary NIIT year in an otherwise fully-solvent plan, drowning out
-  // the signal a REAL shortfall (balance exhaustion, hard-exclusion) is
-  // for. The greater of $50 or 1% of the need itself scales with plan
-  // size while still catching genuine shortfalls, which tend to be a
-  // large fraction of afterTaxNeed, not a rounding-scale sliver of it.
-  const shortfallMaterialityFloor = Math.max(50, afterTaxNeed * 0.01);
+  // Materiality floor, not a correctness tolerance (SHORTFALL_MATERIALITY).
+  const shortfallMaterialityFloor = shortfallFloor(afterTaxNeed);
   const finalUnmetNeed =
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
@@ -1270,8 +1248,8 @@ export function runDecumulationYear(
   // Single canonical "is this a REAL shortfall worth alerting on" verdict
   // `finalUnmetNeed` above intentionally
   // preserves its existing byte-identical value/undefined-ness for
-  // existing consumers (no cache-version bump needed for an additive
-  // field), but its own two branches apply the materiality floor
+  // existing consumers (an additive field), but its own two branches
+  // apply the materiality floor
   // inconsistently: the `routedUnmetNeed` fallback branch is NEVER
   // floor-filtered, so a rounding-scale routed residual could read as
   // `unmetNeed > 0` without being material. Chart/table/KPI alerting
@@ -1303,13 +1281,13 @@ export function runDecumulationYear(
     shortfallMaterialityFloor;
 
   // --- IRMAA Awareness (Phase 6) ---
-  // Store MAGI for 2-year lookback (#18).
-  magiHistory.push(currentYearMagi);
+  // This year's income, for next years' lookbacks.
+  incomeHistory.push(income);
   // IRMAA uses year N-2 MAGI per IRS rules; fall back to current year for first 2 years.
-  const irmaaLookbackMagi =
-    magiHistory.length > 2
-      ? magiHistory[magiHistory.length - 3]!
-      : currentYearMagi;
+  const irmaaLookbackMagi = yearMagi(
+    incomeHistory.length > 2 ? incomeHistory.at(-3)! : income,
+    "irmaa",
+  );
   const irmaaResult = checkHouseholdIrmaa({
     enableIrmaaAwareness,
     filingStatus,
@@ -1326,20 +1304,13 @@ export function runDecumulationYear(
   // Under-65 is the ACA marketplace-subsidy eligibility criterion this
   // checks — it's the same real-world Medicare-eligibility event the IRMAA
   // block above tests, not an independent regulatory threshold, so it
-  // shares MEDICARE_START_AGE.
-  const allPersonsUnder65 =
-    perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.every((by) => year - by < MEDICARE_START_AGE)
-      : age < MEDICARE_START_AGE;
+  // shares AGE_RULES.medicare.
+  const allPersonsUnder65 = personsAge65Plus === 0;
   const acaResult = checkAca({
     enableAcaAwareness,
     allPersonsUnder65,
     householdSize: householdSize ?? 2,
-    totalTraditionalWithdrawal,
-    rothConversionAmount,
-    brokerageGainsPortion,
-    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-    ssIncome,
+    income,
     fplGrowthFactor,
     fplByHousehold: taxRates.fplByHousehold,
   });
@@ -1588,13 +1559,8 @@ export function runDecumulationYear(
     penaltyLockedStillExcluded: eligibility
       ? roundToCents(
           sumBy(
-            (
-              Object.entries(eligibility.penaltyExposedTotalStillExcluded) as [
-                string,
-                number,
-              ][]
-            ).filter(([cat]) => !isHsaCategory(cat)),
-            ([, v]) => v,
+            getAllCategories().filter((c) => nonMedicalPenaltyRate(c) == null),
+            (c) => eligibility.penaltyExposedTotalStillExcluded[c],
           ),
         )
       : undefined,

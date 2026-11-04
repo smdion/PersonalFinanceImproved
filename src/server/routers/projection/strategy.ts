@@ -28,7 +28,7 @@ import {
   planRetirementAge as planRetirementAgeOf,
 } from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { strategySpending } from "@/lib/calculators/strategy-spending";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
@@ -80,6 +80,8 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/helpers/projection-cache";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -91,21 +93,11 @@ export const strategyRouter = createTRPCRouter({
   computeStrategyComparison: protectedProcedure
     .input(
       z
-        .object({
+        .strictObject({
           /** Simulation preset (the page's selector); the Default preset
            *  when absent. */
           preset: z.enum(SIMULATION_PRESET_KEYS).optional(),
-          contributionProfileId: z.number().int().optional(),
-          /** Optional Salary Profile — the independent "what if I earned X" axis. */
-          salaryProfileId: z.number().int().optional(),
-          /** View a non-active Retirement Profile (phase 4 assumptions band). */
-          retirementProfileId: z.number().int().optional(),
-          decumulationBudgetProfileId: z.number().int().optional(),
-          decumulationBudgetColumn: z.number().int().min(0).optional(),
-          decumulationExpenseOverride: z.number().min(0).optional(),
-          accumulationBudgetProfileId: z.number().int().optional(),
-          accumulationBudgetColumn: z.number().int().min(0).optional(),
-          accumulationExpenseOverride: z.number().min(0).optional(),
+          selection: profileSelectionSchema.optional(),
           snapshotId: z.number().int().optional(),
           /** Bypass the projection cache and force a fresh comparison — the explicit "Refresh" action, not the default query path. */
           forceRefresh: z.boolean().optional(),
@@ -113,6 +105,7 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -132,22 +125,14 @@ export const strategyRouter = createTRPCRouter({
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input?.snapshotId,
-          contributionProfileId: input?.contributionProfileId,
-          salaryProfileId: input?.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input?.contributionProfileId,
-        salaryProfileId: input?.salaryProfileId,
-        accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input?.accumulationBudgetColumn,
-        accumulationExpenseOverride: input?.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input?.decumulationBudgetColumn,
-        decumulationExpenseOverride: input?.decumulationExpenseOverride,
-        retirementProfileId: input?.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { strategies: [], activeStrategy: null };
       if (payload.notConfigured)
@@ -239,8 +224,7 @@ export const strategyRouter = createTRPCRouter({
       // routing mode for the life of the cached row. Every other cache
       // site in this codebase (scenarios.ts, monte-carlo.ts, coast-fire.ts)
       // hashes the full built engine input; this was the one exception.
-      // No PROJECTION_CACHE_ENGINE_VERSION bump — the hash change
-      // self-invalidates every existing row; they simply orphan and evict.
+      // A changed input hash misses every older row; they orphan and evict.
       const inputHash = hashEngineInput("strategyComparison", {
         baseEngineInput,
         mcBaseEngineInput,
@@ -316,7 +300,7 @@ export const strategyRouter = createTRPCRouter({
                   ...saved,
                 },
                 numTrials: 200,
-                seed: 42,
+                seed: COMPARISON_SEED,
                 assetClasses: mcAssetClasses,
                 correlations: mcCorrelations,
                 glidePath: mcGlidePath,
@@ -405,24 +389,17 @@ export const strategyRouter = createTRPCRouter({
     .use(expensiveRateLimitMiddleware)
     .input(
       z
-        .object({
+        .strictObject({
           /** Simulation preset (the page's selector); the Default preset
            *  when absent. */
           preset: z.enum(SIMULATION_PRESET_KEYS).optional(),
-          contributionProfileId: z.number().int().optional(),
-          /** Optional Salary Profile — the independent "what if I earned X" axis. */
-          salaryProfileId: z.number().int().optional(),
-          accumulationBudgetProfileId: z.number().int().optional(),
-          accumulationBudgetColumn: z.number().int().min(0).optional(),
-          accumulationExpenseOverride: z.number().min(0).optional(),
-          decumulationBudgetProfileId: z.number().int().optional(),
-          decumulationBudgetColumn: z.number().int().min(0).optional(),
-          decumulationExpenseOverride: z.number().min(0).optional(),
+          selection: profileSelectionSchema.optional(),
           snapshotId: z.number().int().optional(),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -442,21 +419,14 @@ export const strategyRouter = createTRPCRouter({
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input?.snapshotId,
-          contributionProfileId: input?.contributionProfileId,
-          salaryProfileId: input?.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
       const payloadOpts = {
-        contributionProfileId: input?.contributionProfileId,
-        salaryProfileId: input?.salaryProfileId,
-        accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input?.accumulationBudgetColumn,
-        accumulationExpenseOverride: input?.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input?.decumulationBudgetColumn,
-        decumulationExpenseOverride: input?.decumulationExpenseOverride,
+        ...profiles,
       };
       const payload = await buildEnginePayload(ctx.db, data, payloadOpts);
       if (!payload)
@@ -535,7 +505,7 @@ export const strategyRouter = createTRPCRouter({
       const baselineMc = await runMonteCarloOffThread({
         engineInput: mcBaseEngineInput,
         numTrials: 200,
-        seed: 42,
+        seed: COMPARISON_SEED,
         assetClasses: mcAssetClasses,
         correlations: mcCorrelations,
         glidePath: mcGlidePath,
@@ -780,7 +750,7 @@ export const strategyRouter = createTRPCRouter({
         const variantMc = await runMonteCarloOffThread({
           engineInput: variantInput,
           numTrials: 200,
-          seed: 42,
+          seed: COMPARISON_SEED,
           assetClasses: mcAssetClasses,
           correlations: mcCorrelations,
           glidePath: mcGlidePath,

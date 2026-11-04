@@ -12,7 +12,7 @@
  */
 
 import { DEFAULT_SIMULATION } from "@/lib/constants";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import {
   formatCurrency,
   formatPercent,
@@ -28,28 +28,19 @@ type CoastFireInput = Parameters<
   typeof trpc.projection.computeCoastFire.useQuery
 >[0];
 
-type CoastFireMcResult = {
-  coastFireAge: number | null;
-  status: "already_coast" | "found" | "unreachable";
-  successRate: number;
-  /** MC success rate for stopping contributions today (vs successRate which
-   *  is measured at the found age). Used to surface the deterministic/MC
-   *  divergence on the card: when deterministic says "already" but MC says
-   *  "found at later age," stopNowSuccessRate is the rate at today. */
-  stopNowSuccessRate: number;
-  /** % of stop-now trials that failed specifically because penalty-exposed
-   *  money was excluded rather than the
-   *  household genuinely running out — surfaced so a low stopNowSuccessRate
-   *  isn't read as "you'll be broke" when it actually means "your money is
-   *  there but locked until 59½." */
-  stopNowPenaltyAvoidedShortfallRate: number;
-  /** Median dollar shortfall (today's dollars) among stop-now trials that
-   *  hit a penalty-avoided shortfall — "how much," not just "how often." */
-  stopNowMedianPenaltyAvoidedShortfallPV: number;
-  spendingStabilityRate: number;
-  confidenceThreshold: number;
-  warning: string | null;
-};
+/** The part of computeCoastFireMC's result the card reads. */
+type CoastFireMcResult = Pick<
+  NonNullable<RouterOutputs["projection"]["computeCoastFireMC"]["result"]>,
+  | "coastFireAge"
+  | "status"
+  | "successRate"
+  | "stopNowSuccessRate"
+  | "stopNowPenaltyAvoidedShortfallRate"
+  | "stopNowMedianPenaltyAvoidedShortfallPV"
+  | "spendingStabilityRate"
+  | "confidenceThreshold"
+  | "warning"
+>;
 
 /** Below this fraction of stop-now trials hitting a penalty-avoided
  *  shortfall, the "why stopping today fails" explanation isn't worth

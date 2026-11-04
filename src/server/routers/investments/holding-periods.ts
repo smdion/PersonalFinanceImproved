@@ -26,14 +26,12 @@ import { inferSecurityKind } from "@/lib/pure/simplefin-holdings";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toFactRows } from "@/server/helpers/fund-facts";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
-import { localDateStr } from "@/lib/utils/date";
 import {
   loadEnteredPeriods,
   loadHoldingSplits,
   loadObservedPeriods,
 } from "./_shared";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 const PROBLEM_TEXT: Record<string, string> = {
   weightsDontSum: "The funds' shares must add up to 100%",
@@ -132,7 +130,7 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
             .where(inArray(schema.securityFacts.securityId, ids))
         : Promise.resolve([]),
     ]);
-    const today = localDateStr();
+    const today = ctx.scope.today;
     return {
       accounts: [...names.entries()].map(([id, label]) => ({
         id,

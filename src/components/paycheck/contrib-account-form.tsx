@@ -73,12 +73,10 @@ export type ContribAccountFormValues = {
   isPayrollDeducted: boolean | null;
 };
 
-const FIRST_TYPE = getAllCategories()[0]!;
-
 function defaultsFor(
   overrides?: Partial<ContribAccountFormValues>,
 ): ContribAccountFormValues {
-  const accountType = overrides?.accountType ?? FIRST_TYPE;
+  const accountType = overrides?.accountType ?? getAllCategories()[0]!;
   return {
     personId: null,
     jobId: null,

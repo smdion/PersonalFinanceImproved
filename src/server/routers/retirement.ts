@@ -1,11 +1,11 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
 import { householdRetirementYear } from "@/server/helpers/retirement-profile";
-import { getStrategyMeta } from "@/lib/config/withdrawal-strategies";
 import {
   capResolvedProfile,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
 import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
+import { returnFilingStatusSchema } from "@/lib/config/filing-status.schema";
 import type { CapPassed } from "@/lib/pure/contribution-caps";
 import {
   redundantReturnRateIds,
@@ -15,6 +15,10 @@ import { assertNoPlanUses } from "@/server/helpers/plans";
 import { eq, ne, asc, and, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
+import {
+  storedWithdrawalOrderSchema,
+  storedWithdrawalSplitsSchema,
+} from "@/lib/pure/engine";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
   createTRPCRouter,
@@ -37,10 +41,9 @@ import {
   resolveProfile,
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
-  resolveActiveProfilePair,
 } from "@/server/helpers";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { getAllPeople } from "@/server/helpers/people";
-import type { Db } from "@/server/helpers";
 import {
   aggregateContributionsByCategory,
   type ContribRowWithActiveFields,
@@ -48,10 +51,9 @@ import {
 import {
   isRetirementParent,
   tracksCostBasis,
-  accountCategoryEnum,
   type AccountCategory,
 } from "@/lib/config/account-types";
-import { getAge } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   filterActiveJobs,
@@ -59,6 +61,7 @@ import {
 } from "@/lib/pure/profiles";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
+import { strategyParamInputShape } from "@/lib/config/withdrawal-strategy-inputs";
 import { zDecimal } from "./settings/_shared";
 import {
   resolveRetirementProfileIdFrom,
@@ -67,12 +70,7 @@ import {
   adoptFirstRetirementProfile,
   lockFirstRetirementProfile,
 } from "@/server/helpers/retirement-profile";
-
-/** VPW's end age as its editor bounds it (config paramFields). */
-const VPW_END_AGE_FIELD = (() => {
-  const f = getStrategyMeta("vpw").paramFields.find((p) => p.key === "endAge");
-  return { min: f?.min ?? 90, max: f?.max ?? 110 };
-})();
+import type { Db } from "@/lib/db";
 
 // --- CRUD Zod schemas ---
 
@@ -106,79 +104,13 @@ const retirementSettingsInput = z.object({
   withdrawalRoutingMode: z
     .enum(["bracket_filling", "waterfall", "percentage"])
     .optional(),
-  /** Persisted household default for the withdrawal ORDER (Waterfall's
-   *  account sequence; also, filtered to Traditional accounts,
-   *  bracket_filling's Phase 1 order). Elements must be valid account
-   *  categories with no duplicates; a partial list is allowed — the engine
-   *  backfills any missing category via `ensureCompleteWithdrawalOrder`
-   *  (override-resolution.ts), so a strict full-permutation check here would
-   *  only add a way for the write to 400 with no read-path benefit (and go
-   *  unsatisfiable if `accountCategoryEnum()` and `getAllCategories()` ever
-   *  drift). `null` clears it back to `getDefaultDecumulationOrder()`; omit
-   *  the key to leave it unchanged. */
-  withdrawalOrder: z
-    .array(z.enum(accountCategoryEnum()))
-    .refine((arr) => new Set(arr).size === arr.length, {
-      message: "withdrawalOrder must not repeat an account category",
-    })
-    .nullable()
-    .optional(),
-  /** Persisted household default for percentage-mode splits — fractions per
-   *  account. A PARTIAL record is legal: a category absent from the record
-   *  resolves to 0 and the engine redistributes the shortfall
-   *  proportionally. `buildDecumulationDefaults` uses the stored record
-   *  wholesale (no merge with `DEFAULT_WITHDRAWAL_SPLITS`). `null` clears it
-   *  back to the default; omit the key to leave it unchanged. */
-  withdrawalSplits: z
-    .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
-    .refine(
-      // Loose guard only — a single-field rebalance transiently pushes the
-      // sum off 100%, and the engine redistributes any shortfall
-      // proportionally, so this rejects gross nonsense (all-zero, 10×
-      // fat-finger) without blocking normal editing. The UI shows an amber
-      // "should be 100%" hint for anything off.
-      (rec) => {
-        const sum = Object.values(rec).reduce((s, v) => s + v, 0);
-        return sum > 0.5 && sum < 1.5;
-      },
-      {
-        message: "withdrawalSplits values must be in the neighbourhood of 100%",
-      },
-    )
-    .nullable()
-    .optional(),
-  gkUpperGuardrail: zDecimal.optional(),
-  gkLowerGuardrail: zDecimal.optional(),
-  gkIncreasePct: zDecimal.optional(),
-  gkDecreasePct: zDecimal.optional(),
-  gkSkipInflationAfterLoss: z.boolean().optional(),
-  sdAnnualDeclineRate: zDecimal.optional(),
-  cpWithdrawalPercent: zDecimal.optional(),
-  cpFloorPercent: zDecimal.optional(),
-  enWithdrawalPercent: zDecimal.optional(),
-  enRollingYears: z.number().int().min(3).max(20).optional(),
-  enFloorPercent: zDecimal.optional(),
-  vdBasePercent: zDecimal.optional(),
-  vdCeilingPercent: zDecimal.optional(),
-  vdFloorPercent: zDecimal.optional(),
-  rmdMultiplier: zDecimal.optional(),
-  /** VPW: the most the percentage reaches, and the age the table runs to
-   *  (null = the config default). */
-  vpwCap: zDecimal.nullable().optional(),
-  vpwEndAge: z
-    .number()
-    .int()
-    .min(VPW_END_AGE_FIELD.min)
-    .max(VPW_END_AGE_FIELD.max)
-    .nullable()
-    .optional(),
-  /** Per portfolio-sized strategy: Social Security comes out of the
-   *  strategy's amount (true) or on top of it (false / null). */
-  cpSsInAmount: z.boolean().nullable().optional(),
-  enSsInAmount: z.boolean().nullable().optional(),
-  vdSsInAmount: z.boolean().nullable().optional(),
-  rmdSsInAmount: z.boolean().nullable().optional(),
-  vpwSsInAmount: z.boolean().nullable().optional(),
+  /** Persisted household default for the withdrawal ORDER. `null` clears it
+   *  back to `getDefaultDecumulationOrder()`; omit the key to leave it. */
+  withdrawalOrder: storedWithdrawalOrderSchema.nullable().optional(),
+  /** Persisted household default for percentage-mode splits. `null` clears
+   *  it back to the default; omit the key to leave it unchanged. */
+  withdrawalSplits: storedWithdrawalSplitsSchema.nullable().optional(),
+  ...strategyParamInputShape(),
   rmdExcessHandling: z.enum(["reinvest", "spend"]).optional(),
   /** Where reinvested RMD money goes — a Retirement brokerage's performance
    *  account; null = spread across the Retirement brokerages. */
@@ -200,7 +132,7 @@ const retirementSettingsInput = z.object({
   householdSize: z.number().int().min(1).max(HOUSEHOLD_SIZE_MAX).optional(),
   socialSecurityMonthly: zDecimal.optional(),
   ssStartAge: z.number().int().min(62).max(70).optional(),
-  filingStatus: z.enum(["MFJ", "Single", "HOH"]).nullable().optional(),
+  filingStatus: returnFilingStatusSchema.nullable().optional(),
 });
 
 // retirementScenarioInput removed with the retirementScenarios router
@@ -370,7 +302,7 @@ export const retirementRouter = createTRPCRouter({
           const labels = p.columnLabels as string[];
           const months = (p.columnMonths as number[] | null) ?? null;
           const numColumns = labels.length;
-          const activeProfiles = await resolveActiveProfilePair(ctx.db);
+          const activeProfiles = await resolveProfileSelection(ctx.scope);
           const resolvedItems = await resolveLinkedBudgetItemAmounts(
             ctx.db,
             items,
@@ -464,9 +396,8 @@ export const retirementRouter = createTRPCRouter({
       // When a historical snapshot is selected, use its date as the reference point
       const referenceDate = snapshotData?.snapshot.snapshotDate
         ? new Date(snapshotData.snapshot.snapshotDate)
-        : new Date();
-      // Age as of reference date (calendar-accurate via getAge)
-      const age = getAge(new Date(primaryPerson.dateOfBirth), referenceDate);
+        : ctx.scope.asOf;
+      const age = ageOnDate(primaryPerson.dateOfBirth, referenceDate);
 
       // Portfolio — only retirement-category accounts from latest balance snapshot
       let portfolioTotal = 0;

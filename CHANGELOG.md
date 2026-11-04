@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
+## [0.10.1] - 2026-11-04
+
+v0.10.1 reshapes how Ledgr's code knows things: each domain fact now has one definition that the rest of the code reads, instead of copies that can drift apart. No figure in the app changes; a test records every figure the app shows and stays identical through every change in this release.
+
+### Upgrading
+
+- **Pull the new image and restart.** No database changes.
+- **The first projection after the upgrade recomputes.** Cached projections and Simulation runs are now keyed by the code that computes them, so every release that changes that code starts with fresh results once. A Simulation's median can differ slightly from the last cached run (a new random draw), and the dashboard tile shows the projection's figure until the Retirement page runs the Simulation again.
+- **A filing status Ledgr doesn't recognise now stops the projection with an error** instead of computing with no withholding table. Ledgr only ever saves MFJ, Single or HOH, so this can only come from a hand-edited database or a restored backup with a bad value; fix the status on the Retirement Profile or the Taxes page.
+
+### Under the hood
+
+- **Lists defined once.** Account types, filing statuses, tax treatments, budget apps, pay periods, dollar views and permissions are each declared in one place and read everywhere; adding an account type no longer means editing hand-written copies of its list (a test adds a made-up type and checks it reaches the projection, Tax Buckets and every derived list).
+- **Filing status and ages:** the W-4 box and this year's return are separate types, and the W-4 stands in for the return in one named place. Age rules (catch-up, 65+, QCD, Medicare) live in one table with today's measures.
+- **One year's income and MAGI:** the projection reads income streams and each rule's MAGI (IRMAA, ACA, NIIT, senior deduction) from one definition.
+- **Contributions:** one yearly-amount function, one percent conversion, and three named states for a year's saving (contributing, paused, stopped) in place of a 0 that meant all three.
+- **Requests:** each request reads "now" once, and the projection and budget procedures take one profile selection instead of per-page tier objects.
+- **Budget apps:** YNAB and Actual are entries in one registry, and one test suite runs against both.
+- **Guards:** a new hand-written copy of a closed list, or a new plain-text field for an account type, category, tax type or filing status, now fails CI; commit rules (prefix, reason, size) block instead of warn.
+
+Counts: functions over 150 lines 306 → 304; lint suppressions 4,511 → 4,550 (4,367 without the 183 plain-text fields the new guard counts, so −144); `src/` 1,537 lines smaller.
+
 ## [0.10.0] - 2026-11-03
 
 > Rollup of everything since v0.9.0. For patch-level detail, see the v0.9.x entries below.

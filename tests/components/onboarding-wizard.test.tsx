@@ -7,49 +7,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-const mocks = vi.hoisted(() => ({
-  firstRun: {
-    data: undefined as { adminNeeded: boolean } | undefined,
-    isPending: false,
-  },
-  refetchAnswer: { adminNeeded: false },
-  createLocalAdmin: vi.fn(),
-  invalidate: vi.fn(),
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import {
+  mutationCalls,
+  queryRefetch,
+  resetTrpcMock,
+  setMutationError,
+  setMutationResult,
+  setQuery,
+  setQueryState,
+  utilsCalls,
+} from "./trpc-mock";
 
-vi.mock("@/lib/trpc", () => {
-  const mutation = () => ({ mutateAsync: vi.fn() });
-  return {
-    trpc: {
-      settings: {
-        firstRunState: {
-          useQuery: () => ({
-            ...mocks.firstRun,
-            refetch: async () => {
-              mocks.firstRun.data = mocks.refetchAnswer;
-              return { data: mocks.refetchAnswer };
-            },
-          }),
-        },
-        createLocalAdmin: {
-          useMutation: () => ({ mutateAsync: mocks.createLocalAdmin }),
-        },
-        testOidcConnection: {
-          useQuery: () => ({ data: undefined, isFetching: false }),
-        },
-        people: { create: { useMutation: mutation } },
-        jobs: { create: { useMutation: mutation } },
-        completeOnboarding: { useMutation: mutation },
-        taxDataSync: { setEnabled: { useMutation: mutation } },
-      },
-      salaryProfile: { update: { useMutation: mutation } },
-      sync: { syncAll: { useMutation: mutation } },
-      useUtils: () => ({
-        settings: { firstRunState: { invalidate: mocks.invalidate } },
-      }),
-    },
-  };
-});
+const FIRST_RUN = "settings.firstRunState";
+const CREATE_ADMIN = "settings.createLocalAdmin";
+/** What a refetch of the first-run state answers (and then shows). */
+let refetchAnswer = { adminNeeded: false };
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
@@ -70,14 +45,17 @@ function fillAdmin(container: HTMLElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.firstRun.data = undefined;
-  mocks.firstRun.isPending = false;
-  mocks.refetchAnswer = { adminNeeded: false };
+  resetTrpcMock();
+  refetchAnswer = { adminNeeded: false };
+  queryRefetch(FIRST_RUN).mockImplementation(async () => {
+    setQuery(FIRST_RUN, refetchAnswer);
+    return { data: refetchAnswer };
+  });
 });
 
 describe("OnboardingWizard Admin step", () => {
   it("skips the Admin step when an admin exists", () => {
-    mocks.firstRun.data = { adminNeeded: false };
+    setQuery(FIRST_RUN, { adminNeeded: false });
     render(<OnboardingWizard onComplete={() => {}} />);
     expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Get Started" }));
@@ -87,8 +65,8 @@ describe("OnboardingWizard Admin step", () => {
   });
 
   it("keeps the Admin step while the server says an admin is needed, then moves on", async () => {
-    mocks.firstRun.data = { adminNeeded: true };
-    mocks.createLocalAdmin.mockResolvedValueOnce({ id: 1 });
+    setQuery(FIRST_RUN, { adminNeeded: true });
+    setMutationResult(CREATE_ADMIN, { id: 1 });
     const { container } = render(<OnboardingWizard onComplete={() => {}} />);
     expect(screen.getByText("Step 1 of 6")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Get Started" }));
@@ -97,19 +75,22 @@ describe("OnboardingWizard Admin step", () => {
     fillAdmin(container);
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => expect(oidcHeading()).toBeInTheDocument());
-    expect(mocks.createLocalAdmin).toHaveBeenCalledWith({
-      name: "Robin",
-      email: "robin@example.com",
-      password: "Wizard-admin-pass-1",
-    });
-    expect(mocks.invalidate).toHaveBeenCalled();
+    expect(mutationCalls(CREATE_ADMIN)).toEqual([
+      {
+        name: "Robin",
+        email: "robin@example.com",
+        password: "Wizard-admin-pass-1",
+      },
+    ]);
+    expect(utilsCalls("settings.firstRunState.invalidate")).not.toHaveLength(0);
   });
 
   it("moves past the Admin step when the server refuses because one now exists", async () => {
     // Stale state (another tab, or a reload racing the create): the
     // server refuses, and its fresh answer says no admin is needed.
-    mocks.firstRun.data = { adminNeeded: true };
-    mocks.createLocalAdmin.mockRejectedValueOnce(
+    setQuery(FIRST_RUN, { adminNeeded: true });
+    setMutationError(
+      CREATE_ADMIN,
       new Error("A local admin account already exists."),
     );
     const { container } = render(<OnboardingWizard onComplete={() => {}} />);
@@ -123,7 +104,7 @@ describe("OnboardingWizard Admin step", () => {
   });
 
   it("waits for the server's answer before leaving Welcome", () => {
-    mocks.firstRun.isPending = true;
+    setQueryState(FIRST_RUN, { isPending: true });
     render(<OnboardingWizard onComplete={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Get Started" }));
     expect(

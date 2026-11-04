@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   toNumber,
   getPrimaryPerson,
-  getPeriodsPerYear,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
 } from "@/server/helpers/transforms";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 
 describe("toNumber", () => {
   it("parses numeric string", () => {

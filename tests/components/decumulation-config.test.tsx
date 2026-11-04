@@ -17,11 +17,11 @@ vi.mock("@/components/ui/help-tip", () => ({
 
 import { DecumulationConfig } from "@/components/cards/projection/decumulation-config";
 import {
+  getAllCategories,
   getDefaultDecumulationOrder,
   buildCategoryRecord,
   categoriesWithTaxPreference,
 } from "@/lib/config/account-types";
-import { ALL_CATEGORIES } from "@/components/cards/projection/utils";
 
 function baseProps(overrides: Record<string, unknown> = {}) {
   const withdrawalSplits = buildCategoryRecord(() => 0.25);
@@ -245,7 +245,7 @@ describe("DecumulationConfig", () => {
 
   it("updates a split value via setWithdrawalSplits when edited", () => {
     const setWithdrawalSplits = vi.fn();
-    const cat = ALL_CATEGORIES[0]!;
+    const cat = getAllCategories()[0]!;
     render(
       <DecumulationConfig
         {...baseProps({

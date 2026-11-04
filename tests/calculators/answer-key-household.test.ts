@@ -39,7 +39,10 @@ import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import { computePortfolioTotal } from "@/lib/pure/performance";
 import { inflateTarget } from "@/lib/pure/milestones.shared";
 import type { NetWorthInput, ProjectionInput } from "@/lib/calculators/types";
-import { withConsistentStart } from "./fixtures/engine-fixtures";
+import {
+  withConsistentStart,
+  makeAccumulationDefaults,
+} from "./fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -257,13 +260,11 @@ describe("household: Coast FIRE reads retirement money only", () => {
     };
     return withConsistentStart(
       withCapsAge({
-        accumulationDefaults: {
+        accumulationDefaults: makeAccumulationDefaults({
           contributionRate: 0.2,
-          routingMode: "waterfall",
-          accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
           accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
           taxSplits: { "401k": 0, ira: 0 },
-        },
+        }),
         decumulationDefaults: {
           withdrawalRate: 0.04,
           withdrawalRoutingMode: "waterfall",

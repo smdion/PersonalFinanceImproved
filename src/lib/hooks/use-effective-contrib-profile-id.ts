@@ -23,7 +23,7 @@ export function useEffectiveContribProfileId(): {
   const { profileId } = useEffectiveProfileId("contribution", {
     validIds: contribProfiles?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeContribProfileId,
+    activeProfileId: activeContribProfileId,
   });
   const contributionProfileId = profileId;
   return {

@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
 
 // Direct smoke test for src/components/cards/dashboard/retirement-card.tsx.
 // tests/components/dashboard.test.tsx mocks out all dashboard cards at the
@@ -26,7 +27,10 @@ vi.mock("@/lib/context/user-context", () => ({
 }));
 vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
   usePlanEngineInput: () => ({
-    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    input: {
+      selection: {},
+      decumulationDefaults: { withdrawalTaxPreference: {} },
+    },
     ready: true,
     ids: {
       contributionProfileId: null,
@@ -75,9 +79,13 @@ vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
   useYearEndTargetingInput: () => ({}),
 }));
 
-let milestoneInputs: unknown = undefined;
-let mcPeekData: unknown = { result: null };
-let coastFireMcPeekData: unknown = { result: null };
+const milestoneInputsAre = (
+  data: MockOutput<"milestones.computeInputs"> | undefined,
+) => setQuery("milestones.computeInputs", data);
+const mcPeekIs = (data: MockOutput<"projection.computeMonteCarloProjection">) =>
+  setQuery("projection.computeMonteCarloProjection", data);
+const coastFireMcPeekIs = (data: MockOutput<"projection.computeCoastFireMC">) =>
+  setQuery("projection.computeCoastFireMC", data);
 
 // A line of 0 puts every household over it, so the match is left out of the
 // totals by default — what the scope test below reads.
@@ -90,41 +98,31 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    milestones: {
-      computeInputs: { useQuery: () => ({ data: milestoneInputs }) },
-    },
-    projection: {
-      computeProjection: {
-        useQuery: () => ({
-          data: engineData,
-          isLoading: false,
-          isFetching: false,
-          error: null,
-        }),
-      },
-      computeCoastFire: {
-        useQuery: () => ({
-          data: { result: { status: "found", coastFireAge: 50 } },
-        }),
-      },
-      computeMonteCarloProjection: {
-        useQuery: () => ({ data: mcPeekData }),
-      },
-      computeCoastFireMC: {
-        useQuery: () => ({ data: coastFireMcPeekData }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { RetirementCard } from "@/components/cards/dashboard/retirement-card";
 
+beforeEach(() => {
+  resetTrpcMock();
+  milestoneInputsAre(undefined);
+  mcPeekIs({ result: null });
+  coastFireMcPeekIs({ result: null });
+  // A partial engine answer: only what the card reads.
+  setQuery(
+    "projection.computeProjection",
+    engineData as MockOutput<"projection.computeProjection">,
+  );
+  setQuery("projection.computeCoastFire", {
+    result: { status: "found", coastFireAge: 50 },
+  });
+});
+
 describe("RetirementCard dashboard cache-peek features", () => {
   it("shows nothing extra when neither peek query has cached data", () => {
-    mcPeekData = { result: null };
-    coastFireMcPeekData = { result: null };
+    mcPeekIs({ result: null });
+    coastFireMcPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.queryByText("Simulated success")).toBeNull();
     expect(
@@ -133,11 +131,11 @@ describe("RetirementCard dashboard cache-peek features", () => {
   });
 
   it("shows the MC confidence badge with a relative freshness label on a peek hit", () => {
-    mcPeekData = {
+    mcPeekIs({
       result: { successRate: 0.92, today: { percentileBands: [] } },
       simulationInputs: { computedAt: new Date().toISOString() },
-    };
-    coastFireMcPeekData = { result: null };
+    });
+    coastFireMcPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.getByText("Simulated success")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
@@ -150,10 +148,10 @@ describe("RetirementCard dashboard cache-peek features", () => {
   });
 
   it("shows the simulated Coast FIRE age next to the deterministic baseline", () => {
-    mcPeekData = { result: null };
-    coastFireMcPeekData = {
+    mcPeekIs({ result: null });
+    coastFireMcPeekIs({
       result: { status: "found", coastFireAge: 55 },
-    };
+    });
     render(<RetirementCard />);
     expect(screen.getByText("(simulated: 2041)")).toBeInTheDocument();
   });
@@ -164,7 +162,7 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
     // Inflation 0 so today's $ = nominal for the baseline; the card reads
     // the simulation's own today's-dollar bands (deflated per trial).
     engineData.settings.annualInflation = "0";
-    mcPeekData = {
+    mcPeekIs({
       result: {
         successRate: 0.9,
         percentileBands: [{ age: 65, year: 2051, p25: 1, p50: 2, p75: 3 }],
@@ -175,8 +173,8 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
         },
       },
       simulationInputs: { computedAt: new Date().toISOString() },
-    };
-    coastFireMcPeekData = { result: null };
+    });
+    coastFireMcPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.getByText("$620,000.00")).toBeInTheDocument();
     expect(screen.getByText(/simulated median/)).toBeInTheDocument();
@@ -186,8 +184,8 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
   });
 
   it("without a simulation: the labelled baseline and a pointer to run one", () => {
-    mcPeekData = { result: null };
-    coastFireMcPeekData = { result: null };
+    mcPeekIs({ result: null });
+    coastFireMcPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.getByText(/baseline — fixed returns/)).toBeInTheDocument();
     const prompt = screen.getByText(/Run a simulation on the Retirement page/);
@@ -202,8 +200,8 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
 
 describe("RetirementCard scope", () => {
   it("counts Retirement accounts only, like the Retirement page", () => {
-    mcPeekData = { result: null };
-    coastFireMcPeekData = { result: null };
+    mcPeekIs({ result: null });
+    coastFireMcPeekIs({ result: null });
     const saved = engineData.result.projectionByYear;
     const savedSpecs = (engineData as Record<string, unknown>)
       .contributionSpecs;
@@ -294,9 +292,9 @@ describe("RetirementCard readiness follows the household's checkpoint table", ()
   };
 
   it("uses Money Guy's liquid investments by default", () => {
-    mcPeekData = { result: null };
-    coastFireMcPeekData = { result: null };
-    milestoneInputs = { checkpointSource: "moneyGuy", years: [now] };
+    mcPeekIs({ result: null });
+    coastFireMcPeekIs({ result: null });
+    milestoneInputsAre({ checkpointSource: "moneyGuy", years: [now] });
     render(<RetirementCard />);
     // 600k / 200k = 3.0×
     expect(screen.getByText("3.0x")).toBeInTheDocument();
@@ -304,7 +302,7 @@ describe("RetirementCard readiness follows the household's checkpoint table", ()
   });
 
   it("uses Fidelity's retirement savings when chosen", () => {
-    milestoneInputs = { checkpointSource: "fidelity", years: [now] };
+    milestoneInputsAre({ checkpointSource: "fidelity", years: [now] });
     render(<RetirementCard />);
     // 450k / 200k = 2.25×
     expect(screen.getByText("2.3x")).toBeInTheDocument();

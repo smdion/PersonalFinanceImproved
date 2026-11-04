@@ -17,12 +17,8 @@ const { firstRunState } = vi.hoisted(() => ({
   firstRunState: vi.fn(async () => ({ adminNeeded: false })),
 }));
 vi.mock("@/server/helpers/first-run", () => ({ firstRunState }));
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    settings: {
-      createLocalAdmin: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { connection } from "next/server";

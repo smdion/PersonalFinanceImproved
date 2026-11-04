@@ -20,6 +20,11 @@ import {
   computeSpousalBenefit,
 } from "@/lib/calculators/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
+import {
+  FILING_STATUS_RULES,
+  filingTable,
+  parseReturnFilingStatus,
+} from "@/lib/config/filing-status";
 import { toNumber } from "@/server/helpers/transforms";
 import {
   SS_EARLIEST_CLAIMING_AGE_MONTHS,
@@ -59,8 +64,8 @@ export type SsEntryOverride = {
 
 /**
  * @param people          the household's per-person settings
- * @param filingStatus    used only to decide MFJ ⇒ spouses (MFJ + exactly
- *                        two people). Single/HOH/3+ never get spousal math.
+ * @param filingStatus    used only to decide spouses: a two-person return
+ *                        and exactly two people. Single/HOH/3+ never do.
  * @param ssStartAgeDelta shift every person's claiming age by this many
  *                        whole years (clamped to [62, 70]). 0 = use each
  *                        person's stored `ssStartAge` as-is. The strategy
@@ -98,7 +103,11 @@ export function buildSocialSecurityEntries(
       : parseAnnualPia(p.socialSecurityPia);
   };
 
-  const isMfjCouple = filingStatus === "MFJ" && people.length === 2;
+  const status = parseReturnFilingStatus(filingStatus);
+  const isMfjCouple =
+    status !== null &&
+    filingTable(FILING_STATUS_RULES, status).peopleOnReturn === 2 &&
+    people.length === 2;
 
   return people.map((ps, i) => {
     const startAge = shiftedStartAge(ps);

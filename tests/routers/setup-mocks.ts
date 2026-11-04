@@ -26,36 +26,54 @@ vi.mock("next/server", () => ({
 // Mock the auth function — we provide sessions directly via context
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
-  Permission: {},
   RBAC_ADMIN_GROUP_KEY: "rbac_admin_group",
   RBAC_SETTINGS_PREFIX: "rbac_group_",
-  ALL_PERMISSIONS: [
-    "scenario",
-    "portfolio",
-    "performance",
-    "budget",
-    "savings",
-    "brokerage",
-    "version",
-    "contributionProfile",
-    "sync",
-  ],
 }));
 
 // Mock the db module — we provide our own SQLite db via context.
-// The mock db needs a minimal insert() chain for the change_log middleware
-// in trpc.ts which uses the top-level db import (not ctx.db) to log mutations.
-const noopChain = {
-  values: () => noopChain,
-  returning: () => noopChain,
-  then: (resolve: (v: unknown) => void) => resolve([]),
-  catch: () => noopChain,
-};
-vi.mock("@/lib/db", () => ({
-  db: {
+// The change_log middleware in trpc.ts (logMutation) writes through the
+// top-level db import, not ctx.db, so the mocked `db` forwards to the db of
+// the suite's latest createTestCaller (setTopLevelTestDb): an audit row a
+// mutation writes, or should not write, is visible in the test's database.
+// With no test db open it is a no-op insert chain.
+const topLevelDb = vi.hoisted(() => {
+  const noopChain: Record<string, unknown> = {
+    values: () => noopChain,
+    returning: () => noopChain,
+    then: (resolve: (v: unknown) => void) => resolve([]),
+    catch: () => noopChain,
+  };
+  const noopDb = {
     insert: () => noopChain,
     select: () => ({ from: () => noopChain }),
-  },
+  };
+  return { noopDb, current: null as object | null };
+});
+
+/** Point the mocked top-level `db` at a test database. */
+export function setTopLevelTestDb(testDb: object): void {
+  topLevelDb.current = testDb;
+}
+
+/** Back to the no-op when `testDb` is the current one (it is closing). */
+export function releaseTopLevelTestDb(testDb: object): void {
+  if (topLevelDb.current === testDb) topLevelDb.current = null;
+}
+
+vi.mock("@/lib/db", () => ({
+  db: new Proxy(
+    {},
+    {
+      get: (_target, key) => {
+        const target = (topLevelDb.current ?? topLevelDb.noopDb) as Record<
+          PropertyKey,
+          unknown
+        >;
+        const value = target[key];
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    },
+  ),
   pool: null,
   isPostgres: () => false,
   isSQLite: () => true,

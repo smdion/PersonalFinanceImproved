@@ -3,12 +3,12 @@ import { useCallback } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import {
   buildCategoryRecord,
+  getAllCategories,
   getDefaultAccumulationOrder,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
 import type { AccumOverride, DecumOverride } from "./types";
 import { emptyAccumForm, emptyDecumForm } from "./types";
-import { ALL_CATEGORIES } from "./utils";
 import { useProjectionFormState } from "./use-projection-form-state";
 import { useProjectionQueries } from "./use-projection-queries";
 import { useProjectionDerived } from "./use-projection-derived";
@@ -135,7 +135,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
         () => 0,
       );
       let hasSplits = false;
-      for (const cat of ALL_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (form.accumForm.accountSplits[cat] !== "") {
           splits[cat] = parseFloat(form.accumForm.accountSplits[cat]) / 100;
           hasSplits = true;
@@ -151,7 +151,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
         () => 0,
       );
       let hasCaps = false;
-      for (const cat of ALL_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (form.accumForm.accountCaps[cat] !== "") {
           caps[cat] = parseFloat(form.accumForm.accountCaps[cat]);
           hasCaps = true;
@@ -237,7 +237,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
         () => 0,
       );
       let hasWSplits = false;
-      for (const cat of ALL_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (form.decumForm.withdrawalSplits[cat] !== "") {
           wsplits[cat] = parseFloat(form.decumForm.withdrawalSplits[cat]) / 100;
           hasWSplits = true;
@@ -245,7 +245,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       }
       if (hasWSplits) o.withdrawalSplits = wsplits;
       const prefs: Record<string, "traditional" | "roth"> = {};
-      for (const cat of ALL_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (form.decumForm.withdrawalTaxPreference[cat] !== "") {
           prefs[cat] = form.decumForm.withdrawalTaxPreference[cat] as
             "traditional" | "roth";
@@ -256,7 +256,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
         () => 0,
       );
       let hasWCaps = false;
-      for (const cat of ALL_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (form.decumForm.withdrawalAccountCaps[cat] !== "") {
           caps[cat] = parseFloat(form.decumForm.withdrawalAccountCaps[cat]);
           hasWCaps = true;

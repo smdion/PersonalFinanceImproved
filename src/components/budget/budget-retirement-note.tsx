@@ -28,9 +28,7 @@ export function BudgetRetirementNote() {
     const label = (p.columnLabels as string[] | null)?.[column];
     return `${p.name}${label ? ` · ${label}` : ""}${yearly != null ? ` (${formatCurrency(yearly)} a year)` : ""}`;
   };
-  const setBefore = (
-    engineInput as { accumulationExpenseOverride?: number } | undefined
-  )?.accumulationExpenseOverride;
+  const setBefore = engineInput?.selection.accumulationBudget?.annualExpenses;
   const before =
     setBefore != null
       ? `${formatCurrency(setBefore)} a year (an amount you set)`
@@ -40,7 +38,7 @@ export function BudgetRetirementNote() {
           data.accumulationExpenses,
         );
   // An amount set on Retirement replaces the budget for that phase.
-  const setAfter = engineInput?.decumulationExpenseOverride;
+  const setAfter = engineInput?.selection.decumulationBudget?.annualExpenses;
   const after =
     setAfter != null
       ? `${formatCurrency(setAfter)} a year (an amount you set)`

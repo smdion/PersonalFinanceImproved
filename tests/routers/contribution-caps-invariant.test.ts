@@ -29,7 +29,7 @@ import { applyContributionAccountEdit } from "@/server/helpers/contribution";
 import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
-import type { Db } from "@/server/helpers/transforms";
+import type { Db } from "@/lib/db";
 
 const FIXED_NOW = new Date("2026-04-14T12:00:00Z");
 const LIMIT = 24500;

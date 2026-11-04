@@ -21,14 +21,15 @@ import type {
 } from "@/lib/calculators/types";
 import {
   getAccountSegments,
-  getSegmentBalance,
   getAllCategories,
   getAccountTypeConfig,
   getDisplayConfig,
   ACCOUNT_TYPE_CONFIG,
   isPreTaxType,
   isTaxFreeBucket,
+  isOverflowTarget,
 } from "@/lib/config/account-types";
+import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import {
@@ -54,7 +55,7 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
-import { gapShortfallFloor } from "@/lib/calculators/engine";
+import { shortfallFloor } from "@/lib/calculators/engine";
 import {
   buildEligibilityNote,
   ownerAccountLabel,
@@ -404,9 +405,7 @@ export function AccumulationRow({
         <>
           {getAllCategories()
             .filter(
-              (c) =>
-                !ACCOUNT_TYPE_CONFIG[c].isOverflowTarget &&
-                visibleColumns.contribCats.has(c),
+              (c) => !isOverflowTarget(c) && visibleColumns.contribCats.has(c),
             )
             .map((cat) => {
               const slot = slotMap.get(cat);
@@ -561,9 +560,7 @@ export function AccumulationRow({
             })}
           {getAllCategories()
             .filter(
-              (c) =>
-                ACCOUNT_TYPE_CONFIG[c].isOverflowTarget &&
-                visibleColumns.contribCats.has(c),
+              (c) => isOverflowTarget(c) && visibleColumns.contribCats.has(c),
             )
             .map((ofCat) => {
               const bSlot = slotMap.get(ofCat);
@@ -892,7 +889,7 @@ export function AccumulationRow({
             for (const sbCat of getAllCategories().filter(
               (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
             )) {
-              const isOF = ACCOUNT_TYPE_CONFIG[sbCat]?.isOverflowTarget;
+              const isOF = isOverflowTarget(sbCat);
               const sbSlot = yr.slots.find((s) => s.category === sbCat);
               if (sbSlot && sbSlot.employeeContrib > 0) {
                 bucketTotals.push({
@@ -992,7 +989,7 @@ export function AccumulationRow({
             header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
             meta: gapScoped ? undefined : gapMeta,
             shortfall:
-              gap && !gapScoped && gap.unmetNeed >= gapShortfallFloor(gap.need)
+              gap && !gapScoped && gap.unmetNeed >= shortfallFloor(gap.need)
                 ? { amount: deflate(gap.unmetNeed, yr.year) }
                 : undefined,
             withdrawals:

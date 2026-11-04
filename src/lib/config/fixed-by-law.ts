@@ -17,13 +17,12 @@ import {
   HSA_NON_MEDICAL_PENALTY_AGE,
   HSA_NON_MEDICAL_PENALTY_RATE,
   PENALTY_FREE_AGE,
-  QCD_MIN_ELIGIBILITY_AGE,
   RMD_EXCISE_TAX_RATE,
   ROTH_CONVERSION_SEASONING_YEARS,
   RULE_OF_55_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
-  MEDICARE_START_AGE,
 } from "@/lib/constants";
+import { AGE_RULES } from "./age-rules";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "./niit";
 import {
   SS_TAX_THRESHOLDS,
@@ -42,6 +41,7 @@ import {
   getFullRetirementAge,
 } from "./social-security";
 import { ACCOUNT_TYPE_CONFIG } from "./account-types";
+import type { FilingStatusKey } from "./filing-status";
 
 type FixedByLawItem = {
   label: string;
@@ -56,7 +56,7 @@ const pct = (r: number) =>
   formatPercent(r, Number.isInteger(Math.round(r * 1e6) / 1e4) ? 0 : 1);
 /** 59.5 → "59½". */
 const age = (a: number) => (a % 1 === 0.5 ? `${Math.floor(a)}½` : `${a}`);
-const byStatus = (t: { MFJ: number; Single: number; HOH: number }) =>
+const byStatus = (t: Record<FilingStatusKey, number>) =>
   `${money(t.MFJ)} married filing jointly · ${money(t.Single)} single · ${money(t.HOH)} head of household`;
 const fra = (y: number) => {
   const f = getFullRetirementAge(y);
@@ -162,7 +162,7 @@ export function fixedByLawGroups(): FixedByLawGroup[] {
         },
         {
           label: "Medicare (and IRMAA) from",
-          value: `${MEDICARE_START_AGE}`,
+          value: `${AGE_RULES.medicare.age}`,
           citation: "Social Security Act §226",
         },
         {
@@ -172,7 +172,7 @@ export function fixedByLawGroups(): FixedByLawGroup[] {
         },
         {
           label: "Charitable distributions (QCDs) from IRAs",
-          value: `70½ (Ledgr counts from the year you turn ${QCD_MIN_ELIGIBILITY_AGE})`,
+          value: `70½ (Ledgr counts from the year you turn ${AGE_RULES.qcd.age})`,
           citation: "IRC §408(d)(8)(B)(ii)",
         },
         {

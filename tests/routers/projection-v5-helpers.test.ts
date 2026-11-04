@@ -8,6 +8,7 @@ import {
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { clearSimulationPresets } from "../helpers/db-harness";
+import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";
 
 /**
  * Unit tests for the projection-v5-helpers module. These helpers were
@@ -137,9 +138,8 @@ describe("runStressTestScenarios (M2)", () => {
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
   > {
     return withCapsAge({
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.15,
-        routingMode: "waterfall",
         accountOrder: ["401k", "hsa", "ira", "brokerage"],
         accountSplits: {
           "401k": 0.5,
@@ -148,8 +148,7 @@ describe("runStressTestScenarios (M2)", () => {
           ira: 0.1,
           brokerage: 0.3,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       currentAge: 35,
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,

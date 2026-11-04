@@ -10,7 +10,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatCurrency } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { previousTradingDay } from "@/lib/pure/market-calendar";
 import { LoadingCard } from "./utils";

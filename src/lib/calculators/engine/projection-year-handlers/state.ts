@@ -14,6 +14,7 @@ import { buildSpecToAccountMapping } from "../individual-account-tracking";
 import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
+import type { YearIncome } from "@/lib/pure/tax/year-income";
 
 /**
  * Initialize mutable projection state from input and context.
@@ -64,8 +65,8 @@ export function buildProjectionState(
   // Spending strategy cross-year state
   const spendingState = initialCrossYearState();
 
-  // IRMAA 2-year lookback
-  const magiHistory: number[] = [];
+  // Each decumulation year's income, for the IRMAA and senior-deduction lookbacks
+  const incomeHistory: YearIncome[] = [];
 
   // Individual account balances
   const indBal = new Map<string, number>();
@@ -135,7 +136,7 @@ export function buildProjectionState(
     activeEmployerMatchByParentCat,
     accumulationDefaults,
     spendingState,
-    magiHistory,
+    incomeHistory,
     rmdNoOwnerWarned: false,
     decumulationExpensesSet: false,
     firstOverflowYear: null,

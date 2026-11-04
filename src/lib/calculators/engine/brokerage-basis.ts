@@ -21,14 +21,14 @@ import { roundToCents } from "../../utils/math";
 import {
   getAccountTypeConfig,
   isRetirementMoney,
-  setBasis,
 } from "../../config/account-types";
+import { setBasis } from "../../config/account-balance";
 import type {
   AccountBalances,
   IndividualAccountInput,
   TaxBuckets,
 } from "../types";
-import type { IndKeyFn } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 export type BrokerageBasis = Map<string, number>;
 

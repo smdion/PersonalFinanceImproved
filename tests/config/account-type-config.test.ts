@@ -14,10 +14,6 @@ import {
   getLimitGroup,
   getParentCategory,
   getDisplayGroup,
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
-  getBasis,
   getAccountSegments,
   parseColumnKey,
   getColumnLabel,
@@ -31,9 +27,18 @@ import {
   isDiscountBasisEmployerContrib,
   tracksRothBasis,
   type AccountCategory,
-  type AccountBalance,
   isPreTaxTreatment,
+  isHsaCategory,
+  isIraCategory,
+  isRuleOf55EligibleCategory,
 } from "@/lib/config/account-types";
+import { type AccountBalance } from "@/lib/config/account-types.types";
+import {
+  getTraditionalBalance,
+  getRothBalance,
+  getTotalBalance,
+  getBasis,
+} from "@/lib/config/account-balance";
 import {
   CONTRIBUTION_METHOD_LABELS,
   CONTRIBUTION_METHOD_LABELS_SHORT,
@@ -134,14 +139,9 @@ describe("getAllCategories", () => {
     expect(getAllCategories()).toContain("brokerage");
   });
 
-  // `accountCategoryEnum()` (a hardcoded literal tuple in
-  // account-types.types.ts) and `getAllCategories()` (derived from
-  // ACCOUNT_TYPE_CONFIG's keys) are independent sources of truth. Zod
-  // schemas that use the enum for element type AND getAllCategories() for a
-  // completeness check (retirement.ts's `withdrawalOrder`) become
-  // unsatisfiable the moment the two disagree — add a config entry without
-  // the enum literal and every withdrawal-order save 400s. RULES.md's
-  // "adding an account type = one config entry" makes that an easy mistake.
+  // Zod schemas use the enum for the element type and getAllCategories()
+  // for a completeness check (retirement.ts's `withdrawalOrder`): if the two
+  // disagreed, every withdrawal-order save would be rejected.
   it("agrees exactly with accountCategoryEnum()", () => {
     expect([...accountCategoryEnum()].sort()).toEqual(
       [...getAllCategories()].sort(),
@@ -394,6 +394,37 @@ describe("defaults", () => {
     }
   });
 
+  // The config's `decumulationRank` and `defaultWithdrawalSplit` give
+  // these pinned orders and splits.
+  it("derived orders and splits equal the pinned literals", () => {
+    const ranks = getAllCategories().map(
+      (c) => ACCOUNT_TYPE_CONFIG[c].decumulationRank,
+    );
+    expect(new Set(ranks).size).toBe(ranks.length);
+    expect(getDefaultDecumulationOrder()).toEqual([
+      "401k",
+      "403b",
+      "ira",
+      "brokerage",
+      "hsa",
+    ]);
+    expect(accountCategoryEnum()).toEqual([
+      "401k",
+      "403b",
+      "ira",
+      "hsa",
+      "brokerage",
+    ]);
+    expect(DEFAULT_WITHDRAWAL_SPLITS).toStrictEqual({
+      "401k": 0.35,
+      "403b": 0,
+      ira: 0.25,
+      hsa: 0.1,
+      brokerage: 0.3,
+    });
+    expect(Object.keys(DEFAULT_WITHDRAWAL_SPLITS)).toEqual(getAllCategories());
+  });
+
   it("DEFAULT_WITHDRAWAL_SPLITS values sum to ~1", () => {
     const total = Object.values(DEFAULT_WITHDRAWAL_SPLITS).reduce(
       (a, b) => a + b,
@@ -485,24 +516,43 @@ describe("display labels", () => {
   });
 });
 
+describe("early-access behavior fields reproduce the identity branches", () => {
+  // Before the fields: IRA → 59½/Roth IRA rules and QCD, a Rule-of-55
+  // category → employer-plan rules, HSA → 20% non-medical penalty before 65.
+  it.each(getAllCategories())("%s", (cat) => {
+    const cfg = ACCOUNT_TYPE_CONFIG[cat];
+    const expected = isIraCategory(cat)
+      ? "ira_59_half"
+      : cat === "401k" || cat === "403b"
+        ? "employer_plan"
+        : isHsaCategory(cat)
+          ? "hsa_non_medical"
+          : "none";
+    expect(cfg.earlyAccessRule).toBe(expected);
+    expect(cfg.qcdEligible).toBe(isIraCategory(cat));
+    expect(cfg.nonMedicalPenaltyRate).toBe(isHsaCategory(cat) ? 0.2 : null);
+  });
+});
+
 describe("Roth ordering rules / Rule of 55 config (Tax Buckets tool)", () => {
   it("401k and 403b use pro-rata ordering and are Rule-of-55 eligible", () => {
     expect(ACCOUNT_TYPE_CONFIG["401k"].rothOrderingRules).toBe("pro_rata");
-    expect(ACCOUNT_TYPE_CONFIG["401k"].ruleOf55Eligible).toBe(true);
+    expect(isRuleOf55EligibleCategory("401k")).toBe(true);
     expect(ACCOUNT_TYPE_CONFIG["403b"].rothOrderingRules).toBe("pro_rata");
-    expect(ACCOUNT_TYPE_CONFIG["403b"].ruleOf55Eligible).toBe(true);
+    expect(isRuleOf55EligibleCategory("403b")).toBe(true);
   });
 
   it("ira uses basis-first ordering and has no Rule-of-55 equivalent", () => {
     expect(ACCOUNT_TYPE_CONFIG.ira.rothOrderingRules).toBe("basis_first");
-    expect(ACCOUNT_TYPE_CONFIG.ira.ruleOf55Eligible).toBe(false);
+    expect(isRuleOf55EligibleCategory("ira")).toBe(false);
   });
 
   it("hsa and brokerage have no Roth ordering concept and no Rule of 55", () => {
     expect(ACCOUNT_TYPE_CONFIG.hsa.rothOrderingRules).toBeNull();
-    expect(ACCOUNT_TYPE_CONFIG.hsa.ruleOf55Eligible).toBe(false);
+    expect(isRuleOf55EligibleCategory("hsa")).toBe(false);
     expect(ACCOUNT_TYPE_CONFIG.brokerage.rothOrderingRules).toBeNull();
-    expect(ACCOUNT_TYPE_CONFIG.brokerage.ruleOf55Eligible).toBe(false);
+    expect(isRuleOf55EligibleCategory("brokerage")).toBe(false);
+    expect(isRuleOf55EligibleCategory("not-a-category")).toBe(false);
   });
 
   it("tracksRothBasis mirrors tracksCostBasis for the roth_traditional structure", () => {

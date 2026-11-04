@@ -664,6 +664,7 @@ import { calculateProjection } from "@/lib/calculators/engine/projection";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },
@@ -710,13 +711,11 @@ function makeBaseProjection(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
       taxSplits: {},
-    },
+    }),
     decumulationDefaults: {
       ...DEFAULT_DECUMULATION,
       distributionTaxRates: {
@@ -994,16 +993,8 @@ describe("retirement projection edge cases", () => {
       retirementYear: 2025 + 30,
       projectionEndYear: 2025 + 35,
       currentSalary: 100_000,
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.1,
-        routingMode: "waterfall" as const,
-        accountOrder: [
-          "401k" as const,
-          "403b" as const,
-          "hsa" as const,
-          "ira" as const,
-          "brokerage" as const,
-        ],
         accountSplits: {
           "401k": 0,
           "403b": 0,
@@ -1012,7 +1003,7 @@ describe("retirement projection edge cases", () => {
           brokerage: 1,
         },
         taxSplits: {},
-      },
+      }),
     };
     const resultMid = calculateProjection(
       makeBaseProjection({ ...accInput, asOfDate: midYear }),

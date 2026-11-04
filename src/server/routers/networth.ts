@@ -201,7 +201,7 @@ export const networthRouter = createTRPCRouter({
       const homeImprovements = setting("current_home_improvements", 0);
 
       // Home values: market (estimated) and cost basis (purchase + improvements)
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
       const activeMortgage = getActiveMortgageLoan(mortgageLoans);
       const homeValueEstimated = activeMortgage
         ? toNumber(
@@ -319,7 +319,7 @@ export const networthRouter = createTRPCRouter({
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {
       const [yearEndHistory, people, mortgageLoansAll] = await Promise.all([
-        buildYearEndHistory(ctx.db, new Date(), {
+        buildYearEndHistory(ctx.db, ctx.scope.asOf, {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
         }),
@@ -381,7 +381,7 @@ export const networthRouter = createTRPCRouter({
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {
       const [yearEndHistory, people] = await Promise.all([
-        buildYearEndHistory(ctx.db, new Date(), {
+        buildYearEndHistory(ctx.db, ctx.scope.asOf, {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
         }),
@@ -743,7 +743,7 @@ export const networthRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { dateFrom, dateTo, useMarketValue } = input;
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
 
       // Fetch shared data needed for both dates
       const [mortgageLoans, extraPayments, settings, allSnapshots] =
@@ -1246,7 +1246,7 @@ export const networthRouter = createTRPCRouter({
           snapshotId: snapshot.id,
           snapshotDate: input.snapshotDate,
           mode: "create",
-          asOfDate: new Date(),
+          asOfDate: new Date(), // after the fetch
         });
 
         return { ...snapshot, apiSyncResult, apiPullResult };

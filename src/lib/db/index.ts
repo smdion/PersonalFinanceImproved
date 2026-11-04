@@ -67,3 +67,10 @@ import type * as pgSchema from "./schema-pg";
 
 export const db: NodePgDatabase<typeof pgSchema> = _db;
 export const pool = _pool;
+
+/** The app's database handle, PG-typed (see above). */
+export type Db = typeof db;
+
+/** `Db` or an open transaction handle — for code that must be able to run
+ *  inside a caller's `db.transaction(async (tx) => …)` as well as standalone. */
+export type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];

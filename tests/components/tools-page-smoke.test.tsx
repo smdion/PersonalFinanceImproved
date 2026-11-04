@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+} from "./trpc-mock";
 
 // Smoke test for the Tools (Relocation Analysis) page. Asserts the main
 // relocation form fields render, the projection comparison table header
 // renders, and the year-adjustments panel header renders. Exercises the
 // save-scenario mutation path.
-
-const saveMutate = vi.fn();
 
 vi.mock("@/lib/hooks/use-debounced-value", () => ({
   useDebouncedValue: <T,>(v: T) => v,
@@ -58,6 +62,17 @@ vi.mock("@/components/ui/button", () => ({
 }));
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 
+// columnTotals isn't in budget.listProfiles' output: kept as the test had it.
+const budgetProfiles = [
+  {
+    id: 1,
+    name: "Default",
+    isActive: true,
+    columnLabels: ["Base"],
+    columnTotals: [4000],
+  },
+];
+
 const mockRelocData = {
   budgetInfo: {
     profiles: [
@@ -104,8 +119,10 @@ const mockRelocData = {
       },
     ],
   },
-  currentContribProfile: null,
-  relocationContribProfile: null,
+  // Undefined, not null: the procedure's output has no null here (the card
+  // shows the contribution line only when there is one, either way).
+  currentContribProfile: undefined,
+  relocationContribProfile: undefined,
 };
 
 // useBudgetProfilesList reads the active Plan's pins from scenario context.
@@ -117,93 +134,46 @@ vi.mock("@/lib/context/scenario-context", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        appSettings: { list: { invalidate: vi.fn() } },
-      },
-      projection: {
-        relocationScenarios: { list: { invalidate: vi.fn() } },
-      },
-    }),
-    settings: {
-      // useBudgetProfilesList -> usePersistedSetting reads this.
-      appSettings: {
-        list: { useQuery: () => ({ data: [] }) },
-        upsert: { useMutation: () => ({ mutate: vi.fn() }) },
-      },
-    },
-    budget: {
-      listProfiles: {
-        useQuery: () => ({
-          data: [
-            {
-              id: 1,
-              name: "Default",
-              isActive: true,
-              columnLabels: ["Base"],
-              columnTotals: [4000],
-            },
-          ],
-        }),
-      },
-    },
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    projection: {
-      computeProjection: {
-        useQuery: () => ({
-          data: { people: [{ id: 1, name: "Alice", birthYear: 1990 }] },
-        }),
-      },
-      relocationScenarios: {
-        list: { useQuery: () => ({ data: [] }) },
-        save: {
-          useMutation: () => ({ mutate: saveMutate, isPending: false }),
-        },
-        delete: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-      computeRelocationFiProjection: {
-        useQuery: () => ({
-          data: {
-            currentBalanceAtRetirement: 1500000,
-            relocationBalanceAtRetirement: 1200000,
-            relocationFiTarget: 1150000,
-            isViableNow: false,
-            earliestRelocateAge: 50,
-            earliestRelocateYear: 2036,
-            recommendedPortfolioToRelocate: 900000,
-            projectionRows: [],
-            blendedRows: null,
-            blendedBalanceAtRetirement: null,
-            inflationRate: 0.035,
-            baseYear: 2026,
-          },
-          isPending: false,
-          isFetching: false,
-        }),
-      },
-    },
-    retirement: {
-      computeRelocationAnalysis: {
-        useQuery: () => ({ data: mockRelocData, isLoading: false }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 describe("ToolsPage smoke", () => {
   beforeEach(() => {
-    saveMutate.mockClear();
+    resetTrpcMock();
+    // useBudgetProfilesList -> usePersistedSetting reads this.
+    setQuery("settings.appSettings.list", []);
+    setQuery("budget.listProfiles", budgetProfiles);
+    setQuery("contributionProfile.list", []);
+    setQuery("salaryProfile.list", []);
+    setQuery("projection.computeProjection", {
+      people: [{ id: 1, name: "Alice", birthYear: 1990 }],
+    });
+    setQuery("projection.relocationScenarios.list", []);
+    setQuery("projection.computeRelocationFiProjection", {
+      currentBalanceAtRetirement: 1500000,
+      relocationBalanceAtRetirement: 1200000,
+      relocationFiTarget: 1150000,
+      isViableNow: false,
+      earliestRelocateAge: 50,
+      earliestRelocateYear: 2036,
+      recommendedPortfolioToRelocate: 900000,
+      projectionRows: [],
+      blendedRows: null,
+      blendedBalanceAtRetirement: null,
+      inflationRate: 0.035,
+      baseYear: 2026,
+    });
+    setQuery("retirement.computeRelocationAnalysis", mockRelocData);
+    // No write settles: the test reads that the save was sent.
+    for (const path of [
+      "settings.appSettings.upsert",
+      "contributionProfile.setActive",
+      "salaryProfile.setActive",
+      "projection.relocationScenarios.save",
+      "projection.relocationScenarios.delete",
+    ] as const)
+      holdMutation(path);
   });
 
   it("renders relocation form fields and key section headers", async () => {
@@ -244,6 +214,8 @@ describe("ToolsPage smoke", () => {
     const saveBtns = screen.getAllByRole("button", { name: /^Save$/i });
     fireEvent.click(saveBtns[saveBtns.length - 1]!);
 
-    expect(saveMutate).toHaveBeenCalled();
+    expect(
+      mutationCalls("projection.relocationScenarios.save"),
+    ).not.toHaveLength(0);
   });
 });

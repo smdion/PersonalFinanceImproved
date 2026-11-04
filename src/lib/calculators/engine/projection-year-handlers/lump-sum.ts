@@ -7,12 +7,14 @@ import type { IndividualAccountInput, LumpSum } from "../../types";
 import {
   getAccountTypeConfig,
   isRothType,
+  isRetirementMoney,
+} from "../../../config/account-types";
+import {
   addTraditional,
   addRoth,
   addBalance,
   addBasis,
-  isRetirementMoney,
-} from "../../../config/account-types";
+} from "../../../config/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import {
   portfolioFirst,

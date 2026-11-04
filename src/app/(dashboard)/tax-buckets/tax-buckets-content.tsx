@@ -31,6 +31,9 @@ import {
   tracksRothBasis,
 } from "@/lib/config/account-types";
 import { penaltyFreePrefixAmount } from "@/lib/pure/early-access";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import type { DollarBasis } from "@/lib/config/enum-values";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 // The pure type, not a tRPC-inferred one — inferRouterOutputs types
 // `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
@@ -110,8 +113,15 @@ function buildBuckets(entries: AccountEntry[]) {
   return { buckets, householdTotal, householdAccessible, householdLocked };
 }
 
-type BucketKey =
-  "traditional" | "rothIra" | "rothEmployer" | "brokerage" | "hsa";
+/** The page's buckets, in display order. */
+const BUCKET_KEYS = [
+  "traditional",
+  "rothIra",
+  "rothEmployer",
+  "brokerage",
+  "hsa",
+] as const;
+type BucketKey = (typeof BUCKET_KEYS)[number];
 
 const BUCKET_META: Record<BucketKey, { label: string; helpText?: string }> = {
   traditional: { label: "Traditional" },
@@ -173,7 +183,7 @@ export function TaxBucketsContent() {
   // deflating them would be a no-op at best and confusing at worst.
   // Mirrors the Retirement page's own "Today's $"/"Future $" toggle
   // (dollarMode "real"/"nominal") and default.
-  const [dollarMode, setDollarMode] = useState<"real" | "nominal">("real");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
 
   const { data, isLoading, error } =
     trpc.taxBuckets.computeBreakdown.useQuery();
@@ -182,16 +192,14 @@ export function TaxBucketsContent() {
   // does NOT fall back to "whatever's active" — the server has no default
   // profile to resolve to, so every contribution account silently gets $0
   // configured value and the whole target contribution overflows to
-  // brokerage. That's a real bug this page shipped with, caught by a wildly
-  // implausible "At Retirement" brokerage total.
-  const { queryInput: contribProfileQueryInput } =
-    useEffectiveContribProfileId();
-  const { queryInput: salaryProfileQueryInput } = useEffectiveSalaryProfileId();
+  // brokerage.
+  const { queryInput: contribPick } = useEffectiveContribProfileId();
+  const { queryInput: salaryPick } = useEffectiveSalaryProfileId();
   // Only fetched when the user actually switches to "At Retirement" — the
   // "now" view stays free of any projected bleed-through, and the page
   // doesn't pay for the heavier call on every visit.
   const projectionQuery = trpc.projection.computeProjection.useQuery(
-    { ...contribProfileQueryInput, ...salaryProfileQueryInput },
+    { selection: profileSelectionFrom({ ...contribPick, ...salaryPick }) },
     { enabled: view === "atRetirement" },
   );
 
@@ -263,14 +271,11 @@ export function TaxBucketsContent() {
     projectionSettings?.annualInflation != null
       ? Number(projectionSettings.annualInflation)
       : DEFAULT_INFLATION_RATE;
-  const baseYear = new Date().getFullYear();
-  const deflate = (amount: number) => {
-    if (dollarMode === "nominal") return amount;
-    if (!projection?.transitionYear) return amount;
-    const years = projection.transitionYear - baseYear;
-    if (years <= 0) return amount;
-    return amount / Math.pow(1 + inflationRate, years);
-  };
+  const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
+  const deflate = (amount: number) =>
+    dollarMode === "nominal" || !projection?.transitionYear
+      ? amount
+      : toTodaysDollars(amount, projection.transitionYear, deflator);
   const fmt = (amount: number) =>
     formatCurrency(view === "atRetirement" ? deflate(amount) : amount);
 
@@ -291,14 +296,6 @@ export function TaxBucketsContent() {
       </div>
     );
   }
-
-  const bucketOrder: BucketKey[] = [
-    "traditional",
-    "rothIra",
-    "rothEmployer",
-    "brokerage",
-    "hsa",
-  ];
 
   // Never merge the two views' entries — "At Retirement" only renders once
   // its own projection has actually resolved, so a stale "now" number can
@@ -460,7 +457,7 @@ export function TaxBucketsContent() {
 
       {/* Household-first bucket summary + expandable per-account detail */}
       {activeEntries !== null &&
-        bucketOrder.map((key) => {
+        BUCKET_KEYS.map((key) => {
           const b = buckets.get(key);
           if (!b || b.entries.length === 0) return null;
           const meta = BUCKET_META[key];
@@ -639,7 +636,7 @@ function AccountDetailRow({
           </Badge>
           <HelpTip
             text={
-              entry.ageThresholdStatus.thresholdAge === 65
+              isHsaCategory(entry.category)
                 ? "At 65, non-medical HSA withdrawals stop incurring the 20% penalty — ordinary income tax still applies. Qualified medical withdrawals are always penalty-free and tax-free at any age."
                 : "At 59½, retirement-account withdrawals become penalty-free generally. There's no Rule-of-55 equivalent for an IRA (only SEPP/72(t), not modeled here)."
             }

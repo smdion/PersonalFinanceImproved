@@ -39,23 +39,20 @@ vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
   useDashboardProjection: () => ({ data: undefined }),
 }));
 
-// Each click sends its own change; the server merges it (settings router).
-const mutate = vi.fn();
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    settings: {
-      appSettings: {
-        list: { useQuery: () => ({ data: [] }) },
-        setDismissal: {
-          useMutation: () => ({ mutate, isPending: false }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+} from "./trpc-mock";
+
+// Each click sends its own change; the server merges it (settings router).
+const DISMISS = "settings.appSettings.setDismissal";
+const dismissals = () =>
+  mutationCalls(DISMISS) as { id: string; value: unknown }[];
 
 async function renderPage() {
   const { RecommendationsContent } =
@@ -65,7 +62,10 @@ async function renderPage() {
 
 describe("RecommendationsContent", () => {
   beforeEach(() => {
-    mutate.mockClear();
+    resetTrpcMock();
+    setQuery("settings.appSettings.list", []);
+    // The writes never settle: the test reads what each click sent.
+    holdMutation(DISMISS);
   });
 
   it("viewers see the recommendations but no snooze or dismiss controls", async () => {
@@ -92,8 +92,8 @@ describe("RecommendationsContent", () => {
     };
     dismiss(0);
     dismiss(1);
-    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2));
-    expect(mutate.mock.calls.map(([c]) => c.id)).toEqual(["a", "b"]);
-    expect(mutate.mock.calls[0]![0].value).toMatchObject({ until: null });
+    await waitFor(() => expect(dismissals()).toHaveLength(2));
+    expect(dismissals().map((c) => c.id)).toEqual(["a", "b"]);
+    expect(dismissals()[0]!.value).toMatchObject({ until: null });
   });
 });

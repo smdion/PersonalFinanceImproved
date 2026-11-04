@@ -1,5 +1,5 @@
 /** Compare Plans — one column per picked Plan, figured with its profiles. */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
@@ -7,8 +7,7 @@ vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
   usePlanEngineInput: () => ({
     input: {
-      contributionProfileId: 20,
-      salaryProfileId: 10,
+      selection: { contribution: 20, salary: 10 },
       decumulationDefaults: {},
     },
     ready: true,
@@ -30,31 +29,32 @@ vi.mock("@/lib/hooks/use-plans", () => ({
 vi.mock("@/lib/hooks/use-budget-profiles-list", () => ({
   useBudgetProfilesList: () => ({ data: [{ id: 3, name: "Lean" }] }),
 }));
-const budgetQuery = vi.fn();
-const projectionQuery = vi.fn();
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [{ id: 2, name: "Max 401k" }] }) },
-    },
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [{ id: 1, name: "Raise" }] }) },
-    },
-    retirement: {
-      retirementProfiles: {
-        list: { useQuery: () => ({ data: [{ id: 4, name: "Retire 60" }] }) },
-      },
-    },
-    budget: {
-      computeActiveSummary: { useQuery: (i: unknown) => budgetQuery(i) },
-    },
-    projection: {
-      computeProjection: { useQuery: (i: unknown) => projectionQuery(i) },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { ComparePlans } from "@/components/plans/compare-plans";
+import { queryCalls, resetTrpcMock, setQuery } from "./trpc-mock";
+
+const BUDGET = "budget.computeActiveSummary";
+const PROJECTION = "projection.computeProjection";
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("contributionProfile.list", [{ id: 2, name: "Max 401k" }]);
+  setQuery("salaryProfile.list", [{ id: 1, name: "Raise" }]);
+  setQuery("retirement.retirementProfiles.list", [
+    { id: 4, name: "Retire 60" },
+  ]);
+});
+
+/** Each Plan's budget and projection answers. */
+function figures() {
+  setQuery(BUDGET, { netMonthlyIncome: 5000, weightedAnnualTotal: 48000 });
+  setQuery(PROJECTION, {
+    result: { sustainableWithdrawal: 80000, projectionByYear: [] },
+  });
+}
 
 const apply = { mutate: vi.fn(), isPending: false };
 const plan = {
@@ -86,32 +86,24 @@ describe("ComparePlans", () => {
       planInUse: null,
       apply,
     });
-    budgetQuery.mockReturnValue({
-      data: { netMonthlyIncome: 5000, weightedAnnualTotal: 48000 },
-      isLoading: false,
-    });
-    projectionQuery.mockReturnValue({
-      data: {
-        result: { sustainableWithdrawal: 80000, projectionByYear: [] },
-      },
-      isLoading: false,
-    });
+    figures();
     render(<ComparePlans />);
-    expect(budgetQuery).toHaveBeenCalledWith(
+    expect(queryCalls(BUDGET)).toContainEqual(
       expect.objectContaining({
         profileId: 3,
-        contributionProfile: expect.objectContaining({ localSelectionId: 2 }),
-        salaryProfile: expect.objectContaining({ localSelectionId: 1 }),
+        selection: { contribution: 2, salary: 1 },
       }),
     );
     // The dashboard's input, with this Plan's profiles where they differ.
-    expect(projectionQuery).toHaveBeenCalledWith(
+    expect(queryCalls(PROJECTION)).toContainEqual(
       expect.objectContaining({
         decumulationDefaults: {},
-        contributionProfileId: 2,
-        salaryProfileId: 1,
-        retirementProfileId: 4,
-        accumulationBudgetProfileId: 3,
+        selection: {
+          contribution: 2,
+          salary: 1,
+          retirement: 4,
+          accumulationBudget: { profileId: 3 },
+        },
       }),
     );
     expect(screen.getByText("Max 401k")).toBeInTheDocument();
@@ -120,7 +112,8 @@ describe("ComparePlans", () => {
     expect(screen.getByText("through the plan")).toBeInTheDocument();
   });
   it("the Plan in use runs exactly the dashboard's projection (same cached run)", () => {
-    projectionQuery.mockClear();
+    // The earlier test's answers stay registered, as they did before.
+    figures();
     plans.mockReturnValue({
       plans: [{ ...plan, salaryProfileId: 10, contributionProfileId: 20 }],
       activeIds: { salary: 10, contribution: 20, budget: 3, retirement: 4 },
@@ -128,9 +121,8 @@ describe("ComparePlans", () => {
       apply,
     });
     render(<ComparePlans />);
-    expect(projectionQuery).toHaveBeenCalledWith({
-      contributionProfileId: 20,
-      salaryProfileId: 10,
+    expect(queryCalls(PROJECTION)).toContainEqual({
+      selection: { contribution: 20, salary: 10 },
       decumulationDefaults: {},
     });
   });

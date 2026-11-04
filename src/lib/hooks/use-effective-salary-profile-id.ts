@@ -27,7 +27,7 @@ export function useEffectiveSalaryProfileId(): {
   const { profileId } = useEffectiveProfileId("salary", {
     validIds: salaryProfiles?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeSalaryProfileId,
+    activeProfileId: activeSalaryProfileId,
   });
   const salaryProfileId = profileId;
   return {

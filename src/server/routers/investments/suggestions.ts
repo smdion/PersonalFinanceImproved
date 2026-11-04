@@ -56,7 +56,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         .from(schema.performanceAccounts),
     ]);
     const { feeds, subs, snapshotDate, lastTransactionDay } = context;
-    const today = utcDayOf(new Date());
+    const today = utcDayOf(ctx.scope.asOf);
     const recentSince = addDays(today, -RECENT_ACTIVITY_DAYS);
     // Placing contributions uses this year's paycheck setup at a flat rate;
     // across a year end or a long gap that's no longer a fair estimate, so

@@ -30,7 +30,11 @@ import {
   getAllCategories,
   categoriesWithTaxPreference,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
+import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
+import {
+  strategyParamFields,
+  type StrategyParamColumn,
+} from "@/lib/config/withdrawal-strategies";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   fetchRetirementData,
@@ -39,11 +43,23 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+
+/** A settings row's strategy param columns, as stored. */
+function pickStrategyParamColumns<
+  T extends Partial<Record<StrategyParamColumn, unknown>>,
+>(row: T): Pick<T, StrategyParamColumn> {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the keys are exactly the param columns
+  return Object.fromEntries(
+    strategyParamFields().map((f) => [f.column, row[f.column]]),
+  ) as Pick<T, StrategyParamColumn>;
+}
 
 export const scenariosRouter = createTRPCRouter({
   /**
@@ -59,7 +75,7 @@ export const scenariosRouter = createTRPCRouter({
    */
   computeProjection: protectedProcedure
     .input(
-      z.object({
+      z.strictObject({
         // Accumulation defaults are derived from paycheck/contribution accounts on the server.
         // No client-side accumulation defaults input.
 
@@ -72,25 +88,7 @@ export const scenariosRouter = createTRPCRouter({
         // --- Decumulation overrides ---
         decumulationOverrides: decumulationOverrideSchema,
 
-        // --- Optional salary overrides from UI ---
-        // --- Optional contribution profile (overrides contribution accounts + salary) ---
-        contributionProfileId: z.number().int().optional(),
-        /** Optional Salary Profile — the independent "what if I earned X" axis. */
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile (phase 4 assumptions band) —
-         *  same "view without activating" contract as the two profile ids
-         *  above. Falls back to the household's globally-active profile
-         *  when omitted or when it names a profile that no longer exists. */
-        retirementProfileId: z.number().int().optional(),
-        // --- Phase-based budget selection (independent profile+column per phase) ---
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        /** Manual annual expense override for accumulation (bypasses budget profile). */
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        /** Manual annual expense override for decumulation (bypasses budget profile). */
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         /** When true, skip the heavy projection calculation and return only metadata (settings, expenses, budget profiles). */
         metadataOnly: z.boolean().default(false),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
@@ -106,21 +104,14 @@ export const scenariosRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
+        contributionProfileId: profiles.contributionProfileId,
+        salaryProfileId: profiles.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { result: null };
       // No return rate: a state, not an engine throw. Metadata (settings,
@@ -295,7 +286,7 @@ export const scenariosRouter = createTRPCRouter({
               : undefined);
           // Match to portfolio account display name using same cascade as engine
           const matchTaxType =
-            TAX_TREATMENT_TO_TAX_TYPE[rest.taxTreatment] ?? rest.taxTreatment;
+            portfolioTaxTypeOf(rest.taxTreatment) ?? rest.taxTreatment;
           const catAccts = accountBreakdownByCategory[rest.category] ?? [];
           const exactOwner = (a: {
             ownerPersonId?: number;
@@ -455,28 +446,7 @@ export const scenariosRouter = createTRPCRouter({
           withdrawalRoutingMode: settings.withdrawalRoutingMode,
           withdrawalOrder: settings.withdrawalOrder,
           withdrawalSplits: settings.withdrawalSplits,
-          gkUpperGuardrail: settings.gkUpperGuardrail,
-          gkLowerGuardrail: settings.gkLowerGuardrail,
-          gkIncreasePct: settings.gkIncreasePct,
-          gkDecreasePct: settings.gkDecreasePct,
-          gkSkipInflationAfterLoss: settings.gkSkipInflationAfterLoss,
-          sdAnnualDeclineRate: settings.sdAnnualDeclineRate,
-          cpWithdrawalPercent: settings.cpWithdrawalPercent,
-          cpFloorPercent: settings.cpFloorPercent,
-          enWithdrawalPercent: settings.enWithdrawalPercent,
-          enRollingYears: settings.enRollingYears,
-          enFloorPercent: settings.enFloorPercent,
-          vdBasePercent: settings.vdBasePercent,
-          vdCeilingPercent: settings.vdCeilingPercent,
-          vdFloorPercent: settings.vdFloorPercent,
-          rmdMultiplier: settings.rmdMultiplier,
-          vpwCap: settings.vpwCap,
-          vpwEndAge: settings.vpwEndAge,
-          cpSsInAmount: settings.cpSsInAmount,
-          enSsInAmount: settings.enSsInAmount,
-          vdSsInAmount: settings.vdSsInAmount,
-          rmdSsInAmount: settings.rmdSsInAmount,
-          vpwSsInAmount: settings.vpwSsInAmount,
+          ...pickStrategyParamColumns(settings),
           rmdExcessHandling: settings.rmdExcessHandling,
           rmdExcessTargetPerformanceAccountId:
             settings.rmdExcessTargetPerformanceAccountId,

@@ -19,12 +19,9 @@ import {
   getAllCategories,
   getAccountTypeConfig,
   buildCategoryRecord,
-  getEngineCategories,
-  DEFAULT_DECUMULATION_ORDER,
+  getDefaultDecumulationOrder,
 } from "../../config/account-types";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
-
-const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
 /**
  * Guarantee `withdrawalOrder` covers every engine category, appending any
@@ -48,7 +45,7 @@ const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
  * category in practice) without touching that separate, deliberately
  * partial test contract.
  *
- * Missing categories are appended in `DEFAULT_DECUMULATION_ORDER`'s
+ * Missing categories are appended in `getDefaultDecumulationOrder()`'s
  * relative order — deterministic, and matches what an un-customized
  * household already sees for those same categories.
  */
@@ -56,9 +53,7 @@ function ensureCompleteWithdrawalOrder(
   order: AccountCategory[],
 ): AccountCategory[] {
   const present = new Set(order);
-  const missing = DEFAULT_DECUMULATION_ORDER.filter(
-    (c) => getEngineCategories().includes(c) && !present.has(c),
-  );
+  const missing = getDefaultDecumulationOrder().filter((c) => !present.has(c));
   return missing.length > 0 ? [...order, ...missing] : order;
 }
 
@@ -125,7 +120,7 @@ export function resolveAccumulationConfig(
     }
     if (o.accountCaps !== undefined) {
       // Merge partial caps — explicitly set null to remove a cap
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.accountCaps) {
           config.accountCaps[cat] = o.accountCaps[cat] ?? null;
         }
@@ -227,7 +222,7 @@ export function resolveDecumulationConfig(
     if (o.withdrawalOrder !== undefined)
       config.withdrawalOrder = [...o.withdrawalOrder];
     if (o.withdrawalSplits !== undefined) {
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.withdrawalSplits) {
           config.withdrawalSplits[cat] =
             o.withdrawalSplits[cat] ?? config.withdrawalSplits[cat];
@@ -235,7 +230,7 @@ export function resolveDecumulationConfig(
       }
     }
     if (o.withdrawalTaxPreference !== undefined) {
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.withdrawalTaxPreference) {
           config.withdrawalTaxPreference[cat] =
             o.withdrawalTaxPreference[cat] ?? null;
@@ -243,7 +238,7 @@ export function resolveDecumulationConfig(
       }
     }
     if (o.withdrawalAccountCaps !== undefined) {
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.withdrawalAccountCaps) {
           config.withdrawalAccountCaps[cat] =
             o.withdrawalAccountCaps[cat] ?? null;
@@ -262,7 +257,7 @@ export function resolveDecumulationConfig(
     }
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
-    // see DecumulationOverride's docblock. Same
+    // Field notes: decumulationOverrideArraySchema. Same
     // optional/sticky-forward pattern as rothConversionTarget just above:
     // no entry needed in the initial literal or the reset branch (an
     // omitted optional field is already undefined, which is the correct

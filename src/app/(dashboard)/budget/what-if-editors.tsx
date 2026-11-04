@@ -40,11 +40,6 @@ export type ContribAddition = {
   contributionValue: string;
 };
 
-/** Every account category the app supports — same source
- *  ContributionProfileManager and every other picker use, so a new category
- *  added to the config shows up here automatically. */
-export const SANDBOX_ACCOUNT_TYPES = getAllCategories();
-
 const LINK = "text-caption font-medium text-blue-500 hover:text-blue-700";
 const AMBER_INPUT =
   "bg-surface-primary rounded border border-amber-400 px-1.5 py-0.5 text-xs font-medium text-amber-600";
@@ -513,7 +508,7 @@ export function WhatIfContributionsEditor({
                         }
                         className="bg-surface-primary rounded border border-amber-400 px-1 py-0.5 text-xs font-medium text-amber-600"
                       >
-                        {SANDBOX_ACCOUNT_TYPES.map((t) => (
+                        {getAllCategories().map((t) => (
                           <option key={t} value={t}>
                             {t}
                           </option>

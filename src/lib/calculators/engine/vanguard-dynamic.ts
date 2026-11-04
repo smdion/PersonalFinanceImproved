@@ -7,7 +7,6 @@
  * SWR: 4.7% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
-import { DEFAULT_STRATEGY_WITHDRAWAL_PERCENT } from "../../constants";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
@@ -19,11 +18,8 @@ export function applyVanguardDynamic(
   input: SpendingStrategyInput,
 ): SpendingStrategyResult {
   const { portfolioBalance, crossYearState } = input;
-  const p = params as VanguardDynamicParams;
-  const basePercent = p.basePercent ?? DEFAULT_STRATEGY_WITHDRAWAL_PERCENT;
-  const ceilingPercent =
-    p.ceilingPercent ?? DEFAULT_STRATEGY_WITHDRAWAL_PERCENT;
-  const floorPercent = p.floorPercent ?? 0.025;
+  const { basePercent, ceilingPercent, floorPercent } =
+    params as VanguardDynamicParams;
 
   const raw = portfolioBalance * basePercent;
 

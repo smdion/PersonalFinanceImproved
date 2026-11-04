@@ -1,6 +1,6 @@
 /** Data fetching and mutations for the projection card — deterministic engine query, Monte Carlo queries with prefetch, salary/budget override CRUD, and glide-path mutations. */
 import { useMemo, useEffect, useRef, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useBoundedPollInterval } from "@/lib/hooks/use-bounded-poll-interval";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
@@ -19,26 +19,15 @@ import type {
   MonteCarloResult,
 } from "@/lib/calculators/types";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
-/** Mirrors the server's `CoastFireProbeResult`
- *  (server/routers/projection/coast-fire-probe.ts) — hand-rolled, not
- *  imported, since src/components/** is lint-forbidden from importing
- *  @/server/* (no-restricted-imports rule, eslint.config.mjs; same
- *  reasoning as projection/sections/types.ts's own docblock). */
-type CoastFireProbeResult = {
-  probeAge: number;
-  successRate: number;
-  passes: boolean;
-  spendingStabilityRate: number;
-  penaltyAvoidedShortfallRate: number;
-  medianPenaltyAvoidedShortfallPV: number;
-  confidenceThreshold: number;
-  mcResult: MonteCarloResult;
-};
+type CoastFireProbeResult = NonNullable<
+  RouterOutputs["projection"]["computeCoastFireProbe"]["result"]
+>;
 
 // Safety ceiling for every getMonteCarloProgress poller below (400ms
 // interval x 450 = ~3 minutes) — see useBoundedPollInterval's own
@@ -116,29 +105,21 @@ export function useProjectionQueries(
       ...(decumOverridesTouched
         ? { decumulationOverrides: decumOverrides }
         : {}),
-      ...(accumulationBudgetProfileId != null
-        ? { accumulationBudgetProfileId }
-        : {}),
-      ...(accumulationBudgetColumn != null ? { accumulationBudgetColumn } : {}),
-      ...(accumulationExpenseOverride != null
-        ? { accumulationExpenseOverride }
-        : {}),
-      ...(decumulationBudgetProfileId != null
-        ? { decumulationBudgetProfileId }
-        : {}),
-      ...(decumulationBudgetColumn != null ? { decumulationBudgetColumn } : {}),
-      ...(decumulationExpenseOverride != null
-        ? { decumulationExpenseOverride }
-        : {}),
-      ...(contributionProfileId != null ? { contributionProfileId } : {}),
-      ...(salaryProfileId != null ? { salaryProfileId } : {}),
-      // This object is spread into every engine
-      // query in this hook (computeProjection, computeMonteCarloProjection,
-      // computeCoastFire/MC/Probe, the bracket optimizer) — adding
-      // retirementProfileId here once threads the AssumptionsBand's "view
-      // a non-active profile" selection to all of them in one place,
-      // instead of needing it wired into each query's input separately.
-      ...(retirementProfileId != null ? { retirementProfileId } : {}),
+      // Spread into every engine query in this hook (computeProjection,
+      // computeMonteCarloProjection, computeCoastFire/MC/Probe, the bracket
+      // optimizer), so the AssumptionsBand's "view a non-active profile"
+      // reaches all of them from one place.
+      selection: profileSelectionFrom({
+        accumulationBudgetProfileId,
+        accumulationBudgetColumn,
+        accumulationExpenseOverride,
+        decumulationBudgetProfileId,
+        decumulationBudgetColumn,
+        decumulationExpenseOverride,
+        contributionProfileId,
+        salaryProfileId,
+        retirementProfileId,
+      }),
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
@@ -450,7 +431,7 @@ export function useProjectionQueries(
         probeAge,
         runId,
       });
-      setCoastFireProbeResult(response.result as CoastFireProbeResult | null);
+      setCoastFireProbeResult(response.result);
       // Can't simulate: say why where a failed check would.
       if ("notConfigured" in response)
         setCoastFireProbeError(
@@ -483,11 +464,9 @@ export function useProjectionQueries(
       },
     );
 
-  // Operational escape hatch: wipe every cached
-  // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
-  // and redeploying, then invalidate every projection query on THIS page so
-  // it refetches against the now-empty cache immediately, rather than
-  // requiring a manual reload.
+  // Operational escape hatch: wipe every cached projection row server-side
+  // without a deploy, then invalidate every projection query on this page so
+  // it refetches against the now-empty cache at once.
   const clearProjectionCacheMutation = trpc.projection.clearCache.useMutation({
     onSuccess: () => {
       utils.projection.computeProjection.invalidate();

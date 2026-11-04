@@ -116,7 +116,7 @@ export function ContributionProfileManager({
     useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
       localSelection: selectedProfileId,
-      globalDefaultId: globalActiveContribId,
+      activeProfileId: globalActiveContribId,
     });
   const activeProfileName = profiles?.find(
     (p) => p.id === globalActiveContribId,

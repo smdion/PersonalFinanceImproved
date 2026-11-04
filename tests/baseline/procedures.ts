@@ -56,6 +56,14 @@ const active = ({ ids }: ProcedureContext) => ({
   salaryProfileId: ids.salaryProfile,
 });
 
+/** The same two profiles as a projection request's selection. */
+const activeSelection = ({ ids }: ProcedureContext) => ({
+  selection: {
+    contribution: ids.contributionProfile,
+    salary: ids.salaryProfile,
+  },
+});
+
 export const PROCEDURES: BaselineProcedure[] = [
   { path: "settings.people.list" },
   { path: "settings.jobs.list" },
@@ -143,9 +151,9 @@ export const PROCEDURES: BaselineProcedure[] = [
   ),
   { path: "retirement.retirementProfiles.list" },
   { path: "retirement.returnRates.list" },
-  { path: "projection.computeProjection", input: active },
-  { path: "projection.computeCoastFire", input: active },
-  { path: "projection.computeCoastFireMC", input: active },
+  { path: "projection.computeProjection", input: activeSelection },
+  { path: "projection.computeCoastFire", input: activeSelection },
+  { path: "projection.computeCoastFireMC", input: activeSelection },
   {
     path: "projection.computeCoastFireProbe",
     // Five years from now, or the last working year if sooner; a
@@ -156,16 +164,16 @@ export const PROCEDURES: BaselineProcedure[] = [
       const age = 2026 - Number(person.dateOfBirth.slice(0, 4));
       const retirementAge = ctx.household.retirement[key]!.retirementAge;
       const probeAge = Math.min(age + 5, retirementAge - 1);
-      return probeAge >= age ? { ...active(ctx), probeAge } : null;
+      return probeAge >= age ? { ...activeSelection(ctx), probeAge } : null;
     },
   },
   {
     path: "projection.computeMonteCarloProjection",
-    input: (ctx) => ({ ...active(ctx), numTrials: 100, seed: 31 }),
+    input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
-  { path: "projection.computeStrategyComparison", input: active },
-  { path: "projection.analyzeStrategy", input: active },
-  { path: "projection.computeStressTest", input: active },
+  { path: "projection.computeStrategyComparison", input: activeSelection },
+  { path: "projection.analyzeStrategy", input: activeSelection },
+  { path: "projection.computeStressTest", input: activeSelection },
   {
     path: "projection.computeRelocationFiProjection",
     input: (ctx) => ({
@@ -175,12 +183,12 @@ export const PROCEDURES: BaselineProcedure[] = [
     }),
   },
   { path: "projection.relocationScenarios.list" },
-  { path: "projection.projectTaxYears", input: active },
+  { path: "projection.projectTaxYears", input: activeSelection },
   {
     path: "projection.compareWithdrawalStrategies",
     // The three the Tax optimization page compares.
     input: (ctx) => ({
-      ...active(ctx),
+      ...activeSelection(ctx),
       strategies: [
         {
           label: "Traditional first",
@@ -199,24 +207,27 @@ export const PROCEDURES: BaselineProcedure[] = [
   {
     path: "projection.rothConversionWhatIf",
     variant: "optimize",
-    input: (ctx) => ({ ...active(ctx), mode: "optimize" }),
+    input: (ctx) => ({ ...activeSelection(ctx), mode: "optimize" }),
   },
   {
     path: "projection.rothConversionWhatIf",
     variant: "explicit",
     input: (ctx) => ({
-      ...active(ctx),
+      ...activeSelection(ctx),
       mode: "explicit",
       conversionTargets: [{ year: 2027, targetRate: 0.22 }],
     }),
   },
-  { path: "projection.computeWithdrawalBracketOptimizer", input: active },
+  {
+    path: "projection.computeWithdrawalBracketOptimizer",
+    input: activeSelection,
+  },
   {
     path: "projection.sweepSocialSecurityClaimingAges",
     input: (ctx) => {
       const { key, id } = primary(ctx);
       const pia = Number(ctx.household.retirement[key]?.ssMonthly ?? 0);
-      return pia > 0 ? { ...active(ctx), personId: id, pia } : null;
+      return pia > 0 ? { ...activeSelection(ctx), personId: id, pia } : null;
     },
   },
   { path: "performance.computeSummary" },

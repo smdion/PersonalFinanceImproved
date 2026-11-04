@@ -7,8 +7,8 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { localDateStr } from "@/lib/utils/date";
-import type { DbOrTx } from "./transforms";
 import { toDecimalColumn } from "@/lib/utils/math";
+import type { DbOrTx } from "@/lib/db";
 
 /** Loans whose balance comes from an included feed. */
 export async function loansFedBySimplefin(db: DbOrTx): Promise<Set<number>> {

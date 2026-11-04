@@ -130,7 +130,14 @@ if [[ "$PKG_VERSION" != "$VERSION" ]]; then
   echo -e "${YELLOW}--force: continuing despite mismatch${NC}"
 fi
 
-# 3. CI must be green for the commit being deployed. Without a green run
+# 3. The projection cache's engine hash must match the code: a stale one
+#    would serve cached projections from other code. --force doesn't skip it.
+if ! pnpm -s check:engine-hash; then
+  echo -e "${RED}Refusing to deploy: run 'pnpm engine-hash' and commit the result.${NC}"
+  exit 1
+fi
+
+# 4. CI must be green for the commit being deployed. Without a green run
 #    (none yet, still running, failed, or a job missing), refuse; --force
 #    deploys anyway with a warning.
 HEAD_SHA=$(git rev-parse HEAD)
@@ -150,7 +157,7 @@ fi
 #    AFTER deploy by `pnpm release`. The version is already in package.json,
 #    so the build will bake it in correctly.)
 
-# 4. Verify clean working directory (source on host is bind-mounted)
+# 5. Verify clean working directory (source on host is bind-mounted)
 if [[ -n "$(git status --porcelain)" ]]; then
   echo -e "${YELLOW}Warning: working directory has uncommitted changes${NC}"
   if ! $FORCE; then
@@ -165,7 +172,7 @@ if $DRY_RUN; then
   exit 0
 fi
 
-# 5. Verify host is reachable
+# 6. Verify host is reachable
 echo -e "\n${BOLD}[1/6] Checking host connectivity...${NC}"
 if ! $SSH_CMD "echo ok" >/dev/null 2>&1; then
   echo -e "${RED}Cannot reach $SSH_HOST — check SSH key and network${NC}"

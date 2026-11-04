@@ -24,20 +24,19 @@ import {
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
-  getPeriodsPerYear,
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
   buildContribAccounts,
-  computeAnnualContribution,
   loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
   applySandboxSalaryEntries,
   applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import {
@@ -47,7 +46,8 @@ import {
 } from "./_shared";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
+import { isPriorYearContribWindow } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { ficaCapContext } from "@/lib/pure/contributions";
 import {
   resolveIrsLimit,
@@ -91,10 +91,10 @@ import {
   isRetirementParent,
   isPortfolioParent,
 } from "@/lib/config/account-types";
-
-function getAgeFromDob(dob: string, asOf: Date): number {
-  return getAge(new Date(dob), asOf);
-}
+import {
+  computeAnnualContribution,
+  fractionFromPercent,
+} from "@/lib/pure/contributions/contribution-amount";
 
 type AccountTypeSnapshot = {
   accountType: string; // display label (e.g. '401k', 'ESPP', 'Long Term Brokerage')
@@ -229,7 +229,7 @@ export const contributionRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const currentYear = new Date().getFullYear();
+      const currentYear = ctx.scope.asOf.getFullYear();
       const inPriorYearWindow = isPriorYearContribWindow();
       const priorYear = currentYear - 1;
 
@@ -386,7 +386,7 @@ export const contributionRouter = createTRPCRouter({
       }
       const effectiveJobs = profileResult.jobs;
 
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
       // The IRS-limit cap pass: every figure below reads the capped value.
       const capHousehold = await loadCapHousehold(
         ctx.db,
@@ -462,14 +462,13 @@ export const contributionRouter = createTRPCRouter({
       for (const c of activeContribs) {
         const value = computeValue(c);
         let expectedYtd = 0;
-
         const jd = c.jobId ? jobCache.get(c.jobId) : null;
         if (c.contributionMethod === "percent_of_salary" && jd) {
-          const pct = value / 100;
           expectedYtd =
-            jd.salary * pct * (jd.periodsElapsed / jd.periodsPerYear);
+            jd.salary *
+            fractionFromPercent(value) *
+            (jd.periodsElapsed / jd.periodsPerYear);
         } else {
-          // Fixed methods: scale by elapsed fraction
           const periodsPerYear =
             jd?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
           const periodsElapsed = jd?.periodsElapsed ?? 0;
@@ -590,7 +589,7 @@ export const contributionRouter = createTRPCRouter({
           // set to, fromBonus) —
           // the paycheck's way (contributionPay / bonusCheckContribution).
           // This year's figures: the pinned bonus when there is one, like
-          // the paycheck (SalaryProfileEntry.bonusOverride).
+          // the paycheck (SalaryEntry.bonusOverride).
           const pay = contributionPay(dbSalary, bonusTerms, comp.bonusOverride);
           const salary = pay.salary;
           // Total compensation this year (salary + this year's bonus) — the
@@ -606,7 +605,7 @@ export const contributionRouter = createTRPCRouter({
             activeJob.anchorPayDate,
             periodsPerYear,
           );
-          const age = getAgeFromDob(person.dateOfBirth, asOfDate);
+          const age = ageOnDate(person.dateOfBirth, asOfDate);
 
           const jobContribs = effectiveContribs.filter(
             (c) => c.jobId === activeJob.id,
@@ -1270,21 +1269,18 @@ export const contributionRouter = createTRPCRouter({
       // as each person's, at the oldest member's age for any catch-up.
       const householdAge = Math.max(
         0,
-        ...people.map((p) => getAgeFromDob(p.dateOfBirth, asOfDate)),
+        ...people.map((p) => ageOnDate(p.dateOfBirth, asOfDate)),
       );
       for (const c of jointContribs) {
         const val = toNumber(String(c.contributionValue));
         const periodsPerYear =
           results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
-        const salary = 0;
-        const annual =
-          c.contributionMethod === "percent_of_salary"
-            ? salary * (val / 100)
-            : c.contributionMethod === "fixed_per_period"
-              ? val * periodsPerYear
-              : c.contributionMethod === "fixed_monthly"
-                ? val * 12
-                : val;
+        const annual = computeAnnualContribution(
+          c.contributionMethod,
+          val,
+          0, // a joint account has no salary: a percent reads as $0
+          periodsPerYear,
+        );
         const matchAnnual =
           c.employerMatchType === "fixed_annual"
             ? toNumber(c.employerMatchValue)

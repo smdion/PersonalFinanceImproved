@@ -2,10 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PastYearEditDialog } from "@/components/performance/past-year-edit-dialog";
 import type { AccountRow } from "@/components/performance/types";
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setMutationState,
+} from "./trpc-mock";
 
-const previewMutate = vi.fn();
-const saveMutate = vi.fn();
-let call = 0;
 const previewData = {
   success: true,
   preview: {
@@ -46,24 +49,16 @@ const previewData = {
   },
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    performance: {
-      updateAccount: {
-        // First hook in the dialog is the preview, second the save.
-        useMutation: () =>
-          call++ % 2 === 0
-            ? {
-                mutate: previewMutate,
-                data: previewData,
-                isPending: false,
-                isError: false,
-              }
-            : { mutate: saveMutate, isPending: false, isError: false },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+// The dialog's two hooks (the preview, then the save) share the procedure:
+// dry runs are the preview's calls.
+const UPDATE = "performance.updateAccount";
+const calls = () => mutationCalls(UPDATE) as { dryRun?: boolean }[];
+const previewCalls = () => calls().filter((c) => c.dryRun);
+const saveCalls = () => calls().filter((c) => !c.dryRun);
 
 const account = {
   id: 7,
@@ -76,9 +71,10 @@ const account = {
 
 describe("PastYearEditDialog", () => {
   beforeEach(() => {
-    call = 0;
-    previewMutate.mockClear();
-    saveMutate.mockClear();
+    resetTrpcMock();
+    // Neither call settles; the preview's answer is already on the hook.
+    holdMutation(UPDATE);
+    setMutationState(UPDATE, { data: previewData });
   });
 
   it("previews with next year chained, lists what moves and what's left to check, then saves the same edit", () => {
@@ -91,7 +87,7 @@ describe("PastYearEditDialog", () => {
         onSaved={vi.fn()}
       />,
     );
-    expect(previewMutate).toHaveBeenCalledWith({
+    expect(previewCalls()).toContainEqual({
       id: 7,
       endingBalance: "925",
       chainNextYear: true,
@@ -106,12 +102,12 @@ describe("PastYearEditDialog", () => {
     ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("checkbox"));
-    expect(previewMutate).toHaveBeenLastCalledWith(
+    expect(previewCalls().at(-1)).toEqual(
       expect.objectContaining({ chainNextYear: false, dryRun: true }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Save change" }));
-    expect(saveMutate).toHaveBeenCalledWith({
+    expect(saveCalls()).toContainEqual({
       id: 7,
       endingBalance: "925",
       chainNextYear: false,

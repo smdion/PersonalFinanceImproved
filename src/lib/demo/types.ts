@@ -1,8 +1,16 @@
 import type { PerfCategory } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { HsaCoverageType, TaxTreatment } from "@/lib/config/enum-values";
+import type {
+  AccountOwnership,
+  EmployerMatchType,
+  HsaCoverageType,
+  PayPeriod,
+  PayWeek,
+  TaxTreatment,
+} from "@/lib/config/enum-values";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { DebtKind } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 
 /**
  * DemoProfile — complete, holistic dataset for a demo persona.
@@ -41,15 +49,15 @@ export type DemoProfile = {
     employerName: string;
     title: string | null;
     annualSalary: string;
-    payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
-    payWeek: "even" | "odd" | "na";
+    payPeriod: PayPeriod;
+    payWeek: PayWeek;
     startDate: string;
     anchorPayDate: string | null;
     endDate: string | null;
     bonusPercent: string;
     bonusMonth: number | null;
     bonusDayOfMonth?: number | null;
-    w4FilingStatus: "MFJ" | "Single" | "HOH";
+    w4FilingStatus: W4FilingStatus;
   }[];
 
   budgetProfiles: {
@@ -93,7 +101,7 @@ export type DemoProfile = {
     taxTreatment: TaxTreatment;
     contributionMethod: string;
     contributionValue: string;
-    employerMatchType: string;
+    employerMatchType: EmployerMatchType;
     employerMatchValue: string | null;
     employerMaxMatchPct: string | null;
     /** accountLabel of the performance account to link to */
@@ -122,7 +130,7 @@ export type DemoProfile = {
     institution: string;
     accountType: AccountCategory;
     accountLabel: string;
-    ownershipType: "individual" | "joint";
+    ownershipType: AccountOwnership;
     parentCategory: PerfCategory;
     label: string | null;
     isActive: boolean;

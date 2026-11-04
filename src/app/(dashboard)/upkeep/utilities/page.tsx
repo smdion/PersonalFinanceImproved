@@ -3,7 +3,7 @@
 /** Utilities tracker — gas/water/electric cost & usage history with annual trend charts and a collapsible per-year drill-down. */
 
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -57,46 +57,8 @@ const KIND_COLOR: Record<string, string> = {
   electric: CHART_COLORS.perfReturn, // emerald
 };
 
-// Mirrors the utilities.computeSummary router output (hand-written to avoid
-// importing server types into the client bundle).
-type UtilityReadingRow = {
-  id: number;
-  month: number;
-  cost: number;
-  usage: number | null;
-  note: string | null;
-  costPerUnit: number | null;
-  source: string | null;
-};
-type UtilityYearRow = {
-  year: number;
-  readingCount: number;
-  totalCost: number;
-  avgCost: number;
-  minCost: number;
-  maxCost: number;
-  totalUsage: number | null;
-  avgUsage: number | null;
-  minUsage: number | null;
-  maxUsage: number | null;
-  costPerUnit: number | null;
-  yoyCostPct: number | null;
-  readings: UtilityReadingRow[];
-};
-type UtilitySummary = {
-  serviceId: number;
-  kind: string;
-  providerName: string;
-  usageUnit: string | null;
-  sortOrder: number;
-  active: boolean;
-  latestYear: number | null;
-  latestYearTotalCost: number | null;
-  latestYearTotalUsage: number | null;
-  latestCostPerUnit: number | null;
-  latestYoyCostPct: number | null;
-  years: UtilityYearRow[];
-};
+type UtilitySummary =
+  RouterOutputs["utilities"]["computeSummary"]["summaries"][number];
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);

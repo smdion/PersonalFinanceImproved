@@ -23,7 +23,8 @@ import {
   type SimulationPresetKey,
 } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/stock-share";
-import { toNumber, type Db } from "./transforms";
+import { toNumber } from "./transforms";
+import type { Db } from "@/lib/db";
 
 type CustomClampBounds = { returnClampMin: number; returnClampMax: number };
 type AssetClassOverride = { id: number; meanReturn?: number; stdDev?: number };

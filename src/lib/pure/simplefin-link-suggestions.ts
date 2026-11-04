@@ -9,7 +9,7 @@
  * wins, and each sub-account is suggested at most once.
  */
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
 type UnlinkedSimplefinAccount = {

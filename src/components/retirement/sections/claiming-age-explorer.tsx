@@ -18,6 +18,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Disclaimer } from "@/components/ui/disclaimer";
 import { formatCurrency } from "@/lib/utils/format";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 type Props = {
   personId: number;
@@ -58,9 +59,11 @@ export function ClaimingAgeExplorer({
     {
       personId,
       pia,
-      retirementProfileId,
-      contributionProfileId,
-      salaryProfileId,
+      selection: profileSelectionFrom({
+        retirementProfileId,
+        contributionProfileId,
+        salaryProfileId,
+      }),
     },
     { enabled: expanded, placeholderData: (prev) => prev },
   );

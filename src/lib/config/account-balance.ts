@@ -5,11 +5,8 @@
 // writes go through these helpers so the rest of the codebase never
 // pattern-matches on `structure` directly.
 
-import type {
-  AccountBalance,
-  AccountCategory,
-  BalanceStructure,
-} from "./account-types.types";
+import { assertNever } from "@/lib/utils/assert-never";
+import type { AccountBalance, BalanceStructure } from "./account-types.types";
 
 // ---------------------------------------------------------------------------
 // Accessors
@@ -31,6 +28,8 @@ export function getTotalBalance(bal: AccountBalance): number {
       return bal.balance;
     case "basis_tracking":
       return bal.balance;
+    default:
+      return assertNever(bal);
   }
 }
 
@@ -99,6 +98,8 @@ export function zeroBalanceForStructure(
       return { structure: "single_bucket", balance: 0 };
     case "basis_tracking":
       return { structure: "basis_tracking", balance: 0, basis: 0 };
+    default:
+      return assertNever(structure);
   }
 }
 
@@ -119,6 +120,8 @@ export function cloneBalance(bal: AccountBalance): AccountBalance {
         balance: bal.balance,
         basis: bal.basis,
       };
+    default:
+      return assertNever(bal);
   }
 }
 
@@ -127,9 +130,9 @@ export function cloneBalance(bal: AccountBalance): AccountBalance {
 // ---------------------------------------------------------------------------
 
 /** Read the balance for a specific account segment from an AccountBalances record. */
-export function getSegmentBalance(
-  balances: Record<AccountCategory, AccountBalance>,
-  segment: { category: AccountCategory; subKey: string | null },
+export function getSegmentBalance<C extends string>(
+  balances: Record<C, AccountBalance>,
+  segment: { category: C; subKey: string | null },
 ): number {
   const bal = balances[segment.category];
   if (segment.subKey === "trad") return getTraditionalBalance(bal);

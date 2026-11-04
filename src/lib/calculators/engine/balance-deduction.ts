@@ -20,6 +20,8 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
   isRetirementMoney,
+} from "../../config/account-types";
+import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -30,8 +32,8 @@ import {
   setBasis,
   addBalance,
   addBasis,
-} from "../../config/account-types";
-import type { IndKeyFn } from "./individual-account-tracking";
+} from "../../config/account-balance";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------
 // Withdrawal Deduction

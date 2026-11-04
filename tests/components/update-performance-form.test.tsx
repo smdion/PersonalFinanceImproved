@@ -18,58 +18,16 @@ import type { AccountRow } from "@/components/performance/types";
 //   Account 2 (Vanguard, no snapshot match, manual endingBalance 50000):
 //     50000 - 45000 - 6000 + 500 - 0 + 0 = -500
 
-const batchMutate = vi.fn();
-let batchMutationState: {
-  isPending: boolean;
-  isError: boolean;
-  error: { message: string } | null;
-} = {
-  isPending: false,
-  isError: false,
-  error: null,
-};
-
-let suggestionData: unknown = undefined;
-
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    investments: {
-      suggestPerformance: {
-        useQuery: () => ({ data: suggestionData }),
-      },
-    },
-    networth: {
-      portfolioSnapshots: {
-        getLatest: {
-          useQuery: () => ({
-            data: {
-              snapshot: { snapshotDate: "2026-01-01" },
-              accounts: [{ performanceAccountId: 101, amount: "115000" }],
-            },
-            isLoading: false,
-          }),
-        },
-      },
-    },
-    performance: {
-      batchUpdateAccounts: {
-        useMutation: ({ onSuccess }: { onSuccess?: () => void }) => ({
-          mutate: (input: unknown) => {
-            batchMutate(input);
-            onSuccess?.();
-          },
-          isPending: batchMutationState.isPending,
-          isError: batchMutationState.isError,
-          error: batchMutationState.error,
-        }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import { mutationCalls, resetTrpcMock, setQuery } from "./trpc-mock";
+
+const BATCH = "performance.batchUpdateAccounts";
 
 const accountRows: AccountRow[] = [
   {
@@ -130,13 +88,15 @@ const accountRows: AccountRow[] = [
 
 describe("UpdatePerformanceForm", () => {
   beforeEach(() => {
-    batchMutate.mockClear();
-    batchMutationState = { isPending: false, isError: false, error: null };
-    suggestionData = undefined;
+    resetTrpcMock();
+    setQuery("networth.portfolioSnapshots.getLatest", {
+      snapshot: { snapshotDate: "2026-01-01" },
+      accounts: [{ performanceAccountId: 101, amount: "115000" }],
+    });
   });
 
   it("fills from SimpleFIN and saves what the fill counted", () => {
-    suggestionData = {
+    setQuery("investments.suggestPerformance", {
       year: 2026,
       accounts: [
         {
@@ -175,7 +135,7 @@ describe("UpdatePerformanceForm", () => {
           suggested: {},
         },
       ],
-    };
+    });
     render(
       <UpdatePerformanceForm
         currentYear={2026}
@@ -193,7 +153,7 @@ describe("UpdatePerformanceForm", () => {
     expect(screen.getByText(/No SimpleFIN feed/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const input = batchMutate.mock.calls[0]![0] as {
+    const input = mutationCalls(BATCH)[0] as {
       accounts: {
         id: number;
         totalContributions: string;
@@ -232,7 +192,7 @@ describe("UpdatePerformanceForm", () => {
   });
 
   it("keeps a figure already edited in the form when filling", () => {
-    suggestionData = {
+    setQuery("investments.suggestPerformance", {
       year: 2026,
       accounts: [
         {
@@ -261,7 +221,7 @@ describe("UpdatePerformanceForm", () => {
           },
         },
       ],
-    };
+    });
     render(
       <UpdatePerformanceForm
         currentYear={2026}
@@ -281,7 +241,7 @@ describe("UpdatePerformanceForm", () => {
       screen.getByText(/Kept the figures you'd already edited/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const { accounts } = batchMutate.mock.calls[0]![0] as {
+    const { accounts } = mutationCalls(BATCH)[0] as {
       accounts: { id: number; totalContributions: string }[];
     };
     expect(accounts.find((a) => a.id === 1)!.totalContributions).toBe(
@@ -364,8 +324,8 @@ describe("UpdatePerformanceForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
 
-    expect(batchMutate).toHaveBeenCalledTimes(1);
-    const { accounts } = batchMutate.mock.calls[0]![0] as {
+    expect(mutationCalls(BATCH)).toHaveLength(1);
+    const { accounts } = mutationCalls(BATCH)[0] as {
       accounts: { id: number; yearlyGainLoss: string; endingBalance: string }[];
     };
     expect(accounts).toHaveLength(2);
@@ -408,7 +368,7 @@ describe("UpdatePerformanceForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use that" }));
     expect(screen.queryByText(/Last year ended at/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const { accounts } = batchMutate.mock.calls[0]![0] as {
+    const { accounts } = mutationCalls(BATCH)[0] as {
       accounts: {
         id: number;
         beginningBalance: string;
@@ -444,7 +404,7 @@ describe("UpdatePerformanceForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
 
-    const { accounts } = batchMutate.mock.calls[0]![0] as {
+    const { accounts } = mutationCalls(BATCH)[0] as {
       accounts: { id: number; yearlyGainLoss: string }[];
     };
     const acct1 = accounts.find((a) => a.id === 1)!;

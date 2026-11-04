@@ -3,7 +3,11 @@
 
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
 import { WEALTH_TIER_PAW_MIN, WEALTH_TIER_UAW_MAX } from "@/lib/constants";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import {
+  filingTable,
+  parseReturnFilingStatus,
+  type FilingStatusKey,
+} from "@/lib/config/filing-status";
 import type {
   CompositionBucket,
   InvestmentTransactionKind,
@@ -122,19 +126,6 @@ export const TAX_BUCKET_DESCRIPTIONS: Record<string, string> = {
   hsa: "HSA contributions. Triple tax-advantaged.",
   afterTax: "After-tax brokerage contributions. Capital gains tax on growth.",
 };
-/** Canonical engine-internal tax bucket keys, in display order. */
-export const TAX_BUCKET_KEYS = [
-  "preTax",
-  "taxFree",
-  "hsa",
-  "afterTax",
-] as const;
-type TaxBucketKey = (typeof TAX_BUCKET_KEYS)[number];
-
-/** Build a fresh zero-initialized tax-bucket counter map. */
-export function emptyTaxBucketMap(): Record<TaxBucketKey, number> {
-  return { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
-}
 
 /** Short tax treatment labels for compact display (contribution profiles, badges). */
 const TAX_TREATMENT_SHORT_LABELS: Record<string, string> = {
@@ -225,17 +216,6 @@ export function combineCashBasisGainLoss(
 ): number {
   return gainLoss + discountEmployerSum;
 }
-
-/**
- * Bridge map: DB tax_treatment (snake_case) → portfolio tax_type (camelCase).
- * Single source of truth — imported by projection, retirement, and engine routers.
- */
-export const TAX_TREATMENT_TO_TAX_TYPE: Record<string, string> = {
-  pre_tax: "preTax",
-  tax_free: "taxFree",
-  after_tax: "afterTax",
-  hsa: "hsa",
-};
 
 /** Generic label lookup with fallback to key. */
 export function displayLabel(map: Record<string, string>, key: string): string {
@@ -339,12 +319,13 @@ export const BRIDGE_SOURCE_LABELS: Record<
 
 /** How each filing status reads on screen — never the short code. Ledgr
  *  has no married-filing-separately status. */
-export const FILING_STATUS_LABELS: Record<W4FilingStatus, string> = {
+export const FILING_STATUS_LABELS: Record<FilingStatusKey, string> = {
   MFJ: "Married filing jointly",
   Single: "Single",
   HOH: "Head of household",
 };
 /** The label for a stored status; an unknown one is shown as stored. */
 export function filingStatusLabel(status: string): string {
-  return FILING_STATUS_LABELS[status as W4FilingStatus] ?? status;
+  const known = parseReturnFilingStatus(status);
+  return known ? filingTable(FILING_STATUS_LABELS, known) : status;
 }

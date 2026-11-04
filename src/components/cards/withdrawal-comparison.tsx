@@ -5,11 +5,12 @@ import {
   type SimulationNotConfigured,
 } from "@/lib/calculators/monte-carlo";
 import { strategySummary } from "@/lib/pure/strategy-summary";
-import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import {
   formatCurrency,
   compactCurrency,
@@ -27,35 +28,18 @@ import {
 } from "recharts";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { STRATEGY_COMPARISON_COLORS, CHART_COLORS } from "@/lib/utils/colors";
+import { simulationRateTone } from "@/lib/config/simulation-tones";
 
-type StrategyResult = {
-  strategy: string;
-  label: string;
-  shortLabel: string;
-  failureAge: number | null;
-  failureYear: number | null;
-  failureReason: PlanFailureReason | null;
-  /** What the strategy has the household spend (Social Security
-   *  included) — comparable across strategies, unlike the withdrawals. */
-  year1Spending: number;
-  avgAnnualSpending: number;
-  year1Withdrawal: number;
-  avgAnnualWithdrawal: number;
-  minAnnualWithdrawal: number;
-  maxAnnualWithdrawal: number;
-  endRetirementBalance: number;
-  legacyAmount: number;
-  successRate: number | null;
-  spendingStabilityRate: number | null;
-  budgetStabilityRate: number | null;
-  yearByYear: {
-    age: number;
-    year: number;
-    withdrawal: number;
-    spending: number;
-    retirementBalance: number;
-  }[];
-};
+const RATE_TONE_CLASS = {
+  green: "text-green-400",
+  amber: "text-yellow-400",
+  red: "text-red-400",
+} as const;
+
+type StrategyResult = Extract<
+  RouterOutputs["projection"]["computeStrategyComparison"],
+  { strategies: unknown }
+>["strategies"][number];
 
 type AnalyzerInput = {
   contributionProfileId?: number;
@@ -75,8 +59,8 @@ type Props = {
   presetLabel?: string;
   /** Why those columns are empty (the Simulation can't run), or null. */
   notConfigured?: SimulationNotConfigured | null;
-  dollarMode: "nominal" | "real";
-  onDollarModeChange: (mode: "nominal" | "real") => void;
+  dollarMode: DollarBasis;
+  onDollarModeChange: (mode: DollarBasis) => void;
   inflationRate: number;
   analyzerInput?: AnalyzerInput;
 };
@@ -105,13 +89,9 @@ export function WithdrawalComparisonCard({
 
   if (strategies.length === 0) return null;
 
-  // Deflate a future-dollar value to today's dollars
-  const thisYear = new Date().getFullYear();
-  const deflate = (value: number, year: number) => {
-    if (dollarMode === "nominal") return value;
-    const yearsOut = year - thisYear;
-    return yearsOut > 0 ? value / Math.pow(1 + inflationRate, yearsOut) : value;
-  };
+  const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
+  const deflate = (value: number, year: number) =>
+    dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
   // Build chart data: merge all strategies into year-indexed rows
   const chartData = (() => {
@@ -272,11 +252,7 @@ export function WithdrawalComparisonCard({
                       {s.successRate !== null ? (
                         <span
                           className={
-                            s.successRate >= 0.9
-                              ? "text-green-400"
-                              : s.successRate >= 0.75
-                                ? "text-yellow-400"
-                                : "text-red-400"
+                            RATE_TONE_CLASS[simulationRateTone(s.successRate)]
                           }
                         >
                           {formatPercent(s.successRate)}
@@ -289,11 +265,9 @@ export function WithdrawalComparisonCard({
                       {s.spendingStabilityRate !== null ? (
                         <span
                           className={
-                            s.spendingStabilityRate >= 0.9
-                              ? "text-green-400"
-                              : s.spendingStabilityRate >= 0.75
-                                ? "text-yellow-400"
-                                : "text-red-400"
+                            RATE_TONE_CLASS[
+                              simulationRateTone(s.spendingStabilityRate)
+                            ]
                           }
                         >
                           {formatPercent(s.spendingStabilityRate)}
@@ -306,11 +280,9 @@ export function WithdrawalComparisonCard({
                       {s.budgetStabilityRate !== null ? (
                         <span
                           className={
-                            s.budgetStabilityRate >= 0.9
-                              ? "text-green-400"
-                              : s.budgetStabilityRate >= 0.75
-                                ? "text-yellow-400"
-                                : "text-red-400"
+                            RATE_TONE_CLASS[
+                              simulationRateTone(s.budgetStabilityRate)
+                            ]
                           }
                         >
                           {formatPercent(s.budgetStabilityRate)}

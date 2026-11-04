@@ -8,7 +8,6 @@
 import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
-import type { Db } from "./transforms";
 import { localDateStr } from "@/lib/utils/date";
 import { log } from "@/lib/logger";
 import { loansFedBySimplefin } from "./loan-feed";
@@ -17,6 +16,7 @@ import {
   mappingsWithTypedIds,
 } from "@/lib/utils/account-mapping";
 import { toDecimalColumn } from "@/lib/utils/math";
+import type { Db } from "@/lib/db";
 
 type ApplyPullMappingResult =
   | { applied: false }

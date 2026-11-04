@@ -21,21 +21,17 @@ import type { RouterOutputs } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 
 const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;
-
-type ProfileResolutionTiers = {
-  localSelectionId: number | null;
-  globalDefaultId: number | null;
-};
 
 type UpdateBatchResult = RouterOutputs["budget"]["updateItemAmounts"];
 
 type UpdateBatch = {
   mutateAsync: (args: {
     updates: Array<{ id: number; colIndex: number; amount: number }>;
-    contributionProfile?: ProfileResolutionTiers;
+    selection?: PayProfileSelection;
   }) => Promise<UpdateBatchResult>;
 };
 
@@ -44,15 +40,15 @@ export function useBudgetPageState({
   nameColWidth,
   setNameColWidth,
   updateBatch,
-  contributionProfileTiers,
+  paySelection,
 }: {
   data: object | null | undefined;
   nameColWidth: number;
   setNameColWidth: (w: number) => void;
   updateBatch: UpdateBatch;
-  /** Which Contribution Profile a linked item's edit should land in — same
-   *  tiers object computeActiveSummary already resolves with. */
-  contributionProfileTiers: ProfileResolutionTiers;
+  /** The summary query's pay selection, so a linked edit lands in the
+   *  Contribution Profile that query resolved. */
+  paySelection: PayProfileSelection;
 }) {
   // ---- Edit mode + draft store ----
 
@@ -93,12 +89,12 @@ export function useBudgetPageState({
   // Stable refs so saveAllDrafts never closes over stale values
   const editDraftsRef = useRef(editDrafts);
   const updateBatchRef = useRef(updateBatch);
-  const contributionProfileTiersRef = useRef(contributionProfileTiers);
+  const paySelectionRef = useRef(paySelection);
   useEffect(() => {
     editDraftsRef.current = editDrafts;
     updateBatchRef.current = updateBatch;
-    contributionProfileTiersRef.current = contributionProfileTiers;
-  }, [editDrafts, updateBatch, contributionProfileTiers]);
+    paySelectionRef.current = paySelection;
+  }, [editDrafts, updateBatch, paySelection]);
 
   const saveAllDrafts = async () => {
     const drafts = editDraftsRef.current;
@@ -116,7 +112,7 @@ export function useBudgetPageState({
     });
     const res = await updateBatchRef.current.mutateAsync({
       updates,
-      contributionProfile: contributionProfileTiersRef.current,
+      selection: paySelectionRef.current,
     });
     // Cells the server couldn't apply (a since-deleted item, or a column
     // that no longer exists because the budget's columns changed while

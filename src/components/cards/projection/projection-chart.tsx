@@ -33,10 +33,8 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import {
-  getAccountSegments,
-  getSegmentBalance,
-} from "@/lib/config/account-types";
+import { getAccountSegments } from "@/lib/config/account-types";
+import { getSegmentBalance } from "@/lib/config/account-balance";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";

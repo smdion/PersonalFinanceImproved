@@ -1,31 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // The add/transfer forms are seeded with a goal once; the goal list can
 // change while one is open. What's shown and what's submitted must agree.
 
-const { createTx, mutation } = vi.hoisted(() => {
-  const createTx = vi.fn();
-  const mutation = (fn?: (input: unknown) => void) => ({
-    useMutation: () => ({ mutate: fn ?? vi.fn(), isPending: false }),
-  });
-  return { createTx, mutation };
-});
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({ savings: { invalidate: vi.fn() } }),
-    savings: {
-      plannedTransactions: {
-        create: mutation((i) => createTx(i)),
-        update: mutation(),
-        delete: mutation(),
-        settle: mutation(),
-        settleMany: mutation(),
-        getSettlementSuggestions: { useQuery: () => ({ data: undefined }) },
-      },
-      transfers: { create: mutation(), delete: mutation() },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 vi.mock("@/lib/hooks/use-local-storage", () => ({
   useLocalStorage: (_k: string, v: unknown) => [v, vi.fn()],
@@ -33,6 +13,24 @@ vi.mock("@/lib/hooks/use-local-storage", () => ({
 
 import { AllTransactionsTab } from "@/components/savings/all-transactions-tab";
 import type { GoalProjection } from "@/components/savings/types";
+import { holdMutation, mutationCalls, resetTrpcMock } from "./trpc-mock";
+
+const CREATE = "savings.plannedTransactions.create";
+
+beforeEach(() => {
+  resetTrpcMock();
+  // No write settles: the test reads what was submitted.
+  for (const path of [
+    CREATE,
+    "savings.plannedTransactions.update",
+    "savings.plannedTransactions.delete",
+    "savings.plannedTransactions.settle",
+    "savings.plannedTransactions.settleMany",
+    "savings.transfers.create",
+    "savings.transfers.delete",
+  ] as const)
+    holdMutation(path);
+});
 
 const goal = (goalId: number, name: string): GoalProjection => ({
   goalId,
@@ -77,7 +75,7 @@ describe("AllTransactionsTab add form", () => {
       target: { value: "Tickets" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(createTx).toHaveBeenCalledWith(
+    expect(mutationCalls(CREATE)).toContainEqual(
       expect.objectContaining({ goalId: 2 }),
     );
   });

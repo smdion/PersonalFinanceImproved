@@ -4,15 +4,13 @@
  * caller picks others), with contribution-linked items resolved to real
  * dollars, or the caller's flat override.
  */
-import type { db as _db } from "@/lib/db";
 import type * as schema from "@/lib/db/schema";
 import {
   computeBudgetAnnualTotal,
   pickActiveBudgetProfile,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
-
-type Db = typeof _db;
+import type { Db } from "@/lib/db";
 
 export async function resolvePhaseExpenses(
   db: Db,

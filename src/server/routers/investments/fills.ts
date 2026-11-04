@@ -12,8 +12,7 @@ import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
 import { toNumber } from "@/server/helpers/transforms";
 import { loadClassifiedTransactions, loadFeedContext } from "./_shared";
-
-type Db = Parameters<typeof loadFeedContext>[0];
+import type { Db } from "@/lib/db";
 
 /** The year's transactions (voided ones too, so a fill can take them back out). */
 export async function loadYearRows(db: Db, year: number) {

@@ -38,7 +38,6 @@ import {
   loadLiveContribData,
   resolveProfile,
   getIncompleteContribAccountIds,
-  type Db,
 } from "@/server/helpers";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { getDisplayConfig } from "@/lib/config/account-types";
@@ -49,6 +48,7 @@ import {
   deductionActiveFieldsSchema,
 } from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type { Db } from "@/lib/db";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
@@ -196,7 +196,7 @@ export const contributionProfileRouter = createTRPCRouter({
       ctx.db,
       await getAllPeople(ctx.db),
       null,
-      new Date().getFullYear(),
+      ctx.scope.asOf.getFullYear(),
     );
 
     const resolved = profiles.map((profile) => {

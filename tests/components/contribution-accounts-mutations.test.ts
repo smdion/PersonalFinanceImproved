@@ -14,103 +14,54 @@
  * reappearing.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { RouterOutputs } from "@/lib/trpc";
 import { renderHook } from "@testing-library/react";
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  settleMutation,
+  utilsCalls,
+} from "./trpc-mock";
 
-const makeMutation = () => ({
-  mutate: vi.fn(),
-  isPending: false,
-  isSuccess: false,
-  isError: false,
-  data: null,
-  error: null,
-  reset: vi.fn(),
-});
-
-const invalidateFns = {
-  performanceAccounts: vi.fn(),
-  contributionAccounts: vi.fn(),
-  portfolioSnapshotsGetLatest: vi.fn(),
-  retirement: vi.fn(),
-  projection: vi.fn(),
-  networth: vi.fn(),
-  contributionProfile: vi.fn(),
-  paycheck: vi.fn(),
-};
-
-const stableUtils = {
-  settings: {
-    contributionAccounts: { invalidate: invalidateFns.contributionAccounts },
-  },
-  performance: {
-    performanceAccounts: { invalidate: invalidateFns.performanceAccounts },
-  },
-  retirement: { invalidate: invalidateFns.retirement },
-  projection: { invalidate: invalidateFns.projection },
-  networth: {
-    invalidate: invalidateFns.networth,
-    portfolioSnapshots: {
-      getLatest: { invalidate: invalidateFns.portfolioSnapshotsGetLatest },
-    },
-  },
-  contributionProfile: { invalidate: invalidateFns.contributionProfile },
-  paycheck: { invalidate: invalidateFns.paycheck },
-};
-
-// Capture the mutate fn + onSuccess callback for each mutation so tests can
-// both assert on the input shape passed to mutate() and (optionally) fire
-// onSuccess to verify the invalidate wiring.
-const mutations: Record<string, ReturnType<typeof makeMutation>> = {};
-const onSuccessCallbacks: Record<string, (() => void) | undefined> = {};
-
-function mutationFactory(key: string) {
-  return {
-    useMutation: (opts?: { onSuccess?: () => void }) => {
-      const m = makeMutation();
-      mutations[key] = m;
-      onSuccessCallbacks[key] = opts?.onSuccess;
-      return m;
-    },
-  };
-}
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => stableUtils,
-    settings: {
-      contributionAccounts: {
-        update: mutationFactory("updateContrib"),
-        create: mutationFactory("createContrib"),
-      },
-    },
-    networth: {
-      portfolioSnapshots: {
-        updateAccount: mutationFactory("updatePortfolioAccount"),
-        createAccount: mutationFactory("createPortfolioAccount"),
-      },
-    },
-    performance: {
-      performanceAccounts: {
-        update: mutationFactory("updatePerf"),
-        create: mutationFactory("createPerf"),
-        delete: mutationFactory("deletePerf"),
-      },
-    },
-    contributionProfile: {
-      setAccountActiveFields: mutationFactory("setContribProfileFields"),
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+const P = {
+  updateContrib: "settings.contributionAccounts.update",
+  createContrib: "settings.contributionAccounts.create",
+  updatePortfolioAccount: "networth.portfolioSnapshots.updateAccount",
+  createPortfolioAccount: "networth.portfolioSnapshots.createAccount",
+  updatePerf: "performance.performanceAccounts.update",
+  createPerf: "performance.performanceAccounts.create",
+  deletePerf: "performance.performanceAccounts.delete",
+  setContribProfileFields: "contributionProfile.setAccountActiveFields",
+} as const;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetTrpcMock();
+  // Calls are recorded, nothing settles until a test settles it (the
+  // onSuccess wiring tests below), as before.
+  for (const path of Object.values(P)) holdMutation(path);
 });
 
-const basePerfAccount = {
+/** Every utils call a successful mutation should have made. */
+const invalidated = (path: string) => utilsCalls(path).length > 0;
+
+type PerfAccount =
+  RouterOutputs["performance"]["performanceAccounts"]["list"][number];
+type Contrib =
+  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
+
+const basePerfAccount: PerfAccount = {
   id: 1,
   institution: "Fidelity",
   accountType: "401k",
   subType: null,
   label: null,
+  accountLabel: "Fidelity 401k",
   displayName: null,
   ownerPersonId: 5,
   ownershipType: "individual",
@@ -119,16 +70,23 @@ const basePerfAccount = {
   displayOrder: 0,
   retirementBehavior: "stops_at_owner_retirement",
   contributionScaling: "scales_with_salary",
+  costBasis: "0",
+  separationDate: null,
+  allowPenalizedWithdrawals: false,
+  createdAt: "2026-01-01T00:00:00.000Z",
 };
 
-const baseContrib = {
+const baseContrib: Contrib = {
   id: 1,
   personId: 5,
   jobId: 10,
   accountType: "401k",
+  subType: null,
+  label: null,
+  parentCategory: "Retirement",
+  priorYearContribAmount: "0",
+  priorYearContribYear: null,
   taxTreatment: "pre_tax",
-  contributionMethod: "percent_of_salary",
-  contributionValue: "10",
   employerMatchType: "none",
   employerMatchValue: null,
   employerMaxMatchPct: null,
@@ -163,7 +121,7 @@ describe("useContributionAccountsMutations", () => {
     result.current.handlePerfUpdate(basePerfAccount, {
       institution: "Vanguard",
     });
-    expect(mutations.updatePerf!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updatePerf)).toContainEqual(
       expect.objectContaining({
         id: 1,
         institution: "Vanguard",
@@ -188,7 +146,7 @@ describe("useContributionAccountsMutations", () => {
       { ...basePerfAccount, subType: "roth", label: "My Account" },
       { subType: null, label: null },
     );
-    expect(mutations.updatePerf!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updatePerf)).toContainEqual(
       expect.objectContaining({ subType: null, label: null }),
     );
   });
@@ -199,7 +157,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [] }),
     );
     result.current.handlePerfUpdate(basePerfAccount, { ownerPersonId: null });
-    expect(mutations.updatePerf!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updatePerf)).toContainEqual(
       expect.objectContaining({ ownerPersonId: null }),
     );
   });
@@ -214,12 +172,12 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [] }),
     );
     result.current.handleContribUpdate(baseContrib, { personId: null });
-    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({ id: 1, personId: null }),
     );
     // Specifically assert it did NOT fall back to the stale personId — this
     // is exactly the bug the !== undefined fix closed.
-    const call = mutations.updateContrib!.mutate.mock.calls[0]![0];
+    const call = mutationCalls(P.updateContrib)[0] as { personId: unknown };
     expect(call.personId).not.toBe(baseContrib.personId);
   });
 
@@ -231,7 +189,7 @@ describe("useContributionAccountsMutations", () => {
     result.current.handleContribUpdate(baseContrib, {
       autoMaximize: true,
     });
-    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({
         id: 1,
         personId: 5,
@@ -249,7 +207,7 @@ describe("useContributionAccountsMutations", () => {
       autoMaximize: true,
       isActive: false,
     });
-    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({
         id: 1,
         autoMaximize: true,
@@ -270,7 +228,7 @@ describe("useContributionAccountsMutations", () => {
       { ...baseContrib, employerMatchValue: "50" },
       { employerMatchValue: null },
     );
-    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({ employerMatchValue: null }),
     );
   });
@@ -288,19 +246,19 @@ describe("useContributionAccountsMutations", () => {
       }),
     );
     result.current.handleContribUpdate(baseContrib, { rothRoute: "backdoor" });
-    expect(mutations.setContribProfileFields!.mutate).toHaveBeenLastCalledWith({
+    expect(mutationCalls(P.setContribProfileFields).at(-1)).toEqual({
       profileId: 9,
       accountId: 1,
       fields: { rothRoute: "backdoor" },
     });
     result.current.handleContribUpdate(baseContrib, { rothRoute: "direct" });
-    expect(mutations.setContribProfileFields!.mutate).toHaveBeenLastCalledWith({
+    expect(mutationCalls(P.setContribProfileFields).at(-1)).toEqual({
       profileId: 9,
       accountId: 1,
       fields: {},
       unset: ["rothRoute"],
     });
-    expect(mutations.updateContrib!.mutate).not.toHaveBeenCalled();
+    expect(mutationCalls(P.updateContrib)).toHaveLength(0);
   });
 
   it("handleLinkContrib finds the contrib by id and updates its performanceAccountId", async () => {
@@ -309,7 +267,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
     result.current.handleLinkContrib(1, 99);
-    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({ id: 1, performanceAccountId: 99 }),
     );
   });
@@ -320,7 +278,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
     result.current.handleLinkContrib(1, null);
-    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({ id: 1, performanceAccountId: null }),
     );
   });
@@ -331,7 +289,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
     result.current.handleLinkContrib(999, 99);
-    expect(mutations.updateContrib!.mutate).not.toHaveBeenCalled();
+    expect(mutationCalls(P.updateContrib)).toHaveLength(0);
   });
 
   // ---------------------------------------------------------------------
@@ -343,35 +301,61 @@ describe("useContributionAccountsMutations", () => {
     // rule 3) — a caller that wants to react to success (e.g. closing a
     // form) passes its own onSuccess at the .mutate() call site instead.
     const useContributionAccountsMutations = await importHook();
-    renderHook(() => useContributionAccountsMutations({ allContribs: [] }));
-    onSuccessCallbacks.createPerf?.();
-    expect(invalidateFns.performanceAccounts).toHaveBeenCalled();
+    const { result } = renderHook(() =>
+      useContributionAccountsMutations({ allContribs: [] }),
+    );
+    // Any input: the mock records it; this test is about what success does.
+    result.current.createPerfMut.mutate(
+      basePerfAccount as Parameters<
+        typeof result.current.createPerfMut.mutate
+      >[0],
+    );
+    settleMutation(P.createPerf);
+    expect(invalidated("performance.performanceAccounts.invalidate")).toBe(
+      true,
+    );
   });
 
   it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and networth", async () => {
     const useContributionAccountsMutations = await importHook();
-    renderHook(() => useContributionAccountsMutations({ allContribs: [] }));
-    onSuccessCallbacks.updatePerf?.();
-    expect(invalidateFns.performanceAccounts).toHaveBeenCalled();
-    expect(invalidateFns.retirement).toHaveBeenCalled();
-    expect(invalidateFns.projection).toHaveBeenCalled();
-    expect(invalidateFns.networth).toHaveBeenCalled();
+    const { result } = renderHook(() =>
+      useContributionAccountsMutations({ allContribs: [] }),
+    );
+    result.current.handlePerfUpdate(basePerfAccount, {});
+    settleMutation(P.updatePerf);
+    expect(invalidated("performance.performanceAccounts.invalidate")).toBe(
+      true,
+    );
+    expect(invalidated("retirement.invalidate")).toBe(true);
+    expect(invalidated("projection.invalidate")).toBe(true);
+    expect(invalidated("networth.invalidate")).toBe(true);
   });
 
   it("updateContribMut's onSuccess invalidates contributionAccounts, retirement, and projection", async () => {
     const useContributionAccountsMutations = await importHook();
-    renderHook(() => useContributionAccountsMutations({ allContribs: [] }));
-    onSuccessCallbacks.updateContrib?.();
-    expect(invalidateFns.contributionAccounts).toHaveBeenCalled();
-    expect(invalidateFns.retirement).toHaveBeenCalled();
-    expect(invalidateFns.projection).toHaveBeenCalled();
+    const { result } = renderHook(() =>
+      useContributionAccountsMutations({ allContribs: [] }),
+    );
+    result.current.handleContribUpdate(baseContrib, {});
+    settleMutation(P.updateContrib);
+    expect(invalidated("settings.contributionAccounts.invalidate")).toBe(true);
+    expect(invalidated("retirement.invalidate")).toBe(true);
+    expect(invalidated("projection.invalidate")).toBe(true);
   });
 
   it("updatePortfolioAccountMut's onSuccess invalidates portfolioSnapshots.getLatest and networth", async () => {
     const useContributionAccountsMutations = await importHook();
-    renderHook(() => useContributionAccountsMutations({ allContribs: [] }));
-    onSuccessCallbacks.updatePortfolioAccount?.();
-    expect(invalidateFns.portfolioSnapshotsGetLatest).toHaveBeenCalled();
-    expect(invalidateFns.networth).toHaveBeenCalled();
+    const { result } = renderHook(() =>
+      useContributionAccountsMutations({ allContribs: [] }),
+    );
+    // Any input: the mock records it; this test is about what success does.
+    result.current.updatePortfolioAccountMut.mutate({ id: 1 } as Parameters<
+      typeof result.current.updatePortfolioAccountMut.mutate
+    >[0]);
+    settleMutation(P.updatePortfolioAccount);
+    expect(
+      invalidated("networth.portfolioSnapshots.getLatest.invalidate"),
+    ).toBe(true);
+    expect(invalidated("networth.invalidate")).toBe(true);
   });
 });

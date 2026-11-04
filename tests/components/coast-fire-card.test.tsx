@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { CoastFireCard } from "@/components/cards/coast-fire-card";
 
@@ -7,17 +7,15 @@ import { CoastFireCard } from "@/components/cards/coast-fire-card";
 // combined baseline+simulated branch that activates once the shared Coast
 // FIRE Monte Carlo result is available.
 
-const mockUseQuery = vi.fn();
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    projection: {
-      computeCoastFire: {
-        useQuery: (...args: unknown[]) => mockUseQuery(...args),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
+
+const COAST_FIRE = "projection.computeCoastFire";
+type CoastFireResult = NonNullable<MockOutput<typeof COAST_FIRE>>["result"];
+
+beforeEach(() => resetTrpcMock());
 
 // KpiCard always renders a HelpTip for its tooltip prop, which needs a Radix
 // TooltipProvider ancestor CoastFireCard doesn't supply on its own (normally
@@ -31,8 +29,8 @@ const baseInput: Parameters<typeof CoastFireCard>[0]["input"] = {
   snapshotId: 1,
 };
 
-function setDeterministic(result: unknown) {
-  mockUseQuery.mockReturnValue({ data: result ? { result } : undefined });
+function setDeterministic(result: CoastFireResult | null) {
+  setQuery(COAST_FIRE, result ? { result } : undefined);
 }
 
 describe("CoastFireCard", () => {

@@ -37,6 +37,7 @@ import type {
   ProjectionInput,
 } from "@/lib/calculators/types";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
+import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";
 
 const HERE = __dirname;
 const YEAR = 2026;
@@ -399,10 +400,8 @@ export function ledgerInput(
   const totalSaving = Object.values(contribByCat).reduce((a, b) => a + b, 0);
 
   return {
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: totalPay > 0 ? retirementSaving / totalPay : 0,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: Object.fromEntries(
         cats.map((c) => [
           c,
@@ -419,7 +418,7 @@ export function ledgerInput(
           return [c, all > 0 ? roth / all : 0];
         }),
       ),
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode:

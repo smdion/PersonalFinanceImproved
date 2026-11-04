@@ -2,7 +2,11 @@
 
 import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import {
+  flatDeflator,
+  simulationDollars,
+  toTodaysDollars,
+} from "@/lib/pure/simulation/dollars";
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
 import {
@@ -28,6 +32,7 @@ import {
 } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
+import { simulationRateTone } from "@/lib/config/simulation-tones";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -148,27 +153,22 @@ function RetirementCardImpl() {
   const retLimits = sumBy(Object.values(irsGroupLimits), (v) => v);
   // The plan judge: retirement money runs out, or a year falls short.
   const outcome = assessPlan(result);
-  // Deflate sustainable withdrawal to today's dollars
+  // Sustainable withdrawal in today's dollars, indexed by age from today's.
   const yearsToRet = Math.max(0, retAge - currentAge);
-  const sustainableWdNominal = result.sustainableWithdrawal;
-  const sustainableWd =
-    yearsToRet > 0 && Number(settings.annualInflation) > 0
-      ? sustainableWdNominal /
-        Math.pow(1 + Number(settings.annualInflation), yearsToRet)
-      : sustainableWdNominal;
+  const inflRate = Math.max(0, Number(settings.annualInflation) || 0);
+  const sustainableWd = toTodaysDollars(
+    result.sustainableWithdrawal,
+    retAge,
+    flatDeflator(currentAge, inflRate),
+  );
   // Already retired: the figure is today's, so the label says today's age.
   const nestEggAge = Math.max(retAge, currentAge);
   // Simulated when the Retirement page has run one for these inputs, else
   // the baseline — the same rule and figure the page's hero uses.
-  const inflRate = Number(settings.annualInflation) || 0;
-  const firstYear = result.projectionByYear[0]?.year ?? 0;
-  const toDisplay = (value: number, year: number) =>
-    inflRate > 0 && year > firstYear
-      ? value / Math.pow(1 + inflRate, year - firstYear)
-      : value;
+  const byYear = flatDeflator(result.projectionByYear[0]?.year ?? 0, inflRate);
   const baseline = baselineNestEgg(result.projectionByYear, nestEggAge);
   const nestEgg = baseline
-    ? toDisplay(baseline.nominal, baseline.year)
+    ? toTodaysDollars(baseline.nominal, baseline.year, byYear)
     : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
     // Today's dollars, from the Simulation's own per-trial deflation.
@@ -378,11 +378,8 @@ function RetirementCardImpl() {
                 <FocusLink
                   focus={{ topic: "planHealth" }}
                   className={`font-medium hover:underline ${
-                    mcPeek.result.successRate >= 0.9
-                      ? STATUS_COLORS.green.text
-                      : mcPeek.result.successRate >= 0.75
-                        ? STATUS_COLORS.amber.text
-                        : STATUS_COLORS.red.text
+                    STATUS_COLORS[simulationRateTone(mcPeek.result.successRate)]
+                      .text
                   }`}
                 >
                   {formatPercent(mcPeek.result.successRate, 0)}

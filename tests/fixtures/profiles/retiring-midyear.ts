@@ -50,6 +50,7 @@
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 
@@ -58,13 +59,12 @@ export function makeRetiringMidyearInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.1,
-      routingMode: "waterfall",
       accountOrder: ["401k"],
       accountSplits: { "401k": 1.0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
       taxSplits: { "401k": 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "waterfall",

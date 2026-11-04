@@ -23,16 +23,17 @@ vi.mock("next-auth/react", () => ({
   signIn: vi.fn(),
 }));
 
-const { createLocalAdmin } = vi.hoisted(() => ({ createLocalAdmin: vi.fn() }));
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    settings: {
-      createLocalAdmin: {
-        useMutation: () => ({ mutateAsync: createLocalAdmin }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import {
+  mutationCalls,
+  resetTrpcMock,
+  setMutationError,
+  setMutationResult,
+} from "./trpc-mock";
+
+const CREATE_ADMIN = "settings.createLocalAdmin";
 
 import { signIn } from "next-auth/react";
 import { LoginForm } from "@/app/login/login-form";
@@ -65,6 +66,7 @@ import { LoginForm } from "@/app/login/login-form";
 describe("LoginForm (M18)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetTrpcMock();
     // Reset search params ref to empty — individual tests override to
     // simulate ?error=... or ?callbackUrl=... query strings.
     searchParamsRef.current = new URLSearchParams();
@@ -273,7 +275,7 @@ describe("LoginForm (M18)", () => {
     });
 
     it("creates the admin, then signs in with it", async () => {
-      createLocalAdmin.mockResolvedValueOnce({ id: 1 });
+      setMutationResult(CREATE_ADMIN, { id: 1 });
       vi.mocked(signIn).mockResolvedValueOnce({
         error: undefined,
         ok: true,
@@ -294,22 +296,25 @@ describe("LoginForm (M18)", () => {
           }),
         );
       });
-      expect(createLocalAdmin).toHaveBeenCalledWith({
-        name: "Robin",
-        email: "robin@example.com",
-        password: "First-admin-pass-1",
-      });
+      expect(mutationCalls(CREATE_ADMIN)).toEqual([
+        {
+          name: "Robin",
+          email: "robin@example.com",
+          password: "First-admin-pass-1",
+        },
+      ]);
     });
 
     it("refuses mismatched passwords before sending anything", () => {
       render(<LoginForm hasOidc={false} adminNeeded />);
       fill("First-admin-pass-1", "First-admin-pass-2");
       expect(screen.getByText(/Passwords don't match/)).toBeInTheDocument();
-      expect(createLocalAdmin).not.toHaveBeenCalled();
+      expect(mutationCalls(CREATE_ADMIN)).toHaveLength(0);
     });
 
     it("shows the server's refusal and doesn't sign in", async () => {
-      createLocalAdmin.mockRejectedValueOnce(
+      setMutationError(
+        CREATE_ADMIN,
         Object.assign(new Error("A local admin account already exists."), {
           data: { code: "BAD_REQUEST" },
         }),
@@ -323,7 +328,7 @@ describe("LoginForm (M18)", () => {
     });
 
     it("falls back to the sign-in form when signing in after creation fails", async () => {
-      createLocalAdmin.mockResolvedValueOnce({ id: 1 });
+      setMutationResult(CREATE_ADMIN, { id: 1 });
       vi.mocked(signIn).mockResolvedValueOnce({
         error: "CredentialsSignin",
         ok: false,

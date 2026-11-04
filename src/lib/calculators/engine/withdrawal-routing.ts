@@ -13,7 +13,6 @@ import type {
   ResolvedDecumulationConfig,
   AccountBalances,
   AccountCategory,
-  FilingStatusType,
 } from "../types";
 import { roundToCents } from "../../utils/math";
 import {
@@ -22,11 +21,13 @@ import {
   isOverflowTarget,
   categoriesWithTaxPreference,
   tradPreferenceEngineCategories,
+  getDefaultDecumulationOrder,
+} from "../../config/account-types";
+import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  getDefaultDecumulationOrder,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import { subtractExcluded, applySlotsToBalances } from "./balance-utils";
@@ -36,8 +37,7 @@ import type {
 } from "@/lib/pure/withdrawal-eligibility";
 import { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "./withdrawal-cost-ranking";
-
-const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 /**
  * Route withdrawals from accounts for one year.
@@ -209,7 +209,7 @@ export function routeWithdrawalsPercentage(
   // Apply account caps and clamp to available balance
   let excess = 0;
   const cappedAccounts = new Set<AccountCategory>();
-  for (const cat of ACCOUNT_CATEGORIES) {
+  for (const cat of getAllCategories()) {
     const accountCap = config.withdrawalAccountCaps[cat];
     // A cap moves the cut-off share to other accounts like an emptied
     // account's does (it was dropped: delivered short with no unmet need).
@@ -241,10 +241,10 @@ export function routeWithdrawalsPercentage(
   const placeExcess = () => {
     for (
       let pass = 0;
-      excess > 0.01 && pass < ACCOUNT_CATEGORIES.length * 2;
+      excess > 0.01 && pass < getAllCategories().length * 2;
       pass++
     ) {
-      const withRoom = ACCOUNT_CATEGORIES.filter((c) => roomOf(c) > 0);
+      const withRoom = getAllCategories().filter((c) => roomOf(c) > 0);
       if (withRoom.length === 0) break;
       const splitWeighted = withRoom.filter(
         (c) => (config.withdrawalSplits[c] ?? 0) > 0,
@@ -276,7 +276,7 @@ export function routeWithdrawalsPercentage(
     let totalTradWithdrawn = 0;
     let totalRothWithdrawn = 0;
 
-    for (const category of ACCOUNT_CATEGORIES) {
+    for (const category of getAllCategories()) {
       const withdrawal = targets[category];
       let rothWithdrawal = 0;
       let tradWithdrawal = 0;
@@ -354,7 +354,7 @@ export function routeWithdrawalsPercentage(
   };
 
   let builtSlots = buildSlots();
-  for (let pass = 0; pass < ACCOUNT_CATEGORIES.length * 2; pass++) {
+  for (let pass = 0; pass < getAllCategories().length * 2; pass++) {
     const cut = builtSlots.filter(
       (s) => targets[s.category] - s.withdrawal > 0.01,
     );
@@ -471,16 +471,10 @@ export function routeWithdrawalsBracketFilling(
   const tradTypeCap = config.withdrawalTaxTypeCaps.traditional;
   const rothTypeCap = config.withdrawalTaxTypeCaps.roth;
 
-  // Computed ONCE, shared
-  // by both Phase 1 (below) and `drawRothTierCapped` further down — both
-  // loops need "which Traditional-preference account first," and a single
-  // local here means the two can't drift the way they would if each
-  // independently filtered `config.withdrawalOrder`. Previously both
-  // loops ignored `config.withdrawalOrder` entirely and iterated
-  // `categoriesWithTaxPreference()` directly (a config-declaration-order
-  // list, not the user's own editable order) — waterfall and percentage
-  // modes already honored the user's order; bracket_filling silently
-  // didn't. Filtering the user's FULL order down to just the
+  // Computed ONCE, shared by Phase 1 (below) and `drawRothTierCapped`
+  // further down, so both read "which Traditional-preference account
+  // first" from the user's own `config.withdrawalOrder`, as waterfall and
+  // percentage modes do. Filtering the user's FULL order down to just the
   // Traditional-preference categories preserves their relative order
   // among themselves; `tradPreferenceEngineCategories()` (not
   // `categoriesWithTaxPreference()` alone) is the correct membership test
@@ -611,7 +605,7 @@ export function routeWithdrawalsBracketFilling(
     }
   }
 
-  const overflowCats = ACCOUNT_CATEGORIES.filter(isOverflowTarget);
+  const overflowCats = getAllCategories().filter(isOverflowTarget);
   function drawBrokerageTierCapped(cap: number): void {
     let tierRemaining = Math.min(remaining, cap);
     for (const brokCat of overflowCats) {
@@ -654,7 +648,7 @@ export function routeWithdrawalsBracketFilling(
     }
   }
 
-  const singleBucketCats = ACCOUNT_CATEGORIES.filter(
+  const singleBucketCats = getAllCategories().filter(
     (cat) => getAccountTypeConfig(cat).balanceStructure === "single_bucket",
   );
   function drawHsaTierCapped(cap: number): void {
@@ -869,12 +863,8 @@ export function routeWithdrawalsBracketFilling(
 
   if (pastTarget > 0) warnings.push(pastTargetWarning(pastTarget));
 
-  // Ensure all 4 categories have slots (brokerage might be missing if not needed)
-  // (this ACCOUNT_CATEGORIES loop already
-  // covers every singleBucketCats entry too, since singleBucketCats is a
-  // subset — a separate identical loop over just that subset ran first
-  // and was fully dead code, removed here.)
-  for (const cat of ACCOUNT_CATEGORIES) {
+  // Every category gets a slot, including ones nothing was drawn from.
+  for (const cat of getAllCategories()) {
     if (!slots.find((s) => s.category === cat)) {
       slots.push({
         category: cat,
@@ -931,7 +921,7 @@ interface RouteBracketInfo {
    *  degrades to the fixed Roth→brokerage→HSA order (no
    *  filingStatus at all skips LTCG/NIIT lookups entirely; the others
    *  default to "no basis tracking / no MAGI headroom known"). */
-  filingStatus?: FilingStatusType | null;
+  filingStatus?: ReturnFilingStatus | null;
   ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
   /** Total Roth BASIS dollars (tax-free, non-qualified-growth-free) still
    *  available across the accounts routing will draw from, from

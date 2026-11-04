@@ -51,6 +51,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
+import { budgetApiServiceLabel } from "@/lib/utils/format";
 
 // ── Navigation data structure ──
 
@@ -291,8 +292,6 @@ function CollapsibleNavGroup({
   );
 }
 
-const BUDGET_API_LABELS = { ynab: "YNAB", actual: "Actual Budget" } as const;
-
 /** Standalone link to the active budget API's own web app, below the System
  *  group. Hidden entirely when no service is active, or when Actual is
  *  active but has no External URL saved (its `serverUrl` is often a
@@ -308,7 +307,7 @@ function BudgetApiLink({
   const { data } = trpc.sync.getActiveBudgetApiLink.useQuery();
   if (!data || data.service === "none" || !data.url) return null;
 
-  const label = BUDGET_API_LABELS[data.service];
+  const label = budgetApiServiceLabel(data.service);
   return (
     <a
       href={data.url}

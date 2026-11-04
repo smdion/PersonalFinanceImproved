@@ -101,7 +101,7 @@ export function BudgetContent({
   const { profileId: displayProfileId } = useEffectiveProfileId("budget", {
     validIds: allProfiles?.map((p) => p.id),
     localSelection: viewingProfileId,
-    globalDefaultId: activeProfileId,
+    activeProfileId,
   });
 
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -112,26 +112,18 @@ export function BudgetContent({
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
   );
-  // One shared tier object per axis, fed to BOTH the server query and the
-  // client-side payroll breakdown so they cannot resolve differently.
-  const contributionProfileTiers = useMemo(
+  // The active ids, sent explicitly (null while loading = none), shared by
+  // the summary query and the edit batch so they resolve alike.
+  const paySelection = useMemo(
     () => ({
-      localSelectionId: null,
-      globalDefaultId: activeContribProfileId,
+      contribution: activeContribProfileId,
+      salary: activeSalaryProfileIdSetting,
     }),
-    [activeContribProfileId],
-  );
-  const salaryProfileTiers = useMemo(
-    () => ({
-      localSelectionId: null,
-      globalDefaultId: activeSalaryProfileIdSetting,
-    }),
-    [activeSalaryProfileIdSetting],
+    [activeContribProfileId, activeSalaryProfileIdSetting],
   );
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
-    contributionProfile: contributionProfileTiers,
-    salaryProfile: salaryProfileTiers,
+    selection: paySelection,
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
@@ -226,7 +218,7 @@ export function BudgetContent({
     useEffectiveProfileId("retirement", {
       validIds: (retirementProfilesForResolve ?? []).map((p) => p.id),
       localSelection: viewingRetirementProfileId,
-      globalDefaultId: activeRetirementProfileId,
+      activeProfileId: activeRetirementProfileId,
     });
   const [showModeManager, setShowModeManager] = useState(false);
   const [addingItemToCategory, setAddingItemToCategory] = useState<
@@ -250,7 +242,7 @@ export function BudgetContent({
     nameColWidth,
     setNameColWidth,
     updateBatch,
-    contributionProfileTiers,
+    paySelection,
   });
 
   const {
@@ -274,8 +266,8 @@ export function BudgetContent({
     data,
     savingsGoals,
     apiActualsData,
-    contributionProfileTiers,
-    salaryProfileTiers,
+    contribProfileId: activeContribProfileId,
+    salaryProfileId: activeSalaryProfileIdSetting,
     editMode,
     getDraft,
     visibleCount,

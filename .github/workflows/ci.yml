@@ -34,19 +34,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # --- Warning only (never fails the pipeline) ---
+      # --- Blocking steps (fail the pipeline) ---
 
-      - name: Commit rules over the pull request's commits (warnings only)
+      - name: Commit rules over the pull request's commits
         if: github.event_name == 'pull_request'
-        continue-on-error: true
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
           git fetch --no-tags --unshallow origin || true
           git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
-          pnpm tsx scripts/check-commit.ts --range "origin/$BASE_REF..HEAD"
-
-      # --- Blocking steps (fail the pipeline) ---
+          pnpm tsx scripts/check-commit.ts --strict --range "origin/$BASE_REF..HEAD"
 
       - name: Type-check
         run: npx tsc --noEmit
@@ -196,6 +193,10 @@ jobs:
 
       - name: Verify docs freshness
         run: pnpm docs:verify
+
+      # The projection cache's engine version is a hash of the engine code.
+      - name: Verify the engine hash is current
+        run: pnpm check:engine-hash
 
       # Every calculator, engine and lib/pure export has a row in
       # docs/CALCULATIONS.md; the exports without one and the high-risk

@@ -20,7 +20,7 @@ import { localDateStr } from "@/lib/utils/date";
 import { getEffectiveCreditCardDebt } from "./budget";
 import { parseAppSettings } from "./settings";
 import { toNumber } from "./transforms";
-import type { DbOrTx } from "./transforms";
+import type { DbOrTx } from "@/lib/db";
 
 type OpenDebt = typeof schema.debts.$inferSelect;
 

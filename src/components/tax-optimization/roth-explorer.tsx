@@ -19,10 +19,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Selection = Partial<
-  Pick<
-    RouterInputs["projection"]["rothConversionWhatIf"],
-    "retirementProfileId"
-  >
+  Pick<RouterInputs["projection"]["rothConversionWhatIf"], "selection">
 >;
 
 export function RothExplorer({ selection }: { selection: Selection }) {

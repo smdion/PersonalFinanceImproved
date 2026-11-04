@@ -7,15 +7,14 @@
  * loan. A link to a refinanced loan follows it to the loan that replaced it.
  * Spending typed in for a phase has no lines, so nothing ends in it.
  */
-import type { db as _db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import type { ExpenseEnding } from "@/lib/calculators/types";
 import { computeBudgetAnnualTotal } from "@/server/helpers";
 import { buildMortgageInputs } from "@/server/helpers/mortgage";
 import { toNumber } from "@/server/helpers/transforms";
+import type { Db } from "@/lib/db";
 
-type Db = typeof _db;
 type Loan = typeof schema.mortgageLoans.$inferSelect;
 type Item = typeof schema.budgetItems.$inferSelect;
 type Phase = {

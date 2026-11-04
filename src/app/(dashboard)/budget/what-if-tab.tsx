@@ -45,6 +45,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
 import {
+  getAllCategories,
   getParentCategory,
   getDefaultTaxTreatment,
 } from "@/lib/config/account-types";
@@ -78,7 +79,6 @@ import {
 } from "./use-budget-derived-data";
 import { WhatIfPaycheckSummary } from "./what-if-paycheck-summary";
 import {
-  SANDBOX_ACCOUNT_TYPES,
   WhatIfContributionsEditor,
   WhatIfDeductionsEditor,
   WhatIfPinnedCell,
@@ -313,7 +313,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
       {
         localId,
         personId,
-        accountType: SANDBOX_ACCOUNT_TYPES[0]!,
+        accountType: getAllCategories()[0]!,
         contributionMethod: "percent_of_salary",
         contributionValue: "0",
       },
@@ -572,20 +572,20 @@ export function WhatIfTab({
   const { profileId: defaultBudgetId } = useEffectiveProfileId("budget", {
     validIds: budgetProfiles?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeBudgetProfileId,
+    activeProfileId: activeBudgetProfileId,
   });
   const { profileId: defaultContribId } = useEffectiveProfileId(
     "contribution",
     {
       validIds: contribProfiles?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeContribSetting,
+      activeProfileId: activeContribSetting,
     },
   );
   const { profileId: defaultSalaryId } = useEffectiveProfileId("salary", {
     validIds: salaryProfiles?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeSalarySetting,
+    activeProfileId: activeSalarySetting,
   });
 
   // ── The three local pickers (plain state; null = "use the default") ──
@@ -627,21 +627,13 @@ export function WhatIfTab({
   });
 
   // ── Budget panel ──
-  // The tab's picks go into the LOCAL SELECTION tier of the documented
-  // precedence — the tier that exists for exactly this sandbox.
-  const contributionProfileTiers = useMemo(
+  // The tab's picks, else the active ids (null while loading = none).
+  const selection = useMemo(
     () => ({
-      localSelectionId: contribId,
-      globalDefaultId: activeContribSetting,
+      contribution: contribId ?? activeContribSetting,
+      salary: salaryId ?? activeSalarySetting,
     }),
-    [contribId, activeContribSetting],
-  );
-  const salaryProfileTiers = useMemo(
-    () => ({
-      localSelectionId: salaryId,
-      globalDefaultId: activeSalarySetting,
-    }),
-    [salaryId, activeSalarySetting],
+    [contribId, salaryId, activeContribSetting, activeSalarySetting],
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
@@ -655,8 +647,7 @@ export function WhatIfTab({
   const computeActiveSummaryInput = useDebouncedValue(
     {
       selectedColumn: activeColumn,
-      contributionProfile: contributionProfileTiers,
-      salaryProfile: salaryProfileTiers,
+      selection,
       ...(budgetId != null ? { profileId: budgetId } : {}),
       ...(Object.keys(sandbox.salaryEntries).length > 0
         ? { sandboxSalaryEntries: sandbox.salaryEntries }
@@ -712,8 +703,8 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    contributionProfileTiers,
-    salaryProfileTiers,
+    contribProfileId: selection.contribution,
+    salaryProfileId: selection.salary,
     editMode: true,
     getDraft: sandbox.getDraft,
     // No pagination in the sandbox — a "load more" sentinel that never

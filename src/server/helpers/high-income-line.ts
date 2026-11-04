@@ -7,12 +7,13 @@ import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { defaultHighIncomeLine } from "@/lib/pure/high-income-line";
 import { getAllPeople } from "./people";
-import { thisYearFilingStatus } from "./filing-status";
+import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import {
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
 } from "./retirement-profile";
-import { getPrimaryPerson, type Db } from "./transforms";
+import { getPrimaryPerson } from "./transforms";
+import type { Db } from "@/lib/db";
 
 export async function householdHighIncomeLine(db: Db) {
   const [appSettings, retSettings, retProfiles, people] = await Promise.all([

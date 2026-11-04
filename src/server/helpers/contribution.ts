@@ -13,7 +13,6 @@ import type {
   AccountCategory,
   RetirementContribSlice,
 } from "@/lib/calculators/types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   buildCategoryRecord,
   categoriesWithTaxPreference,
@@ -23,14 +22,19 @@ import {
   getDefaultTaxTreatment,
   isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
-import type {
-  TaxTreatment,
-  ContributionMethod,
+import {
+  type TaxTreatment,
+  type ContributionMethod,
 } from "@/lib/config/enum-values";
+import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
+import {
+  computeAnnualContribution,
+  fractionFromPercent,
+} from "@/lib/pure/contributions/contribution-amount";
 import type { ContribSaveChecker } from "./contribution-caps";
-import { toNumber, getPeriodsPerYear } from "./transforms";
-import type { Db, DbOrTx } from "./transforms";
+import { toNumber } from "./transforms";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   filterActiveJobs,
   resolveContribFieldDisplayState,
@@ -54,6 +58,7 @@ import {
   matchGroupKey,
   matchPayGroupsWithBonus,
 } from "./contribution-match";
+import type { Db, DbOrTx } from "@/lib/db";
 
 // Employer match lives in contribution-match.ts; re-exported so callers
 // keep importing contribution helpers from one place.
@@ -64,28 +69,6 @@ export {
   matchPayGroupsWithBonus,
   type GroupableMatchRow,
 } from "./contribution-match";
-
-/**
- * Compute annual contribution amount from DB contribution row fields.
- * Eliminates the duplicated if/else chain for contribution methods.
- */
-export function computeAnnualContribution(
-  method: string,
-  value: number,
-  salary: number,
-  periodsPerYear: number,
-): number {
-  switch (method) {
-    case "percent_of_salary":
-      return salary * (value / 100);
-    case "fixed_per_period":
-      return value * periodsPerYear;
-    case "fixed_monthly":
-      return value * 12;
-    default: // fixed_annual
-      return value;
-  }
-}
 
 /**
  * Fallback periods-per-year for a jobless contribution account: the active
@@ -258,7 +241,7 @@ function mergeContributionAccountEdit(
  * Writes into `contributionProfileId`'s active fields — accounts carry no
  * value of their own (see applyContribActiveFields), so the caller must
  * have already resolved which profile this edit belongs to (same
- * Plan-pin → column-pin → local-selection → global-default precedence the
+ * local selection → active profile precedence the
  * rest of the page uses; see resolveEffectiveContribProfileIdForItem in
  * routers/budget.ts).
  *
@@ -491,7 +474,7 @@ export function buildContribAccounts(
       perPeriodContribution: roundToCents(perPeriod),
       rateOfGross:
         c.contributionMethod === "percent_of_salary"
-          ? contribValue / 100
+          ? fractionFromPercent(contribValue)
           : null,
       taxTreatment: c.taxTreatment,
       isPayrollDeducted,
@@ -623,7 +606,8 @@ export function annualContributionWithBonus(
       {
         isPayrollDeducted: isPaidThroughPayroll(c),
         fromBonus: c.fromBonus,
-        rateOfGross: method === "percent_of_salary" ? value / 100 : null,
+        rateOfGross:
+          method === "percent_of_salary" ? fractionFromPercent(value) : null,
         perPeriodContribution:
           method === "fixed_per_period"
             ? value
@@ -918,7 +902,7 @@ export function buildContributionDisplaySpecs(
     const ownerPerson = people.find((p) => p.id === c.personId);
     const cv = computeValue(c);
     const method = c.contributionMethod ?? "percent_of_salary";
-    const value = method === "percent_of_salary" ? cv / 100 : cv;
+    const value = method === "percent_of_salary" ? fractionFromPercent(cv) : cv;
 
     return {
       id: c.id,
@@ -1700,7 +1684,7 @@ export function buildProfileContribData(
       const js = jobPayFor(c, jobSalaries);
       let personPayShare: number | undefined;
       if (method === "percent_of_salary") {
-        value = cv / 100;
+        value = fractionFromPercent(cv);
         // The pay this rate applies to — base salary, plus the bonus when
         // its check carries this contribution (annualContributionWithBonus)
         // — as a share of total pay, so it grows with salary in the engine.
@@ -1749,8 +1733,7 @@ export function buildProfileContribData(
       const contribOwner =
         c.personId != null ? ctx.personNameById.get(c.personId) : undefined;
       const matchTaxType =
-        TAX_TREATMENT_TO_TAX_TYPE[c.taxTreatment ?? "pre_tax"] ??
-        c.taxTreatment;
+        portfolioTaxTypeOf(c.taxTreatment ?? "pre_tax") ?? c.taxTreatment;
       const catAccts = ctx.accountBreakdownByCategory[cat] ?? [];
       const contribParentCat =
         c.parentCategory ??

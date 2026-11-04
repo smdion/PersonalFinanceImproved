@@ -230,6 +230,72 @@ describe("the household's choices for these years", () => {
   });
 });
 
+describe("a stopped year that is also a 0% year", () => {
+  // Bo still has pay in 2031 and the plan's own rate is 10%, so the 0% row
+  // alone would be a pause; stopping saving takes precedence. Pins today's
+  // figures, so the 0% ceiling can't reach a stopped year's specs.
+  const contributionSpecs = [
+    {
+      category: "401k",
+      name: "Bo 401k",
+      method: "percent_of_salary",
+      value: 0.1,
+      salaryFraction: 0.4,
+      baseAnnual: 6000,
+      personId: 2,
+      employerShare: 1,
+      personPayShare: 1,
+    },
+    {
+      category: "ira",
+      name: "Bo IRA",
+      method: "fixed_monthly",
+      value: 500,
+      salaryFraction: 0.4,
+      baseAnnual: 6000,
+      personId: 2,
+      personPayShare: 1,
+    },
+  ] as ProjectionInput["contributionSpecs"];
+  const run = () => {
+    const base = couple({
+      contributionSpecs,
+      gapYearStopSaving: true,
+      employerMatchRateByCategory: {
+        "401k": 0.04,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+    });
+    return year(
+      {
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.1,
+        },
+        accumulationOverrides: [{ year: 2031, contributionRate: 0 }],
+      },
+      2031,
+    );
+  };
+
+  it("saves nothing, gets no match, and no rate ceiling scales the year", () => {
+    const stopped = run();
+    expect(stopped.savingStopped).toBe(true);
+    expect(stopped.totalEmployee).toBe(0);
+    expect(stopped.totalEmployer).toBe(0);
+    expect(stopped.rateCeilingScale).toBeNull();
+    // The draw covers the budget with nothing taken out for saving.
+    expect(stopped.gapDraw!.contributions).toBe(0);
+    expect(stopped.gapDraw!.need).toBe(56590);
+    expect(stopped.gapDraw!.withdrawal).toBe(59245.93);
+    expect(stopped.retirementBalance).toBe(1023811.95);
+  });
+});
+
 describe("what goes into a gap year's shortfall", () => {
   const needIn = (i: ProjectionInput) => year(i, 2031).gapDraw?.need ?? 0;
 
@@ -388,7 +454,7 @@ describe("gap-year figures (pins current behavior)", () => {
       accounts,
     );
     // Grossed up, the draw nets 56,499.46 against a 56,590 need: 90.54
-    // short, under the funded floor (gapShortfallFloor), so pinned as is.
+    // short, under the funded floor (shortfallFloor), so pinned as is.
     expect(figures(input)).toEqual({
       contributions: 0,
       need: 56590,

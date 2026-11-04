@@ -19,7 +19,6 @@ import {
   calendarYear,
 } from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
-import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import {
   getTotalCompensation,
@@ -42,7 +41,7 @@ import {
 } from "@/lib/calculators/net-worth";
 import { checksPaidYtd, periodsBeforeStart } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
-import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { payPeriodConfig } from "@/lib/config/pay-periods";
 import {
   accountTypeToPerformanceCategory,
   PERF_CATEGORY_PORTFOLIO,
@@ -52,6 +51,7 @@ import { sumAccounts, computeReturn } from "@/lib/pure/performance";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 import { getEffectiveOtherLiabilities } from "./debts";
+import type { Db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping
@@ -1034,7 +1034,7 @@ export async function buildYearEndHistory(
           // schedule to weight this job's contribution to the ratio by;
           // excluded, not defaulted to a guessed period count.
           if (job.payPeriod == null) continue;
-          const ppy = PAY_PERIOD_CONFIG[job.payPeriod]?.periodsPerYear ?? 12;
+          const ppy = payPeriodConfig(job.payPeriod)?.periodsPerYear ?? 12;
           // The checks this job has paid out of the ones it pays THIS year
           // (a job started this year has fewer — none before its start), so
           // YTD ÷ ratio is this year's own total. Contributions' ytdRatio

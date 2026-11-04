@@ -16,7 +16,7 @@ import {
   planRetirementAge as planRetirementAgeOf,
 } from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -39,17 +39,19 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
   buildMcInputs,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
 import {
   hashEngineInput,
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/helpers/projection-cache";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /**
  * Deliberately NOT `CoastFireMcResult` (computeCoastFireMC's shape).
@@ -86,22 +88,11 @@ export const coastFireProbeRouter = createTRPCRouter({
   computeCoastFireProbe: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
-      z.object({
+      z.strictObject({
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        contributionProfileId: z.number().int().optional(),
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile — see
-         *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context. */
-        retirementProfileId: z.number().int().optional(),
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
         /** The age to probe. Validated server-side below against the
          *  RESOLVED engine input's own currentAge/retirementAge — client
@@ -113,26 +104,19 @@ export const coastFireProbeRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       // Coast FIRE's Simulation runs on the default preset.
       const [data, mc] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input.snapshotId,
-          contributionProfileId: input.contributionProfileId,
-          salaryProfileId: input.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };
@@ -187,7 +171,6 @@ export const coastFireProbeRouter = createTRPCRouter({
       const inflationRisk = mc.effectiveInflationRisk;
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
-      const SEED = 42;
 
       // Own hashEngineInput `kind` -- "coastFireProbe", never
       // "coastFireMc". hashEngineInput hashes this DERIVED payload, not
@@ -229,7 +212,7 @@ export const coastFireProbeRouter = createTRPCRouter({
             ),
           },
           numTrials: NUM_TRIALS,
-          seed: SEED,
+          seed: COMPARISON_SEED,
           assetClasses: mcAssetClasses,
           returnClampMin,
           returnClampMax,

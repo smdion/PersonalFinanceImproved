@@ -24,7 +24,6 @@ import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import {
   toNumber,
-  getPeriodsPerYear,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
   resolveCompensation,
@@ -41,6 +40,7 @@ import {
   getIncompleteContribAccountIds,
   contributionPay,
 } from "@/server/helpers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
@@ -244,7 +244,7 @@ export const paycheckRouter = createTRPCRouter({
       const taxYear =
         resolvedTax?.resolvedYear ??
         input?.taxYearOverride ??
-        new Date().getFullYear();
+        ctx.scope.asOf.getFullYear();
       const allBrackets = resolvedTax
         ? allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear)
         : [];
@@ -306,7 +306,7 @@ export const paycheckRouter = createTRPCRouter({
       }
       const effectiveJobs = profileResult.jobs;
 
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
       // The IRS-limit cap pass: every figure below reads the capped value.
       const capHousehold = await loadCapHousehold(
         ctx.db,
@@ -415,7 +415,7 @@ export const paycheckRouter = createTRPCRouter({
           contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
         );
         // This year's actual paid-out bonus, if pinned on the Salary
-        // Profile entry (SalaryProfileEntry.bonusOverride).
+        // Profile entry (SalaryEntry.bonusOverride).
         const paycheckInput = buildPaycheckInputForJob(job, {
           salary,
           bonusTerms,

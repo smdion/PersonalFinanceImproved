@@ -79,7 +79,7 @@ export function ContributionAccountsSettings() {
     {
       validIds: contribProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: rawActiveContribProfileId,
+      activeProfileId: rawActiveContribProfileId,
     },
   );
   // Powers each contribution row's "$X in <profile name>" status line —

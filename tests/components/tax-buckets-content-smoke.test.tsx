@@ -22,7 +22,7 @@ import { computeTaxBucketProjection } from "@/lib/pure/tax-bucket-projection";
 import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { annAndBo, engineDataFor } from "./projection-household";
-import { resetTrpcMock, setQuery } from "./trpc-mock";
+import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
 
 vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("./trpc-mock")).trpc,
@@ -118,7 +118,12 @@ const engineData = engineDataFor(calculateProjection(annAndBo()));
 beforeEach(() => {
   resetTrpcMock();
   localStorage.clear();
-  setQuery("taxBuckets.computeBreakdown", breakdownAnswer());
+  // The pure functions' types are wider than the procedure's output
+  // (rothBasisMeta.updatedAt may be a Date before serialization).
+  setQuery(
+    "taxBuckets.computeBreakdown",
+    breakdownAnswer() as MockOutput<"taxBuckets.computeBreakdown">,
+  );
   setQuery("projection.computeProjection", engineData);
 });
 

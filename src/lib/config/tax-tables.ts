@@ -5,7 +5,7 @@
 // Key: LTCG brackets use total taxable income (ordinary + capital gains),
 // NOT just capital gains alone.
 
-import type { FilingStatusType } from "../calculators/types";
+import type { ReturnFilingStatus } from "./filing-status";
 
 /**
  * Convert GROSS ordinary income (Traditional withdrawals + taxable SS +
@@ -72,7 +72,7 @@ export type LtcgBracketTable = Record<
  *  (resolveTaxParams), so a missing one is a caller bug — never guessed. */
 function bracketsFor(
   brackets: LtcgBracketTable,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
 ): { threshold: number; rate: number }[] {
   const raw = brackets[filingStatus];
   if (!raw || raw.length === 0)
@@ -93,7 +93,7 @@ function bracketsFor(
  */
 export function getLtcgRate(
   totalTaxableIncome: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   brackets: LtcgBracketTable,
 ): number {
   const table = bracketsFor(brackets, filingStatus);
@@ -130,7 +130,7 @@ export function getLtcgRate(
  */
 export function ltcgRateForNextDollar(
   taxableIncome: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   brackets: LtcgBracketTable,
 ): number {
   const table = bracketsFor(brackets, filingStatus);
@@ -155,7 +155,7 @@ export function ltcgRateForNextDollar(
 export function computeLtcgTax(
   ordinaryTaxableIncome: number,
   capitalGains: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   brackets: LtcgBracketTable,
 ): number {
   if (capitalGains <= 0) return 0;
@@ -195,7 +195,7 @@ export function computeLtcgTax(
 export function ltcgRoomForRate(
   targetRate: number,
   ordinaryTaxableIncome: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   brackets: LtcgBracketTable,
 ): number {
   const table = bracketsFor(brackets, filingStatus);

@@ -18,14 +18,6 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: vi.fn(async () => true),
 }));
 
-const createLoanMutate = vi.fn();
-const updateLoanMutate = vi.fn();
-const deleteLoanMutate = vi.fn();
-const createExtraMutate = vi.fn();
-const deleteExtraMutate = vi.fn();
-const invalidateMortgage = vi.fn();
-const invalidateNetWorth = vi.fn();
-
 const mockLoans = [
   {
     id: 1,
@@ -76,78 +68,25 @@ const mockExtraPayments = [
   },
 ];
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      mortgage: { invalidate: invalidateMortgage },
-      networth: { invalidate: invalidateNetWorth },
-    }),
-    mortgage: {
-      mortgageLoans: {
-        list: { useQuery: () => ({ data: mockLoans, isLoading: false }) },
-        create: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              createLoanMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        update: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              updateLoanMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        delete: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              deleteLoanMutate(input);
-              opts.onSuccess?.();
-            },
-          }),
-        },
-      },
-      mortgageExtraPayments: {
-        list: { useQuery: () => ({ data: mockExtraPayments }) },
-        create: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              createExtraMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        delete: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              deleteExtraMutate(input);
-              opts.onSuccess?.();
-            },
-          }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import {
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+  utilsCalls,
+} from "./trpc-mock";
 
 import { MortgageSettings } from "@/components/mortgage/mortgage-settings";
 
 describe("MortgageSettings smoke", () => {
   beforeEach(() => {
     currentRole = "admin";
-    createLoanMutate.mockClear();
-    updateLoanMutate.mockClear();
-    deleteLoanMutate.mockClear();
-    createExtraMutate.mockClear();
-    deleteExtraMutate.mockClear();
-    invalidateMortgage.mockClear();
-    invalidateNetWorth.mockClear();
+    resetTrpcMock();
+    // By reference: a test that empties mockLoans empties the query's data.
+    setQuery("mortgage.mortgageLoans.list", mockLoans);
+    setQuery("mortgage.mortgageExtraPayments.list", mockExtraPayments);
   });
 
   it("renders loan cards, refinance chain, and extra payments table", () => {
@@ -185,13 +124,13 @@ describe("MortgageSettings smoke", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
 
-    expect(createLoanMutate).toHaveBeenCalledWith(
+    expect(mutationCalls("mortgage.mortgageLoans.create")).toContainEqual(
       expect.objectContaining({ name: "New Loan Name" }),
     );
     // Every mortgage figure (payoff summary, Debt Payoff) and Net Worth's
     // mortgage balance refresh, not just the loan list.
-    expect(invalidateMortgage).toHaveBeenCalled();
-    expect(invalidateNetWorth).toHaveBeenCalled();
+    expect(utilsCalls("mortgage.invalidate")).not.toHaveLength(0);
+    expect(utilsCalls("networth.invalidate")).not.toHaveLength(0);
   });
 
   it("deletes a loan after confirming", async () => {
@@ -200,7 +139,7 @@ describe("MortgageSettings smoke", () => {
     fireEvent.click(deleteButtons[0]!);
     await Promise.resolve();
     await Promise.resolve();
-    expect(deleteLoanMutate).toHaveBeenCalled();
+    expect(mutationCalls("mortgage.mortgageLoans.delete")).not.toHaveLength(0);
   });
 
   it("shows 'No loans configured' when there are no loans", () => {

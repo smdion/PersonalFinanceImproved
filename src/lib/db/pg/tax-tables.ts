@@ -13,7 +13,10 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type {
+  ReturnFilingStatus,
+  W4FilingStatus,
+} from "@/lib/config/filing-status";
 import { referenceOriginColumns } from "./contributions";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -63,7 +66,7 @@ export const ltcgBrackets = pgTable(
   {
     id: serial("id").primaryKey(),
     taxYear: integer("tax_year").notNull(),
-    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    filingStatus: text("filing_status").$type<ReturnFilingStatus>().notNull(),
     brackets: jsonb("brackets").$type<LtcgBracketEntry[]>().notNull(),
     ...referenceOriginColumns,
   },
@@ -87,7 +90,7 @@ export const irmaaBrackets = pgTable(
   {
     id: serial("id").primaryKey(),
     taxYear: integer("tax_year").notNull(),
-    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    filingStatus: text("filing_status").$type<ReturnFilingStatus>().notNull(),
     brackets: jsonb("brackets").$type<IrmaaBracketEntry[]>().notNull(),
     ...referenceOriginColumns,
   },

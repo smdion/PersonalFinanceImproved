@@ -58,6 +58,9 @@ export const DEFAULT_PAY_PERIODS_PER_YEAR = 26;
 
 export const DEFAULT_TAX_RATE_BROKERAGE = 0.15;
 
+/** The Roth bracket target when none is set: stay in the 12% bracket. */
+export const DEFAULT_ROTH_BRACKET_TARGET = 0.12;
+
 // ---------------------------------------------------------------------------
 // Wealth Score (Millionaire Next Door formula)
 // ---------------------------------------------------------------------------
@@ -112,14 +115,9 @@ export const RMD_EXCISE_TAX_RATE = 0.25;
 export const RULE_OF_55_AGE = 55;
 
 /** Age at which retirement-account withdrawals become penalty-free generally
- *  (and, combined with the 5-year clock, "qualified"/tax-free for Roth).
- *
- *  Non-integer threshold under year-granularity age modeling
- *  (`ageInYear` in `src/lib/utils/date.ts`, used everywhere the engine
- *  reasons about age): `ageInYear(...) >= 59.5` is only ever true when
- *  `ageInYear(...) >= 60` — integer age comparison against a `.5` threshold
- *  rounds the eligibility start up to the year the person turns 60, not the
- *  year they turn 59.5. Correct and intentional, not an off-by-one. */
+ *  (and, with the 5-year clock, "qualified"/tax-free for Roth). Against the
+ *  engine's whole-year `ageInYear`, it holds from the year the person turns
+ *  60, not 59 — intended, not an off-by-one. */
 export const PENALTY_FREE_AGE = 59.5;
 
 /** Years a Roth conversion must season before it's penalty-free to withdraw
@@ -142,20 +140,9 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
  *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
-/** Medicare eligibility age (Social Security Act §226). IRMAA surcharges
- *  apply from this age onward; it also backs ACA subsidy-eligibility checks
- *  elsewhere, since gaining Medicare ends marketplace-subsidy eligibility. */
-export const MEDICARE_START_AGE = 65;
-
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
- *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
- *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately
- *  below — this is NOT a uniform "one rate for every account type" the way
- *  the age thresholds above are per-account-type but the penalty rate
- *  itself is not: HSA's non-medical penalty is legally 20%, not 10%, and
- *  applying 10% there would understate a real cost for exactly the account
- *  type where this feature is
- *  making the biggest behavior change). Used by
+ *  (IRC §72(t)): every gated account type but HSA, whose non-medical
+ *  penalty is 20% (`HSA_NON_MEDICAL_PENALTY_RATE`). Used by
  *  `src/lib/pure/early-withdrawal-penalty.ts`. */
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
 
@@ -178,11 +165,7 @@ export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
 export const DEFAULT_STRATEGY_FLOOR_PERCENT = 0.9;
 
 /** Default rolling-average window (years) for the endowment withdrawal
- *  strategy. the UI config previously defaulted this
- *  to 5 while the engine and server fallback both used 10 — a real,
- *  user-facing divergence. Standardized on 10 (majority — engine, server
- *  fallback, and methodology docs all already agreed) and wired all three
- *  layers to this one constant so they can't drift apart again. */
+ *  strategy: the engine, the server fallback and the UI all read it. */
 export const DEFAULT_ENDOWMENT_ROLLING_YEARS = 10;
 
 // ---------------------------------------------------------------------------
@@ -222,14 +205,9 @@ export const DEFAULT_MC_INFLATION_RISK = { stdDev: 0.012 };
  *  floor on inflation, which would bias it up. */
 export const MC_INFLATION_GROWTH_FLOOR = 0.5;
 
-/** Default number of trials for a Monte Carlo simulation run. Dropped from
- *  1000 → 500 (after the worker-thread offload
- *  fixed the real motivation for a cut — it no longer needs to trade
- *  precision for a shorter server-wide freeze, since MC no longer blocks
- *  the event loop at all). Standard error scales as 1/sqrt(n): a true 90%
- *  success rate has ~±1.3 percentage points of noise at 500 trials vs
- *  ~±1% at 1000 — accepted as fine since results display rounded to whole
- *  percentage points anyway. */
+/** Default number of trials for a Monte Carlo simulation run. A true 90%
+ *  success rate carries about ±1.3 points of noise at 500 trials, fine for
+ *  a figure shown to whole points. */
 export const MC_DEFAULT_TRIALS = 500;
 
 /** The Simulation presets; Custom is the household's own values. */
@@ -253,6 +231,10 @@ export const DEFAULT_SIMULATION = {
   taxMode: "advanced",
 } as const;
 
+/** The seed of compared runs (Coast FIRE probes, strategy variants, a
+ *  year's return range): a difference is the change, not the draws. */
+export const COMPARISON_SEED = 42;
+
 /** React Query staleTime for projection queries (1 minute). */
 export const PROJECTION_STALE_TIME_MS = 60_000;
 
@@ -265,6 +247,14 @@ export const PROJECTION_DEBOUNCE_MS = 600;
 
 /** Allocation tolerance — allocations summing within this of 1.0 are acceptable. */
 export const ALLOCATION_TOLERANCE = 0.01;
+
+/** A year's funding gap is unmet need only above the greater of these: NIIT
+ *  and the LTCG recompute run after routing, so a $0.01 floor would flag UNMET
+ *  NEED on every ordinary NIIT year. A real shortfall is a large share. */
+export const SHORTFALL_MATERIALITY = {
+  minimum: 50,
+  shareOfNeed: 0.01,
+} as const;
 
 /** A share below this shows as 0% (whole-percent display) — too small to draw or mention. */
 export const NEGLIGIBLE_SHARE = 0.005;
@@ -329,38 +319,14 @@ export const MIN_INFLATION_RATE = -0.1;
 export const MAX_BROKERAGE_RAMP_YEARS = 40;
 
 // ---------------------------------------------------------------------------
-// RMD / Qualified Charitable Distribution
-// ---------------------------------------------------------------------------
-
-/** Minimum age for QCD eligibility (IRC §408(d)(8)(B)(ii): age 70½) — the
- *  engine tracks whole-year ages only, so this rounds DOWN to 70 rather
- *  than 71, since someone who turns 70 mid-year is already 70½-eligible
- *  for part of that projection year and the engine has no sub-year
- *  granularity to model the exact month. Deliberately independent of
- *  `getRmdStartAge` (72/73/75 by birth year) — QCD eligibility was NOT
- *  moved by SECURE 2.0's RMD-age delay, so a household can (and often
- *  should, to shrink a future RMD) start QCDs years before RMDs are even
- *  required (QCD was previously computed
- *  only for people who'd already reached RMD age, silently zeroing out
- *  this whole pre-RMD window, its highest-value use case). */
-export const QCD_MIN_ELIGIBILITY_AGE = 70;
-
-// ---------------------------------------------------------------------------
 // RMD-aware Roth conversion smoothing
 // ---------------------------------------------------------------------------
 
-/** Fallback ceiling for how far RMD smoothing may elevate a household's
- *  effective Roth-conversion target rate above their own
- *  `rothBracketTarget`/`rothConversionTarget`, used only when a household
- *  has `rmdSmoothingEnabled` on but never explicitly set
- *  `rmdSmoothingMaxBracketTarget` — the UI's own default for a NEWLY
- *  enabled household should seed from that household's current
- *  `rothBracketTarget` instead of relying on this constant, so opting in
- *  never visibly changes a rate the household already chose. This is a
- *  last-resort backstop (e.g. for direct API/engine-input use bypassing
- *  the UI), not the primary default path. 24% keeps the backstop below
- *  the two highest ordinary brackets, matching the same "moderate, not
- *  the top bracket" intent as the schema/UI default. */
+/** RMD smoothing's ceiling when `rmdSmoothingEnabled` is on and no
+ *  `rmdSmoothingMaxBracketTarget` is set: a backstop for input that skips
+ *  the UI, which seeds from the household's `rothBracketTarget` so opting in
+ *  never visibly changes a rate it already chose. 24% stays below the two
+ *  highest ordinary brackets. */
 export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
 
 // ---------------------------------------------------------------------------

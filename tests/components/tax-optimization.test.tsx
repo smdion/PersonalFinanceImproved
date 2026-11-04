@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { resetTrpcMock, setQuery } from "./trpc-mock";
 
 import {
   IrmaaCliffAlert,
@@ -8,20 +9,16 @@ import {
 import { ReportAssumptionsSummary } from "@/components/cards/projection/report/report-assumptions-summary";
 
 // --- trpc mock (RothExplorer / WithdrawalComparison use useQuery) ---
-const rothWhatIfQuery = vi.fn();
-const compareQuery = vi.fn();
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    projection: {
-      rothConversionWhatIf: {
-        useQuery: (...a: unknown[]) => rothWhatIfQuery(...a),
-      },
-      compareWithdrawalStrategies: {
-        useQuery: (...a: unknown[]) => compareQuery(...a),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+const ROTH = "projection.rothConversionWhatIf";
+const COMPARE = "projection.compareWithdrawalStrategies";
+
+beforeEach(() => {
+  resetTrpcMock();
+});
 
 // Import the query-driven components AFTER the mock is registered.
 const { RothExplorer } =
@@ -116,16 +113,13 @@ describe("IrmaaCliffAlert", () => {
 
 describe("RothExplorer", () => {
   it("shows the engine's recommended conversion ceiling", () => {
-    rothWhatIfQuery.mockReturnValue({
-      data: {
-        mode: "optimize",
-        result: {
-          recommendedTarget: 0.24,
-          currentTarget: 0.22,
-          candidates: [],
-        },
+    setQuery(ROTH, {
+      mode: "optimize",
+      result: {
+        recommendedTarget: 0.24,
+        currentTarget: 0.22,
+        candidates: [],
       },
-      isLoading: false,
     });
     render(<RothExplorer selection={{}} />);
     expect(
@@ -135,41 +129,38 @@ describe("RothExplorer", () => {
   });
 
   it("renders the bracket-ceiling comparison and marks best + current", () => {
-    rothWhatIfQuery.mockReturnValue({
-      data: {
-        mode: "optimize",
-        result: {
-          recommendedTarget: 0.24,
-          currentTarget: 0.22,
-          candidates: [
-            {
-              target: 0.24,
-              netCost: 500000,
-              lifetimeTax: 300000,
-              traditionalEnd: 900000,
-              shortfallScore: 0,
-              depleted: false,
-            },
-            {
-              target: 0.22,
-              netCost: 520000,
-              lifetimeTax: 280000,
-              traditionalEnd: 1090000,
-              shortfallScore: 0,
-              depleted: false,
-            },
-            {
-              target: 0.32,
-              netCost: 700000,
-              lifetimeTax: 500000,
-              traditionalEnd: 100000,
-              shortfallScore: 0,
-              depleted: true,
-            },
-          ],
-        },
+    setQuery(ROTH, {
+      mode: "optimize",
+      result: {
+        recommendedTarget: 0.24,
+        currentTarget: 0.22,
+        candidates: [
+          {
+            target: 0.24,
+            netCost: 500000,
+            lifetimeTax: 300000,
+            traditionalEnd: 900000,
+            shortfallScore: 0,
+            depleted: false,
+          },
+          {
+            target: 0.22,
+            netCost: 520000,
+            lifetimeTax: 280000,
+            traditionalEnd: 1090000,
+            shortfallScore: 0,
+            depleted: false,
+          },
+          {
+            target: 0.32,
+            netCost: 700000,
+            lifetimeTax: 500000,
+            traditionalEnd: 100000,
+            shortfallScore: 0,
+            depleted: true,
+          },
+        ],
       },
-      isLoading: false,
     });
     render(<RothExplorer selection={{}} />);
     expect(screen.getByText("best")).toBeInTheDocument();
@@ -180,39 +171,36 @@ describe("RothExplorer", () => {
 
 describe("WithdrawalComparison", () => {
   it("renders the strategy matrix and marks the cheapest", () => {
-    compareQuery.mockReturnValue({
-      data: {
-        baselineLabel: "Tax-optimized",
-        strategies: [
-          {
-            label: "Traditional first",
-            mode: "waterfall",
-            lifetimeTax: 120000,
-            terminalByTaxType: {
-              preTax: 1,
-              taxFree: 2,
-              afterTax: 3,
-              afterTaxBasis: 0,
-              hsa: 0,
-            },
-            failureYear: null,
+    setQuery(COMPARE, {
+      baselineLabel: "Tax-optimized",
+      strategies: [
+        {
+          label: "Traditional first",
+          mode: "waterfall",
+          lifetimeTax: 120000,
+          terminalByTaxType: {
+            preTax: 1,
+            taxFree: 2,
+            afterTax: 3,
+            afterTaxBasis: 0,
+            hsa: 0,
           },
-          {
-            label: "Tax-optimized",
-            mode: "bracket_filling",
-            lifetimeTax: 90000,
-            terminalByTaxType: {
-              preTax: 1,
-              taxFree: 2,
-              afterTax: 3,
-              afterTaxBasis: 0,
-              hsa: 0,
-            },
-            failureYear: null,
+          failureYear: null,
+        },
+        {
+          label: "Tax-optimized",
+          mode: "bracket_filling",
+          lifetimeTax: 90000,
+          terminalByTaxType: {
+            preTax: 1,
+            taxFree: 2,
+            afterTax: 3,
+            afterTaxBasis: 0,
+            hsa: 0,
           },
-        ],
-      },
-      isLoading: false,
+          failureYear: null,
+        },
+      ],
     });
     render(<WithdrawalComparison selection={{}} />);
     expect(screen.getByText("Traditional first")).toBeInTheDocument();
@@ -228,39 +216,36 @@ describe("WithdrawalComparison", () => {
       afterTaxBasis: 0,
       hsa: 0,
     };
-    compareQuery.mockReturnValue({
-      data: {
-        baselineLabel: "Your current plan",
-        strategies: [
-          {
-            label: "Your current plan",
-            mode: "bracket_filling",
-            withdrawalOrder: [],
-            isCurrentPlan: true,
-            lifetimeTax: 90000,
-            terminalByTaxType,
-            failureYear: null,
-          },
-          {
-            label: "Traditional first",
-            mode: "waterfall",
-            lifetimeTax: 120000,
-            terminalByTaxType,
-            failureYear: null,
-          },
-          {
-            label: "Bracket Filling",
-            mode: "bracket_filling",
-            // Config match (same mode) AND output match (same
-            // lifetimeTax/failureYear as "Your current plan" above) —
-            // this is the row that should get the annotation.
-            lifetimeTax: 90000,
-            terminalByTaxType,
-            failureYear: null,
-          },
-        ],
-      },
-      isLoading: false,
+    setQuery(COMPARE, {
+      baselineLabel: "Your current plan",
+      strategies: [
+        {
+          label: "Your current plan",
+          mode: "bracket_filling",
+          withdrawalOrder: [],
+          isCurrentPlan: true,
+          lifetimeTax: 90000,
+          terminalByTaxType,
+          failureYear: null,
+        },
+        {
+          label: "Traditional first",
+          mode: "waterfall",
+          lifetimeTax: 120000,
+          terminalByTaxType,
+          failureYear: null,
+        },
+        {
+          label: "Bracket Filling",
+          mode: "bracket_filling",
+          // Config match (same mode) AND output match (same
+          // lifetimeTax/failureYear as "Your current plan" above) —
+          // this is the row that should get the annotation.
+          lifetimeTax: 90000,
+          terminalByTaxType,
+          failureYear: null,
+        },
+      ],
     });
     render(<WithdrawalComparison selection={{}} />);
     expect(screen.getByText("(same as your current plan)")).toBeInTheDocument();
@@ -270,37 +255,34 @@ describe("WithdrawalComparison", () => {
   });
 
   it("does not annotate a preset that shares a mode but not the resolved order or the numbers", () => {
-    compareQuery.mockReturnValue({
-      data: {
-        baselineLabel: "Traditional first",
-        strategies: [
-          {
-            label: "Your current plan",
-            mode: "waterfall",
-            // Deliberately NOT one of the two waterfall presets' orders.
-            withdrawalOrder: ["hsa", "brokerage", "401k", "403b", "ira"],
-            isCurrentPlan: true,
-            lifetimeTax: 100000,
-            terminalByTaxType: null,
-            failureYear: null,
-          },
-          {
-            label: "Traditional first",
-            mode: "waterfall",
-            lifetimeTax: 95000,
-            terminalByTaxType: null,
-            failureYear: null,
-          },
-          {
-            label: "Brokerage first",
-            mode: "waterfall",
-            lifetimeTax: 105000,
-            terminalByTaxType: null,
-            failureYear: null,
-          },
-        ],
-      },
-      isLoading: false,
+    setQuery(COMPARE, {
+      baselineLabel: "Traditional first",
+      strategies: [
+        {
+          label: "Your current plan",
+          mode: "waterfall",
+          // Deliberately NOT one of the two waterfall presets' orders.
+          withdrawalOrder: ["hsa", "brokerage", "401k", "403b", "ira"],
+          isCurrentPlan: true,
+          lifetimeTax: 100000,
+          terminalByTaxType: null,
+          failureYear: null,
+        },
+        {
+          label: "Traditional first",
+          mode: "waterfall",
+          lifetimeTax: 95000,
+          terminalByTaxType: null,
+          failureYear: null,
+        },
+        {
+          label: "Brokerage first",
+          mode: "waterfall",
+          lifetimeTax: 105000,
+          terminalByTaxType: null,
+          failureYear: null,
+        },
+      ],
     });
     render(<WithdrawalComparison selection={{}} />);
     expect(

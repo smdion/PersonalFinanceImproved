@@ -22,13 +22,13 @@ import { computeSnapshotEndingBalances } from "@/lib/pure/portfolio";
 import { ownerKey, type YearEndSnapshot } from "@/lib/pure/performance-checks";
 import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
 import { toNumber } from "@/server/helpers/transforms";
-import type { DbType } from "@/server/routers/settings/_shared";
 import {
   captureYearRollups,
   syncYearRollups,
 } from "@/server/helpers/performance-rollups";
 import { pushSnapshotToBudgetApi } from "@/server/helpers";
 import type { PushSnapshotMode } from "@/server/helpers/budget-api-push";
+import type { DbOrTx } from "@/lib/db";
 
 /**
  * Each year's latest snapshot — the one that sets that year's ending
@@ -36,7 +36,7 @@ import type { PushSnapshotMode } from "@/server/helpers/budget-api-push";
  * below and the Performance checks so they can't disagree.
  */
 async function lastSnapshotPerYear(
-  db: DbType,
+  db: DbOrTx,
 ): Promise<Map<number, { id: number; date: string }>> {
   const all = await db
     .select({
@@ -56,7 +56,7 @@ async function lastSnapshotPerYear(
 /** Each year's latest snapshot balances, per account (as the sync totals
  *  them) and per account + person (for accounts held in parts). */
 export async function loadYearEndSnapshots(
-  db: DbType,
+  db: DbOrTx,
 ): Promise<YearEndSnapshot[]> {
   const last = await lastSnapshotPerYear(db);
   if (last.size === 0) return [];
@@ -120,7 +120,7 @@ export async function loadYearEndSnapshots(
 type SnapshotPerformanceSync = "synced" | "earlier-snapshot" | "year-finalized";
 
 export async function refreshSnapshotYearDerivatives(
-  tx: DbType,
+  tx: DbOrTx,
   snapshotDate: string,
   accounts: { performanceAccountId: number | null; amount: string }[],
 ): Promise<SnapshotPerformanceSync> {
@@ -195,7 +195,7 @@ type SnapshotPushResult = {
  * decides how loudly to surface `error`.
  */
 export async function pushSnapshotIfConfigured(
-  db: DbType,
+  db: DbOrTx,
   opts: {
     snapshotId: number;
     snapshotDate: string;

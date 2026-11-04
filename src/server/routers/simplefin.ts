@@ -77,7 +77,7 @@ import {
   isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { ParentCategory } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
 
@@ -851,7 +851,7 @@ export const simplefinRouter = createTRPCRouter({
   listBalanceHistory: protectedProcedure
     .input(z.object({ days: z.number().int().min(1).max(365).default(30) }))
     .query(async ({ ctx, input }) => {
-      const since = new Date();
+      const since = new Date(ctx.scope.asOf);
       since.setDate(since.getDate() - input.days);
       const sinceStr = localDateStr(since);
 

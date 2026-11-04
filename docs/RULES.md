@@ -39,7 +39,7 @@ These apply to every change, and to every review of one.
 
 These stop the failure this codebase is most prone to: maintenance by addition, where each change fixes its bug and leaves the shape alone.
 
-1. **Comments explain the code, not its history: they state what is true now.** At most three lines of current reason. Past tense, "the fix", counts of bugs and claims like "can't drift" are rejected; history goes in the commit, incident stories, finding ids (`H10`), roadmap numbers (`R32`), date-stamps and links to plan or review notes included. If a comment needs more, the code or the type changes first. Deleting code deletes its comment. These are not history, so they stay: statute and tax-law citations (`SECURE 2.0 (2023)`, IRS Notice numbers, `tax_year` values); `@deprecated` tags saying what to do instead; answer-key case ids written `<area>/<id>` (`ret/R12`; [TESTING.md](TESTING.md) § Suites worth knowing; a bare `R12` is a citation); references to the `docs/` files; and the `PROJECTION_CACHE_ENGINE_VERSION` changelog in `projection-cache.ts`.
+1. **Comments explain the code, not its history: they state what is true now.** At most three lines of current reason. Past tense, "the fix", counts of bugs and claims like "can't drift" are rejected; history goes in the commit, incident stories, finding ids (`H10`), roadmap numbers (`R32`), date-stamps and links to plan or review notes included. If a comment needs more, the code or the type changes first. Deleting code deletes its comment. These are not history, so they stay: statute and tax-law citations (`SECURE 2.0 (2023)`, IRS Notice numbers, `tax_year` values); `@deprecated` tags saying what to do instead; answer-key case ids written `<area>/<id>` (`ret/R12`; [TESTING.md](TESTING.md) § Suites worth knowing; a bare `R12` is a citation); and references to the `docs/` files.
 2. **Change the model, not the branch.** A second fix in the same spot within 30 days first asks what concept is missing. No function over 150 lines may grow. A rename or removal sweeps all callers, aliases and comments.
 3. **Types carry the state.** New domain fields use enums and config-derived unions, never `string`. Fields that appear together are grouped into one optional object. A field has one meaning. Identity is an id, never a formatted or display value. A new `as` needs a parser or a one-line reason (an `eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- <reason>`).
 4. **No guards for impossible states.** A default in money code needs a real absent state; a missing key that should exist throws or warns rather than becoming $0.
@@ -57,7 +57,12 @@ These stop the failure this codebase is most prone to: maintenance by addition, 
 
 Rules below state the target. These parts aren't true yet; don't build on them.
 
-- **"One config entry" for an account type.** `AccountCategory` and its enum are hand copies, the default withdrawal order is a hand list (a category missing from it is never drawn), and early access is identity branches.
+- **"One config entry" for an account type,** until v0.11: some lists and router schemas are still built at module load (the `it.fails` cases in `tests/lint/violations.test.ts`).
+- **Early access has two behaviors,** until v0.11: the engine reads each type's `earlyAccessRule`; Tax Buckets still branches on IRA and HSA by name.
+- **The engine keys an account by its display name** (with category, tax type and owner), so two same-named accounts of one owner merge (`el-h5`), until it keys by id (v0.11).
+- **A date of birth is parsed two ways,** UTC midnight (`ageOnDate`) and local midnight (milestones, holdings), until one parse (v0.11).
+- **The W-4 status stands in for the return status** when a year has none, in one function (`w4StandInForReturn`), until the return status is asked for (v0.11).
+- **Two MAGI sites in the Roth conversion optimizer keep their own term order,** until `yearMagi` rounds to cents (v0.11).
 - **Calculations are answer-keyed only in part.** [CALCULATIONS.md](CALCULATIONS.md) lists every calculation: its Tested column says which rows have hand-worked answer-key cases, and its Gaps column is where calculation bugs are listed. A row with no case has only its pinned tests, which can move with the code. A figure changes only with its source and its cause in dollars.
 - **There is no named layer for composition that needs I/O.** It lives in router procedures and `src/server/helpers/`, and some routers call others. Don't add more; a shared service layer is planned.
 - **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** Both are recorded layer breaks (§ Pure Business Logic Boundary); don't extend them.
@@ -77,7 +82,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Inflation shocks are independent year to year,** so long-run inflation spread is understated, until persistent inflation is modelled (decision F4, v0.11).
 - **Missing data still becomes $0 in many money paths** (`?? 0`, `return 0`), until each gets a real absent state (§ The Holistic Rule, rule 1). Don't add one.
 - **Some helpers still default `asOfDate = new Date()`,** until every caller passes its request's date (§ Time Resolution, rule 2). Don't add one.
-- **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11).
+- **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11). The Simulation's colour tones (`simulationRateTone`) also mark 75% amber and colour the stability rates.
 
 ## Data-Driven Architecture
 
@@ -88,7 +93,7 @@ All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCO
 ### Rules
 
 1. **No category if-chains.** Any code path that branches on account type string must use a config lookup. Direct string comparisons (`=== '401k'`, `.includes('hsa')`) are violations.
-2. **No hardcoded category arrays.** Use `getAllCategories()` or filtered variants (`categoriesWithIrsLimit()`, `categoriesWithTaxPreference()`). Never write `['401k', '403b', 'hsa', 'ira', 'brokerage']`.
+2. **No hand-written list of a closed set.** Use `getAllCategories()` or filtered variants (`categoriesWithIrsLimit()`, `categoriesWithTaxPreference()`). Never write `['401k', '403b', 'hsa', 'ira', 'brokerage']`. The same holds for every set the config defines: filing statuses, portfolio tax types, budget services, dollar bases, pay periods, permissions (`tests/lint/violations.test.ts`; today's few are listed there, shrink-only). A field holding such a value is typed by its set, not `string` (`ratchet/no-string-closed-set-field`).
 3. **Display labels live in config modules.** `src/lib/config/display-labels.ts` and `src/lib/config/account-types.ts` own all label maps. Components import — never define local label maps. Performance category strings (`"401k/IRA"`, `"HSA"`, `"Brokerage"`) must reference exported constants from `display-labels.ts`, not inline string literals.
 4. **Zod validators derive from config.** Use `z.enum(accountCategoryEnum())` — never `z.enum(['401k', ...])`. All mutations that accept `accountType` must use the config-derived enum, including performance account and portfolio account mutations. No `z.string()` for account type fields.
 5. **Balance access uses helpers.** `AccountBalances` is `Record<AccountCategory, AccountBalance>` (discriminated union). Use `getTraditionalBalance()`, `getRothBalance()`, `getTotalBalance()`, `getBasis()` — never literal keys like `acctBal['401k'].traditional`.
@@ -96,8 +101,9 @@ All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCO
 7. **Tax type checks use predicates.** Use `isTaxFree()` and config helpers — never `taxType === "preTax"` or `=== "roth"` directly. Internal engine keys (`preTax`, `taxFree`, `hsa`, `afterTax`) are canonical but must be accessed through helpers, not inline string comparisons.
 8. **Display ordering lives in config.** Category tab order, finalize modal sort order, and any other display ordering of account types or performance categories must be defined once in config and imported — never hardcoded as local arrays in components.
 9. **Form defaults come from config.** Initial `useState()` values for account type selectors must use `getAllCategories()[0]` or a config-derived default — never `useState("401k")` or other hardcoded category strings.
+10. **Behavior fields, not identity predicates.** Code asks what an account type does (a config field such as `supportsRothSplit` or `irsLimitGroup`, read through its helper), never which type it is: no `isHsaCategory`-style predicate naming an account. Inside the engine, dispatch on `balanceStructure` (the shape of the balance) is allowed.
 
-Key files, adding a predicate, and contribution stubs: DESIGN.md § Data-Driven Architecture.
+Key files, adding a behavior field, and contribution stubs: DESIGN.md § Data-Driven Architecture.
 
 ## Pure Business Logic Boundary
 
@@ -166,6 +172,7 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 2. **Helpers require asOfDate.** Functions like `buildYearEndHistory()`, `getEffectiveOtherAssets()`, and `isPriorYearContribWindow()` take `asOfDate` as a required parameter, with no `= new Date()` default: a default guards a state that shouldn't exist. They never call `new Date()` internally.
 3. **Calculator inputs require asOfDate.** All calculator input types already include `asOfDate: Date`. This is enforced by TypeScript — maintain it.
 4. **No stray `new Date()` in called functions.** If a function is called from a router that already resolved a date, the function must use the passed date — not create its own.
+5. **After a fetch.** A step that means now, after a network fetch, may read the clock again, with a one-line comment.
 
 ## Permission & Security Gates
 

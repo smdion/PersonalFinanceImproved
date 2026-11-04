@@ -1299,7 +1299,7 @@ describe("budget router", () => {
      * Seeds a linked contribution account + budget item, plus a Contribution
      * Profile giving the account its starting value (accounts carry no
      * value of their own anymore). Returns the profile's id so tests can
-     * pass it through as `contributionProfile.globalDefaultId`.
+     * pick it as the request's `selection.contribution`.
      */
     async function seedLinkedItem(
       overrides: {
@@ -1336,16 +1336,6 @@ describe("budget router", () => {
       return { contribAccountId, itemId, contribProfileId };
     }
 
-    /** contributionProfile tiers pointing at the given profile as the
-     * globally-active default — the precedence tier updateItemAmount(s)
-     * resolves against when the test doesn't pin one more specifically. */
-    function profileTiers(contribProfileId: number) {
-      return {
-        localSelectionId: null,
-        globalDefaultId: contribProfileId,
-      };
-    }
-
     function getContributionValue(contribProfileId: number): number {
       const row = db
         .select()
@@ -1378,7 +1368,7 @@ describe("budget router", () => {
         id: itemId,
         colIndex: 0,
         amount: 100,
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
 
       expect(getContributionValue(contribProfileId)).toBeCloseTo(100);
@@ -1401,7 +1391,7 @@ describe("budget router", () => {
           { id: linkedItemId, colIndex: 0, amount: 120 },
           { id: unlinkedItemId, colIndex: 0, amount: 80 },
         ],
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
 
       expect(getContributionValue(contribProfileId)).toBeCloseTo(120);
@@ -1454,7 +1444,7 @@ describe("budget router", () => {
           { id: itemA, colIndex: 0, amount: 111 },
           { id: itemB, colIndex: 0, amount: 222 },
         ],
-        contributionProfile: profileTiers(sharedProfileId),
+        selection: { contribution: sharedProfileId },
       });
 
       const row = db
@@ -1486,7 +1476,7 @@ describe("budget router", () => {
       });
 
       const before = await caller.budget.computeActiveSummary({
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
       const linked = before.rawItems!.find((i) => i.id === itemId)!;
       expect(linked.contribAmount).toBeCloseTo(83.33, 2);
@@ -1495,7 +1485,7 @@ describe("budget router", () => {
         id: itemId,
         colIndex: 0,
         amount: linked.contribAmount!,
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
 
       // Should not drift (e.g. to 999.96) from re-saving the displayed value.
@@ -1511,7 +1501,7 @@ describe("budget router", () => {
       });
 
       const before = await caller.budget.computeActiveSummary({
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
       const linked = before.rawItems!.find((i) => i.id === itemId)!;
       expect(linked.contribAmount).toBeCloseTo((50 * 26) / 12, 2);
@@ -1520,7 +1510,7 @@ describe("budget router", () => {
         id: itemId,
         colIndex: 0,
         amount: 200, // new monthly target
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
 
       // value = 200 * 12 / 26
@@ -1541,7 +1531,7 @@ describe("budget router", () => {
           id: itemId,
           colIndex: 0,
           amount: 100,
-          contributionProfile: profileTiers(contribProfileId),
+          selection: { contribution: contribProfileId },
         }),
       ).rejects.toThrow(/percent_of_salary/);
     });
@@ -1563,14 +1553,14 @@ describe("budget router", () => {
         });
 
       const baseline = await caller.budget.computeActiveSummary({
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
       expect(
         baseline.rawItems!.find((i) => i.id === itemId)!.contribAmount,
       ).toBeCloseTo(75, 2);
 
       const withSandbox = await caller.budget.computeActiveSummary({
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
         sandboxContribActiveFields: {
           [String(contribAccountId)]: { contributionValue: "300" },
         },
@@ -1613,13 +1603,13 @@ describe("budget router", () => {
       });
 
       const baseline = await caller.budget.computeActiveSummary({
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
       });
       const before = baseline.rawItems!.find((i) => i.id === itemId)!;
       expect(before.contribAmount).toBeCloseTo((50 * 26) / 12, 2);
 
       const withSandbox = await caller.budget.computeActiveSummary({
-        contributionProfile: profileTiers(contribProfileId),
+        selection: { contribution: contribProfileId },
         sandboxSalaryEntries: {
           [String(personId)]: { salary: 999999 },
         },
@@ -1652,10 +1642,7 @@ describe("budget router", () => {
       });
 
       const result = await caller.budget.computeActiveSummary({
-        contributionProfile: {
-          localSelectionId: null,
-          globalDefaultId: emptyProfileId,
-        },
+        selection: { contribution: emptyProfileId },
       });
       const item = result.rawItems!.find((i) => i.id === itemId)!;
       expect(item.contribAmount).toBe(0);
@@ -1685,10 +1672,7 @@ describe("budget router", () => {
       });
 
       const result = await caller.budget.computeActiveSummary({
-        contributionProfile: {
-          localSelectionId: null,
-          globalDefaultId: offProfileId,
-        },
+        selection: { contribution: offProfileId },
       });
       const item = result.rawItems!.find((i) => i.id === itemId)!;
       expect(item.contribAmount).toBe(0);
@@ -1728,10 +1712,7 @@ describe("budget router", () => {
       });
 
       const result = await caller.budget.computeActiveSummary({
-        contributionProfile: {
-          localSelectionId: null,
-          globalDefaultId: someProfileId,
-        },
+        selection: { contribution: someProfileId },
       });
       const item = result.rawItems!.find((i) => i.id === itemId)!;
       expect(item.contribAmount).toBe(0);
@@ -1777,10 +1758,7 @@ describe("budget router", () => {
 
       const withA = await caller.budget.computeActiveSummary({
         profileId: twoColProfileId,
-        contributionProfile: {
-          localSelectionId: profileA,
-          globalDefaultId: null,
-        },
+        selection: { contribution: profileA },
       });
       const itemA = withA.rawItems!.find((i) => i.id === itemId)!;
       expect(itemA.contribStatus).toEqual(["ok", "ok"]);
@@ -1788,10 +1766,7 @@ describe("budget router", () => {
 
       const withB = await caller.budget.computeActiveSummary({
         profileId: twoColProfileId,
-        contributionProfile: {
-          localSelectionId: profileB,
-          globalDefaultId: null,
-        },
+        selection: { contribution: profileB },
       });
       const itemB = withB.rawItems!.find((i) => i.id === itemId)!;
       expect(itemB.contribStatus).toEqual(["not_in_profile", "not_in_profile"]);

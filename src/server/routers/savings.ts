@@ -27,15 +27,10 @@ import {
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
 import { paycheckRouter } from "./paycheck";
-import {
-  budgetRouter,
-  profileResolutionTiersSchema,
-  type ProfileResolutionTiers,
-} from "./budget";
+import { budgetRouter } from "./budget";
 import {
   toNumber,
   computeBudgetAnnualTotal,
-  getPeriodsPerYear,
   resolveCompensation,
   loadEffectiveSalaryProfile,
   resolveActiveSalaryProfileId,
@@ -57,6 +52,7 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_BUDGET_ACTIVE_COLUMN,
@@ -73,8 +69,8 @@ import { zDecimal } from "./settings/_shared";
 import {
   targetModeSchema,
   budgetApiServiceSchema,
-  BUDGET_API_SERVICE_VALUES,
 } from "@/lib/config/enum-values";
+import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
@@ -100,6 +96,11 @@ import { currentMonthKey } from "@/lib/pure/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
+import type { DbOrTx } from "@/lib/db";
+import {
+  payProfileSelectionSchema,
+  type PayProfileSelection,
+} from "@/lib/pure/household/profile-selection.schema";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -129,7 +130,7 @@ import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
  * fabricated schedule.
  */
 export async function computeJobNetPayPerCheck(
-  db: DbType,
+  db: DbOrTx,
   jobId: number,
 ): Promise<{
   netPayPerCheck: number;
@@ -367,7 +368,7 @@ export async function computeJobNetPayPerCheck(
  * than fabricate a home for the data" rule as computeJobNetPayPerCheck.
  */
 async function writeJobExtraPaycheckRouting(
-  db: DbType,
+  db: DbOrTx,
   jobId: number,
   routing: ExtraPaycheckRoutingData | null,
 ): Promise<void> {
@@ -488,37 +489,13 @@ function resolveEfundTierIndex(
 async function computeLiveMaxMonthlyFunding(
   ctx: Context,
   profileId?: number,
-  /** The caller's already-resolved Contribution/Salary Profile selection
-   *  (savings/page.tsx's effectiveContribProfileId/effectiveSalaryProfileId
-   *  — the SAME precedence chain, column profile > local selection >
-   *  active, computeActiveSummary's own contributionProfile/salaryProfile
-   *  tiers resolve against) — the paycheck.computeSummary
-   *  call below had NO such resolution at all — it always used whichever
-   *  contribution/salary profile is globally active, regardless of what
-   *  column/profile the caller was actually viewing. A household with any
-   *  non-default (column-pinned or locally-selected) Contribution/Salary
-   *  Profile saw recalculateAllocation/lockInAllocationPercent silently
-   *  compute against the WRONG live pool — the preview (built client-side
-   *  from the correct effective profile) showed a real change, but the
-   *  persisted write, computed here against the household's default profile
-   *  instead, could match the already-stored value almost exactly and look
-   *  like a complete no-op (`updated: N` returned, nothing actually moved).
-   *  budgetCaller.computeActiveSummary ALSO needs the caller's raw
-   *  contribution/salary TIERS (not just a resolved id) passed as its own
-   *  `contributionProfile`/`salaryProfile` input — leaving that call bare
-   *  (as the first fix here did) makes it
-   *  fall back to NO_PROFILE_TIERS (column profiles only, no active
-   *  default), so contribution-linked budget items resolve against a
-   *  DIFFERENT profile than the client's own top-level maxMonthlyFunding
-   *  query used (savings/page.tsx passes contributionProfileTiers/
-   *  salaryProfileTiers there) — budgetMonthlyTotal, and so the persisted
-   *  live pool, still silently diverged from the preview even after the
-   *  paycheck-side fix. */
+  /** The page's Contribution/Salary Profile ids for the paycheck side, and
+   *  its budget summary's selection for the budget side, so the pool
+   *  matches its preview. */
   income?: {
     contributionProfileId?: number;
     salaryProfileId?: number;
-    contributionProfileTiers?: ProfileResolutionTiers;
-    salaryProfileTiers?: ProfileResolutionTiers;
+    selection?: PayProfileSelection;
   },
 ): Promise<number | null> {
   const paycheckCaller = createCallerFactory(paycheckRouter)(internalCtx(ctx));
@@ -537,12 +514,7 @@ async function computeLiveMaxMonthlyFunding(
     ),
     budgetCaller.computeActiveSummary({
       ...(profileId ? { profileId } : {}),
-      ...(income?.contributionProfileTiers
-        ? { contributionProfile: income.contributionProfileTiers }
-        : {}),
-      ...(income?.salaryProfileTiers
-        ? { salaryProfile: income.salaryProfileTiers }
-        : {}),
+      ...(income?.selection ? { selection: income.selection } : {}),
     }),
   ]);
   const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetSummary);
@@ -553,10 +525,6 @@ async function computeLiveMaxMonthlyFunding(
       )
     : null;
 }
-
-/** Accepts both the main db instance and transaction handles. */
-type DbType =
-  Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
 
 /**
  * Delete a savings goal, detaching its sub-goals first (they become
@@ -577,7 +545,7 @@ async function deleteSavingsGoal(db: Context["db"], id: number) {
 /** A transfer's two legs must settle/unsettle together — otherwise money
  *  silently vanishes from (or reappears in) the combined projection. */
 async function resolvePairedPlannedTxIds(
-  db: DbType,
+  db: DbOrTx,
   plannedTxId: number,
 ): Promise<number[]> {
   const [row] = await db
@@ -603,7 +571,7 @@ async function resolvePairedPlannedTxIds(
 }
 
 async function settleOccurrence(
-  db: DbType,
+  db: DbOrTx,
   input: { plannedTxId: number; occurrenceMonth: string },
 ) {
   const pairIds = await resolvePairedPlannedTxIds(db, input.plannedTxId);
@@ -660,7 +628,7 @@ const savingsGoalInput = z.object({
  * only some goals' overrides.
  */
 async function replaceMonthOverrides(
-  db: DbType,
+  db: DbOrTx,
   months: string[],
   allocations: { goalId: number; amount: number }[],
 ): Promise<void> {
@@ -812,7 +780,7 @@ export const savingsRouter = createTRPCRouter({
         .filter((g) => g.apiCategoryId);
       const currentMonthBudgetedMap = new Map<number, number>();
       if (apiLinkedGoals.length > 0 && activeServiceForSummary !== "none") {
-        const now = new Date();
+        const now = ctx.scope.asOf;
         const monthCache = await cacheGet<BudgetMonthDetail>(
           ctx.db,
           activeServiceForSummary,
@@ -910,7 +878,7 @@ export const savingsRouter = createTRPCRouter({
           outstandingSelfLoans,
           essentialMonthlyExpenses,
           targetMonths: efundGoal.targetMonths ?? 4,
-          asOfDate: new Date(),
+          asOfDate: ctx.scope.asOf,
         };
         efundResult = calculateEFund(efundInput);
       }
@@ -957,7 +925,7 @@ export const savingsRouter = createTRPCRouter({
         }),
         monthlySavingsPool: totalMonthlyPool,
         essentialMonthlyExpenses,
-        asOfDate: new Date(),
+        asOfDate: ctx.scope.asOf,
       };
 
       const savingsResult = calculateSavings(savingsInput);
@@ -2108,8 +2076,7 @@ export const savingsRouter = createTRPCRouter({
           // can't silently diverge from what its own preview showed.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
-          contributionProfileTiers: profileResolutionTiersSchema.optional(),
-          salaryProfileTiers: profileResolutionTiersSchema.optional(),
+          selection: payProfileSelectionSchema.optional(),
         })
         .optional(),
     )
@@ -2149,8 +2116,7 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
-          contributionProfileTiers: input?.contributionProfileTiers,
-          salaryProfileTiers: input?.salaryProfileTiers,
+          selection: input?.selection,
         },
       );
       if (maxMonthlyFunding === null) {
@@ -2206,8 +2172,7 @@ export const savingsRouter = createTRPCRouter({
           // See computeLiveMaxMonthlyFunding's `income` param docblock.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
-          contributionProfileTiers: profileResolutionTiersSchema.optional(),
-          salaryProfileTiers: profileResolutionTiersSchema.optional(),
+          selection: payProfileSelectionSchema.optional(),
         })
         .optional(),
     )
@@ -2243,8 +2208,7 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
-          contributionProfileTiers: input?.contributionProfileTiers,
-          salaryProfileTiers: input?.salaryProfileTiers,
+          selection: input?.selection,
         },
       );
       if (maxMonthlyFunding === null) {
@@ -2610,7 +2574,7 @@ export const savingsRouter = createTRPCRouter({
           payPeriod,
           anchorPayDate,
         } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
-        const nowYear = new Date().getFullYear();
+        const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(
           ctx.db,
           input.jobId,
@@ -2661,7 +2625,7 @@ export const savingsRouter = createTRPCRouter({
           payPeriod,
           anchorPayDate,
         } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
-        const nowYear = new Date().getFullYear();
+        const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
           ...existing,
           baseNetPayPerCheck,

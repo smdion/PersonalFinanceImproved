@@ -1,0 +1,80 @@
+{
+  "description": "A request the wrapper rejects with 500 (\"Unknown error\"), sent through ActualClient.request: 6 identical PUTs.",
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "pairs": [
+    {
+      "method": "PUT",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": {
+        "note": "x"
+      },
+      "status": 500,
+      "responseBody": {
+        "error": "Unknown error while interacting with Actual Api. See server logs for more information"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": {
+        "note": "x"
+      },
+      "status": 500,
+      "responseBody": {
+        "error": "Unknown error while interacting with Actual Api. See server logs for more information"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": {
+        "note": "x"
+      },
+      "status": 500,
+      "responseBody": {
+        "error": "Unknown error while interacting with Actual Api. See server logs for more information"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": {
+        "note": "x"
+      },
+      "status": 500,
+      "responseBody": {
+        "error": "Unknown error while interacting with Actual Api. See server logs for more information"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": {
+        "note": "x"
+      },
+      "status": 500,
+      "responseBody": {
+        "error": "Unknown error while interacting with Actual Api. See server logs for more information"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": {
+        "note": "x"
+      },
+      "status": 500,
+      "responseBody": {
+        "error": "Unknown error while interacting with Actual Api. See server logs for more information"
+      }
+    }
+  ]
+}

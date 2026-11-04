@@ -3,7 +3,7 @@
 //
 // Philosophy: Config declares, code executes.
 // Nothing in the codebase knows what "Guyton-Klinger" is — it only knows how to
-// process a strategy with properties like `paramFields` and `defaultParams`.
+// process a strategy with properties like `paramFields` and `incomeSource`.
 //
 // References: Morningstar "State of Retirement Income: 2025"
 
@@ -36,6 +36,10 @@ type ParamField = {
   max?: number;
   step?: number;
   default: number | boolean;
+  /** Stored as a whole number; the API takes an integer within min–max. */
+  integer?: true;
+  /** The column may be null, which means this default. */
+  nullable?: true;
   tooltip?: string;
   /** Fields sharing the same group render side-by-side as a visual pair. */
   group?: string;
@@ -78,8 +82,8 @@ type WithdrawalStrategyConfig = {
    *  - "rate": withdrawal rate × portfolio drives spending (budget is starting point)
    *  - "formula": spending computed from portfolio via IRS/endowment formula (budget and rate not used) */
   incomeSource: IncomeSource;
-  /** Default parameter values keyed by param name. */
-  defaultParams: Readonly<Record<string, number | boolean>>;
+  /** Params the engine reads that no field edits, keyed by param name. */
+  fixedParams?: Readonly<Record<string, number>>;
   /** UI-renderable parameter field descriptors. */
   paramFields: readonly ParamField[];
   /** Whether the strategy uses the user's Initial Withdrawal Rate setting. */
@@ -119,7 +123,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
     reactsToVolatility: false,
-    defaultParams: {},
     paramFields: [],
     crossYearStateKeys: [],
     guide: {
@@ -151,7 +154,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
     reactsToVolatility: true,
-    defaultParams: {},
     paramFields: [],
     crossYearStateKeys: ["priorYearReturn", "initialWithdrawalAmount"],
     guide: {
@@ -183,10 +185,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
-    defaultParams: {
-      rmdMultiplier: 1.0,
-      ssInAmount: false,
-    },
     paramFields: [
       {
         key: "rmdMultiplier",
@@ -210,6 +208,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "rmdSsInAmount",
         label: "Social Security comes out of this amount",
         type: "boolean",
+        nullable: true,
         default: false,
         tooltip:
           "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
@@ -245,13 +244,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
     reactsToVolatility: true,
-    defaultParams: {
-      upperGuardrail: 0.8,
-      lowerGuardrail: 1.2,
-      increasePercent: 0.1,
-      decreasePercent: 0.1,
-      skipInflationAfterLoss: true,
-    },
     paramFields: [
       {
         key: "upperGuardrail",
@@ -353,9 +345,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: true,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
-    defaultParams: {
-      annualDeclineRate: 0.02,
-    },
     paramFields: [
       {
         key: "annualDeclineRate",
@@ -401,11 +390,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
-    defaultParams: {
-      withdrawalPercent: 0.05,
-      floorPercent: 0.9,
-      ssInAmount: false,
-    },
     paramFields: [
       {
         key: "withdrawalPercent",
@@ -441,6 +425,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "cpSsInAmount",
         label: "Social Security comes out of this amount",
         type: "boolean",
+        nullable: true,
         default: false,
         tooltip:
           "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
@@ -476,12 +461,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
-    defaultParams: {
-      withdrawalPercent: 0.05,
-      rollingYears: DEFAULT_ENDOWMENT_ROLLING_YEARS,
-      floorPercent: 0.9,
-      ssInAmount: false,
-    },
     paramFields: [
       {
         key: "withdrawalPercent",
@@ -505,6 +484,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "enRollingYears",
         label: "Rolling Window (years)",
         type: "number",
+        integer: true,
         min: 3,
         max: 20,
         step: 1,
@@ -530,6 +510,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "enSsInAmount",
         label: "Social Security comes out of this amount",
         type: "boolean",
+        nullable: true,
         default: false,
         tooltip:
           "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
@@ -565,12 +546,6 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
-    defaultParams: {
-      basePercent: 0.05,
-      ceilingPercent: 0.05,
-      floorPercent: 0.025,
-      ssInAmount: false,
-    },
     paramFields: [
       {
         key: "basePercent",
@@ -618,6 +593,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "vdSsInAmount",
         label: "Social Security comes out of this amount",
         type: "boolean",
+        nullable: true,
         default: false,
         tooltip:
           "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
@@ -654,15 +630,12 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
-    defaultParams: {
-      cap: 0.1,
-      endAge: 100,
+    fixedParams: {
       // The real returns the published table is built on.
       stockReturn: 0.05,
       bondReturn: 0.019,
       // Used when the projection has no asset allocation.
       stockShare: 0.6,
-      ssInAmount: false,
     },
     paramFields: [
       {
@@ -670,6 +643,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "vpwCap",
         label: "Most it reaches",
         type: "percent",
+        nullable: true,
         min: 0.05,
         max: 0.2,
         step: 0.005,
@@ -683,6 +657,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "vpwEndAge",
         label: "Table runs to age",
         type: "number",
+        integer: true,
+        nullable: true,
         min: 90,
         max: 110,
         step: 1,
@@ -696,6 +672,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         column: "vpwSsInAmount",
         label: "Social Security comes out of this amount",
         type: "boolean",
+        nullable: true,
         default: false,
         tooltip:
           "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
@@ -720,15 +697,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         "Low stability is expected — spending tracks the balance, and the percentage itself rises with age.",
     },
   },
-} as const;
-
-// Validate: every config entry must conform to WithdrawalStrategyConfig.
-function _validateConfig<T extends Record<string, WithdrawalStrategyConfig>>(
-  c: T,
-): T {
-  return c;
-}
-_validateConfig(WITHDRAWAL_STRATEGY_CONFIG);
+} as const satisfies Record<string, WithdrawalStrategyConfig>;
 
 // ---------------------------------------------------------------------------
 // Derived type — auto-expands when you add a config entry
@@ -757,11 +726,40 @@ export function getStrategyMeta(
   return WITHDRAWAL_STRATEGY_CONFIG[key];
 }
 
-/** Get default params for a strategy. */
-export function getStrategyDefaults(
-  key: WithdrawalStrategyType,
-): Record<string, number | boolean> {
-  return { ...WITHDRAWAL_STRATEGY_CONFIG[key].defaultParams };
+type FieldsOf<K extends WithdrawalStrategyType> =
+  (typeof WITHDRAWAL_STRATEGY_CONFIG)[K]["paramFields"][number];
+/** A strategy param field, with its literal key, column and flags. */
+export type StrategyParamField = FieldsOf<WithdrawalStrategyType>;
+/** A retirement_settings column a strategy param is stored in. */
+export type StrategyParamColumn = StrategyParamField["column"];
+/** A strategy's params with nothing stored: each field's default, and its
+ *  fixed params. */
+export type StrategyDefaults<K extends WithdrawalStrategyType> = {
+  [F in FieldsOf<K> as F["key"]]: F["type"] extends "boolean"
+    ? boolean
+    : number;
+} & ((typeof WITHDRAWAL_STRATEGY_CONFIG)[K] extends { fixedParams: infer P }
+  ? P
+  : unknown);
+
+/** Default params for a strategy, from its param fields' defaults. */
+export function getStrategyDefaults<K extends WithdrawalStrategyType>(
+  key: K,
+): StrategyDefaults<K> {
+  const cfg: WithdrawalStrategyConfig = WITHDRAWAL_STRATEGY_CONFIG[key];
+  const fromFields = cfg.paramFields.map((f) => [f.key, f.default] as const);
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- built from the same fields StrategyDefaults maps
+  return {
+    ...cfg.fixedParams,
+    ...Object.fromEntries(fromFields),
+  } as StrategyDefaults<K>;
+}
+
+/** Every strategy's param fields, in config order. */
+export function strategyParamFields(): StrategyParamField[] {
+  return getAllStrategyKeys().flatMap((k) => [
+    ...WITHDRAWAL_STRATEGY_CONFIG[k].paramFields,
+  ]);
 }
 
 /** Display label map — same pattern as display-labels.ts. */

@@ -26,6 +26,9 @@ function baseInputs(
   overrides: Partial<SimulationInputs> = {},
 ): SimulationInputs {
   return {
+    seed: null,
+    computedAt: null,
+    withdrawalStrategy: "fixed",
     currentAge: 45,
     retirementAge: 65,
     endAge: 95,

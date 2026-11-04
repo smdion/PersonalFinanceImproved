@@ -1,0 +1,232 @@
+{
+  "description": "pushSnapshotToBudgetApi create: scan two accounts, balance, POST adjustment, read-back.",
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "pairs": [
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions?since_date=2016-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "68379b33-9619-4e06-ad9c-589bcfbe1048",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "category": null,
+            "amount": 5000000,
+            "payee": "1674b957-cb7e-4108-980f-2c9960c61390",
+            "notes": "roth open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee roth",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628922053,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/65460984-2fac-480d-9215-a19537f0b942/transactions?since_date=2016-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "eae60d0f-f315-4036-a447-d4f8c8d199f7",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "65460984-2fac-480d-9215-a19537f0b942",
+            "category": null,
+            "amount": 30000,
+            "payee": "487239b4-ff27-4aae-80bd-fc5211f4ad4e",
+            "notes": "xfer on-off",
+            "date": "2026-10-21",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": "fed7f3a5-c138-46af-949a-5a86cb137e53",
+            "sort_order": 1793628922607,
+            "cleared": false,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "60ac2e2f-3892-4cce-b3b3-b55403bcf7a4",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "65460984-2fac-480d-9215-a19537f0b942",
+            "category": null,
+            "amount": 1234567,
+            "payee": "15a73789-99c5-4928-a82c-df7cda22bdef",
+            "notes": "brk open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee brk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628921863,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 5000000
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions",
+      "requestBody": {
+        "transaction": {
+          "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+          "date": "2026-10-31",
+          "amount": 123456,
+          "payee_name": "Portfolio Sync",
+          "notes": "Ledgr snapshot:538009 - Roth",
+          "cleared": true,
+          "reconciled": true,
+          "imported_id": "ledgr:hNN5xtMn8vWNNEmnTDgk22AkPFN64i"
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "message": "ok"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions?since_date=2026-10-31",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "092ec4d2-4e21-420f-8601-f052c4d6db3b",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "category": null,
+            "amount": 123456,
+            "payee": "1ff0eb8f-8327-442c-ad39-2709549c6d5c",
+            "notes": "Ledgr snapshot:538009 - Roth",
+            "date": "2026-10-31",
+            "imported_id": "ledgr:hNN5xtMn8vWNNEmnTDgk22AkPFN64i",
+            "error": null,
+            "imported_payee": "Portfolio Sync",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629298405,
+            "cleared": true,
+            "reconciled": true,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/65460984-2fac-480d-9215-a19537f0b942/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 1264567
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/accounts/65460984-2fac-480d-9215-a19537f0b942/transactions",
+      "requestBody": {
+        "transaction": {
+          "account": "65460984-2fac-480d-9215-a19537f0b942",
+          "date": "2026-10-31",
+          "amount": 69970,
+          "payee_name": "Portfolio Sync",
+          "notes": "Ledgr snapshot:538009 - BrkA, BrkB",
+          "cleared": true,
+          "reconciled": true,
+          "imported_id": "ledgr:bTOcAxdrb-GMhlhITpQm1WBGZx-iqR"
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "message": "ok"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/65460984-2fac-480d-9215-a19537f0b942/transactions?since_date=2026-10-31",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "e986818c-f0b1-47ec-b507-48c6b2757a4e",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "65460984-2fac-480d-9215-a19537f0b942",
+            "category": null,
+            "amount": 69970,
+            "payee": "1ff0eb8f-8327-442c-ad39-2709549c6d5c",
+            "notes": "Ledgr snapshot:538009 - BrkA, BrkB",
+            "date": "2026-10-31",
+            "imported_id": "ledgr:bTOcAxdrb-GMhlhITpQm1WBGZx-iqR",
+            "error": null,
+            "imported_payee": "Portfolio Sync",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629298742,
+            "cleared": true,
+            "reconciled": true,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    }
+  ]
+}

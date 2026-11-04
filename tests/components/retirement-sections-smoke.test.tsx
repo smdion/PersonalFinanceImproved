@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { queryCalls, queryOptions, resetTrpcMock, setQuery } from "./trpc-mock";
 
 // Smoke tests for src/components/retirement/sections/ — created by the
 // v0.5.2/v0.5.3 file-split refactor of retirement-content.tsx and left with
@@ -18,25 +19,17 @@ vi.mock("@/components/ui/help-tip", () => ({
 // tax-optimization.test.tsx's own mock). Every existing test in this file
 // leaves PIA unset, so ClaimingAgeExplorer never mounts and this mock is
 // inert for them; only the new PIA-specific tests below actually invoke it.
-const claimingAgeSweepQuery = vi.fn(
-  (..._args: unknown[]): { data: unknown; isLoading: boolean } => ({
-    data: undefined,
-    isLoading: false,
-  }),
-);
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    projection: {
-      sweepSocialSecurityClaimingAges: {
-        useQuery: (...a: unknown[]) => claimingAgeSweepQuery(...a),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
+const SWEEP = "projection.sweepSocialSecurityClaimingAges";
+/** Each render's sweep query call: [input, options]. */
+const sweepCalls = () =>
+  queryCalls(SWEEP).map((input, i) => [input, queryOptions(SWEEP)[i]]);
+
 afterEach(() => {
-  claimingAgeSweepQuery.mockClear();
-  claimingAgeSweepQuery.mockReturnValue({ data: undefined, isLoading: false });
+  resetTrpcMock();
 });
 
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
@@ -45,22 +38,12 @@ import { SocialSecuritySection } from "@/components/retirement/sections/social-s
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
 import { IncomeSection } from "@/components/retirement/sections/income";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { Settings } from "@/components/retirement/sections/types";
+import {
+  makePersonSettings,
+  makeSettings,
+} from "./fixtures/retirement-settings";
 
-const baseSettings: Settings = {
-  personId: 1,
-  profileId: 1,
-  retirementAge: 65,
-  endAge: 95,
-  returnAfterRetirement: "0.05",
-  annualInflation: "0.03",
-  salaryAnnualIncrease: "0.03",
-  withdrawalRate: "0.04",
-  taxMultiplier: "1.0",
-  socialSecurityMonthly: "2000",
-  ssStartAge: 67,
-  withdrawalStrategy: "fixed",
-};
+const baseSettings = makeSettings();
 
 describe("StrategyParamsSection smoke", () => {
   it("renders nothing for the 'fixed' strategy (no param fields)", () => {
@@ -167,7 +150,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alice",
             birthYear: 1990,
@@ -176,8 +159,8 @@ describe("SocialSecuritySection smoke", () => {
             salaryAnnualIncrease: "0.03",
             ruleOf55Override: true,
             socialSecurityMonthly: "2000",
-          },
-          {
+          }),
+          makePersonSettings({
             personId: 2,
             name: "Bob",
             birthYear: 1992,
@@ -186,7 +169,7 @@ describe("SocialSecuritySection smoke", () => {
             salaryAnnualIncrease: "0.03",
             ruleOf55Override: true,
             socialSecurityMonthly: "1500",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -214,7 +197,7 @@ describe("SocialSecuritySection smoke", () => {
     // ClaimingAgeExplorer itself never mounts for an unset PIA (it's
     // conditionally rendered based on peopleWithPia), so its useQuery call
     // never happens at all — not just "called with enabled: false".
-    expect(claimingAgeSweepQuery).not.toHaveBeenCalled();
+    expect(queryCalls(SWEEP)).toHaveLength(0);
   });
 
   it("single-person: renders the claiming-age explorer button once PIA is set", () => {
@@ -222,7 +205,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -233,7 +216,7 @@ describe("SocialSecuritySection smoke", () => {
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -250,7 +233,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -260,7 +243,7 @@ describe("SocialSecuritySection smoke", () => {
             ruleOf55Override: true,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "0",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -276,7 +259,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alice",
             birthYear: 1990,
@@ -286,8 +269,8 @@ describe("SocialSecuritySection smoke", () => {
             ruleOf55Override: true,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3000",
-          },
-          {
+          }),
+          makePersonSettings({
             personId: 2,
             name: "Bob",
             birthYear: 1992,
@@ -297,7 +280,7 @@ describe("SocialSecuritySection smoke", () => {
             ruleOf55Override: true,
             socialSecurityMonthly: "1500",
             // No PIA for Bob.
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -311,33 +294,30 @@ describe("SocialSecuritySection smoke", () => {
   });
 
   it("clicking the explorer button expands the comparison table and calls the sweep query", () => {
-    claimingAgeSweepQuery.mockReturnValue({
-      data: {
-        result: {
-          recommendedAge: 70,
-          candidates: [
-            {
-              claimingAge: 62,
-              adjustedAnnualBenefit: 22400,
-              finalNetWorth: 900000,
-              fails: false,
-            },
-            {
-              claimingAge: 70,
-              adjustedAnnualBenefit: 39680,
-              finalNetWorth: 1100000,
-              fails: false,
-            },
-          ],
-        },
+    setQuery(SWEEP, {
+      result: {
+        recommendedAge: 70,
+        candidates: [
+          {
+            claimingAge: 62,
+            adjustedAnnualBenefit: 22400,
+            finalNetWorth: 900000,
+            fails: false,
+          },
+          {
+            claimingAge: 70,
+            adjustedAnnualBenefit: 39680,
+            finalNetWorth: 1100000,
+            fails: false,
+          },
+        ],
       },
-      isLoading: false,
     });
     render(
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -348,7 +328,7 @@ describe("SocialSecuritySection smoke", () => {
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -365,23 +345,21 @@ describe("SocialSecuritySection smoke", () => {
       // ClaimingAgeExplorer/social-security.tsx docblocks) — NOT
       // cosmetic, the sweep endpoint's docblock says omitting these
       // silently resolves against the wrong profile/pin. This test
-      // doesn't pass contributionProfileId/salaryProfileId, so they come
-      // through undefined; retirementProfileId comes from settings.profileId.
-      retirementProfileId: 1,
-      contributionProfileId: undefined,
-      salaryProfileId: undefined,
+      // doesn't pass contributionProfileId/salaryProfileId, so they're
+      // left out; the retirement profile comes from settings.profileId.
+      selection: { retirement: 1 },
     };
-    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+    expect(sweepCalls()).toContainEqual([
       expectedQueryInput,
       expect.objectContaining({ enabled: false }),
-    );
+    ]);
 
     fireEvent.click(screen.getByText(/Compare claiming ages ▼/));
 
-    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+    expect(sweepCalls()).toContainEqual([
       expectedQueryInput,
       expect.objectContaining({ enabled: true }),
-    );
+    ]);
     expect(screen.getByText("62")).toBeInTheDocument();
     expect(screen.getByText("70")).toBeInTheDocument();
     expect(screen.getByText("Recommended")).toBeInTheDocument();
@@ -395,15 +373,12 @@ describe("SocialSecuritySection smoke", () => {
   });
 
   it("threads a pinned contribution/salary profile through to the sweep query — NOT cosmetic, the endpoint resolves budget/depletion against them", () => {
-    claimingAgeSweepQuery.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-    });
+    setQuery(SWEEP, undefined);
     render(
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -414,7 +389,7 @@ describe("SocialSecuritySection smoke", () => {
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -423,16 +398,18 @@ describe("SocialSecuritySection smoke", () => {
         salaryProfileId={7}
       />,
     );
-    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+    expect(sweepCalls()).toContainEqual([
       {
         personId: 1,
         pia: 38400,
-        retirementProfileId: baseSettings.profileId,
-        contributionProfileId: 42,
-        salaryProfileId: 7,
+        selection: {
+          retirement: baseSettings.profileId,
+          contribution: 42,
+          salary: 7,
+        },
       },
       expect.objectContaining({ enabled: false }),
-    );
+    ]);
   });
 });
 

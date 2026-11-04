@@ -33,14 +33,8 @@ import {
   EDIT_LOCK_KEYS,
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
-import type {
-  PayPeriod,
-  PayWeek,
-  W4FilingStatus,
-} from "@/lib/config/enum-values";
-import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
-import type { BonusDestination } from "@/lib/config/enum-values";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { toast } from "@/lib/hooks/use-toast";
 import { SK_PAYCHECK_TAX_YEAR } from "@/lib/constants/settings-keys";
 
@@ -183,33 +177,6 @@ export default function PaycheckPage() {
     },
   });
 
-  /** Mirrors SalaryProfileEntry (server/helpers/salary.ts) by hand —
-   *  components may not import server modules. Must stay in sync with it
-   *  and with salaryEntrySchema. */
-  type CompleteSalaryEntry = {
-    salary: number;
-    bonusPercent: number;
-    bonusMultiplier: number;
-    monthsInBonusYear: number;
-    bonusOverride: number | null;
-    payPeriod: PayPeriod;
-    payWeek: PayWeek;
-    anchorPayDate: string | null;
-    budgetPeriodsPerMonth: number | null;
-    w4FilingStatus: W4FilingStatus;
-    w4Box2cChecked: boolean;
-    additionalFedWithholding: number;
-    bonusMonth: number | null;
-    bonusDayOfMonth: number | null;
-    /** Not editable from this page — preserved as-is (or defaulted to
-     *  "not configured" for a brand-new entry) whenever a Paycheck-page
-     *  field write creates/updates this job's entry. Edited from Salary
-     *  Profile Manager instead (see extra-paycheck-rules-editor.tsx). */
-    extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-    bonusDestination?: BonusDestination;
-    otherEarnings?: Record<string, number>;
-  };
-
   /**
    * Save field edits to this job's entry in the displayed Salary Profile —
    * a field-level patch on the server (salaryProfile.patchEntry), so two
@@ -220,8 +187,8 @@ export default function PaycheckPage() {
    */
   function patchSalaryEntry(
     jobId: number,
-    defaults: CompleteSalaryEntry,
-    updates: Partial<CompleteSalaryEntry>,
+    defaults: SalaryEntry,
+    updates: Partial<SalaryEntry>,
   ) {
     if (!displayedSalaryProfile) return;
     const existing = displayedSalaryProfile.salaries[String(jobId)];
@@ -446,29 +413,28 @@ export default function PaycheckPage() {
                           // terms of its own any more — every edit to any of
                           // those lands in the displayed Salary Profile as
                           // part of that job's complete entry (see
-                          // resolveCompensation/SalaryProfileEntry in
-                          // server/helpers/salary.ts). Untouched fields
-                          // default to this job's currently-resolved values.
-                          const salaryProfileEntryDefaults: CompleteSalaryEntry =
-                            {
-                              salary: d.salary,
-                              ...d.resolvedBonusTerms,
-                              payPeriod: job.payPeriod,
-                              payWeek: job.payWeek,
-                              anchorPayDate: job.anchorPayDate ?? null,
-                              budgetPeriodsPerMonth:
-                                job.budgetPeriodsPerMonth != null
-                                  ? Number(job.budgetPeriodsPerMonth)
-                                  : null,
-                              w4FilingStatus: job.w4FilingStatus,
-                              w4Box2cChecked: job.w4Box2cChecked,
-                              additionalFedWithholding: Number(
-                                job.additionalFedWithholding,
-                              ),
-                              bonusMonth: job.bonusMonth ?? null,
-                              bonusDayOfMonth: job.bonusDayOfMonth ?? null,
-                              extraPaycheckRouting: null,
-                            };
+                          // resolveCompensation and SalaryEntry). Untouched
+                          // fields default to this job's currently-resolved
+                          // values.
+                          const salaryProfileEntryDefaults: SalaryEntry = {
+                            salary: d.salary,
+                            ...d.resolvedBonusTerms,
+                            payPeriod: job.payPeriod,
+                            payWeek: job.payWeek,
+                            anchorPayDate: job.anchorPayDate ?? null,
+                            budgetPeriodsPerMonth:
+                              job.budgetPeriodsPerMonth != null
+                                ? Number(job.budgetPeriodsPerMonth)
+                                : null,
+                            w4FilingStatus: job.w4FilingStatus,
+                            w4Box2cChecked: job.w4Box2cChecked,
+                            additionalFedWithholding: Number(
+                              job.additionalFedWithholding,
+                            ),
+                            bonusMonth: job.bonusMonth ?? null,
+                            bonusDayOfMonth: job.bonusDayOfMonth ?? null,
+                            extraPaycheckRouting: null,
+                          };
                           // Every Salary Profile field — the same parse and
                           // save path as Profiles → Salary (salaryEntryEdit).
                           const edit = salaryEntryEdit(field, value, {

@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+  setQueryState,
+} from "./trpc-mock";
 
 // Smoke test for BrokerageGoalsSection — covers the loading state, the
 // mutation path (create goal), and the permission gate (canEdit via
@@ -22,41 +29,8 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 // this component doesn't supply on its own. Stub it out like other tests do.
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 
-const createMutate = vi.fn();
-const invalidateGoals = vi.fn();
-const invalidateSummary = vi.fn();
-let goalsQueryData: unknown[] | undefined;
-let goalsLoading = false;
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      brokerage: {
-        listGoals: { invalidate: invalidateGoals },
-        computeSummary: { invalidate: invalidateSummary },
-      },
-    }),
-    brokerage: {
-      listGoals: {
-        useQuery: () => ({ data: goalsQueryData, isLoading: goalsLoading }),
-      },
-      createGoal: {
-        useMutation: ({ onSuccess }: { onSuccess?: () => void }) => ({
-          mutate: (input: unknown) => {
-            createMutate(input);
-            onSuccess?.();
-          },
-          isPending: false,
-        }),
-      },
-      updateGoal: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      deleteGoal: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 const mockGoals = [
@@ -73,16 +47,16 @@ const mockGoals = [
 
 describe("BrokerageGoalsSection", () => {
   beforeEach(() => {
-    createMutate.mockClear();
-    invalidateGoals.mockClear();
-    invalidateSummary.mockClear();
+    resetTrpcMock();
+    // Only createGoal settles (and runs its onSuccess), as before.
+    holdMutation("brokerage.updateGoal");
+    holdMutation("brokerage.deleteGoal");
     mockRole = "admin";
-    goalsQueryData = mockGoals;
-    goalsLoading = false;
+    setQuery("brokerage.listGoals", mockGoals);
   });
 
   it("renders a loading skeleton while goals are loading", () => {
-    goalsLoading = true;
+    setQueryState("brokerage.listGoals", { isLoading: true });
     render(<BrokerageGoalsSection />);
     expect(screen.getByText("Long-Term Goals")).toBeInTheDocument();
   });
@@ -95,7 +69,7 @@ describe("BrokerageGoalsSection", () => {
   });
 
   it("shows the empty state when there are no goals and the create form is closed", () => {
-    goalsQueryData = [];
+    setQuery("brokerage.listGoals", []);
     render(<BrokerageGoalsSection />);
     expect(
       screen.getByText(
@@ -137,7 +111,7 @@ describe("BrokerageGoalsSection", () => {
 
     fireEvent.click(screen.getByText("Create Goal"));
 
-    expect(createMutate).toHaveBeenCalledWith(
+    expect(mutationCalls("brokerage.createGoal")).toContainEqual(
       expect.objectContaining({
         name: "Kitchen Remodel",
         targetAmount: "50000",

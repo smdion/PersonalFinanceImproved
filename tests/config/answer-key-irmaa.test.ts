@@ -55,7 +55,7 @@ import { cents, runOneYear, xfail } from "../fixtures/answer-key";
 import { getIrmaaCost, getNextIrmaaCliff } from "@/lib/config/irmaa-tables";
 import { engineHousehold } from "../fixtures/answer-key-household";
 import { shippedTaxTables } from "../helpers/tax-data";
-import type { FilingStatusType } from "@/lib/calculators/types";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 // ---------------------------------------------------------------------------
 // The surcharge per enrolled person, a year, on a premium year's table
@@ -63,11 +63,11 @@ import type { FilingStatusType } from "@/lib/calculators/types";
 
 const irmaa = (
   magi: number,
-  status: FilingStatusType,
+  status: ReturnFilingStatus,
   premiumYear: 2025 | 2026 = 2026,
 ) => getIrmaaCost(magi, status, shippedTaxTables(premiumYear).irmaaBrackets);
 
-const nextCliff = (magi: number, status: FilingStatusType) =>
+const nextCliff = (magi: number, status: ReturnFilingStatus) =>
   getNextIrmaaCliff(magi, status, shippedTaxTables(2026).irmaaBrackets);
 
 /** The top tier compares with `>`, so MAGI exactly at 500,000 / 750,000

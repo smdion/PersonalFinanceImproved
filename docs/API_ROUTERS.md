@@ -286,7 +286,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure                     | Kind     | Auth                 | Description                                                                                                                                                                                              |
 | ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clearCache`                  | mutation | `adminProcedure`     | forces a full recompute without bumping PROJECTION_CACHE_ENGINE_VERSION and redeploying. Admin-only: destructive against shared cache state.                                                             |
+| `clearCache`                  | mutation | `adminProcedure`     | forces a full recompute without a deploy. Admin-only: destructive against shared cache state.                                                                                                            |
 | `computeMonteCarloProjection` | query    | `protectedProcedure` | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
 | `getMonteCarloProgress`       | query    | `protectedProcedure` | running — see monte-carlo-worker-client.ts's module docblock for why this is an in-memory Map rather than a DB table or a subscription. Returns null once the job is done or if the runId is unknown (e. |
 | `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
@@ -513,37 +513,37 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/tax-limits`
 
-| Procedure        | Kind     | Auth                 | Description                                                                                                      |
-| ---------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `addYear`        | mutation | `adminProcedure`     | year as carried forward (replaced when the real figures ship). Tables that already have the year are left alone. |
-| `confirm`        | mutation | `adminProcedure`     | figure replaces it when it ships), but no longer needs attention.                                                |
-| `create`         | mutation | `adminProcedure`     | The documents Ledgr's figure cites, each with its link.                                                          |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `list`           | query    | `protectedProcedure` | Each row says whether Ledgr ships it (Reset to shipped vs delete).                                               |
-| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
-| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
-| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
-| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
-| `sectionSources` | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.                                                           |
-| `status`         | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.                                                           |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| Procedure        | Kind     | Auth                 | Description                                                        |
+| ---------------- | -------- | -------------------- | ------------------------------------------------------------------ |
+| `addYear`        | mutation | `adminProcedure`     | carried forward until the real figures ship.                       |
+| `confirm`        | mutation | `adminProcedure`     | figure replaces it when it ships), but no longer needs attention.  |
+| `create`         | mutation | `adminProcedure`     | The documents Ledgr's figure cites, each with its link.            |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | Each row says whether Ledgr ships it (Reset to shipped vs delete). |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `sectionSources` | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.             |
+| `status`         | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.             |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
 
 ## `simplefin`
 

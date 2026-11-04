@@ -4,7 +4,10 @@
  * Provides input builders for deterministic engine and Monte Carlo tests,
  * plus tolerance constants calibrated against known platforms.
  */
-import { withConsistentStart } from "../calculators/fixtures/engine-fixtures";
+import {
+  withConsistentStart,
+  makeAccumulationDefaults,
+} from "../calculators/fixtures/engine-fixtures";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
@@ -88,13 +91,11 @@ export function makePureGrowthInput(
 ): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
-      accumulationDefaults: {
+      accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
         accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
         taxSplits: {},
-      },
+      }),
       decumulationDefaults: {
         ...DEFAULT_DECUMULATION,
         distributionTaxRates: {
@@ -158,13 +159,11 @@ export function makeTrinityInput(
   const withdrawalRate = overrides.decumulationDefaults?.withdrawalRate ?? 0.04;
   const startingBalance = 1_000_000;
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
       taxSplits: {},
-    },
+    }),
     decumulationDefaults: {
       ...DEFAULT_DECUMULATION,
       withdrawalRate,
@@ -226,10 +225,7 @@ export function makeStandardInput(
 ): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
-      accumulationDefaults: {
-        contributionRate: 0.25,
-        routingMode: "waterfall",
-        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
           "403b": 0,
@@ -237,8 +233,7 @@ export function makeStandardInput(
           ira: 0.15,
           brokerage: 0.35,
         },
-        taxSplits: { "401k": 0.5, ira: 1.0 },
-      },
+      }),
       decumulationDefaults: DEFAULT_DECUMULATION,
       accumulationOverrides: [],
       decumulationOverrides: [],

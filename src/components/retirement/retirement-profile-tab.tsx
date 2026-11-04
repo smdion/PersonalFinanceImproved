@@ -72,6 +72,7 @@ import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 export function RetirementProfileTab({
   profileId,
@@ -119,7 +120,7 @@ export function RetirementProfileTab({
     {
       validIds: contribProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: contribProfileId,
+      activeProfileId: contribProfileId,
     },
   );
   const { profileId: effectiveSalaryProfileId } = useEffectiveProfileId(
@@ -127,7 +128,7 @@ export function RetirementProfileTab({
     {
       validIds: salaryProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: salaryProfileId,
+      activeProfileId: salaryProfileId,
     },
   );
 
@@ -136,22 +137,16 @@ export function RetirementProfileTab({
   // don't depend on which portfolio snapshot is selected.
   const baseInput = useMemo(
     () => ({
-      ...(effectiveContribProfileId != null
-        ? { contributionProfileId: effectiveContribProfileId }
-        : {}),
-      ...(effectiveSalaryProfileId != null
-        ? { salaryProfileId: effectiveSalaryProfileId }
-        : {}),
-      ...(decBudgetProfileId != null
-        ? { decumulationBudgetProfileId: decBudgetProfileId }
-        : {}),
-      ...(decBudgetCol != null
-        ? { decumulationBudgetColumn: decBudgetCol }
-        : {}),
-      ...(decExpenseOverride
-        ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-        : {}),
-      ...(profileId != null ? { retirementProfileId: profileId } : {}),
+      selection: profileSelectionFrom({
+        contributionProfileId: effectiveContribProfileId,
+        salaryProfileId: effectiveSalaryProfileId,
+        decumulationBudgetProfileId: decBudgetProfileId,
+        decumulationBudgetColumn: decBudgetCol,
+        decumulationExpenseOverride: decExpenseOverride
+          ? parseFloat(decExpenseOverride)
+          : null,
+        retirementProfileId: profileId,
+      }),
     }),
     [
       effectiveContribProfileId,

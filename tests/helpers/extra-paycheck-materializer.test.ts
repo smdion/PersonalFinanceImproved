@@ -14,7 +14,7 @@
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
-import type { SalaryProfileEntry } from "@/server/helpers/salary";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { createTestDb, type TestDbContext } from "./db-harness";
 import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { eq } from "drizzle-orm";
@@ -123,7 +123,7 @@ describe("materializeExtraPaycheckSavings", () => {
       .from(ctx.schema.salaryProfiles)
       .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))
       .all();
-    const salaries = row!.salaries as Record<string, SalaryProfileEntry>;
+    const salaries = row!.salaries as Record<string, SalaryEntry>;
     ctx.db
       .update(ctx.schema.salaryProfiles)
       .set({

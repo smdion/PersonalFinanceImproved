@@ -51,6 +51,7 @@ import {
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import {
   decToWhole,
+  rothTargetOf,
   wholeToDec,
 } from "@/components/retirement/sections/helpers";
 import type {
@@ -61,8 +62,7 @@ import type {
 
 type ProfileListEntry = { id: number; name: string };
 
-/** Inflation/Withdrawal-Rate/Raise chips were structurally identical
- *  (~16 lines each, same InlineEdit percent wiring). */
+/** One percent chip (inflation, withdrawal rate, raise). */
 function PercentChip({
   chipCls,
   labelCls,
@@ -334,7 +334,7 @@ export function AssumptionsBand({
           </span>
           {editable ? (
             <select
-              value={String(Number(settings.rothBracketTarget ?? "0.12"))}
+              value={String(rothTargetOf(settings.rothBracketTarget))}
               onChange={(e) =>
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
@@ -352,7 +352,7 @@ export function AssumptionsBand({
             </select>
           ) : (
             <span className="font-medium">
-              {formatPercent(Number(settings.rothBracketTarget ?? "0.12"), 0)}
+              {formatPercent(rothTargetOf(settings.rothBracketTarget), 0)}
             </span>
           )}
         </span>

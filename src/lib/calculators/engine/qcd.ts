@@ -29,7 +29,7 @@
  * Only meaningful when individual accounts are tracked — same limitation
  * per-person RMD tracking itself already has (there's no person-level
  * granularity without it). Callers should include anyone at or above
- * `QCD_MIN_ELIGIBILITY_AGE` (constants.ts), not just people who've
+ * `AGE_RULES.qcd` (config/age-rules.ts), not just people who've
  * already reached their RMD start age — QCD eligibility (70½) predates
  * SECURE 2.0's RMD-age delay (72/73/75), and the years before RMDs are
  * required are QCD's highest-value window for shrinking a future one.
@@ -58,7 +58,7 @@ interface QcdPersonResult {
  * Compute each person's QCD amount for the year. Returns only entries
  * with a positive amount. Empty array when `qcdMaximize` is off or no
  * person has an IRA Traditional balance to draw it from. Callers decide
- * who's eligible to pass in (age 70½+, per `QCD_MIN_ELIGIBILITY_AGE`) —
+ * who's eligible to pass in (age 70½+, per `AGE_RULES.qcd`) —
  * this function doesn't gate on age or RMD status itself.
  */
 export function computeQcdAmounts(

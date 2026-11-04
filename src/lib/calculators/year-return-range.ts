@@ -11,10 +11,10 @@ import {
   sampleBlendedReturn,
   type GlidePathEntry,
 } from "./random";
+import { COMPARISON_SEED } from "../constants";
 
 /** Enough that the range's edges settle to a tenth of a point. */
 const DRAWS = 5_000;
-const SEED = 42;
 const LOW_SHARE = 0.05;
 const HIGH_SHARE = 0.95;
 
@@ -34,7 +34,7 @@ export function yearReturnRanges(args: {
     buildCorrelationMatrix(assetClasses, correlations),
   );
   return args.ages.map((age) => {
-    const rng = createPRNG(SEED + age);
+    const rng = createPRNG(COMPARISON_SEED + age);
     const draws = Array.from({ length: DRAWS }, () =>
       Math.min(
         clampMax,

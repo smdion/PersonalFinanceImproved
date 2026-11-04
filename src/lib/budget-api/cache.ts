@@ -7,9 +7,7 @@ import * as schema from "@/lib/db/schema";
 import type { BudgetApiService } from "./types";
 import type { BudgetAPIClient } from "./interface";
 import { currentMonthKey } from "@/lib/pure/date-keys";
-
-type Db = typeof import("@/lib/db").db;
-type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+import type { Db, DbOrTx } from "@/lib/db";
 
 /** Read a cached value. Returns null if not found or expired. */
 export async function cacheGet<T>(
@@ -50,7 +48,7 @@ export async function cacheGet<T>(
 
 /** Write a value to the cache (upsert by service + key). */
 export async function cacheSet(
-  db: Db | Tx,
+  db: DbOrTx,
   service: BudgetApiService,
   key: string,
   data: unknown,

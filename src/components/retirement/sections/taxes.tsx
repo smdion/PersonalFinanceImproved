@@ -21,9 +21,9 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import {
-  W4_FILING_STATUS_VALUES,
-  type W4FilingStatus,
-} from "@/lib/config/enum-values";
+  parseReturnFilingStatus,
+  RETURN_FILING_STATUS_VALUES,
+} from "@/lib/config/filing-status";
 import {
   FILING_STATUS_LABELS,
   filingStatusLabel,
@@ -43,6 +43,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type {
   Settings,
   SelectedScenario,
@@ -50,20 +51,13 @@ import type {
   IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
+import { rothTargetOf } from "./helpers";
 import {
   WITHDRAWAL_ROUTING_MODES,
   WITHDRAWAL_ROUTING_MODE_LABELS,
   WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
 } from "@/lib/config/withdrawal-routing";
-
-/** Shape of `computeWithdrawalBracketOptimizer`'s result — mirrored here
- *  (not imported from @/server/*, same reasoning as types.ts's docblock)
- *  since sections may not import server code. */
-export type BracketOptimizerResult = {
-  recommendedTarget: number | null;
-  currentTarget: number | null;
-} | null;
 
 type Props = {
   settings: Settings;
@@ -73,7 +67,7 @@ type Props = {
   /** Multi-year withdrawal-policy optimizer result, or undefined while the
    *  parent's query hasn't resolved yet — either way, no recommendation is
    *  shown until a real, non-null `recommendedTarget` arrives. */
-  bracketOptimizerResult?: BracketOptimizerResult;
+  bracketOptimizerResult?: BracketOptimizerResult | null;
 };
 
 export function TaxesSection({
@@ -108,15 +102,9 @@ export function TaxesSection({
     0,
   );
 
-  // Multi-year withdrawal-policy optimizer, Phase 4 — live recommendation
-  // next to the Bracket Ceiling control below. Not gated on
-  // withdrawalRoutingMode (Settings DOES carry that field now — the
-  // persisted default below — but this recommendation is about
-  // rothBracketTarget, a genuinely separate lever) and not gated on
-  // enableRothConversions either: rothBracketTarget also
-  // governs RMD smoothing's ceiling and (when routing IS bracket_filling,
-  // the site-wide default) distribution routing itself, so the
-  // recommendation is relevant regardless of which toggles happen to be on.
+  // The withdrawal-policy optimizer's recommendation beside the Bracket
+  // Ceiling, whatever the toggles: rothBracketTarget also sets RMD
+  // smoothing's ceiling and, under bracket filling, distribution routing.
   const recommendedTarget = bracketOptimizerResult?.recommendedTarget ?? null;
   const willChangeSmoothingCeiling =
     recommendedTarget != null && (settings.rmdSmoothingEnabled ?? false);
@@ -127,11 +115,8 @@ export function TaxesSection({
     upsertSettings.mutate(
       buildSettingsPatch(settings, {
         rothBracketTarget: target,
-        // Joint movement, mirroring how the optimizer itself scores a
-        // candidate (withdrawal-bracket-optimizer.ts's buildCandidateInput)
-        // -- each gated on its OWN toggle, independently, per the design
-        // doc's correction (rmdSmoothingMaxBracketTarget must key off
-        // rmdSmoothingEnabled specifically, NOT enableRothConversions).
+        // Moved together as the optimizer scores a candidate
+        // (buildCandidateInput), each on its own toggle.
         ...(settings.enableRothConversions
           ? { rothConversionTarget: target }
           : {}),
@@ -156,7 +141,7 @@ export function TaxesSection({
             const val = e.target.value || null;
             upsertSettings.mutate(
               buildSettingsPatch(settings, {
-                filingStatus: val as W4FilingStatus | null,
+                filingStatus: parseReturnFilingStatus(val),
               }),
             );
           }}
@@ -164,7 +149,7 @@ export function TaxesSection({
           <option value="">
             Auto ({filingStatusLabel(filingStatus ?? "")})
           </option>
-          {W4_FILING_STATUS_VALUES.map((s) => (
+          {RETURN_FILING_STATUS_VALUES.map((s) => (
             <option key={s} value={s}>
               {FILING_STATUS_LABELS[s]}
             </option>
@@ -282,7 +267,7 @@ export function TaxesSection({
           </span>
           <div className="font-medium">
             <select
-              value={String(Number(settings?.rothBracketTarget ?? "0.12"))}
+              value={String(rothTargetOf(settings?.rothBracketTarget))}
               onChange={(e) => {
                 if (!settings) return;
                 upsertSettings.mutate(
@@ -356,10 +341,9 @@ export function TaxesSection({
             {(settings?.enableRothConversions ?? false) && (
               <select
                 value={String(
-                  Number(
+                  rothTargetOf(
                     settings?.rothConversionTarget ??
-                      settings?.rothBracketTarget ??
-                      "0.12",
+                      settings?.rothBracketTarget,
                   ),
                 )}
                 onChange={(e) => {

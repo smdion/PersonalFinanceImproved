@@ -23,6 +23,7 @@ import type {
 } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -107,10 +108,8 @@ function makeInput(): ProjectionInput {
   ];
 
   return withCapsAge({
-    accumulationDefaults: {
+    accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
       accountSplits: {
         "401k": 0.7,
         "403b": 0,
@@ -119,7 +118,7 @@ function makeInput(): ProjectionInput {
         brokerage: 0.2,
       },
       taxSplits: { "401k": 0.9, ira: 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "waterfall",

@@ -11,35 +11,37 @@
  * IRMAA: checks if MAGI crosses a Medicare surcharge cliff (age 65+).
  * ACA: checks if MAGI crosses the ACA subsidy cliff (pre-65 retirees).
  */
-import type { AccountCategory, TaxBuckets, FilingStatusType } from "../types";
+import type { AccountCategory, TaxBuckets } from "../types";
 import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,
   isOverflowTarget,
+  isRetirementMoney,
+} from "../../config/account-types";
+import {
   getTotalBalance,
   getBasis,
   setTraditional,
   setRoth,
   setBalance,
   setBasis,
-  isRetirementMoney,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 import type { AccountBalances, IndividualAccountInput } from "../types";
 import {
   getIrmaaCost,
   getNextIrmaaCliff,
   type IrmaaBracket,
 } from "../../config/irmaa-tables";
-import { getAcaSubsidyCliff, acaMagi } from "../../config/aca-tables";
+import { getAcaSubsidyCliff } from "../../config/aca-tables";
+import type { MagiIncome } from "@/lib/pure/tax/year-income";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
 } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import type {
-  IndKeyFn,
-  NonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
+import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,7 +85,7 @@ export interface RothConversionInput {
    * N+2's vintage, not year N's — see `decumulation-year.ts`'s
    * `grownIrmaaBracketsForCap`. */
   irmaaBrackets: Record<string, IrmaaBracket[]>;
-  filingStatus?: FilingStatusType | null;
+  filingStatus?: ReturnFilingStatus | null;
   /** Current balances (mutated in place). */
   balances: TaxBuckets;
   /** Basis ratio of the brokerage money that pays the conversion's tax (the
@@ -153,7 +155,7 @@ interface RothConversionResult {
 
 export interface IrmaaInput {
   enableIrmaaAwareness: boolean | undefined;
-  filingStatus: FilingStatusType | null | undefined;
+  filingStatus: ReturnFilingStatus | null | undefined;
   /** Whether ANY household member is ≥65. */
   anyPersonAge65: boolean;
   /**
@@ -183,23 +185,8 @@ export interface AcaInput {
   /** Whether ALL household members are <65. */
   allPersonsUnder65: boolean;
   householdSize: number;
-  totalTraditionalWithdrawal: number;
-  rothConversionAmount: number;
-  brokerageGainsPortion: number;
-  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
-   *  ordinary income, so it belongs in AGI/MAGI like any other. This
-   *  docblock right here already documents that
-   *  the same omission was fixed for currentYearMagi/NIIT/the IRMAA
-   *  lookback (decumulation-year.ts) "and the ACA subsidy check below" —
-   *  but checkAca's own call site never actually passed it, so a pre-65
-   *  household with a real non-qualified Roth growth draw could see
-   *  acaSubsidyPreserved read true across a cliff that was really
-   *  crossed. */
-  rothTaxableGrowth: number;
-  /** Full gross Social Security benefit (not the 0-85% taxable slice) — ACA
-   *  MAGI per 26 U.S.C. §36B(d)(2)(B) requires adding back the entire
-   *  benefit, unlike income-tax provisional income or IRMAA MAGI. */
-  ssIncome: number;
+  /** The year's income; ACA's MAGI adds the whole Social Security benefit. */
+  income: MagiIncome<"aca">;
   /**
    * `(1 + inflationRate) ^ (year - fplYear)` (the poverty levels'
    * coverage year, bracket-growth.ts `taxTableYears`) — grows the ACA
@@ -301,21 +288,14 @@ export function performRothConversion(
   // Total taxable income this year (Traditional withdrawals + taxable SS +
   // non-qualified Roth growth) -- needed before target resolution now,
   // since smoothing's elevated target (if any) is sized against it.
-  // Previously omitted rothTaxableGrowth,
-  // understating real income and overstating conversionRoom below.
   const yearTaxableIncome =
     totalTraditionalWithdrawal + taxableSS + rothTaxableGrowth;
 
   let conversionTarget = configTarget ?? input.rothBracketTarget;
   if (smoothingActive) {
-    // Find the MINIMUM marginal rate whose cap accommodates
-    // this year's income plus the smoothing target, by reusing the
-    // already-tested incomeCapForMarginalRate over each bracket's own
-    // rate (ascending, ordinary array order) -- not a new reverse
-    // bracket-walk, which would carry real off-by-one risk at a value
-    // landing exactly on a threshold. The top bracket's cap is always
-    // Infinity, so this always finds SOME rate -- "no bracket
-    // accommodates it" is not a real failure mode here.
+    // The lowest marginal rate whose cap fits this year's income plus the
+    // smoothing target (incomeCapForMarginalRate over each bracket, in
+    // order). The top bracket's cap is Infinity, so some rate always fits.
     const neededIncome = yearTaxableIncome + rmdSmoothingTarget!;
     let minimumRateNeeded: number | undefined;
     for (const b of taxBrackets) {
@@ -376,6 +356,7 @@ export function performRothConversion(
 
   // IRMAA-aware cap (#38): reduce conversion to stay below next IRMAA cliff.
   if (input.irmaaAwareRothConversions && input.filingStatus && conversion > 0) {
+    // Today's term order (float ties at a cliff); yearMagi once it rounds to cents.
     const magiWithoutConversion =
       totalTraditionalWithdrawal +
       input.brokerageGainsPortion +
@@ -461,14 +442,12 @@ export function performRothConversion(
   }
 
   // Update per-account balances: distribute proportionally across Traditional
-  // accounts. The WEIGHT used to size each category's share must also
-  // be Retirement-only (`bal.traditional - nonRetirement.trad[cat]`), not
-  // the raw blended `bal.traditional` — otherwise a category whose blended
-  // balance is inflated by a Portfolio-parented account gets an oversized
-  // share of an already-correctly-capped `conversion` total, and the
-  // aggregate mutation below (still full-category-sized, by design — both
-  // trackers must move together) would disagree with what the individual
-  // debit further down can actually place in Retirement-only accounts.
+  // accounts, each category weighted by its Retirement-only balance
+  // (`bal.traditional - nonRetirement.trad[cat]`), not the blended one: a
+  // Portfolio-parented account would otherwise inflate a category's share
+  // of the capped `conversion`, and the aggregate mutation below (full-
+  // category-sized by design, both trackers move together) would disagree
+  // with what the individual debit can place in Retirement-only accounts.
   const tradAccounts: { cat: AccountCategory; balance: number }[] = [];
   for (const cat of getAllCategories()) {
     const bal = acctBal[cat];
@@ -689,11 +668,7 @@ export function checkAca(input: AcaInput): AcaResult {
     enableAcaAwareness,
     allPersonsUnder65,
     householdSize,
-    totalTraditionalWithdrawal,
-    rothConversionAmount,
-    brokerageGainsPortion,
-    rothTaxableGrowth,
-    ssIncome,
+    income,
     fplGrowthFactor,
     fplByHousehold,
   } = input;
@@ -710,13 +685,13 @@ export function checkAca(input: AcaInput): AcaResult {
   // the coverage year's poverty levels.
   const acaCliff =
     getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
-  const projectedMagi = acaMagi({
-    totalTraditionalWithdrawal,
-    rothConversionAmount,
-    brokerageGainsPortion,
-    rothTaxableGrowth,
-    ssIncome,
-  });
+  // Today's term order (float ties at the cliff); yearMagi once it rounds to cents.
+  const projectedMagi =
+    income.traditionalDraws +
+    income.rothConversions +
+    income.realizedGains +
+    income.rothTaxableGrowth +
+    income.socialSecurity.gross;
   const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
   const acaSubsidyPreserved = projectedMagi < acaCliff;
 
@@ -731,7 +706,7 @@ export function checkAca(input: AcaInput): AcaResult {
     // touch MAGI at all) would have kept the household under the cliff —
     // actionable information without the engine silently re-ordering
     // withdrawals against a value it can't fully price.
-    const brokerageCouldCoverOverage = brokerageGainsPortion >= overage;
+    const brokerageCouldCoverOverage = income.realizedGains >= overage;
     const attribution = brokerageCouldCoverOverage
       ? ` — sourcing $${overage.toFixed(0)} less from brokerage (and more from Roth) would keep MAGI under the cliff`
       : "";

@@ -11,18 +11,17 @@ import {
 } from "@/server/helpers/contribution-caps";
 import { getAllPeople } from "@/server/helpers/people";
 import { computeValue } from "@/lib/pure/contribution-caps";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
-import type { Db, DbOrTx } from "./transforms";
 import { parseAppSettings } from "./settings";
-import type { ActiveBudgetApi } from "@/lib/budget-api/types";
+import type { ActiveBudgetApi, BudgetApiService } from "@/lib/budget-api/types";
+import { SK_BUDGET_ACTIVE_COLUMN } from "@/lib/constants/settings-keys";
 import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_ACTIVE_SALARY_PROFILE_ID,
-  SK_BUDGET_ACTIVE_COLUMN,
-} from "@/lib/constants/settings-keys";
+  resolveProfileSelection,
+  type ProfilePair,
+} from "@/server/services/profile-selection";
 import {
   filterActiveJobs,
   type ContribResolutionStatus,
@@ -37,11 +36,12 @@ import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
-  computeAnnualContribution,
   resolveJoblessPeriodsPerYear,
   resolveContribPeriods,
   classifyContribResolution,
 } from "./contribution";
+import type { Db } from "@/lib/db";
+import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
 const BUDGET_CACHE_MAX_AGE_MS = undefined;
@@ -117,7 +117,7 @@ export async function resolveTargetBudgetProfile(
  */
 async function sumMappedAccountBalances(
   db: Db,
-  service: "ynab" | "actual",
+  service: BudgetApiService,
   localId: "cash" | "creditCard",
 ): Promise<{
   total: number;
@@ -193,7 +193,7 @@ export async function getEffectiveCash(
   activeBudgetApi?: ActiveBudgetApi,
 ): Promise<{
   cash: number;
-  source: "ynab" | "actual" | "manual";
+  source: BudgetApiService | "manual";
   cacheAgeDays: number | null;
   /** Mapped cash accounts the budget app no longer lists. */
   missingAccounts: number;
@@ -406,38 +406,6 @@ export function computeBudgetAnnualTotal(
 ): number {
   if (columnMonths) return computeWeightedBudgetTotal(items, columnMonths);
   return computeBudgetColumnTotal(items, columnIndex);
-}
-
-/** The active (Contribution Profile, Salary Profile) pair — what a caller
- *  with no page context of its own (a budget-API sync, an expense rollup, a
- *  retirement readiness check) uses. The same state every page shows, since
- *  applying a Plan writes these settings. */
-export type ProfilePair = {
-  contribProfileId: number | null;
-  salaryProfileId: number | null;
-};
-
-export async function resolveActiveProfilePair(
-  db: DbOrTx,
-): Promise<ProfilePair> {
-  const settingRows = await db
-    .select()
-    .from(schema.appSettings)
-    .where(
-      inArray(schema.appSettings.key, [
-        SK_ACTIVE_CONTRIB_PROFILE_ID,
-        SK_ACTIVE_SALARY_PROFILE_ID,
-      ]),
-    );
-  const settingValue = (key: string): number | null => {
-    const raw = settingRows.find((r) => r.key === key)?.value ?? null;
-    const num = Number(raw);
-    return raw == null || Number.isNaN(num) ? null : num;
-  };
-  return {
-    contribProfileId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
-    salaryProfileId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
-  };
 }
 
 /**
@@ -657,7 +625,7 @@ export async function getAnnualExpensesFromBudget(
     db,
     items,
     (profile.columnLabels as string[] | null)?.length ?? 0,
-    await resolveActiveProfilePair(db),
+    await resolveProfileSelection({ db }),
   );
 
   return computeBudgetAnnualTotal(

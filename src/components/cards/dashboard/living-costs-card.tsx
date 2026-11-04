@@ -102,7 +102,7 @@ function LivingCostsCardImpl() {
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
   const {
-    contributionProfileId: activeContribProfileId,
+    contributionProfileId: effectiveContribId,
     queryInput: contribProfileInput,
   } = useEffectiveContribProfileId();
   // Budget Profile axis — the active row, through the shared resolver.
@@ -114,13 +114,13 @@ function LivingCostsCardImpl() {
     {
       validIds: budgetProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: globalActiveBudgetId,
+      activeProfileId: globalActiveBudgetId,
     },
   );
   const activeBudgetProfileName = budgetProfilesList?.find(
     (p) => p.id === displayBudgetProfileId,
   )?.name;
-  // Same tiers used by the paycheck query below, so the budget total and the
+  // Same profiles as the paycheck query below, so the budget total and the
   // income figure on this card never disagree about which Salary /
   // Contribution Profile is in effect.
   const { data: budgetData, isLoading: isBudgetLoading } =
@@ -129,13 +129,9 @@ function LivingCostsCardImpl() {
       ...(displayBudgetProfileId != null
         ? { profileId: displayBudgetProfileId }
         : {}),
-      contributionProfile: {
-        localSelectionId: null,
-        globalDefaultId: activeContribProfileId,
-      },
-      salaryProfile: {
-        localSelectionId: null,
-        globalDefaultId: rawActiveSalaryProfileId,
+      selection: {
+        contribution: effectiveContribId,
+        salary: rawActiveSalaryProfileId,
       },
     });
   // Spent this month in the linked budget app (YNAB/Actual) — the "how am

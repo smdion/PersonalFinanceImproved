@@ -12,6 +12,7 @@ import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -22,10 +23,7 @@ const AS_OF = new Date("2025-03-07");
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withCapsAge({
-    accumulationDefaults: {
-      contributionRate: 0.25,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+    accumulationDefaults: makeAccumulationDefaults({
       accountSplits: {
         "401k": 0.4,
         "403b": 0,
@@ -33,8 +31,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         ira: 0.15,
         brokerage: 0.35,
       },
-      taxSplits: { "401k": 0.5, ira: 1.0 },
-    },
+    }),
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "waterfall",

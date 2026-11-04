@@ -13,7 +13,6 @@
  * coverage here; this locks in the base wiring only).
  */
 import "../routers/setup-mocks";
-import type { Db } from "@/server/helpers/transforms";
 import {
   describe,
   it,
@@ -36,6 +35,7 @@ import {
 } from "@/server/retirement/build-engine-payload";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import type { Db } from "@/lib/db";
 
 async function getSchema() {
   return await import("@/lib/db/schema");

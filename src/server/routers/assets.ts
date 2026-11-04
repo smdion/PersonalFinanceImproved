@@ -40,7 +40,7 @@ export const assetsRouter = createTRPCRouter({
         mortgageExtras,
         allSettings,
       ] = await Promise.all([
-        buildYearEndHistory(ctx.db, new Date(), {
+        buildYearEndHistory(ctx.db, ctx.scope.asOf, {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
         }),
@@ -130,7 +130,7 @@ export const assetsRouter = createTRPCRouter({
           : false);
 
       const allYears = yearEndHistory.map((r) => r.year);
-      const currentYear = new Date().getFullYear();
+      const currentYear = ctx.scope.asOf.getFullYear();
 
       // Build home improvements cumulative by year
       const homeImpByYear = new Map<

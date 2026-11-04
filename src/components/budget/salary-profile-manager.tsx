@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
@@ -16,12 +16,6 @@ import {
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
-import {
-  type PayPeriod,
-  type PayWeek,
-  type W4FilingStatus,
-} from "@/lib/config/enum-values";
-import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 import { PayScheduleSection } from "@/components/paycheck/pay-schedule-section";
 import { TaxWithholdingSection } from "@/components/paycheck/tax-withholding-section";
@@ -31,8 +25,6 @@ import {
 } from "@/components/paycheck/bonus-section";
 import { OtherPaySection } from "@/components/paycheck/other-pay-section";
 import { SectionHeader } from "@/components/paycheck/section-header";
-import type { EarningRow } from "@/components/paycheck/types";
-import type { BonusDestination } from "@/lib/config/enum-values";
 import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
 import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import { toast } from "@/lib/hooks/use-toast";
@@ -118,7 +110,7 @@ export function SalaryProfileManager({
     useEffectiveProfileId("salary", {
       validIds: profiles?.map((p) => p.id),
       localSelection: selectedProfileId,
-      globalDefaultId: globalActiveSalaryId,
+      activeProfileId: globalActiveSalaryId,
     });
   const activeProfileName = profiles?.find(
     (p) => p.id === globalActiveSalaryId,
@@ -264,82 +256,10 @@ export function SalaryProfileManager({
 // Shared entry helpers
 // ---------------------------------------------------------------------------
 
-/** One job in a person's job history, as salaryProfile.getById resolves it. */
-type JobOption = {
-  id: number;
-  employerName: string;
-  startDate: string;
-  endDate: string | null;
-  /** Whether this profile has a complete entry for this job — the whole
-   *  encoding. No entry means $0/no bonus, not a fallback to anything. */
-  hasEntry: boolean;
-  salary: number;
-  bonusPercent: number;
-  bonusMultiplier: number;
-  monthsInBonusYear: number;
-  /** This year's actual paid-out bonus, pinned on the same entry — see
-   *  SalaryProfileEntry.bonusOverride's docblock. */
-  bonusOverride: number | null;
-  /** What this profile actually produces for this job. */
-  effectiveSalary: number;
-  estimatedBonus: number;
-  // ── Pay/withholding/bonus-timing fields (see salaryEntrySchema for the full
-  // ── field-by-field meaning — these just mirror it for display). ──
-  payPeriod: PayPeriod;
-  payWeek: PayWeek;
-  anchorPayDate: string | null;
-  budgetPeriodsPerMonth: number | null;
-  w4FilingStatus: W4FilingStatus;
-  w4Box2cChecked: boolean;
-  additionalFedWithholding: number;
-  bonusMonth: number | null;
-  bonusDayOfMonth: number | null;
-  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-  bonusDestination: BonusDestination;
-  /** This job's other-pay lines with their amount in this profile. */
-  earningRows: EarningRow[];
-  /** The formula's bonus, ignoring this year's actual. */
-  formulaBonus: number;
-};
-
-/**
- * One person's row as salaryProfile.getById returns it.
- *
- * Spelled out rather than inferred from the router: components may not
- * import server modules, and inferring through useQuery's return type
- * needs the call's arguments, which a bare type position doesn't have.
- */
-type Detail = {
-  personId: number;
-  personName: string;
-  /** The job this row targets — the real identity of an entry, not
-   *  personId. Null when this person has no jobs at all yet. */
-  jobId: number | null;
-  /** This person's full job history, for the row's job picker. */
-  jobOptions: JobOption[];
-  employerName: string | null;
-  hasEntry: boolean;
-  salary: number;
-  bonusPercent: number;
-  bonusMultiplier: number;
-  monthsInBonusYear: number;
-  bonusOverride: number | null;
-  effectiveSalary: number;
-  estimatedBonus: number;
-  payPeriod: PayPeriod;
-  payWeek: PayWeek;
-  anchorPayDate: string | null;
-  budgetPeriodsPerMonth: number | null;
-  w4FilingStatus: W4FilingStatus;
-  w4Box2cChecked: boolean;
-  additionalFedWithholding: number;
-  bonusMonth: number | null;
-  bonusDayOfMonth: number | null;
-  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-  bonusDestination: BonusDestination;
-  earningRows: EarningRow[];
-  formulaBonus: number;
-};
+/** One person's row as salaryProfile.getById returns it. */
+type Detail = NonNullable<
+  RouterOutputs["salaryProfile"]["getById"]
+>["salaryDetails"][number];
 
 /**
  * Re-target a row at a different job from its jobOptions — used by the job

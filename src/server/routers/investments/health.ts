@@ -7,7 +7,6 @@ import {
   investmentHealthIssues,
 } from "@/lib/pure/investment-health";
 import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
-import { localDateStr } from "@/lib/utils/date";
 import { loadAccounts } from "./_shared";
 
 export const investmentHealthRouter = createTRPCRouter({
@@ -66,6 +65,6 @@ export const investmentHealthRouter = createTRPCRouter({
       };
     });
 
-    return { issues: investmentHealthIssues(inputs, localDateStr()) };
+    return { issues: investmentHealthIssues(inputs, ctx.scope.today) };
   }),
 });

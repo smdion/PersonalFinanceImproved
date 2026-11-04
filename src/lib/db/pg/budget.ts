@@ -11,10 +11,8 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
-import type {
-  BudgetApiService,
-  ApiSyncDirection,
-} from "@/lib/config/enum-values";
+import type { ApiSyncDirection } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { contributionAccounts } from "./contributions";
 import { mortgageLoans } from "./mortgages";
 

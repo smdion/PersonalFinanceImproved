@@ -1,51 +1,51 @@
 {
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 430,
-    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1071,
-    "src/app/(dashboard)/budget/budget-content.tsx": 671,
-    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 403,
-    "src/app/(dashboard)/budget/what-if-editors.tsx": 569,
-    "src/app/(dashboard)/budget/what-if-tab.tsx": 1375,
+    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1067,
+    "src/app/(dashboard)/budget/budget-content.tsx": 663,
+    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 390,
+    "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
+    "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
-    "src/app/(dashboard)/expenses/expenses-content.tsx": 825,
+    "src/app/(dashboard)/expenses/expenses-content.tsx": 819,
     "src/app/(dashboard)/historical/page.tsx": 1026,
     "src/app/(dashboard)/house/page.tsx": 746,
-    "src/app/(dashboard)/networth/page.tsx": 465,
-    "src/app/(dashboard)/paycheck/page.tsx": 719,
+    "src/app/(dashboard)/networth/page.tsx": 461,
+    "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
-    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 945,
-    "src/app/(dashboard)/savings/page.tsx": 952,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1025,
+    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
+    "src/app/(dashboard)/savings/page.tsx": 935,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1022,
     "src/app/(dashboard)/tools/page.tsx": 585,
-    "src/app/(dashboard)/upkeep/utilities/page.tsx": 560,
+    "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 954,
     "src/components/budget/budget-summary-table.tsx": 772,
     "src/components/budget/contribution-profile-manager.tsx": 2063,
-    "src/components/budget/salary-profile-manager.tsx": 1034,
+    "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
-    "src/components/cards/coast-fire-card.tsx": 417,
+    "src/components/cards/coast-fire-card.tsx": 408,
     "src/components/cards/dashboard/contributions-card.tsx": 655,
     "src/components/cards/dashboard/linked-balance-card.tsx": 451,
-    "src/components/cards/dashboard/living-costs-card.tsx": 683,
-    "src/components/cards/dashboard/retirement-card.tsx": 451,
+    "src/components/cards/dashboard/living-costs-card.tsx": 679,
+    "src/components/cards/dashboard/retirement-card.tsx": 448,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,
-    "src/components/cards/mc-simulation-assumptions.tsx": 1111,
+    "src/components/cards/mc-simulation-assumptions.tsx": 1071,
     "src/components/cards/projection/decumulation-config.tsx": 480,
     "src/components/cards/projection/index.tsx": 1520,
     "src/components/cards/projection/overrides-panel.tsx": 1132,
-    "src/components/cards/projection/projection-chart.tsx": 1149,
+    "src/components/cards/projection/projection-chart.tsx": 1147,
     "src/components/cards/projection/projection-hero-kpis.tsx": 507,
     "src/components/cards/projection/projection-mc-results.tsx": 406,
-    "src/components/cards/projection/projection-table-accum-row.tsx": 1450,
-    "src/components/cards/projection/projection-table-decum-row.tsx": 1629,
+    "src/components/cards/projection/projection-table-accum-row.tsx": 1447,
+    "src/components/cards/projection/projection-table-decum-row.tsx": 1619,
     "src/components/cards/projection/projection-table.tsx": 427,
-    "src/components/cards/projection/report/report-assumptions-summary.tsx": 423,
+    "src/components/cards/projection/report/report-assumptions-summary.tsx": 330,
     "src/components/cards/projection/spending-stability-chart.tsx": 557,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
-    "src/components/cards/projection/use-projection-derived.ts": 643,
-    "src/components/cards/projection/use-projection-queries.ts": 998,
-    "src/components/cards/projection/utils.ts": 883,
-    "src/components/cards/withdrawal-comparison.tsx": 587,
+    "src/components/cards/projection/use-projection-derived.ts": 637,
+    "src/components/cards/projection/use-projection-queries.ts": 977,
+    "src/components/cards/projection/utils.ts": 870,
+    "src/components/cards/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 683,
@@ -53,13 +53,13 @@
     "src/components/investments/holding-history-section.tsx": 522,
     "src/components/investments/holdings-section.tsx": 790,
     "src/components/layout/scenario-bar.tsx": 497,
-    "src/components/layout/sidebar.tsx": 526,
+    "src/components/layout/sidebar.tsx": 525,
     "src/components/liabilities/debts-card.tsx": 536,
     "src/components/methodology-content.tsx": 555,
     "src/components/mortgage/mortgage-settings.tsx": 728,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
     "src/components/onboarding/onboarding-wizard.tsx": 1020,
-    "src/components/paycheck/contrib-account-form.tsx": 629,
+    "src/components/paycheck/contrib-account-form.tsx": 627,
     "src/components/paycheck/contrib-card.tsx": 539,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
@@ -70,13 +70,13 @@
     "src/components/portfolio/contribution-accounts-card.tsx": 666,
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": 640,
     "src/components/portfolio/contribution-accounts.tsx": 415,
-    "src/components/portfolio/new-snapshot-form.tsx": 867,
+    "src/components/portfolio/new-snapshot-form.tsx": 835,
     "src/components/portfolio/portfolio-chart.tsx": 476,
     "src/components/retirement/assumptions-band.tsx": 453,
-    "src/components/retirement/retirement-profile-tab.tsx": 615,
-    "src/components/retirement/sections/taxes.tsx": 585,
+    "src/components/retirement/retirement-profile-tab.tsx": 610,
+    "src/components/retirement/sections/taxes.tsx": 569,
     "src/components/savings/all-transactions-tab.tsx": 1457,
-    "src/components/savings/api-sync-section.tsx": 646,
+    "src/components/savings/api-sync-section.tsx": 637,
     "src/components/savings/contribution-grid.tsx": 471,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1260,
     "src/components/savings/fund-card.tsx": 1042,
@@ -85,37 +85,37 @@
     "src/components/savings/savings-trajectory-table.tsx": 550,
     "src/components/settings/general.tsx": 449,
     "src/components/settings/integrations-simplefin.tsx": 493,
-    "src/components/settings/integrations.tsx": 708,
+    "src/components/settings/integrations.tsx": 707,
     "src/components/settings/integrations/budget-section.tsx": 712,
     "src/components/settings/integrations/portfolio-section.tsx": 659,
-    "src/components/tools/relocation/projection-table.tsx": 417,
+    "src/components/tools/relocation/projection-table.tsx": 416,
     "src/components/validation-content.tsx": 578,
     "src/lib/budget-api/actual-client.ts": 837,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/calculators/engine/contribution-routing.ts": 629,
-    "src/lib/calculators/engine/individual-account-tracking.ts": 1486,
-    "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 748,
-    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 866,
-    "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1637,
+    "src/lib/calculators/engine/contribution-routing.ts": 627,
+    "src/lib/calculators/engine/individual-account-tracking.ts": 1474,
+    "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 723,
+    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 854,
+    "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1603,
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/calculators/engine/rmd-enforcement.ts": 468,
-    "src/lib/calculators/engine/tax-estimation.ts": 519,
-    "src/lib/calculators/engine/tax-gross-up.ts": 587,
-    "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 506,
-    "src/lib/calculators/engine/withdrawal-routing.ts": 1448,
+    "src/lib/calculators/engine/tax-estimation.ts": 515,
+    "src/lib/calculators/engine/tax-gross-up.ts": 578,
+    "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 502,
+    "src/lib/calculators/engine/withdrawal-routing.ts": 1438,
     "src/lib/calculators/monte-carlo.ts": 761,
     "src/lib/calculators/mortgage.ts": 424,
-    "src/lib/calculators/paycheck.ts": 1398,
+    "src/lib/calculators/paycheck.ts": 1381,
     "src/lib/calculators/relocation.ts": 490,
-    "src/lib/calculators/types/engine-config.ts": 878,
-    "src/lib/calculators/types/engine-projection.ts": 725,
-    "src/lib/config/account-types.ts": 909,
+    "src/lib/calculators/types/engine-config.ts": 803,
+    "src/lib/calculators/types/engine-projection.ts": 721,
+    "src/lib/config/account-types.ts": 862,
     "src/lib/config/milestones.ts": 691,
-    "src/lib/config/withdrawal-strategies.ts": 781,
-    "src/lib/constants.ts": 404,
-    "src/lib/db/backup-transforms.ts": 1126,
+    "src/lib/config/withdrawal-strategies.ts": 779,
+    "src/lib/constants.ts": 370,
+    "src/lib/db/backup-transforms.ts": 1118,
     "src/lib/db/json-schemas.ts": 459,
-    "src/lib/db/pg/api-sync.ts": 619,
+    "src/lib/db/pg/api-sync.ts": 617,
     "src/lib/db/pg/retirement.ts": 631,
     "src/lib/db/reference-reconcile-core.ts": 800,
     "src/lib/db/version-logic.ts": 612,
@@ -125,7 +125,7 @@
     "src/lib/demo/profiles/recently-retired.ts": 1618,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/contribution-caps.ts": 671,
-    "src/lib/pure/contributions.ts": 687,
+    "src/lib/pure/contributions.ts": 685,
     "src/lib/pure/holding-periods.ts": 433,
     "src/lib/pure/milestone-input.ts": 674,
     "src/lib/pure/milestones.ts": 1705,
@@ -133,49 +133,49 @@
     "src/lib/pure/performance.ts": 599,
     "src/lib/pure/roth-ira.ts": 543,
     "src/lib/pure/tax-bucket-projection.ts": 527,
-    "src/lib/pure/withdrawal-eligibility.ts": 539,
-    "src/lib/sec/facts-sync.ts": 586,
+    "src/lib/pure/withdrawal-eligibility.ts": 484,
+    "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 495,
-    "src/lib/simplefin/ingest.ts": 535,
-    "src/lib/simplefin/sync.ts": 618,
+    "src/lib/simplefin/ingest.ts": 534,
+    "src/lib/simplefin/sync.ts": 616,
     "src/lib/tax-data/validate.ts": 411,
-    "src/lib/utils/colors.ts": 434,
+    "src/lib/utils/colors.ts": 431,
     "src/lib/utils/format.ts": 421,
     "src/server/helpers/budget-api-push.ts": 434,
-    "src/server/helpers/budget.ts": 668,
+    "src/server/helpers/budget.ts": 636,
     "src/server/helpers/contribution-caps.ts": 560,
-    "src/server/helpers/contribution.ts": 1843,
-    "src/server/helpers/projection-cache.ts": 556,
-    "src/server/helpers/salary.ts": 549,
+    "src/server/helpers/contribution.ts": 1826,
+    "src/server/helpers/projection-cache.ts": 221,
+    "src/server/helpers/salary.ts": 503,
     "src/server/helpers/snapshot.ts": 1218,
-    "src/server/retirement/build-engine-payload.ts": 1418,
-    "src/server/retirement/payload/profile-switches.ts": 509,
+    "src/server/retirement/build-engine-payload.ts": 1415,
+    "src/server/retirement/payload/profile-switches.ts": 505,
     "src/server/routers/assets.ts": 528,
-    "src/server/routers/budget.ts": 2186,
+    "src/server/routers/budget.ts": 2149,
     "src/server/routers/contribution-profiles.ts": 914,
-    "src/server/routers/contribution.ts": 1440,
+    "src/server/routers/contribution.ts": 1436,
     "src/server/routers/demo.ts": 663,
-    "src/server/routers/investments/_shared.ts": 637,
-    "src/server/routers/investments/load-current-balances.ts": 509,
-    "src/server/routers/milestones.ts": 415,
+    "src/server/routers/investments/_shared.ts": 636,
+    "src/server/routers/investments/load-current-balances.ts": 508,
+    "src/server/routers/milestones.ts": 414,
     "src/server/routers/networth.ts": 1481,
     "src/server/routers/paycheck.ts": 945,
-    "src/server/routers/performance.ts": 1899,
-    "src/server/routers/projection/_shared.ts": 472,
-    "src/server/routers/projection/coast-fire.ts": 506,
-    "src/server/routers/projection/monte-carlo.ts": 577,
+    "src/server/routers/performance.ts": 1895,
+    "src/server/routers/projection/_shared.ts": 368,
+    "src/server/routers/projection/coast-fire.ts": 469,
+    "src/server/routers/projection/monte-carlo.ts": 550,
     "src/server/routers/projection/relocation.ts": 666,
-    "src/server/routers/projection/scenarios.ts": 519,
-    "src/server/routers/projection/strategy.ts": 876,
-    "src/server/routers/projection/tax-optimization.ts": 552,
-    "src/server/routers/retirement.ts": 1489,
-    "src/server/routers/salary-profiles.ts": 738,
-    "src/server/routers/savings.ts": 2898,
-    "src/server/routers/settings/admin.ts": 426,
+    "src/server/routers/projection/scenarios.ts": 489,
+    "src/server/routers/projection/strategy.ts": 846,
+    "src/server/routers/projection/tax-optimization.ts": 536,
+    "src/server/routers/retirement.ts": 1420,
+    "src/server/routers/salary-profiles.ts": 694,
+    "src/server/routers/savings.ts": 2862,
+    "src/server/routers/settings/admin.ts": 423,
     "src/server/routers/settings/paycheck.ts": 734,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin.ts": 872,
-    "src/server/routers/sync/core.ts": 1119,
+    "src/server/routers/sync/core.ts": 1118,
     "src/server/routers/utilities.ts": 581,
     "src/server/trpc.ts": 591
   },
@@ -187,14 +187,14 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
-      "BrokerageContent": 390,
+      "BrokerageContent": 383,
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 593
+      "BudgetContent": 585
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-      "useBudgetDerivedData": 328
+      "useBudgetDerivedData": 322
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
       "useBudgetPageState": 207
@@ -205,7 +205,7 @@
     },
     "src/app/(dashboard)/budget/what-if-tab.tsx": {
       "useSandboxState": 234,
-      "WhatIfTab": 839
+      "WhatIfTab": 830
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
       "ContributionsContent": 887,
@@ -216,7 +216,7 @@
       "DataBrowserContent": 249
     },
     "src/app/(dashboard)/expenses/expenses-content.tsx": {
-      "ExpensesContent": 589
+      "ExpensesContent": 583
     },
     "src/app/(dashboard)/historical/page.tsx": {
       "HistoricalPage": 191,
@@ -233,32 +233,32 @@
       "MilestonesContent": 223
     },
     "src/app/(dashboard)/networth/page.tsx": {
-      "NetWorthPage": 400
+      "NetWorthPage": 396
     },
     "src/app/(dashboard)/paycheck/page.tsx": {
-      "PaycheckPage": 673,
-      "PaycheckPage.map()": 322
+      "PaycheckPage": 645,
+      "PaycheckPage.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
       "PerformanceContent": 811
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 755,
-      "PortfolioContent.map()": 266
+      "PortfolioContent": 750,
+      "PortfolioContent.map()": 263
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
       "RecommendationsContent": 192
     },
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
-      "RetirementContent": 313
+      "RetirementContent": 309
     },
     "src/app/(dashboard)/savings/page.tsx": {
-      "SavingsPage": 871
+      "SavingsPage": 854
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 391
+      "TaxBucketsContent": 378
     },
     "src/app/(dashboard)/tools/page.tsx": {
       "ToolsPage": 542
@@ -330,10 +330,10 @@
       "LinkedBalanceCardImpl": 210
     },
     "src/components/cards/dashboard/living-costs-card.tsx": {
-      "LivingCostsCardImpl": 587
+      "LivingCostsCardImpl": 583
     },
     "src/components/cards/dashboard/retirement-card.tsx": {
-      "RetirementCardImpl": 408
+      "RetirementCardImpl": 400
     },
     "src/components/cards/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 407
@@ -372,7 +372,7 @@
       "McResultsSection.iife()": 286
     },
     "src/components/cards/projection/projection-table-accum-row.tsx": {
-      "AccumulationRow": 1346,
+      "AccumulationRow": 1342,
       "AccumulationRow.content.iife()": 211,
       "AccumulationRow.map()": 151
     },
@@ -380,18 +380,18 @@
       "ContribMethodologySection": 267
     },
     "src/components/cards/projection/projection-table-decum-row.tsx": {
-      "DecumulationRow": 1280,
-      "DecumulationRow.content.iife()": 207,
-      "DecumulationRow.map()": 231,
+      "DecumulationRow": 1267,
+      "DecumulationRow.content.iife()": 204,
+      "DecumulationRow.map()": 221,
       "DecumulationRow.map() #2": 158,
       "DecumulationRow.map() #3": 181,
-      "DecumulationRow.map().content.iife()": 184
+      "DecumulationRow.map().content.iife()": 174
     },
     "src/components/cards/projection/projection-table.tsx": {
       "ProjectionTable": 392
     },
     "src/components/cards/projection/report/report-assumptions-summary.tsx": {
-      "ReportAssumptionsSummary": 298
+      "ReportAssumptionsSummary": 269
     },
     "src/components/cards/projection/spending-stability-chart.tsx": {
       "SpendingStabilityChart": 514
@@ -400,22 +400,22 @@
       "renderTooltip": 328
     },
     "src/components/cards/projection/use-projection-derived.ts": {
-      "useProjectionDerived": 607
+      "useProjectionDerived": 599
     },
     "src/components/cards/projection/use-projection-form-state.ts": {
       "useProjectionFormState": 343
     },
     "src/components/cards/projection/use-projection-queries.ts": {
-      "useProjectionQueries": 949
+      "useProjectionQueries": 939
     },
     "src/components/cards/projection/use-projection-state.ts": {
       "useProjectionState": 284
     },
     "src/components/cards/projection/utils.ts": {
-      "filterYearByParentCategory": 250
+      "filterYearByParentCategory": 241
     },
     "src/components/cards/withdrawal-comparison.tsx": {
-      "WithdrawalComparisonCard": 502
+      "WithdrawalComparisonCard": 490
     },
     "src/components/decumulation-methodology-content.tsx": {
       "DecumulationMethodologyContent": 867
@@ -474,7 +474,7 @@
       "AssetsLiabilitiesCards": 225
     },
     "src/components/networth/spreadsheet/spreadsheet-view.tsx": {
-      "SpreadsheetView": 194
+      "SpreadsheetView": 190
     },
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
       "SpreadsheetYearOverYearTable": 300,
@@ -538,9 +538,6 @@
       "YearRow": 719,
       "YearRow.map()": 379
     },
-    "src/components/plans/compare-plans.tsx": {
-      "PlanColumn": 156
-    },
     "src/components/portfolio/account-balance-overview.tsx": {
       "AccountBalanceOverview": 238
     },
@@ -572,7 +569,7 @@
       "PortfolioQuickLook": 287
     },
     "src/components/portfolio/use-contribution-accounts-mutations.ts": {
-      "useContributionAccountsMutations": 285
+      "useContributionAccountsMutations": 283
     },
     "src/components/retirement/assumptions-band.tsx": {
       "AssumptionsBand": 344
@@ -581,7 +578,7 @@
       "RetirementProfileManager": 266
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 540
+      "RetirementProfileTab": 534
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 180
@@ -600,7 +597,7 @@
       "StrategyParamsSection.renderField": 171
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 493
+      "TaxesSection": 483
     },
     "src/components/savings/all-transactions-tab.tsx": {
       "AllTransactionsTab": 1408,
@@ -611,7 +608,7 @@
       "useApiSync": 335
     },
     "src/components/savings/contribution-grid.tsx": {
-      "ContributionGrid": 222,
+      "ContributionGrid": 221,
       "DefaultContributionCell": 212
     },
     "src/components/savings/emergency-fund-detail.tsx": {
@@ -684,7 +681,7 @@
       "TiingoCard": 152
     },
     "src/components/settings/integrations.tsx": {
-      "IntegrationsSettings": 186,
+      "IntegrationsSettings": 180,
       "ServiceCard": 455
     },
     "src/components/settings/integrations/budget-section.tsx": {
@@ -705,7 +702,7 @@
       "ReturnRatesSettings": 257
     },
     "src/components/settings/tax-brackets.tsx": {
-      "TaxBracketsSettings": 337
+      "TaxBracketsSettings": 336
     },
     "src/components/settings/tax-data.tsx": {
       "TaxDataSettings": 202
@@ -751,16 +748,16 @@
       "distributeContributions": 387
     },
     "src/lib/calculators/engine/post-withdrawal-optimizer.ts": {
-      "performRothConversion": 383
+      "performRothConversion": 375
     },
     "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 787
+      "runAccumulationYear": 769
     },
     "src/lib/calculators/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 188
     },
     "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 1534
+      "runDecumulationYear": 1499
     },
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 438
@@ -770,13 +767,13 @@
       "enforceRmd": 155
     },
     "src/lib/calculators/engine/tax-gross-up.ts": {
-      "evaluateCost": 168
+      "evaluateCost": 160
     },
     "src/lib/calculators/engine/withdrawal-cost-ranking.ts": {
-      "rankWithdrawalTiers": 277
+      "rankWithdrawalTiers": 274
     },
     "src/lib/calculators/engine/withdrawal-routing.ts": {
-      "routeWithdrawalsBracketFilling": 475,
+      "routeWithdrawalsBracketFilling": 465,
       "routeWithdrawalsPercentage": 189
     },
     "src/lib/calculators/monte-carlo.ts": {
@@ -807,7 +804,7 @@
       "capContributionsByLimitGroup": 271
     },
     "src/lib/pure/distribution-tax-rates.ts": {
-      "buildDistributionTaxRates": 201
+      "buildDistributionTaxRates": 199
     },
     "src/lib/pure/milestone-input.ts": {
       "buildMilestoneInput": 218
@@ -823,10 +820,10 @@
       "computeTaxBucketProjection.entries.map()": 191
     },
     "src/lib/pure/tax-buckets.ts": {
-      "computeTaxBucketBreakdown": 248
+      "computeTaxBucketBreakdown": 243
     },
     "src/lib/pure/withdrawal-eligibility.ts": {
-      "computeWithdrawalEligibility": 219
+      "computeWithdrawalEligibility": 182
     },
     "src/lib/sec/facts-sync.ts": {
       "refreshOne": 205
@@ -847,7 +844,7 @@
       "loadContributionMix": 187
     },
     "src/server/helpers/contribution.ts": {
-      "buildProfileContribData": 236
+      "buildProfileContribData": 235
     },
     "src/server/helpers/extra-paycheck-materializer.ts": {
       "_materialize": 217
@@ -856,7 +853,7 @@
       "buildYearEndHistory": 870
     },
     "src/server/retirement/build-engine-payload.ts": {
-      "buildEnginePayload": 1146,
+      "buildEnginePayload": 1141,
       "fetchRetirementData": 164
     },
     "src/server/retirement/payload/individual-accounts.ts": {
@@ -869,14 +866,14 @@
       "assetsRouter.computeSummary.query()": 241
     },
     "src/server/routers/budget.ts": {
-      "budgetRouter.computeActiveSummary.query()": 274,
+      "budgetRouter.computeActiveSummary.query()": 266,
       "budgetRouter.syncBudgetToApi.mutation()": 160
     },
     "src/server/routers/contribution-profiles.ts": {
       "contributionProfileRouter.getById.query()": 186
     },
     "src/server/routers/contribution.ts": {
-      "contributionRouter.computeSummary.query()": 1209,
+      "contributionRouter.computeSummary.query()": 1205,
       "contributionRouter.computeSummary.query().results.map()": 745
     },
     "src/server/routers/demo.ts": {
@@ -907,26 +904,23 @@
       "performanceRouter.finalizeYear.mutation().transaction()": 477
     },
     "src/server/routers/projection/coast-fire.ts": {
-      "coastFireRouter.computeCoastFireMC.query()": 262
+      "coastFireRouter.computeCoastFireMC.query()": 254
     },
     "src/server/routers/projection/monte-carlo.ts": {
-      "monteCarloRouter.computeMonteCarloProjection.query()": 325
+      "monteCarloRouter.computeMonteCarloProjection.query()": 318
     },
     "src/server/routers/projection/relocation.ts": {
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 487
     },
     "src/server/routers/projection/scenarios.ts": {
-      "scenariosRouter.computeProjection.query()": 411
+      "scenariosRouter.computeProjection.query()": 383
     },
     "src/server/routers/projection/strategy.ts": {
-      "strategyRouter.analyzeStrategy.query()": 421,
-      "strategyRouter.computeStrategyComparison.query()": 287
+      "strategyRouter.analyzeStrategy.query()": 415,
+      "strategyRouter.computeStrategyComparison.query()": 279
     },
     "src/server/routers/retirement.ts": {
-      "retirementRouter.computeRelocationAnalysis.query()": 400
-    },
-    "src/server/routers/salary-profiles.ts": {
-      "salaryProfileRouter.getById.query()": 178
+      "retirementRouter.computeRelocationAnalysis.query()": 399
     },
     "src/server/routers/savings.ts": {
       "computeJobNetPayPerCheck": 224,

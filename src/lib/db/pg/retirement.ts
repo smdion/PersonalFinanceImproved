@@ -14,7 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 import { contributionProfiles, salaryProfiles } from "./contribution-profiles";
 import { people } from "./people";
 import { performanceAccounts } from "./performance";
@@ -313,7 +313,7 @@ export const retirementSettings = pgTable(
     /** Filing status for retirement projections. Null = "Auto": follow
      *  this year's filing status (lib/pure/filing-status.ts — the household
      *  setting, else a W-4). Resolved by resolveRetirementFilingStatus. */
-    filingStatus: text("filing_status").$type<W4FilingStatus>(),
+    filingStatus: text("filing_status").$type<ReturnFilingStatus>(),
 
     // --- Retirement Profiles migration, step A (expand) ---------------------
     // Added additively; nothing reads them yet (step B switches the reads).

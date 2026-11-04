@@ -81,10 +81,10 @@ export function toSql(text: string, params: unknown[]): SQL {
   );
 }
 
-type Db = Parameters<typeof execRaw>[0];
+type RawDb = Parameters<typeof execRaw>[0];
 
 /** Run the reconcile's statements on `db`. */
-function runOn(db: Db) {
+function runOn(db: RawDb) {
   return async (text: string, params: unknown[]) => {
     const q = toSql(text, params);
     if (/^\s*SELECT/i.test(text)) return queryRaw(db, q);
@@ -103,7 +103,7 @@ type SqliteClient = {
   };
   transaction: <T>(fn: () => T) => () => T;
 };
-function sqliteClient(db: Db): SqliteClient | null {
+function sqliteClient(db: RawDb): SqliteClient | null {
   const client = (db as { $client?: unknown }).$client as
     SqliteClient | undefined;
   return client && typeof client.prepare === "function" ? client : null;
@@ -112,7 +112,7 @@ function sqliteClient(db: Db): SqliteClient | null {
 /** Run `sync` (better-sqlite3's own transaction) or `async` (Postgres, in
  *  one transaction when `db` can open one) against `db`. */
 async function inReferenceTransaction<T>(
-  db: Db,
+  db: RawDb,
   sync: (run: RefQuerySync) => T,
   async: (run: RefQuery, dialect: "pg" | "sqlite") => Promise<T>,
 ): Promise<T> {
@@ -131,8 +131,8 @@ async function inReferenceTransaction<T>(
   }
   if (!isPostgres() || !("transaction" in db))
     return async(runOn(db), isPostgres() ? "pg" : "sqlite");
-  const pg = db as Db & {
-    transaction: <U>(fn: (tx: Db) => Promise<U>) => Promise<U>;
+  const pg = db as RawDb & {
+    transaction: <U>(fn: (tx: RawDb) => Promise<U>) => Promise<U>;
   };
   return pg.transaction((tx) => async(runOn(tx), "pg"));
 }
@@ -140,7 +140,7 @@ async function inReferenceTransaction<T>(
 /** Run `files` in order (each with its mode) in one transaction; step 5
  *  (carry-forward) runs with the last. Exported for tests. */
 export async function reconcileTaxDataFiles(
-  db: Db,
+  db: RawDb,
   files: { file: TaxDataFile; mode: RefMode }[],
 ): Promise<RefChange[]> {
   const last = files.length - 1;
@@ -166,7 +166,7 @@ export async function reconcileTaxDataFiles(
 
 /** Seed the shipped presets into `db` when its preset tables are all
  *  empty, in its own transaction; returns the rows inserted. */
-export async function seedShippedPresets(db: Db): Promise<number> {
+export async function seedShippedPresets(db: RawDb): Promise<number> {
   const presets = readSimulationPresetsFile();
   return inReferenceTransaction(
     db,
@@ -178,7 +178,7 @@ export async function seedShippedPresets(db: Db): Promise<number> {
 /** The newest community update an admin approved that this version can
  *  read, when it's newer than the shipped file (null otherwise). */
 export async function approvedCommunityFile(
-  db: Db,
+  db: RawDb,
   shippedVersion = readTaxDataFile().dataVersion,
 ): Promise<TaxDataFile | null> {
   const rows = (await queryRaw(
@@ -195,7 +195,7 @@ export async function approvedCommunityFile(
  *  the shipped file, then a newer approved community update; then, in a
  *  transaction of its own, the presets when the preset tables are empty.
  *  A demo schema finds the install's updates through its search_path. */
-export async function applyReferenceData(db: Db): Promise<void> {
+export async function applyReferenceData(db: RawDb): Promise<void> {
   const file = readTaxDataFile();
   const community = await approvedCommunityFile(db, file.dataVersion);
   await reconcileTaxDataFiles(db, [
@@ -208,7 +208,7 @@ export async function applyReferenceData(db: Db): Promise<void> {
 /** Apply an approved community update (one transaction); returns the
  *  figures it changed. */
 export async function applyCommunityTaxData(
-  db: Db,
+  db: RawDb,
   file: TaxDataFile,
 ): Promise<RefChange[]> {
   return reconcileTaxDataFiles(db, [{ file, mode: "community" }]);
@@ -216,7 +216,7 @@ export async function applyCommunityTaxData(
 
 /** What applying a community update would change, without writing. */
 export async function previewCommunityTaxData(
-  db: Db,
+  db: RawDb,
   file: TaxDataFile,
 ): Promise<RefChange[]> {
   const run = async (text: string, params: unknown[]) =>
@@ -238,7 +238,7 @@ export async function previewCommunityTaxData(
  *  committed, so a failure here is logged (the next start's migrate
  *  reconciles anyway) rather than reported as the restore failing. Returns
  *  whether it applied. */
-export async function reconcileReferenceData(db: Db): Promise<boolean> {
+export async function reconcileReferenceData(db: RawDb): Promise<boolean> {
   try {
     await applyReferenceData(db);
     return true;

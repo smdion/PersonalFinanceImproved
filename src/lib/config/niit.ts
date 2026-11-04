@@ -15,17 +15,26 @@
 //   - Rental income, dividends, interest ARE net investment income.
 //   - Wages, SS benefits, IRA/401k distributions are NOT net investment income.
 
-import type { FilingStatusType } from "../calculators/types";
+import {
+  filingTable,
+  type FilingStatusKey,
+  type ReturnFilingStatus,
+} from "./filing-status";
 
 /** NIIT rate — fixed at 3.8% since enactment (2013). */
 export const NIIT_RATE = 0.038;
 
 /** MAGI thresholds by filing status — not indexed to inflation (IRC §1411(b)). */
-export const NIIT_THRESHOLDS: Record<FilingStatusType, number> = {
+export const NIIT_THRESHOLDS: Record<FilingStatusKey, number> = {
   MFJ: 250000,
   Single: 200000,
   HOH: 200000,
 };
+
+/** A return status's NIIT MAGI threshold. */
+export function niitThresholdFor(status: ReturnFilingStatus): number {
+  return filingTable(NIIT_THRESHOLDS, status);
+}
 
 /**
  * Compute Net Investment Income Tax (3.8% surtax).
@@ -41,11 +50,11 @@ export const NIIT_THRESHOLDS: Record<FilingStatusType, number> = {
 export function computeNiit(
   magi: number,
   netInvestmentIncome: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
 ): number {
   if (netInvestmentIncome <= 0) return 0;
 
-  const threshold = NIIT_THRESHOLDS[filingStatus];
+  const threshold = niitThresholdFor(filingStatus);
   const magiExcess = Math.max(0, magi - threshold);
   if (magiExcess <= 0) return 0;
 

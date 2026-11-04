@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 // Direct smoke test for
@@ -14,21 +14,23 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   ],
 }));
 
-let savingsQuery: { data: unknown; isLoading: boolean; error: unknown };
-let reimbQuery: { data: unknown };
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    savings: {
-      computeSummary: { useQuery: () => savingsQuery },
-      listEfundReimbursements: { useQuery: () => reimbQuery },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { SavingsGoalsCard } from "@/components/cards/dashboard/savings-goals-card";
+import {
+  resetTrpcMock,
+  setQuery,
+  setQueryState,
+  type MockOutput,
+} from "./trpc-mock";
 
-const loading = { data: undefined, isLoading: true, error: null };
+const SUMMARY = "savings.computeSummary";
+const REIMB = "savings.listEfundReimbursements";
+const summary = (data: ReturnType<typeof mkData>) =>
+  // mkData's goal rows are partial and keep the fixture's own field types.
+  setQuery(SUMMARY, data as MockOutput<typeof SUMMARY>);
 
 const baseEfund = {
   monthsCovered: 4,
@@ -98,23 +100,27 @@ function mkData(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe("SavingsGoalsCard smoke", () => {
+  beforeEach(() => {
+    resetTrpcMock();
+  });
+
   it("renders a loading card while the query is pending", () => {
-    savingsQuery = loading;
-    reimbQuery = { data: undefined };
+    setQueryState(SUMMARY, { isLoading: true });
+    setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     expect(screen.getByText("Savings Goals")).toBeInTheDocument();
   });
 
   it("renders an error card when the query fails", () => {
-    savingsQuery = { data: undefined, isLoading: false, error: new Error("x") };
-    reimbQuery = { data: undefined };
+    setQueryState(SUMMARY, { error: new Error("x") });
+    setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     expect(screen.getByText("Failed to load")).toBeInTheDocument();
   });
 
   it("renders the emergency fund progress section with tier toggle and needed amount", () => {
-    savingsQuery = { data: mkData(), isLoading: false, error: null };
-    reimbQuery = { data: undefined };
+    summary(mkData());
+    setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     expect(screen.getByText("Income Replacement")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lean" })).toBeInTheDocument();
@@ -125,8 +131,8 @@ describe("SavingsGoalsCard smoke", () => {
   });
 
   it("marks a fixed-target goal as Funded when current >= target", () => {
-    savingsQuery = { data: mkData(), isLoading: false, error: null };
-    reimbQuery = { data: undefined };
+    summary(mkData());
+    setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     // Vacation Fund: current 6000 >= target 5000 -> Funded
     expect(screen.getByText("Vacation Fund")).toBeInTheDocument();
@@ -145,8 +151,8 @@ describe("SavingsGoalsCard smoke", () => {
       targetAmount: "8000",
       targetDate: "2020-01-01",
     };
-    savingsQuery = {
-      data: mkData({
+    summary(
+      mkData({
         savings: {
           goals: [
             {
@@ -167,30 +173,24 @@ describe("SavingsGoalsCard smoke", () => {
         },
         goals: [shortfallGoal, efundGoal],
       }),
-      isLoading: false,
-      error: null,
-    };
-    reimbQuery = { data: undefined };
+    );
+    setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     expect(screen.getByText("Car Repair")).toBeInTheDocument();
     expect(screen.getByText(/\$6,000\.00 needed/)).toBeInTheDocument();
   });
 
   it("shows the pending reimbursement row when reimbursements exist", () => {
-    savingsQuery = { data: mkData(), isLoading: false, error: null };
-    reimbQuery = { data: { total: 250 } };
+    summary(mkData());
+    setQuery(REIMB, { total: 250 });
     render(<SavingsGoalsCard />);
     expect(screen.getByText("Pending Reimb.")).toBeInTheDocument();
     expect(screen.getByText("+$250.00")).toBeInTheDocument();
   });
 
   it("renders nothing extra (no e-fund block) when monthsCovered is null", () => {
-    savingsQuery = {
-      data: mkData({ efund: { ...baseEfund, monthsCovered: null } }),
-      isLoading: false,
-      error: null,
-    };
-    reimbQuery = { data: undefined };
+    summary(mkData({ efund: { ...baseEfund, monthsCovered: null } }));
+    setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     expect(screen.queryByText("Income Replacement")).toBeNull();
   });

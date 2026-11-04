@@ -26,16 +26,6 @@
   },
   {
     "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/irmaa-tables.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/niit.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
     "from": "src/lib/config/performance-help.ts",
     "to": "src/lib/pure/performance-annotations.ts"
   },
@@ -46,18 +36,8 @@
   },
   {
     "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/ss-tax.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
     "from": "src/lib/config/tax-data-publication.ts",
     "to": "src/lib/db/reference-data.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/tax-tables.ts",
-    "to": "src/lib/calculators/types.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -78,16 +58,6 @@
     "rule": "infra-below-server",
     "from": "src/lib/simplefin/sync.ts",
     "to": "src/server/helpers/loan-feed.ts"
-  },
-  {
-    "rule": "infra-below-server",
-    "from": "src/lib/simplefin/sync.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "infra-below-server",
-    "from": "src/lib/tax-data/sync.ts",
-    "to": "src/server/helpers/index.ts"
   },
   {
     "rule": "no-circular",
@@ -111,11 +81,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/balance-deduction.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/balance-utils.ts",
     "to": "src/lib/pure/withdrawal-eligibility.ts"
   },
@@ -123,21 +88,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/bracket-growth.ts",
     "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/bracket-growth.ts",
-    "to": "src/lib/config/irmaa-tables.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/bracket-growth.ts",
-    "to": "src/lib/config/tax-tables.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/brokerage-basis.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
   },
   {
     "rule": "no-circular",
@@ -291,18 +241,8 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/tax-estimation.ts",
-    "to": "src/lib/config/tax-tables.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
     "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/config/tax-tables.ts"
   },
   {
     "rule": "no-circular",
@@ -313,11 +253,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
     "to": "src/lib/pure/roth-distribution-tax.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
   },
   {
     "rule": "no-circular",
@@ -363,16 +298,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/types.ts",
     "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-config.ts",
-    "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-config.ts",
-    "to": "src/lib/config/tax-tables.ts"
   },
   {
     "rule": "no-circular",
@@ -661,21 +586,6 @@
   },
   {
     "rule": "services-below-routers",
-    "from": "src/server/helpers/plans.ts",
-    "to": "src/server/auth.ts"
-  },
-  {
-    "rule": "services-below-routers",
-    "from": "src/server/helpers/savings-allocation.ts",
-    "to": "src/server/trpc.ts"
-  },
-  {
-    "rule": "services-below-routers",
-    "from": "src/server/helpers/snapshot-derivatives.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "services-below-routers",
     "from": "src/server/helpers/snapshot.ts",
     "to": "src/server/mutation-events.ts"
   },
@@ -688,11 +598,6 @@
     "rule": "shared-stays-in-group",
     "from": "src/server/routers/investments/comparison.ts",
     "to": "src/server/routers/projection/_shared.ts"
-  },
-  {
-    "rule": "ui-never-imports-server",
-    "from": "src/lib/context/user-context.tsx",
-    "to": "src/server/auth.ts"
   },
   {
     "rule": "ui-never-runs-infra",

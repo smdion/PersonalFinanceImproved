@@ -7,18 +7,25 @@ import type {
 } from "@/lib/calculators/types";
 import {
   type AccountCategory,
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
   getAllCategories,
   getAccountTypeConfig,
   parseColumnKey,
   ACCOUNT_TYPE_CONFIG,
   isRothType,
+  isTaxFree,
   isTaxFreeBucket,
   isPreTaxType,
+  tracksCostBasis,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
+import {
+  getTraditionalBalance,
+  getRothBalance,
+  getTotalBalance,
+} from "@/lib/config/account-balance";
+import {
+  emptyTaxBucketMap,
+  TAX_TREATMENT_TO_TAX_TYPE,
+} from "@/lib/config/tax-treatment-buckets";
 import {
   roundToCents,
   sumBy,
@@ -37,8 +44,6 @@ import type {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-export const ALL_CATEGORIES = getAllCategories();
 
 /** Roth conversion target bracket presets for the decumulation form dropdown. */
 export const ROTH_CONVERSION_BRACKET_PRESETS = [
@@ -106,9 +111,6 @@ export const catDisplayLabel: Record<string, string> = Object.fromEntries(
 );
 
 /** Tax bucket → slot field mapping. Data-driven: add a bucket here, everything else follows. */
-// Re-export the shared bridge map under the name this module uses
-export const TAX_TREATMENT_TO_BUCKET = TAX_TREATMENT_TO_TAX_TYPE;
-
 export const bucketSlotMap: Record<
   string,
   {
@@ -118,7 +120,7 @@ export const bucketSlotMap: Record<
     withdrawalField: "traditionalWithdrawal" | "rothWithdrawal" | "withdrawal";
     /** Only match slots whose category is this value (null = all categories). */
     categoryFilter: string | null;
-    /** DB tax treatment values that belong to this bucket (null = all). Derived from TAX_TREATMENT_TO_BUCKET. */
+    /** DB tax treatment values that belong to this bucket (null = all). Derived from TAX_TREATMENT_TO_TAX_TYPE. */
     specTreatments: Set<string> | null;
     /** Tax field string for itemTaxType(). */
     taxField: string | undefined;
@@ -131,8 +133,8 @@ export const bucketSlotMap: Record<
     withdrawalField: "traditionalWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
-      Object.entries(TAX_TREATMENT_TO_BUCKET)
-        .filter(([, v]) => v === "preTax")
+      Object.entries(TAX_TREATMENT_TO_TAX_TYPE)
+        .filter(([, v]) => isPreTaxType(v))
         .map(([k]) => k),
     ),
     taxField: "traditional",
@@ -143,8 +145,8 @@ export const bucketSlotMap: Record<
     withdrawalField: "rothWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
-      Object.entries(TAX_TREATMENT_TO_BUCKET)
-        .filter(([, v]) => v === "taxFree")
+      Object.entries(TAX_TREATMENT_TO_TAX_TYPE)
+        .filter(([, v]) => isTaxFreeBucket(v))
         .map(([k]) => k),
     ),
     taxField: "roth",
@@ -213,13 +215,7 @@ export function filterYearByParentCategory(
   const filtered = yr.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
   );
-  const byTax = {
-    preTax: 0,
-    taxFree: 0,
-    hsa: 0,
-    afterTax: 0,
-    afterTaxBasis: 0,
-  };
+  const byTax = { ...emptyTaxBucketMap(), afterTaxBasis: 0 };
   for (const ia of filtered) {
     if (isTaxFreeBucket(ia.taxType)) {
       byTax.taxFree += ia.balance;
@@ -238,10 +234,7 @@ export function filterYearByParentCategory(
   }
   // The engine tracks brokerage basis per account; an older result without
   // it falls back to a proportional estimate.
-  const basisAccts = filtered.filter(
-    (ia) =>
-      getAccountTypeConfig(ia.category).balanceStructure === "basis_tracking",
-  );
+  const basisAccts = filtered.filter((ia) => tracksCostBasis(ia.category));
   byTax.afterTaxBasis = basisAccts.every((ia) => ia.costBasis != null)
     ? roundToCents(sumBy(basisAccts, (ia) => ia.costBasis!))
     : roundToCents(
@@ -467,15 +460,19 @@ export function itemTaxType(
       ? ACCOUNT_TYPE_CONFIG[category as AccountCategory]
       : null;
   if (!cfg || !cfg.supportsRothSplit) return undefined;
-  if (taxField === "roth" || taxField === "tax_free" || taxField === "taxFree")
-    return "roth";
+  const t = taxField ?? "";
+  if (isRothType(t) || isTaxFree(t) || isTaxFreeBucket(t)) return "roth";
   return "traditional";
 }
+
+type ColumnTreatment = "traditional" | "roth" | null; // a Roth-split column's side
+const isRothColumn = (t: ColumnTreatment) => t === "roth";
+const isTraditionalColumn = (t: ColumnTreatment) => t === "traditional";
 
 /** Derive category + tax treatment from a column key like '401k_trad', 'hsa', 'brokerage'. */
 export function colKeyParts(key: string): {
   category: string;
-  treatment: "traditional" | "roth" | null;
+  treatment: ColumnTreatment;
 } {
   const parsed = parseColumnKey(key);
   if (!parsed) return { category: key, treatment: null };
@@ -496,20 +493,12 @@ export function colBalance(
   const { category, treatment } = colKeyParts(key);
   const bal = ba[category as AccountCategory];
   if (!bal) return 0;
-  if (treatment === "roth") return getRothBalance(bal);
-  if (treatment === "traditional" || treatment === "trad")
-    return getTraditionalBalance(bal);
+  if (isRothColumn(treatment)) return getRothBalance(bal);
+  if (isTraditionalColumn(treatment)) return getTraditionalBalance(bal);
   return getTotalBalance(bal);
 }
 
-/**
- * Safe division — returns 0 when divisor is 0.
- * Thin wrapper around the canonical `safeDivide` in `@/lib/utils/math`
- * (previously a local reimplementation with a 1e-9 epsilon threshold instead
- * of an exact `=== 0` check). All call sites in this module already guard
- * their denominators with an explicit `> 0` check before calling, so the
- * epsilon vs. exact-zero difference is not reachable here.
- */
+/** Safe division — 0 when the divisor is 0 (`safeDivide` in `@/lib/utils/math`). */
 export function safeDivide(numerator: number, denominator: number): number {
   return canonicalSafeDivide(numerator, denominator, 0)!;
 }
@@ -528,8 +517,9 @@ export function colWithdrawal(
   let total = 0;
   for (const slot of slots) {
     if (slot.category !== category) continue;
-    if (treatment === "roth") total += slot.rothWithdrawal;
-    else if (treatment === "traditional") total += slot.traditionalWithdrawal;
+    if (isRothColumn(treatment)) total += slot.rothWithdrawal;
+    else if (isTraditionalColumn(treatment))
+      total += slot.traditionalWithdrawal;
     else total += slot.withdrawal;
   }
   return total;
@@ -538,12 +528,12 @@ export function colWithdrawal(
 /** Map a column key (e.g. '401k_roth', 'hsa') to the engine's taxType string for IA filtering. */
 export function colEngineTaxType(key: string): string | null {
   const { treatment } = colKeyParts(key);
-  if (treatment === "roth") return "taxFree";
-  if (treatment === "traditional") return "preTax";
+  if (isRothColumn(treatment)) return "taxFree";
+  if (isTraditionalColumn(treatment)) return "preTax";
   const parsed = parseColumnKey(key);
   if (parsed) {
     const cfg = ACCOUNT_TYPE_CONFIG[parsed.category];
-    return cfg.taxBucketKey === "preTax" ? "preTax" : cfg.taxBucketKey;
+    return cfg.taxBucketKey;
   }
   return null;
 }
@@ -591,9 +581,9 @@ export function slotsColumnBalanceInflow(
   const { category, treatment } = colKeyParts(colKey);
   const slot = slots.find((s) => s.category === category);
   if (!slot) return 0;
-  if (treatment === "traditional")
+  if (isTraditionalColumn(treatment))
     return slot.traditionalContrib + slot.employerMatch;
-  if (treatment === "roth") return slot.rothContrib; // roth match flows to preTax, not here
+  if (isRothColumn(treatment)) return slot.rothContrib; // roth match flows to preTax, not here
   return slot.employeeContrib + slot.employerMatch;
 }
 
@@ -624,7 +614,7 @@ export function slotsBucketBalanceInflow(
   return total;
 }
 
-/** Filter specs for a tax bucket — data-driven via bucketSlotMap + TAX_TREATMENT_TO_BUCKET. */
+/** Filter specs for a tax bucket — data-driven via bucketSlotMap + TAX_TREATMENT_TO_TAX_TYPE. */
 export function filterSpecsForBucket<
   T extends { taxTreatment?: string; category?: string },
 >(specs: T[], bucket: string): T[] {
@@ -791,12 +781,9 @@ export function lumpSumTotal(lumpSums: LumpSum[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Guardrail/strategy event styling (shared between the Balance chart's
-// ReferenceLine markers and the table's "Total Withdrawals" tooltip —
-// the table tooltip previously had no
-// user-visible explanation for a spending jump/drop, only the hidden
-// diagMode diagnostic dump. Factored out here so both call sites can never
-// independently drift on color/wording.)
+// Guardrail/strategy event styling, shared by the Balance chart's
+// ReferenceLine markers and the table's "Total Withdrawals" tooltip so the
+// two never drift on color or wording.
 // ---------------------------------------------------------------------------
 
 type StrategyEventStyle = {

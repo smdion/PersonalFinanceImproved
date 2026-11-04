@@ -16,9 +16,7 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import * as schema from "./schema";
 import { log } from "@/lib/logger";
-import type { db as appDb } from "./index";
-
-type Db = typeof appDb;
+import type { Db } from "@/lib/db";
 
 export async function backfillJointPersonId(db: Db) {
   const jointRows = await db

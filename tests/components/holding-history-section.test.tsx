@@ -3,13 +3,18 @@
  * edited or deleted, and saving a new period sends fractions that add to 1.
  * Invented funds and accounts only.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+} from "./trpc-mock";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 
-const { data, save } = vi.hoisted(() => ({
-  save: vi.fn(),
+const { data } = vi.hoisted(() => ({
   data: {
     accounts: [
       { id: 3, label: "Example IRA", split: false, conflict: false },
@@ -37,7 +42,7 @@ const { data, save } = vi.hoisted(() => ({
         orphaned: false,
         start: "2026-10-12",
         end: null,
-        basis: "observed",
+        basis: "observed" as const,
         weights: { 1: 1 },
       },
       {
@@ -47,7 +52,7 @@ const { data, save } = vi.hoisted(() => ({
         orphaned: false,
         start: "2020-01-01",
         end: "2024-12-31",
-        basis: "user",
+        basis: "user" as const,
         notes: null,
         weights: { 1: 0.6, 2: 0.4 },
       },
@@ -58,7 +63,7 @@ const { data, save } = vi.hoisted(() => ({
         orphaned: false,
         start: "2026-10-12",
         end: null,
-        basis: "observed",
+        basis: "observed" as const,
         weights: { 2: 1 },
       },
       {
@@ -68,7 +73,7 @@ const { data, save } = vi.hoisted(() => ({
         orphaned: true,
         start: "2018-01-01",
         end: "2019-12-31",
-        basis: "user",
+        basis: "user" as const,
         notes: null,
         weights: { 1: 1 },
       },
@@ -76,32 +81,28 @@ const { data, save } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/lib/trpc", () => {
-  const mutation = (fn = vi.fn()) => ({
-    useMutation: () => ({
-      mutate: fn,
-      isPending: false,
-      isError: false,
-      error: null,
-    }),
-  });
-  return {
-    trpc: {
-      useUtils: () => ({ investments: { invalidate: vi.fn() } }),
-      investments: {
-        listHoldingPeriods: { useQuery: () => ({ data }) },
-        saveHoldingPeriod: mutation(save),
-        deleteHoldingPeriod: mutation(),
-        addFundByTicker: mutation(),
-        addFundByName: mutation(),
-        setUserFacts: mutation(),
-        clearUserFacts: mutation(),
-      },
-    },
-  };
-});
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
+}));
 
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
+
+const SAVE = "investments.saveHoldingPeriod";
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("investments.listHoldingPeriods", data);
+  // No write settles: the tests read what was sent.
+  for (const path of [
+    SAVE,
+    "investments.deleteHoldingPeriod",
+    "investments.addFundByTicker",
+    "investments.addFundByName",
+    "investments.setUserFacts",
+    "investments.clearUserFacts",
+  ] as const)
+    holdMutation(path);
+});
 
 describe("HoldingHistorySection", () => {
   it("observed periods are read-only; entered ones can be edited; unknown mixes are flagged", () => {
@@ -124,7 +125,7 @@ describe("HoldingHistorySection", () => {
       target: { value: "100" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save period" }));
-    expect(save).toHaveBeenCalledWith(
+    expect(mutationCalls(SAVE)).toContainEqual(
       expect.objectContaining({
         id: null,
         performanceAccountId: 3,
@@ -156,7 +157,7 @@ describe("HoldingHistorySection", () => {
       target: { value: "100" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save period" }));
-    expect(save).toHaveBeenLastCalledWith(
+    expect(mutationCalls(SAVE).at(-1)).toEqual(
       expect.objectContaining({
         performanceAccountId: 5,
         subKey: "5_taxFree__2",

@@ -1,6 +1,6 @@
 {
   "name": "ledgr",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "engines": {
@@ -28,8 +28,10 @@
     "test:e2e": "playwright test",
     "compare": "tsx .scratch/compare/compare-xlsx-to-live.ts",
     "seed:safe": "pnpm validate && pnpm seed && pnpm validate",
+    "engine-hash": "tsx scripts/engine-hash.ts",
+    "check:engine-hash": "tsx scripts/engine-hash.ts --check",
     "docs:verify": "tsx scripts/verify-docs.ts && tsx scripts/calculations-tested.ts && pnpm docs:verify-api",
-    "docs:update": "tsx scripts/verify-docs.ts --update && tsx scripts/calculations-tested.ts --update && pnpm docs:gen-api && npx prettier --write docs/SCHEMA.md docs/API_ROUTERS.md",
+    "docs:update": "pnpm engine-hash && tsx scripts/verify-docs.ts --update && tsx scripts/calculations-tested.ts --update && pnpm docs:gen-api && npx prettier --write docs/SCHEMA.md docs/API_ROUTERS.md",
     "docs:gen-api": "tsx scripts/gen-api-docs.ts",
     "docs:verify-api": "pnpm docs:gen-api && npx prettier --write docs/SCHEMA.md docs/API_ROUTERS.md && git diff --exit-code docs/SCHEMA.md docs/API_ROUTERS.md || (echo \"docs/SCHEMA.md or docs/API_ROUTERS.md is stale — run 'pnpm docs:update' and commit the result.\" && exit 1)",
     "setup": "bash scripts/setup-dev.sh",

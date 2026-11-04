@@ -3,14 +3,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ContribCard } from "@/components/paycheck/contrib-card";
 import type { RawContrib } from "@/components/paycheck/types";
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    performance: {
-      performanceAccounts: {
-        list: { useQuery: () => ({ data: undefined }) },
-      },
-    },
-  },
+// No query is registered: performanceAccounts.list has no data.
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 vi.mock("@/components/ui/inline-edit", () => ({

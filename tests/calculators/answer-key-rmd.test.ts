@@ -468,7 +468,7 @@ describe("answer key: the RMD amount", () => {
 
 describe("answer key: QCD at 70½", () => {
   // Each owner holds a 5,000 IRA and gives it all, in 2026. The engine's
-  // gate is 70 in the year (`QCD_MIN_ELIGIBILITY_AGE`, disclosed at
+  // gate is 70 in the year (`AGE_RULES.qcd`, disclosed at
   // `fixed-by-law.ts:175`): owners born in 1956 or earlier get the QCD.
   it("ret/Q2 [RET-09] DOB 1955-08-15, QCD on 2026-02-15 (70½ that day): a QCD", () => {
     // 70½ on 2026-02-15 (six months after the 70th birthday on

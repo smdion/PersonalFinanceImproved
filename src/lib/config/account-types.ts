@@ -1,47 +1,17 @@
-// Central account type configuration — the ONLY place account-type-specific
-// knowledge lives. Everything else imports from here.
-//
-// Philosophy: Config declares, code executes.
-// Nothing in the codebase knows what a "401k" is — it only knows how to process
-// an account type with properties like supportsRothSplit: true and
-// balanceStructure: 'roth_traditional'.
-
-// ---------------------------------------------------------------------------
-// Re-exports — maintain backwards compatibility for all consumers
-// ---------------------------------------------------------------------------
-
-// Types
-export type { AccountBalance, AccountCategory } from "./account-types.types";
-
-export { accountCategoryEnum } from "./account-types.types";
-
-// Balance helpers
-export {
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
-  getBasis,
-  addTraditional,
-  addRoth,
-  addBalance,
-  addBasis,
-  setTraditional,
-  setRoth,
-  setBalance,
-  setBasis,
-  cloneBalance,
-  getSegmentBalance,
-} from "./account-balance";
+// Account types: one ACCOUNT_TYPE_CONFIG entry per category and the helpers
+// that read it (types: account-types.types.ts; balances: account-balance.ts).
+// Code asks about properties, never a category (RULES.md § Data-Driven Architecture).
 
 import type {
-  AccountCategory,
   AccountTypeConfig,
+  EarlyAccessRule,
   DisplayGroup,
   AccountBalance,
   AccountSegment,
 } from "./account-types.types";
 
 import { zeroBalanceForStructure } from "./account-balance";
+import { HSA_NON_MEDICAL_PENALTY_RATE } from "@/lib/constants";
 import {
   PERF_CATEGORY_HSA,
   PERF_CATEGORY_BROKERAGE,
@@ -72,7 +42,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "pro_rata",
-    ruleOf55Eligible: true,
+    earlyAccessRule: "employer_plan",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -91,6 +63,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.35,
+    decumulationRank: 1,
     isPayrollDeductible: true,
     payrollFicaExempt: false,
     supportsPriorYearContrib: false,
@@ -104,6 +77,7 @@ export const ACCOUNT_TYPE_CONFIG = {
       border: "border-blue-300",
       text: "text-blue-700",
     },
+    chartHex: { standard: "#3b82f6", roth: "#93c5fd" },
     employerMatchLabel: "match",
     hasDiscountBar: false,
     employerContribKind: "match",
@@ -123,7 +97,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "pro_rata",
-    ruleOf55Eligible: true,
+    earlyAccessRule: "employer_plan",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -142,6 +118,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0,
+    decumulationRank: 2,
     isPayrollDeductible: true,
     payrollFicaExempt: false,
     supportsPriorYearContrib: false,
@@ -155,6 +132,7 @@ export const ACCOUNT_TYPE_CONFIG = {
       border: "border-indigo-300",
       text: "text-indigo-700",
     },
+    chartHex: { standard: "#3b82f6", roth: "#93c5fd" },
     employerMatchLabel: "match",
     hasDiscountBar: false,
     employerContribKind: "match",
@@ -174,7 +152,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "basis_first",
-    ruleOf55Eligible: false,
+    earlyAccessRule: "ira_59_half",
+    qcdEligible: true,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -191,6 +171,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.25,
+    decumulationRank: 3,
     isPayrollDeductible: false,
     payrollFicaExempt: false,
     supportsPriorYearContrib: true,
@@ -204,6 +185,7 @@ export const ACCOUNT_TYPE_CONFIG = {
       border: "border-purple-300",
       text: "text-purple-700",
     },
+    chartHex: { standard: "#8b5cf6", roth: "#c4b5fd" },
     employerMatchLabel: "match",
     hasDiscountBar: false,
     employerContribKind: "match",
@@ -222,7 +204,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "hsa",
     supportedTaxTreatments: ["hsa"],
     rothOrderingRules: null,
-    ruleOf55Eligible: false,
+    earlyAccessRule: "hsa_non_medical",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -240,6 +224,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.1,
+    decumulationRank: 5,
     isPayrollDeductible: true,
     payrollFicaExempt: true,
     supportsPriorYearContrib: true,
@@ -253,6 +238,7 @@ export const ACCOUNT_TYPE_CONFIG = {
       border: "border-teal-300",
       text: "text-teal-700",
     },
+    chartHex: { standard: "#10b981", roth: "#6ee7b7" },
     employerMatchLabel: "match",
     hasDiscountBar: false,
     employerContribKind: "match",
@@ -278,7 +264,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "afterTax",
     supportedTaxTreatments: ["after_tax"],
     rothOrderingRules: null,
-    ruleOf55Eligible: false,
+    earlyAccessRule: "none",
+    qcdEligible: false,
+    nonMedicalPenaltyRate: null,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -292,6 +280,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: true,
     generateOverflowWarnings: false,
     defaultWithdrawalSplit: 0.3,
+    decumulationRank: 4,
     isPayrollDeductible: false,
     payrollFicaExempt: false,
     supportsPriorYearContrib: false,
@@ -305,6 +294,7 @@ export const ACCOUNT_TYPE_CONFIG = {
       border: "border-amber-300",
       text: "text-amber-700",
     },
+    chartHex: { standard: "#f97316", roth: "#fdba74" },
     employerMatchLabel: "match",
     hasDiscountBar: false,
     employerContribKind: "match",
@@ -327,14 +317,17 @@ export const ACCOUNT_TYPE_CONFIG = {
       },
     },
   },
-} as const;
+} as const satisfies Record<string, AccountTypeConfig>;
 
-// Validate: every config entry must conform to AccountTypeConfig.
-// Using a helper function avoids hardcoding keys and preserves literal key inference.
-function _validateConfig<T extends Record<string, AccountTypeConfig>>(c: T): T {
-  return c;
+/** An account category: one key of `ACCOUNT_TYPE_CONFIG`. */
+export type AccountCategory = keyof typeof ACCOUNT_TYPE_CONFIG;
+
+/** Zod-compatible tuple for `z.enum(accountCategoryEnum())`, read at call time. */
+export function accountCategoryEnum(): [AccountCategory, ...AccountCategory[]] {
+  const [first, ...rest] = getAllCategories();
+  if (first === undefined) throw new Error("ACCOUNT_TYPE_CONFIG is empty");
+  return [first, ...rest];
 }
-_validateConfig(ACCOUNT_TYPE_CONFIG);
 
 // ---------------------------------------------------------------------------
 // Budget ↔ contribution matching
@@ -423,14 +416,6 @@ export function isDiscountBasisEmployerContrib(
 // Module-level defaults
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_DECUMULATION_ORDER: AccountCategory[] = [
-  "401k",
-  "403b",
-  "ira",
-  "brokerage",
-  "hsa",
-];
-
 export const DEFAULT_WITHDRAWAL_SPLITS: Record<AccountCategory, number> =
   Object.fromEntries(
     Object.entries(ACCOUNT_TYPE_CONFIG).map(([k, v]) => [
@@ -464,18 +449,9 @@ export function categoriesWithTaxPreference(): AccountCategory[] {
   );
 }
 
-/** `getEngineCategories() ∩ categoriesWithTaxPreference()` — the
- *  Traditional-preference categories that actually participate in engine
- *  routing:
- *  the two source filters are independently maintained and coincide
- *  today by coincidence, not by construction (every category currently
- *  has `participatesInEngine: true, engineParent: null`), so a future
- *  account type with `engineParent` set could silently diverge them.
- *  Single source of truth for "which Traditional categories does
- *  bracket_filling's Phase 1 (and its matching UI order editor) actually
- *  care about" — used by both `withdrawal-routing.ts`'s Phase 1/Roth-tier
- *  loops and `decumulation-config.tsx`'s "Traditional Account Order"
- *  sub-control, so the two can't drift on which categories are in scope. */
+/** The Traditional-preference categories that take part in engine routing
+ *  (`getEngineCategories() ∩ categoriesWithTaxPreference()`), for
+ *  bracket_filling's Phase 1 and the Traditional order editor. */
 export function tradPreferenceEngineCategories(): AccountCategory[] {
   const engineCats = new Set(getEngineCategories());
   return categoriesWithTaxPreference().filter((c) => engineCats.has(c));
@@ -567,33 +543,39 @@ export function tracksRothBasis(category: string): boolean {
   return cfg?.balanceStructure === "roth_traditional";
 }
 
-/** Check if a category is HSA. This file is the one place allowed to know
- *  literal category strings (it's where they're defined as dictionary
- *  keys) — a direct `category === "hsa"` check here, not a check against
- *  balanceStructure/rothOrderingRules or another incidental structural
- *  property that HAPPENS to be unique to HSA today (those checks are
- *  fragile to a future account type that
- *  legitimately reuses the same structural value for unrelated reasons). */
+/** Identity checks, kept for the callers not yet on behavior fields
+ *  (RULES.md § Data-Driven Architecture, rule 10); new code reads a field. */
 export function isHsaCategory(category: string): boolean {
   return category === "hsa";
 }
 
-/** Check if a category is IRA — see isHsaCategory's docblock for why this
- *  is a direct identity check rather than a structural-property check. */
+/** See isHsaCategory. */
 export function isIraCategory(category: string): boolean {
   return category === "ira";
 }
 
-/** Check if a category is eligible for the Rule of 55 exception (401k/403b
- *  — IRC §72(t)(2)(A)(v)). Reads `ruleOf55Eligible` directly rather than
- *  the coincidentally-equivalent `rothOrderingRules === "pro_rata"` — Roth
- *  distribution ordering and Rule-of-55 eligibility are legally distinct
- *  concepts (IRC §72(t)(2)(A)(v) vs. IRS Notice 2009-68) that happen to
- *  coincide for today's 5 categories; a future account type where they
- *  diverge needs its own field read, not a borrowed one. */
+/** Rule of 55 can apply (IRC §72(t)(2)(A)(v)): the employer-plan
+ *  early-access rule. False for a category not in the config. */
 export function isRuleOf55EligibleCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.ruleOf55Eligible ?? false;
+  return cfg?.earlyAccessRule === "employer_plan";
+}
+
+/** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */
+export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
+  return ACCOUNT_TYPE_CONFIG[category].earlyAccessRule;
+}
+
+/** A QCD can come from this category (`qcdEligible`). */
+export function isQcdEligible(category: AccountCategory): boolean {
+  return ACCOUNT_TYPE_CONFIG[category].qcdEligible;
+}
+
+/** The non-medical withdrawal penalty rate, or null where there is none. */
+export function nonMedicalPenaltyRate(
+  category: AccountCategory,
+): number | null {
+  return ACCOUNT_TYPE_CONFIG[category].nonMedicalPenaltyRate;
 }
 
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
@@ -645,16 +627,11 @@ export function isRetirementMoney(
 }
 
 /**
- * Whether an account counts toward the synthesized "Retirement"
- * parent-category performance rollup: either a fully-retirement performance
- * category (401k/IRA, HSA — always Retirement regardless of parentCategory),
- * or a Brokerage-category account explicitly tagged parentCategory ===
- * "Retirement" (Brokerage is mixed — spans both Retirement and Portfolio
- * goals, e.g. Retirement Brokerage vs. a taxable brokerage account).
- *
- * Single source of truth for this rule — shared between the performance
- * router's actual rollup computation and the performance page's
- * selection-matching UI (audit Batch 31 Finding 1).
+ * Whether an account counts toward the "Retirement" performance rollup: a
+ * fully-retirement performance category (401k/IRA, HSA, whatever its
+ * parentCategory), or a Brokerage account tagged parentCategory "Retirement"
+ * (Brokerage spans both goals). The performance router's rollup and the
+ * page's selection matching share this one rule.
  */
 export function isInRetirementPerformanceRollup(
   accountType: string | null,
@@ -775,8 +752,8 @@ export function getDefaultTaxTreatment(category: AccountCategory): string {
 /**
  * Get the column segments for all engine categories.
  */
-export function getAccountSegments(): AccountSegment[] {
-  const segments: AccountSegment[] = [];
+export function getAccountSegments(): AccountSegment<AccountCategory>[] {
+  const segments: AccountSegment<AccountCategory>[] = [];
   for (const cat of getEngineCategories()) {
     const cfg = ACCOUNT_TYPE_CONFIG[cat];
     if (cfg.balanceStructure === "roth_traditional") {
@@ -851,40 +828,16 @@ export function getDefaultAccumulationOrder(): AccountCategory[] {
  * Get the default decumulation order.
  */
 export function getDefaultDecumulationOrder(): AccountCategory[] {
-  return DEFAULT_DECUMULATION_ORDER.filter(
-    (c) =>
-      ACCOUNT_TYPE_CONFIG[c].participatesInEngine &&
-      !ACCOUNT_TYPE_CONFIG[c].engineParent,
+  return getEngineCategories().sort(
+    (a, b) =>
+      ACCOUNT_TYPE_CONFIG[a].decumulationRank -
+      ACCOUNT_TYPE_CONFIG[b].decumulationRank,
   );
 }
 
-/**
- * The Retirement page's DEFAULT (un-customized) decumulation withdrawal
- * config — shared so the page's own form-state defaults
- * (use-projection-form-state.ts) and any other consumer that needs to
- * reproduce the SAME default engine input (e.g. the dashboard Retirement
- * tile's cache-key-matching "peek" queries) can never independently drift.
- * The persistent projection cache hashes the full built engine input, so
- * even a cosmetic difference here (a category order, a fallback value)
- * would silently turn into a permanent cache miss for one of the two call
- * sites.
- *
- * NO `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits` key —
- * none of those are request-level defaults any more. The real household
- * defaults live in `retirement_settings` (`.withdrawal_routing_mode`,
- * `.withdrawal_order`, `.withdrawal_splits`) and a caller must OMIT each
- * field to reach them (buildDecumulationDefaults,
- * server/routers/projection/_shared.ts). This function returning a
- * hardcoded copy here would make this "shared so callers can't drift"
- * object itself the drift: `retirement-card.tsx`'s peek query spreads it
- * unconditionally (it can't know about a session override, so it was never
- * a candidate for touched-gating), so it would keep SENDING the config
- * default — silently overruling any household's saved
- * waterfall/percentage/custom-order choice for the dashboard tile's FI year
- * / Coast FIRE age, while the Retirement page (which
- * omits these fields until the user touches its Configure editors) resolved
- * the real setting. Two different answers to the same question from what's
- * supposed to be one shared default. */
+/** The Retirement page's default decumulation input, shared with the
+ *  dashboard tile's peek queries so both hash to one cache key. No routing
+ *  mode, order or splits: omitted, they come from retirement_settings. */
 export function defaultDecumulationConfig(): {
   withdrawalTaxPreference: Partial<
     Record<AccountCategory, "traditional" | "roth">

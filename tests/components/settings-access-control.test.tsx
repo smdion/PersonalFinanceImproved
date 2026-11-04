@@ -31,46 +31,29 @@ const mockRbacData = {
   adminGroup: "ledgr-admin",
   isAdminCustom: false,
   permissions: [
-    { permission: "scenario", group: "ledgr-scenario", isCustom: false },
+    {
+      permission: "scenario" as const,
+      group: "ledgr-scenario",
+      isCustom: false,
+    },
   ],
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        rbacGroups: { get: { invalidate: vi.fn() } },
-        appSettings: { list: { invalidate: vi.fn() } },
-      },
-    }),
-    settings: {
-      testOidcConnection: {
-        useQuery: () => ({
-          data: undefined,
-          isFetching: false,
-          refetch: vi.fn(),
-        }),
-      },
-      rbacGroups: {
-        get: { useQuery: () => ({ data: mockRbacData, isLoading: false }) },
-      },
-      appSettings: {
-        upsert: {
-          useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-        },
-        delete: {
-          useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { AccessControlSettings } from "@/components/settings/access-control";
+import { holdMutation, resetTrpcMock, setQuery } from "./trpc-mock";
 
 describe("AccessControlSettings smoke", () => {
   beforeEach(() => {
     store.clear();
+    resetTrpcMock();
+    setQuery("settings.rbacGroups.get", mockRbacData);
+    // Writes never settled before (no onSuccess): keep it so.
+    holdMutation("settings.appSettings.upsert");
+    holdMutation("settings.appSettings.delete");
   });
 
   it("defaults to the Authentik section", () => {

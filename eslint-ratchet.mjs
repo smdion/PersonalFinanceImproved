@@ -7,6 +7,30 @@ const TEXT_FIELD =
   /(?:reason|label|message|note|description|warning|text|name|title|explanation|summary|detail)s?$/i;
 const STRING_TRANSFORMS = new Set(["toLowerCase", "toUpperCase", "trim"]);
 
+/** Account-type config fields that have a one-field helper in
+ *  lib/config/account-types.ts (RULES § Data-Driven Architecture). */
+const HELPER_FIELDS = [
+  "isOverflowTarget",
+  "irsLimitGroup",
+  "employerMatchSubType",
+  "earlyAccessRule",
+  "qcdEligible",
+  "nonMedicalPenaltyRate",
+  "displayGroup",
+  "payrollFicaExempt",
+].join("|");
+
+/** Fields whose value is a member of a closed set (account categories,
+ *  tax types, filing statuses): a plain `string` type lets any text in. */
+const CLOSED_SET_FIELDS = [
+  "accountType",
+  "category",
+  "parentCategory",
+  "taxType",
+  "taxTreatment",
+  "filingStatus",
+].join("|");
+
 /** A rule that reports every node a selector matches. */
 function selectorRule(description, selector, message) {
   return {
@@ -271,6 +295,16 @@ const ratchetPlugin = {
       "JSXExpressionContainer CallExpression[callee.type=/^(ArrowFunctionExpression|FunctionExpression)$/]",
       "Immediately-invoked function in JSX. Compute the value above the return, or in a <component>.model.ts beside the component.",
     ),
+    "no-config-reach-through": selectorRule(
+      "An account-type field with its own helper is read through the helper.",
+      `MemberExpression[property.name=/^(${HELPER_FIELDS})$/]:matches([object.callee.name='getAccountTypeConfig'], [object.object.name='ACCOUNT_TYPE_CONFIG'])`,
+      "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, …), not the config entry.",
+    ),
+    "no-string-closed-set-field": selectorRule(
+      "A field holding a closed set's value is typed by the set, not string.",
+      `TSPropertySignature[key.name=/^(${CLOSED_SET_FIELDS})$/] > TSTypeAnnotation > TSStringKeyword`,
+      "This field holds a closed set's value: type it by the set (AccountCategory, PortfolioTaxType, ReturnFilingStatus, …), not string.",
+    ),
     "no-raw-input": selectorRule(
       "Inputs go through the form primitives.",
       "JSXOpeningElement[name.name='input']",
@@ -333,6 +367,8 @@ export const ratchetConfig = [
       "ratchet/no-jsx-iife": "error",
       "ratchet/no-text-includes": "error",
       "ratchet/no-raw-input": "error",
+      "ratchet/no-string-closed-set-field": "error",
+      "ratchet/no-config-reach-through": "error",
       "ratchet/no-fixed-inset-overlay": "error",
       "ratchet/no-history-comment": "error",
       "ratchet/max-comment-lines": "error",
@@ -341,16 +377,16 @@ export const ratchetConfig = [
     },
   },
   {
+    // The helpers themselves.
+    files: ["src/lib/config/account-types.ts"],
+    rules: { "ratchet/no-config-reach-through": "off" },
+  },
+  {
     // The primitives themselves.
     files: ["src/components/forms/**", "src/components/ui/**"],
     rules: {
       "ratchet/no-raw-input": "off",
       "ratchet/no-fixed-inset-overlay": "off",
     },
-  },
-  {
-    // Its engine-version changelog is the documentation (RULES § comments).
-    files: ["src/server/helpers/projection-cache.ts"],
-    rules: { "ratchet/no-history-comment": "off" },
   },
 ];

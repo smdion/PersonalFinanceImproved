@@ -33,7 +33,10 @@
  * protectedProcedure, writes on contributionProfileProcedure.
  */
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import {
+  BLANK_SALARY_ENTRY,
+  type SalaryEntry,
+} from "@/lib/db/salary-entry-defaults";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -248,6 +251,22 @@ export const salaryProfileRouter = createTRPCRouter({
         ctx.db.select().from(schema.paycheckEarnings),
       ]);
 
+      /** An entry's salary fields over the blank entry, then where its
+       *  bonus goes (absent = the budget). `otherEarnings` isn't one: it
+       *  comes back per line as `earningRows`. */
+      const entryFields = (entry: SalaryEntry | null) => {
+        const {
+          bonusDestination,
+          otherEarnings: _,
+          ...fields
+        }: Partial<SalaryEntry> = entry ?? {};
+        return {
+          ...BLANK_SALARY_ENTRY,
+          ...fields,
+          bonusDestination: bonusDestination ?? DEFAULT_BONUS_DESTINATION,
+        };
+      };
+
       /** Full per-job detail — computed once per job so both the selected
        *  row AND every OTHER job in that person's jobOptions (the row's job
        *  picker) carry real resolved values, not just the display name.
@@ -265,46 +284,11 @@ export const salaryProfileRouter = createTRPCRouter({
            *  the whole encoding. No entry means $0/no bonus, not a fallback
            *  to some other value. */
           hasEntry: entry !== null,
-          salary: entry?.salary ?? BLANK_SALARY_ENTRY.salary,
-          bonusPercent: entry?.bonusPercent ?? BLANK_SALARY_ENTRY.bonusPercent,
-          bonusMultiplier:
-            entry?.bonusMultiplier ?? BLANK_SALARY_ENTRY.bonusMultiplier,
-          monthsInBonusYear:
-            entry?.monthsInBonusYear ?? BLANK_SALARY_ENTRY.monthsInBonusYear,
-          /** This year's actual paid-out bonus, pinned on the same entry —
-           *  see SalaryProfileEntry.bonusOverride's docblock. */
-          bonusOverride:
-            entry?.bonusOverride ?? BLANK_SALARY_ENTRY.bonusOverride,
-          /** Pay schedule, W-4 elections and bonus pay date — fields that
-           *  moved off `jobs` in Stage B. With no entry yet, the blank
-           *  entry's values (BLANK_SALARY_ENTRY) — purely a visible starting
-           *  point for the editor, never used in any live calculation (a job
-           *  with no entry resolves to $0/incomplete everywhere else). */
-          payPeriod: entry?.payPeriod ?? BLANK_SALARY_ENTRY.payPeriod,
-          payWeek: entry?.payWeek ?? BLANK_SALARY_ENTRY.payWeek,
-          anchorPayDate:
-            entry?.anchorPayDate ?? BLANK_SALARY_ENTRY.anchorPayDate,
-          budgetPeriodsPerMonth:
-            entry?.budgetPeriodsPerMonth ??
-            BLANK_SALARY_ENTRY.budgetPeriodsPerMonth,
-          w4FilingStatus:
-            entry?.w4FilingStatus ?? BLANK_SALARY_ENTRY.w4FilingStatus,
-          w4Box2cChecked:
-            entry?.w4Box2cChecked ?? BLANK_SALARY_ENTRY.w4Box2cChecked,
-          additionalFedWithholding:
-            entry?.additionalFedWithholding ??
-            BLANK_SALARY_ENTRY.additionalFedWithholding,
-          bonusMonth: entry?.bonusMonth ?? BLANK_SALARY_ENTRY.bonusMonth,
-          bonusDayOfMonth:
-            entry?.bonusDayOfMonth ?? BLANK_SALARY_ENTRY.bonusDayOfMonth,
-          /** Where this job's extra (3rd biweekly) paycheck routes, if
-           *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
-          extraPaycheckRouting:
-            entry?.extraPaycheckRouting ??
-            BLANK_SALARY_ENTRY.extraPaycheckRouting,
-          /** Where this job's bonus goes; absent = the budget. */
-          bonusDestination:
-            entry?.bonusDestination ?? DEFAULT_BONUS_DESTINATION,
+          /** The entry's fields; with no entry yet, the blank entry's
+           *  (BLANK_SALARY_ENTRY) — purely a visible starting point for the
+           *  editor, never used in any live calculation (a job with no
+           *  entry resolves to $0/incomplete everywhere else). */
+          ...entryFields(entry),
           /** This job's other-pay lines with their per-check amount in this
            *  profile (0 when it sets none) — same as the Paycheck page. */
           earningRows: allEarnings
@@ -352,37 +336,9 @@ export const salaryProfileRouter = createTRPCRouter({
           jobOptions,
           employerName: selected?.employerName ?? null,
           hasEntry: selected?.hasEntry ?? false,
-          salary: selected?.salary ?? BLANK_SALARY_ENTRY.salary,
-          bonusPercent:
-            selected?.bonusPercent ?? BLANK_SALARY_ENTRY.bonusPercent,
-          bonusMultiplier:
-            selected?.bonusMultiplier ?? BLANK_SALARY_ENTRY.bonusMultiplier,
-          monthsInBonusYear:
-            selected?.monthsInBonusYear ?? BLANK_SALARY_ENTRY.monthsInBonusYear,
-          bonusOverride:
-            selected?.bonusOverride ?? BLANK_SALARY_ENTRY.bonusOverride,
-          payPeriod: selected?.payPeriod ?? BLANK_SALARY_ENTRY.payPeriod,
-          payWeek: selected?.payWeek ?? BLANK_SALARY_ENTRY.payWeek,
-          anchorPayDate:
-            selected?.anchorPayDate ?? BLANK_SALARY_ENTRY.anchorPayDate,
-          budgetPeriodsPerMonth:
-            selected?.budgetPeriodsPerMonth ??
-            BLANK_SALARY_ENTRY.budgetPeriodsPerMonth,
-          w4FilingStatus:
-            selected?.w4FilingStatus ?? BLANK_SALARY_ENTRY.w4FilingStatus,
-          w4Box2cChecked:
-            selected?.w4Box2cChecked ?? BLANK_SALARY_ENTRY.w4Box2cChecked,
-          additionalFedWithholding:
-            selected?.additionalFedWithholding ??
-            BLANK_SALARY_ENTRY.additionalFedWithholding,
-          bonusMonth: selected?.bonusMonth ?? BLANK_SALARY_ENTRY.bonusMonth,
-          bonusDayOfMonth:
-            selected?.bonusDayOfMonth ?? BLANK_SALARY_ENTRY.bonusDayOfMonth,
-          extraPaycheckRouting:
-            selected?.extraPaycheckRouting ??
-            BLANK_SALARY_ENTRY.extraPaycheckRouting,
-          bonusDestination:
-            selected?.bonusDestination ?? DEFAULT_BONUS_DESTINATION,
+          ...entryFields(
+            selected ? (salaries[String(selected.id)] ?? null) : null,
+          ),
           earningRows: selected?.earningRows ?? [],
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,

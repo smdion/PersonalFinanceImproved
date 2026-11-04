@@ -18,7 +18,8 @@ import {
   MONTH_NAMES_SHORT,
 } from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
-import { GoalProjection, monthKey } from "./types";
+import { GoalProjection } from "./types";
+import { monthKey } from "@/lib/pure/savings-projection";
 import {
   FUND_COLORS,
   CHART_COLORS,

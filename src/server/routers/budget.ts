@@ -44,13 +44,10 @@ import {
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
-  resolveActiveProfilePair,
-  type ProfilePair,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
 } from "@/server/helpers";
-import type { DbOrTx } from "@/server/helpers/transforms";
 import { budgetApiServiceSchema } from "@/lib/config/enum-values";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
@@ -69,6 +66,12 @@ import type {
 } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
+import type { DbOrTx } from "@/lib/db";
+import {
+  payProfileSelectionSchema,
+  type PayProfileSelection,
+} from "@/lib/pure/household/profile-selection.schema";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
@@ -117,33 +120,6 @@ async function renumberItems(
 }
 
 /**
- * docs/DESIGN.md's profile precedence as the caller supplies it: its own
- * local selection (What-If), else the active profile. Both fields are
- * required (nullable) so a caller can't silently omit one.
- */
-export const profileResolutionTiersSchema = z.object({
-  /** The calling page's own local selection / preview pick, if it has one. */
-  localSelectionId: z.number().int().nullable(),
-  /** The globally-active profile id for this axis. */
-  globalDefaultId: z.number().int().nullable(),
-});
-
-export type ProfileResolutionTiers = z.infer<
-  typeof profileResolutionTiersSchema
->;
-
-/** The profile a page's tiers resolve to: its own local selection (What-If
- *  sandbox), else the active one. Without tiers, the active profile. */
-async function profileFromTiers(
-  db: DbOrTx,
-  tiers: ProfileResolutionTiers | undefined,
-  kind: "contribProfileId" | "salaryProfileId",
-): Promise<number | null> {
-  if (tiers) return tiers.localSelectionId ?? tiers.globalDefaultId;
-  return (await resolveActiveProfilePair(db))[kind];
-}
-
-/**
  * Which Contribution Profile a budget-linked item edit writes into — the
  * one the page shows. Throws rather than silently writing nowhere:
  * contributionValue/Method have no account-level fallback (see
@@ -152,9 +128,12 @@ async function profileFromTiers(
  */
 async function resolveEffectiveContribProfileIdForItem(
   db: DbOrTx,
-  tiers: ProfileResolutionTiers | undefined,
+  selection: PayProfileSelection | undefined,
 ): Promise<number> {
-  const resolvedId = await profileFromTiers(db, tiers, "contribProfileId");
+  const { contribProfileId: resolvedId } = await resolveProfileSelection(
+    { db },
+    selection,
+  );
   if (resolvedId == null) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -225,7 +204,7 @@ export const budgetRouter = createTRPCRouter({
         .select()
         .from(schema.savingsGoals)
         .where(eq(schema.savingsGoals.isActive, true)),
-      resolveActiveProfilePair(ctx.db),
+      resolveProfileSelection(ctx.scope),
     ]);
     // Savings funding is per-(goal, profile) — resolve once per profile and
     // fold the monthly total into annualTotal so it isn't silently excluded
@@ -597,12 +576,9 @@ export const budgetRouter = createTRPCRouter({
         .object({
           selectedColumn: z.number().optional(),
           profileId: z.number().optional(),
-          /**
-           * The caller's resolution tiers for each profile axis (local
-           * selection → active); omitted = the active profiles.
-           */
-          contributionProfile: profileResolutionTiersSchema.optional(),
-          salaryProfile: profileResolutionTiersSchema.optional(),
+          /** The page's own Contribution/Salary picks (What-If); absent =
+           *  the active profiles. */
+          selection: payProfileSelectionSchema.optional(),
           /** The What-If tab's hand-edited salary/bonus entries — see
            *  paycheckRouter.computeSummary's identical field. Threaded into
            *  every paycheck.computeSummary call this procedure makes
@@ -642,12 +618,12 @@ export const budgetRouter = createTRPCRouter({
       // can't be used to silently corrupt a What-If scenario comparison
       // (the advisor rejected folding this into netMonthlyIncome for
       // exactly that reason: netMonthlyIncome is per-selectedColumn and has
-      // no "this is the live view" signal). Same value regardless of which
-      // scenario column the caller asked for — see
-      // tests/routers/budget-coverage.test.ts for the invariant test.
-      const nowMonthStart = currentMonthKey(new Date());
+      // no "this is the live view" signal). Same value for every scenario
+      // column (invariant test: tests/routers/budget-coverage.test.ts).
+      const { asOf } = ctx.scope;
+      const nowMonthStart = currentMonthKey(asOf);
       const nextMonthStart = currentMonthKey(
-        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+        new Date(asOf.getFullYear(), asOf.getMonth() + 1, 1),
       );
       const budgetIncomeAdjustmentRows = await ctx.db
         .select({ amount: schema.budgetIncomeAdjustments.amount })
@@ -715,18 +691,10 @@ export const budgetRouter = createTRPCRouter({
       // pair the page shows: its own local selection (What-If), else the
       // active profiles. A budget column is a spending level, so the pair is
       // the same for every column (and matches use-budget-derived-data.ts).
-      const profiles: ProfilePair = {
-        contribProfileId: await profileFromTiers(
-          ctx.db,
-          input?.contributionProfile,
-          "contribProfileId",
-        ),
-        salaryProfileId: await profileFromTiers(
-          ctx.db,
-          input?.salaryProfile,
-          "salaryProfileId",
-        ),
-      };
+      const profiles = await resolveProfileSelection(
+        ctx.scope,
+        input?.selection,
+      );
       // Resolved through the SAME helper listProfiles uses above
       // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
       // its own independent copy of this exact resolution (the only
@@ -794,7 +762,7 @@ export const budgetRouter = createTRPCRouter({
         })),
         columnLabels,
         selectedColumn,
-        asOfDate: new Date(),
+        asOfDate: ctx.scope.asOf,
       };
 
       const result = calculateBudget(budgetInput);
@@ -911,7 +879,7 @@ export const budgetRouter = createTRPCRouter({
         id: z.number().int(),
         colIndex: z.number().int(),
         amount: z.number(),
-        contributionProfile: profileResolutionTiersSchema.optional(),
+        selection: payProfileSelectionSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -938,10 +906,7 @@ export const budgetRouter = createTRPCRouter({
         // before, is strictly worse than that convention for no reason.
         await ctx.db.transaction(async (tx) => {
           const contribProfileId =
-            await resolveEffectiveContribProfileIdForItem(
-              tx,
-              input.contributionProfile,
-            );
+            await resolveEffectiveContribProfileIdForItem(tx, input.selection);
           await applyContributionAccountEdit(
             tx,
             accountId,
@@ -980,7 +945,7 @@ export const budgetRouter = createTRPCRouter({
             amount: z.number(),
           }),
         ),
-        contributionProfile: profileResolutionTiersSchema.optional(),
+        selection: payProfileSelectionSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1080,7 +1045,7 @@ export const budgetRouter = createTRPCRouter({
             const contribProfileId =
               await resolveEffectiveContribProfileIdForItem(
                 tx,
-                input.contributionProfile,
+                input.selection,
               );
             contributionEdits.push({
               contributionAccountId: item.contributionAccountId,
@@ -1703,9 +1668,7 @@ export const budgetRouter = createTRPCRouter({
 
   /** Get cached categories from the active (or specified) budget API for the category picker. */
   listApiCategories: protectedProcedure
-    .input(
-      z.object({ service: z.enum(["ynab", "actual"]).optional() }).optional(),
-    )
+    .input(z.object({ service: budgetApiServiceSchema.optional() }).optional())
     .query(async ({ ctx, input }) => {
       const active = await getActiveBudgetApi(ctx.db);
       const service = input?.service ?? (active !== "none" ? active : null);
@@ -1823,7 +1786,7 @@ export const budgetRouter = createTRPCRouter({
       }
 
       // Get current month detail from cache
-      const now = new Date();
+      const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,
@@ -1985,7 +1948,7 @@ export const budgetRouter = createTRPCRouter({
       });
 
       const numColumns = (profile.columnLabels as string[]).length;
-      const activeProfiles = await resolveActiveProfilePair(ctx.db);
+      const activeProfiles = await resolveProfileSelection(ctx.scope);
       // Contribution-linked items freeze `amounts` on edit (see
       // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
       // would push the stale value instead of the profile's live one.
@@ -2100,7 +2063,7 @@ export const budgetRouter = createTRPCRouter({
           linkedColumnIndex: 0,
         };
 
-      const now = new Date();
+      const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,

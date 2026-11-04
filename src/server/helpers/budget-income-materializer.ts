@@ -26,9 +26,9 @@ import {
   isExtraPaycheckBudgetMode,
 } from "@/lib/calculators/paycheck";
 import { currentMonthKey } from "@/lib/pure/date-keys";
-import type { Db } from "./transforms";
 import { loadEffectiveSalaryProfile } from "./salary";
 import { localDateStr } from "@/lib/utils/date";
+import type { Db } from "@/lib/db";
 
 const HORIZON_MONTHS = 120; // covers the max 10-year projection window
 

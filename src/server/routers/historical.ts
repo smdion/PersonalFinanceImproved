@@ -31,7 +31,7 @@ export const historicalRouter = createTRPCRouter({
         otherAssets,
         notes,
       ] = await Promise.all([
-        buildYearEndHistory(ctx.db, new Date(), {
+        buildYearEndHistory(ctx.db, ctx.scope.asOf, {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
         }),
@@ -49,7 +49,7 @@ export const historicalRouter = createTRPCRouter({
         ctx.db.select().from(schema.historicalNotes),
       ]);
 
-      const currentYear = new Date().getFullYear();
+      const currentYear = ctx.scope.asOf.getFullYear();
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
         null,
@@ -87,7 +87,7 @@ export const historicalRouter = createTRPCRouter({
 
       for (const person of people) {
         if (recordedYears.has(person.id)) continue;
-        const activeJob = findActiveJob(jobs, person.id, new Date());
+        const activeJob = findActiveJob(jobs, person.id, ctx.scope.asOf);
         const comp = activeJob
           ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
           : { salary: 0, bonus: 0 };
@@ -279,12 +279,12 @@ export const historicalRouter = createTRPCRouter({
 
       let fallbackSalary = toNumber(existing[0]?.salary);
       let fallbackBonus = toNumber(existing[0]?.bonus);
-      if (!existing[0] && input.year === new Date().getFullYear()) {
+      if (!existing[0] && input.year === ctx.scope.asOf.getFullYear()) {
         const [jobs, salaryProfileActiveMap] = await Promise.all([
           ctx.db.select().from(schema.jobs),
           loadEffectiveSalaryProfile(ctx.db, null),
         ]);
-        const activeJob = findActiveJob(jobs, input.personId, new Date());
+        const activeJob = findActiveJob(jobs, input.personId, ctx.scope.asOf);
         const comp = activeJob
           ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
           : { salary: 0, bonus: 0 };

@@ -9,29 +9,18 @@ import {
   getAllCategories,
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
+import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
 
-let accumQueryData: unknown[] | undefined;
-let decumQueryData: unknown[] | undefined;
+type Overrides = MockOutput<"retirement.projectionOverrides.get">;
+let accumQueryData: Overrides | undefined;
+let decumQueryData: Overrides | undefined;
 
 vi.mock("@/lib/hooks/use-simulation-preset", () => ({
   useSimulationPreset: () => ["default", vi.fn()],
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    retirement: {
-      projectionOverrides: {
-        get: {
-          useQuery: (input: { overrideType: string }) => ({
-            data:
-              input.overrideType === "accumulation"
-                ? accumQueryData
-                : decumQueryData,
-          }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
@@ -44,6 +33,14 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
 beforeEach(() => {
   accumQueryData = undefined;
   decumQueryData = undefined;
+  resetTrpcMock();
+  // Read at the first render, after each test has set its rows.
+  // Undefined until a test sets rows (not loaded).
+  setQuery(
+    "retirement.projectionOverrides.get",
+    (input: { overrideType: string }) =>
+      input.overrideType === "accumulation" ? accumQueryData : decumQueryData,
+  );
 });
 
 async function importHook() {

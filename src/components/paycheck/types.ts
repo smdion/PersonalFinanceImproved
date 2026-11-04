@@ -3,7 +3,6 @@ import type { CappedContribution } from "@/lib/pure/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/calculators/types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { getAllCategories } from "@/lib/config/account-types";
 
 // Raw DB row types for inline editing
 export type RawDeduction = {
@@ -127,9 +126,6 @@ export type JointContrib = {
   maxValue?: number;
   othersInGroup?: number;
 };
-
-/** Account category options for dropdowns — derived from config */
-export const WATERFALL_CATEGORIES: AccountCategory[] = getAllCategories();
 
 export type { PaycheckResult, ViewMode, AccountCategory };
 

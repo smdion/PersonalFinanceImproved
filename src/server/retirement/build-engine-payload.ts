@@ -17,11 +17,14 @@ import {
   planEndAge,
   planRetirementAge,
 } from "@/lib/pure/household-timeline";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { retirementFilingStatus } from "@/lib/pure/filing-status";
-import { thisYearFilingStatus } from "@/server/helpers/filing-status";
+import {
+  retirementFilingStatus,
+  storedProfileFilingStatus,
+} from "@/lib/pure/filing-status";
+import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
@@ -61,6 +64,7 @@ import {
 } from "@/lib/pure/basis-consistency";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
+  DEFAULT_SIMULATION,
   IRS_LIMIT_GROWTH_RATE,
   IRS_LIMIT_GROWTH_RATE_MAX,
   FALLBACK_CONTRIBUTION_RATE,
@@ -83,15 +87,13 @@ import {
 import { retirementContributions } from "./payload/retirement-contributions";
 import { buildIndividualAccounts } from "./payload/individual-accounts";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
-import type { db as _db } from "@/lib/db";
 import { projectionJobs, workingYears } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_IRS_LIMIT_GROWTH_RATE,
 } from "@/lib/constants/settings-keys";
-
-type Db = typeof _db;
+import type { Db } from "@/lib/db";
 
 /**
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
@@ -386,31 +388,25 @@ export async function buildEnginePayload(
   // This year's return, and retirement years' (the profile's, or "Auto" =
   // this year's) — lib/pure/filing-status.ts. Nothing known: the cautious
   // fallback, and the household is asked (a recommendation).
+  const profileStatus = storedProfileFilingStatus(settings.filingStatus);
   const thisYearFiling = await thisYearFilingStatus(db, {
     appSettings: allAppSettings,
-    profileStatus: settings.filingStatus,
+    profileStatus,
     people,
     salaryProfileActiveMap,
   });
   const filingStatus = retirementFilingStatus(
-    settings.filingStatus,
+    profileStatus,
     thisYearFiling.status,
   );
 
   // Every per-year tax slice (withholding brackets, contribution
   // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
-  // FPL) is resolved through ONE call, anchored on ONE year — instead of
-  // the old mix of `Math.max(tax_brackets.taxYear)` for brackets and
-  // `WHERE tax_year = asOfDate.getFullYear()` for limits, which could
-  // silently split across two vintages in the Oct-Jan window.
+  // FPL) is resolved through ONE call, anchored on ONE year.
   //
-  // requestedYear: the active retirement profile's pin
-  // (`tax_params_year`, null ⇒ undefined ⇒ newest enacted — the earlier
-  // default, since no production caller ever passed the latent `asOfDate`
-  // opt and the old `contribution_limits` filter was therefore always the
-  // current calendar year, which equals the newest seeded year). Historical
-  // portfolio snapshots already priced tax off current data, not the
-  // snapshot's year, so there is nothing year-specific to carry over here.
+  // requestedYear: the active retirement profile's pin (`tax_params_year`,
+  // null ⇒ newest enacted). Historical portfolio snapshots price tax off
+  // current data too, not the snapshot's year.
   // `onMissing: "nearest"` — a projection uses this as a base year then
   // grows it forward, so an unseeded pin year falls back to the newest
   // earlier year rather than throwing.
@@ -458,8 +454,10 @@ export async function buildEnginePayload(
       } (Settings → Reference Data).`,
     );
 
-  const bracketData = (resolvedTax.withholdingBrackets?.[filingStatus]?.false ??
-    []) as {
+  // A complete year has every status's table: never a guessed empty one.
+  const withholding = resolvedTax.withholdingBrackets?.[filingStatus]?.false;
+  if (!withholding) throw new Error(`No ${filingStatus} withholding table.`);
+  const bracketData = withholding as {
     threshold: number;
     baseWithholding: number;
     rate: number;
@@ -1096,10 +1094,9 @@ export async function buildEnginePayload(
     Object.values(contribByCategory),
     (c) => c.annual,
   );
-  // Retirement contribution rate on total compensation (always includes
-  // bonus). Retirement contributions only: the engine's rate ceiling caps
-  // retirement contributions and leaves Portfolio savings alone, so the
-  // rate it caps against must not count them either.
+  // Retirement contribution rate on total compensation (bonus included),
+  // retirement contributions only: the engine's rate ceiling leaves Portfolio
+  // savings alone, so the rate it caps against must not count them either.
   const displayContribRate = safeDivide(
     retirementContributions(contributionSpecs),
     totalCompensation,
@@ -1157,7 +1154,7 @@ export async function buildEnginePayload(
           afterTax: t.afterTax + b.afterTax,
           afterTaxBasis: t.afterTaxBasis + b.afterTaxBasis,
         }),
-        { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0, afterTaxBasis: 0 },
+        { ...emptyTaxBucketMap(), afterTaxBasis: 0 },
       ),
     defaults: {
       ...defaultContribData.retirementOnly,

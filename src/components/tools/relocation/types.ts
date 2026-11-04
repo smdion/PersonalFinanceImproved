@@ -1,49 +1,27 @@
-/** Shared prop types for relocation sub-components extracted from tools/page.tsx.
- *
- * These shapes mirror what `trpc.retirement.computeRelocationAnalysis` returns.
- * They are hand-written (rather than inferred via `inferRouterOutputs`)
- * because `src/components/**` is lint-forbidden from importing `@/server/*`.
- * Keep in sync with `src/server/routers/retirement.ts::computeRelocationAnalysis`.
+/** Shared prop types for relocation sub-components extracted from
+ *  tools/page.tsx, read from what `retirement.computeRelocationAnalysis`
+ *  returns.
  */
-
 // The calculator-side result type lives in `lib/` and is the authoritative
 // shape for `relocQuery.data.result`. Re-exporting lets us keep lib imports
 // local to this module.
 import type { RelocationResult as CalculatorRelocationResult } from "@/lib/calculators/types/relocation";
+import type { RouterOutputs } from "@/lib/trpc";
 
-/** Budget profile summary entry within `budgetInfo.profiles`. Server builds
- *  this from `budgetProfiles` rows — shape: retirement.ts profileSummaries.
- */
-type RelocationBudgetProfile = {
-  id: number;
-  name: string;
-  isActive: boolean;
-  columnLabels: string[];
-  columnMonths: number[] | null;
-  columnTotals: number[];
-  weightedAnnualTotal: number | null;
-};
+type RelocationAnalysis = Extract<
+  RouterOutputs["retirement"]["computeRelocationAnalysis"],
+  { currentContribProfile: unknown }
+>;
 
 /** `budgetInfo` payload (non-null branch). */
-export type RelocationBudgetInfo = {
-  profiles: RelocationBudgetProfile[];
-  currentProfileId: number;
-  currentColumnIndex: number;
-  relocationProfileId: number;
-  relocationColumnIndex: number;
-};
+export type RelocationBudgetInfo = NonNullable<
+  RelocationAnalysis["budgetInfo"]
+>;
 
-/** Contribution profile summary returned on the top-level query result
- *  (see `retirement.ts::currentContribProfile` / `relocationContribProfile`).
- */
-export type RelocationContribProfile = {
-  annualContributions: number;
-  employerMatch: number;
-  combinedSalary: number;
-  /** Ids of contribution accounts excluded from annualContributions above
-   *  because they have no resolvable job/pay period. */
-  incompleteAccountIds: number[];
-};
+/** A contribution profile summary on the query result. */
+export type RelocationContribProfile = NonNullable<
+  RelocationAnalysis["currentContribProfile"]
+>;
 
 /** Re-export of the calculator `RelocationResult` under the local name so
  *  leaf components can import everything from one module.

@@ -77,11 +77,46 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import ts from "typescript";
 import {
   ACCOUNT_TYPE_CONFIG,
-  DEFAULT_DECUMULATION_ORDER,
+  DEFAULT_WITHDRAWAL_SPLITS,
+  accountCategoryEnum,
+  buildCategoryRecord,
+  getAllCategories,
+  getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
-import { accountCategoryEnum } from "@/lib/config/account-types.types";
+import { calculateProjection } from "@/lib/calculators/engine";
+import type { ProjectionInput } from "@/lib/calculators/types";
+import { decumulationOverrideArraySchema } from "@/lib/pure/engine";
+import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import { categoryChartHex } from "@/lib/utils/colors";
+import { accountDisplayName } from "@/lib/utils/format";
+import { engineHousehold } from "../fixtures/answer-key-household";
+import {
+  DOLLAR_BASIS_VALUES,
+  PAY_PERIOD_VALUES,
+  PORTFOLIO_TAX_TYPE_VALUES,
+} from "@/lib/config/enum-values";
+import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
+import {
+  RETURN_FILING_STATUS_VALUES,
+  W4_FILING_STATUS_VALUES,
+} from "@/lib/config/filing-status";
+import { PERMISSIONS } from "@/lib/config/permissions";
+import { routePercentage } from "@/lib/calculators/engine/contribution-routing";
+import { resolveAccumulationConfig } from "@/lib/calculators/engine/override-resolution";
+import { routeWithdrawalsPercentage } from "@/lib/calculators/engine/withdrawal-routing";
+import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import {
+  makeAccountBalances,
+  makeAccumulationConfig,
+  makeAccumulationDefaults,
+  makeDecumulationConfig,
+  makeEmployerMatch,
+  makeYearLimits,
+} from "../calculators/fixtures/engine-fixtures";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).
@@ -112,8 +147,6 @@ const EXEMPT: Record<string, string> = {
   // The config FILE itself defines what categories exist.
   "src/lib/config/account-types.ts":
     "Defines ACCOUNT_TYPE_CONFIG and the predicate helpers",
-  "src/lib/config/account-types.types.ts":
-    "Type definitions for the config schema",
   "src/lib/config/enum-values.ts": "Exports the enum array for Zod validators",
   // Database schema files reference column names but the field name happens
   // to match a category — not a violation, just naming.
@@ -223,35 +256,170 @@ function findCategoryEqualityViolations(): Violation[] {
   return violations;
 }
 
-function findHardcodedCategoryArrayViolations(): Violation[] {
-  const violations: Violation[] = [];
-  // Match an array literal that contains 3+ category strings (4+ would be
-  // an obvious match against ALL categories; 3 still suspicious).
-  const pattern = new RegExp(
-    `\\[\\s*(?:['"](${categoryAlternation()})['"]\\s*,\\s*){2,}['"](${categoryAlternation()})['"]`,
+// Every closed set the config derives its lists from. A hand-written array
+// of its members (`["401k", "403b", "ira"]`, `["MFJ", "Single", "HOH"]`)
+// goes stale when the set changes: read the set, or a list the config
+// derives from it. Each set is read at scan time, so a member added to
+// the config is covered with no edit here.
+interface ClosedSet {
+  name: string;
+  members: () => readonly string[];
+  /** Where the set is defined (its own file may list it). */
+  definedIn: string;
+  /** What to use instead. */
+  use: string;
+}
+
+const CLOSED_SETS: ClosedSet[] = [
+  {
+    name: "account category",
+    members: () => Object.keys(ACCOUNT_TYPE_CONFIG),
+    definedIn: "src/lib/config/account-types.ts",
+    use: "getAllCategories() / categoriesWithIrsLimit() / similar (account-types.ts)",
+  },
+  {
+    name: "filing status",
+    members: () => [...RETURN_FILING_STATUS_VALUES, ...W4_FILING_STATUS_VALUES],
+    definedIn: "src/lib/config/filing-status.ts",
+    use: "RETURN_FILING_STATUS_VALUES / FILING_STATUS_ORDER (filing-status.ts)",
+  },
+  {
+    name: "portfolio tax type",
+    members: () => PORTFOLIO_TAX_TYPE_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "PORTFOLIO_TAX_TYPE_VALUES (enum-values.ts)",
+  },
+  {
+    name: "budget service",
+    members: () => BUDGET_API_SERVICE_VALUES,
+    definedIn: "src/lib/config/budget-apps.ts",
+    use: "BUDGET_API_SERVICE_VALUES / BUDGET_PROVIDERS",
+  },
+  {
+    name: "dollar basis",
+    members: () => DOLLAR_BASIS_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "DOLLAR_BASIS_VALUES (enum-values.ts)",
+  },
+  {
+    name: "pay period",
+    members: () => PAY_PERIOD_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "PAY_PERIOD_VALUES (enum-values.ts) / PAY_PERIOD_CONFIG",
+  },
+  {
+    name: "permission",
+    members: () => PERMISSIONS,
+    definedIn: "src/lib/config/permissions.ts",
+    use: "PERMISSIONS (permissions.ts)",
+  },
+];
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** An array literal opening with `k` or more of the set's members, on one
+ *  line or wrapped: k is 3, or every member of a smaller set. */
+function closedSetArrayPattern(set: ClosedSet): RegExp {
+  const members = [...new Set(set.members())];
+  const alt = members.map(escapeRegExp).join("|");
+  const k = Math.min(3, members.length);
+  return new RegExp(
+    `\\[\\s*(?:['"](?:${alt})['"]\\s*,\\s*){${k - 1},}['"](?:${alt})['"]`,
+    "g",
   );
+}
+
+/** Comment lines blanked (line numbers kept), so a list in a comment or a
+ *  docblock isn't a violation. */
+function codeOnly(lines: string[]): string {
+  return lines
+    .map((l) => {
+      const t = l.trim();
+      return t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")
+        ? ""
+        : l;
+    })
+    .join("\n");
+}
+
+/** Today's hand-written closed-set lists, per file, each with its reason.
+ *  Shrink-only, like the size baseline: a new one fails, and a file whose
+ *  count drops fails until its entry is lowered (or removed). */
+const CLOSED_SET_LISTS_KNOWN: Record<
+  string,
+  { count: number; reason: string }
+> = (() => {
+  const reason =
+    "Tax-type column order, equal to PORTFOLIO_TAX_TYPE_VALUES; using it " +
+    "reflows a long render chain in a file at its size ceiling: goes when " +
+    "the projection table is split";
+  return {
+    "src/components/cards/projection/projection-chart.tsx": {
+      count: 1,
+      reason,
+    },
+    "src/components/cards/projection/projection-table-accum-row.tsx": {
+      count: 3,
+      reason,
+    },
+    "src/components/cards/projection/projection-table-decum-row.tsx": {
+      count: 3,
+      reason,
+    },
+    "src/components/cards/projection/projection-table.tsx": {
+      count: 4,
+      reason,
+    },
+  };
+})();
+
+/** What fails against CLOSED_SET_LISTS_KNOWN: a file over its count (or
+ *  not listed), or under it (stale entry). */
+function closedSetListProblems(violations: Violation[]): string[] {
+  const byFile = new Map<string, Violation[]>();
+  for (const v of violations)
+    byFile.set(v.file, [...(byFile.get(v.file) ?? []), v]);
+  const problems: string[] = [];
+  for (const [file, vs] of byFile) {
+    const known = CLOSED_SET_LISTS_KNOWN[file]?.count ?? 0;
+    if (vs.length > known)
+      problems.push(
+        `${file}: ${vs.length} lists, ${known} known\n` +
+          vs.map((v) => `  :${v.line} ${v.rule}: ${v.snippet}`).join("\n"),
+      );
+  }
+  for (const [file, { count }] of Object.entries(CLOSED_SET_LISTS_KNOWN)) {
+    const now = byFile.get(file)?.length ?? 0;
+    if (now < count)
+      problems.push(
+        `${file}: ${now} lists, ${count} known — lower its entry in CLOSED_SET_LISTS_KNOWN`,
+      );
+  }
+  return problems;
+}
+
+function findHardcodedClosedSetArrayViolations(): Violation[] {
+  const violations: Violation[] = [];
   for (const file of walkTsFiles(SRC_DIR)) {
     const rel = relPath(file);
     if (isExempt(rel)) continue;
     const lines = readFileLines(file);
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!;
-      const trimmed = line.trim();
-      if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
-      if (
-        line.includes("lint-violation-ok") ||
-        (i > 0 && lines[i - 1]!.includes("lint-violation-ok")) ||
-        (i > 1 && lines[i - 2]!.includes("lint-violation-ok")) ||
-        (i > 2 && lines[i - 3]!.includes("lint-violation-ok"))
-      ) {
-        continue;
-      }
-      if (pattern.test(line)) {
+    const code = codeOnly(lines);
+    for (const set of CLOSED_SETS) {
+      if (rel === set.definedIn) continue;
+      for (const m of code.matchAll(closedSetArrayPattern(set))) {
+        const i = code.slice(0, m.index).split("\n").length - 1;
+        if (
+          lines
+            .slice(Math.max(0, i - 3), i + 1)
+            .some((l) => l.includes("lint-violation-ok"))
+        )
+          continue;
         violations.push({
           file: rel,
           line: i + 1,
-          rule: "no-hardcoded-category-array",
-          snippet: trimmed.slice(0, 100),
+          rule: `no-hardcoded-closed-set-array (${set.name}; use ${set.use})`,
+          snippet: m[0].replace(/\s+/g, " ").slice(0, 100),
         });
       }
     }
@@ -894,15 +1062,6 @@ function findReviewCitationViolations(): Violation[] {
 //     so this can't collide with RULES.md's statutory-date exception
 //   - a bare roadmap R## tag (R48a, R17, R6b, ...) — not a real
 //     identifier anywhere else in this codebase
-// One dedicated file exemption: projection-cache.ts's
-// PROJECTION_CACHE_ENGINE_VERSION changelog is RULES.md's own named
-// exception (the R##/date history there IS the documentation) — every
-// other file must pass clean. The narrower rule 25 above is unaffected;
-// keeping both means a regression against either shape still fails loudly
-// with the more specific message.
-const BROAD_CITATION_FILE_EXEMPT = new Set<string>([
-  "src/server/helpers/projection-cache.ts",
-]);
 // A bare attribution phrase or a bare roadmap R## tag is never one of
 // RULES.md's comment exceptions — safe to enforce everywhere (src/,
 // tests/, scripts/).
@@ -938,12 +1097,7 @@ function findBroadCitationViolations(): Violation[] {
   for (const { dir, includeDatePattern } of roots) {
     for (const file of walkTsFiles(dir)) {
       const rel = relPath(file);
-      if (
-        isExempt(rel) ||
-        BROAD_CITATION_FILE_EXEMPT.has(rel) ||
-        CITATION_RULE_FILE_EXEMPT.has(rel)
-      )
-        continue;
+      if (isExempt(rel) || CITATION_RULE_FILE_EXEMPT.has(rel)) continue;
       const lines = readFileLines(file);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]!;
@@ -1032,14 +1186,16 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no hardcoded category arrays (['401k', '403b', ...])", () => {
-    const violations = findHardcodedCategoryArrayViolations();
-    if (violations.length > 0) {
+  it("no hand-written list of a closed set (['401k', '403b', ...], ['MFJ', 'Single', 'HOH'], ...)", () => {
+    const problems = closedSetListProblems(
+      findHardcodedClosedSetArrayViolations(),
+    );
+    if (problems.length > 0) {
       expect.fail(
-        `Found ${violations.length} hardcoded-category-array violations. ` +
-          `Use getAllCategories() / categoriesWithIrsLimit() / similar from ` +
-          `src/lib/config/account-types.ts.\n` +
-          formatViolations("Violations", violations),
+        `Hand-written closed-set lists. Read the set from src/lib/config/ ` +
+          `(each rule names what to use); a list fixed lowers its count in ` +
+          `CLOSED_SET_LISTS_KNOWN.\n` +
+          problems.join("\n"),
       );
     }
   });
@@ -1430,8 +1586,8 @@ const POSITIVE_CONTROLS: [string, () => Violation[], Record<string, string>][] =
       { "src/a.ts": 'if (t === "401k") run();\n' },
     ],
     [
-      "category array",
-      findHardcodedCategoryArrayViolations,
+      "closed-set array",
+      findHardcodedClosedSetArrayViolations,
       { "src/a.ts": 'const c = ["401k", "403b", "ira"];\n' },
     ],
     [
@@ -1576,6 +1732,20 @@ describe("RULES.md violations sweep — positive controls", () => {
     },
   );
 
+  it.each(CLOSED_SETS.map((set) => [set.name, set] as const))(
+    "closed-set array: flags a wrapped hand list of %s, not its own file",
+    (_, set) => {
+      const members = [...new Set(set.members())].slice(0, 3);
+      const list = `export const L = [\n${members.map((m) => `  "${m}",`).join("\n")}\n];\n`;
+      expect(
+        scanPlanted(findHardcodedClosedSetArrayViolations, {
+          "src/a.ts": list,
+          [set.definedIn]: list,
+        }),
+      ).toEqual(["src/a.ts"]);
+    },
+  );
+
   it("honors the lint-violation-ok escape hatch", () => {
     expect(
       scanPlanted(findCategoryEqualityViolations, {
@@ -1608,9 +1778,16 @@ describe("RULES.md violations sweep — positive controls", () => {
 
 const SYNTHETIC_CATEGORY = "synthetic-test-category";
 
+/** A brokerage-like entry with its own label and chart colours. */
+const SYNTHETIC_ENTRY = {
+  ...ACCOUNT_TYPE_CONFIG.brokerage,
+  displayLabel: "Synthetic Plan",
+  chartHex: { standard: "#123456", roth: "#654321" },
+};
+
 function withSyntheticCategory<T>(fn: () => T): T {
   const config = ACCOUNT_TYPE_CONFIG as Record<string, unknown>;
-  config[SYNTHETIC_CATEGORY] = { ...ACCOUNT_TYPE_CONFIG.brokerage };
+  config[SYNTHETIC_CATEGORY] = { ...SYNTHETIC_ENTRY };
   try {
     return fn();
   } finally {
@@ -1630,25 +1807,328 @@ describe("one config entry adds an account type", () => {
     expect(Object.keys(ACCOUNT_TYPE_CONFIG)).not.toContain(SYNTHETIC_CATEGORY);
   });
 
-  // Broken today: AccountCategory and its enum are hand copies (RULES.md
-  // § Known Gaps).
+  it("the account-category enum includes it", () => {
+    withSyntheticCategory(() => {
+      expect(accountCategoryEnum()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
+  it("the default withdrawal order includes it", () => {
+    withSyntheticCategory(() => {
+      expect(getDefaultDecumulationOrder()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
+  // The engine reads the category list at call time, so an entry added at
+  // run time reaches each router.
+  it("percentage contribution routing reaches it", () => {
+    withSyntheticCategory(() => {
+      const config = makeAccumulationConfig({ routingMode: "percentage" });
+      Reflect.set(config.accountSplits, SYNTHETIC_CATEGORY, 1);
+      const limits = makeYearLimits();
+      Reflect.set(limits, SYNTHETIC_CATEGORY, Infinity);
+      const match = makeEmployerMatch();
+      Reflect.set(match, SYNTHETIC_CATEGORY, 0);
+      const { slots } = routePercentage(1000, config, limits, match);
+      expect(slots.map((s) => s.category)).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
+  it("an override's account caps reach it", () => {
+    withSyntheticCategory(() => {
+      const accountCaps = {};
+      Reflect.set(accountCaps, SYNTHETIC_CATEGORY, 500);
+      const config = resolveAccumulationConfig(
+        2030,
+        makeAccumulationDefaults(),
+        [{ year: 2030, accountCaps }],
+      );
+      expect(Reflect.get(config.accountCaps, SYNTHETIC_CATEGORY)).toBe(500);
+    });
+  });
+
+  it("early access and its penalty follow the entry's fields, not its name", () => {
+    withSyntheticCategory(() => {
+      // An HSA-like entry: locked for non-medical use before 65, at 20%.
+      Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+        ...ACCOUNT_TYPE_CONFIG.hsa,
+      });
+      const account = {
+        name: "Synthetic",
+        category: "hsa" as const,
+        taxType: "hsa",
+        ownerBirthYear: 1980,
+      };
+      Reflect.set(account, "category", SYNTHETIC_CATEGORY);
+      const exposure = computeWithdrawalEligibility({
+        year: 2030,
+        indAccts: [account],
+        indBal: new Map([["k", 1000]]),
+        indKey: () => "k",
+      });
+      expect(exposure.byKey.get("k")?.penaltyFreeAmount).toBe(0);
+      const { penaltyCost } = computeEarlyWithdrawalPenalty({
+        exposure,
+        withdrawnByKey: new Map([["k", 100]]),
+      });
+      expect(penaltyCost).toBe(20);
+    });
+  });
+
+  it("percentage withdrawal routing draws from it", () => {
+    withSyntheticCategory(() => {
+      const config = makeDecumulationConfig({
+        withdrawalRoutingMode: "percentage",
+      });
+      Reflect.set(config.withdrawalSplits, SYNTHETIC_CATEGORY, 1);
+      const balances = makeAccountBalances();
+      Reflect.set(balances, SYNTHETIC_CATEGORY, {
+        structure: "basis_tracking",
+        balance: 10000,
+        basis: 10000,
+      });
+      const { slots } = routeWithdrawalsPercentage(1000, config, balances);
+      const slot = slots.find((s) => String(s.category) === SYNTHETIC_CATEGORY);
+      expect(slot?.withdrawal).toBeGreaterThan(0);
+    });
+  });
+
+  it("the default withdrawal order and the Retirement page's order editor include it", () => {
+    withSyntheticCategory(() => {
+      expect(getDefaultDecumulationOrder()).toContain(SYNTHETIC_CATEGORY);
+      expect(getAllCategories()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
   it.fails(
-    "the account-category enum includes it (until v0.10.1 Test every promise)",
+    "the default withdrawal splits include it (v0.11 One config entry: DEFAULT_WITHDRAWAL_SPLITS is built at load)",
     () => {
       withSyntheticCategory(() => {
-        expect(accountCategoryEnum()).toContain(SYNTHETIC_CATEGORY);
+        expect(DEFAULT_WITHDRAWAL_SPLITS).toHaveProperty([SYNTHETIC_CATEGORY]);
       });
     },
   );
 
-  // Broken today: the default withdrawal order is a hand list, so a new
-  // category is never drawn.
+  it("an account's name shows its label", () => {
+    withSyntheticCategory(() => {
+      expect(
+        accountDisplayName(
+          { accountType: SYNTHETIC_CATEGORY, institution: "Bank" },
+          "Pat",
+        ),
+      ).toContain("Synthetic Plan");
+    });
+  });
+
   it.fails(
-    "the default withdrawal order includes it (until v0.10.1 Test every promise)",
+    "charts draw it in its own colour (v0.11 One config entry: CATEGORY_CHART_HEX is built at load)",
     () => {
       withSyntheticCategory(() => {
-        expect(DEFAULT_DECUMULATION_ORDER).toContain(SYNTHETIC_CATEGORY);
+        expect(categoryChartHex(SYNTHETIC_CATEGORY, false)).toBe("#123456");
       });
     },
   );
+
+  it.fails(
+    "the projection inputs accept it (v0.11 One config entry: router schemas are built at load)",
+    () => {
+      withSyntheticCategory(() => {
+        const parsed = decumulationOverrideArraySchema.safeParse([
+          { year: 2030, withdrawalOrder: [SYNTHETIC_CATEGORY] },
+        ]);
+        expect(parsed.success).toBe(true);
+      });
+    },
+  );
+
+  it("a two-year projection contributes to it, then draws from it", () => {
+    withSyntheticCategory(() => {
+      const input = twoYearHousehold();
+      const [working, retired] = calculateProjection(input).projectionByYear;
+      if (
+        working?.phase !== "accumulation" ||
+        retired?.phase !== "decumulation"
+      )
+        throw new Error("expected a working year, then a retired one");
+      expect(
+        working.slots.find((s) => String(s.category) === SYNTHETIC_CATEGORY)
+          ?.employeeContrib,
+      ).toBeGreaterThan(0);
+      expect(
+        retired.slots.find((s) => String(s.category) === SYNTHETIC_CATEGORY)
+          ?.withdrawal,
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it("Tax Buckets count its balance in its tax bucket", () => {
+    withSyntheticCategory(() => {
+      const breakdown = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            {
+              institution: "Bank",
+              taxType: "afterTax",
+              accountType: "brokerage" as const,
+              subType: null,
+              label: null,
+              parentCategory: "Retirement",
+              amount: 1000,
+              ownerPersonId: 1,
+              performanceAccountId: null,
+              displayName: null,
+              accountLabel: null,
+            },
+          ].map((a) => {
+            Reflect.set(a, "accountType", SYNTHETIC_CATEGORY);
+            return a;
+          }),
+        },
+        [{ id: 1, name: "Pat" }],
+        [],
+      );
+      expect(breakdown.portfolioByTaxType.afterTax).toBe(1000);
+      expect(
+        Reflect.get(breakdown.portfolioByAccount, SYNTHETIC_CATEGORY),
+      ).toMatchObject({
+        balance: 1000,
+      });
+    });
+  });
+
+  it("no other category list or schema is built when its module loads", () => {
+    expect(moduleLoadLists()).toEqual([...BUILT_AT_LOAD].sort());
+  });
+
+  for (const site of BUILT_AT_LOAD)
+    it.fails(
+      `${site} reads the config when used (v0.11 One config entry: lists and schemas built at load)`,
+      () => {
+        expect(moduleLoadLists()).not.toContain(site);
+      },
+    );
 });
+
+/** Category lists and schemas still built when their module loads, so a
+ *  category added later misses them. */
+const BUILT_AT_LOAD = [
+  "src/app/(dashboard)/historical/page.tsx ALL_portfolioBreakdownCols",
+  "src/components/cards/projection/projection-table-decum-row.tsx CATEGORY_ORDER",
+  "src/components/cards/projection/types.ts emptyAccumForm",
+  "src/components/cards/projection/types.ts emptyDecumForm",
+  "src/components/cards/projection/utils.ts catDisplayLabel",
+  "src/components/cards/projection/utils.ts bucketSlotMap",
+  "src/components/cards/projection/utils.ts _singleBucketCategories",
+  "src/lib/config/account-types.ts DEFAULT_WITHDRAWAL_SPLITS",
+  "src/lib/pure/engine/types/overrides.schema.ts lumpSumSchema",
+  "src/lib/pure/engine/types/overrides.schema.ts decumulationDefaultsInputSchema",
+  "src/lib/pure/engine/types/overrides.schema.ts decumulationOverrideArraySchema",
+  "src/lib/pure/engine/types/overrides.schema.ts storedWithdrawalOrderSchema",
+  "src/lib/pure/engine/types/overrides.schema.ts storedWithdrawalSplitsSchema",
+  "src/lib/utils/colors.ts ACCOUNT_TYPE_COLORS",
+  "src/lib/utils/colors.ts CATEGORY_CHART_HEX",
+  "src/server/routers/_shared.ts zSandboxContribAdditions",
+  "src/server/routers/networth.ts portfolioSnapshotInput",
+  "src/server/routers/networth.ts networthRouter",
+  "src/server/routers/performance.ts performanceAccountInput",
+  "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
+  "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
+  "src/server/routers/settings/paycheck.ts contributionAccountInput",
+];
+
+const CATEGORY_LIST_CALLS = new Set([
+  "getAllCategories",
+  "getEngineCategories",
+  "categoriesWithTaxPreference",
+  "categoriesWithoutTaxPreference",
+  "categoriesWithIrsLimit",
+  "getDefaultDecumulationOrder",
+  "getDefaultAccumulationOrder",
+  "accountCategoryEnum",
+  "tradPreferenceEngineCategories",
+]);
+
+/** Every top-level `const` under src/ whose value calls a category-list
+ *  function or iterates ACCOUNT_TYPE_CONFIG outside a function body, as
+ *  "<file> <name>". */
+function moduleLoadLists(): string[] {
+  const root = path.resolve(__dirname, "../..");
+  const readsAtLoad = (node: ts.Node): boolean => {
+    if (ts.isFunctionLike(node)) return false;
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      if (ts.isIdentifier(callee) && CATEGORY_LIST_CALLS.has(callee.text))
+        return true;
+      const arg = node.arguments[0];
+      if (
+        ts.isPropertyAccessExpression(callee) &&
+        ts.isIdentifier(callee.expression) &&
+        callee.expression.text === "Object" &&
+        arg &&
+        ts.isIdentifier(arg) &&
+        arg.text === "ACCOUNT_TYPE_CONFIG"
+      )
+        return true;
+    }
+    return (
+      ts.forEachChild(node, (child) => readsAtLoad(child) || undefined) ?? false
+    );
+  };
+  const found: string[] = [];
+  for (const file of walkTsFiles(path.join(root, "src"))) {
+    const source = ts.createSourceFile(
+      file,
+      fs.readFileSync(file, "utf8"),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    for (const statement of source.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const decl of statement.declarationList.declarations)
+        if (decl.initializer && readsAtLoad(decl.initializer))
+          found.push(
+            `${path.relative(root, file).split(path.sep).join("/")} ${decl.name.getText(source)}`,
+          );
+    }
+  }
+  return found.sort();
+}
+
+/** A household working in 2026 and retired in 2027, with all its money in
+ *  the synthetic category: contributions and withdrawals both go there. */
+function twoYearHousehold(): ProjectionInput {
+  const input = engineHousehold({
+    status: "Single",
+    people: [{ birthYear: 1961, job: { salary: 100_000, lastYear: 2026 } }],
+    spending: 40_000,
+    // The end year itself isn't run (RULES Known Gaps), so 2028 gives two.
+    endYear: 2028,
+  });
+  const only = () => {
+    const record = buildCategoryRecord(() => 0);
+    Reflect.set(record, SYNTHETIC_CATEGORY, 1);
+    return record;
+  };
+  input.accumulationDefaults = makeAccumulationDefaults({
+    contributionRate: 0.1,
+    routingMode: "percentage",
+    accountSplits: only(),
+    taxSplits: {},
+  });
+  input.decumulationDefaults.withdrawalOrder = [];
+  Reflect.set(
+    input.decumulationDefaults.withdrawalOrder,
+    0,
+    SYNTHETIC_CATEGORY,
+  );
+  input.decumulationDefaults.withdrawalSplits = only();
+  if (!input.startingAccountBalances) throw new Error("no account balances");
+  Reflect.set(input.startingAccountBalances, SYNTHETIC_CATEGORY, {
+    structure: "basis_tracking",
+    balance: 500_000,
+    basis: 500_000,
+  });
+  input.startingBalances.afterTax += 500_000;
+  input.startingBalances.afterTaxBasis += 500_000;
+  return input;
+}

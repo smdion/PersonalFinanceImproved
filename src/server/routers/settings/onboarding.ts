@@ -13,7 +13,7 @@ import {
 } from "@/server/helpers/first-run";
 import { lockForTransaction } from "@/server/helpers/transaction-lock";
 import { adoptFirstRetirementProfile } from "@/server/helpers/retirement-profile";
-import type { DbOrTx } from "@/server/helpers/transforms";
+import type { DbOrTx } from "@/lib/db";
 
 /** Refuse unless the install still needs its first admin (first-run.ts). */
 async function requireAdminNeeded(db: DbOrTx): Promise<void> {

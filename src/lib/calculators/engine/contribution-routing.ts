@@ -39,8 +39,6 @@ import {
 import { OVERFLOW_TOLERANCE } from "../../constants";
 import { projectSpecAmount } from "./contribution-projection";
 
-const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
-
 /**
  * Get the Roth fraction for an account category.
  * Delegates to config-driven helper — no hardcoded category checks.
@@ -258,7 +256,7 @@ export function routePercentage(
   }[] = [];
   let totalOverflow = 0;
 
-  for (const category of ACCOUNT_CATEGORIES) {
+  for (const category of getAllCategories()) {
     const percent = config.accountSplits[category] ?? 0;
     const requested = roundToCents(targetContribution * percent);
     const irsLimit = yearLimits[category];
@@ -555,7 +553,7 @@ export function routeFromSpecs(
   });
   // A category's Roth share is fixed before any cut below.
   const rothFrac = Object.fromEntries(
-    ACCOUNT_CATEGORIES.map((cat) => [
+    getAllCategories().map((cat) => [
       cat,
       employee[cat] > 0
         ? roth[cat] / employee[cat]
@@ -596,7 +594,7 @@ export function routeFromSpecs(
   }
 
   const slots: AccumulationSlot[] = [];
-  for (const cat of ACCOUNT_CATEGORIES) {
+  for (const cat of getAllCategories()) {
     const emp = employee[cat];
     const match = employerMatch[cat];
     if (emp <= 0 && match <= 0) continue;

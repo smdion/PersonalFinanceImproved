@@ -6,7 +6,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { localDateStr } from "@/lib/utils/date";
 
-const createMutate = vi.fn();
 const mockLatest = {
   snapshot: { id: 7, snapshotDate: "2025-01-01" },
   accounts: [
@@ -33,47 +32,19 @@ const mockPerf = [
   },
 ];
 
-let mockSuggestions: unknown = undefined;
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    investments: {
-      suggestSnapshot: { useQuery: () => ({ data: mockSuggestions }) },
-    },
-    networth: {
-      listSnapshotTotals: { useQuery: () => ({ data: [] }) },
-      portfolioSnapshots: {
-        getLatest: { useQuery: () => ({ data: mockLatest, isLoading: false }) },
-        create: {
-          useMutation: (opts: { onSuccess?: (d: unknown) => void }) => ({
-            mutate: (...a: unknown[]) => {
-              createMutate(...a);
-              opts.onSuccess?.({ apiSyncResult: { pushed: false } });
-            },
-            isPending: false,
-            isError: false,
-            error: null,
-          }),
-        },
-      },
-    },
-    performance: {
-      performanceAccounts: {
-        list: { useQuery: () => ({ data: mockPerf, isLoading: false }) },
-      },
-    },
-    settings: {
-      people: {
-        list: {
-          useQuery: () => ({
-            data: [{ id: 1, name: "Alice" }],
-            isLoading: false,
-          }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setMutationResult,
+  setQuery,
+  type MockOutput,
+} from "./trpc-mock";
+
+const CREATE = "networth.portfolioSnapshots.create";
 
 const { NewSnapshotForm } =
   await import("@/components/portfolio/new-snapshot-form");
@@ -86,13 +57,21 @@ const TODAY = localDateStr();
 
 beforeEach(() => {
   window.localStorage.clear();
-  createMutate.mockClear();
-  mockSuggestions = undefined;
+  resetTrpcMock();
+  setQuery("networth.listSnapshotTotals", []);
+  // A test swaps in rows built with a plain-string taxType.
+  setQuery(
+    "networth.portfolioSnapshots.getLatest",
+    mockLatest as MockOutput<"networth.portfolioSnapshots.getLatest">,
+  );
+  setQuery("performance.performanceAccounts.list", mockPerf);
+  setQuery("settings.people.list", [{ id: 1, name: "Alice" }]);
+  setMutationResult(CREATE, { apiSyncResult: { pushed: false } });
 });
 
 describe("NewSnapshotForm fill from SimpleFIN", () => {
   it("fills linked balances and labels them", () => {
-    mockSuggestions = {
+    setQuery("investments.suggestSnapshot", {
       snapshotDate: "2025-01-01",
       amounts: [{ key: "11_preTax__1", amount: 104321.5 }],
       accounts: [
@@ -106,7 +85,7 @@ describe("NewSnapshotForm fill from SimpleFIN", () => {
         },
       ],
       unplaced: [],
-    };
+    });
     render(<NewSnapshotForm onClose={vi.fn()} onSaved={vi.fn()} />);
     fireEvent.click(
       screen.getByRole("button", { name: "Fill from SimpleFIN" }),
@@ -114,7 +93,7 @@ describe("NewSnapshotForm fill from SimpleFIN", () => {
     expect(screen.getByDisplayValue("104321.50")).toBeInTheDocument();
     expect(screen.getByText(/^From SimpleFIN as of/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Snapshot" }));
-    const input = createMutate.mock.calls[0]![0] as {
+    const input = mutationCalls(CREATE)[0] as {
       accounts: { amount: string }[];
     };
     expect(input.accounts[0]!.amount).toBe("104321.50");
@@ -216,48 +195,9 @@ describe("NewSnapshotForm local draft", () => {
         ],
       }),
     );
-    // Re-mock listSnapshotTotals to report the date as taken.
-    vi.resetModules();
-    vi.doMock("@/lib/trpc", () => ({
-      trpc: {
-        investments: {
-          suggestSnapshot: { useQuery: () => ({ data: undefined }) },
-        },
-        networth: {
-          listSnapshotTotals: {
-            useQuery: () => ({ data: [{ id: 1, date: TODAY, total: 1 }] }),
-          },
-          portfolioSnapshots: {
-            getLatest: {
-              useQuery: () => ({ data: mockLatest, isLoading: false }),
-            },
-            create: {
-              useMutation: () => ({
-                mutate: vi.fn(),
-                isPending: false,
-                isError: false,
-                error: null,
-              }),
-            },
-          },
-        },
-        performance: {
-          performanceAccounts: {
-            list: { useQuery: () => ({ data: mockPerf, isLoading: false }) },
-          },
-        },
-        settings: {
-          people: {
-            list: {
-              useQuery: () => ({
-                data: [{ id: 1, name: "Alice" }],
-                isLoading: false,
-              }),
-            },
-          },
-        },
-      },
-    }));
+    // The date already has a snapshot; saving never settles.
+    setQuery("networth.listSnapshotTotals", [{ id: 1, date: TODAY, total: 1 }]);
+    holdMutation(CREATE);
     const mod = await import("@/components/portfolio/new-snapshot-form");
     render(<mod.NewSnapshotForm onClose={() => {}} onSaved={() => {}} />);
 
@@ -291,7 +231,7 @@ describe("NewSnapshotForm local draft", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Save Snapshot" }),
     );
-    await waitFor(() => expect(createMutate).toHaveBeenCalled());
+    await waitFor(() => expect(mutationCalls(CREATE)).not.toHaveLength(0));
     expect(
       window.localStorage.getItem(`pf-snapshot-draft:${TODAY}`),
     ).toBeNull();

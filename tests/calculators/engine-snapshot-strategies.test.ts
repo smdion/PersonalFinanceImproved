@@ -23,7 +23,8 @@
  * limit.
  */
 import { describe, expect, it } from "vitest";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection as runEngine } from "@/lib/calculators/engine";
+import { recordDrift } from "./fixtures/drift";
 import type { AccountBalances, ProjectionInput } from "@/lib/calculators/types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
@@ -37,6 +38,10 @@ import {
 } from "./fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+
+/** Every projection here is checked for indBal/acctBal drift (end of file). */
+const drift = recordDrift(runEngine);
+const calculateProjection = drift.calculate;
 
 const AS_OF = new Date("2026-01-15");
 const CURRENT_AGE = 66;
@@ -190,5 +195,12 @@ describe("engine snapshots by withdrawal strategy (pins current behavior)", () =
       expect(strategyPath(retiree(strategy)).years, strategy).not.toEqual(
         fixed,
       );
+  });
+});
+
+describe("the two balance tracks agree", () => {
+  it("no projection above drifts by more than $1 (indBal vs acctBal)", () => {
+    expect(drift.byTest.size).toBeGreaterThan(0);
+    expect(drift.drifting()).toEqual([]);
   });
 });

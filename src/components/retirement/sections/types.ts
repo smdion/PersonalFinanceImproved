@@ -1,162 +1,51 @@
 /**
- * Shared prop types for retirement-content.tsx section components.
- *
- * These are hand-rolled because src/components/** is lint-forbidden from
- * importing @/server/* (no-restricted-imports rule at eslint.config.mjs).
- * The parent `retirement-content.tsx` guards on `data.settings` presence
- * before rendering, so we narrow to the "loaded" branch at the prop
- * boundary — sections never see null settings.
+ * Prop types for the retirement-content section components, read from the
+ * routers' own types. The parent renders sections only once
+ * computeProjection's `settings` is loaded, so they never see it missing.
  */
+import type { RouterInputs, RouterOutputs } from "@/lib/trpc";
 
-/** Full retirement settings row shape, matching the `settings` field that
- *  computeProjection returns after the payload-present guard. Decimal fields
- *  are serialized as strings because Drizzle + decimal columns round-trip
- *  through JSON as string. */
-export type Settings = {
-  personId: number;
-  /** Which retirement profile this row belongs to — on the wire from
-   *  computeProjection since `settings` is the raw DB row (Retirement
-   *  Profiles phase 4). Null only for a pre-migration/never-backfilled
-   *  household. Always forward this unchanged through `buildSettingsPatch`
-   *  so household-grain edits stay scoped to the profile they're shown
-   *  for, not whatever the household's globally-active profile happens to
-   *  be — see retirementSettings.upsert's docblock. */
-  profileId: number | null;
-  /** For display: the plan's age when withdrawals start, on the scale of
-   *  each row's age. Never saved; see `ownRetirementAge`. */
-  retirementAge: number;
-  endAge: number;
-  /** The first year of withdrawals. */
-  retirementYear?: number;
-  /** This row's stored ages, which a save sends back unchanged. */
-  ownRetirementAge?: number;
-  ownEndAge?: number;
-  returnAfterRetirement: string;
-  annualInflation: string;
-  postRetirementInflation?: string | null;
-  salaryAnnualIncrease: string;
-  salaryCap?: string | null;
-  raisesDuringRetirement?: boolean;
-  withdrawalRate: string;
-  taxMultiplier: string;
-  grossUpForTaxes?: boolean;
-  rothBracketTarget?: string | null;
-  socialSecurityMonthly: string;
-  ssStartAge: number;
-  enableRothConversions?: boolean;
-  rothConversionTarget?: string | null;
-  withdrawalStrategy: string;
-  /** Within bracket_filling mode's cost-ranked tier, which
-   *  of Roth basis / brokerage's 0%-LTCG room drains first. "roth_first"
-   *  (default) or "brokerage_first" (explicit household opt-in — trades a
-   *  real ACA/IRMAA MAGI cost for using the annual 0%-LTCG allowance
-   *  sooner). */
-  discretionaryWithdrawalOrder?: string | null;
-  /** Household default for `withdrawalRoutingMode` — WHICH accounts fund a
-   *  year's withdrawal ("bracket_filling" | "waterfall" | "percentage").
-   *  The Retirement page's Configure toggle can override this for one
-   *  session; this is what applies everywhere else (Tax Optimization
-   *  included) until it does. */
-  withdrawalRoutingMode?: string | null;
-  /** Persisted household default for the withdrawal ORDER (Waterfall's
-   *  account sequence; also bracket_filling's Traditional-account Phase 1
-   *  order). `null` = use `getDefaultDecumulationOrder()`. Same
-   *  session-override-then-fall-back semantics as `withdrawalRoutingMode`. */
-  withdrawalOrder?: string[] | null;
-  /** Persisted household default for percentage-mode splits — a fraction
-   *  per account. `null` = use `DEFAULT_WITHDRAWAL_SPLITS`. */
-  withdrawalSplits?: Record<string, number> | null;
-  // Strategy-specific params
-  gkUpperGuardrail?: string | null;
-  gkLowerGuardrail?: string | null;
-  gkIncreasePct?: string | null;
-  gkDecreasePct?: string | null;
-  gkSkipInflationAfterLoss?: boolean;
-  sdAnnualDeclineRate?: string | null;
-  cpWithdrawalPercent?: string | null;
-  cpFloorPercent?: string | null;
-  enWithdrawalPercent?: string | null;
-  enRollingYears?: number | null;
-  enFloorPercent?: string | null;
-  vdBasePercent?: string | null;
-  vdCeilingPercent?: string | null;
-  vdFloorPercent?: string | null;
-  rmdMultiplier?: string | null;
-  vpwCap?: string | null;
-  vpwEndAge?: number | null;
-  cpSsInAmount?: boolean | null;
-  enSsInAmount?: boolean | null;
-  vdSsInAmount?: boolean | null;
-  rmdSsInAmount?: boolean | null;
-  vpwSsInAmount?: boolean | null;
-  /** What to do with RMD-forced withdrawal beyond stated spending
-   *  need — "reinvest" (default) or "spend". */
-  rmdExcessHandling?: string | null;
-  /** Where reinvested RMD money goes — a Retirement brokerage's performance
-   *  account; null = spread across the Retirement brokerages. */
-  rmdExcessTargetPerformanceAccountId?: number | null;
-  /** Automatically maximize Qualified Charitable Distributions
-   *  against the RMD each year (IRA-only, capped, approximation). */
-  qcdMaximize?: boolean;
-  /** Proactively size Roth conversions to shrink a future RMD toward
-   *  projected spending need. Requires individual-account tracking. */
-  rmdSmoothingEnabled?: boolean;
-  /** How far smoothing may elevate the effective conversion target
-   *  rate above rothBracketTarget/rothConversionTarget — can only raise,
-   *  never lower. Null/unset = UI should seed from rothBracketTarget. */
-  rmdSmoothingMaxBracketTarget?: string | null;
-  // Feature flags + filing
-  enableIrmaaAwareness?: boolean;
-  irmaaOnTopOfBudget?: boolean;
-  gapYearStopSaving?: boolean;
-  gapYearDraws?: boolean;
-  enableAcaAwareness?: boolean;
-  householdSize?: number;
-  filingStatus?: string | null;
-  filingStatusExplicit?: string | null;
-};
+type ProjectionData = Extract<
+  RouterOutputs["projection"]["computeProjection"],
+  { settings: unknown }
+>;
+type ProfilePeople = RouterInputs["retirement"]["retirementProfilePeople"];
 
-/** Per-person retirement overrides — present when household has >1 person.
- *  Nullable at the parent layer so sections handle both cases. */
-export type PerPersonSettings = ReadonlyArray<{
-  personId: number;
-  name: string;
-  birthYear: number;
-  retirementAge: number;
-  endAge: number | null;
-  /** This person's EFFECTIVE pre-retirement raise rate (decimal string, e.g.
-   *  "0.03"). Resolved server-side: their own `retirement_settings` rate for
-   *  the active profile, or the primary person's rate when they have none.
-   *  Written per-person via `retirementSettings.upsertPersonRaiseRate` —
-   *  the single household "Pre-Retirement Raise" control only ever wrote the
-   *  primary's row, leaving a second household member's rate unreachable. */
-  salaryAnnualIncrease: string;
-  socialSecurityMonthly: string;
-  /** PIA (Primary Insurance Amount, monthly benefit at Full Retirement
-   *  Age) — opt-in direct input, independent of socialSecurityMonthly.
-   *  `null`/unset = not opted in, this person stays on the flat monthly
-   *  benefit. See SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1. */
-  socialSecurityPia?: string | null;
-  ssStartAge?: number | null;
-  /** Rule of 55 forecasting override — true (default) = no
-   *  override, false = force this person's employer-plan accounts
-   *  ineligible for Rule of 55 regardless of computed job-separation
-   *  status. See retirementSettings.ruleOf55Override's docblock in
-   *  schema-pg.ts. */
-  ruleOf55Override: boolean;
-}> | null;
+/** The retirement settings computeProjection returns. */
+export type Settings = ProjectionData["settings"];
+/** Per-person retirement settings; sections also take null (none loaded). */
+export type PerPersonSettings = ProjectionData["perPersonSettings"] | null;
+/** The active scenario's distribution tax rates, or null. */
+export type SelectedScenario = ProjectionData["selectedScenario"];
+/** Return-rate summary for the Glide Path section. */
+export type ReturnRateSummary = ProjectionData["returnRateSummary"];
+/** Budget profile summaries for the Per-Phase Budget section. */
+export type BudgetProfileSummaries = ProjectionData["budgetProfileSummaries"];
+/** A contribution profile as the Income section lists it. */
+export type ContribProfileListEntry = Pick<
+  RouterOutputs["contributionProfile"]["list"][number],
+  "id" | "name"
+>;
 
-/** Typed payload for `retirementSettings.upsert`. The six required fields
- *  anchor the row; all other Settings fields are optional overrides.
- *  Defined here (component layer) to avoid importing from @/server/*. */
-export type UpsertSettingsInput = {
-  personId: number;
-  retirementAge: number;
-  endAge: number;
-  returnAfterRetirement: string;
-  annualInflation: string;
-  salaryAnnualIncrease: string;
-} & Partial<Settings>;
+type UpsertInput = RouterInputs["retirement"]["retirementSettings"]["upsert"];
+
+/** A settings edit: any Settings field, with `filingStatus` as stored (null
+ *  clears it back to the resolved status). */
+export type SettingsPatch = Partial<Omit<Settings, "filingStatus">> &
+  Pick<UpsertInput, "filingStatus">;
+
+/** Payload for `retirementSettings.upsert`: its six required anchor fields,
+ *  and the edit. */
+export type UpsertSettingsInput = Pick<
+  UpsertInput,
+  | "personId"
+  | "retirementAge"
+  | "endAge"
+  | "returnAfterRetirement"
+  | "annualInflation"
+  | "salaryAnnualIncrease"
+> &
+  SettingsPatch;
 
 /** The upsert mutation pass-through. Sections only need `.mutate(...)` —
  *  the parent owns the optimistic update pipeline. */
@@ -165,65 +54,15 @@ export type UpsertSettingsMutation = {
 };
 
 /** `retirementProfilePeople.upsertPerson` pass-through — per-person fields
- *  (Retirement Age, Rule of 55, SS Benefit, SS Start Age) that live on
- *  `retirement_profile_people`, not `retirement_settings`. */
+ *  that live on `retirement_profile_people`, not `retirement_settings`. */
 export type UpsertProfilePersonMutation = {
-  mutate: (input: {
-    profileId: number;
-    personId: number;
-    retirementAge?: number;
-    endAge?: number;
-    socialSecurityMonthly?: string | null;
-    socialSecurityPia?: string | null;
-    ssStartAge?: number | null;
-    ruleOf55Override?: boolean | null;
-  }) => void;
+  mutate: (input: ProfilePeople["upsertPerson"]) => void;
 };
 
-/** `retirementProfilePeople.upsertHouseholdFields` pass-through — fields
- *  the UI presents as ONE household-wide control (Plan Through, SS Start
- *  Age) but that are stored per-person; fans the edit to every person in
- *  the profile server-side. */
+/** `retirementProfilePeople.upsertHouseholdFields` pass-through — one
+ *  household-wide control stored per person, fanned out server-side. */
 export type UpsertProfileHouseholdFieldsMutation = {
-  mutate: (input: {
-    profileId: number;
-    endAge?: number;
-    ssStartAge?: number | null;
-  }) => void;
-};
-
-/** Selected retirement scenario — used by Taxes section for per-account-type
- *  distribution tax rates. Nullable when no scenario is active. */
-export type SelectedScenario = {
-  distributionTaxRateTraditional: string;
-  distributionTaxRateRoth: string;
-  distributionTaxRateBrokerage: string;
-} | null;
-
-/** Return-rate summary — used by Glide Path section. */
-export type ReturnRateSummary = {
-  currentRate: number | null;
-  retirementRate: number | null;
-  postRetirementRate: number | null;
-  avgAccumulation: number;
-  schedule: ReadonlyArray<{ age: number; rate: number }>;
-} | null;
-
-/** Budget profile summaries — used by Per-Phase Budget section. */
-export type BudgetProfileSummaries = ReadonlyArray<{
-  id: number;
-  name: string;
-  isActive: boolean;
-  columnLabels: string[];
-  columnMonths: number[] | null;
-  columnTotals: number[];
-  weightedAnnualTotal: number | null;
-}>;
-
-/** Contribution profile list entry — used by Income section. */
-export type ContribProfileListEntry = {
-  id: number;
-  name: string;
+  mutate: (input: ProfilePeople["upsertHouseholdFields"]) => void;
 };
 
 /** Whether the current user may edit `retirement_settings` via

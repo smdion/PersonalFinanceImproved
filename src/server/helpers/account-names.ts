@@ -1,7 +1,7 @@
 /** Tracked (Ledgr) account names, built once for every server view that lists accounts. */
 import * as schema from "@/lib/db/schema";
 import { accountDisplayName } from "@/lib/utils/format";
-import type { Db } from "./transforms";
+import type { Db } from "@/lib/db";
 
 /** Each tracked (Ledgr) account's name, as every page shows it (accountDisplayName). */
 export async function loadTrackedAccountNames(

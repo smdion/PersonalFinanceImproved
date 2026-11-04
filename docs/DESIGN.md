@@ -418,7 +418,7 @@ The household can set a **current glide path** — its target mix by age for wha
 
 This year's income figures come from one model: `computeAnnualEarnings()` (`lib/pure/household-income.ts`), built from each person's paycheck result — salary plus the **resolved** bonus (the set bonus if there is one, else the formula), pre-tax money (pre-tax payroll contributions on regular checks and — for accounts set to `fromBonus` — on bonus checks, `annualContributionWithBonus`'s rule, plus pre-tax deductions) and FICA wages (gross less Section 125 deductions and payroll contributions to an account type with `payrollFicaExempt` — HSA — within its yearly cap: the IRS limit less employer money (`payrollFicaExemptCap`), one cap shared across a person's rows of the same account type (`shareFicaExemptCaps`), age at Dec 31 from `ficaCapContext`; only pre-tax rows count). A job counts only the checks it pays inside the year: the current job from its start date (none before it — `periodsBeforeStart`; a bonus dated before the start isn't its), plus any job that ended this year, from its own Salary Profile entry through its end date; the router sums a person's jobs (`jobPaycheckSetup` builds each one's paycheck the same way). A person whose year starts with the current job and no earlier job counted gets `yearPayNote` (the Taxes page says pay before the start isn't counted). The IRS-limit caps still size a full year at the current job (see TODO). The paycheck router returns it per person and as `householdIncome`; the annual tax, the Income card, Living Costs and MAGI all read it. A job's bonus can go to extra spending instead of the budget (Salary Profile entry `bonusDestination`): Living Costs then shows its take-home (`bonusSpendingNet`) as its own bar.
 
-`calculateHouseholdTax()` figures the year's liability for this year's tax-return filing status (`lib/pure/filing-status.ts`: the household setting `tax_filing_status`, else the active Retirement Profile's, else a W-4 from the request's Salary Profile — `thisYearFilingStatus` in `server/helpers/filing-status.ts`, which the IRS-limit caps, the Roth IRA phase-out and the engine's year-0 caps share; retirement years use the profile's status, or this year's when the profile is set to Auto (`filing_status` null); nothing known → Single, and a recommendation asks): federal on the combined income with one standard deduction; Social Security per person on FICA wages, capped at the wage base; Medicare per person; and the 0.9% Additional Medicare Tax on the household's combined Medicare wages above the filing status's **liability** threshold (`fica_medicare_surtax_liability_<status>`). Employers withhold it per employee above a separate **withholding** threshold (`fica_medicare_surtax_threshold`, IRC 3102(f)) — that row belongs to paycheck withholding only; the household tax uses it just to say how withheld and owed differ (Form 8959). Both are seeded reference rows, admin-editable. The NIIT thresholds, by contrast, stay in engine config: they're statutory, not indexed, and only the retirement engine reads them — don't "fix" one toward the other. The effective rate is federal ÷ wage AGI, the tax-return definition; FICA is its own line. Actual-YTD withholding is summed from the year schedule (`withheldThroughPeriod`), which charges full Social Security until the wage base and Additional Medicare once this employer's Medicare wages pass the withholding threshold — the per-check figure is the year's Social Security averaged over every check. A bonus check is withheld at the supplemental rate on its federal taxable wages (gross less the pre-tax money it takes).
+`calculateHouseholdTax()` figures the year's liability for this year's tax-return filing status (`lib/pure/filing-status.ts`: the household setting `tax_filing_status`, else the active Retirement Profile's, else a W-4 from the request's Salary Profile — `thisYearFilingStatus` in `server/services/tax/filing-status.ts`, which the IRS-limit caps, the Roth IRA phase-out and the engine's year-0 caps share; retirement years use the profile's status, or this year's when the profile is set to Auto (`filing_status` null); nothing known → Single, and a recommendation asks): federal on the combined income with one standard deduction; Social Security per person on FICA wages, capped at the wage base; Medicare per person; and the 0.9% Additional Medicare Tax on the household's combined Medicare wages above the filing status's **liability** threshold (`fica_medicare_surtax_liability_<status>`). Employers withhold it per employee above a separate **withholding** threshold (`fica_medicare_surtax_threshold`, IRC 3102(f)) — that row belongs to paycheck withholding only; the household tax uses it just to say how withheld and owed differ (Form 8959). Both are seeded reference rows, admin-editable. The NIIT thresholds, by contrast, stay in engine config: they're statutory, not indexed, and only the retirement engine reads them — don't "fix" one toward the other. The effective rate is federal ÷ wage AGI, the tax-return definition; FICA is its own line. Actual-YTD withholding is summed from the year schedule (`withheldThroughPeriod`), which charges full Social Security until the wage base and Additional Medicare once this employer's Medicare wages pass the withholding threshold — the per-check figure is the year's Social Security averaged over every check. A bonus check is withheld at the supplemental rate on its federal taxable wages (gross less the pre-tax money it takes).
 
 Roth IRA MAGI (`buildRothIraView`, `lib/pure/roth-ira.ts`) = wage AGI − HSA money paid outside payroll + taxable investment income (`lib/pure/investment-income.ts`: dividends and interest in taxable account types, this year so far plus last year's rest-of-year per feed, annualized where a feed's history is shorter; a tax year that hasn't started uses this year's estimate). Roth conversions are left out of both sides; the traditional IRA deduction isn't modelled. The verdict needs a safety margin below the phase-out start (default the range width, `roth_ira_direct_margin` setting). The detail lives on the Taxes page (Planning → Taxes: `TaxBreakdown` + `RothIraSection`); the dashboard's Household Income card stays light — two tax lines and one Roth IRA line (`RothIraLine`) linking there.
 
@@ -577,10 +577,10 @@ a tier — applying it changes the active profiles.
 
 Budget columns have **no profiles of their own**: every column uses the
 same (Contribution, Salary) pair — the page's local selection → the active
-one. `budget.computeActiveSummary` takes two-tier
-`{ localSelectionId, globalDefaultId }` objects (`profileResolutionTiersSchema`
-/ `profileFromTiers`) with no column tier; callers with no page context use
-`resolveActiveProfilePair`. A linked item's dollars are computed once
+one. `budget.computeActiveSummary` takes a `selection` of the page's
+Contribution/Salary picks (absent = the active one), with no column tier,
+resolved by `resolveProfileSelection` (`server/services/profile-selection.ts`);
+callers with no page context pick none. A linked item's dollars are computed once
 (`resolveLinkedBudgetItemAmounts(db, items, n, pair)`) and repeated across
 columns. Migration 0009 dropped the old per-column profile ids. Never add a
 per-column profile back — a different set of profiles is a different Plan.
@@ -606,34 +606,49 @@ The rules are RULES.md § Data-Driven Architecture.
 
 ### Key Files
 
-| File                                    | Role                                                                                                              |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `src/lib/config/account-types.ts`       | `ACCOUNT_TYPE_CONFIG` + every derived helper and predicate                                                        |
-| `src/lib/config/account-balance.ts`     | Balance-structure helpers (Traditional, Roth, basis)                                                              |
-| `src/lib/config/display-labels.ts`      | Label maps and performance-category constants                                                                     |
-| `src/lib/config/account-types.types.ts` | `AccountCategory` (a hand-kept union matching the config keys, see RULES.md § Known Gaps), `AccountBalance` union |
-| `src/lib/constants.ts`                  | App-wide defaults and thresholds                                                                                  |
+| File                                                | Role                                                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `src/lib/config/account-types.ts`                   | `ACCOUNT_TYPE_CONFIG`, `AccountCategory` (its keys) + every derived helper and predicate         |
+| `src/lib/config/account-balance.ts`                 | Balance-structure helpers (Traditional, Roth, basis)                                             |
+| `src/lib/config/display-labels.ts`                  | Label maps and performance-category constants                                                    |
+| `src/lib/config/account-types.types.ts`             | `AccountTypeConfig` (the entry shape), `AccountBalance` union                                    |
+| `src/lib/constants.ts`                              | App-wide defaults and thresholds                                                                 |
+| `src/lib/config/filing-status.ts`                   | Return and W-4 filing statuses (types, order) and the per-status rules table; no Zod             |
+| `src/lib/config/filing-status.schema.ts`            | The two filing-status Zod schemas, apart so client bundles skip Zod                              |
+| `src/lib/config/age-rules.ts`                       | `AGE_RULES`: each age rule and how it is measured (tests go through `lib/pure/household/age.ts`) |
+| `src/lib/config/magi-definitions.ts`                | `MAGI_DEFINITIONS`: what each rule's MAGI counts of Social Security                              |
+| `src/lib/config/permissions.ts`                     | `PERMISSIONS` and `Permission`, shared by the server and the client                              |
+| `src/lib/config/budget-apps.ts`                     | `BUDGET_API_SERVICE_VALUES`, `BUDGET_SERVICES` labels, `isBudgetApiService`; no Zod              |
+| `src/lib/budget-api/providers.ts`                   | `BUDGET_PROVIDERS`: one entry per budget service, with its client                                |
+| `src/lib/pure/tax/year-income.ts`                   | `YearIncome` (one year's income by stream) and `yearMagi`                                        |
+| `src/lib/pure/contributions/contribution-amount.ts` | A contribution's yearly dollars, `Fraction` and `EmployerMatch`                                  |
+| `src/server/data/request-scope.ts`                  | `RequestScope`: a procedure call's db, instant and household day                                 |
+| `src/lib/pure/simulation/dollars.ts`                | The Simulation's outcomes in a view's dollars (today's or nominal)                               |
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
-### Fixing a violation: add the predicate first
+### Fixing a violation: read a behavior field
 
-When you find a category check (`=== '401k'`, `parentCategory === 'Portfolio'`,
-`balanceStructure === 'basis_tracking'`, etc.) that should use a config helper,
-**the helper may not exist yet**. Don't reach into `ACCOUNT_TYPE_CONFIG[cat].field`
-directly from the call site as a workaround — that just moves the violation. The
-correct workflow:
+When you find a category check (`=== '401k'`, `isHsaCategory(cat)`,
+`parentCategory === 'Portfolio'`, etc.), ask what the code needs to know
+about the account, and read the config field that says it (RULES.md
+§ Data-Driven Architecture, rule 10):
 
-1. Add a small predicate to `src/lib/config/account-types.ts` next to the
-   existing helpers (`isPortfolioParent`, `isOverflowTarget`, etc.). One
-   line of doc-comment naming the config field it reads.
-2. Export it.
-3. Update every call site to use the new predicate.
+1. If a field and its helper exist (`getLimitGroup` reads `irsLimitGroup`,
+   `isOverflowTarget`, `tracksCostBasis`), call the helper. Don't reach into
+   `ACCOUNT_TYPE_CONFIG[cat].field` from the call site.
+2. If not, add a field to `AccountTypeConfig` named for the behavior (as
+   `earlyAccessRule` and `qcdEligible` are), set it on every entry, and add
+   its helper in `src/lib/config/account-types.ts` with a one-line doc
+   comment naming the field.
+3. Update every call site to use it.
 
-This keeps the data-driven boundary intact: call sites stay generic, and the
-config file remains the only place that knows what each field means.
-Examples: `getLimitGroup` (reads `irsLimitGroup`),
-`tracksCostBasis` (reads `balanceStructure === "basis_tracking"`).
+Never add a predicate that names an account type (`isHsaCategory`,
+`isIraCategory`): a new type with the same behavior would have to be added
+to it by hand. Inside the engine, dispatching on `balanceStructure`
+(`roth_traditional`, `single_bucket`, `basis_tracking`) is allowed, since
+that is the shape of the balance, not its identity; outside the engine, use
+the helper (`tracksCostBasis`).
 
 ### Contribution Stubs
 
@@ -657,7 +672,7 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 
 ### Public API
 
-`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `gapShortfallFloor()` (the gap-year shortfall floor), plus their types. Everything else is internal to `engine/`.
+`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `shortfallFloor()` (the shortfall floor (gap and retirement years)), plus their types. Everything else is internal to `engine/`.
 
 ---
 
@@ -720,10 +735,11 @@ data of its own any more — it is pure identity/lifecycle (`id`, `personId`,
 `startDate`, `endDate`, `isSpeculative`, `employerName`, `title`). Every
 number and election a job needs for a live calculation comes from a
 **Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
-a **complete entry**:
+a **complete entry**, `SalaryEntry` (`z.infer` of `salaryEntrySchema` in
+`src/lib/db/json-schemas.ts`):
 
 ```ts
-type SalaryProfileEntry = {
+type SalaryEntry = {
   salary: number;
   bonusPercent: number; // fraction, 0.12 = 12%
   bonusMultiplier: number;
@@ -851,7 +867,7 @@ The Simulation runs the whole projection many times, each trial with its own ran
 2. **Generic over specific.** Contribution accounts, savings goals, budget categories — all user-definable.
 3. **Snapshots for history, settings for current state.** Time-varying data gets point-in-time records.
 4. **Computed values are not stored — with documented exceptions.** Live totals, percentages, and projections are recalculated from source data at read time. **Exceptions** fall into three classes: (a) stored because inputs may not survive, (b) a deliberate point-in-time commitment recorded under whatever was active at save time — the "recorded fact" pattern — which stays fixed even though its inputs DO survive and remain deterministic, because re-deriving it later would mean the value silently changes out from under something that already treated it as settled (a materialized future transaction, a pinned actual), or (c) a pure performance cache of an expensive-but-fully-reproducible computation — inputs survive, recomputation is deterministic, and nothing downstream treats it as settled (unlike (b)), but the computation itself is expensive enough that repeating it on every read is wasteful. Class (c) is only safe when the cache key captures every input that could change the result — an incomplete key silently serves stale-but-presented-as-fresh data, which is exactly the failure mode (a)/(b) don't have to guard against.
-   - **`projection_cache`** (`lib/db/pg/api-sync.ts`, `src/server/helpers/projection-cache.ts`) — the deterministic Retirement engine result, Monte Carlo, and Coast FIRE MC. Class (c): the cache key is a SHA-256 hash of the canonicalized EXACT object passed to the pure calculator (not the raw tRPC input — the router resolves profile IDs into live DB state that isn't otherwise captured, so hashing only the tRPC input would silently serve stale cross-device results). `engineVersion` is folded into the uniqueness constraint so an engine-logic change invalidates every existing row without a manual cache-clear. TTL 36h; eviction is opportunistic (fire-and-forget on write, not cron-driven) rather than a scheduled job, since writes are infrequent relative to reads. `seed` is stored WITH the row (a miss mints one, a hit replays it) so a cached Monte Carlo result stays honestly reproducible rather than a frozen snapshot of randomness masquerading as determinism.
+   - **`projection_cache`** (`lib/db/pg/api-sync.ts`, `src/server/helpers/projection-cache.ts`) — the deterministic Retirement engine result, Monte Carlo, and Coast FIRE MC. Class (c): the cache key is a SHA-256 hash of the canonicalized EXACT object passed to the pure calculator (not the raw tRPC input — the router resolves profile IDs into live DB state that isn't otherwise captured, so hashing only the tRPC input would silently serve stale cross-device results). `engineVersion` is folded into the uniqueness constraint; it is a hash of the source files the cached projections run (`scripts/engine-hash.ts` writes `src/lib/generated/engine-hash.ts`; CI fails when it is stale), so a deploy that changes that code invalidates every existing row and Simulation runs draw fresh samples. TTL 36h; eviction is opportunistic (fire-and-forget on write, not cron-driven) rather than a scheduled job, since writes are infrequent relative to reads. `seed` is stored WITH the row (a miss mints one, a hit replays it) so a cached Monte Carlo result stays honestly reproducible rather than a frozen snapshot of randomness masquerading as determinism.
    - **`utility_reading.cost` filled from the budget** (`source` `ynab`/`actual`, the utilities cost feed) — a month's net spend in the mapped budget category, stored because the budget's synced transactions only reach back about a year and a half; older months can't be recomputed, and the household can override any month (a typed cost is never replaced). Refreshed only by an explicit pull the household reviews. Class (a).
    - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned). Class (a).
    - **`annualReturnPct`** — stored on finalized `annual_performance` rows; recomputed on read for non-finalized years. Per-account returns are always computed on read from the row's own figures (`account_performance.annual_return_pct` is not read). A finalized year's stored return may not be reproducible from its rows (an override, imported history), so an edit to that year's account rows keeps its basis rather than recomputing it (`rebaseLockedReturn`). Class (a).
@@ -884,8 +900,10 @@ v0.8.10 converter's live copy went with the v0.9.0 squash — only the
 restore path in `src/lib/db/v0810-profile-sets.ts` remains.) Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
-also drops the columns the migration drops, and each new data-changing
-migration tag goes in `V08_SCHEMA_TAGS`. Pending migrations apply
+also drops the columns the migration drops. A new migration's tag reaches
+`KNOWN_SCHEMA_VERSIONS` from the drizzle journal, so only a data-changing
+one needs a transform. The journal has two read paths: `version-logic.ts`
+reads it from disk at startup, `backup-transforms.ts` bundles it. Pending migrations apply
 strictly, all in one transaction, and the schema is checked against the
 latest snapshot (every table, column and index) before it commits: a failed
 statement or a missing object rolls everything back and records nothing.
@@ -922,7 +940,7 @@ Each account type has a default `parentCategory` in `ACCOUNT_TYPE_CONFIG` (broke
 
 **Simulated vs baseline (one display rule, v0.8.11).** A nest egg (or end balance) is shown through `simulatedOrBaseline` (`lib/pure/nest-egg-display.ts`) everywhere it appears — the dashboard's Retirement card and the Retirement page's hero:
 
-- With a simulation for the current inputs: the simulated median at the target age (retirement age, or today when already retired), "Range p25 – p75", and "Baseline: $X (fixed returns)". Today's dollars for a simulated figure come from the Simulation itself (`MonteCarloResult.today`, read through `simulationDollars` in `lib/pure/simulation-dollars.ts`): each trial is deflated by the inflation it ran with before the percentiles are taken — never the nominal band deflated at the plan's rate afterwards, which would erase the inflation each trial drew. The baseline is deflated at the plan's rate. Trials vary inflation around the plan's own rates (inflation risk is only the spread, v0.9.5).
+- With a simulation for the current inputs: the simulated median at the target age (retirement age, or today when already retired), "Range p25 – p75", and "Baseline: $X (fixed returns)". Today's dollars for a simulated figure come from the Simulation itself (`MonteCarloResult.today`, read through `simulationDollars` in `lib/pure/simulation/dollars.ts`): each trial is deflated by the inflation it ran with before the percentiles are taken — never the nominal band deflated at the plan's rate afterwards, which would erase the inflation each trial drew. The baseline is deflated at the plan's rate. Trials vary inflation around the plan's own rates (inflation risk is only the spread, v0.9.5).
 - Without one: the baseline, labelled "baseline (fixed returns)", with a pointer to the Retirement page to run the simulation. The dashboard never runs a simulation; it reads the page's cached run.
 - A person filter always shows the baseline — the simulation is the whole household's.
 - Every surface builds its projection input with `usePlanEngineInput` (and the default simulation is `DEFAULT_SIMULATION`), so the dashboard reads exactly the run the Retirement page made. Cached runs key on the full built input with dates truncated to the calendar day, and expire after 36 h.

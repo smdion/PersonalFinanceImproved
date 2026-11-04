@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  type MockOutput,
+} from "./trpc-mock";
 
 // Smoke test for RetirementContent — asserts the 3 tabs render, key KPI labels
 // appear (rendered via the mocked ProjectionCard), and tab switching works.
@@ -83,7 +89,10 @@ vi.mock("@/lib/hooks/use-debounced-value", () => ({
 }));
 vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
   usePlanEngineInput: () => ({
-    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    input: {
+      selection: {},
+      decumulationDefaults: { withdrawalTaxPreference: {} },
+    },
     ready: true,
     ids: {
       contributionProfileId: null,
@@ -105,9 +114,6 @@ vi.mock("@/lib/hooks/use-active-salary-profile", () => ({
 vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ activeScenario: null }),
 }));
-
-/** What computeStrategyComparison returns (null = nothing yet). */
-const mockComparison: { data: unknown } = { data: null };
 
 const mockSettings = {
   personId: 1,
@@ -148,74 +154,47 @@ const mockProjectionData = {
   result: { projectionByYear: [] },
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      retirement: { invalidate: vi.fn() },
-      projection: {
-        invalidate: vi.fn(),
-        computeProjection: {
-          cancel: vi.fn(),
-          setData: vi.fn(),
-        },
-      },
-    }),
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-    },
-    // The independent Salary Profile axis (useActiveSalaryProfile). An empty
-    // list is the "nothing to resolve" case: the hook leaves the active id
-    // alone rather than re-pointing it.
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-    },
-    networth: {
-      listSnapshotTotals: { useQuery: () => ({ data: [] }) },
-    },
-    projection: {
-      computeProjection: {
-        useQuery: () => ({
-          data: mockProjectionData,
-          isLoading: false,
-          isFetching: false,
-          error: null,
-        }),
-      },
-      computeStrategyComparison: {
-        useQuery: () => ({ data: mockComparison.data, isLoading: false }),
-      },
-    },
-    retirement: {
-      retirementSettings: {
-        upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-      },
-      retirementProfilePeople: {
-        upsertPerson: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        upsertHouseholdFields: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-      retirementProfiles: {
-        list: { useQuery: () => ({ data: [] }) },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+/** What computeStrategyComparison returns (null = nothing yet). */
+const COMPARISON = "projection.computeStrategyComparison";
 
 describe("RetirementContent smoke", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockComparison.data = null;
+    resetTrpcMock();
+    setQuery("contributionProfile.list", []);
+    // The independent Salary Profile axis (useActiveSalaryProfile). An empty
+    // list is the "nothing to resolve" case: the hook leaves the active id
+    // alone rather than re-pointing it.
+    setQuery("salaryProfile.list", []);
+    setQuery("networth.listSnapshotTotals", []);
+    // The fixture is a partial projection with the stored-row field types,
+    // which the procedure's (serialized) output type doesn't have.
+    const projection: unknown = mockProjectionData;
+    setQuery(
+      "projection.computeProjection",
+      projection as MockOutput<"projection.computeProjection">,
+    );
+    setQuery(COMPARISON, null);
+    setQuery("retirement.retirementProfiles.list", []);
+    // No write settled before (no onSuccess): keep it so.
+    for (const path of [
+      "retirement.retirementSettings.upsert",
+      "retirement.retirementProfilePeople.upsertPerson",
+      "retirement.retirementProfilePeople.upsertHouseholdFields",
+    ] as const)
+      holdMutation(path);
   });
 
   it("the comparison tab says to set a return rate when none is set, not Loading", async () => {
-    mockComparison.data = {
+    setQuery(COMPARISON, {
       strategies: [],
       activeStrategy: null,
       notConfigured: "no_return_rate",
-    };
+    });
     const { RetirementContent } =
       await import("@/app/(dashboard)/retirement/retirement-content");
     render(<RetirementContent />);

@@ -11,7 +11,6 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { localDateStr } from "@/lib/utils/date";
 import { debtBalance, isOpenDebt } from "@/server/helpers/debts";
 import { log } from "@/lib/logger";
 import {
@@ -37,8 +36,8 @@ import {
   loadBudgetItemLinks,
   loadSavingsGoalLinks,
   resolveLinkedBudgetItemAmounts,
-  resolveActiveProfilePair,
 } from "@/server/helpers";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { serviceEnum } from "./_shared";
@@ -113,7 +112,7 @@ export const syncCoreRouter = createTRPCRouter({
           client.getCategories(),
         ]);
 
-        const now = new Date();
+        const now = new Date(); // after the fetch
         const currentMonth = currentMonthKey(now);
         const monthDetail = await client.getMonthDetail(currentMonth);
 
@@ -131,7 +130,7 @@ export const syncCoreRouter = createTRPCRouter({
         const { getApiAccountBalanceMapFromAccounts } =
           await import("@/server/helpers/api-balance-resolution");
         const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
-        const currentYear = new Date().getFullYear();
+        const currentYear = new Date().getFullYear(); // after the fetch
 
         // ── Drift detection ──
         // Diff cached account list against new fetch. Surfaces broken
@@ -347,7 +346,7 @@ export const syncCoreRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const service = input.service as BudgetApiService;
 
-      const now = new Date();
+      const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
 
       const currentYear = now.getFullYear();
@@ -548,7 +547,7 @@ export const syncCoreRouter = createTRPCRouter({
         // stale DB column.
         const previewNumColumns = (activeProfile.columnLabels as string[])
           .length;
-        const activeProfiles = await resolveActiveProfilePair(ctx.db);
+        const activeProfiles = await resolveProfileSelection(ctx.scope);
         budgetItemRows = await resolveLinkedBudgetItemAmounts(
           ctx.db,
           linkedRows,
@@ -905,7 +904,7 @@ export const syncCoreRouter = createTRPCRouter({
               loans: mortInputs,
               extraPayments: mortExtras,
               whatIfScenarios: [],
-              asOfDate: new Date(),
+              asOfDate: ctx.scope.asOf,
             })
           : null;
       const feedLoans = await loansFedBySimplefin(ctx.db);
@@ -945,7 +944,7 @@ export const syncCoreRouter = createTRPCRouter({
       }
 
       // Open debts, each a pull target for its balance (as a loan balance).
-      const today = localDateStr();
+      const today = ctx.scope.today;
       const debtAccounts = (await ctx.db.select().from(schema.debts))
         .filter((d) => isOpenDebt(d, today))
         .map((d) => {

@@ -14,7 +14,7 @@ import {
 } from "@/lib/pure/contribution-caps";
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
-import { thisYearFilingStatus } from "./filing-status";
+import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import type { FilingStatusSource } from "@/lib/pure/filing-status";
 import { accountDisplayName } from "@/lib/utils/format";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -33,7 +33,7 @@ import {
   type JobRef,
   type JobSalaryRef,
 } from "./contribution";
-import { getPrimaryPerson, type Db } from "./transforms";
+import { getPrimaryPerson } from "./transforms";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { findActiveJob, type JobLike } from "@/lib/pure/profiles";
@@ -49,9 +49,9 @@ import {
   type SalaryActiveMap,
   type SalaryProfileActiveMap,
 } from "./salary";
+import type { Db } from "@/lib/db";
 
 export type CappedRowFields = CapPassed;
-
 export type CapPassContext = {
   activeJobs: readonly JobRef[];
   /** Each job's pay; `totalComp` = salary + bonus (W-2 taxable pay before
@@ -252,7 +252,7 @@ export async function loadCapHousehold(
     resolveRetirementProfileIdFrom(appSettings, retProfiles),
     getPrimaryPerson([...people])?.id ?? null,
   );
-  // This year's return (server/helpers/filing-status.ts); unknown —
+  // This year's return (server/services/tax/filing-status.ts); unknown —
   // married rules off, never assumed.
   const thisYear = await thisYearFilingStatus(db, {
     appSettings,

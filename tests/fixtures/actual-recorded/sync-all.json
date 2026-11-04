@@ -1,0 +1,2338 @@
+{
+  "description": "Every request of one sync.syncAll (55): accounts, 9 balances, categories, months, 2 reads per category note, per-account transactions.",
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "pairs": [
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "65460984-2fac-480d-9215-a19537f0b942",
+            "name": "Test Brokerage",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "name": "Test Checking",
+            "offbudget": false,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "name": "Test Roth",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+            "name": "Test Savings",
+            "offbudget": false,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "ad099e35-2446-4e8e-a313-105ad33d02df",
+            "name": "Test Mortgage",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+            "name": "Test Visa",
+            "offbudget": false,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "18b99b48-5440-4513-aca7-39372677302e",
+            "name": "Test House",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "b071a79a-d87f-4b00-bffb-77e628f646fe",
+            "name": "Test Old Bank",
+            "offbudget": false,
+            "closed": true,
+            "account_group_id": null
+          },
+          {
+            "id": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "name": "Test Spare",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/categorygroups",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "name": "Usual Expenses",
+            "is_income": false,
+            "hidden": false,
+            "categories": [
+              {
+                "id": "541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+                "name": "Food",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+              },
+              {
+                "id": "af375fd4-d759-46b3-bffe-74a856151d57",
+                "name": "General",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+              },
+              {
+                "id": "d4b0f075-3343-4408-91ed-fae94f74e5bf",
+                "name": "Bills",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+              },
+              {
+                "id": "29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+                "name": "Bills (Flexible)",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+              }
+            ]
+          },
+          {
+            "id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+            "name": "Investments and Savings",
+            "is_income": false,
+            "hidden": false,
+            "categories": [
+              {
+                "id": "6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+                "name": "Savings",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "a137772f-cf2f-4089-9432-822d2ddc1466"
+              }
+            ]
+          },
+          {
+            "id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+            "name": "Test Expenses",
+            "is_income": false,
+            "hidden": false,
+            "categories": [
+              {
+                "id": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+                "name": "Test Misc",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+              },
+              {
+                "id": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+                "name": "Test Gas Utility",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+              },
+              {
+                "id": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+                "name": "Test Dining",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+              },
+              {
+                "id": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+                "name": "Test Groceries",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+              }
+            ]
+          },
+          {
+            "id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+            "name": "Test Sinking Funds",
+            "is_income": false,
+            "hidden": false,
+            "categories": [
+              {
+                "id": "0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+                "name": "Test Car Fund",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+              },
+              {
+                "id": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+                "name": "Test Vacation",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+              },
+              {
+                "id": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+                "name": "Test Emergency Fund",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+              }
+            ]
+          },
+          {
+            "id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+            "name": "Test Hidden Group",
+            "is_income": false,
+            "hidden": true,
+            "categories": [
+              {
+                "id": "17d16605-b8aa-474d-934e-9622a36e905e",
+                "name": "Test Hidden Cat",
+                "is_income": false,
+                "hidden": false,
+                "group_id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b"
+              }
+            ]
+          },
+          {
+            "id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+            "name": "Income",
+            "is_income": true,
+            "hidden": false,
+            "categories": [
+              {
+                "id": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+                "name": "Test Salary",
+                "is_income": true,
+                "hidden": false,
+                "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+              },
+              {
+                "id": "3c1699a5-522a-435e-86dc-93d900a14f0e",
+                "name": "Income",
+                "is_income": true,
+                "hidden": false,
+                "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+              },
+              {
+                "id": "506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+                "name": "Starting Balances",
+                "is_income": true,
+                "hidden": false,
+                "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/categories",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+            "name": "Food",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+          },
+          {
+            "id": "af375fd4-d759-46b3-bffe-74a856151d57",
+            "name": "General",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+          },
+          {
+            "id": "d4b0f075-3343-4408-91ed-fae94f74e5bf",
+            "name": "Bills",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+          },
+          {
+            "id": "29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+            "name": "Bills (Flexible)",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+          },
+          {
+            "id": "6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+            "name": "Savings",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "a137772f-cf2f-4089-9432-822d2ddc1466"
+          },
+          {
+            "id": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+            "name": "Test Misc",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+          },
+          {
+            "id": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+            "name": "Test Gas Utility",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+          },
+          {
+            "id": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+            "name": "Test Dining",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+          },
+          {
+            "id": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+            "name": "Test Groceries",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+          },
+          {
+            "id": "0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+            "name": "Test Car Fund",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+          },
+          {
+            "id": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+            "name": "Test Vacation",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+          },
+          {
+            "id": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+            "name": "Test Emergency Fund",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+          },
+          {
+            "id": "17d16605-b8aa-474d-934e-9622a36e905e",
+            "name": "Test Hidden Cat",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b"
+          },
+          {
+            "id": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+            "name": "Test Salary",
+            "is_income": true,
+            "hidden": false,
+            "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+          },
+          {
+            "id": "3c1699a5-522a-435e-86dc-93d900a14f0e",
+            "name": "Income",
+            "is_income": true,
+            "hidden": false,
+            "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+          },
+          {
+            "id": "506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+            "name": "Starting Balances",
+            "is_income": true,
+            "hidden": false,
+            "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/months/2026-11",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": {
+          "month": "2026-11",
+          "incomeAvailable": 1272539,
+          "lastMonthOverspent": -28695,
+          "forNextMonth": 0,
+          "totalBudgeted": -175895,
+          "toBudget": 1067949,
+          "fromLastMonth": 1272539,
+          "totalIncome": 0,
+          "totalSpent": -23253,
+          "totalBalance": 320491,
+          "categoryGroups": [
+            {
+              "id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+              "name": "Usual Expenses",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+                  "name": "Food",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "af375fd4-d759-46b3-bffe-74a856151d57",
+                  "name": "General",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "d4b0f075-3343-4408-91ed-fae94f74e5bf",
+                  "name": "Bills",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+                  "name": "Bills (Flexible)",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 0,
+              "spent": 0,
+              "balance": 0
+            },
+            {
+              "id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+              "name": "Investments and Savings",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+                  "name": "Savings",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 0,
+              "spent": 0,
+              "balance": 0
+            },
+            {
+              "id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+              "name": "Test Expenses",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+                  "name": "Test Misc",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+                  "name": "Test Gas Utility",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 7500,
+                  "spent": -3333,
+                  "balance": 4167,
+                  "carryover": false
+                },
+                {
+                  "id": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+                  "name": "Test Dining",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 15050,
+                  "spent": -13111,
+                  "balance": 1939,
+                  "carryover": false
+                },
+                {
+                  "id": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+                  "name": "Test Groceries",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 40000,
+                  "spent": 1524,
+                  "balance": 109373,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 62550,
+              "spent": -14920,
+              "balance": 115479
+            },
+            {
+              "id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+              "name": "Test Sinking Funds",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+                  "name": "Test Car Fund",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+                  "name": "Test Vacation",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+                  "budgeted": 12345,
+                  "spent": -3333,
+                  "balance": 9012,
+                  "carryover": false
+                },
+                {
+                  "id": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+                  "name": "Test Emergency Fund",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+                  "budgeted": 100000,
+                  "spent": -5000,
+                  "balance": 195000,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 112345,
+              "spent": -8333,
+              "balance": 204012
+            },
+            {
+              "id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+              "name": "Test Hidden Group",
+              "is_income": false,
+              "hidden": true,
+              "categories": [
+                {
+                  "id": "17d16605-b8aa-474d-934e-9622a36e905e",
+                  "name": "Test Hidden Cat",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+                  "budgeted": 1000,
+                  "spent": 0,
+                  "balance": 1000,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 1000,
+              "spent": 0,
+              "balance": 1000
+            },
+            {
+              "id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+              "name": "Income",
+              "is_income": true,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+                  "name": "Test Salary",
+                  "is_income": true,
+                  "hidden": false,
+                  "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+                  "received": 0
+                },
+                {
+                  "id": "3c1699a5-522a-435e-86dc-93d900a14f0e",
+                  "name": "Income",
+                  "is_income": true,
+                  "hidden": false,
+                  "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+                  "received": 0
+                },
+                {
+                  "id": "506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+                  "name": "Starting Balances",
+                  "is_income": true,
+                  "hidden": false,
+                  "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+                  "received": 0
+                }
+              ],
+              "received": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/65460984-2fac-480d-9215-a19537f0b942/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 1264567
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/885e64fa-0ef9-4288-9d60-d6d4c8e51786/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 1406179
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 5000000
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/f63afa95-bb9e-47f2-90b7-fdfb321d7e26/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 120050
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/ad099e35-2446-4e8e-a313-105ad33d02df/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": -25000075
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/5318f40b-c21d-422d-aae1-3d86cc6bc0a5/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": -134456
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/18b99b48-5440-4513-aca7-39372677302e/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 35000033
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/af375fd4-d759-46b3-bffe-74a856151d57",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/d4b0f075-3343-4408-91ed-fae94f74e5bf",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/b071a79a-d87f-4b00-bffb-77e628f646fe/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 0
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/b9aa9a0c-2154-421a-a4b3-f9dd4c975701/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 120
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/a12040f5-fee3-4358-a449-ff00ed41e1fe",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/1f2c5370-3853-4b94-90fc-bf6470a18921",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "just a free-text note"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/b00d2876-45a0-43a5-9076-56f31c214a0d",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template 150.50"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "Weekly shop\n#template 400"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template 50 up to 300"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template-1 100"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/abeba14f-8ac0-4881-a01b-cf2b03019d11",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template up to 5000"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/17d16605-b8aa-474d-934e-9622a36e905e",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/911ebde8-bfec-4084-88a3-f2439645fa9b",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/3c1699a5-522a-435e-86dc-93d900a14f0e",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/months/2026-11",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": {
+          "month": "2026-11",
+          "incomeAvailable": 1272539,
+          "lastMonthOverspent": -28695,
+          "forNextMonth": 0,
+          "totalBudgeted": -175895,
+          "toBudget": 1067949,
+          "fromLastMonth": 1272539,
+          "totalIncome": 0,
+          "totalSpent": -23253,
+          "totalBalance": 320491,
+          "categoryGroups": [
+            {
+              "id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+              "name": "Usual Expenses",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+                  "name": "Food",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "af375fd4-d759-46b3-bffe-74a856151d57",
+                  "name": "General",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "d4b0f075-3343-4408-91ed-fae94f74e5bf",
+                  "name": "Bills",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+                  "name": "Bills (Flexible)",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 0,
+              "spent": 0,
+              "balance": 0
+            },
+            {
+              "id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+              "name": "Investments and Savings",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+                  "name": "Savings",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 0,
+              "spent": 0,
+              "balance": 0
+            },
+            {
+              "id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+              "name": "Test Expenses",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+                  "name": "Test Misc",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+                  "name": "Test Gas Utility",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 7500,
+                  "spent": -3333,
+                  "balance": 4167,
+                  "carryover": false
+                },
+                {
+                  "id": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+                  "name": "Test Dining",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 15050,
+                  "spent": -13111,
+                  "balance": 1939,
+                  "carryover": false
+                },
+                {
+                  "id": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+                  "name": "Test Groceries",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+                  "budgeted": 40000,
+                  "spent": 1524,
+                  "balance": 109373,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 62550,
+              "spent": -14920,
+              "balance": 115479
+            },
+            {
+              "id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+              "name": "Test Sinking Funds",
+              "is_income": false,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+                  "name": "Test Car Fund",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+                  "budgeted": 0,
+                  "spent": 0,
+                  "balance": 0,
+                  "carryover": false
+                },
+                {
+                  "id": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+                  "name": "Test Vacation",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+                  "budgeted": 12345,
+                  "spent": -3333,
+                  "balance": 9012,
+                  "carryover": false
+                },
+                {
+                  "id": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+                  "name": "Test Emergency Fund",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+                  "budgeted": 100000,
+                  "spent": -5000,
+                  "balance": 195000,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 112345,
+              "spent": -8333,
+              "balance": 204012
+            },
+            {
+              "id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+              "name": "Test Hidden Group",
+              "is_income": false,
+              "hidden": true,
+              "categories": [
+                {
+                  "id": "17d16605-b8aa-474d-934e-9622a36e905e",
+                  "name": "Test Hidden Cat",
+                  "is_income": false,
+                  "hidden": false,
+                  "group_id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+                  "budgeted": 1000,
+                  "spent": 0,
+                  "balance": 1000,
+                  "carryover": false
+                }
+              ],
+              "budgeted": 1000,
+              "spent": 0,
+              "balance": 1000
+            },
+            {
+              "id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+              "name": "Income",
+              "is_income": true,
+              "hidden": false,
+              "categories": [
+                {
+                  "id": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+                  "name": "Test Salary",
+                  "is_income": true,
+                  "hidden": false,
+                  "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+                  "received": 0
+                },
+                {
+                  "id": "3c1699a5-522a-435e-86dc-93d900a14f0e",
+                  "name": "Income",
+                  "is_income": true,
+                  "hidden": false,
+                  "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+                  "received": 0
+                },
+                {
+                  "id": "506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+                  "name": "Starting Balances",
+                  "is_income": true,
+                  "hidden": false,
+                  "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+                  "received": 0
+                }
+              ],
+              "received": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/af375fd4-d759-46b3-bffe-74a856151d57",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/d4b0f075-3343-4408-91ed-fae94f74e5bf",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/a12040f5-fee3-4358-a449-ff00ed41e1fe",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/1f2c5370-3853-4b94-90fc-bf6470a18921",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "just a free-text note"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/b00d2876-45a0-43a5-9076-56f31c214a0d",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template 150.50"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "Weekly shop\n#template 400"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template 50 up to 300"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template-1 100"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/abeba14f-8ac0-4881-a01b-cf2b03019d11",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": "#template up to 5000"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/17d16605-b8aa-474d-934e-9622a36e905e",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/911ebde8-bfec-4084-88a3-f2439645fa9b",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/3c1699a5-522a-435e-86dc-93d900a14f0e",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes/category/506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "65460984-2fac-480d-9215-a19537f0b942",
+            "name": "Test Brokerage",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "name": "Test Checking",
+            "offbudget": false,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "name": "Test Roth",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+            "name": "Test Savings",
+            "offbudget": false,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "ad099e35-2446-4e8e-a313-105ad33d02df",
+            "name": "Test Mortgage",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+            "name": "Test Visa",
+            "offbudget": false,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "18b99b48-5440-4513-aca7-39372677302e",
+            "name": "Test House",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          },
+          {
+            "id": "b071a79a-d87f-4b00-bffb-77e628f646fe",
+            "name": "Test Old Bank",
+            "offbudget": false,
+            "closed": true,
+            "account_group_id": null
+          },
+          {
+            "id": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "name": "Test Spare",
+            "offbudget": true,
+            "closed": false,
+            "account_group_id": null
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/65460984-2fac-480d-9215-a19537f0b942/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "eae60d0f-f315-4036-a447-d4f8c8d199f7",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "65460984-2fac-480d-9215-a19537f0b942",
+            "category": null,
+            "amount": 30000,
+            "payee": "487239b4-ff27-4aae-80bd-fc5211f4ad4e",
+            "notes": "xfer on-off",
+            "date": "2026-10-21",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": "fed7f3a5-c138-46af-949a-5a86cb137e53",
+            "sort_order": 1793628922607,
+            "cleared": false,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "60ac2e2f-3892-4cce-b3b3-b55403bcf7a4",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "65460984-2fac-480d-9215-a19537f0b942",
+            "category": null,
+            "amount": 1234567,
+            "payee": "15a73789-99c5-4928-a82c-df7cda22bdef",
+            "notes": "brk open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee brk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628921863,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/885e64fa-0ef9-4288-9d60-d6d4c8e51786/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "0c1feb1e-0cae-4071-99f8-14a2f098bc63",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": null,
+            "amount": -4444,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "uncategorized",
+            "date": "2026-11-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920644,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "7bc73983-e8bd-4d7e-8b68-91b94f5dc1dc",
+            "is_parent": true,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": null,
+            "amount": -9999,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "split D thirds",
+            "date": "2026-11-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920548,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": [
+              {
+                "id": "01c38846-b556-4b26-a0f8-f14fd54a9345",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "7bc73983-e8bd-4d7e-8b68-91b94f5dc1dc",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+                "amount": -3333,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-11-01",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": 0,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              },
+              {
+                "id": "30ba43f1-d1fc-4018-95a9-d90c79e92f18",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "7bc73983-e8bd-4d7e-8b68-91b94f5dc1dc",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+                "amount": -3333,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-11-01",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": -1,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              },
+              {
+                "id": "0183713e-40c5-4af7-979b-0257d97157cb",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "7bc73983-e8bd-4d7e-8b68-91b94f5dc1dc",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+                "amount": -3333,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-11-01",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": -2,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              }
+            ]
+          },
+          {
+            "id": "af55184c-aa76-4295-9587-a703e733406b",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+            "amount": 1525,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "refund",
+            "date": "2026-11-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920461,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "8f8d3407-1e1a-4b36-808d-a76445b82fac",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+            "amount": -1,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "one cent",
+            "date": "2026-11-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920375,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "4d706b44-641a-4b10-8ddb-3537c31056a2",
+            "is_parent": true,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": null,
+            "amount": -5000,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "split C mixed sign",
+            "date": "2026-10-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920281,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": [
+              {
+                "id": "4bd3c11b-0824-4766-b1a4-ecc878cbe0a6",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "4d706b44-641a-4b10-8ddb-3537c31056a2",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+                "amount": -7525,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-10-31",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": 0,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              },
+              {
+                "id": "b1b0d3bd-5cde-49e3-a0b8-110a0e2a9729",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "4d706b44-641a-4b10-8ddb-3537c31056a2",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+                "amount": 2525,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-10-31",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": -1,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              }
+            ]
+          },
+          {
+            "id": "020e4228-a318-4ce9-b6dd-f80afdc12327",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+            "amount": -110,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "oct end",
+            "date": "2026-10-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920188,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "fed7f3a5-c138-46af-949a-5a86cb137e53",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+            "amount": -30000,
+            "payee": "35589201-a42a-4df8-bf0c-7c9f3e9fdf94",
+            "notes": "xfer on-off",
+            "date": "2026-10-21",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": "eae60d0f-f315-4036-a447-d4f8c8d199f7",
+            "sort_order": 1793628922520,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "a4b20816-1692-4573-a2f9-03a08fdcd38d",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": null,
+            "amount": -25050,
+            "payee": "481ecb59-f40e-4a85-8250-6efe4f56ff9d",
+            "notes": "xfer on-on",
+            "date": "2026-10-20",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": "f2da7bee-b43e-407d-8290-7821b7f7e928",
+            "sort_order": 1793628922330,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "4f60c76d-45fd-4b48-b6a8-c795178c7c36",
+            "is_parent": true,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": null,
+            "amount": -2935,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "split B float",
+            "date": "2026-10-15",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920080,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": [
+              {
+                "id": "af74652e-4b27-47e4-a738-5b4ef5fb7cee",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "4f60c76d-45fd-4b48-b6a8-c795178c7c36",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+                "amount": -1110,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-10-15",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": 0,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              },
+              {
+                "id": "3bbaaea3-3c29-490b-a759-c51dff4d2144",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "4f60c76d-45fd-4b48-b6a8-c795178c7c36",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+                "amount": -1825,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-10-15",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": -1,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              }
+            ]
+          },
+          {
+            "id": "9c5390d8-c3ba-4301-aab6-685fbe34de5f",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+            "amount": 500000,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "pay oct",
+            "date": "2026-10-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919984,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "ae32cbb3-128b-4a89-9d50-105536ca52ed",
+            "is_parent": true,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": null,
+            "amount": -10000,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "split A",
+            "date": "2026-03-15",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919882,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": [
+              {
+                "id": "0a177218-c896-4469-979c-6ed9642b6bac",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "ae32cbb3-128b-4a89-9d50-105536ca52ed",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+                "amount": -6001,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-03-15",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": 0,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              },
+              {
+                "id": "ad64657b-0bb9-4c61-b8c6-5b109a5cfcb4",
+                "is_parent": false,
+                "is_child": true,
+                "parent_id": "ae32cbb3-128b-4a89-9d50-105536ca52ed",
+                "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+                "category": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+                "amount": -3999,
+                "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+                "notes": null,
+                "date": "2026-03-15",
+                "imported_id": null,
+                "error": null,
+                "imported_payee": null,
+                "starting_balance_flag": false,
+                "transfer_id": null,
+                "sort_order": -1,
+                "cleared": true,
+                "reconciled": false,
+                "tombstone": false,
+                "schedule": null,
+                "raw_synced_data": null
+              }
+            ]
+          },
+          {
+            "id": "7ad3387c-d034-464d-86dd-f3fcccbd7906",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+            "amount": -7,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "seven cents",
+            "date": "2026-03-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919726,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "e04c3606-58c8-4653-9e58-e534c608087b",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+            "amount": -1999,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "feb end",
+            "date": "2026-02-28",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919574,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "db700a6c-aa81-4a9a-825b-c6e8de88f06c",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+            "amount": 500000,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "pay jan",
+            "date": "2026-01-15",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919421,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "99a81237-a1d1-4959-9309-c7030c2351e7",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+            "amount": -1234,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "new year",
+            "date": "2026-01-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919272,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "86ca0495-fe08-4aad-a5d8-b29399570cc0",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+            "amount": -4567,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "year end",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628919123,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "1f004b6f-a470-4cf4-9a55-c3a2884c92fd",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+            "category": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+            "amount": 500000,
+            "payee": "818d0814-d652-4ae0-b6a3-effcff8c0cdb",
+            "notes": "pay dec",
+            "date": "2025-12-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee chk",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628918978,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "68379b33-9619-4e06-ad9c-589bcfbe1048",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "category": null,
+            "amount": 5000000,
+            "payee": "1674b957-cb7e-4108-980f-2c9960c61390",
+            "notes": "roth open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee roth",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628922053,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/f63afa95-bb9e-47f2-90b7-fdfb321d7e26/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "f9fc12bc-26f4-4b0d-b936-768fa4ffe4b2",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+            "category": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+            "amount": -5000,
+            "payee": "106aad39-3e19-4a61-8df3-7c54ef97eab3",
+            "notes": "ef draw",
+            "date": "2026-11-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee sav",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628921400,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "f2da7bee-b43e-407d-8290-7821b7f7e928",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+            "category": null,
+            "amount": 25050,
+            "payee": "487239b4-ff27-4aae-80bd-fc5211f4ad4e",
+            "notes": "xfer on-on",
+            "date": "2026-10-20",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": "a4b20816-1692-4573-a2f9-03a08fdcd38d",
+            "sort_order": 1793628922425,
+            "cleared": false,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "d5b97bb1-1e7c-4a2c-8bfe-f25b73ecac3a",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+            "category": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+            "amount": 100000,
+            "payee": "106aad39-3e19-4a61-8df3-7c54ef97eab3",
+            "notes": "ef deposit",
+            "date": "2026-01-02",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee sav",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628921310,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/ad099e35-2446-4e8e-a313-105ad33d02df/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "b0802712-fc30-44c7-a60f-3a3556a149d9",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "ad099e35-2446-4e8e-a313-105ad33d02df",
+            "category": null,
+            "amount": -25000075,
+            "payee": "7fbc66fb-2e15-4b2e-80ba-1e838dc1c170",
+            "notes": "mtg open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee mtg",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628922235,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/5318f40b-c21d-422d-aae1-3d86cc6bc0a5/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "4f5ff0f4-04c7-4005-a022-c6374cb724ce",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+            "category": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+            "amount": -2001,
+            "payee": "e33893b6-5b48-461d-bf5d-4202ade1993d",
+            "notes": "visa dine",
+            "date": "2026-11-01",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee visa",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628921114,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "22467097-5789-471a-a432-81a484e88882",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+            "category": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+            "amount": -8999,
+            "payee": "e33893b6-5b48-461d-bf5d-4202ade1993d",
+            "notes": "visa groc",
+            "date": "2026-10-05",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee visa",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628921022,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "015609ab-70ea-412b-83f3-4c8c3d513ebf",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+            "category": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+            "amount": -123456,
+            "payee": "e33893b6-5b48-461d-bf5d-4202ade1993d",
+            "notes": "big visa",
+            "date": "2026-01-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee visa",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628920935,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/18b99b48-5440-4513-aca7-39372677302e/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "29da48e4-7109-485a-a13f-94830f10cc85",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "18b99b48-5440-4513-aca7-39372677302e",
+            "category": null,
+            "amount": 35000033,
+            "payee": null,
+            "notes": "house open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628922703,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/b9aa9a0c-2154-421a-a4b3-f9dd4c975701/transactions?since_date=2025-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "fabc8394-694b-48c6-9777-c6636a080130",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": -3,
+            "payee": null,
+            "notes": "fixture bad category",
+            "date": "2026-10-05",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629113752,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "83436eb6-18bb-43c3-8e78-af3a90731d49",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": 123,
+            "payee": null,
+            "notes": "spare",
+            "date": "2026-10-02",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628922797,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    }
+  ]
+}

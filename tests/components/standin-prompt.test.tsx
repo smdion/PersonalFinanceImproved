@@ -1,34 +1,31 @@
 /** A suggested stand-in fund: preview and recommendation. Invented data only. */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { Holding } from "@/components/investments/fund-holding-row";
 
-// Each call succeeds straight away; `calls` records what was sent.
-const calls = vi.hoisted(() => [] as string[]);
-vi.mock("@/lib/trpc", () => {
-  const mutation = (name: string) => ({
-    useMutation: (opts?: { onSuccess?: () => void }) => ({
-      mutate: () => {
-        calls.push(name);
-        opts?.onSuccess?.();
-      },
-      isPending: false,
-      isSuccess: false,
-    }),
-  });
-  return {
-    trpc: {
-      useUtils: () => ({ investments: { invalidate: vi.fn() } }),
-      investments: {
-        confirmStandIn: mutation("confirmStandIn"),
-        rejectStandIn: mutation("rejectStandIn"),
-        findStandIn: mutation("findStandIn"),
-        checkStandIn: mutation("checkStandIn"),
-        setUserFacts: mutation("setUserFacts"),
-        clearUserFacts: mutation("clearUserFacts"),
-      },
-    },
-  };
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
+}));
+import { resetTrpcMock, setMutationResult } from "./trpc-mock";
+
+// Each call succeeds straight away (trpc-mock's default); `calls` records
+// what was sent, in order across procedures.
+const calls: string[] = [];
+const STAND_IN_MUTATIONS = [
+  "confirmStandIn",
+  "rejectStandIn",
+  "findStandIn",
+  "checkStandIn",
+  "setUserFacts",
+  "clearUserFacts",
+] as const;
+beforeEach(() => {
+  resetTrpcMock();
+  for (const name of STAND_IN_MUTATIONS)
+    setMutationResult(`investments.${name}`, () => {
+      calls.push(name);
+      return {};
+    });
 });
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => children,

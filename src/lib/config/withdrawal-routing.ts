@@ -22,10 +22,9 @@ export const WITHDRAWAL_ROUTING_MODES = [
   "percentage",
 ] as const satisfies readonly RoutingMode[];
 
-/** The household-wide default when nothing else specifies one — matches
- *  `retirement_settings.withdrawal_routing_mode`'s DB default and
- *  `decumulationDefaultsInputSchema`'s hardcoded fallback in `_shared.ts`.
- *  Single source so the three can't drift to different literals. */
+/** The household-wide default when nothing else specifies one: the DB
+ *  default of `retirement_settings.withdrawal_routing_mode`, and the last
+ *  fallback in `buildDecumulationDefaults`. */
 export const DEFAULT_WITHDRAWAL_ROUTING_MODE: RoutingMode = "bracket_filling";
 
 export const WITHDRAWAL_ROUTING_MODE_LABELS: Record<RoutingMode, string> = {

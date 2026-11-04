@@ -24,8 +24,7 @@ import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toNumber } from "@/server/helpers/transforms";
 import { loadClassifiedTransactions, loadFeedContext } from "./_shared";
 import { loadPerformanceSuggestions } from "./fills";
-
-type Db = Parameters<typeof loadFeedContext>[0];
+import type { Db } from "@/lib/db";
 
 type LiveContribution = {
   performanceAccountId: number;

@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/calculators   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->598<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->621<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
@@ -85,7 +85,7 @@ The pinned `toBe` figures don't update with `-u` — change them from the failur
   columns left to read
 - A pinned salary being treated as excluding bonus, or total compensation
   computed anywhere other than `resolveCompensation()`
-- Any field of `SalaryProfileEntry` reappearing in a Contribution Profile
+- Any field of `SalaryEntry` reappearing in a Contribution Profile
   active-field bucket — the `jobs` bucket there is deleted, only
   `contributionAccounts`/`deductions` remain; any per-job bucket; any second
   bonus-contribution gate besides `takesFromBonusCheck`; an inline

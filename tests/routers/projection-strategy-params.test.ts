@@ -27,7 +27,11 @@ import {
   buildStrategyParams,
   resolveSsStartAgeBaseline,
 } from "@/server/routers/projection/_shared";
-import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
+import {
+  getAllStrategyKeys,
+  getStrategyDefaults,
+  WITHDRAWAL_STRATEGY_CONFIG,
+} from "@/lib/config/withdrawal-strategies";
 
 const noOverrides = {
   gkUpperGuardrail: null,
@@ -50,9 +54,9 @@ const noOverrides = {
 describe("buildStrategyParams reads each param field's own column", () => {
   it("every strategy's defaults with nothing stored, VPW included", () => {
     const params = buildStrategyParams({});
-    for (const [key, meta] of Object.entries(WITHDRAWAL_STRATEGY_CONFIG)) {
-      if (meta.paramFields.length === 0) continue;
-      expect(params[key as keyof typeof params]).toEqual(meta.defaultParams);
+    for (const key of getAllStrategyKeys()) {
+      if (WITHDRAWAL_STRATEGY_CONFIG[key].paramFields.length === 0) continue;
+      expect(params[key]).toEqual(getStrategyDefaults(key));
     }
     expect(params.vpw).toMatchObject({
       cap: 0.1,
@@ -97,39 +101,30 @@ describe("withdrawal-strategy defaults agree across layers", () => {
 
   it("endowment: rollingYears matches", () => {
     expect(serverDefaults.endowment!.rollingYears).toBe(10);
-    expect(
-      WITHDRAWAL_STRATEGY_CONFIG.endowment.defaultParams.rollingYears,
-    ).toBe(10);
+    expect(getStrategyDefaults("endowment").rollingYears).toBe(10);
   });
 
   it("endowment: withdrawalPercent and floorPercent match", () => {
     expect(serverDefaults.endowment!.withdrawalPercent).toBe(0.05);
     expect(serverDefaults.endowment!.floorPercent).toBe(0.9);
-    expect(
-      WITHDRAWAL_STRATEGY_CONFIG.endowment.defaultParams.withdrawalPercent,
-    ).toBe(0.05);
-    expect(
-      WITHDRAWAL_STRATEGY_CONFIG.endowment.defaultParams.floorPercent,
-    ).toBe(0.9);
+    expect(getStrategyDefaults("endowment").withdrawalPercent).toBe(0.05);
+    expect(getStrategyDefaults("endowment").floorPercent).toBe(0.9);
   });
 
   it("constant_percentage: withdrawalPercent and floorPercent match", () => {
     expect(serverDefaults.constant_percentage!.withdrawalPercent).toBe(0.05);
     expect(serverDefaults.constant_percentage!.floorPercent).toBe(0.9);
-    expect(
-      WITHDRAWAL_STRATEGY_CONFIG.constant_percentage.defaultParams
-        .withdrawalPercent,
-    ).toBe(0.05);
-    expect(
-      WITHDRAWAL_STRATEGY_CONFIG.constant_percentage.defaultParams.floorPercent,
-    ).toBe(0.9);
+    expect(getStrategyDefaults("constant_percentage").withdrawalPercent).toBe(
+      0.05,
+    );
+    expect(getStrategyDefaults("constant_percentage").floorPercent).toBe(0.9);
   });
 
   it("vanguard_dynamic: basePercent, ceilingPercent, floorPercent match", () => {
     expect(serverDefaults.vanguard_dynamic!.basePercent).toBe(0.05);
     expect(serverDefaults.vanguard_dynamic!.ceilingPercent).toBe(0.05);
     expect(serverDefaults.vanguard_dynamic!.floorPercent).toBe(0.025);
-    const cfg = WITHDRAWAL_STRATEGY_CONFIG.vanguard_dynamic.defaultParams;
+    const cfg = getStrategyDefaults("vanguard_dynamic");
     expect(cfg.basePercent).toBe(0.05);
     expect(cfg.ceilingPercent).toBe(0.05);
     expect(cfg.floorPercent).toBe(0.025);

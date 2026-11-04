@@ -7,7 +7,7 @@
 import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
@@ -23,8 +23,8 @@ import {
 } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { taxTypeLabel, gainLossTextColor } from "@/lib/utils/colors";
-import { getDisplayConfig } from "@/lib/config/account-types";
+import { gainLossTextColor } from "@/lib/utils/colors";
+import { snapshotRowLabel } from "@/lib/pure/portfolio/snapshot-row-label";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -54,28 +54,12 @@ const PortfolioChart = dynamic(
   { loading: () => <SkeletonChart />, ssr: false },
 );
 
-// Use centralized taxTypeLabel() from colors.ts for display labels
-
 // ---------------------------------------------------------------------------
 // Grouping helpers for snapshot display (expanded snapshot history rows)
 // ---------------------------------------------------------------------------
 
-type SnapshotAccountWithPerf = {
-  id: number;
-  institution: string;
-  taxType: string;
-  accountType: string;
-  subType: string | null;
-  label: string | null;
-  amount: number;
-  ownerPersonId: number | null;
-  ownerName: string | null;
-  performanceAccountId: number | null;
-  perfAccountLabel: string | null;
-  perfDisplayName: string | null;
-  perfAccountType: string | null;
-  perfOwnerPersonId: number | null;
-};
+type SnapshotAccountWithPerf =
+  RouterOutputs["networth"]["listSnapshots"]["snapshots"][number]["accounts"][number];
 
 type AccountGroup = {
   key: string;
@@ -145,45 +129,14 @@ function groupByPerformanceAccount(
   );
 }
 
-function buildSubRowLabel(
-  a: SnapshotAccountWithPerf,
-  group: AccountGroup,
-): string {
-  const owner = group.hasMultipleOwners && a.ownerName ? a.ownerName : null;
-  const taxLabel = taxTypeLabel(a.taxType);
-  // DESIGN.md's sub-account-type rule only names subType, but `label` is a
-  // real, separate free-text override column on portfolio_accounts — it
-  // takes precedence when set (see DESIGN.md).
-  const displayName = a.label || a.subType;
-
-  let typeLabel: string;
-  if (displayName) {
-    typeLabel = displayName;
-  } else {
-    const rawType = a.accountType.toLowerCase();
-    const perfType = (group.perfAccountType ?? "").toLowerCase();
-    // Documented rule (DESIGN.md): show accountType only if it differs from
-    // the parent performance account's type — that's the whole test. The
-    // extra `rawType !== taxType` condition previously suppressed this
-    // label whenever accountType happened to equal the taxType string
-    // (e.g. accountType "hsa" vs taxType "hsa"), which isn't in the spec.
-    typeLabel =
-      rawType !== perfType
-        ? getDisplayConfig(a.accountType).displayLabel
-        : taxLabel;
-  }
-
-  if (owner) {
-    // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO owns
-    // it), distinct from the parens used below for WHAT kind of sub-account
-    // it is (e.g. "Employer Match (Traditional)"). The code was the one
-    // out of sync with the documented example.
-    const qualifier =
-      typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
-    return `${owner} — ${qualifier}`;
-  }
-
-  return typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
+/** The owner prefix applies on a joint account whose rows have different
+ *  owners (groupByPerformanceAccount sets hasMultipleOwners). */
+function subRowLabel(a: SnapshotAccountWithPerf, group: AccountGroup) {
+  return snapshotRowLabel({
+    ...a,
+    owner: group.hasMultipleOwners ? a.ownerName : null,
+    perfAccountType: group.perfAccountType,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -246,9 +199,7 @@ export function PortfolioContent() {
 
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const budgetApiConnected = !!syncStatus?.connected;
-  const syncServiceLabel = budgetApiServiceLabel(
-    (syncStatus?.service as "ynab" | "actual" | null | undefined) ?? "none",
-  );
+  const syncServiceLabel = budgetApiServiceLabel(syncStatus?.service ?? "none");
 
   const {
     pending: syncPendingRaw,
@@ -824,10 +775,7 @@ export function PortfolioContent() {
                                       </div>
                                       {/* Sub-rows */}
                                       {group.accounts.map((a) => {
-                                        const subLabel = buildSubRowLabel(
-                                          a,
-                                          group,
-                                        );
+                                        const subLabel = subRowLabel(a, group);
                                         return (
                                           <div
                                             key={a.id}

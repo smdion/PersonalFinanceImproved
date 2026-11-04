@@ -38,10 +38,12 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const socialSecurityRouter = createTRPCRouter({
   /**
@@ -56,15 +58,9 @@ export const socialSecurityRouter = createTRPCRouter({
    * pattern every other projection endpoint uses (see
    * `decumulationDefaultsInputSchema`'s own docblock) — a caller that
    * omits it gets the household's own persisted withdrawal settings.
-   * `retirementProfileId`/budget/expense/salary fields mirror
-   * `coast-fire.ts`'s full input set — Social Security data
-   * (`socialSecurityPia`, `ssStartAge`) lives on `retirement_profile_
-   * people`, scoped per profile, so a household viewing a non-active
-   * Retirement Profile must resolve against THAT profile's data, not
-   * silently fall back to the active one. Candidate depletion is a hard
-   * exclusion in the sweep's ranking, so a different budget/expense
-   * assumption can change which age gets recommended, not just the
-   * numbers shown — threading these isn't cosmetic.
+   * `selection` carries the page's profile and budget picks: Social
+   * Security data lives per Retirement Profile, and depletion excludes a
+   * candidate age, so the picks can change which age is recommended.
    *
    * NOTE for step 7 (UI): for a household that has NOT opted into PIA for
    * this person, every candidate this sweep returns still replaces their
@@ -76,41 +72,26 @@ export const socialSecurityRouter = createTRPCRouter({
    */
   sweepSocialSecurityClaimingAges: protectedProcedure
     .input(
-      z.object({
+      z.strictObject({
         personId: z.number().int(),
         pia: z.number().positive(),
         ages: z.array(z.number().int().min(62).max(70)).min(1).optional(),
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        contributionProfileId: z.number().int().optional(),
-        salaryProfileId: z.number().int().optional(),
-        retirementProfileId: z.number().int().optional(),
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
+        contributionProfileId: profiles.contributionProfileId,
+        salaryProfileId: profiles.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)

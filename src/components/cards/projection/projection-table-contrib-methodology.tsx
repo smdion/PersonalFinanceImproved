@@ -20,7 +20,7 @@ import {
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_TO_BUCKET } from "./utils";
+import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import type { ProjectionState } from "./projection-table-types";
 
 type ContribMethodologyProps = {
@@ -110,7 +110,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                       )
                       .map((spec) => {
                         const bucket =
-                          TAX_TREATMENT_TO_BUCKET[spec.taxTreatment] ??
+                          portfolioTaxTypeOf(spec.taxTreatment) ??
                           spec.taxTreatment;
                         return (
                           <tr

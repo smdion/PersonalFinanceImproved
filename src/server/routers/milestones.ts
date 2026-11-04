@@ -37,7 +37,7 @@ import {
 import { effectiveHighIncomeLine } from "@/lib/pure/high-income-line";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
-import { resolveActiveProfilePair } from "@/server/helpers/budget";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { contributionRouter } from "./contribution";
 import { savingsRouter } from "./savings";
 import { mortgageRouter } from "./mortgage";
@@ -328,7 +328,7 @@ export const milestonesRouter = createTRPCRouter({
     const results = evaluateMilestones(
       await activeMilestoneInput(ctx as Context),
     );
-    const today = localDateStr();
+    const today = ctx.scope.today;
     const reachedNow = results
       .filter((r) => r.status === "reached")
       .map((r) => ({ id: r.id, reachedYear: r.reachedYear }));
@@ -357,9 +357,8 @@ async function activeMilestoneInput(ctx: Context) {
   const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
   const optional = <T>(p: Promise<T>) => p.catch(() => null);
   // Contributions need the profile ids the page sends; with none they're $0.
-  const { contribProfileId, salaryProfileId } = await resolveActiveProfilePair(
-    ctx.db,
-  );
+  const { contribProfileId, salaryProfileId } =
+    await resolveProfileSelection(ctx);
   const [
     inputs,
     contributions,

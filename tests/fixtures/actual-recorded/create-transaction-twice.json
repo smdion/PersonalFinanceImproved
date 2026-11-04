@@ -1,0 +1,192 @@
+{
+  "description": "ActualClient.createTransaction twice with one payload: POST, read-back, POST, read-back. Both POSTs answer {\"message\":\"ok\"}; the second read-back holds two rows with the same imported_id.",
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "pairs": [
+    {
+      "method": "POST",
+      "path": "/accounts/b9aa9a0c-2154-421a-a4b3-f9dd4c975701/transactions",
+      "requestBody": {
+        "transaction": {
+          "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+          "date": "2026-10-03",
+          "amount": -1999,
+          "payee_name": "Dup",
+          "notes": "same fingerprint 626787",
+          "cleared": true,
+          "imported_id": "ledgr:BGYuJng_unvJn9VDR6Pkv-n1tRH-X8"
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "message": "ok"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/b9aa9a0c-2154-421a-a4b3-f9dd4c975701/transactions?since_date=2026-10-03",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "fabc8394-694b-48c6-9777-c6636a080130",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": -3,
+            "payee": null,
+            "notes": "fixture bad category",
+            "date": "2026-10-05",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629113752,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "1201d6e8-ce6a-4d45-af76-e47079622402",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": -1999,
+            "payee": "b4ed2465-72a5-4e76-9b26-bc4b83891632",
+            "notes": "same fingerprint 626787",
+            "date": "2026-10-03",
+            "imported_id": "ledgr:BGYuJng_unvJn9VDR6Pkv-n1tRH-X8",
+            "error": null,
+            "imported_payee": "Dup",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629290239,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/accounts/b9aa9a0c-2154-421a-a4b3-f9dd4c975701/transactions",
+      "requestBody": {
+        "transaction": {
+          "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+          "date": "2026-10-03",
+          "amount": -1999,
+          "payee_name": "Dup",
+          "notes": "same fingerprint 626787",
+          "cleared": true,
+          "imported_id": "ledgr:BGYuJng_unvJn9VDR6Pkv-n1tRH-X8"
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "message": "ok"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/b9aa9a0c-2154-421a-a4b3-f9dd4c975701/transactions?since_date=2026-10-03",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "fabc8394-694b-48c6-9777-c6636a080130",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": -3,
+            "payee": null,
+            "notes": "fixture bad category",
+            "date": "2026-10-05",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": null,
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629113752,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "407c9974-7a67-4c60-a988-9797c96adaf5",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": -1999,
+            "payee": "b4ed2465-72a5-4e76-9b26-bc4b83891632",
+            "notes": "same fingerprint 626787",
+            "date": "2026-10-03",
+            "imported_id": "ledgr:BGYuJng_unvJn9VDR6Pkv-n1tRH-X8",
+            "error": null,
+            "imported_payee": "Dup",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629290534,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "1201d6e8-ce6a-4d45-af76-e47079622402",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+            "category": null,
+            "amount": -1999,
+            "payee": "b4ed2465-72a5-4e76-9b26-bc4b83891632",
+            "notes": "same fingerprint 626787",
+            "date": "2026-10-03",
+            "imported_id": "ledgr:BGYuJng_unvJn9VDR6Pkv-n1tRH-X8",
+            "error": null,
+            "imported_payee": "Dup",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629290239,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    }
+  ]
+}

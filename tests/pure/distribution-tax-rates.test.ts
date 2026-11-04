@@ -6,12 +6,12 @@
  */
 import { describe, it, expect } from "vitest";
 import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
-import type { FilingStatusType } from "@/lib/calculators/types";
 import {
   shippedTaxTables,
   taxDataLimitMap,
   taxDataWithholding,
 } from "../helpers/tax-data";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const settings = {
   distributionTaxRateTraditional: "0.2",
@@ -96,7 +96,7 @@ describe("answer key: buildDistributionTaxRates per status, shipped 2026 limits"
       .map(([k, v]) => [k.slice("2026:".length), v]),
   );
   const tables = shippedTaxTables(2026);
-  const run = (filingStatus: FilingStatusType) =>
+  const run = (filingStatus: ReturnFilingStatus) =>
     buildDistributionTaxRates({
       ...base,
       filingStatus,

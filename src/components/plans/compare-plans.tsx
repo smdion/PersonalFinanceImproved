@@ -45,16 +45,11 @@ function PlanColumn({
   onApply?: () => void;
   applying: boolean;
 }) {
-  const tiers = (id: number | null) => ({
-    localSelectionId: id,
-    globalDefaultId: id,
-  });
   const budget = trpc.budget.computeActiveSummary.useQuery(
     {
       selectedColumn: 0,
       ...(ids.budget != null ? { profileId: ids.budget } : {}),
-      contributionProfile: tiers(ids.contribution),
-      salaryProfile: tiers(ids.salary),
+      selection: { contribution: ids.contribution, salary: ids.salary },
     },
     { enabled: ids.budget != null },
   );
@@ -69,16 +64,15 @@ function PlanColumn({
   const projection = trpc.projection.computeProjection.useQuery(
     {
       ...engineInput,
-      ...(differs("contribution")
-        ? { contributionProfileId: ids.contribution! }
-        : {}),
-      ...(differs("salary") ? { salaryProfileId: ids.salary! } : {}),
-      ...(differs("retirement")
-        ? { retirementProfileId: ids.retirement! }
-        : {}),
-      ...(differs("budget")
-        ? { accumulationBudgetProfileId: ids.budget! }
-        : {}),
+      selection: {
+        ...engineInput.selection,
+        ...(differs("contribution") && { contribution: ids.contribution! }),
+        ...(differs("salary") && { salary: ids.salary! }),
+        ...(differs("retirement") && { retirement: ids.retirement! }),
+        ...(differs("budget") && {
+          accumulationBudget: { profileId: ids.budget! },
+        }),
+      },
     },
     { enabled: ready },
   );

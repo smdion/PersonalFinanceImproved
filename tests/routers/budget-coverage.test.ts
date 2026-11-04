@@ -1322,10 +1322,7 @@ describe("budget router — syncBudgetToApi", () => {
       );
 
       const summary = await caller.budget.computeActiveSummary({
-        contributionProfile: {
-          localSelectionId: null,
-          globalDefaultId: profileId,
-        },
+        selection: { contribution: profileId },
       });
       const summaryItem = summary.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
@@ -1707,10 +1704,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       // Profile is passed — the column must fall through to it (this is the
       // fix: previously the server ignored this param entirely).
       const overriddenSummary = await caller.budget.computeActiveSummary({
-        contributionProfile: {
-          localSelectionId: null,
-          globalDefaultId: profileId,
-        },
+        selection: { contribution: profileId },
       });
       const overriddenItem = overriddenSummary.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
@@ -1779,13 +1773,10 @@ describe("budget router — computeActiveSummary sandbox support", () => {
           },
         },
       });
-      const contributionProfile = {
-        localSelectionId: null,
-        globalDefaultId: profileId,
-      };
+      const selection = { contribution: profileId };
 
       const withoutOverride = await caller.budget.computeActiveSummary({
-        contributionProfile,
+        selection,
       });
       const linkedItem = withoutOverride.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
@@ -1795,7 +1786,7 @@ describe("budget router — computeActiveSummary sandbox support", () => {
       expect(linkedItem!.contribAmount).toBeCloseTo(50, 2);
 
       const withOverride = await caller.budget.computeActiveSummary({
-        contributionProfile,
+        selection,
         itemAmountActiveFields: [
           { itemId: seed.itemIds[0]!, colIndex: 0, amount: 750 },
         ],

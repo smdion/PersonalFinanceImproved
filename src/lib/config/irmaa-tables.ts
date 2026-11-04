@@ -9,7 +9,7 @@
 // MAGI of exactly that amount lands one tier low here — a $1 edge, kept for
 // one rule; don't shift the shipped thresholds to match.
 
-import type { FilingStatusType } from "../calculators/types";
+import type { ReturnFilingStatus } from "./filing-status";
 
 export type IrmaaBracket = {
   magiThreshold: number;
@@ -24,7 +24,7 @@ export type IrmaaBracketTable = Record<string, IrmaaBracket[]>;
 
 function bracketsFor(
   brackets: IrmaaBracketTable,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
 ): IrmaaBracket[] {
   const b = brackets[filingStatus];
   if (!b || b.length === 0)
@@ -40,7 +40,7 @@ function bracketsFor(
  */
 export function getIrmaaCost(
   magi: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   brackets: IrmaaBracketTable,
 ): number {
   let surcharge = 0;
@@ -57,7 +57,7 @@ export function getIrmaaCost(
  */
 export function getNextIrmaaCliff(
   magi: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   brackets: IrmaaBracketTable,
 ): number | null {
   for (const b of bracketsFor(brackets, filingStatus)) {

@@ -150,7 +150,7 @@ describe("projection cache read/write lifecycle", () => {
         seed: null,
         result: { v: 1 },
         expiresAt: new Date(Date.now() + 1000 * 60 * 60),
-        engineVersion: PROJECTION_CACHE_ENGINE_VERSION + 999,
+        engineVersion: PROJECTION_CACHE_ENGINE_VERSION ^ 1,
       })
       .run();
 

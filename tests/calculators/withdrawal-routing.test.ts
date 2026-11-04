@@ -618,7 +618,7 @@ describe("routeWithdrawalsBracketFilling", () => {
   });
 
   it("uncustomized (default) order produces byte-identical output to before this fix", () => {
-    // DEFAULT_DECUMULATION_ORDER filtered to Traditional-preference
+    // getDefaultDecumulationOrder() filtered to Traditional-preference
     // categories is, by construction, identical to the pre-fix hardcoded
     // categoriesWithTaxPreference() order -- verifying that here, not just
     // asserting it, so a household who never touched the order editor

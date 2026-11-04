@@ -3,13 +3,11 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { readMaybeEncrypted } from "@/lib/crypto";
+import { isBudgetApiService } from "@/lib/config/budget-apps";
 import type { BudgetAPIClient } from "./interface";
-import type { ActiveBudgetApi, YnabConfig, ActualConfig } from "./types";
-import { YnabClient } from "./ynab-client";
-import { ActualClient } from "./actual-client";
-
-type Db = typeof import("@/lib/db").db;
+import type { ActiveBudgetApi, BudgetApiService } from "./types";
+import { BUDGET_PROVIDERS } from "./providers";
+import type { Db } from "@/lib/db";
 
 /** Get the active budget API setting. Returns 'none' if not configured. */
 export async function getActiveBudgetApi(db: Db): Promise<ActiveBudgetApi> {
@@ -21,9 +19,8 @@ export async function getActiveBudgetApi(db: Db): Promise<ActiveBudgetApi> {
 
   const row = rows[0];
   if (!row) return "none";
-  const val = row.value;
-  if (val === "ynab" || val === "actual") return val;
-  return "none";
+  // An unknown stored service reads as "none".
+  return isBudgetApiService(row.value) ? row.value : "none";
 }
 
 /** @internal Only tests import it (knip --production).
@@ -44,7 +41,7 @@ export async function getBudgetAPIClient(
  */
 export async function getClientForService(
   db: Db,
-  service: "ynab" | "actual",
+  service: BudgetApiService,
 ): Promise<BudgetAPIClient | null> {
   const connections = await db
     .select()
@@ -59,32 +56,12 @@ export async function getClientForService(
   // readMaybeEncrypted detects the format and decrypts only if necessary,
   // so existing v4 deployments keep working until the next saveConnection
   // upgrades the row to encrypted-at-rest.
-  if (service === "ynab") {
-    const ynabConfig = readMaybeEncrypted<YnabConfig>(conn.config);
-    if (!ynabConfig.accessToken || !ynabConfig.budgetId) return null;
-    return new YnabClient(ynabConfig.accessToken, ynabConfig.budgetId);
-  }
-
-  if (service === "actual") {
-    const actualConfig = readMaybeEncrypted<ActualConfig>(conn.config);
-    if (
-      !actualConfig.serverUrl ||
-      !actualConfig.apiKey ||
-      !actualConfig.budgetSyncId
-    )
-      return null;
-    return new ActualClient(
-      actualConfig.serverUrl,
-      actualConfig.apiKey,
-      actualConfig.budgetSyncId,
-    );
-  }
-
-  return null;
+  if (!Object.hasOwn(BUDGET_PROVIDERS, service)) return null;
+  return BUDGET_PROVIDERS[service].createClient(conn.config);
 }
 
 /** Get the api_connections row for a service, or null if not configured. */
-export async function getApiConnection(db: Db, service: "ynab" | "actual") {
+export async function getApiConnection(db: Db, service: BudgetApiService) {
   const rows = await db
     .select()
     .from(schema.apiConnections)

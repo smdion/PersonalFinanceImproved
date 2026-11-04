@@ -8,6 +8,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { evaluateMilestones } from "@/lib/pure/milestones";
 import { makeInput } from "../fixtures/milestones";
+import { setQueryState } from "./trpc-mock";
 
 const DISCLAIMER =
   "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.";
@@ -48,15 +49,12 @@ vi.mock("@/components/milestones/milestone-row", () => ({
 vi.mock("@/components/ui/balanced-columns", () => ({
   BalancedColumns: () => null,
 }));
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    projection: {
-      computeStressTest: {
-        useQuery: () => ({ data: undefined, isLoading: true, isError: false }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+// The stress test is still loading.
+setQueryState("projection.computeStressTest", { isLoading: true });
 
 describe("the shared disclaimer", () => {
   it("Milestones shows it", async () => {

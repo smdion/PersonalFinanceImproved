@@ -7,6 +7,7 @@
  *  always real, never degraded. */
 import type { ProjectionResult } from "@/lib/calculators/types/engine-projection";
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { PerPersonSettings } from "@/components/retirement/sections/types";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { buildReportNarrative } from "@/lib/pure/report";
 import { ReportCover } from "./report-cover";
@@ -43,11 +44,7 @@ export function ReportRoot({
   peopleNames: string[];
   generatedAt: Date;
   engineSettings: ReportEngineSettings;
-  perPersonSettings?: ReadonlyArray<{
-    socialSecurityMonthly?: number | string | null;
-    socialSecurityPia?: number | string | null;
-    ssStartAge?: number | string | null;
-  }>;
+  perPersonSettings?: NonNullable<PerPersonSettings>;
   rmdExcessYears: number;
   qcdYears: number;
   irmaaCappedRothYears: number;

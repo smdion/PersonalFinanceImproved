@@ -23,12 +23,12 @@ import {
   overUnderTextColor,
 } from "@/lib/utils/colors";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_BUDGET_ACTIVE_COLUMN,
 } from "@/lib/constants/settings-keys";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 
 // Code-split the recharts-heavy chart row. Both
 // charts share a single chunk so the recharts payload is fetched once on
@@ -100,7 +100,6 @@ export function ExpensesContent() {
 
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
 
   // The active profile for both budget and contribution — this page has no
   // local picker of its own, so localSelection is always null (single
@@ -112,7 +111,7 @@ export function ExpensesContent() {
     {
       validIds: budgetProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeBudgetProfileId,
+      activeProfileId: activeBudgetProfileId,
     },
   );
   const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
@@ -120,24 +119,19 @@ export function ExpensesContent() {
     {
       validIds: contribProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeContribProfileId,
+      activeProfileId: activeContribProfileId,
     },
   );
 
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    // Tiers — the shape every budget caller sends (docs/DESIGN.md "Profile
-    // Resolution").
-    contributionProfile: {
-      localSelectionId: null,
-      globalDefaultId: activeContribProfileId,
-    },
-    salaryProfile: {
-      localSelectionId: null,
-      globalDefaultId: rawActiveSalaryProfileId,
+    selection: {
+      contribution: activeContribProfileId,
+      salary: rawActiveSalaryProfileId,
     },
   });
 

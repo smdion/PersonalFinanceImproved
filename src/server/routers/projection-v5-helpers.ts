@@ -17,12 +17,10 @@ import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import * as schema from "@/lib/db/schema";
-import type { db } from "@/lib/db";
+import type { Db } from "@/lib/db";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { getStressTestScenarios } from "@/lib/pure/stress-test";
 import { roundToCents } from "@/lib/utils/math";
-
-type DbType = typeof db;
 
 // ---------------------------------------------------------------------------
 // PlanHealthCard inputs
@@ -64,7 +62,7 @@ export function buildAccumulationOrder(
  * PlanHealthCard skips the glide-path warning.
  */
 export async function computeCurrentStockAllocationPercent(
-  db: DbType,
+  db: Db,
   currentAge: number,
 ): Promise<number | null> {
   const [preset, bucketRows] = await Promise.all([

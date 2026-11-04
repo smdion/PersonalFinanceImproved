@@ -15,139 +15,87 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import {
+  mutationCalls,
+  resetTrpcMock,
+  setMutationResult,
+  setQuery,
+  utilsCalls,
+} from "../components/trpc-mock";
 
-const listQuery = vi.fn();
-const profileListQuery = vi.fn();
-let setActiveOnSuccess: (() => void) | undefined;
-const invalidate = {
-  appSettingsList: vi.fn(),
-  contributionProfile: vi.fn(),
-  salaryProfile: vi.fn(),
-  contribution: vi.fn(),
-  paycheck: vi.fn(),
-  projection: vi.fn(),
-  retirement: vi.fn(),
-  brokerage: vi.fn(),
-  budget: vi.fn(),
-  savings: vi.fn(),
-  contributionAccounts: vi.fn(),
-};
-
-// Each router gets its own setActive, so a hook writing through the other
-// profile's procedure fails the test.
-const setActive = {
-  contributionProfile: vi.fn(),
-  salaryProfile: vi.fn(),
-};
-const profileRouter = (mutateAsync: (input: unknown) => unknown) => ({
-  list: { useQuery: () => profileListQuery() },
-  setActive: {
-    useMutation: (opts?: { onSuccess?: () => void }) => {
-      setActiveOnSuccess = opts?.onSuccess;
-      return { mutateAsync };
-    },
-  },
-});
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        appSettings: { list: { invalidate: invalidate.appSettingsList } },
-        contributionAccounts: { invalidate: invalidate.contributionAccounts },
-      },
-      contributionProfile: { invalidate: invalidate.contributionProfile },
-      salaryProfile: { invalidate: invalidate.salaryProfile },
-      contribution: { invalidate: invalidate.contribution },
-      paycheck: { invalidate: invalidate.paycheck },
-      projection: { invalidate: invalidate.projection },
-      retirement: { invalidate: invalidate.retirement },
-      brokerage: { invalidate: invalidate.brokerage },
-      budget: { invalidate: invalidate.budget },
-      savings: { invalidate: invalidate.savings },
-    }),
-    settings: {
-      appSettings: {
-        list: { useQuery: () => listQuery() },
-        upsert: { useMutation: () => ({ mutate: vi.fn() }) },
-      },
-    },
-    // Getters: vi.mock is hoisted above profileRouter's declaration.
-    get contributionProfile() {
-      return profileRouter(setActive.contributionProfile);
-    },
-    get salaryProfile() {
-      return profileRouter(setActive.salaryProfile);
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../components/trpc-mock")).trpc,
 }));
 
 describe.each([
   {
     hook: useActiveContribProfile,
-    router: "contributionProfile",
+    router: "contributionProfile" as const,
     settingKey: "active_contrib_profile_id",
-    ownInvalidate: invalidate.contributionProfile,
-    ownSetActive: setActive.contributionProfile,
   },
   {
     hook: useActiveSalaryProfile,
-    router: "salaryProfile",
+    router: "salaryProfile" as const,
     settingKey: "active_salary_profile_id",
-    ownInvalidate: invalidate.salaryProfile,
-    ownSetActive: setActive.salaryProfile,
   },
-])(
-  "$hook.name",
-  ({ hook, router, settingKey, ownInvalidate, ownSetActive }) => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-      localStorage.clear();
-      listQuery.mockReturnValue({ data: [{ key: settingKey, value: 1 }] });
-      profileListQuery.mockReturnValue({ data: [{ id: 1 }, { id: 2 }] });
-      setActive.contributionProfile.mockResolvedValue({ success: true });
-      setActive.salaryProfile.mockResolvedValue({ success: true });
+])("$hook.name", ({ hook, router, settingKey }) => {
+  // Each router has its own setActive, so a hook writing through the
+  // other profile's procedure fails the test.
+  const ownSetActive = () => mutationCalls(`${router}.setActive`);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    resetTrpcMock();
+    setQuery("settings.appSettings.list", [{ key: settingKey, value: 1 }]);
+    setQuery("contributionProfile.list", [{ id: 1 }, { id: 2 }]);
+    setQuery("salaryProfile.list", [{ id: 1 }, { id: 2 }]);
+    setMutationResult("contributionProfile.setActive", { success: true });
+    setMutationResult("salaryProfile.setActive", { success: true });
+  });
+
+  it(`writes through ${router}.setActive, not the generic appSettings.upsert`, async () => {
+    const { result } = renderHook(() => hook());
+
+    await act(async () => {
+      result.current[1](2);
+      await Promise.resolve();
     });
 
-    it(`writes through ${router}.setActive, not the generic appSettings.upsert`, async () => {
-      const { result } = renderHook(() => hook());
+    expect(ownSetActive()).toContainEqual({ id: 2 });
+  });
 
-      await act(async () => {
-        result.current[1](2);
-        await Promise.resolve();
-      });
+  it(`writes through ${router}.setActive with id: null when clearing the selection, instead of silently no-op'ing (advisor-caught 2026-09-01)`, async () => {
+    const { result } = renderHook(() => hook());
 
-      expect(ownSetActive).toHaveBeenCalledWith({ id: 2 });
+    await act(async () => {
+      result.current[1](null);
+      await Promise.resolve();
     });
 
-    it(`writes through ${router}.setActive with id: null when clearing the selection, instead of silently no-op'ing (advisor-caught 2026-09-01)`, async () => {
-      const { result } = renderHook(() => hook());
+    expect(ownSetActive()).toContainEqual({ id: null });
+  });
 
-      await act(async () => {
-        result.current[1](null);
-        await Promise.resolve();
-      });
+  it("invalidates every downstream query on a successful activation, not just the settings pointer", () => {
+    const { result } = renderHook(() => hook());
 
-      expect(ownSetActive).toHaveBeenCalledWith({ id: null });
+    // The activation succeeds: setActive's onSuccess runs.
+    act(() => {
+      result.current[1](2);
     });
 
-    it("invalidates every downstream query on a successful activation, not just the settings pointer", () => {
-      renderHook(() => hook());
-
-      act(() => {
-        setActiveOnSuccess?.();
-      });
-
-      expect(invalidate.appSettingsList).toHaveBeenCalled();
-      expect(ownInvalidate).toHaveBeenCalled();
-      expect(invalidate.contribution).toHaveBeenCalled();
-      expect(invalidate.paycheck).toHaveBeenCalled();
-      expect(invalidate.projection).toHaveBeenCalled();
-      expect(invalidate.retirement).toHaveBeenCalled();
-      expect(invalidate.brokerage).toHaveBeenCalled();
-      expect(invalidate.budget).toHaveBeenCalled();
-      expect(invalidate.savings).toHaveBeenCalled();
-      expect(invalidate.contributionAccounts).toHaveBeenCalled();
-    });
-  },
-);
+    for (const path of [
+      "settings.appSettings.list.invalidate",
+      `${router}.invalidate`,
+      "contribution.invalidate",
+      "paycheck.invalidate",
+      "projection.invalidate",
+      "retirement.invalidate",
+      "brokerage.invalidate",
+      "budget.invalidate",
+      "savings.invalidate",
+      "settings.contributionAccounts.invalidate",
+    ])
+      expect(utilsCalls(path), path).not.toHaveLength(0);
+  });
+});

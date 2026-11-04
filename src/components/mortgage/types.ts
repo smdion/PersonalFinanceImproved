@@ -1,40 +1,15 @@
-export type AmortEntry = {
-  month: number;
-  date: string;
-  payment: number;
-  principal: number;
-  interest: number;
-  extraPayment: number;
-  balance: number;
-};
+import type { RouterOutputs } from "@/lib/trpc";
 
-export type LoanSummary = {
-  loanId: number;
-  name: string;
-  currentBalance: number;
-  remainingMonths: number;
-  totalInterestLife: number;
-  amortizationSchedule: AmortEntry[];
-  payoffDate: string;
-  payoffPercent: number;
-  totalInterestPaid: number;
-  totalInterestSaved: number;
-  monthsAheadOfSchedule: number;
-  fullTermStandardInterest?: number;
-  paidOffDate?: string;
-  endedBalance?: number;
-  wasRefinanced?: boolean;
-};
+type MortgageResult = NonNullable<
+  RouterOutputs["mortgage"]["computeActiveSummary"]["result"]
+>;
 
-export type LoanHistoryEntry = {
-  loanId: number;
-  name: string;
-  isActive: boolean;
-  interestRate: number;
-  refinancedInto?: string;
-  paidOffDate?: string;
-  endedBalance?: number;
-};
+/** One loan in computeActiveSummary's result. */
+export type LoanSummary = MortgageResult["loans"][number];
+
+export type AmortEntry = LoanSummary["amortizationSchedule"][number];
+
+export type LoanHistoryEntry = MortgageResult["loanHistory"][number];
 
 export type WhatIfScenarioRow = {
   id: number;

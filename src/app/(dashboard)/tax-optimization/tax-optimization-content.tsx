@@ -49,14 +49,14 @@ export function TaxOptimizationContent() {
     {
       validIds: retirementProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeRetirementId,
+      activeProfileId: activeRetirementId,
     },
   );
 
   const selection = useMemo(
     () =>
       effectiveRetirementProfileId != null
-        ? { retirementProfileId: effectiveRetirementProfileId }
+        ? { selection: { retirement: effectiveRetirementProfileId } }
         : {},
     [effectiveRetirementProfileId],
   );

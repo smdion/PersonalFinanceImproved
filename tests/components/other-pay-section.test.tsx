@@ -3,32 +3,19 @@
  * a preset change updates the line's flags; adding a line uses the preset's
  * flags. Invented lines only.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  holdMutation,
+  mutationCallOptions,
+  mutationCalls,
+  resetTrpcMock,
+} from "./trpc-mock";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
-const m = vi.hoisted(() => ({
-  create: vi.fn(),
-  update: vi.fn(),
-  remove: vi.fn(),
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
-vi.mock("@/lib/trpc", () => {
-  const mut = (fn: unknown) => ({
-    useMutation: () => ({ mutate: fn, isPending: false, error: null }),
-  });
-  return {
-    trpc: {
-      useUtils: () => ({ paycheck: { invalidate: vi.fn() } }),
-      settings: {
-        earnings: {
-          create: mut(m.create),
-          update: mut(m.update),
-          delete: mut(m.remove),
-        },
-      },
-    },
-  };
-});
 
 import { OtherPaySection } from "@/components/paycheck/other-pay-section";
 
@@ -42,6 +29,14 @@ const row = {
   amount: 7.81,
 };
 
+beforeEach(() => {
+  resetTrpcMock();
+  // The writes don't settle: the tests read what was sent.
+  holdMutation("settings.earnings.create");
+  holdMutation("settings.earnings.update");
+  holdMutation("settings.earnings.delete");
+});
+
 describe("OtherPaySection", () => {
   it("shows a taxable benefit and changes its treatment in one update", () => {
     render(<OtherPaySection jobId={1} rows={[row]} onSetAmount={vi.fn()} />);
@@ -50,7 +45,7 @@ describe("OtherPaySection", () => {
     );
     expect(picker).toHaveValue("imputed");
     fireEvent.change(picker, { target: { value: "paidTaxed" } });
-    expect(m.update).toHaveBeenCalledWith(
+    expect(mutationCalls("settings.earnings.update")).toContainEqual(
       expect.objectContaining({
         id: 3,
         isCash: true,
@@ -74,7 +69,7 @@ describe("OtherPaySection", () => {
       target: { value: "imputed" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(m.create).toHaveBeenCalledWith(
+    expect(mutationCalls("settings.earnings.create")).toEqual([
       {
         jobId: 1,
         earningName: "Group life",
@@ -82,8 +77,10 @@ describe("OtherPaySection", () => {
         federalTaxable: true,
         ficaTaxable: true,
       },
+    ]);
+    expect(mutationCallOptions("settings.earnings.create")).toEqual([
       expect.anything(),
-    );
+    ]);
   });
 
   it("read-only with no lines renders nothing", () => {

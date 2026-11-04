@@ -3,41 +3,40 @@
  * Traditional pair capped together as one account (computeGroupedEmployerMatch),
  * and which match groups count the bonus check (matchPayGroupsWithBonus).
  */
-import type { MatchTaxTreatment } from "@/lib/config/enum-values";
+import type {
+  ContributionMethod,
+  MatchTaxTreatment,
+} from "@/lib/config/enum-values";
 import { rowTakesFromBonusCheck } from "@/lib/calculators/paycheck";
+import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
+import {
+  fractionFromPercent,
+  parseEmployerMatch,
+} from "@/lib/pure/contributions/contribution-amount";
 
 /**
- * Compute annual employer match from DB contribution row fields.
- * When maxMatchPct is 0 or unset, treat as no cap (unlimited match).
+ * Compute annual employer match from DB contribution row fields
+ * (`parseEmployerMatch` reads the stored terms).
  */
 export function computeEmployerMatch(
   matchType: string | null,
   matchValue: number,
   maxMatchPct: number,
   empContribAnnual: number,
-  empContribMethod: string,
+  /** "combined": a group's total, read as a share of pay. */
+  empContribMethod: ContributionMethod | "combined",
   empContribValue: number,
   salary: number,
 ): number {
-  if (!matchType || matchType === "none") return 0;
-
-  if (matchType === "percent_of_contribution") {
-    if (salary <= 0) return 0;
-    const matchRate = matchValue / 100;
-    const empPct =
-      empContribMethod === "percent_of_salary"
-        ? empContribValue / 100
-        : empContribAnnual / salary;
-    const cappedPct = maxMatchPct > 0 ? Math.min(empPct, maxMatchPct) : empPct;
-    return salary * cappedPct * matchRate;
-  }
-  if (matchType === "dollar_match") {
-    return matchValue;
-  }
-  if (matchType === "fixed_annual") {
-    return matchValue;
-  }
-  return 0;
+  const match = parseEmployerMatch(matchType, matchValue, maxMatchPct);
+  if (match.kind === "none") return 0;
+  if (match.kind === "flat") return match.perYear;
+  if (salary <= 0) return 0;
+  const empPct =
+    empContribMethod === "percent_of_salary"
+      ? fractionFromPercent(empContribValue)
+      : empContribAnnual / salary;
+  return salary * applyCeiling(empPct, match.capOfPay) * match.rate;
 }
 
 /**
@@ -219,10 +218,9 @@ export function computeGroupedEmployerMatch(
     // The full match: the same formula with the group contributing at
     // least the capped percent of pay. Uncapped or flat matches can't go
     // higher than what's already captured.
+    const cap = storedCeiling(winner.employerMaxMatchPct);
     const capAnnual =
-      winner.employerMaxMatchPct > 0
-        ? winner.employerMaxMatchPct * winner.salary
-        : combinedAnnual;
+      cap.kind === "at" ? cap.amount * winner.salary : combinedAnnual;
     const availableMatch = computeEmployerMatch(
       winner.employerMatchType,
       winner.employerMatchValue,
@@ -241,8 +239,8 @@ export function computeGroupedEmployerMatch(
         matchAvailableAnnual: availableMatch * share,
         fullMatchShareOfPay:
           winner.employerMatchType === "percent_of_contribution" &&
-          winner.employerMaxMatchPct > 0
-            ? winner.employerMaxMatchPct
+          cap.kind === "at"
+            ? cap.amount
             : null,
         // Match tax character is a plan property, not a per-split-row one
         // — every row in the group gets the winning row's value, never its

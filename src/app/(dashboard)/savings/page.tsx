@@ -126,20 +126,14 @@ export default function SavingsPage() {
 
   // Independent Salary Profile axis — the active one.
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  // Tiers, the same shape every budget caller sends (docs/RULES.md
-  // "Profile Resolution").
-  const contributionProfileTiers = {
-    localSelectionId: null,
-    globalDefaultId: rawActiveContribProfileId,
-  };
-  const salaryProfileTiers = {
-    localSelectionId: null,
-    globalDefaultId: rawActiveSalaryProfileId,
+  // The active ids, sent explicitly (null while loading = none).
+  const paySelection = {
+    contribution: rawActiveContribProfileId,
+    salary: rawActiveSalaryProfileId,
   };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
-    contributionProfile: contributionProfileTiers,
-    salaryProfile: salaryProfileTiers,
+    selection: paySelection,
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
 
@@ -177,15 +171,8 @@ export default function SavingsPage() {
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
   const recalcMaxMonthlyFunding = maxMonthlyFunding;
 
-  // The exact Contribution/Salary Profile selection `paycheckData` (and so
-  // recalcMaxMonthlyFunding/maxMonthlyFunding) was computed from — threaded
-  // into recalculateAllocation/lockInAllocationPercent's mutation calls so
-  // the server-side live-pool recompute can't silently diverge from what
-  // this same preview just showed (the mutation
-  // previously always used the household's globally-active Contribution/
-  // Salary Profile regardless of what was actually selected here, so a
-  // household with any non-default selection saw "Pull in new pay" report
-  // success while the persisted value never moved).
+  // The profiles this preview used, threaded into the recalculate and
+  // lock-in mutations so their live pool matches it.
   const recalcIncomeParams = {
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
@@ -193,11 +180,7 @@ export default function SavingsPage() {
     ...(effectiveSalaryProfileId != null
       ? { salaryProfileId: effectiveSalaryProfileId }
       : {}),
-    // Threaded through so budget.computeActiveSummary's own resolution
-    // (inside computeLiveMaxMonthlyFunding, savings.ts) matches exactly
-    // what this page's own maxMonthlyFunding query above used.
-    contributionProfileTiers: contributionProfileTiers,
-    salaryProfileTiers: salaryProfileTiers,
+    selection: paySelection,
   };
 
   // ── Cross-section coordination ──

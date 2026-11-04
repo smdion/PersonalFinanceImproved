@@ -165,6 +165,8 @@
     "ENG-36": "H",
     "ENG-37": "M",
     "ENG-38": "M",
+    "ENG-39": "M",
+    "ENG-40": "M",
     "WDR-01": "H",
     "WDR-02": "H",
     "WDR-03": "M",
@@ -210,6 +212,7 @@
     "SIM-21": "H",
     "SIM-22": "H",
     "SIM-23": "L",
+    "SIM-24": "M",
     "HH-01": "H",
     "HH-02": "H",
     "HH-03": "M",
@@ -269,7 +272,8 @@
     "HH-58": "M",
     "HH-59": "L",
     "HH-60": "L",
-    "HH-61": "M"
+    "HH-61": "M",
+    "HH-62": "L"
   },
   "highRiskWithoutIndependentTest": [
     "ENG-01",
@@ -376,7 +380,7 @@
     "src/lib/calculators/engine/contribution-projection.ts:projectSpecAmount",
     "src/lib/calculators/engine/contribution-routing.ts:capSpecs",
     "src/lib/calculators/engine/contribution-routing.ts:slotLimits",
-    "src/lib/calculators/engine/gap-year-draw.ts:gapShortfallFloor",
+    "src/lib/calculators/engine/gap-year-draw.ts:shortfallFloor",
     "src/lib/calculators/engine/guyton-klinger.ts:applyGuytonKlingerStrategy",
     "src/lib/calculators/engine/individual-account-tracking.ts:accrueIndividualBasis",
     "src/lib/calculators/engine/individual-account-tracking.ts:buildIndividualYearBalances",

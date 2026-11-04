@@ -1,6 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  setQueryState,
+  type MockOutput,
+} from "./trpc-mock";
 
 // Direct smoke test for src/components/cards/dashboard/contributions-card.tsx.
 // tests/components/dashboard.test.tsx mocks out all dashboard cards at the
@@ -28,12 +35,25 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   ],
 }));
 
-let paceQuery: { data: unknown } = { data: undefined };
-let contribQuery: { data: unknown; isLoading: boolean; error: unknown } = {
-  data: undefined,
-  isLoading: true,
-  error: null,
-};
+const CONTRIB = "contribution.computeSummary";
+const PACE = "investments.getSavingsThisYear";
+/** What contribution.computeSummary answers. */
+function contribQueryIs({
+  data,
+  isLoading,
+  error,
+}: {
+  data: MockOutput<typeof CONTRIB> | undefined;
+  isLoading: boolean;
+  error: unknown;
+}) {
+  setQuery(CONTRIB, data);
+  setQueryState(CONTRIB, { isLoading, error });
+}
+/** What investments.getSavingsThisYear answers. */
+function paceQueryIs({ data }: { data: MockOutput<typeof PACE> | undefined }) {
+  setQuery(PACE, data);
+}
 
 vi.mock("@/lib/hooks/use-high-income-line", () => ({
   useHighIncomeLine: () => ({
@@ -44,30 +64,8 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    contribution: {
-      computeSummary: { useQuery: () => contribQuery },
-    },
-    investments: {
-      getSavingsThisYear: { useQuery: () => paceQuery },
-    },
-    // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
-    // useEffectiveContribProfileId → useActiveContribProfile. An empty list
-    // is the "nothing to resolve" case: the hook leaves the active id alone
-    // rather than re-pointing it.
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { ContributionsCard } from "@/components/cards/dashboard/contributions-card";
@@ -183,21 +181,38 @@ const mockData = {
   jointTotals: { totalWithoutMatch: 0, totalWithMatch: 0 },
 };
 
+beforeEach(() => {
+  resetTrpcMock();
+  // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
+  // useEffectiveContribProfileId → useActiveContribProfile. An empty list
+  // is the "nothing to resolve" case: the hook leaves the active id alone
+  // rather than re-pointing it.
+  setQuery("salaryProfile.list", []);
+  setQuery("contributionProfile.list", []);
+  holdMutation("salaryProfile.setActive");
+  holdMutation("contributionProfile.setActive");
+  contribQueryIs({ data: undefined, isLoading: true, error: null });
+});
+
 describe("ContributionsCard smoke", () => {
   it("renders a loading card while the query is pending", () => {
-    contribQuery = { data: undefined, isLoading: true, error: null };
+    contribQueryIs({ data: undefined, isLoading: true, error: null });
     render(<ContributionsCard />);
     expect(screen.getByText("Contributions")).toBeInTheDocument();
   });
 
   it("renders an error card when the query fails", () => {
-    contribQuery = { data: undefined, isLoading: false, error: new Error("x") };
+    contribQueryIs({
+      data: undefined,
+      isLoading: false,
+      error: new Error("x"),
+    });
     render(<ContributionsCard />);
     expect(screen.getByText("Failed to load")).toBeInTheDocument();
   });
 
   it("renders per-person account types with funding bars and household totals", () => {
-    contribQuery = { data: mockData, isLoading: false, error: null };
+    contribQueryIs({ data: mockData, isLoading: false, error: null });
     render(<ContributionsCard />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("401(k)")).toBeInTheDocument();
@@ -209,22 +224,22 @@ describe("ContributionsCard smoke", () => {
   });
 
   it("shows whether money is going in as set up, and what's saved so far", () => {
-    contribQuery = { data: mockData, isLoading: false, error: null };
-    paceQuery = {
+    contribQueryIs({ data: mockData, isLoading: false, error: null });
+    paceQueryIs({
       data: {
         accounts: [{ performanceAccountId: 1, status: "on_pace" }],
         total: { saved: 9000, unposted: 500, status: "on_pace" },
       },
-    };
+    });
     render(<ContributionsCard />);
     expect(screen.getAllByText("On pace").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/Saved so far this year/)).toBeInTheDocument();
     expect(screen.getByText(/on its way/)).toBeInTheDocument();
-    paceQuery = { data: undefined };
+    paceQueryIs({ data: undefined });
   });
 
   it("renders joint accounts in their own section when present", () => {
-    contribQuery = {
+    contribQueryIs({
       data: {
         ...mockData,
         jointAccountTypes: [
@@ -241,7 +256,7 @@ describe("ContributionsCard smoke", () => {
       },
       isLoading: false,
       error: null,
-    };
+    });
     render(<ContributionsCard />);
     expect(screen.getByText("Joint")).toBeInTheDocument();
     expect(screen.getByText("Joint Brokerage")).toBeInTheDocument();
@@ -255,14 +270,14 @@ describe("ContributionsCard smoke", () => {
         projected: view(24000, 3000, 23500),
       },
     };
-    contribQuery = {
+    contribQueryIs({
       data: {
         ...mockData,
         people: [{ ...mockData.people[0], accountTypes: [overAccount] }],
       },
       isLoading: false,
       error: null,
-    };
+    });
     render(<ContributionsCard />);
     expect(screen.getByText("Over")).toBeInTheDocument();
   });

@@ -28,13 +28,6 @@ import type {
 } from "@/components/budget";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 
-/** Non-column tiers of docs/DESIGN.md's profile precedence, supplied by the
- *  page ([column profile] → local selection → active). */
-type ProfileResolutionTiers = {
-  localSelectionId: number | null;
-  globalDefaultId: number | null;
-};
-
 type ApiActualsData =
   | {
       service?: string | null;
@@ -77,8 +70,8 @@ export function useBudgetDerivedData({
   data,
   savingsGoals,
   apiActualsData,
-  contributionProfileTiers,
-  salaryProfileTiers,
+  contribProfileId,
+  salaryProfileId,
   editMode,
   getDraft,
   visibleCount,
@@ -86,11 +79,10 @@ export function useBudgetDerivedData({
   data: DataShape;
   savingsGoals: SavingsGoalEntry[] | undefined;
   apiActualsData: ApiActualsData;
-  /** The profile tiers (local selection → active) — must be the SAME
-   *  values sent to budget.computeActiveSummary, or server totals and this
-   *  page's payroll breakdown resolve different profiles. */
-  contributionProfileTiers: ProfileResolutionTiers;
-  salaryProfileTiers: ProfileResolutionTiers;
+  /** The profiles budget.computeActiveSummary resolves for this page (its
+   *  pick, else the active one), so the payroll breakdown matches it. */
+  contribProfileId: number | null;
+  salaryProfileId: number | null;
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
   visibleCount: number;
@@ -110,13 +102,8 @@ export function useBudgetDerivedData({
   // ---- Pay under the profiles this page shows ----
   // A budget column is a spending level, not a different pay world, so one
   // paycheck query (the page's local selection — What-If — else the active
-  // profiles; the SAME tiers sent to budget.computeActiveSummary) serves
-  // every column.
-  const contribProfileId =
-    contributionProfileTiers.localSelectionId ??
-    contributionProfileTiers.globalDefaultId;
-  const salaryProfileId =
-    salaryProfileTiers.localSelectionId ?? salaryProfileTiers.globalDefaultId;
+  // profiles, as budget.computeActiveSummary resolves them) serves every
+  // column.
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery({
     ...(contribProfileId != null
       ? { contributionProfileId: contribProfileId }

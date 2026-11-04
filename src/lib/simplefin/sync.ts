@@ -15,7 +15,6 @@ import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { countsInLiveBalance } from "@/lib/pure/simplefin-feeds";
 import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
-import type { DbOrTx } from "@/server/helpers/transforms";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import {
   getAccounts,
@@ -37,10 +36,9 @@ import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { utcDayOf } from "@/lib/utils/date";
 import { toDecimalColumn } from "@/lib/utils/math";
 import { localDateStr } from "@/lib/utils/date";
+import type { Db, DbOrTx } from "@/lib/db";
 
 export { localDateStr };
-
-type Db = typeof import("@/lib/db").db;
 
 export type SimplefinConfig = {
   accessUrl: string;

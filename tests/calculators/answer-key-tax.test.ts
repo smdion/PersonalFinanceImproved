@@ -61,9 +61,9 @@ import { computeNiit } from "@/lib/config/niit";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import type {
   DecumulationSlot,
-  FilingStatusType,
   TaxBracketInput,
 } from "@/lib/calculators/types";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 type Year = 2025 | 2026;
 
@@ -86,14 +86,14 @@ function limit(year: Year, key: string): number {
 }
 
 /** The Pub 15-T standard (non-2(c)) withholding table, as shipped. */
-function withholding(year: Year, status: FilingStatusType) {
+function withholding(year: Year, status: ReturnFilingStatus) {
   const t = shippedYear(year).withholding.tables[status];
   if (!t) throw new Error(`no ${year} ${status} withholding table`);
   return t.standard as WithholdingBracket[];
 }
 
 /** The Form 1040 rate schedule rebuilt from the withholding table. */
-function rateSchedule(year: Year, status: FilingStatusType) {
+function rateSchedule(year: Year, status: ReturnFilingStatus) {
   const rows = withholding(year, status);
   return toTaxableIncomeBrackets(
     rows.map((r, i) => ({
@@ -109,7 +109,7 @@ function ltcgBrackets(year: Year): LtcgBracketTable {
 }
 
 /** TAX(status, x): the exact schedule (spec BR-2), as the Taxes page runs it. */
-function scheduleTax(year: Year, status: FilingStatusType, ti: number) {
+function scheduleTax(year: Year, status: ReturnFilingStatus, ti: number) {
   return sumBracketTax(ti, rateSchedule(year, status)).total;
 }
 
@@ -117,7 +117,7 @@ function scheduleTax(year: Year, status: FilingStatusType, ti: number) {
  *  ordinary portion (line 5) on the schedule, the gains stacked on it. */
 function stackedTax(
   year: Year,
-  status: FilingStatusType,
+  status: ReturnFilingStatus,
   taxableIncome: number,
   gains: number,
 ) {
@@ -137,7 +137,7 @@ function stackedTax(
  */
 function yearTax(c: {
   year: Year;
-  status: FilingStatusType;
+  status: ReturnFilingStatus;
   ordinary: number;
   gains?: number;
   taxableSS?: number;
@@ -186,7 +186,7 @@ function yearTax(c: {
 function taxableSS(
   benefits: number,
   other: number,
-  status: FilingStatusType,
+  status: ReturnFilingStatus,
   gains = 0,
 ) {
   return taxableSSFor(
@@ -207,7 +207,7 @@ function taxableSS(
  */
 function seniorDeduction(c: {
   year: number;
-  status: FilingStatusType;
+  status: ReturnFilingStatus;
   seniors: number;
   magi: number;
 }) {
@@ -236,7 +236,7 @@ function seniorDeduction(c: {
  */
 function deductions(c: {
   year: Year;
-  status: FilingStatusType;
+  status: ReturnFilingStatus;
   seniors: number;
   magi: number;
 }) {
@@ -256,7 +256,7 @@ function deductions(c: {
 /** The Taxes page's bracket input for a status, on the shipped 2026
  *  figures (the shape `buildLiabilityBracketInput` gives
  *  `calculateHouseholdTax`). */
-function liabilityInput(status: FilingStatusType): TaxBracketInput {
+function liabilityInput(status: ReturnFilingStatus): TaxBracketInput {
   return {
     filingStatus: status,
     w4Checkbox: false,
@@ -280,7 +280,7 @@ function liabilityInput(status: FilingStatusType): TaxBracketInput {
  * (`fica_medicare_surtax_liability_<status>`); employers withhold above
  * the per-employer 200,000 (IRC 3102(f)).
  */
-function householdTax(status: FilingStatusType, jobs: number[]) {
+function householdTax(status: ReturnFilingStatus, jobs: number[]) {
   return calculateHouseholdTax({
     people: jobs.map((w) => ({ federalWages: w, ficaWages: w })),
     taxBrackets: liabilityInput(status),
@@ -298,7 +298,7 @@ function householdTax(status: FilingStatusType, jobs: number[]) {
  * the dollar, so the balance is read from there (none when they're within
  * a dollar).
  */
-function additionalMedicare(status: FilingStatusType, jobs: number[]) {
+function additionalMedicare(status: ReturnFilingStatus, jobs: number[]) {
   const r = householdTax(status, jobs);
   const note = r.warnings.find((w) => w.startsWith("Additional Medicare"));
   const amount = (re: RegExp) =>

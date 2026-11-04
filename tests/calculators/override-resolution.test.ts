@@ -232,7 +232,7 @@ describe("resolveDecumulationConfig", () => {
     expect(config.withdrawalOrder).toContain("ira");
     expect(config.withdrawalOrder).toContain("403b");
     // Explicitly-ordered categories keep their relative order; missing
-    // ones append after, in DEFAULT_DECUMULATION_ORDER's relative order.
+    // ones append after, in getDefaultDecumulationOrder()'s relative order.
     expect(config.withdrawalOrder).toEqual([
       "brokerage",
       "401k",

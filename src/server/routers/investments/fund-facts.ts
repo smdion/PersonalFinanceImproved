@@ -13,7 +13,6 @@ import {
   compositionBucketSchema,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
-import { localDateStr } from "@/lib/utils/date";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "./holdings-overview";
@@ -240,7 +239,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
       const values = {
         securityId: input.securityId,
         source: "user" as const,
-        asOf: localDateStr(),
+        asOf: ctx.scope.today,
         ...(input.expenseRatio !== undefined
           ? {
               expenseRatio:

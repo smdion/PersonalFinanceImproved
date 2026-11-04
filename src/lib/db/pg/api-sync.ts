@@ -16,7 +16,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type {
-  BudgetApiService,
   InvestmentTransactionKind,
   SecurityKind,
   SecurityFactSource,
@@ -26,6 +25,7 @@ import type {
   StandInPreview,
   TaxDataUpdateStatus,
 } from "@/lib/config/enum-values";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { mortgageLoans } from "./mortgages";
 import { performanceAccounts } from "./performance";
 import type { AccountMapping, ApiConfig } from "./tax-tables";
@@ -118,10 +118,8 @@ export const projectionCache = pgTable(
     lastReadAt: timestamp("last_read_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    /** Bumped whenever the engine's computation logic changes in a way
-     *  that could change output for the same inputs — auto-invalidates
-     *  stale-shaped/stale-computed rows after a deploy without needing a
-     *  manual cache-clear. See PROJECTION_CACHE_ENGINE_VERSION. */
+    /** A hash of the engine code (src/lib/generated/engine-hash.ts): rows
+     *  written by other code never match. See PROJECTION_CACHE_ENGINE_VERSION. */
     engineVersion: integer("engine_version").notNull(),
   },
   (table) => [

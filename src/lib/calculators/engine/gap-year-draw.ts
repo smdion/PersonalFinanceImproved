@@ -24,6 +24,7 @@
  */
 import type { DecumulationSlot } from "../types";
 import { roundToCents, sumBy } from "../../utils/math";
+import { SHORTFALL_MATERIALITY } from "../../constants";
 import {
   growLtcgBrackets,
   growWithholdingBrackets,
@@ -87,10 +88,11 @@ export type GapYearAccounts = {
   eligibility: EligibilityRecord | undefined;
 };
 
-/** Below this the year counts as funded: rounding, not a shortfall. Same
- *  floor as a retirement year's. */
-export function gapShortfallFloor(need: number): number {
-  return Math.max(50, need * 0.01);
+/** Below this a gap or retirement year counts as funded: rounding, not a
+ *  shortfall (SHORTFALL_MATERIALITY). */
+export function shortfallFloor(need: number): number {
+  const { minimum, shareOfNeed } = SHORTFALL_MATERIALITY;
+  return Math.max(minimum, need * shareOfNeed);
 }
 
 export function runGapYearDraw(
@@ -202,7 +204,7 @@ export function runGapYearDraw(
     slots: [],
     warnings: [],
   };
-  if (need < gapShortfallFloor(need))
+  if (need < shortfallFloor(need))
     return { draw: { ...noDraw, need: 0 }, accounts: null };
   if (input.gapYearDraws === false)
     return { draw: { ...noDraw, spendingCut: need }, accounts: null };

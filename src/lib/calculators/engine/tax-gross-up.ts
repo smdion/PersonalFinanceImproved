@@ -37,10 +37,10 @@ import type {
   ResolvedDecumulationConfig,
   AccountBalances,
   TaxBuckets,
-  FilingStatusType,
   IndividualAccountInput,
 } from "../types";
 import { computeNiit } from "../../config/niit";
+import { yearMagi } from "@/lib/pure/tax/year-income";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
 import {
@@ -57,11 +57,12 @@ import type {
 import {
   distributeWithdrawals,
   depleteIndividualBasis,
-  type IndKeyFn,
 } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 /** Input for the convergence estimation. */
 interface TaxEstimationInput {
@@ -80,7 +81,7 @@ interface TaxEstimationInput {
    *  top of the amount by definition). */
   ssSurplus?: number;
   /** Filing status for SS taxation thresholds */
-  filingStatus: FilingStatusType | null | undefined;
+  filingStatus: ReturnFilingStatus | null | undefined;
   /** Resolved decumulation config for this year */
   config: ResolvedDecumulationConfig;
   /** Tax rate configuration from decumulation defaults */
@@ -219,9 +220,8 @@ function evaluateCost(
   const clonedAcctBal = cloneAccountBalances(acctBal);
   // Same basis-derived ranking inputs the real
   // execution passes (deriveBasisRankingInputs's docblock) — no
-  // magiBeforeThisDraw here (this file has no magiHistory access; falls
-  // back to routeForMode's own ordinary-income-floor proxy, acceptable
-  // for a convergence-loop trial, not final pricing).
+  // magiBeforeThisDraw here, as in the real execution: routeForMode falls
+  // back to its own ordinary-income floor.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: input.brokerageBasisRatio,
@@ -237,12 +237,8 @@ function evaluateCost(
     clonedAcctBal,
     {
       taxBrackets: taxRates.taxBrackets,
-      // Read the resolved (possibly per-year-overridden)
-      // value, same fix as the real router's own call site
-      // (decumulation-year.ts) -- this file's own header docblock (Part
-      // "2." above) says this estimate and the real router must never
-      // diverge on what routing rule applies; leaving this unresolved
-      // would violate that for any household using the new override.
+      // The resolved (possibly per-year) value, as the real router reads
+      // it: this estimate and the router apply the same routing rule.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
       // Same rule, same reason as rothBracketTarget above: the
       // reserved-room estimate must target the rate a conversion will
@@ -257,12 +253,7 @@ function evaluateCost(
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
-      // This was missing entirely, a
-      // live divergence from the real router's own call site
-      // (decumulation-year.ts), which has passed this since the LTCG fix
-      // earlier in this same session. Same rule as the rothBracketTarget
-      // comment above: this estimate and the real router must never
-      // diverge on what routing rule applies.
+      // Passed as the real router passes it (same rule as above).
       standardDeduction: taxRates.standardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
@@ -326,18 +317,20 @@ function evaluateCost(
     taxableSS = taxableSSFor(input.ssIncome, taxResult, filingStatus);
     taxResult = price(taxableSS);
   }
-  // NIIT, priced as the year handler charges it (decumulation-year.ts):
-  // left out, a household above the threshold came up short by exactly the
-  // surtax every year. Roth conversions run later and stay out of MAGI here.
+  // NIIT, priced as the year handler charges it (decumulation-year.ts).
+  // Roth conversions run later and stay out of MAGI here.
+  const niitMagi = yearMagi(
+    {
+      traditionalDraws: taxResult.totalTraditionalWithdrawal,
+      rothTaxableGrowth: taxResult.rothTaxableGrowth,
+      rothConversions: 0,
+      realizedGains: taxResult.brokerageGainsPortion,
+      socialSecurity: { taxable: taxableSS },
+    },
+    "niit",
+  );
   const niit = filingStatus
-    ? computeNiit(
-        taxResult.totalTraditionalWithdrawal +
-          taxResult.rothTaxableGrowth +
-          taxResult.brokerageGainsPortion +
-          taxableSS,
-        taxResult.brokerageGainsPortion,
-        filingStatus,
-      )
+    ? computeNiit(niitMagi, taxResult.brokerageGainsPortion, filingStatus)
     : 0;
   const taxCost = roundToCents(taxResult.taxCost + niit);
   const totalCost = roundToCents(taxCost + taxResult.penaltyCost);
@@ -359,14 +352,13 @@ function evaluateCost(
   };
 }
 
-/** Rounds of the routing fixed point below, and how close (dollars) the
- *  share routing saw must come to the share the trial priced. Solver
- *  parameters, not figures: stopping short of the tolerance costs routing
- *  quality (bracket caps a little off), never correctness, because the real
- *  year routes with the same figure the accepted trial did and so
- *  reproduces it either way. */
+/** Rounds of the routing fixed point and how close (dollars) the routed share
+ *  must come to the priced one. Short of it costs routing quality, never
+ *  correctness: the real year routes with the accepted trial's figure. */
 const SS_ROUTING_ROUNDS = 6;
 const SS_ROUTING_TOLERANCE = 1;
+/** The first trial's flat 85% share (a seed, not the statutory tier-2 rate). */
+const FIRST_TRIAL_SS_SHARE = 0.85;
 
 /**
  * `evaluateCost` at W, with routing's bracket caps reading W's OWN taxable
@@ -407,7 +399,7 @@ function fixedWithdrawalEstimate(
 ): TaxEstimationResult {
   const { ssIncome, totalBalance } = input;
   const W = roundToCents(Math.max(0, Math.min(amount, totalBalance)));
-  const evalResult = evaluateAtOwnSS(W, ssIncome * 0.85, input);
+  const evalResult = evaluateAtOwnSS(W, ssIncome * FIRST_TRIAL_SS_SHARE, input);
   const taxableSS = evalResult.routedWithSS;
   const effectiveTaxRate = W > 0 ? evalResult.totalCost / W : 0;
   const derivedAfterTaxNeed = roundToCents(
@@ -488,13 +480,12 @@ export function estimateWithdrawalTaxCost(
   const proceedsOf = (t: Trial) => deliveredOf(t) - t.e.netCost;
   const residualOf = (t: Trial) => roundToCents(afterTaxNeed - proceedsOf(t));
 
-  // Seeded with the flat 85% estimate. Proceeds at W = need can't exceed
-  // the need (cost is never negative), so this trial under-delivers or
-  // converges.
+  // At W = need the proceeds can't exceed the need (cost is never
+  // negative), so this first trial under-delivers or converges.
   const W0 = roundToCents(Math.max(0, Math.min(afterTaxNeed, totalBalance)));
   let trial: Trial = {
     W: W0,
-    e: evaluateAtOwnSS(W0, ssIncome * 0.85, input),
+    e: evaluateAtOwnSS(W0, ssIncome * FIRST_TRIAL_SS_SHARE, input),
   };
 
   let lo: Trial | null = null;

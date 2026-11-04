@@ -9,6 +9,7 @@
  */
 
 import { z } from "zod";
+import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 
 // ── Decimal string (shared across routers and JSONB active-field schemas) ──
 
@@ -204,12 +205,6 @@ export const ACCOUNT_OWNERSHIP_VALUES = ["individual", "joint"] as const;
 export type AccountOwnership = (typeof ACCOUNT_OWNERSHIP_VALUES)[number];
 export const accountOwnershipSchema = z.enum(ACCOUNT_OWNERSHIP_VALUES);
 
-// ── W-4 Filing Status ──
-
-export const W4_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
-export type W4FilingStatus = (typeof W4_FILING_STATUS_VALUES)[number];
-export const w4FilingStatusSchema = z.enum(W4_FILING_STATUS_VALUES);
-
 // ── Bonus Destination ──
 
 /** Where a job's bonus goes: into the budget, or extra spending outside it
@@ -222,8 +217,6 @@ export const DEFAULT_BONUS_DESTINATION: BonusDestination = "budget";
 
 // ── Budget API Service ──
 
-export const BUDGET_API_SERVICE_VALUES = ["ynab", "actual"] as const;
-export type BudgetApiService = (typeof BUDGET_API_SERVICE_VALUES)[number];
 export const budgetApiServiceSchema = z.enum(BUDGET_API_SERVICE_VALUES);
 
 // ── API Sync Direction ──
@@ -293,8 +286,7 @@ export const UTILITY_USUAL_UNIT: Record<UtilityKind, UtilityUnit> = {
 export const UTILITY_SOURCE_VALUES = [
   "import",
   "manual",
-  "ynab",
-  "actual",
+  ...BUDGET_API_SERVICE_VALUES,
 ] as const;
 export type UtilitySource = (typeof UTILITY_SOURCE_VALUES)[number];
 export const utilitySourceSchema = z.enum(UTILITY_SOURCE_VALUES);
@@ -344,3 +336,7 @@ export const DEBT_KIND_VALUES = [
 ] as const;
 export type DebtKind = (typeof DEBT_KIND_VALUES)[number];
 export const debtKindSchema = z.enum(DEBT_KIND_VALUES);
+
+/** A view's dollars: as projected, or today's ("real"). */
+export const DOLLAR_BASIS_VALUES = ["nominal", "real"] as const;
+export type DollarBasis = (typeof DOLLAR_BASIS_VALUES)[number];

@@ -10,15 +10,14 @@ import type {
   MonteCarloPercentileBand,
   MonteCarloResult,
 } from "@/lib/calculators/types";
-
-export type DollarMode = "nominal" | "real";
+import type { DollarBasis } from "@/lib/config/enum-values";
 
 export function simulationDollars(
   result: Pick<
     MonteCarloResult,
     "percentileBands" | "distributions" | "medianEndBalance" | "worstCase"
   > & { today: MonteCarloResult["today"] },
-  mode: DollarMode,
+  mode: DollarBasis,
 ): {
   percentileBands: MonteCarloPercentileBand[];
   terminalBalance: DistributionSummary;
@@ -33,4 +32,31 @@ export function simulationDollars(
         medianEndBalance: result.medianEndBalance,
         p5EndBalance: result.worstCase.p5EndBalance,
       };
+}
+
+/** A year's price index against `baseYear`: 1 at or before it. */
+export type Deflator = {
+  readonly baseYear: number;
+  readonly indexOf: (year: number) => number;
+};
+
+/** One flat annual rate compounded from `baseYear` (a view's own rate). */
+export function flatDeflator(
+  baseYear: number,
+  annualInflation: number,
+): Deflator {
+  return {
+    baseYear,
+    indexOf: (year) =>
+      year > baseYear ? Math.pow(1 + annualInflation, year - baseYear) : 1,
+  };
+}
+
+/** A `year` figure in the deflator's base-year dollars. */
+export function toTodaysDollars(
+  value: number,
+  year: number,
+  deflator: Deflator,
+): number {
+  return value / deflator.indexOf(year);
 }

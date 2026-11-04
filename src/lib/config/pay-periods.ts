@@ -5,15 +5,16 @@
  * periods per month, and UI labels/notes. Replaces all inline maps and
  * hardcoded help text strings throughout the codebase.
  */
-export const PAY_PERIOD_CONFIG: Record<
-  string,
-  {
-    periodsPerYear: number;
-    defaultBudgetPerMonth: number;
-    label: string;
-    budgetNote: string;
-  }
-> = {
+import type { PayPeriod } from "./enum-values";
+
+type PayPeriodConfig = {
+  periodsPerYear: number;
+  defaultBudgetPerMonth: number;
+  label: string;
+  budgetNote: string;
+};
+
+export const PAY_PERIOD_CONFIG: Readonly<Record<PayPeriod, PayPeriodConfig>> = {
   weekly: {
     periodsPerYear: 52,
     defaultBudgetPerMonth: 4,
@@ -39,3 +40,26 @@ export const PAY_PERIOD_CONFIG: Record<
     budgetNote: "1 paycheck/month (exact)",
   },
 };
+
+/** The config for a stored pay-period string; undefined if it isn't one. */
+export function payPeriodConfig(
+  payPeriod: string,
+): PayPeriodConfig | undefined {
+  return isPayPeriod(payPeriod) ? PAY_PERIOD_CONFIG[payPeriod] : undefined;
+}
+
+// A key check, not payPeriodSchema: client code reads this file.
+function isPayPeriod(value: string): value is PayPeriod {
+  return Object.hasOwn(PAY_PERIOD_CONFIG, value);
+}
+
+/** Paychecks per year for a pay period; throws for a value that isn't one. */
+export function getPeriodsPerYear(payPeriod: string): number {
+  const config = payPeriodConfig(payPeriod);
+  if (config === undefined) {
+    throw new Error(
+      `Unknown pay period "${payPeriod}". Expected: weekly, biweekly, semimonthly, or monthly.`,
+    );
+  }
+  return config.periodsPerYear;
+}

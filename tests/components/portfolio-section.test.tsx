@@ -20,6 +20,7 @@ function makePortfolio(
   return {
     snapshotDate: "2026-06-01",
     allAccounts: [],
+    debtAccounts: [],
     localAccounts: [
       {
         label: "Traditional IRA — Alice",
@@ -41,7 +42,7 @@ function makePortfolio(
         id: "remote-1",
         name: "Remote IRA",
         balance: 30000,
-        type: "investment",
+        type: "other",
       },
     ],
     existingMappings: [],

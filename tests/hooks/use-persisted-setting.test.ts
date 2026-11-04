@@ -9,29 +9,23 @@ import { renderHook, act } from "@testing-library/react";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { toast } from "@/lib/hooks/use-toast";
 
-const listQuery = vi.fn();
-const upsertMutate = vi.fn();
-let upsertOnSuccess: (() => void) | undefined;
-const invalidate = vi.fn();
+import {
+  holdMutation,
+  mutationCallOptions,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+  settleMutation,
+  utilsCalls,
+} from "../components/trpc-mock";
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate } } },
-    }),
-    settings: {
-      appSettings: {
-        list: { useQuery: () => listQuery() },
-        upsert: {
-          useMutation: (opts?: { onSuccess?: () => void }) => {
-            upsertOnSuccess = opts?.onSuccess;
-            return { mutate: upsertMutate };
-          },
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../components/trpc-mock")).trpc,
 }));
+
+const UPSERT = "settings.appSettings.upsert";
+const list = (rows: { key: string; value: unknown }[] | undefined) =>
+  setQuery("settings.appSettings.list", rows);
 
 vi.mock("@/lib/hooks/use-toast", () => ({
   toast: { error: vi.fn() },
@@ -40,13 +34,16 @@ vi.mock("@/lib/hooks/use-toast", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  listQuery.mockReturnValue({ data: undefined });
+  resetTrpcMock();
+  // Writes settle only when a test says so.
+  holdMutation(UPSERT);
+  list(undefined);
 });
 
 describe("usePersistedSetting", () => {
   it("a key the loaded DB doesn't have reads as the default, not a stale local value", () => {
     localStorage.setItem("setting:my_key", JSON.stringify("stale"));
-    listQuery.mockReturnValue({ data: [{ key: "other", value: 1 }] });
+    list([{ key: "other", value: 1 }]);
     const { result } = renderHook(() =>
       usePersistedSetting<string>("my_key", "default"),
     );
@@ -67,9 +64,7 @@ describe("usePersistedSetting", () => {
       return value;
     });
     expect(seen.at(-1)).toEqual(["default", false]);
-    listQuery.mockReturnValue({
-      data: [{ key: "my_key", value: "from-db" }],
-    });
+    list([{ key: "my_key", value: "from-db" }]);
     const before = seen.length;
     rerender();
     // The first render after the data arrives already has it.
@@ -123,9 +118,7 @@ describe("usePersistedSetting", () => {
   });
 
   it("adopts the DB value once the query resolves", () => {
-    listQuery.mockReturnValue({
-      data: [{ key: "my_key", value: "db-value" }],
-    });
+    list([{ key: "my_key", value: "db-value" }]);
 
     const { result } = renderHook(() =>
       usePersistedSetting<string>("my_key", "default-value"),
@@ -147,30 +140,25 @@ describe("usePersistedSetting", () => {
     expect(localStorage.getItem("setting:my_key")).toBe(
       JSON.stringify("new-value"),
     );
-    expect(upsertMutate).toHaveBeenCalledWith(
+    expect(mutationCalls(UPSERT)).toEqual([
       { key: "my_key", value: "new-value" },
+    ]);
+    expect(mutationCallOptions(UPSERT)).toEqual([
       expect.objectContaining({ onSettled: expect.any(Function) }),
-    );
+    ]);
   });
 
   it("does not let a late-settling OLDER write's onSettled clear the guard while a NEWER write is pending (M42)", () => {
     const { result, rerender } = renderHook(
       ({ dbValue }: { dbValue: string | undefined }) => {
-        listQuery.mockReturnValue(
+        list(
           dbValue !== undefined
-            ? { data: [{ key: "my_key", value: dbValue }] }
-            : { data: undefined },
+            ? [{ key: "my_key", value: dbValue }]
+            : undefined,
         );
         return usePersistedSetting<string>("my_key", "default-value");
       },
       { initialProps: { dbValue: undefined as string | undefined } },
-    );
-
-    const settledCallbacks: (() => void)[] = [];
-    upsertMutate.mockImplementation(
-      (_input: unknown, opts: { onSettled: () => void }) => {
-        settledCallbacks.push(opts.onSettled);
-      },
     );
 
     // Two rapid writes — user types "A" then "B".
@@ -185,7 +173,7 @@ describe("usePersistedSetting", () => {
 
     // The OLDER write (A) settles late, after B already started.
     act(() => {
-      settledCallbacks[0]!();
+      settleMutation(UPSERT, { index: 0 });
     });
 
     // A stale DB refetch echoing back the pre-B value must NOT clobber "B",
@@ -198,7 +186,7 @@ describe("usePersistedSetting", () => {
     // Once the NEWER write (B) itself settles, the guard clears and a
     // DB-confirmed value can flow through again.
     act(() => {
-      settledCallbacks[1]!();
+      settleMutation(UPSERT);
     });
     act(() => {
       rerender({ dbValue: "B" });
@@ -207,13 +195,20 @@ describe("usePersistedSetting", () => {
   });
 
   it("invalidates the settings list query on successful upsert", () => {
-    renderHook(() => usePersistedSetting<string>("my_key", "default-value"));
+    const { result } = renderHook(() =>
+      usePersistedSetting<string>("my_key", "default-value"),
+    );
 
     act(() => {
-      upsertOnSuccess?.();
+      result.current[1]("new-value");
+    });
+    act(() => {
+      settleMutation(UPSERT);
     });
 
-    expect(invalidate).toHaveBeenCalled();
+    expect(utilsCalls("settings.appSettings.list.invalidate")).not.toHaveLength(
+      0,
+    );
   });
 
   /**
@@ -240,7 +235,7 @@ describe("usePersistedSetting", () => {
     });
 
     expect(writeVia).toHaveBeenCalledWith("new-value");
-    expect(upsertMutate).not.toHaveBeenCalled();
+    expect(mutationCalls(UPSERT)).toHaveLength(0);
     expect(result.current[0]).toBe("default-value");
     expect(localStorage.getItem("setting:my_key")).toBe(
       JSON.stringify("default-value"),
@@ -273,12 +268,8 @@ describe("usePersistedSetting", () => {
     });
     expect(result.current[0]).toBe("new-value");
 
-    const [, opts] = upsertMutate.mock.calls[0] as [
-      unknown,
-      { onError: (err: unknown) => void },
-    ];
     act(() => {
-      opts.onError(new Error("FORBIDDEN"));
+      settleMutation(UPSERT, { error: new Error("FORBIDDEN") });
     });
 
     expect(result.current[0]).toBe("default-value");

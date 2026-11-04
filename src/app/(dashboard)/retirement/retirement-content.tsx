@@ -8,6 +8,7 @@ import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { useFocusedState } from "@/lib/hooks/use-focus";
 import { useState, useMemo } from "react";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -44,7 +45,7 @@ export function RetirementContent() {
   const utils = trpc.useUtils();
   // Links to Plan Health or a projection year open their tab.
   const [pageTab, setPageTab] = useFocusedState("retirementTab", "projection");
-  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
   // Retirement Profile axis (the assumptions band) — the active profile;
   // the band's picker changes it, same as the header.
   const [activeRetirementId, setActiveRetirementId] =
@@ -57,7 +58,7 @@ export function RetirementContent() {
     {
       validIds: retirementProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeRetirementId,
+      activeProfileId: activeRetirementId,
     },
   );
   // The plan's projection input — the one builder the dashboard uses too
@@ -70,17 +71,14 @@ export function RetirementContent() {
     salaryProfileId: effectiveSalaryProfileId,
     snapshotId,
   } = plan.ids;
-  const decBudgetProfileId = plan.input.decumulationBudgetProfileId ?? null;
-  const decBudgetCol = plan.input.decumulationBudgetColumn ?? null;
-  const decExpenseOverride = plan.input.decumulationExpenseOverride ?? null;
+  const decBudget = plan.input.selection.decumulationBudget;
   const [, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
   );
   const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
   const snapshotOptions = snapshotTotalsQuery.data ?? [];
-  // Shared across engineInput and comparisonInput below — the plan input
-  // without the withdrawal-editor defaults (these queries don't take them).
+  // The plan input minus the withdrawal-editor defaults these queries skip.
   const baseInput = useMemo(() => {
     const { decumulationDefaults: _decumulationDefaults, ...rest } = plan.input;
     return rest;
@@ -152,7 +150,6 @@ export function RetirementContent() {
   }
 
   const { settings, people: peopleLookup, perPersonSettings } = data;
-
   // Resolve active budget column label for subtitle
   const accProfileSummary = data.budgetProfileSummaries?.find(
     (p: { id: number; isActive: boolean }) =>
@@ -326,9 +323,9 @@ export function RetirementContent() {
             <ProjectionCard
               people={peopleLookup}
               withdrawalRate={parseFloat(settings.withdrawalRate) * 100}
-              decumulationBudgetProfileId={decBudgetProfileId ?? undefined}
-              decumulationBudgetColumn={decBudgetCol ?? undefined}
-              decumulationExpenseOverride={decExpenseOverride ?? undefined}
+              decumulationBudgetProfileId={decBudget?.profileId}
+              decumulationBudgetColumn={decBudget?.column}
+              decumulationExpenseOverride={decBudget?.annualExpenses}
               parentCategoryFilter="Retirement"
               contributionProfileId={effectiveContribProfileId ?? undefined}
               salaryProfileId={effectiveSalaryProfileId ?? undefined}

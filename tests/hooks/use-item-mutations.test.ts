@@ -16,11 +16,17 @@
  * reverts), and must clone rather than mutate the existing
  * `contribAmounts` array in place.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
 import type { MutableRefObject } from "react";
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import {
+  holdMutation,
+  queryAnswer,
+  resetTrpcMock,
+  setQuery,
+} from "../components/trpc-mock";
 
 type RawItemLike = {
   id: number;
@@ -31,56 +37,20 @@ type RawItemLike = {
   amounts: number[];
 };
 
-let cachedData: { rawItems: RawItemLike[] } | undefined;
+const SUMMARY = "budget.computeActiveSummary";
+/** The summary cache, as the hook's optimistic patch left it. */
+const cached = () => queryAnswer(SUMMARY) as { rawItems: RawItemLike[] };
+const cache = (data: { rawItems: RawItemLike[] }) => setQuery(SUMMARY, data);
 
-const cancel = vi.fn();
-const getData = vi.fn(() => cachedData);
-const setData = vi.fn(
-  (_input: unknown, updater: unknown | ((prev: unknown) => unknown)) => {
-    cachedData = (
-      typeof updater === "function"
-        ? (updater as (prev: unknown) => unknown)(cachedData)
-        : updater
-    ) as typeof cachedData;
-  },
-);
-
-const stableUtils = {
-  budget: {
-    computeActiveSummary: { cancel, getData, setData, invalidate: vi.fn() },
-    listApiActuals: { invalidate: vi.fn() },
-    listProfiles: { invalidate: vi.fn() },
-  },
-  savings: { invalidate: vi.fn() },
-  paycheck: { invalidate: vi.fn() },
-  contribution: { invalidate: vi.fn() },
-  retirement: { invalidate: vi.fn() },
-  projection: { invalidate: vi.fn() },
-  brokerage: { invalidate: vi.fn() },
-  settings: { contributionAccounts: { invalidate: vi.fn() } },
-};
-
-const makeMutation = () => ({ mutate: vi.fn(), isPending: false });
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => stableUtils,
-    budget: {
-      updateItemAmount: { useMutation: () => makeMutation() },
-      deleteItem: { useMutation: () => makeMutation() },
-      updateItemEssential: { useMutation: () => makeMutation() },
-      updateCategoryEssential: { useMutation: () => makeMutation() },
-      updateItemAmounts: { useMutation: () => makeMutation() },
-      moveItem: { useMutation: () => makeMutation() },
-      reorderItem: { useMutation: () => makeMutation() },
-      reorderCategory: { useMutation: () => makeMutation() },
-      createItem: { useMutation: () => makeMutation() },
-    },
-    savings: {
-      convertBudgetItemToGoal: { useMutation: () => makeMutation() },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../components/trpc-mock")).trpc,
 }));
+
+beforeEach(() => {
+  resetTrpcMock();
+  // The server call never settles: these tests read the optimistic patch.
+  holdMutation("budget.updateItemAmount");
+});
 
 function setup() {
   const selectedColumnRef: MutableRefObject<number> = { current: 0 };
@@ -97,7 +67,7 @@ async function flush() {
 
 describe("useItemMutations — updateCell optimistic patch for linked items", () => {
   it("patches contribAmounts[col], not just contribAmount, for a linked complete item", async () => {
-    cachedData = {
+    cache({
       rawItems: [
         {
           id: 1,
@@ -108,7 +78,7 @@ describe("useItemMutations — updateCell optimistic patch for linked items", ()
           amounts: [0, 0],
         },
       ],
-    };
+    });
     const { result } = setup();
 
     await act(async () => {
@@ -116,7 +86,7 @@ describe("useItemMutations — updateCell optimistic patch for linked items", ()
       await flush();
     });
 
-    const patched = cachedData!.rawItems[0]!;
+    const patched = cached().rawItems[0]!;
     expect(patched.contribAmount).toBe(250);
     expect(patched.contribAmounts).toEqual([100, 250]);
   });
@@ -130,7 +100,7 @@ describe("useItemMutations — updateCell optimistic patch for linked items", ()
       contribAmounts: [50],
       amounts: [0],
     };
-    cachedData = { rawItems: [original] };
+    cache({ rawItems: [original] });
     const { result } = setup();
 
     await act(async () => {
@@ -138,12 +108,12 @@ describe("useItemMutations — updateCell optimistic patch for linked items", ()
       await flush();
     });
 
-    expect(cachedData!.rawItems[0]).toBe(original);
+    expect(cached().rawItems[0]).toBe(original);
   });
 
   it("clones contribAmounts rather than mutating the cached array in place", async () => {
     const originalContribAmounts = [10, 20];
-    cachedData = {
+    cache({
       rawItems: [
         {
           id: 3,
@@ -154,7 +124,7 @@ describe("useItemMutations — updateCell optimistic patch for linked items", ()
           amounts: [0, 0],
         },
       ],
-    };
+    });
     const { result } = setup();
 
     await act(async () => {

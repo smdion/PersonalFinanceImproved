@@ -28,20 +28,8 @@ vi.mock("next/server", () => ({
 // Sessions come straight from the caller's context, as in setup-mocks.
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
-  Permission: {},
   RBAC_ADMIN_GROUP_KEY: "rbac_admin_group",
   RBAC_SETTINGS_PREFIX: "rbac_group_",
-  ALL_PERMISSIONS: [
-    "scenario",
-    "portfolio",
-    "performance",
-    "budget",
-    "savings",
-    "brokerage",
-    "version",
-    "contributionProfile",
-    "sync",
-  ],
 }));
 // The real connection, built as src/lib/db/index.ts builds it: that module
 // loads its schema with a runtime require() of a .ts file, which only the

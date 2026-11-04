@@ -12,72 +12,17 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import type {
+  PerPersonSettings,
+  Settings,
+} from "@/components/retirement/sections/types";
 import { parseAnnualPia } from "@/lib/config/social-security";
 
-/** Numeric fields on the echo'd settings object come back as decimal
- *  strings for some (drizzle decimal columns) and plain numbers for others
- *  — accept both here rather than pinning down which is which per field. */
+/** A settings number: decimal columns arrive as strings, the rest as numbers. */
 type NumLike = number | string;
 
-/** Structural subset of the `settings` object `projection.computeProjection`
- *  returns (see `src/server/routers/projection/scenarios.ts`) — named
- *  locally, same convention as `EligibilityAccountInput`, so this component
- *  only has to agree on the fields it actually renders. */
-export type ReportEngineSettings = {
-  retirementAge?: NumLike | null;
-  retirementYear?: NumLike | null;
-  endAge?: NumLike | null;
-  annualInflation?: NumLike | null;
-  postRetirementInflation?: NumLike | null;
-  salaryAnnualIncrease?: NumLike | null;
-  /** app_settings["brokerage_contribution_increase"] — annual $ added to
-   *  brokerage contributions each projected year. */
-  brokerageContributionIncrease?: NumLike | null;
-  salaryCap?: NumLike | null;
-  withdrawalRate?: NumLike | null;
-  withdrawalStrategy?: string | null;
-  enableRothConversions?: boolean | null;
-  rothConversionTarget?: NumLike | null;
-  socialSecurityMonthly?: NumLike | null;
-  ssStartAge?: NumLike | null;
-  enableIrmaaAwareness?: boolean | null;
-  irmaaOnTopOfBudget?: boolean | null;
-  enableAcaAwareness?: boolean | null;
-  householdSize?: NumLike | null;
-  filingStatus?: string | null;
-  /** Filing-status standard deduction — used to explain the bracket-fill
-   *  ceiling's gross-income math in the withdrawal-strategy narrative
-   *  (`bracket-target-narrative.ts`'s `describeBracketCeilingMath`), not
-   *  currently shown as its own row here. */
-  standardDeduction?: NumLike | null;
-  /** What happens to RMD-forced excess beyond stated spending need. */
-  rmdExcessHandling?: string | null;
-  // Per-strategy params — one strategy's fields are
-  // actually read at a time, keyed by WITHDRAWAL_STRATEGY_CONFIG's
-  // paramFields for the active withdrawalStrategy, same source
-  // strategy-params.tsx uses so this can't drift from the real fields.
-  gkUpperGuardrail?: NumLike | null;
-  gkLowerGuardrail?: NumLike | null;
-  gkIncreasePct?: NumLike | null;
-  gkDecreasePct?: NumLike | null;
-  sdAnnualDeclineRate?: NumLike | null;
-  cpWithdrawalPercent?: NumLike | null;
-  cpFloorPercent?: NumLike | null;
-  enWithdrawalPercent?: NumLike | null;
-  enRollingYears?: NumLike | null;
-  enFloorPercent?: NumLike | null;
-  vdBasePercent?: NumLike | null;
-  vdCeilingPercent?: NumLike | null;
-  vdFloorPercent?: NumLike | null;
-  rmdMultiplier?: NumLike | null;
-  vpwCap?: NumLike | null;
-  vpwEndAge?: NumLike | null;
-  cpSsInAmount?: boolean | null;
-  enSsInAmount?: boolean | null;
-  vdSsInAmount?: boolean | null;
-  rmdSsInAmount?: boolean | null;
-  vpwSsInAmount?: boolean | null;
-};
+/** The `settings` computeProjection returns; any field may be missing. */
+export type ReportEngineSettings = Partial<Settings>;
 
 /** `null`/`undefined` → `undefined`; otherwise coerce to a real number. */
 function num(v: NumLike | null | undefined): number | undefined {
@@ -86,16 +31,7 @@ function num(v: NumLike | null | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** Minimal per-person shape the SS section needs — structural, so this
- *  report component stays free of server-type imports (same reason
- *  `ReportEngineSettings` is hand-rolled). */
-type ReportPerPersonSettings = ReadonlyArray<{
-  name?: string | null;
-  salaryAnnualIncrease?: NumLike | null;
-  socialSecurityMonthly?: NumLike | null;
-  socialSecurityPia?: NumLike | null;
-  ssStartAge?: NumLike | null;
-}>;
+type ReportPerPersonSettings = NonNullable<PerPersonSettings>;
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -160,40 +96,11 @@ export function ReportAssumptionsSummary({
     : undefined;
   const strategyLabel =
     strategyCfg?.label ?? settings.withdrawalStrategy ?? "—";
-  // The strategy's own real params — same
-  // paramFields strategy-params.tsx renders for editing, read-only here.
-  // Explicit lookup (not a cast off `settings`) so this stays typed to the
-  // fields ReportEngineSettings actually declares.
-  // Keyed by column (`paramFields[].column`).
-  const strategyParamValues: Record<
-    string,
-    NumLike | boolean | null | undefined
-  > = {
-    gkUpperGuardrail: settings.gkUpperGuardrail,
-    gkLowerGuardrail: settings.gkLowerGuardrail,
-    gkIncreasePct: settings.gkIncreasePct,
-    gkDecreasePct: settings.gkDecreasePct,
-    sdAnnualDeclineRate: settings.sdAnnualDeclineRate,
-    cpWithdrawalPercent: settings.cpWithdrawalPercent,
-    cpFloorPercent: settings.cpFloorPercent,
-    enWithdrawalPercent: settings.enWithdrawalPercent,
-    enRollingYears: settings.enRollingYears,
-    enFloorPercent: settings.enFloorPercent,
-    vdBasePercent: settings.vdBasePercent,
-    vdCeilingPercent: settings.vdCeilingPercent,
-    vdFloorPercent: settings.vdFloorPercent,
-    rmdMultiplier: settings.rmdMultiplier,
-    vpwCap: settings.vpwCap,
-    vpwEndAge: settings.vpwEndAge,
-    cpSsInAmount: settings.cpSsInAmount,
-    enSsInAmount: settings.enSsInAmount,
-    vdSsInAmount: settings.vdSsInAmount,
-    rmdSsInAmount: settings.rmdSsInAmount,
-    vpwSsInAmount: settings.vpwSsInAmount,
-  };
+  // The strategy's own params, read-only: the paramFields
+  // strategy-params.tsx renders for editing, each from its own column.
   const strategyParamRows = (strategyCfg?.paramFields ?? [])
     .map((f) => {
-      const stored = strategyParamValues[f.column];
+      const stored = settings[f.column];
       if (f.type === "boolean") {
         const on = stored == null ? f.default === true : stored === true;
         // The Social Security switch reads as a sentence; other switches

@@ -8,10 +8,10 @@ import { formatPercent } from "@/lib/utils/format";
 import {
   getAccountTypeConfig,
   categoriesWithTaxPreference,
+  getAllCategories,
   categoriesWithoutTaxPreference,
   tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
-import { ALL_CATEGORIES } from "./utils";
 import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,
@@ -191,11 +191,9 @@ export function DecumulationConfig({
           Record<AccountCategory, number> | null | undefined) ??
         withdrawalSplits);
 
-  // bracket_filling's Phase 1 only ever consults the
-  // Traditional-preference subset of the order (401k/403b/IRA) —
-  // brokerage/HSA's position is decided by cost-ranking regardless of
-  // where they sit in the full array, so both the sub-editor and the
-  // summary below only show/build from that subset, not the full order.
+  // bracket_filling's Phase 1 reads only the Traditional-preference part of
+  // the order (brokerage and HSA are placed by cost ranking wherever they
+  // sit), so the editor and summary show only that part.
   const tradPreferenceOrder = displayedOrder.filter((c) =>
     tradPreferenceEngineCategories().includes(c),
   );
@@ -208,10 +206,12 @@ export function DecumulationConfig({
         ? displayedOrder
             .map((c) => getAccountTypeConfig(c).displayLabel)
             .join(" → ")
-        : ALL_CATEGORIES.map(
-            (c) =>
-              `${getAccountTypeConfig(c).displayLabel} ${formatPercent(displayedSplits[c])}`,
-          ).join(", ");
+        : getAllCategories()
+            .map(
+              (c) =>
+                `${getAccountTypeConfig(c).displayLabel} ${formatPercent(displayedSplits[c])}`,
+            )
+            .join(", ");
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
@@ -370,7 +370,7 @@ export function DecumulationConfig({
                 help="How to split your total withdrawal across accounts. Values should sum to 100%. If an account has insufficient funds, its shortfall redistributes proportionally."
               />
               <div className="grid grid-cols-4 gap-3">
-                {ALL_CATEGORIES.map((cat) => (
+                {getAllCategories().map((cat) => (
                   <label key={cat} className="block">
                     <span
                       className={`text-xs font-medium ${accountTextColor(cat)}`}

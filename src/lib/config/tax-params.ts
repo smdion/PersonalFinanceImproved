@@ -32,7 +32,8 @@
  * `tax_year` values, i.e. exactly the behaviour before this resolver existed.
  */
 
-import type { HsaCoverageType, W4FilingStatus } from "./enum-values";
+import type { HsaCoverageType } from "./enum-values";
+import { FILING_STATUS_ORDER, type ReturnFilingStatus } from "./filing-status";
 
 /**
  * The three per-slice entry shapes, kept local so `src/lib/config/` has no
@@ -320,9 +321,7 @@ function completeYears<R extends { taxYear: number; filingStatus: string }>(
         byYear.set(r.taxYear, new Set()).get(r.taxYear)!
       ).add(r.filingStatus);
   return [...byYear]
-    .filter(([, statuses]) =>
-      REQUIRED_FILING_STATUSES.every((f) => statuses.has(f)),
-    )
+    .filter(([, statuses]) => FILING_STATUS_ORDER.every((f) => statuses.has(f)))
     .map(([y]) => y)
     .sort((a, b) => a - b);
 }
@@ -378,16 +377,11 @@ export const HDHP_MIN_DEDUCTIBLE_KEY: Record<HsaCoverageType, string> = {
 
 /** Filing statuses where a spouse's IRA can be funded from the couple's
  *  combined compensation (spousal IRA, IRC 219(c)). */
-export const SPOUSAL_IRA_FILING_STATUSES: readonly W4FilingStatus[] = ["MFJ"];
+export const SPOUSAL_IRA_FILING_STATUSES: readonly ReturnFilingStatus[] = [
+  "MFJ",
+];
 
 /** Filing statuses of a married couple: if either spouse has family HSA
  *  coverage, both are treated as having it and share one family limit, each
  *  spouse's catch-up on top (IRS Pub 969). The app has no MFS status. */
-export const MARRIED_FILING_STATUSES: readonly W4FilingStatus[] = ["MFJ"];
-
-/** All filing statuses the engine expects a bracket set for. */
-export const REQUIRED_FILING_STATUSES: W4FilingStatus[] = [
-  "MFJ",
-  "Single",
-  "HOH",
-];
+export const MARRIED_FILING_STATUSES: readonly ReturnFilingStatus[] = ["MFJ"];

@@ -24,6 +24,7 @@ import {
   getAccountTypeConfig,
   isTaxFreeBucket,
 } from "../../config/account-types";
+import { emptyTaxBucketMap } from "../../config/tax-treatment-buckets";
 import { expenseEndingFactor } from "./expense-endings";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { buildProjectionContext } from "./projection-year-handlers/context";
@@ -56,7 +57,7 @@ function validateEngineInputs(
   // money: a gap is counted as retirement money the router may never
   // reach, which moves withdrawals, depletion and the plan's verdict.
   if (input.startingAccountBalances) {
-    const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+    const byBucket = emptyTaxBucketMap();
     for (const bal of Object.values(input.startingAccountBalances)) {
       if (bal.structure === "roth_traditional") {
         byBucket.preTax += bal.traditional;
@@ -73,7 +74,7 @@ function validateEngineInputs(
     }
   }
   if (input.individualAccounts?.length) {
-    const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+    const byBucket = emptyTaxBucketMap();
     for (const ia of input.individualAccounts) {
       const key = isTaxFreeBucket(ia.taxType)
         ? "taxFree"

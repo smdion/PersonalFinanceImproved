@@ -24,14 +24,17 @@ import {
   getAllCategories,
   isPreTaxType,
   isTaxFreeBucket,
+  isRetirementMoney,
+} from "../../config/account-types";
+import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  isRetirementMoney,
-} from "../../config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
+} from "../../config/account-balance";
+import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/tax-treatment-buckets";
 import { projectSpecAmount } from "./contribution-projection";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   accrueContributionBasis,
   drawFromBasis,
@@ -73,23 +76,10 @@ export function retirementFirst<T>(
   return retirement.length > 0 ? retirement : [...items];
 }
 
-export type IndKeyFn = (ia: {
-  name: string;
-  category: string;
-  taxType: string;
-  ownerPersonId?: number;
-}) => string;
-
-/** Creates the standard composite key function.
- *
- * Includes `ownerPersonId`: two different people's accounts that happen to share
- * a display name within the same category/taxType previously collided into
- * one `indBal` entry, silently merging their balances and keeping only one
- * owner's ID. Eligibility gating (Rule of 55, 59½, etc.) is per-owner, so
- * that collision would resolve the wrong person's access for the merged
- * money. A joint account (`ownerPersonId` undefined) still keys on `"joint"`
- * — unchanged from before, since joint accounts have no per-owner
- * eligibility question to get wrong. */
+/** Creates the standard composite key function. It includes `ownerPersonId`,
+ *  so two people's same-named accounts in one category/taxType stay apart:
+ *  eligibility (Rule of 55, 59½) is per owner. A joint account (no
+ *  `ownerPersonId`) keys on `"joint"`. */
 export function makeIndKey(): IndKeyFn {
   return (ia) =>
     `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;
@@ -120,14 +110,12 @@ export function buildSpecToAccountMapping(
   indKey: IndKeyFn,
   indParentCat: Map<string, string>,
 ): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
-  const taxTreatmentToTaxType = TAX_TREATMENT_TO_TAX_TYPE;
   const specToAccount = new Map<string, string>();
   // The projection-only retirement brokerage has no contributions of its own.
   const accts = indAccts.filter((ia) => !ia.projectedOnly);
 
   for (const spec of contributionSpecs) {
-    const specTaxType =
-      taxTreatmentToTaxType[spec.taxTreatment] ?? spec.taxTreatment;
+    const specTaxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
     const parentCatMatch = (ia: {
       name: string;
       category: string;

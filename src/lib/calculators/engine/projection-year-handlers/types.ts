@@ -22,6 +22,7 @@ import type { makeIndKey } from "../individual-account-tracking";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
+import type { YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
 // Local type used by brokerage goals (defined locally in projection.ts)
@@ -91,7 +92,7 @@ export type ProjectionLoopState = {
   spendingState: SpendingCrossYearState;
 
   // Tax/IRMAA history
-  magiHistory: number[];
+  incomeHistory: YearIncome[];
   /** The no-owner Traditional account warning is said once a projection. */
   rmdNoOwnerWarned: boolean;
 

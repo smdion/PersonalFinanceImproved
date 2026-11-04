@@ -13,8 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { McResultsSection } from "@/components/cards/projection/projection-mc-results";
 import type { ProjectionState } from "@/components/cards/projection/projection-table-types";
-
-const mockInvalidate = vi.fn();
+import { resetTrpcMock, utilsCalls } from "./trpc-mock";
 
 vi.mock("@/lib/hooks/use-high-income-line", () => ({
   useHighIncomeLine: () => ({
@@ -25,12 +24,8 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      projection: { invalidate: mockInvalidate },
-    }),
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
@@ -78,7 +73,7 @@ describe("McResultsSection — Clear Cache client-invalidation", () => {
   });
 
   beforeEach(() => {
-    mockInvalidate.mockClear();
+    resetTrpcMock();
   });
 
   it("invalidates the client-side projection query cache once the server-side clear succeeds", () => {
@@ -100,7 +95,7 @@ describe("McResultsSection — Clear Cache client-invalidation", () => {
     ).mock.calls[0]!;
     options.onSuccess({ cleared: 5 });
 
-    expect(mockInvalidate).toHaveBeenCalledTimes(1);
+    expect(utilsCalls("projection.invalidate")).toHaveLength(1);
   });
 
   it("doesn't clear anything (or invalidate) when the user cancels the confirm dialog", () => {
@@ -114,6 +109,6 @@ describe("McResultsSection — Clear Cache client-invalidation", () => {
     fireEvent.click(screen.getByText("Clear Cache"));
 
     expect(state.clearProjectionCacheMutation.mutate).not.toHaveBeenCalled();
-    expect(mockInvalidate).not.toHaveBeenCalled();
+    expect(utilsCalls("projection.invalidate")).toHaveLength(0);
   });
 });

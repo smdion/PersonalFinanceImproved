@@ -7,7 +7,6 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "@/server/helpers";
 import { zDecimal } from "./_shared";
 import {
   taxBracketsSchema,
@@ -25,10 +24,12 @@ import {
   reconcileReferenceData,
 } from "@/lib/db/reference-data";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
+import * as filing from "@/lib/config/filing-status.schema";
 import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax-data-status";
 import { pendingUpdate } from "./tax-data-sync";
 import { localDateStr } from "@/lib/utils/date";
+import type { Db } from "@/lib/db";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
 
@@ -207,20 +208,20 @@ const contributionLimitInput = z.object({
 
 const taxBracketInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
-  filingStatus: z.enum(["MFJ", "Single", "HOH"]),
+  filingStatus: filing.w4FilingStatusSchema,
   w4Checkbox: z.boolean(),
   brackets: taxBracketsSchema,
 });
 
 const ltcgBracketInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
-  filingStatus: z.enum(["MFJ", "Single", "HOH"]),
+  filingStatus: filing.returnFilingStatusSchema,
   brackets: ltcgBracketsSchema,
 });
 
 const irmaaBracketInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
-  filingStatus: z.enum(["MFJ", "Single", "HOH"]),
+  filingStatus: filing.returnFilingStatusSchema,
   brackets: irmaaBracketsSchema,
 });
 
@@ -320,9 +321,8 @@ export const taxLimitsProcedures = {
       };
     }),
 
-    /** Start a year in one step: every table copies its newest earlier
-     *  year as carried forward (replaced when the real figures ship).
-     *  Tables that already have the year are left alone. */
+    /** Start a year: each table without it copies its newest earlier year,
+     *  carried forward until the real figures ship. */
     addYear: adminProcedure
       .input(z.object({ year: z.number().int().min(2000).max(2100) }))
       .mutation(async ({ ctx, input }) => {

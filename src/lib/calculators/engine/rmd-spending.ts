@@ -19,7 +19,7 @@ export function applyRmdSpending(
   input: SpendingStrategyInput,
 ): SpendingStrategyResult {
   const { portfolioBalance, age, primaryPersonAge } = input;
-  const rmdMultiplier = (params as RmdSpendingParams).rmdMultiplier ?? 1.0;
+  const { rmdMultiplier } = params as RmdSpendingParams;
 
   // Use primary person's age for RMD factor lookup (not household average)
   const factor = getRmdFactor(primaryPersonAge ?? age);

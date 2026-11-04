@@ -41,6 +41,10 @@ type ColorSet = {
 // Account type config shape
 // ---------------------------------------------------------------------------
 
+/** Which early-access rule an account type's withdrawals follow. */
+export type EarlyAccessRule =
+  "ira_59_half" | "employer_plan" | "hsa_non_medical" | "none";
+
 export type AccountTypeConfig = {
   // --- Identity ---
   displayLabel: string;
@@ -60,12 +64,15 @@ export type AccountTypeConfig = {
    *  between basis and earnings, IRS Notice 2009-68). null where the
    *  category has no Roth concept at all (hsa, brokerage). */
   rothOrderingRules: "basis_first" | "pro_rata" | null;
-  /** Whether separating from the employer funding this account type at/after
-   *  age 55 grants penalty-free access to the whole plan (Rule of 55, IRC
-   *  §72(t)(2)(A)(v)) — true only for employer plans (401k/403b). IRAs have
-   *  no Rule-of-55 equivalent (only SEPP/72(t)); brokerage/HSA have no early-
-   *  withdrawal penalty concept this flag applies to. */
-  ruleOf55Eligible: boolean;
+  /** The early-access rule a withdrawal follows: an IRA's 59½ and Roth
+   *  ordering, an employer plan's 59½ or Rule of 55 (IRC §72(t)(2)(A)(v)),
+   *  an HSA's age for non-medical use, or none. */
+  earlyAccessRule: EarlyAccessRule;
+  /** A Qualified Charitable Distribution can come from it (IRC 408(d)(8)). */
+  qcdEligible: boolean;
+  /** The penalty rate on an early non-medical withdrawal, in place of the
+   *  10% early-withdrawal one (IRC 223(f)(4)); null where there is none. */
+  nonMedicalPenaltyRate: number | null;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;
@@ -95,6 +102,8 @@ export type AccountTypeConfig = {
   fixedContribScalesWithSalary: boolean;
   generateOverflowWarnings: boolean;
   defaultWithdrawalSplit: number;
+  /** Position in the default withdrawal order (lowest drawn first). */
+  decumulationRank: number;
   /** Whether contributions to this account type are deducted from the paycheck.
    *  true = employer-plan (401k, 403b, HSA) — deducted before take-home pay.
    *  false = individual account (IRA, brokerage) — paid from take-home pay. */
@@ -113,6 +122,8 @@ export type AccountTypeConfig = {
 
   // --- UI ---
   colors: ColorSet;
+  /** Chart hex (Recharts/SVG): the standard and the lighter Roth shade. */
+  chartHex: { standard: string; roth: string };
   employerMatchLabel: string;
   hasDiscountBar: boolean;
   /** Whether this account type's employer_contributions represents real cash
@@ -155,37 +166,10 @@ export type AccountBalance =
 // UI segment type
 // ---------------------------------------------------------------------------
 
-export type AccountSegment = {
+/** `C` is `AccountCategory`, declared with the config in `account-types.ts`. */
+export type AccountSegment<C extends string> = {
   key: string;
-  category: AccountCategory;
+  category: C;
   label: string;
   subKey: string | null; // 'trad', 'roth', null
 };
-
-// ---------------------------------------------------------------------------
-// Derived category type — needs the config object, so we use a generic
-// constraint that will be satisfied by the main module's re-export.
-// We define it here as a string literal union matching the known keys.
-// ---------------------------------------------------------------------------
-
-// NOTE: AccountCategory is derived from ACCOUNT_TYPE_CONFIG keys in the main
-// module. We re-declare it here as the known union so pure-type consumers
-// don't need to import runtime data.
-export type AccountCategory = "401k" | "403b" | "ira" | "hsa" | "brokerage";
-
-// ---------------------------------------------------------------------------
-// Zod-compatible enum helpers (type-level only — runtime values live in main)
-// ---------------------------------------------------------------------------
-
-const ACCOUNT_CATEGORY_VALUES: [AccountCategory, ...AccountCategory[]] = [
-  "401k",
-  "403b",
-  "ira",
-  "hsa",
-  "brokerage",
-];
-
-/** Zod-compatible tuple for z.enum() — import { accountCategoryEnum } and use z.enum(accountCategoryEnum()) */
-export function accountCategoryEnum(): [AccountCategory, ...AccountCategory[]] {
-  return ACCOUNT_CATEGORY_VALUES;
-}

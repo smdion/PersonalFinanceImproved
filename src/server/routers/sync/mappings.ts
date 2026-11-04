@@ -114,7 +114,7 @@ export const syncMappingsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const currentYear = new Date().getFullYear();
+      const currentYear = ctx.scope.asOf.getFullYear();
 
       // Same direction rule as updateAccountMappings, checked before any write.
       const directionProblem = disallowedDirectionMessage({
@@ -188,7 +188,7 @@ export const syncMappingsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") {
         throw new TRPCError({
