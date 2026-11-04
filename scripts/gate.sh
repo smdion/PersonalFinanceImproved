@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # pnpm gate: the mechanical checks over the staged change, run before the
-# fresh review (CLAUDE.md § The working loop). Lint and format on the staged
-# files, the type-check, tests/lint, and the tests related to the staged
-# files. It prints a report and exits non-zero on a failure; no hook runs it,
-# and nothing here blocks a commit.
+# fresh review (CLAUDE.md § The working loop). Lint, the type-aware lint and
+# format on the staged files, the type-check, tests/lint, and the tests
+# related to the staged files. It prints a report and exits non-zero on a
+# failure; no hook runs it, and nothing here blocks a commit.
 set -uo pipefail
 
 mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR)
@@ -35,6 +35,12 @@ echo "   src/ lines changed (generated SQLite excluded): $src_lines (limit 400 u
 
 if [[ ${#lintable[@]} -gt 0 ]]; then
   step "eslint (staged files)" npx eslint --max-warnings 0 "${lintable[@]}"
+fi
+# The type-aware ratchet CI runs (package.json lint:typed), on staged src files.
+mapfile -t typedlint < <(printf '%s\n' "${lintable[@]}" | grep -E '^src/')
+if [[ ${#typedlint[@]} -gt 0 ]]; then
+  step "lint:typed (staged src files)" npx eslint -c eslint.typed.config.mjs --no-inline-config \
+    --suppressions-location eslint-suppressions-typed.json --max-warnings 0 "${typedlint[@]}"
 fi
 step "prettier (staged files)" npx prettier --check --ignore-unknown "${staged[@]}"
 step "type-check" npx tsc --noEmit -p tsconfig.json

@@ -23,8 +23,9 @@ change → stage → pnpm gate → fresh reviewer → commit → push → CI →
 1. **Before risky work only:** the advisor (below), on whether the approach
    is sound.
 2. **Change one behavior.** A behavior change starts from a failing test.
-3. **Stage it and run `pnpm gate`**: lint and format on the staged files,
-   the type-check, `tests/lint` and the tests related to the staged files.
+3. **Stage it and run `pnpm gate`**: lint, the type-aware lint and format
+   on the staged files, the type-check, `tests/lint` and the tests related
+   to the staged files.
    Fix every failure before review.
 4. **Fresh review.** Spawn the `reviewer` agent with one line of intent and
    the gate's output. Never give it the plan, the advisor's report, your
