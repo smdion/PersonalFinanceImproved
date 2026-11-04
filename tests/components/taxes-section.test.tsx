@@ -11,11 +11,10 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import {
-  TaxesSection,
-  type BracketOptimizerResult,
-} from "@/components/retirement/sections/taxes";
+import { TaxesSection } from "@/components/retirement/sections/taxes";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type { Settings } from "@/components/retirement/sections/types";
+import { makeSettings } from "./fixtures/retirement-settings";
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: ({ text }: { text?: string }) => (
@@ -24,24 +23,13 @@ vi.mock("@/components/ui/help-tip", () => ({
 }));
 
 function baseSettings(overrides: Partial<Settings> = {}): Settings {
-  return {
-    personId: 1,
-    profileId: 1,
-    retirementAge: 65,
+  return makeSettings({
     endAge: 90,
-    returnAfterRetirement: "0.05",
-    annualInflation: "0.03",
     salaryAnnualIncrease: "0.02",
-    withdrawalRate: "0.04",
-    taxMultiplier: "1.0",
     rothBracketTarget: "0.12",
     socialSecurityMonthly: "2500",
-    ssStartAge: 67,
-    withdrawalStrategy: "fixed",
-    enableRothConversions: false,
-    rmdSmoothingEnabled: false,
     ...overrides,
-  };
+  });
 }
 
 function renderTaxesSection(
@@ -69,12 +57,18 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
   });
 
   it("doesn't render a recommendation when the current setting is already optimal", () => {
-    renderTaxesSection({}, { recommendedTarget: null, currentTarget: 0.12 });
+    renderTaxesSection(
+      {},
+      { recommendedTarget: null, currentTarget: 0.12, candidates: [] },
+    );
     expect(screen.queryByText(/Currently recommended/)).not.toBeInTheDocument();
   });
 
   it("renders the recommended target when one exists", () => {
-    renderTaxesSection({}, { recommendedTarget: 0.22, currentTarget: 0.12 });
+    renderTaxesSection(
+      {},
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
+    );
     expect(screen.getByText(/Currently recommended/)).toBeInTheDocument();
     expect(screen.getByText("22%")).toBeInTheDocument();
     expect(screen.getByText("Apply")).toBeInTheDocument();
@@ -91,6 +85,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
         bracketOptimizerResult={{
           recommendedTarget: 0.22,
           currentTarget: 0.12,
+          candidates: [],
         }}
       />,
     );
@@ -101,7 +96,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
   it("Apply sets only rothBracketTarget when conversions and smoothing are both off", () => {
     const { mutate } = renderTaxesSection(
       { enableRothConversions: false, rmdSmoothingEnabled: false },
-      { recommendedTarget: 0.22, currentTarget: 0.12 },
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
     );
     screen.getByText("Apply").click();
     const patch = mutate.mock.calls[0]![0];
@@ -114,7 +109,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
   it("Apply also sets rothConversionTarget when enableRothConversions is on", () => {
     const { mutate } = renderTaxesSection(
       { enableRothConversions: true, rmdSmoothingEnabled: false },
-      { recommendedTarget: 0.22, currentTarget: 0.12 },
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
     );
     screen.getByText("Apply").click();
     const patch = mutate.mock.calls[0]![0];
@@ -129,7 +124,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     // would fail to update it.
     const { mutate } = renderTaxesSection(
       { enableRothConversions: false, rmdSmoothingEnabled: true },
-      { recommendedTarget: 0.22, currentTarget: 0.12 },
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
     );
     expect(screen.getByText(/RMD Smoothing ceiling/)).toBeInTheDocument();
     screen.getByText("Apply").click();
@@ -142,7 +137,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
   it("Apply sets all three fields when both conversions and smoothing are on", () => {
     const { mutate } = renderTaxesSection(
       { enableRothConversions: true, rmdSmoothingEnabled: true },
-      { recommendedTarget: 0.22, currentTarget: 0.12 },
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
     );
     screen.getByText("Apply").click();
     const patch = mutate.mock.calls[0]![0];

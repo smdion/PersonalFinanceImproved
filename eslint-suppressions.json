@@ -1094,10 +1094,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 3
     }
   },
   "src/components/cards/projection/report/report-cover.tsx": {
@@ -2211,7 +2208,7 @@
   },
   "src/components/retirement/sections/types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 11
+      "count": 1
     }
   },
   "src/components/retirement/withdrawal-order-editor.tsx": {

@@ -38,22 +38,12 @@ import { SocialSecuritySection } from "@/components/retirement/sections/social-s
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
 import { IncomeSection } from "@/components/retirement/sections/income";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { Settings } from "@/components/retirement/sections/types";
+import {
+  makePersonSettings,
+  makeSettings,
+} from "./fixtures/retirement-settings";
 
-const baseSettings: Settings = {
-  personId: 1,
-  profileId: 1,
-  retirementAge: 65,
-  endAge: 95,
-  returnAfterRetirement: "0.05",
-  annualInflation: "0.03",
-  salaryAnnualIncrease: "0.03",
-  withdrawalRate: "0.04",
-  taxMultiplier: "1.0",
-  socialSecurityMonthly: "2000",
-  ssStartAge: 67,
-  withdrawalStrategy: "fixed",
-};
+const baseSettings = makeSettings();
 
 describe("StrategyParamsSection smoke", () => {
   it("renders nothing for the 'fixed' strategy (no param fields)", () => {
@@ -160,7 +150,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alice",
             birthYear: 1990,
@@ -169,8 +159,8 @@ describe("SocialSecuritySection smoke", () => {
             salaryAnnualIncrease: "0.03",
             ruleOf55Override: true,
             socialSecurityMonthly: "2000",
-          },
-          {
+          }),
+          makePersonSettings({
             personId: 2,
             name: "Bob",
             birthYear: 1992,
@@ -179,7 +169,7 @@ describe("SocialSecuritySection smoke", () => {
             salaryAnnualIncrease: "0.03",
             ruleOf55Override: true,
             socialSecurityMonthly: "1500",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -215,7 +205,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -226,7 +216,7 @@ describe("SocialSecuritySection smoke", () => {
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -243,7 +233,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -253,7 +243,7 @@ describe("SocialSecuritySection smoke", () => {
             ruleOf55Override: true,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "0",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -269,7 +259,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alice",
             birthYear: 1990,
@@ -279,8 +269,8 @@ describe("SocialSecuritySection smoke", () => {
             ruleOf55Override: true,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3000",
-          },
-          {
+          }),
+          makePersonSettings({
             personId: 2,
             name: "Bob",
             birthYear: 1992,
@@ -290,7 +280,7 @@ describe("SocialSecuritySection smoke", () => {
             ruleOf55Override: true,
             socialSecurityMonthly: "1500",
             // No PIA for Bob.
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -327,7 +317,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -338,7 +328,7 @@ describe("SocialSecuritySection smoke", () => {
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}
@@ -390,7 +380,7 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={[
-          {
+          makePersonSettings({
             personId: 1,
             name: "Alex",
             birthYear: 1990,
@@ -401,7 +391,7 @@ describe("SocialSecuritySection smoke", () => {
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
-          },
+          }),
         ]}
         upsertPerson={{ mutate: vi.fn() }}
         upsertHouseholdFields={{ mutate: vi.fn() }}

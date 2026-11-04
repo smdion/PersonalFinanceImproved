@@ -11,7 +11,7 @@
  * Usage:
  *   upsertSettings.mutate(buildSettingsPatch(settings, { withdrawalRate: '0.04' }))
  */
-import type { Settings, UpsertSettingsInput } from "./types";
+import type { Settings, SettingsPatch, UpsertSettingsInput } from "./types";
 
 /**
  * Build the settings mutation payload.
@@ -21,7 +21,7 @@ import type { Settings, UpsertSettingsInput } from "./types";
  */
 export function buildSettingsPatch(
   current: Settings,
-  patch: Partial<Settings>,
+  patch: SettingsPatch,
 ): UpsertSettingsInput {
   return {
     personId: current.personId,

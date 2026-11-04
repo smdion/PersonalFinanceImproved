@@ -43,6 +43,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type {
   Settings,
   SelectedScenario,
@@ -57,14 +58,6 @@ import {
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
 } from "@/lib/config/withdrawal-routing";
 
-/** Shape of `computeWithdrawalBracketOptimizer`'s result — mirrored here
- *  (not imported from @/server/*, same reasoning as types.ts's docblock)
- *  since sections may not import server code. */
-export type BracketOptimizerResult = {
-  recommendedTarget: number | null;
-  currentTarget: number | null;
-} | null;
-
 type Props = {
   settings: Settings;
   selectedScenario: SelectedScenario;
@@ -73,7 +66,7 @@ type Props = {
   /** Multi-year withdrawal-policy optimizer result, or undefined while the
    *  parent's query hasn't resolved yet — either way, no recommendation is
    *  shown until a real, non-null `recommendedTarget` arrives. */
-  bracketOptimizerResult?: BracketOptimizerResult;
+  bracketOptimizerResult?: BracketOptimizerResult | null;
 };
 
 export function TaxesSection({
