@@ -18,7 +18,7 @@ import {
   isTaxFreeBucket,
   isPreTaxType,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
+import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/enum-values";
 import {
   roundToCents,
   sumBy,
@@ -104,9 +104,6 @@ export const catDisplayLabel: Record<string, string> = Object.fromEntries(
 );
 
 /** Tax bucket → slot field mapping. Data-driven: add a bucket here, everything else follows. */
-// Re-export the shared bridge map under the name this module uses
-export const TAX_TREATMENT_TO_BUCKET = TAX_TREATMENT_TO_TAX_TYPE;
-
 export const bucketSlotMap: Record<
   string,
   {
@@ -116,7 +113,7 @@ export const bucketSlotMap: Record<
     withdrawalField: "traditionalWithdrawal" | "rothWithdrawal" | "withdrawal";
     /** Only match slots whose category is this value (null = all categories). */
     categoryFilter: string | null;
-    /** DB tax treatment values that belong to this bucket (null = all). Derived from TAX_TREATMENT_TO_BUCKET. */
+    /** DB tax treatment values that belong to this bucket (null = all). Derived from TAX_TREATMENT_TO_TAX_TYPE. */
     specTreatments: Set<string> | null;
     /** Tax field string for itemTaxType(). */
     taxField: string | undefined;
@@ -129,7 +126,7 @@ export const bucketSlotMap: Record<
     withdrawalField: "traditionalWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
-      Object.entries(TAX_TREATMENT_TO_BUCKET)
+      Object.entries(TAX_TREATMENT_TO_TAX_TYPE)
         .filter(([, v]) => v === "preTax")
         .map(([k]) => k),
     ),
@@ -141,7 +138,7 @@ export const bucketSlotMap: Record<
     withdrawalField: "rothWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
-      Object.entries(TAX_TREATMENT_TO_BUCKET)
+      Object.entries(TAX_TREATMENT_TO_TAX_TYPE)
         .filter(([, v]) => v === "taxFree")
         .map(([k]) => k),
     ),
@@ -622,7 +619,7 @@ export function slotsBucketBalanceInflow(
   return total;
 }
 
-/** Filter specs for a tax bucket — data-driven via bucketSlotMap + TAX_TREATMENT_TO_BUCKET. */
+/** Filter specs for a tax bucket — data-driven via bucketSlotMap + TAX_TREATMENT_TO_TAX_TYPE. */
 export function filterSpecsForBucket<
   T extends { taxTreatment?: string; category?: string },
 >(specs: T[], bucket: string): T[] {

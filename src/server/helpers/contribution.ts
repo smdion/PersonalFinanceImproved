@@ -13,7 +13,6 @@ import type {
   AccountCategory,
   RetirementContribSlice,
 } from "@/lib/calculators/types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   buildCategoryRecord,
   categoriesWithTaxPreference,
@@ -23,9 +22,10 @@ import {
   getDefaultTaxTreatment,
   isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
-import type {
-  TaxTreatment,
-  ContributionMethod,
+import {
+  portfolioTaxTypeOf,
+  type TaxTreatment,
+  type ContributionMethod,
 } from "@/lib/config/enum-values";
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
 import type { ContribSaveChecker } from "./contribution-caps";
@@ -1749,8 +1749,7 @@ export function buildProfileContribData(
       const contribOwner =
         c.personId != null ? ctx.personNameById.get(c.personId) : undefined;
       const matchTaxType =
-        TAX_TREATMENT_TO_TAX_TYPE[c.taxTreatment ?? "pre_tax"] ??
-        c.taxTreatment;
+        portfolioTaxTypeOf(c.taxTreatment ?? "pre_tax") ?? c.taxTreatment;
       const catAccts = ctx.accountBreakdownByCategory[cat] ?? [];
       const contribParentCat =
         c.parentCategory ??

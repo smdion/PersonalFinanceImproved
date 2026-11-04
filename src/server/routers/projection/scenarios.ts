@@ -30,7 +30,7 @@ import {
   getAllCategories,
   categoriesWithTaxPreference,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
+import { portfolioTaxTypeOf } from "@/lib/config/enum-values";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   fetchRetirementData,
@@ -295,7 +295,7 @@ export const scenariosRouter = createTRPCRouter({
               : undefined);
           // Match to portfolio account display name using same cascade as engine
           const matchTaxType =
-            TAX_TREATMENT_TO_TAX_TYPE[rest.taxTreatment] ?? rest.taxTreatment;
+            portfolioTaxTypeOf(rest.taxTreatment) ?? rest.taxTreatment;
           const catAccts = accountBreakdownByCategory[rest.category] ?? [];
           const exactOwner = (a: {
             ownerPersonId?: number;

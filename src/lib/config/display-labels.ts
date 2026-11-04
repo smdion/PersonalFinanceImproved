@@ -226,17 +226,6 @@ export function combineCashBasisGainLoss(
   return gainLoss + discountEmployerSum;
 }
 
-/**
- * Bridge map: DB tax_treatment (snake_case) → portfolio tax_type (camelCase).
- * Single source of truth — imported by projection, retirement, and engine routers.
- */
-export const TAX_TREATMENT_TO_TAX_TYPE: Record<string, string> = {
-  pre_tax: "preTax",
-  tax_free: "taxFree",
-  after_tax: "afterTax",
-  hsa: "hsa",
-};
-
 /** Generic label lookup with fallback to key. */
 export function displayLabel(map: Record<string, string>, key: string): string {
   return map[key] ?? key;

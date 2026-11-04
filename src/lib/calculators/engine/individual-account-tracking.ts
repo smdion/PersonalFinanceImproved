@@ -29,7 +29,7 @@ import {
   getTotalBalance,
   isRetirementMoney,
 } from "../../config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
+import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/enum-values";
 import { projectSpecAmount } from "./contribution-projection";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
