@@ -10,12 +10,12 @@
     "src/app/(dashboard)/expenses/expenses-content.tsx": 819,
     "src/app/(dashboard)/historical/page.tsx": 1026,
     "src/app/(dashboard)/house/page.tsx": 746,
-    "src/app/(dashboard)/networth/page.tsx": 448,
+    "src/app/(dashboard)/networth/page.tsx": 461,
     "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
     "src/app/(dashboard)/savings/page.tsx": 935,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1023,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1022,
     "src/app/(dashboard)/tools/page.tsx": 585,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 954,
@@ -26,7 +26,7 @@
     "src/components/cards/coast-fire-card.tsx": 408,
     "src/components/cards/dashboard/contributions-card.tsx": 655,
     "src/components/cards/dashboard/linked-balance-card.tsx": 451,
-    "src/components/cards/dashboard/living-costs-card.tsx": 674,
+    "src/components/cards/dashboard/living-costs-card.tsx": 679,
     "src/components/cards/dashboard/retirement-card.tsx": 448,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,
     "src/components/cards/mc-simulation-assumptions.tsx": 1071,
@@ -43,7 +43,7 @@
     "src/components/cards/projection/spending-stability-chart.tsx": 557,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 637,
-    "src/components/cards/projection/use-projection-queries.ts": 986,
+    "src/components/cards/projection/use-projection-queries.ts": 979,
     "src/components/cards/projection/utils.ts": 870,
     "src/components/cards/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
@@ -162,7 +162,7 @@
     "src/server/routers/paycheck.ts": 945,
     "src/server/routers/performance.ts": 1895,
     "src/server/routers/projection/_shared.ts": 368,
-    "src/server/routers/projection/coast-fire.ts": 472,
+    "src/server/routers/projection/coast-fire.ts": 471,
     "src/server/routers/projection/monte-carlo.ts": 552,
     "src/server/routers/projection/relocation.ts": 666,
     "src/server/routers/projection/scenarios.ts": 491,
@@ -170,7 +170,7 @@
     "src/server/routers/projection/tax-optimization.ts": 538,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 694,
-    "src/server/routers/savings.ts": 2850,
+    "src/server/routers/savings.ts": 2862,
     "src/server/routers/settings/admin.ts": 423,
     "src/server/routers/settings/paycheck.ts": 734,
     "src/server/routers/settings/tax-limits.ts": 784,
@@ -258,7 +258,7 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 380
+      "TaxBucketsContent": 378
     },
     "src/app/(dashboard)/tools/page.tsx": {
       "ToolsPage": 542
@@ -904,7 +904,7 @@
       "performanceRouter.finalizeYear.mutation().transaction()": 477
     },
     "src/server/routers/projection/coast-fire.ts": {
-      "coastFireRouter.computeCoastFireMC.query()": 255
+      "coastFireRouter.computeCoastFireMC.query()": 254
     },
     "src/server/routers/projection/monte-carlo.ts": {
       "monteCarloRouter.computeMonteCarloProjection.query()": 318
