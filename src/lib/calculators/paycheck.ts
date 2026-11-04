@@ -12,7 +12,7 @@
  *     periods/year, look up tax in annual brackets, divide back by periods/year.
  *   - The bracket set passed in may be W-4 2(c) checked or unchecked — the tRPC layer selects the
  *     correct set based on job settings. 2(c) brackets are halved for dual-income households.
- *   - Social Security tax has a wage base cap (e.g. $176,100). Once YTD FICA base exceeds the cap,
+ *   - Social Security tax has a wage base cap ($184,500 in 2026). Once YTD FICA base exceeds the cap,
  *     SS withholding drops to $0 for remaining periods. The year schedule models this transition.
  *   - Contribution accounts (401k, IRA, HSA, brokerage) are only included as paycheck deductions
  *     when `isPayrollDeducted` is true. IRA and brokerage contributions flow outside the paycheck.
@@ -336,7 +336,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     safeDivide(annualTax, periodsPerYear, 0)! + input.additionalFedWithholding;
 
   // ── Step 4: FICA taxes ──
-  // Social Security: 6.2% (from input) on FICA base, capped at wage base (e.g. $176,100/year).
+  // Social Security: 6.2% (from input) on FICA base, capped at wage base ($184,500 in 2026).
   // If the employee's YTD earnings already exceed the wage base, SS drops to $0.
   //
   // SINGLE-EMPLOYER ASSUMPTION: This calculator models one W-2 employer. Each employer

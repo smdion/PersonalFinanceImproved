@@ -15,6 +15,7 @@ import {
   parseColumnKey,
   ACCOUNT_TYPE_CONFIG,
   isRothType,
+  isTaxFree,
   isTaxFreeBucket,
   isPreTaxType,
   tracksCostBasis,
@@ -131,7 +132,7 @@ export const bucketSlotMap: Record<
     categoryFilter: null,
     specTreatments: new Set(
       Object.entries(TAX_TREATMENT_TO_TAX_TYPE)
-        .filter(([, v]) => v === "preTax")
+        .filter(([, v]) => isPreTaxType(v))
         .map(([k]) => k),
     ),
     taxField: "traditional",
@@ -143,7 +144,7 @@ export const bucketSlotMap: Record<
     categoryFilter: null,
     specTreatments: new Set(
       Object.entries(TAX_TREATMENT_TO_TAX_TYPE)
-        .filter(([, v]) => v === "taxFree")
+        .filter(([, v]) => isTaxFreeBucket(v))
         .map(([k]) => k),
     ),
     taxField: "roth",
@@ -457,15 +458,19 @@ export function itemTaxType(
       ? ACCOUNT_TYPE_CONFIG[category as AccountCategory]
       : null;
   if (!cfg || !cfg.supportsRothSplit) return undefined;
-  if (taxField === "roth" || taxField === "tax_free" || taxField === "taxFree")
-    return "roth";
+  const t = taxField ?? "";
+  if (isRothType(t) || isTaxFree(t) || isTaxFreeBucket(t)) return "roth";
   return "traditional";
 }
+
+type ColumnTreatment = "traditional" | "roth" | null; // a Roth-split column's side
+const isRothColumn = (t: ColumnTreatment) => t === "roth";
+const isTraditionalColumn = (t: ColumnTreatment) => t === "traditional";
 
 /** Derive category + tax treatment from a column key like '401k_trad', 'hsa', 'brokerage'. */
 export function colKeyParts(key: string): {
   category: string;
-  treatment: "traditional" | "roth" | null;
+  treatment: ColumnTreatment;
 } {
   const parsed = parseColumnKey(key);
   if (!parsed) return { category: key, treatment: null };
@@ -486,20 +491,12 @@ export function colBalance(
   const { category, treatment } = colKeyParts(key);
   const bal = ba[category as AccountCategory];
   if (!bal) return 0;
-  if (treatment === "roth") return getRothBalance(bal);
-  if (treatment === "traditional" || treatment === "trad")
-    return getTraditionalBalance(bal);
+  if (isRothColumn(treatment)) return getRothBalance(bal);
+  if (isTraditionalColumn(treatment)) return getTraditionalBalance(bal);
   return getTotalBalance(bal);
 }
 
-/**
- * Safe division — returns 0 when divisor is 0.
- * Thin wrapper around the canonical `safeDivide` in `@/lib/utils/math`
- * (previously a local reimplementation with a 1e-9 epsilon threshold instead
- * of an exact `=== 0` check). All call sites in this module already guard
- * their denominators with an explicit `> 0` check before calling, so the
- * epsilon vs. exact-zero difference is not reachable here.
- */
+/** Safe division — 0 when the divisor is 0 (`safeDivide` in `@/lib/utils/math`). */
 export function safeDivide(numerator: number, denominator: number): number {
   return canonicalSafeDivide(numerator, denominator, 0)!;
 }
@@ -518,8 +515,9 @@ export function colWithdrawal(
   let total = 0;
   for (const slot of slots) {
     if (slot.category !== category) continue;
-    if (treatment === "roth") total += slot.rothWithdrawal;
-    else if (treatment === "traditional") total += slot.traditionalWithdrawal;
+    if (isRothColumn(treatment)) total += slot.rothWithdrawal;
+    else if (isTraditionalColumn(treatment))
+      total += slot.traditionalWithdrawal;
     else total += slot.withdrawal;
   }
   return total;
@@ -528,12 +526,12 @@ export function colWithdrawal(
 /** Map a column key (e.g. '401k_roth', 'hsa') to the engine's taxType string for IA filtering. */
 export function colEngineTaxType(key: string): string | null {
   const { treatment } = colKeyParts(key);
-  if (treatment === "roth") return "taxFree";
-  if (treatment === "traditional") return "preTax";
+  if (isRothColumn(treatment)) return "taxFree";
+  if (isTraditionalColumn(treatment)) return "preTax";
   const parsed = parseColumnKey(key);
   if (parsed) {
     const cfg = ACCOUNT_TYPE_CONFIG[parsed.category];
-    return cfg.taxBucketKey === "preTax" ? "preTax" : cfg.taxBucketKey;
+    return cfg.taxBucketKey;
   }
   return null;
 }
@@ -581,9 +579,9 @@ export function slotsColumnBalanceInflow(
   const { category, treatment } = colKeyParts(colKey);
   const slot = slots.find((s) => s.category === category);
   if (!slot) return 0;
-  if (treatment === "traditional")
+  if (isTraditionalColumn(treatment))
     return slot.traditionalContrib + slot.employerMatch;
-  if (treatment === "roth") return slot.rothContrib; // roth match flows to preTax, not here
+  if (isRothColumn(treatment)) return slot.rothContrib; // roth match flows to preTax, not here
   return slot.employeeContrib + slot.employerMatch;
 }
 

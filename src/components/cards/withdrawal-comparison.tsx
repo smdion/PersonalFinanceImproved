@@ -28,6 +28,13 @@ import {
 } from "recharts";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { STRATEGY_COMPARISON_COLORS, CHART_COLORS } from "@/lib/utils/colors";
+import { simulationRateTone } from "@/lib/config/simulation-tones";
+
+const RATE_TONE_CLASS = {
+  green: "text-green-400",
+  amber: "text-yellow-400",
+  red: "text-red-400",
+} as const;
 
 type StrategyResult = Extract<
   RouterOutputs["projection"]["computeStrategyComparison"],
@@ -245,11 +252,7 @@ export function WithdrawalComparisonCard({
                       {s.successRate !== null ? (
                         <span
                           className={
-                            s.successRate >= 0.9
-                              ? "text-green-400"
-                              : s.successRate >= 0.75
-                                ? "text-yellow-400"
-                                : "text-red-400"
+                            RATE_TONE_CLASS[simulationRateTone(s.successRate)]
                           }
                         >
                           {formatPercent(s.successRate)}
@@ -262,11 +265,9 @@ export function WithdrawalComparisonCard({
                       {s.spendingStabilityRate !== null ? (
                         <span
                           className={
-                            s.spendingStabilityRate >= 0.9
-                              ? "text-green-400"
-                              : s.spendingStabilityRate >= 0.75
-                                ? "text-yellow-400"
-                                : "text-red-400"
+                            RATE_TONE_CLASS[
+                              simulationRateTone(s.spendingStabilityRate)
+                            ]
                           }
                         >
                           {formatPercent(s.spendingStabilityRate)}
@@ -279,11 +280,9 @@ export function WithdrawalComparisonCard({
                       {s.budgetStabilityRate !== null ? (
                         <span
                           className={
-                            s.budgetStabilityRate >= 0.9
-                              ? "text-green-400"
-                              : s.budgetStabilityRate >= 0.75
-                                ? "text-yellow-400"
-                                : "text-red-400"
+                            RATE_TONE_CLASS[
+                              simulationRateTone(s.budgetStabilityRate)
+                            ]
                           }
                         >
                           {formatPercent(s.budgetStabilityRate)}

@@ -32,6 +32,7 @@ import {
 } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
+import { simulationRateTone } from "@/lib/config/simulation-tones";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -377,11 +378,8 @@ function RetirementCardImpl() {
                 <FocusLink
                   focus={{ topic: "planHealth" }}
                   className={`font-medium hover:underline ${
-                    mcPeek.result.successRate >= 0.9
-                      ? STATUS_COLORS.green.text
-                      : mcPeek.result.successRate >= 0.75
-                        ? STATUS_COLORS.amber.text
-                        : STATUS_COLORS.red.text
+                    STATUS_COLORS[simulationRateTone(mcPeek.result.successRate)]
+                      .text
                   }`}
                 >
                   {formatPercent(mcPeek.result.successRate, 0)}

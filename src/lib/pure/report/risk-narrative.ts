@@ -19,6 +19,9 @@ export interface RiskNarrative {
  *  two sections never disagree about whether a rate "sounds fine." */
 const SUCCESS_RATE_ON_TRACK_THRESHOLD = 0.85;
 
+/** Below this spending stability rate, the narrative notes the deep cuts. */
+const SPENDING_STABILITY_NOTE_BELOW = 0.85;
+
 export function buildRiskNarrative(mcResult: MonteCarloResult): RiskNarrative {
   const successPct = formatPercent(mcResult.successRate, 0);
   const onTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
@@ -40,7 +43,7 @@ export function buildRiskNarrative(mcResult: MonteCarloResult): RiskNarrative {
   }
 
   const spendingStabilityNarrative =
-    mcResult.spendingStabilityRate < 0.85
+    mcResult.spendingStabilityRate < SPENDING_STABILITY_NOTE_BELOW
       ? `Beyond whether your money lasts, ${formatPercent(1 - mcResult.spendingStabilityRate, 0)} of trials required cutting your spending by more than 25% below your planned level at some point along the way — worth knowing even in scenarios that technically "succeed."`
       : undefined;
 

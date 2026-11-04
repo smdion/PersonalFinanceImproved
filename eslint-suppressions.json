@@ -1045,10 +1045,10 @@
       "count": 6
     },
     "ratchet/max-comment-lines": {
-      "count": 25
+      "count": 24
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-jsx-iife": {
       "count": 13
@@ -1227,13 +1227,13 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 9
     },
     "ratchet/no-guarded-division": {
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 9

@@ -34,6 +34,8 @@ import {
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
+  isAfterTaxType,
+  isPreTaxType,
   isIraCategory,
   isHsaCategory,
   tradPreferenceEngineCategories,
@@ -604,16 +606,9 @@ export function DecumulationRow({
                         });
                       }
                     }
-                    // Qualified Charitable Distribution — money sent
-                    // directly from this account to charity, satisfying
-                    // part of the RMD without counting as taxable income.
-                    // Real money leaving the account (a "-" like any other
-                    // withdrawal), but was completely invisible previously
-                    // — QCD bypasses withdrawal routing entirely (it's
-                    // deducted before routing even runs), so there was no
-                    // slot/withdrawal line item anywhere that would have
-                    // shown it. Only ever deducted from "ira" (QCDs are
-                    // IRA-only under current law).
+                    // QCD: money sent from this account to charity, part of
+                    // the RMD but not taxable income. Deducted before routing
+                    // runs, so no slot line shows it; "ira" only (by law).
                     const qcdAmount = yr.qcdAmount ?? 0;
                     if (qcdAmount > 0.01 && isIraCategory(cat)) {
                       items.push({
@@ -1196,7 +1191,7 @@ export function DecumulationRow({
                   // from.
                   const bucketRmdExcess = yr.rmdExcessAmount ?? 0;
                   const bucketRmdMode = engineSettings?.rmdExcessHandling;
-                  if (bucket === "afterTax" && bucketRmdExcess > 0.01) {
+                  if (isAfterTaxType(bucket) && bucketRmdExcess > 0.01) {
                     if (bucketRmdMode === "spend") {
                       wdLineItems.push({
                         label: "RMD excess spent (not reinvested)",
@@ -1213,7 +1208,7 @@ export function DecumulationRow({
                     }
                   }
                   const bucketQcd = yr.qcdAmount ?? 0;
-                  if (bucket === "preTax" && bucketQcd > 0.01) {
+                  if (isPreTaxType(bucket) && bucketQcd > 0.01) {
                     wdLineItems.push({
                       label: "QCD to charity (excluded from taxable income)",
                       amount: deflate(bucketQcd, yr.year),

@@ -28,6 +28,10 @@ import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { SK_SAVINGS_RATE_THRESHOLDS } from "@/lib/constants/settings-keys";
 
+/** The Savings Rate row's default bars (green at or above the first, yellow
+ *  at or above the second) until the household saves its own. */
+const DEFAULT_SAVINGS_RATE_BARS = [0.25, 0.15] as const;
+
 type CheckupStep = {
   label: string;
   helpTip?: string;
@@ -175,7 +179,7 @@ function FinancialCheckupCardImpl() {
     useHighIncomeLine();
   const [savingsRateThresholds] = usePersistedSetting<string>(
     SK_SAVINGS_RATE_THRESHOLDS,
-    "[0.25, 0.15]",
+    `[${DEFAULT_SAVINGS_RATE_BARS.join(", ")}]`,
   );
   const milestones = useRecommendations();
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
@@ -244,13 +248,13 @@ function FinancialCheckupCardImpl() {
       );
       return Array.isArray(arr) && arr.length >= 2
         ? (arr as number[])
-        : [0.25, 0.15];
+        : DEFAULT_SAVINGS_RATE_BARS;
     } catch {
-      return [0.25, 0.15];
+      return DEFAULT_SAVINGS_RATE_BARS;
     }
   })();
-  const greenThreshold = parsedThresholds[0] ?? 0.25;
-  const yellowThreshold = parsedThresholds[1] ?? 0.15;
+  const greenThreshold = parsedThresholds[0] ?? DEFAULT_SAVINGS_RATE_BARS[0];
+  const yellowThreshold = parsedThresholds[1] ?? DEFAULT_SAVINGS_RATE_BARS[1];
 
   steps.push({
     label: "Savings Rate",
