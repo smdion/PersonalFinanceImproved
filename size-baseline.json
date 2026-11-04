@@ -1,7 +1,7 @@
 {
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 430,
-    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1071,
+    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1069,
     "src/app/(dashboard)/budget/budget-content.tsx": 671,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 403,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 569,
@@ -15,7 +15,7 @@
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 909,
     "src/app/(dashboard)/savings/page.tsx": 952,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1025,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1024,
     "src/app/(dashboard)/tools/page.tsx": 585,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 560,
     "src/app/(dashboard)/versions/page.tsx": 954,
@@ -27,7 +27,7 @@
     "src/components/cards/dashboard/contributions-card.tsx": 655,
     "src/components/cards/dashboard/linked-balance-card.tsx": 451,
     "src/components/cards/dashboard/living-costs-card.tsx": 683,
-    "src/components/cards/dashboard/retirement-card.tsx": 451,
+    "src/components/cards/dashboard/retirement-card.tsx": 450,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,
     "src/components/cards/mc-simulation-assumptions.tsx": 1111,
     "src/components/cards/projection/decumulation-config.tsx": 480,
@@ -42,10 +42,10 @@
     "src/components/cards/projection/report/report-assumptions-summary.tsx": 423,
     "src/components/cards/projection/spending-stability-chart.tsx": 557,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
-    "src/components/cards/projection/use-projection-derived.ts": 643,
+    "src/components/cards/projection/use-projection-derived.ts": 641,
     "src/components/cards/projection/use-projection-queries.ts": 998,
     "src/components/cards/projection/utils.ts": 883,
-    "src/components/cards/withdrawal-comparison.tsx": 587,
+    "src/components/cards/withdrawal-comparison.tsx": 585,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 683,
@@ -88,7 +88,7 @@
     "src/components/settings/integrations.tsx": 708,
     "src/components/settings/integrations/budget-section.tsx": 712,
     "src/components/settings/integrations/portfolio-section.tsx": 659,
-    "src/components/tools/relocation/projection-table.tsx": 417,
+    "src/components/tools/relocation/projection-table.tsx": 416,
     "src/components/validation-content.tsx": 578,
     "src/lib/budget-api/actual-client.ts": 837,
     "src/lib/budget-api/ynab-client.ts": 540,
@@ -187,7 +187,7 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
-      "BrokerageContent": 390,
+      "BrokerageContent": 386,
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
@@ -258,7 +258,7 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 391
+      "TaxBucketsContent": 388
     },
     "src/app/(dashboard)/tools/page.tsx": {
       "ToolsPage": 542
@@ -333,7 +333,7 @@
       "LivingCostsCardImpl": 587
     },
     "src/components/cards/dashboard/retirement-card.tsx": {
-      "RetirementCardImpl": 408
+      "RetirementCardImpl": 403
     },
     "src/components/cards/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 407
@@ -400,7 +400,7 @@
       "renderTooltip": 328
     },
     "src/components/cards/projection/use-projection-derived.ts": {
-      "useProjectionDerived": 607
+      "useProjectionDerived": 604
     },
     "src/components/cards/projection/use-projection-form-state.ts": {
       "useProjectionFormState": 343
@@ -415,7 +415,7 @@
       "filterYearByParentCategory": 250
     },
     "src/components/cards/withdrawal-comparison.tsx": {
-      "WithdrawalComparisonCard": 502
+      "WithdrawalComparisonCard": 498
     },
     "src/components/decumulation-methodology-content.tsx": {
       "DecumulationMethodologyContent": 867

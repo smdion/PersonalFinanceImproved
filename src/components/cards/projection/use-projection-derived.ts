@@ -19,6 +19,7 @@ import {
   isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import { emptyTaxBucketMap } from "@/lib/config/display-labels";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { ProjectionQueries } from "./use-projection-queries";
@@ -499,12 +500,9 @@ export function useProjectionDerived(
       ? Number(engineSettings.annualInflation)
       : DEFAULT_INFLATION_RATE;
   const baseYear = new Date().getFullYear();
-  const deflate = (value: number, year: number) => {
-    if (dollarMode === "nominal") return value;
-    const years = year - baseYear;
-    if (years <= 0) return value;
-    return value / Math.pow(1 + inflationRate, years);
-  };
+  const deflator = flatDeflator(baseYear, inflationRate);
+  const deflate = (value: number, year: number) =>
+    dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
   const renderTooltip = _renderTooltip;
 

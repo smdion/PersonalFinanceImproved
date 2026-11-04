@@ -3,6 +3,8 @@
 /** Client content for the Brokerage page — prefetched by page.tsx. */
 
 import { investedAtStartOf } from "@/lib/pure/goldilocks";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -151,7 +153,7 @@ export function BrokerageContent() {
     onSuccess: () => utils.invalidate(),
   });
   const [isGoalsOpen, setIsGoalsOpen] = useState(false);
-  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("nominal");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("nominal");
 
   if (isLoading) {
     return (
@@ -218,13 +220,9 @@ export function BrokerageContent() {
     data.settings?.annualInflation != null
       ? Number(data.settings.annualInflation)
       : DEFAULT_INFLATION_RATE;
-  const baseYear = new Date().getFullYear();
-  const deflate = (value: number, year: number) => {
-    if (dollarMode === "nominal") return value;
-    const years = year - baseYear;
-    if (years <= 0) return value;
-    return value / Math.pow(1 + inflationRate, years);
-  };
+  const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
+  const deflate = (value: number, year: number) =>
+    dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
   // Funding sources
   const totalDirectContrib = sumBy(portfolioAccounts, (at) => at.totalContrib);

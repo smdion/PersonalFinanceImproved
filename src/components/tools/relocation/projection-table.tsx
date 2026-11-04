@@ -12,6 +12,8 @@ import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Toggle } from "@/components/ui/toggle";
 import { formatCurrency } from "@/lib/utils/format";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import type {
   EngineProjectionRow,
   LargePurchaseRow,
@@ -48,16 +50,13 @@ export function RelocationProjectionTable({
   engineResult,
   moveYear,
 }: Props) {
-  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
 
   const inflationRate = engineResult?.inflationRate ?? 0;
   const baseYear = engineResult?.baseYear ?? new Date().getFullYear();
-  const deflate = (value: number, year: number) => {
-    if (dollarMode === "nominal") return value;
-    const years = year - baseYear;
-    if (years <= 0) return value;
-    return value / Math.pow(1 + inflationRate, years);
-  };
+  const deflator = flatDeflator(baseYear, inflationRate);
+  const deflate = (value: number, year: number) =>
+    dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
   return (
     <div className="border-t pt-3">
@@ -144,7 +143,7 @@ function ComparisonTable({
   ageTooltip: (year: number) => string | undefined;
   engineResult?: RelocationEngineResult | null;
   deflate: (value: number, year: number) => number;
-  dollarMode: "nominal" | "real";
+  dollarMode: DollarBasis;
   moveYear?: number | null;
 }) {
   // When moveYear is set, replace the "Move Path" column with blended data so

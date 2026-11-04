@@ -33,3 +33,30 @@ export function simulationDollars(
         p5EndBalance: result.worstCase.p5EndBalance,
       };
 }
+
+/** A year's price index against `baseYear`: 1 at or before it. */
+export type Deflator = {
+  readonly baseYear: number;
+  readonly indexOf: (year: number) => number;
+};
+
+/** One flat annual rate compounded from `baseYear` (a view's own rate). */
+export function flatDeflator(
+  baseYear: number,
+  annualInflation: number,
+): Deflator {
+  return {
+    baseYear,
+    indexOf: (year) =>
+      year > baseYear ? Math.pow(1 + annualInflation, year - baseYear) : 1,
+  };
+}
+
+/** A `year` figure in the deflator's base-year dollars. */
+export function toTodaysDollars(
+  value: number,
+  year: number,
+  deflator: Deflator,
+): number {
+  return value / deflator.indexOf(year);
+}

@@ -5,6 +5,8 @@ import {
   type SimulationNotConfigured,
 } from "@/lib/calculators/monte-carlo";
 import { strategySummary } from "@/lib/pure/strategy-summary";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -75,8 +77,8 @@ type Props = {
   presetLabel?: string;
   /** Why those columns are empty (the Simulation can't run), or null. */
   notConfigured?: SimulationNotConfigured | null;
-  dollarMode: "nominal" | "real";
-  onDollarModeChange: (mode: "nominal" | "real") => void;
+  dollarMode: DollarBasis;
+  onDollarModeChange: (mode: DollarBasis) => void;
   inflationRate: number;
   analyzerInput?: AnalyzerInput;
 };
@@ -105,13 +107,9 @@ export function WithdrawalComparisonCard({
 
   if (strategies.length === 0) return null;
 
-  // Deflate a future-dollar value to today's dollars
-  const thisYear = new Date().getFullYear();
-  const deflate = (value: number, year: number) => {
-    if (dollarMode === "nominal") return value;
-    const yearsOut = year - thisYear;
-    return yearsOut > 0 ? value / Math.pow(1 + inflationRate, yearsOut) : value;
-  };
+  const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
+  const deflate = (value: number, year: number) =>
+    dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
   // Build chart data: merge all strategies into year-indexed rows
   const chartData = (() => {

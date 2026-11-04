@@ -31,6 +31,8 @@ import {
   tracksRothBasis,
 } from "@/lib/config/account-types";
 import { penaltyFreePrefixAmount } from "@/lib/pure/early-access";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import type { DollarBasis } from "@/lib/config/enum-values";
 
 // The pure type, not a tRPC-inferred one — inferRouterOutputs types
 // `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
@@ -173,7 +175,7 @@ export function TaxBucketsContent() {
   // deflating them would be a no-op at best and confusing at worst.
   // Mirrors the Retirement page's own "Today's $"/"Future $" toggle
   // (dollarMode "real"/"nominal") and default.
-  const [dollarMode, setDollarMode] = useState<"real" | "nominal">("real");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
 
   const { data, isLoading, error } =
     trpc.taxBuckets.computeBreakdown.useQuery();
@@ -263,14 +265,11 @@ export function TaxBucketsContent() {
     projectionSettings?.annualInflation != null
       ? Number(projectionSettings.annualInflation)
       : DEFAULT_INFLATION_RATE;
-  const baseYear = new Date().getFullYear();
-  const deflate = (amount: number) => {
-    if (dollarMode === "nominal") return amount;
-    if (!projection?.transitionYear) return amount;
-    const years = projection.transitionYear - baseYear;
-    if (years <= 0) return amount;
-    return amount / Math.pow(1 + inflationRate, years);
-  };
+  const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
+  const deflate = (amount: number) =>
+    dollarMode === "nominal" || !projection?.transitionYear
+      ? amount
+      : toTodaysDollars(amount, projection.transitionYear, deflator);
   const fmt = (amount: number) =>
     formatCurrency(view === "atRetirement" ? deflate(amount) : amount);
 
