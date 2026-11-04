@@ -308,9 +308,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
     }
   },
   "src/app/(dashboard)/profiles/page.tsx": {
@@ -711,9 +708,6 @@
     }
   },
   "src/components/budget/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -2040,7 +2034,7 @@
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 7
+      "count": 3
     }
   },
   "src/components/recommendations/dismiss-controls.tsx": {
