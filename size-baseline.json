@@ -705,7 +705,7 @@
       "ReturnRatesSettings": 257
     },
     "src/components/settings/tax-brackets.tsx": {
-      "TaxBracketsSettings": 337
+      "TaxBracketsSettings": 336
     },
     "src/components/settings/tax-data.tsx": {
       "TaxDataSettings": 202

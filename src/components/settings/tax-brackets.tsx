@@ -7,6 +7,7 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
 
 type BracketEntry = {
   threshold: number;
@@ -64,7 +65,6 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const yearShipped = yearData.some((tb) => tb.shipped);
   const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
-  const filingStatuses = ["MFJ", "Single", "HOH"] as const;
   const statusLabels: Record<string, string> = {
     MFJ: "Married Filing Jointly",
     Single: "Single",
@@ -117,7 +117,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
       }
     } else {
       // Create empty brackets for all filing status + checkbox combos
-      for (const fs of filingStatuses) {
+      for (const fs of W4_FILING_STATUS_VALUES) {
         for (const checkbox of [false, true]) {
           await createMutation.mutateAsync({
             taxYear: activeYear,
@@ -208,7 +208,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
       )}
 
       <div className="space-y-6">
-        {filingStatuses.map((status) => {
+        {W4_FILING_STATUS_VALUES.map((status) => {
           const statusBrackets = yearData.filter(
             (tb) => tb.filingStatus === status,
           );

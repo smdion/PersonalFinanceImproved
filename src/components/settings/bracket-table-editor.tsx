@@ -14,14 +14,10 @@
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
 
 export type BracketFilingStatus = "MFJ" | "Single" | "HOH";
 
-const FILING_STATUSES: readonly BracketFilingStatus[] = [
-  "MFJ",
-  "Single",
-  "HOH",
-] as const;
 const STATUS_LABELS: Record<BracketFilingStatus, string> = {
   MFJ: "Married Filing Jointly",
   Single: "Single",
@@ -149,7 +145,7 @@ export function BracketTableEditor<TEntry>({
         );
       }
     } else {
-      for (const fs of FILING_STATUSES) {
+      for (const fs of FILING_STATUS_ORDER) {
         await onCreateRow(year, fs, defaultBrackets);
       }
     }
@@ -230,7 +226,7 @@ export function BracketTableEditor<TEntry>({
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {FILING_STATUSES.map((status) => {
+        {FILING_STATUS_ORDER.map((status) => {
           const row = yearData.find((r) => r.filingStatus === status);
           if (!row) return null;
           return (

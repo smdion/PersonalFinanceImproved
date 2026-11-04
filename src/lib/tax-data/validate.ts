@@ -10,7 +10,7 @@ import {
   type TaxDataYear,
 } from "@/lib/db/reference-reconcile-core";
 import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
-import { REQUIRED_FILING_STATUSES } from "@/lib/config/tax-params";
+import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
 import {
   fplByHouseholdAmountsSchema,
   irmaaBracketsSchema,
@@ -312,7 +312,7 @@ export function validateTaxDataFile(
       if (sec?.exception && !(sec.exception.reason && sec.exception.source))
         add(`${y} ${s}: exception without reason and source`);
     }
-    const statuses = [...REQUIRED_FILING_STATUSES].sort().join(",");
+    const statuses = [...FILING_STATUS_ORDER].sort().join(",");
     if (
       Object.keys(d.withholding?.tables ?? {})
         .sort()
