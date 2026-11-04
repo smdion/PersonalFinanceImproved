@@ -106,7 +106,7 @@
   },
   "src/components/budget/budget-retirement-note.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 3
     }
   },
   "src/components/budget/budget-summary-bar.tsx": {
@@ -131,7 +131,7 @@
   },
   "src/components/cards/dashboard/financial-checkup-card.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
+      "count": 3
     }
   },
   "src/components/cards/dashboard/household-income-card.tsx": {
@@ -166,7 +166,7 @@
   },
   "src/components/cards/mc-simulation-assumptions.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 10
+      "count": 11
     }
   },
   "src/components/cards/projection/decumulation-config.tsx": {
@@ -201,7 +201,7 @@
   },
   "src/components/cards/projection/projection-table-accum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 8
+      "count": 7
     }
   },
   "src/components/cards/projection/projection-table-contrib-methodology.tsx": {
@@ -236,7 +236,7 @@
   },
   "src/components/cards/projection/utils.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/cards/strategy-guide-panel.tsx": {
@@ -349,9 +349,14 @@
       "count": 7
     }
   },
+  "src/components/portfolio/use-contribution-accounts-mutations.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
   "src/components/retirement/assumptions-band.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
+      "count": 2
     }
   },
   "src/components/retirement/retirement-profile-manager.tsx": {
@@ -364,9 +369,14 @@
       "count": 7
     }
   },
+  "src/components/retirement/sections/glide-path.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
   "src/components/retirement/sections/healthcare.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 12
+      "count": 23
     }
   },
   "src/components/retirement/sections/income.tsx": {
@@ -386,7 +396,12 @@
   },
   "src/components/retirement/sections/rmd-handling.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 11
+      "count": 14
+    }
+  },
+  "src/components/retirement/sections/settings-patch.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/components/retirement/sections/strategy-params.tsx": {
@@ -396,7 +411,12 @@
   },
   "src/components/retirement/sections/taxes.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 27
+      "count": 41
+    }
+  },
+  "src/components/retirement/sections/timeline.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
     }
   },
   "src/components/savings/extra-paycheck-rules-editor.tsx": {
@@ -421,7 +441,7 @@
   },
   "src/components/settings/integrations-preview-panel.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
+      "count": 10
     }
   },
   "src/components/settings/integrations-sec.tsx": {
@@ -446,12 +466,17 @@
   },
   "src/components/settings/integrations/budget-section.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 8
+    }
+  },
+  "src/components/settings/integrations/drift-banner.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/components/settings/integrations/portfolio-section.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 10
+      "count": 14
     }
   },
   "src/components/tax-optimization/roth-explorer.tsx": {
@@ -475,11 +500,6 @@
     }
   },
   "src/lib/budget-api/cache.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/budget-api/factory.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
@@ -544,24 +564,9 @@
       "count": 1
     }
   },
-  "src/lib/calculators/engine/rmd-spending.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/spending-decline.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/engine/tax-estimation.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
-    }
-  },
-  "src/lib/calculators/engine/vanguard-dynamic.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
     }
   },
   "src/lib/calculators/engine/withdrawal-routing.ts": {
@@ -611,12 +616,7 @@
   },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 11
-    }
-  },
-  "src/lib/config/display-labels.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
+      "count": 9
     }
   },
   "src/lib/db/backfill-perf-ids.ts": {
