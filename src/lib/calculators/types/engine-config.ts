@@ -51,6 +51,8 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { LumpSum } from "./shared";
+import type { z } from "zod/v4";
+import type { decumulationOverrideArraySchema } from "@/lib/pure/engine";
 import type { LtcgBracketTable } from "../../config/tax-tables";
 import type { IrmaaBracketTable } from "../../config/irmaa-tables";
 
@@ -581,100 +583,23 @@ export type DecumulationDefaults = {
   rmdSmoothingMaxBracketTarget?: number;
 };
 
-/**
- * A single year-override entry for the decumulation phase.
- * Same sticky-forward semantics as AccumulationOverride.
- *
- * EXAMPLES:
- *
- * No per-year withdrawal rate: no spending strategy reads one (the
- * household's rate lives in DecumulationDefaults, set from settings).
- *
- * Switch to drawing Roth first from 401k at age 80:
- *   { year: 2067, withdrawalTaxPreference: { '401k': 'roth' } }
- *   → Start drawing Roth 401k before Traditional 401k.
- *
- * Cap annual brokerage withdrawals at $50k:
- *   { year: 2060, withdrawalAccountCaps: { brokerage: 50000 } }
- *   → No more than $50k/year from brokerage; excess need from other accounts.
- */
-export type DecumulationOverride = {
-  year: number;
+type DecumulationOverrideRow = z.infer<
+  typeof decumulationOverrideArraySchema
+>[number];
+/** The schema's `z.record` over categories demands every key; the engine
+ *  fills a missing one, so its type takes a partial record. */
+type PerCategoryField =
+  "withdrawalSplits" | "withdrawalTaxPreference" | "withdrawalAccountCaps";
 
-  /** Withdrawal routing mode. See DecumulationDefaults.withdrawalRoutingMode. */
-  withdrawalRoutingMode?: RoutingMode;
-
-  /** Account withdrawal priority (waterfall mode). See DecumulationDefaults.withdrawalOrder. */
-  withdrawalOrder?: AccountCategory[];
-
-  /** Fixed percentage split (percentage mode). See DecumulationDefaults.withdrawalSplits. */
-  withdrawalSplits?: Partial<Record<AccountCategory, number>>;
-
-  /**
-   * Per-account tax preference for withdrawals.
-   * See DecumulationDefaults.withdrawalTaxPreference.
-   */
-  withdrawalTaxPreference?: Partial<Record<AccountCategory, RoutingTaxType>>;
-
-  /**
-   * Dollar cap on withdrawals per account per year.
-   * Limits how much can be drawn from a single account type.
-   * Excess withdrawal need shifts to the next account in withdrawalOrder.
-   */
-  withdrawalAccountCaps?: Partial<Record<AccountCategory, number>>;
-
-  /**
-   * Cross-account dollar cap per tax type for withdrawals.
-   * Limits total Traditional or Roth withdrawals across all accounts.
-   *
-   * Example: { traditional: 80000 } → draw no more than $80k/year from
-   * Traditional balances (across 401k + IRA), to stay in a lower tax bracket.
-   */
-  withdrawalTaxTypeCaps?: Partial<Record<RoutingTaxType, number>>;
-
-  /**
-   * Override the Roth conversion target bracket for this year onward.
-   * Set to 0 to disable Roth conversions from this year.
-   * Omit to keep the current target.
-   */
-  rothConversionTarget?: number;
-
-  /**
-   * Override the bracket_filling target marginal rate (see
-   * `DistributionTaxRates.rothBracketTarget`) for this year onward.
-   * Omit to keep the plan's configured target. Lets a
-   * multi-year withdrawal-policy search express "try this bracket
-   * target for this candidate" the same way `accumulationOverrides`
-   * already lets Coast FIRE express a candidate contribution rate.
-   */
-  rothBracketTarget?: number;
-
-  /**
-   * Override the RMD-smoothing ceiling (see
-   * `DecumulationDefaults.rmdSmoothingMaxBracketTarget`) for this year
-   * onward. Omit to keep the plan's configured ceiling. Provided
-   * alongside `rothBracketTarget` so a search that varies the bracket
-   * target can keep this ceiling consistent with whatever target it's
-   * evaluating, instead of scoring a candidate against a stale ceiling
-   * seeded from a different value.
-   */
-  rmdSmoothingMaxBracketTarget?: number;
-
-  /**
-   * One-time dollar withdrawals for this year. NOT sticky-forward.
-   * Models windfall spending, one-time distributions, etc.
-   */
-  lumpSums?: LumpSum[];
-
-  /**
-   * When true, ALL decumulation fields revert to DecumulationDefaults.
-   */
-  reset?: boolean;
-
-  /** Optional note explaining why this override exists (shown in UI tooltip). */
-  notes?: string;
-
-  /** Override for this year onward. See DecumulationDefaults.avoidPenalizedWithdrawals. */
+/** One year's decumulation override, sticky-forward like
+ *  AccumulationOverride; fields in `decumulationOverrideArraySchema`. */
+export type DecumulationOverride = Omit<
+  DecumulationOverrideRow,
+  PerCategoryField
+> & {
+  [K in PerCategoryField]?: Partial<NonNullable<DecumulationOverrideRow[K]>>;
+} & {
+  /** Engine-only, so not API-settable. See DecumulationDefaults. */
   avoidPenalizedWithdrawals?: boolean;
 };
 

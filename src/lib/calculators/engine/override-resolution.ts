@@ -262,7 +262,7 @@ export function resolveDecumulationConfig(
     }
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
-    // see DecumulationOverride's docblock. Same
+    // Field notes: decumulationOverrideArraySchema. Same
     // optional/sticky-forward pattern as rothConversionTarget just above:
     // no entry needed in the initial literal or the reset branch (an
     // omitted optional field is already undefined, which is the correct

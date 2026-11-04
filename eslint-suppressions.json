@@ -3402,7 +3402,7 @@
   },
   "src/lib/calculators/types/engine-config.ts": {
     "ratchet/max-comment-lines": {
-      "count": 35
+      "count": 31
     },
     "ratchet/no-history-comment": {
       "count": 1
