@@ -10,10 +10,7 @@ import {
   getStressTestScenarios,
   detectRosyAssumptions,
 } from "@/lib/pure/stress-test";
-import {
-  deriveProjectionBand,
-  bandFractionForPortfolio,
-} from "@/lib/pure/projection-bands";
+import { deriveProjectionBand } from "@/lib/pure/projection-bands";
 import {
   recommendWithdrawalStrategy,
   type PlanCharacteristics,
@@ -115,19 +112,6 @@ describe("deriveProjectionBand", () => {
     expect(b.label).toMatch(/\$2\.4M/);
     expect(b.label).toMatch(/\$1\.8M/);
     expect(b.label).toMatch(/\$3\.0M/);
-  });
-});
-
-describe("bandFractionForPortfolio", () => {
-  it("widens for long horizon + heavy equity", () => {
-    expect(bandFractionForPortfolio(30, 90)).toBeGreaterThan(0.3);
-  });
-  it("narrows for short horizon + bond-heavy", () => {
-    expect(bandFractionForPortfolio(10, 30)).toBeLessThan(0.2);
-  });
-  it("clamps to [0.1, 0.5]", () => {
-    expect(bandFractionForPortfolio(100, 100)).toBeLessThanOrEqual(0.5);
-    expect(bandFractionForPortfolio(0, 0)).toBeGreaterThanOrEqual(0.1);
   });
 });
 

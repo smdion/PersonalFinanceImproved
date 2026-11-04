@@ -35,6 +35,7 @@
     "setup": "bash scripts/setup-dev.sh",
     "check:file-size": "tsx scripts/check-size-baseline.ts",
     "check:dead-code": "knip --no-progress",
+    "check:dead-code:production": "knip --production --no-progress",
     "check:layers": "tsx scripts/check-layers.ts",
     "check:types-tests": "tsc -p tsconfig.tests.json",
     "check:types-scripts": "tsc -p tsconfig.scripts.json",

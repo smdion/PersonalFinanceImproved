@@ -9,7 +9,7 @@ type ActiveProfileKind = "contribution" | "salary" | "retirement";
 // would still fire ~20 writes (and ~20 "didn't save" toasts) on a failure.
 const attemptedRepairs = new Set<string>();
 
-/** Test-only: forget attempted repairs (module state survives between tests). */
+/** @internal Test-only: forget attempted repairs (module state survives between tests). */
 export function resetActiveProfileRepairsForTests(): void {
   attemptedRepairs.clear();
 }

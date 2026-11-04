@@ -242,25 +242,6 @@ export function unknownTaxDataKeys(file: TaxDataFile): string[] {
   );
 }
 
-/** The file without limit keys this Ledgr doesn't know (a newer file may
- *  ship figures for features an older install doesn't have). */
-export function withKnownKeysOnly(file: TaxDataFile): TaxDataFile {
-  return {
-    ...file,
-    years: Object.fromEntries(
-      Object.entries(file.years).map(([y, d]) => [
-        y,
-        {
-          ...d,
-          limits: Object.fromEntries(
-            Object.entries(d.limits).filter(([k]) => taxLimitKey(k)),
-          ),
-        },
-      ]),
-    ),
-  };
-}
-
 /** Every problem with the file, as readable lines (empty = valid).
  *  Unknown keys are a problem only when `unknownKeys` is "reject" (CI on
  *  the shipped file); a community update may carry keys a newer Ledgr

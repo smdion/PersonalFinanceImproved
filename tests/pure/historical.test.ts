@@ -1,43 +1,14 @@
 /**
  * Tests for pure historical data temporal resolution logic.
- * Covers: resolveSalaryForYear, resolveCarryForwardAssetValue,
+ * Covers: resolveCarryForwardAssetValue,
  * resolveOtherAssetsForYear, computeHomeImpCumulative.
  */
 import { describe, it, expect } from "vitest";
 import {
-  resolveSalaryForYear,
   resolveCarryForwardAssetValue,
   resolveOtherAssetsForYear,
   computeHomeImpCumulative,
 } from "@/lib/pure/historical";
-
-describe("resolveSalaryForYear", () => {
-  const job = {
-    startDate: "2020-01-01",
-    endDate: null,
-    salary: 80000,
-    changes: [
-      { effectiveDate: "2021-06-01", newSalary: 90000 },
-      { effectiveDate: "2023-01-01", newSalary: 110000 },
-    ],
-  };
-
-  it("returns starting salary before any changes", () => {
-    expect(resolveSalaryForYear(job, 2020)).toBe(80000);
-  });
-
-  it("returns salary after first change", () => {
-    expect(resolveSalaryForYear(job, 2022)).toBe(90000);
-  });
-
-  it("returns salary after latest change", () => {
-    expect(resolveSalaryForYear(job, 2024)).toBe(110000);
-  });
-
-  it("returns salary on the change year itself", () => {
-    expect(resolveSalaryForYear(job, 2023)).toBe(110000);
-  });
-});
 
 describe("resolveCarryForwardAssetValue", () => {
   const items = [

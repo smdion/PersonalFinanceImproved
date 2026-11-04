@@ -5,35 +5,6 @@
 import { toNumber } from "@/server/helpers/transforms";
 import { sumBy } from "@/lib/utils/math";
 
-/** A job's salary change record. */
-type SalaryChange = {
-  effectiveDate: string;
-  newSalary: number;
-};
-
-/** A job timeline entry. */
-type JobTimeline = {
-  startDate: string;
-  endDate: string | null;
-  salary: number;
-  changes: SalaryChange[];
-};
-
-/**
- * Resolve which salary was effective for a job in a given year.
- * Walks through salary changes in order — the last change with effectiveDate <= year applies.
- */
-export function resolveSalaryForYear(job: JobTimeline, year: number): number {
-  let salary = job.salary;
-  for (const ch of job.changes) {
-    const changeYear = parseInt(ch.effectiveDate.slice(0, 4), 10);
-    if (changeYear <= year) {
-      salary = ch.newSalary;
-    }
-  }
-  return salary;
-}
-
 /** An other-asset item from the DB. */
 type OtherAssetItem = {
   id?: number;

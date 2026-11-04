@@ -15,7 +15,7 @@ import {
 } from "@/server/helpers/apply-pull-mapping";
 import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
 import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
-import { countsInLiveBalance, feedsLoan } from "@/lib/pure/simplefin-feeds";
+import { countsInLiveBalance } from "@/lib/pure/simplefin-feeds";
 
 const loanInput = {
   name: "Example Loan",
@@ -207,13 +207,11 @@ describe("the live total", () => {
       lastBalance: -5,
       isIncluded: true,
     };
-    expect(feedsLoan(a)).toBe(true);
     expect(countsInLiveBalance(a)).toBe(false);
     expect(countsInLiveBalance({ ...a, linkedLoanId: null })).toBe(false);
     expect(
       countsInLiveBalance({ ...a, linkedLoanId: null, lastBalance: 5 }),
     ).toBe(true);
-    expect(feedsLoan({ ...a, isIncluded: false })).toBe(false);
   });
 });
 

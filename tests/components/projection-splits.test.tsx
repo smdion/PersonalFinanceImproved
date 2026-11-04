@@ -2,7 +2,7 @@
  * Tests for the extracted projection sub-components:
  * - ProjectionHeroKpis (deterministic + MC)
  * - ProjectionChart + ProjectionChartSkeleton
- * - McDepletionCallout + McResultsSection
+ * - McResultsSection
  *
  * Strategy: mock useProjectionState return value and render each component with
  * representative state shapes. Verify correct text/elements appear.
@@ -423,87 +423,6 @@ describe("ProjectionChart", () => {
     });
     render(<ProjectionChart state={s} />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// McDepletionCallout
-// ---------------------------------------------------------------------------
-
-describe("McDepletionCallout", () => {
-  it("returns null when no MC data", async () => {
-    const { McDepletionCallout } =
-      await import("@/components/cards/projection/projection-mc-results");
-    const { container } = render(
-      <McDepletionCallout state={baseMockState()} />,
-    );
-    expect(container.innerHTML).toBe("");
-  });
-
-  it("returns null when no depletion age in MC", async () => {
-    const { McDepletionCallout } =
-      await import("@/components/cards/projection/projection-mc-results");
-    const s = baseMockState({
-      result: { projectionByYear: [{ age: 36, year: 2026 }] },
-      mcQuery: {
-        data: {
-          result: {
-            successRate: 0.95,
-            distributions: {
-              failureAge: null,
-              terminalBalance: { median: 1000000 },
-            },
-          },
-        },
-        error: null,
-      },
-    });
-    const { container } = render(<McDepletionCallout state={s} />);
-    expect(container.innerHTML).toBe("");
-  });
-
-  it("renders depletion warning when present", async () => {
-    const { McDepletionCallout } =
-      await import("@/components/cards/projection/projection-mc-results");
-    const s = baseMockState({
-      result: { projectionByYear: [{ age: 36, year: 2026 }] },
-      mcQuery: {
-        data: {
-          result: {
-            successRate: 0.72,
-            failureReasonRates: {
-              depleted: 0.2,
-              penaltyGap: 0.08,
-              shortfall: 0,
-            },
-            distributions: {
-              failureAge: { median: 88, p10: 82, p25: 85, p75: 92, p90: 95 },
-              terminalBalance: {
-                median: 50000,
-                p10: 0,
-                p25: 10000,
-                p75: 200000,
-                p90: 500000,
-              },
-            },
-            today: {
-              terminalBalance: {
-                median: 50000,
-                p10: 0,
-                p25: 10000,
-                p75: 200000,
-                p90: 500000,
-              },
-            },
-          },
-        },
-        error: null,
-      },
-    });
-    render(<McDepletionCallout state={s} />);
-    expect(
-      screen.getByText(/28% of futures, money runs out around 2048/),
-    ).toBeInTheDocument();
   });
 });
 

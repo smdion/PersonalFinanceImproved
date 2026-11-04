@@ -78,19 +78,3 @@ export function getBudgetFrequencyNote(
   }
   return config.budgetNote;
 }
-
-type TaxTypeBreakdown = Record<string, number>;
-
-/**
- * Break down snapshot accounts by tax type.
- * Accumulates by whatever taxType key the DB returns — no hardcoded keys.
- */
-export function breakdownByTaxType(
-  accounts: { taxType: string; amount: number }[],
-): TaxTypeBreakdown {
-  const result: TaxTypeBreakdown = {};
-  for (const a of accounts) {
-    result[a.taxType] = (result[a.taxType] ?? 0) + a.amount;
-  }
-  return result;
-}

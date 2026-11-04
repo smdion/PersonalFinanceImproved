@@ -19,7 +19,6 @@ import {
   getTotalBalance,
   getBasis,
   getAccountSegments,
-  getCategoryColumnKey,
   parseColumnKey,
   getColumnLabel,
   getDefaultAccumulationOrder,
@@ -363,18 +362,16 @@ describe("getAccountSegments", () => {
   });
 });
 
-describe("getCategoryColumnKey / parseColumnKey / getColumnLabel", () => {
-  it("round-trips a column key", () => {
-    const key = getCategoryColumnKey("401k", "trad");
-    const parsed = parseColumnKey(key);
+describe("parseColumnKey / getColumnLabel", () => {
+  it("parses a column key", () => {
+    const parsed = parseColumnKey("401k_trad");
     expect(parsed).not.toBeNull();
     expect(parsed!.category).toBe("401k");
     expect(parsed!.subKey).toBe("trad");
   });
 
   it("getColumnLabel returns a non-empty string", () => {
-    const key = getCategoryColumnKey("hsa");
-    expect(getColumnLabel(key).length).toBeGreaterThan(0);
+    expect(getColumnLabel("hsa").length).toBeGreaterThan(0);
   });
 });
 

@@ -67,7 +67,7 @@ const SQUIGGLE_GLYPHS = [
   "\uE007",
 ];
 
-/** Matches a whole masked amount, for tests and leak checks. */
+/** @internal Matches a whole masked amount, for tests and leak checks. */
 export const MASKED_AMOUNT_PATTERN = /^\$[\uE000-\uE007]+$/;
 
 // Random per page load: a squiggle can't be mapped back to an amount from

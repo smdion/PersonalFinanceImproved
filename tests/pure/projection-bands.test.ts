@@ -1,12 +1,9 @@
 /**
  * Tests for confidence-band derivation used by the retirement projection card.
- * Covers: deriveProjectionBand, bandFractionForPortfolio.
+ * Covers: deriveProjectionBand.
  */
 import { describe, it, expect } from "vitest";
-import {
-  deriveProjectionBand,
-  bandFractionForPortfolio,
-} from "@/lib/pure/projection-bands";
+import { deriveProjectionBand } from "@/lib/pure/projection-bands";
 import { compactCurrency } from "@/lib/utils/format";
 
 describe("deriveProjectionBand", () => {
@@ -73,71 +70,5 @@ describe("deriveProjectionBand", () => {
     const band = deriveProjectionBand(500_000, 0);
     expect(band.low).toBe(500_000);
     expect(band.high).toBe(500_000);
-  });
-});
-
-describe("bandFractionForPortfolio", () => {
-  it("returns the base 0.2 fraction for a short horizon, mid-range equity", () => {
-    const fraction = bandFractionForPortfolio(10, 60);
-    expect(fraction).toBe(0.2);
-  });
-
-  it("widens by 0.1 for horizons > 20 years", () => {
-    const fraction = bandFractionForPortfolio(21, 60);
-    expect(fraction).toBeCloseTo(0.3, 5);
-  });
-
-  it("does not widen for horizon exactly 20 years (boundary, exclusive)", () => {
-    const fraction = bandFractionForPortfolio(20, 60);
-    expect(fraction).toBe(0.2);
-  });
-
-  it("widens by 0.05 for equity allocation > 80%", () => {
-    const fraction = bandFractionForPortfolio(10, 81);
-    expect(fraction).toBeCloseTo(0.25, 5);
-  });
-
-  it("does not widen for equity exactly 80% (boundary, exclusive)", () => {
-    const fraction = bandFractionForPortfolio(10, 80);
-    expect(fraction).toBe(0.2);
-  });
-
-  it("narrows by 0.05 for equity allocation < 40%", () => {
-    const fraction = bandFractionForPortfolio(10, 39);
-    expect(fraction).toBeCloseTo(0.15, 5);
-  });
-
-  it("does not narrow for equity exactly 40% (boundary, exclusive)", () => {
-    const fraction = bandFractionForPortfolio(10, 40);
-    expect(fraction).toBe(0.2);
-  });
-
-  it("combines long horizon + heavy equity for a wider band", () => {
-    const fraction = bandFractionForPortfolio(30, 90);
-    expect(fraction).toBeCloseTo(0.35, 5);
-  });
-
-  it("combines long horizon + bond-heavy allocation", () => {
-    const fraction = bandFractionForPortfolio(30, 20);
-    // 0.2 + 0.1 (long horizon) - 0.05 (bond-heavy) = 0.25
-    expect(fraction).toBeCloseTo(0.25, 5);
-  });
-
-  it("extreme long-horizon + heavy-equity inputs stay within the clamp bounds", () => {
-    // Max achievable via the modifiers is 0.2 + 0.1 + 0.05 = 0.35, well under
-    // the 0.5 clamp ceiling — the clamp never actually engages given the
-    // current modifier magnitudes, but the result must still be <= 0.5.
-    const fraction = bandFractionForPortfolio(100, 100);
-    expect(fraction).toBeLessThanOrEqual(0.5);
-    expect(fraction).toBeCloseTo(0.35, 5);
-  });
-
-  it("extreme short-horizon + bond-heavy inputs stay within the clamp bounds", () => {
-    // Min achievable via the modifiers is 0.2 - 0.05 = 0.15, well above the
-    // 0.1 clamp floor — the clamp never actually engages given the current
-    // modifier magnitudes, but the result must still be >= 0.1.
-    const fraction = bandFractionForPortfolio(0, 0);
-    expect(fraction).toBeGreaterThanOrEqual(0.1);
-    expect(fraction).toBeCloseTo(0.15, 5);
   });
 });

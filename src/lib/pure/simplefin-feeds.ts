@@ -15,14 +15,6 @@ export function countsAsFeed(a: {
   return a.linkedPerformanceAccountId != null && a.isIncluded;
 }
 
-/** A feed reporting a mortgage: its balance is the loan's. */
-export function feedsLoan(a: {
-  linkedLoanId: number | null;
-  isIncluded: boolean;
-}): boolean {
-  return a.linkedLoanId != null && a.isIncluded;
-}
-
 /** Unlinked and owing: a loan or card nothing has claimed yet. It's flagged
  *  for linking, not added to the total as if it were money. */
 export function isUnclaimedDebt(a: {

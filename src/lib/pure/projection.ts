@@ -24,18 +24,3 @@ export function blendedReturnForAge(
     return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
   }, 0);
 }
-
-/**
- * Compute blended portfolio return and volatility for current allocation (display only).
- */
-export function blendedPortfolioStats(
-  assetClasses: BlendableAssetClass[],
-  allocations: Record<number, number>,
-): { blendedReturn: number; blendedVol: number } {
-  const blendedReturn = blendedReturnForAge(assetClasses, allocations);
-  const blendedVol = assetClasses.reduce(
-    (sum, ac) => sum + ac.stdDev * (allocations[ac.id] ?? 0),
-    0,
-  );
-  return { blendedReturn, blendedVol };
-}

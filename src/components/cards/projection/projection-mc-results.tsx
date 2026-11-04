@@ -1,12 +1,8 @@
 "use client";
 
-/** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+/** Monte Carlo results — loading spinner, errors, warnings and compact summary bar. */
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import { strategySpending } from "@/lib/calculators/strategy-spending";
-import {
-  dominantFailureReason,
-  planFailurePhrase,
-} from "@/lib/calculators/plan-outcome";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -20,61 +16,8 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
-
-/** Compact depletion callout (1-liner) shown when MC has a depletion age. */
-export function McDepletionCallout({ state }: { state: ProjectionState }) {
-  // Check via `state.result` before destructuring — result truthy always
-  // implies engineSettings defined (see use-projection-derived.ts).
-  if (!state.result) return null;
-
-  const { mcQuery, mcLoading, dollarMode, yearOfAge } = state;
-
-  if (!mcQuery.data?.result || mcLoading) return null;
-  if (!mcQuery.data.result.distributions.failureAge) return null;
-
-  const mc = mcQuery.data.result;
-  // In the shown dollars — today's from the Simulation's per-trial deflation.
-  const tb = simulationDollars(mc, dollarMode).terminalBalance;
-  const dollarsLabel =
-    dollarMode === "nominal" ? "future dollars" : "today\u2019s dollars";
-  const deplPct = Math.round((1 - mc.successRate) * 100);
-  const isLowRisk = mc.successRate >= 0.9;
-  // Named by the most common way failing futures fail (plan judge).
-  const reason = dominantFailureReason(mc.failureReasonRates);
-  const failurePhrase = reason ? planFailurePhrase(reason) : "money runs out";
-  return (
-    <div
-      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${isLowRisk ? "bg-surface-elevated text-muted" : "bg-red-50 text-red-700"}`}
-    >
-      <span className="shrink-0 font-medium">
-        {isLowRisk ? "\u2139\uFE0F" : "\u26A0"}{" "}
-        {isLowRisk
-          ? `In rare scenarios (${deplPct}%), ${failurePhrase} around ${yearOfAge(Math.round(mc.distributions.failureAge!.median))}.`
-          : `In ${deplPct}% of futures, ${failurePhrase} around ${yearOfAge(Math.round(mc.distributions.failureAge!.median))}.`}
-      </span>
-      <span className={isLowRisk ? "text-muted" : "text-red-600"}>
-        Typical end balance: {formatCurrency(tb.median)}
-      </span>
-      <HelpTip
-        maxWidth={400}
-        lines={[
-          `Terminal balance distribution (${dollarsLabel}):`,
-          `Bad luck (p10): ${formatCurrency(tb.p10)}`,
-          `Below avg (p25): ${formatCurrency(tb.p25)}`,
-          `Typical (p50): ${formatCurrency(tb.median)}`,
-          `Above avg (p75): ${formatCurrency(tb.p75)}`,
-          `Good luck (p90): ${formatCurrency(tb.p90)}`,
-          isLowRisk
-            ? "Only a small fraction of simulated scenarios show depletion — this is within normal planning margins."
-            : "A bad stretch of returns early in retirement can drain your portfolio before it recovers.",
-        ]}
-      />
-    </div>
-  );
-}
 
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ state }: { state: ProjectionState }) {

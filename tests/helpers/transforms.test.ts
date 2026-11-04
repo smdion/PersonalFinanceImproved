@@ -5,7 +5,6 @@ import {
   getPeriodsPerYear,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
-  breakdownByTaxType,
 } from "@/server/helpers/transforms";
 
 describe("toNumber", () => {
@@ -159,27 +158,5 @@ describe("getBudgetFrequencyNote", () => {
 
   it("returns empty string for unknown pay period", () => {
     expect(getBudgetFrequencyNote("daily")).toBe("");
-  });
-});
-
-describe("breakdownByTaxType", () => {
-  it("accumulates amounts by tax type", () => {
-    const accounts = [
-      { taxType: "traditional", amount: 100000 },
-      { taxType: "roth", amount: 50000 },
-      { taxType: "traditional", amount: 25000 },
-    ];
-    const result = breakdownByTaxType(accounts);
-    expect(result.traditional).toBe(125000);
-    expect(result.roth).toBe(50000);
-  });
-
-  it("returns empty object for empty array", () => {
-    expect(breakdownByTaxType([])).toEqual({});
-  });
-
-  it("handles single entry", () => {
-    const result = breakdownByTaxType([{ taxType: "hsa", amount: 3000 }]);
-    expect(result.hsa).toBe(3000);
   });
 });

@@ -91,7 +91,7 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
   ) as AccountBalances;
 }
 
-/**
+/** @internal Only tests import it (knip --production).
  * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
  * balances, per category (supersedes the
  * Tier B two-pass model this function was originally written for; renamed

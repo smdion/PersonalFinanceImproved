@@ -66,6 +66,11 @@ jobs:
       - name: Dead code (unused files, exports, dependencies)
         run: pnpm check:dead-code
 
+      # Production mode: an export only tests import is dead code too
+      # (tag a deliberate test seam @internal).
+      - name: Dead code, production (test imports don't count)
+        run: pnpm check:dead-code:production
+
       # Layer rules: no new violation, and the known list only shrinks
       # (checked against main's copy).
       - name: Layer rules (dependency-cruiser)
