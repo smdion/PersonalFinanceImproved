@@ -36,15 +36,15 @@
     "src/components/cards/projection/projection-chart.tsx": 1149,
     "src/components/cards/projection/projection-hero-kpis.tsx": 507,
     "src/components/cards/projection/projection-mc-results.tsx": 406,
-    "src/components/cards/projection/projection-table-accum-row.tsx": 1450,
-    "src/components/cards/projection/projection-table-decum-row.tsx": 1629,
+    "src/components/cards/projection/projection-table-accum-row.tsx": 1447,
+    "src/components/cards/projection/projection-table-decum-row.tsx": 1624,
     "src/components/cards/projection/projection-table.tsx": 427,
     "src/components/cards/projection/report/report-assumptions-summary.tsx": 380,
     "src/components/cards/projection/spending-stability-chart.tsx": 557,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
-    "src/components/cards/projection/use-projection-derived.ts": 641,
+    "src/components/cards/projection/use-projection-derived.ts": 637,
     "src/components/cards/projection/use-projection-queries.ts": 998,
-    "src/components/cards/projection/utils.ts": 875,
+    "src/components/cards/projection/utils.ts": 873,
     "src/components/cards/withdrawal-comparison.tsx": 585,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
@@ -372,7 +372,7 @@
       "McResultsSection.iife()": 286
     },
     "src/components/cards/projection/projection-table-accum-row.tsx": {
-      "AccumulationRow": 1346,
+      "AccumulationRow": 1342,
       "AccumulationRow.content.iife()": 211,
       "AccumulationRow.map()": 151
     },
@@ -380,12 +380,12 @@
       "ContribMethodologySection": 267
     },
     "src/components/cards/projection/projection-table-decum-row.tsx": {
-      "DecumulationRow": 1280,
-      "DecumulationRow.content.iife()": 207,
-      "DecumulationRow.map()": 231,
+      "DecumulationRow": 1274,
+      "DecumulationRow.content.iife()": 204,
+      "DecumulationRow.map()": 228,
       "DecumulationRow.map() #2": 158,
       "DecumulationRow.map() #3": 181,
-      "DecumulationRow.map().content.iife()": 184
+      "DecumulationRow.map().content.iife()": 181
     },
     "src/components/cards/projection/projection-table.tsx": {
       "ProjectionTable": 392
@@ -400,7 +400,7 @@
       "renderTooltip": 328
     },
     "src/components/cards/projection/use-projection-derived.ts": {
-      "useProjectionDerived": 604
+      "useProjectionDerived": 599
     },
     "src/components/cards/projection/use-projection-form-state.ts": {
       "useProjectionFormState": 343
@@ -412,7 +412,7 @@
       "useProjectionState": 284
     },
     "src/components/cards/projection/utils.ts": {
-      "filterYearByParentCategory": 244
+      "filterYearByParentCategory": 241
     },
     "src/components/cards/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 498

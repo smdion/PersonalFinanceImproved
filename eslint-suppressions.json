@@ -1144,7 +1144,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 6
     }
   },
   "src/components/cards/projection/use-projection-form-state.ts": {

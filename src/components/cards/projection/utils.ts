@@ -17,6 +17,7 @@ import {
   isRothType,
   isTaxFreeBucket,
   isPreTaxType,
+  tracksCostBasis,
 } from "@/lib/config/account-types";
 import {
   emptyTaxBucketMap,
@@ -230,10 +231,7 @@ export function filterYearByParentCategory(
   }
   // The engine tracks brokerage basis per account; an older result without
   // it falls back to a proportional estimate.
-  const basisAccts = filtered.filter(
-    (ia) =>
-      getAccountTypeConfig(ia.category).balanceStructure === "basis_tracking",
-  );
+  const basisAccts = filtered.filter((ia) => tracksCostBasis(ia.category));
   byTax.afterTaxBasis = basisAccts.every((ia) => ia.costBasis != null)
     ? roundToCents(sumBy(basisAccts, (ia) => ia.costBasis!))
     : roundToCents(

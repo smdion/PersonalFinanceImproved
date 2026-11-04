@@ -37,6 +37,7 @@ import {
   isIraCategory,
   isHsaCategory,
   tradPreferenceEngineCategories,
+  isOverflowTarget,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -587,10 +588,7 @@ export function DecumulationRow({
                     // instead, not implied to have landed in this balance.
                     const rmdExcess = yr.rmdExcessAmount ?? 0;
                     const rmdMode = engineSettings?.rmdExcessHandling;
-                    if (
-                      rmdExcess > 0.01 &&
-                      ACCOUNT_TYPE_CONFIG[cat].isOverflowTarget
-                    ) {
+                    if (rmdExcess > 0.01 && isOverflowTarget(cat)) {
                       if (rmdMode === "spend") {
                         items.push({
                           label: "RMD excess spent (not reinvested)",
@@ -945,10 +943,7 @@ export function DecumulationRow({
                     amount: deflate(sbWd, yr.year),
                     prefix: "-",
                     color:
-                      sbCat ===
-                      getAllCategories().find(
-                        (c) => ACCOUNT_TYPE_CONFIG[c].isOverflowTarget,
-                      )
+                      sbCat === getAllCategories().find(isOverflowTarget)
                         ? "amber"
                         : "emerald",
                   });
@@ -1339,7 +1334,7 @@ export function DecumulationRow({
               const colRmdMode = engineSettings?.rmdExcessHandling;
               if (
                 colRmdExcess > 0.01 &&
-                ACCOUNT_TYPE_CONFIG[catKey as AccountCategory].isOverflowTarget
+                isOverflowTarget(catKey as AccountCategory)
               ) {
                 if (colRmdMode === "spend") {
                   decAcctItems.push({

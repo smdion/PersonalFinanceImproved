@@ -7,6 +7,20 @@ const TEXT_FIELD =
   /(?:reason|label|message|note|description|warning|text|name|title|explanation|summary|detail)s?$/i;
 const STRING_TRANSFORMS = new Set(["toLowerCase", "toUpperCase", "trim"]);
 
+/** Account-type config fields that have a one-field helper in
+ *  lib/config/account-types.ts (RULES § Data-Driven Architecture). */
+const HELPER_FIELDS = [
+  "isOverflowTarget",
+  "irsLimitGroup",
+  "employerMatchSubType",
+  "ruleOf55Eligible",
+  "earlyAccessRule",
+  "qcdEligible",
+  "nonMedicalPenaltyRate",
+  "displayGroup",
+  "payrollFicaExempt",
+].join("|");
+
 /** A rule that reports every node a selector matches. */
 function selectorRule(description, selector, message) {
   return {
@@ -271,6 +285,11 @@ const ratchetPlugin = {
       "JSXExpressionContainer CallExpression[callee.type=/^(ArrowFunctionExpression|FunctionExpression)$/]",
       "Immediately-invoked function in JSX. Compute the value above the return, or in a <component>.model.ts beside the component.",
     ),
+    "no-config-reach-through": selectorRule(
+      "An account-type field with its own helper is read through the helper.",
+      `MemberExpression[property.name=/^(${HELPER_FIELDS})$/]:matches([object.callee.name='getAccountTypeConfig'], [object.object.name='ACCOUNT_TYPE_CONFIG'])`,
+      "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, …), not the config entry.",
+    ),
     "no-raw-input": selectorRule(
       "Inputs go through the form primitives.",
       "JSXOpeningElement[name.name='input']",
@@ -333,12 +352,18 @@ export const ratchetConfig = [
       "ratchet/no-jsx-iife": "error",
       "ratchet/no-text-includes": "error",
       "ratchet/no-raw-input": "error",
+      "ratchet/no-config-reach-through": "error",
       "ratchet/no-fixed-inset-overlay": "error",
       "ratchet/no-history-comment": "error",
       "ratchet/max-comment-lines": "error",
       "ratchet/no-stacked-docblock": "error",
       "ratchet/no-guarded-division": "error",
     },
+  },
+  {
+    // The helpers themselves.
+    files: ["src/lib/config/account-types.ts"],
+    rules: { "ratchet/no-config-reach-through": "off" },
   },
   {
     // The primitives themselves.

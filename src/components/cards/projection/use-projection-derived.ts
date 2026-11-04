@@ -17,6 +17,7 @@ import {
   ACCOUNT_TYPE_CONFIG,
   isRetirementParent,
   isTaxFreeBucket,
+  isOverflowTarget,
 } from "@/lib/config/account-types";
 import { emptyTaxBucketMap } from "@/lib/config/enum-values";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
@@ -356,7 +357,7 @@ export function useProjectionDerived(
               if (
                 parentCategoryFilter &&
                 slotCat in ACCOUNT_TYPE_CONFIG &&
-                ACCOUNT_TYPE_CONFIG[slotCat as AccountCategory].isOverflowTarget
+                isOverflowTarget(slotCat as AccountCategory)
               ) {
                 const iabs = (
                   yr as {
@@ -402,14 +403,9 @@ export function useProjectionDerived(
             }
           }
         }
-        // Skip entirely when there's no individual-account data (MC Simple
-        // tax mode) — yr.balanceByAccount/balanceByTaxType still hold
-        // NUMBERS in that case (the honestly-collapsed aggregate), but
-        // showing them broken out by account/tax-type dresses up a
-        // fictional single bucket as if it were the household's real
-        // account split. Leaving both sets
-        // empty collapses the "Balances" column group down to just the
-        // real, correct Balance total — see hasIndividualAccountData above.
+        // Without individual-account data (MC Simple tax mode) the
+        // per-account and per-tax-type figures are one collapsed bucket, so
+        // only the Balance total shows (hasIndividualAccountData above).
         if (hasIndividualAccountData) {
           if (yr.balanceByAccount) {
             for (const seg of getAccountSegments()) {
