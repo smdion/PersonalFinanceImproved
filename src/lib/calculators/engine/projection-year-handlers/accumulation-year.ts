@@ -66,6 +66,10 @@ import type {
 import { gapShortfallFloor, runGapYearDraw } from "../gap-year-draw";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
+import {
+  contributionStateForYear,
+  retirementRateCeiling,
+} from "@/lib/pure/contributions/contribution-state";
 
 // ---------------------------------------------------------------------------
 // Accumulation year handler
@@ -195,21 +199,6 @@ export function runAccumulationYear(
     );
   }
 
-  // Apply contributionRate as a ceiling on targetContribution (waterfall/percentage fallback path).
-  // The per-account specs path applies its own ceiling after routeFromSpecs returns.
-  // Skip year 0 real contribs since those are actual paycheck data.
-  if (
-    !useRealContribs &&
-    !(contributionSpecs && contributionSpecs.length > 0)
-  ) {
-    const rateCeiling = roundToCents(
-      projectedSalary * Math.max(0, config.contributionRate) * proRate,
-    );
-    if (targetContribution > rateCeiling) {
-      targetContribution = rateCeiling;
-    }
-  }
-
   // Employer match (grows with salary in future years; pro-rated for year 0)
   const yearEmployerMatch: Record<AccountCategory, number> = Object.fromEntries(
     getAllCategories().map((cat) => [
@@ -261,24 +250,21 @@ export function runAccumulationYear(
     for (const cat of getAllCategories())
       yearEmployerMatch[cat] = roundToCents(yearEmployerMatch[cat]);
   }
-  // Nobody saves this year (gap-year choice or nobody at work): no
-  // contributions and no match, whichever path sized them.
-  if (setup.savingStopped && !useRealContribs) {
+  const contribution = contributionStateForYear({
+    actual: Boolean(useRealContribs),
+    savingStopped: setup.savingStopped,
+    rate: config.contributionRate,
+    defaultRate: state.accumulationDefaults.contributionRate,
+    salary: projectedSalary,
+  });
+  // Stopped: no contributions and no match, whichever path sized them.
+  if (contribution.kind === "stopped") {
     targetContribution = 0;
     for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
   }
 
-  // A change to a 0% rate pauses retirement contributions until the next
-  // change. A plan whose own rate is 0 has no ceiling (no retirement rate to
-  // hold it to), no salary isn't a pause (fixed amounts go in), and year 0's
-  // real contributions already happened. A paused account earns no match
-  // that depends on contributing; flat employer money keeps coming.
-  const paused =
-    !useRealContribs &&
-    config.contributionRate === 0 &&
-    state.accumulationDefaults.contributionRate > 0 &&
-    projectedSalary > 0;
-  if (paused) {
+  // Paused: no match that depends on contributing; flat employer money stays.
+  if (contribution.kind === "paused") {
     if (!contributionSpecs?.length) {
       for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
     } else {
@@ -444,11 +430,14 @@ export function runAccumulationYear(
     const retirementTotal = roundToCents(
       sumBy(slots, (s) => s.employeeContrib - portfolioPart(s)),
     );
-    const rateCeiling = roundToCents(
-      projectedSalary * Math.max(0, config.contributionRate) * proRate,
+    const rateCeiling = retirementRateCeiling(
+      contribution,
+      roundToCents(
+        projectedSalary * Math.max(0, config.contributionRate) * proRate,
+      ),
     );
-    if (retirementTotal > rateCeiling && (rateCeiling > 0 || paused)) {
-      const scale = rateCeiling / retirementTotal;
+    if (rateCeiling.kind === "at" && retirementTotal > rateCeiling.amount) {
+      const scale = rateCeiling.amount / retirementTotal;
       rateCeilingScale = scale;
       for (const slot of slots) {
         const portfolio = portfolioPart(slot);
@@ -562,7 +551,7 @@ export function runAccumulationYear(
   const rampAmount =
     (brokerageContributionRamp ?? 0) > 0 &&
     yearIndex > 0 &&
-    !setup.savingStopped
+    contribution.kind !== "stopped"
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (rampAmount > 0) {

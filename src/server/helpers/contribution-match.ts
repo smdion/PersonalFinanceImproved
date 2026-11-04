@@ -5,10 +5,11 @@
  */
 import type { MatchTaxTreatment } from "@/lib/config/enum-values";
 import { rowTakesFromBonusCheck } from "@/lib/calculators/paycheck";
+import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
 
 /**
  * Compute annual employer match from DB contribution row fields.
- * When maxMatchPct is 0 or unset, treat as no cap (unlimited match).
+ * `maxMatchPct` is a stored cap (`storedCeiling`: 0 means no cap).
  */
 export function computeEmployerMatch(
   matchType: string | null,
@@ -28,8 +29,9 @@ export function computeEmployerMatch(
       empContribMethod === "percent_of_salary"
         ? empContribValue / 100
         : empContribAnnual / salary;
-    const cappedPct = maxMatchPct > 0 ? Math.min(empPct, maxMatchPct) : empPct;
-    return salary * cappedPct * matchRate;
+    return (
+      salary * applyCeiling(empPct, storedCeiling(maxMatchPct)) * matchRate
+    );
   }
   if (matchType === "dollar_match") {
     return matchValue;
@@ -219,10 +221,9 @@ export function computeGroupedEmployerMatch(
     // The full match: the same formula with the group contributing at
     // least the capped percent of pay. Uncapped or flat matches can't go
     // higher than what's already captured.
+    const cap = storedCeiling(winner.employerMaxMatchPct);
     const capAnnual =
-      winner.employerMaxMatchPct > 0
-        ? winner.employerMaxMatchPct * winner.salary
-        : combinedAnnual;
+      cap.kind === "at" ? cap.amount * winner.salary : combinedAnnual;
     const availableMatch = computeEmployerMatch(
       winner.employerMatchType,
       winner.employerMatchValue,
@@ -241,8 +242,8 @@ export function computeGroupedEmployerMatch(
         matchAvailableAnnual: availableMatch * share,
         fullMatchShareOfPay:
           winner.employerMatchType === "percent_of_contribution" &&
-          winner.employerMaxMatchPct > 0
-            ? winner.employerMaxMatchPct
+          cap.kind === "at"
+            ? cap.amount
             : null,
         // Match tax character is a plan property, not a per-split-row one
         // — every row in the group gets the winning row's value, never its

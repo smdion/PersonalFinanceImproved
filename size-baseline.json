@@ -95,7 +95,7 @@
     "src/lib/calculators/engine/contribution-routing.ts": 627,
     "src/lib/calculators/engine/individual-account-tracking.ts": 1480,
     "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 742,
-    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 866,
+    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 855,
     "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1629,
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/calculators/engine/rmd-enforcement.ts": 468,
@@ -754,7 +754,7 @@
       "performRothConversion": 383
     },
     "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 787
+      "runAccumulationYear": 772
     },
     "src/lib/calculators/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 188
