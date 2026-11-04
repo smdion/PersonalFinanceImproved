@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
-## [0.10.0] - 2026-11-04
+## [0.10.0] - 2026-11-03
 
 > Rollup of everything since v0.9.0. For patch-level detail, see the v0.9.x entries below.
 
