@@ -20,7 +20,10 @@ import {
 import { emptyTaxBucketMap } from "@/lib/config/enum-values";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { retirementFilingStatus } from "@/lib/pure/filing-status";
+import {
+  retirementFilingStatus,
+  storedProfileFilingStatus,
+} from "@/lib/pure/filing-status";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -385,31 +388,25 @@ export async function buildEnginePayload(
   // This year's return, and retirement years' (the profile's, or "Auto" =
   // this year's) — lib/pure/filing-status.ts. Nothing known: the cautious
   // fallback, and the household is asked (a recommendation).
+  const profileStatus = storedProfileFilingStatus(settings.filingStatus);
   const thisYearFiling = await thisYearFilingStatus(db, {
     appSettings: allAppSettings,
-    profileStatus: settings.filingStatus,
+    profileStatus,
     people,
     salaryProfileActiveMap,
   });
   const filingStatus = retirementFilingStatus(
-    settings.filingStatus,
+    profileStatus,
     thisYearFiling.status,
   );
 
   // Every per-year tax slice (withholding brackets, contribution
   // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
-  // FPL) is resolved through ONE call, anchored on ONE year — instead of
-  // the old mix of `Math.max(tax_brackets.taxYear)` for brackets and
-  // `WHERE tax_year = asOfDate.getFullYear()` for limits, which could
-  // silently split across two vintages in the Oct-Jan window.
+  // FPL) is resolved through ONE call, anchored on ONE year.
   //
-  // requestedYear: the active retirement profile's pin
-  // (`tax_params_year`, null ⇒ undefined ⇒ newest enacted — the earlier
-  // default, since no production caller ever passed the latent `asOfDate`
-  // opt and the old `contribution_limits` filter was therefore always the
-  // current calendar year, which equals the newest seeded year). Historical
-  // portfolio snapshots already priced tax off current data, not the
-  // snapshot's year, so there is nothing year-specific to carry over here.
+  // requestedYear: the active retirement profile's pin (`tax_params_year`,
+  // null ⇒ newest enacted). Historical portfolio snapshots price tax off
+  // current data too, not the snapshot's year.
   // `onMissing: "nearest"` — a projection uses this as a base year then
   // grows it forward, so an unseeded pin year falls back to the newest
   // earlier year rather than throwing.
@@ -457,8 +454,10 @@ export async function buildEnginePayload(
       } (Settings → Reference Data).`,
     );
 
-  const bracketData = (resolvedTax.withholdingBrackets?.[filingStatus]?.false ??
-    []) as {
+  // A complete year has every status's table: never a guessed empty one.
+  const withholding = resolvedTax.withholdingBrackets?.[filingStatus]?.false;
+  if (!withholding) throw new Error(`No ${filingStatus} withholding table.`);
+  const bracketData = withholding as {
     threshold: number;
     baseWithholding: number;
     rate: number;

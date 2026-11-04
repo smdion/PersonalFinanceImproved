@@ -4413,9 +4413,6 @@
     }
   },
   "src/lib/pure/filing-status.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "ratchet/max-comment-lines": {
       "count": 1
     }

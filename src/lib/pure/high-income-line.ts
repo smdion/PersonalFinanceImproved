@@ -6,9 +6,9 @@
  * says so.
  */
 import { HIGH_INCOME_LINE } from "@/lib/config/milestones";
-import type { W4FilingStatus } from "@/lib/config/filing-status";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
-export type HighIncomeLineBasis = W4FilingStatus | "people";
+export type HighIncomeLineBasis = ReturnFilingStatus | "people";
 
 /** The saved line when one is set (a positive number), else the default. */
 export function effectiveHighIncomeLine(
@@ -27,7 +27,7 @@ export function effectiveHighIncomeLine(
 }
 
 export function defaultHighIncomeLine(
-  filingStatus: W4FilingStatus | null,
+  filingStatus: ReturnFilingStatus | null,
   peopleCount: number,
 ): { threshold: number; basis: HighIncomeLineBasis } {
   if (filingStatus)
