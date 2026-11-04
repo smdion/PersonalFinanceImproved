@@ -30,7 +30,6 @@ import {
   applyActiveSalary,
   applyActiveBonusTerms,
   buildContribAccounts,
-  computeAnnualContribution,
   loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
   applySandboxSalaryEntries,
@@ -92,6 +91,10 @@ import {
   isRetirementParent,
   isPortfolioParent,
 } from "@/lib/config/account-types";
+import {
+  computeAnnualContribution,
+  fractionFromPercent,
+} from "@/lib/pure/contributions/contribution-amount";
 
 type AccountTypeSnapshot = {
   accountType: string; // display label (e.g. '401k', 'ESPP', 'Long Term Brokerage')
@@ -459,14 +462,13 @@ export const contributionRouter = createTRPCRouter({
       for (const c of activeContribs) {
         const value = computeValue(c);
         let expectedYtd = 0;
-
         const jd = c.jobId ? jobCache.get(c.jobId) : null;
         if (c.contributionMethod === "percent_of_salary" && jd) {
-          const pct = value / 100;
           expectedYtd =
-            jd.salary * pct * (jd.periodsElapsed / jd.periodsPerYear);
+            jd.salary *
+            fractionFromPercent(value) *
+            (jd.periodsElapsed / jd.periodsPerYear);
         } else {
-          // Fixed methods: scale by elapsed fraction
           const periodsPerYear =
             jd?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
           const periodsElapsed = jd?.periodsElapsed ?? 0;
@@ -1273,15 +1275,12 @@ export const contributionRouter = createTRPCRouter({
         const val = toNumber(String(c.contributionValue));
         const periodsPerYear =
           results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
-        const salary = 0;
-        const annual =
-          c.contributionMethod === "percent_of_salary"
-            ? salary * (val / 100)
-            : c.contributionMethod === "fixed_per_period"
-              ? val * periodsPerYear
-              : c.contributionMethod === "fixed_monthly"
-                ? val * 12
-                : val;
+        const annual = computeAnnualContribution(
+          c.contributionMethod,
+          val,
+          0, // a joint account has no salary: a percent reads as $0
+          periodsPerYear,
+        );
         const matchAnnual =
           c.employerMatchType === "fixed_annual"
             ? toNumber(c.employerMatchValue)

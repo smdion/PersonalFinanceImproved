@@ -36,12 +36,12 @@ import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
-  computeAnnualContribution,
   resolveJoblessPeriodsPerYear,
   resolveContribPeriods,
   classifyContribResolution,
 } from "./contribution";
 import type { Db, DbOrTx } from "@/lib/db";
+import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
 const BUDGET_CACHE_MAX_AGE_MS = undefined;

@@ -3,43 +3,40 @@
  * Traditional pair capped together as one account (computeGroupedEmployerMatch),
  * and which match groups count the bonus check (matchPayGroupsWithBonus).
  */
-import type { MatchTaxTreatment } from "@/lib/config/enum-values";
+import type {
+  ContributionMethod,
+  MatchTaxTreatment,
+} from "@/lib/config/enum-values";
 import { rowTakesFromBonusCheck } from "@/lib/calculators/paycheck";
 import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
+import {
+  fractionFromPercent,
+  parseEmployerMatch,
+} from "@/lib/pure/contributions/contribution-amount";
 
 /**
- * Compute annual employer match from DB contribution row fields.
- * `maxMatchPct` is a stored cap (`storedCeiling`: 0 means no cap).
+ * Compute annual employer match from DB contribution row fields
+ * (`parseEmployerMatch` reads the stored terms).
  */
 export function computeEmployerMatch(
   matchType: string | null,
   matchValue: number,
   maxMatchPct: number,
   empContribAnnual: number,
-  empContribMethod: string,
+  /** "combined": a group's total, read as a share of pay. */
+  empContribMethod: ContributionMethod | "combined",
   empContribValue: number,
   salary: number,
 ): number {
-  if (!matchType || matchType === "none") return 0;
-
-  if (matchType === "percent_of_contribution") {
-    if (salary <= 0) return 0;
-    const matchRate = matchValue / 100;
-    const empPct =
-      empContribMethod === "percent_of_salary"
-        ? empContribValue / 100
-        : empContribAnnual / salary;
-    return (
-      salary * applyCeiling(empPct, storedCeiling(maxMatchPct)) * matchRate
-    );
-  }
-  if (matchType === "dollar_match") {
-    return matchValue;
-  }
-  if (matchType === "fixed_annual") {
-    return matchValue;
-  }
-  return 0;
+  const match = parseEmployerMatch(matchType, matchValue, maxMatchPct);
+  if (match.kind === "none") return 0;
+  if (match.kind === "flat") return match.perYear;
+  if (salary <= 0) return 0;
+  const empPct =
+    empContribMethod === "percent_of_salary"
+      ? fractionFromPercent(empContribValue)
+      : empContribAnnual / salary;
+  return salary * applyCeiling(empPct, match.capOfPay) * match.rate;
 }
 
 /**

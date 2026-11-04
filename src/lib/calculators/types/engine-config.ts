@@ -49,6 +49,7 @@
 //    Both views read/write the same AccumulationOverride[] array.
 
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { ContributionMethod } from "@/lib/config/enum-values";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { LumpSum } from "./shared";
 import type { z } from "zod/v4";
@@ -657,9 +658,8 @@ export type ContributionSpec = {
   /** Human-readable account name (e.g. "401k", "ESPP", "HSA"). */
   name: string;
   /** How contributions are defined. */
-  method: "percent_of_salary" | "fixed_per_period" | "fixed_monthly";
-  /** The contribution value: percentage (as decimal, e.g. 0.16 = 16%) for
-   *  percent_of_salary, or dollar amount per period/month for fixed methods. */
+  method: ContributionMethod;
+  /** A fraction of pay for percent_of_salary (0.16 = 16%), else dollars. */
   value: number;
   /** Fraction of total compensation this spec's job represents (0–1).
    *  For percent_of_salary: engine computes `projectedSalary × salaryFraction × value`

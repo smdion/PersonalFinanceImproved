@@ -28,6 +28,10 @@ import {
   type ContributionMethod,
 } from "@/lib/config/enum-values";
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
+import {
+  computeAnnualContribution,
+  fractionFromPercent,
+} from "@/lib/pure/contributions/contribution-amount";
 import type { ContribSaveChecker } from "./contribution-caps";
 import { toNumber } from "./transforms";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
@@ -65,28 +69,6 @@ export {
   matchPayGroupsWithBonus,
   type GroupableMatchRow,
 } from "./contribution-match";
-
-/**
- * Compute annual contribution amount from DB contribution row fields.
- * Eliminates the duplicated if/else chain for contribution methods.
- */
-export function computeAnnualContribution(
-  method: string,
-  value: number,
-  salary: number,
-  periodsPerYear: number,
-): number {
-  switch (method) {
-    case "percent_of_salary":
-      return salary * (value / 100);
-    case "fixed_per_period":
-      return value * periodsPerYear;
-    case "fixed_monthly":
-      return value * 12;
-    default: // fixed_annual
-      return value;
-  }
-}
 
 /**
  * Fallback periods-per-year for a jobless contribution account: the active
@@ -492,7 +474,7 @@ export function buildContribAccounts(
       perPeriodContribution: roundToCents(perPeriod),
       rateOfGross:
         c.contributionMethod === "percent_of_salary"
-          ? contribValue / 100
+          ? fractionFromPercent(contribValue)
           : null,
       taxTreatment: c.taxTreatment,
       isPayrollDeducted,
@@ -624,7 +606,8 @@ export function annualContributionWithBonus(
       {
         isPayrollDeducted: isPaidThroughPayroll(c),
         fromBonus: c.fromBonus,
-        rateOfGross: method === "percent_of_salary" ? value / 100 : null,
+        rateOfGross:
+          method === "percent_of_salary" ? fractionFromPercent(value) : null,
         perPeriodContribution:
           method === "fixed_per_period"
             ? value
@@ -919,7 +902,7 @@ export function buildContributionDisplaySpecs(
     const ownerPerson = people.find((p) => p.id === c.personId);
     const cv = computeValue(c);
     const method = c.contributionMethod ?? "percent_of_salary";
-    const value = method === "percent_of_salary" ? cv / 100 : cv;
+    const value = method === "percent_of_salary" ? fractionFromPercent(cv) : cv;
 
     return {
       id: c.id,
@@ -1701,7 +1684,7 @@ export function buildProfileContribData(
       const js = jobPayFor(c, jobSalaries);
       let personPayShare: number | undefined;
       if (method === "percent_of_salary") {
-        value = cv / 100;
+        value = fractionFromPercent(cv);
         // The pay this rate applies to — base salary, plus the bonus when
         // its check carries this contribution (annualContributionWithBonus)
         // — as a share of total pay, so it grows with salary in the engine.

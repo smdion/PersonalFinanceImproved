@@ -110,7 +110,7 @@ describe("sandboxContribActiveFields", () => {
         jobId,
         contributionMethod: "percent_of_salary",
         // percent_of_salary stores the raw percent number (5 = 5%), not a
-        // fraction — see computeAnnualContribution's `value / 100`.
+        // fraction — see `fractionFromPercent`.
         contributionValue: "5",
         personId: null,
       });

@@ -11,50 +11,10 @@ vi.mock("@/lib/db/schema", () => ({
 vi.mock("@/lib/db", () => ({ db: {} }));
 
 import {
-  computeAnnualContribution,
   computeEmployerMatch,
   computeGroupedEmployerMatch,
   type GroupableMatchRow,
 } from "@/server/helpers/contribution";
-
-describe("computeAnnualContribution", () => {
-  it("computes percent_of_salary correctly", () => {
-    // 10% of $120,000
-    expect(computeAnnualContribution("percent_of_salary", 10, 120000, 26)).toBe(
-      12000,
-    );
-  });
-
-  it("computes fixed_per_period correctly", () => {
-    // $500/period × 26 periods
-    expect(computeAnnualContribution("fixed_per_period", 500, 120000, 26)).toBe(
-      13000,
-    );
-  });
-
-  it("computes fixed_monthly correctly", () => {
-    // $1000/month × 12
-    expect(computeAnnualContribution("fixed_monthly", 1000, 120000, 26)).toBe(
-      12000,
-    );
-  });
-
-  it("treats unknown method as fixed_annual", () => {
-    expect(computeAnnualContribution("fixed_annual", 6000, 120000, 26)).toBe(
-      6000,
-    );
-  });
-
-  it("handles zero salary for percent_of_salary", () => {
-    expect(computeAnnualContribution("percent_of_salary", 10, 0, 26)).toBe(0);
-  });
-
-  it("handles zero value", () => {
-    expect(computeAnnualContribution("percent_of_salary", 0, 120000, 26)).toBe(
-      0,
-    );
-  });
-});
 
 describe("computeEmployerMatch", () => {
   it("returns 0 for no match type", () => {
