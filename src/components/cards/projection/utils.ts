@@ -18,7 +18,10 @@ import {
   isTaxFreeBucket,
   isPreTaxType,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/enum-values";
+import {
+  emptyTaxBucketMap,
+  TAX_TREATMENT_TO_TAX_TYPE,
+} from "@/lib/config/enum-values";
 import {
   roundToCents,
   sumBy,
@@ -208,13 +211,7 @@ export function filterYearByParentCategory(
   const filtered = yr.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
   );
-  const byTax = {
-    preTax: 0,
-    taxFree: 0,
-    hsa: 0,
-    afterTax: 0,
-    afterTaxBasis: 0,
-  };
+  const byTax = { ...emptyTaxBucketMap(), afterTaxBasis: 0 };
   for (const ia of filtered) {
     if (isTaxFreeBucket(ia.taxType)) {
       byTax.taxFree += ia.balance;

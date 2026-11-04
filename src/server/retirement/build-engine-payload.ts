@@ -17,7 +17,7 @@ import {
   planEndAge,
   planRetirementAge,
 } from "@/lib/pure/household-timeline";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { emptyTaxBucketMap } from "@/lib/config/enum-values";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { retirementFilingStatus } from "@/lib/pure/filing-status";
@@ -61,6 +61,7 @@ import {
 } from "@/lib/pure/basis-consistency";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
+  DEFAULT_SIMULATION,
   IRS_LIMIT_GROWTH_RATE,
   IRS_LIMIT_GROWTH_RATE_MAX,
   FALLBACK_CONTRIBUTION_RATE,
@@ -1094,10 +1095,9 @@ export async function buildEnginePayload(
     Object.values(contribByCategory),
     (c) => c.annual,
   );
-  // Retirement contribution rate on total compensation (always includes
-  // bonus). Retirement contributions only: the engine's rate ceiling caps
-  // retirement contributions and leaves Portfolio savings alone, so the
-  // rate it caps against must not count them either.
+  // Retirement contribution rate on total compensation (bonus included),
+  // retirement contributions only: the engine's rate ceiling leaves Portfolio
+  // savings alone, so the rate it caps against must not count them either.
   const displayContribRate = safeDivide(
     retirementContributions(contributionSpecs),
     totalCompensation,
@@ -1155,7 +1155,7 @@ export async function buildEnginePayload(
           afterTax: t.afterTax + b.afterTax,
           afterTaxBasis: t.afterTaxBasis + b.afterTaxBasis,
         }),
-        { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0, afterTaxBasis: 0 },
+        { ...emptyTaxBucketMap(), afterTaxBasis: 0 },
       ),
     defaults: {
       ...defaultContribData.retirementOnly,

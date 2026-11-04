@@ -18,7 +18,7 @@ import {
   isRetirementParent,
   isTaxFreeBucket,
 } from "@/lib/config/account-types";
-import { emptyTaxBucketMap } from "@/lib/config/display-labels";
+import { emptyTaxBucketMap } from "@/lib/config/enum-values";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import type { ProjectionFormState } from "./use-projection-form-state";

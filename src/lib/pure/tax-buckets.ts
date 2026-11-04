@@ -24,6 +24,10 @@ import {
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
 import { accountDisplayName } from "@/lib/utils/format";
+import {
+  emptyTaxBucketMap,
+  type PortfolioTaxType,
+} from "@/lib/config/enum-values";
 import { toNumber } from "@/server/helpers/transforms";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 
@@ -114,10 +118,7 @@ export function computeTaxBucketBreakdown(
   perfAccounts: TaxBucketPerfAccount[],
 ): TaxBucketBreakdown {
   const portfolioByTaxType: TaxBuckets = {
-    preTax: 0,
-    taxFree: 0,
-    hsa: 0,
-    afterTax: 0,
+    ...emptyTaxBucketMap(),
     afterTaxBasis: 0,
   };
   const portfolioByTaxTypeByParentCat: Record<string, TaxBuckets> = {};
@@ -183,16 +184,14 @@ export function computeTaxBucketBreakdown(
         a.subType && a.performanceAccountId != null
           ? (parentTypeByPerfId.get(a.performanceAccountId) ?? a.accountType)
           : a.accountType;
-      const key = a.taxType as "preTax" | "taxFree" | "hsa" | "afterTax";
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- snapshot rows store one of the four tax types
+      const key = a.taxType as PortfolioTaxType;
       portfolioByTaxType[key] += a.amount;
 
       const pCat = a.parentCategory ?? "Retirement";
       if (!portfolioByTaxTypeByParentCat[pCat]) {
         portfolioByTaxTypeByParentCat[pCat] = {
-          preTax: 0,
-          taxFree: 0,
-          hsa: 0,
-          afterTax: 0,
+          ...emptyTaxBucketMap(),
           afterTaxBasis: 0,
         };
       }

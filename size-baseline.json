@@ -44,7 +44,7 @@
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 641,
     "src/components/cards/projection/use-projection-queries.ts": 998,
-    "src/components/cards/projection/utils.ts": 878,
+    "src/components/cards/projection/utils.ts": 875,
     "src/components/cards/withdrawal-comparison.tsx": 585,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
@@ -412,7 +412,7 @@
       "useProjectionState": 284
     },
     "src/components/cards/projection/utils.ts": {
-      "filterYearByParentCategory": 250
+      "filterYearByParentCategory": 244
     },
     "src/components/cards/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 498
@@ -823,7 +823,7 @@
       "computeTaxBucketProjection.entries.map()": 191
     },
     "src/lib/pure/tax-buckets.ts": {
-      "computeTaxBucketBreakdown": 248
+      "computeTaxBucketBreakdown": 243
     },
     "src/lib/pure/withdrawal-eligibility.ts": {
       "computeWithdrawalEligibility": 219
@@ -856,7 +856,7 @@
       "buildYearEndHistory": 870
     },
     "src/server/retirement/build-engine-payload.ts": {
-      "buildEnginePayload": 1146,
+      "buildEnginePayload": 1145,
       "fetchRetirementData": 164
     },
     "src/server/retirement/payload/individual-accounts.ts": {
