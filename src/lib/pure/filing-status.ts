@@ -12,7 +12,7 @@
 import {
   W4_FILING_STATUS_VALUES,
   type W4FilingStatus,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/filing-status";
 import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
 
 /** Where this year's filing status came from — shown beside it. */

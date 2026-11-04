@@ -7,9 +7,9 @@ import { sql } from "drizzle-orm";
 import type {
   PayPeriod,
   PayWeek,
-  W4FilingStatus,
   BonusDestination,
 } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import type { EntityFieldMap } from "./scenarios";
 import type { ExtraPaycheckRoutingData } from "./shared";
 

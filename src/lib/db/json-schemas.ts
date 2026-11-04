@@ -11,13 +11,13 @@
 
 import { z } from "zod/v4";
 import {
-  w4FilingStatusSchema,
   payPeriodSchema,
   payWeekSchema,
   bonusDestinationSchema,
   zDecimal,
   ROTH_IRA_ROUTE_VALUES,
 } from "@/lib/config/enum-values";
+import { w4FilingStatusSchema } from "@/lib/config/filing-status";
 import { isCalendarDate } from "@/lib/utils/date";
 
 // ── Primitives & re-usable fragments ────────────────────────────

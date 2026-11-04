@@ -4,7 +4,7 @@
  * else a W-4 — with where it came from. One resolver for the paycheck, the
  * caps and the retirement engine.
  */
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import {
   taxFilingStatusSetting,
   type FilingStatusSource,

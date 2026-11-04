@@ -59,11 +59,8 @@ import {
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { computeAnnualEarnings } from "@/lib/pure/household-income";
-import type {
-  FilingStatusType,
-  PaycheckInput,
-  PaycheckResult,
-} from "@/lib/calculators/types";
+import type { PaycheckInput, PaycheckResult } from "@/lib/calculators/types";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const row = (r: PaycheckResult, check: number) => r.yearSchedule[check - 1]!;
 const sum = (xs: number[]) =>
@@ -466,7 +463,7 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
 function yearOf(
   input: PaycheckInput,
   r: PaycheckResult,
-  status: FilingStatusType,
+  status: ReturnFilingStatus,
 ) {
   const earnings = computeAnnualEarnings({
     salary: input.annualSalary,

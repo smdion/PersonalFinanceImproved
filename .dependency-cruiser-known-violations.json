@@ -26,16 +26,6 @@
   },
   {
     "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/irmaa-tables.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/niit.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
     "from": "src/lib/config/performance-help.ts",
     "to": "src/lib/pure/performance-annotations.ts"
   },
@@ -46,18 +36,8 @@
   },
   {
     "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/ss-tax.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
     "from": "src/lib/config/tax-data-publication.ts",
     "to": "src/lib/db/reference-data.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/tax-tables.ts",
-    "to": "src/lib/calculators/types.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -108,16 +88,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/bracket-growth.ts",
     "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/bracket-growth.ts",
-    "to": "src/lib/config/irmaa-tables.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/bracket-growth.ts",
-    "to": "src/lib/config/tax-tables.ts"
   },
   {
     "rule": "no-circular",
@@ -271,18 +241,8 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/tax-estimation.ts",
-    "to": "src/lib/config/tax-tables.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
     "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/config/tax-tables.ts"
   },
   {
     "rule": "no-circular",
@@ -338,16 +298,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/types.ts",
     "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-config.ts",
-    "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-config.ts",
-    "to": "src/lib/config/tax-tables.ts"
   },
   {
     "rule": "no-circular",

@@ -14,7 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import { contributionProfiles, salaryProfiles } from "./contribution-profiles";
 import { people } from "./people";
 import { performanceAccounts } from "./performance";

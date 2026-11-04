@@ -30,11 +30,8 @@ import {
 } from "./fixtures/paycheck-answer-key";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
-import type {
-  FilingStatusType,
-  PaycheckResult,
-  PayPeriodType,
-} from "@/lib/calculators/types";
+import type { PaycheckResult, PayPeriodType } from "@/lib/calculators/types";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);
 
@@ -57,7 +54,7 @@ const period = fc.constantFrom<PayPeriodType>(
   "semimonthly",
   "monthly",
 );
-const status = fc.constantFrom<FilingStatusType>("Single", "MFJ", "HOH");
+const status = fc.constantFrom<ReturnFilingStatus>("Single", "MFJ", "HOH");
 const salary = fc.integer({ min: 0, max: 600_000 });
 /** A bonus, or none, dated somewhere in the year. */
 const bonus = fc.record({
@@ -90,7 +87,7 @@ const closedFica = (w: number) =>
 function run(c: {
   salary: number;
   period: PayPeriodType;
-  status?: FilingStatusType;
+  status?: ReturnFilingStatus;
   bonus?: { amount: number; month: number; day: number };
 }) {
   const b = c.bonus && c.bonus.amount > 0 ? c.bonus : null;

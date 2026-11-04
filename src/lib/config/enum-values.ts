@@ -204,12 +204,6 @@ export const ACCOUNT_OWNERSHIP_VALUES = ["individual", "joint"] as const;
 export type AccountOwnership = (typeof ACCOUNT_OWNERSHIP_VALUES)[number];
 export const accountOwnershipSchema = z.enum(ACCOUNT_OWNERSHIP_VALUES);
 
-// ── W-4 Filing Status ──
-
-export const W4_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
-export type W4FilingStatus = (typeof W4_FILING_STATUS_VALUES)[number];
-export const w4FilingStatusSchema = z.enum(W4_FILING_STATUS_VALUES);
-
 // ── Bonus Destination ──
 
 /** Where a job's bonus goes: into the budget, or extra spending outside it

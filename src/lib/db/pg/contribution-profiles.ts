@@ -4,9 +4,9 @@ import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
 import type {
   PayPeriod,
   PayWeek,
-  W4FilingStatus,
   BonusDestination,
 } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import type { EntityFieldMap } from "./scenarios";
 import type { ExtraPaycheckRoutingData } from "./shared";
 

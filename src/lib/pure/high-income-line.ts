@@ -6,7 +6,7 @@
  * says so.
  */
 import { HIGH_INCOME_LINE } from "@/lib/config/milestones";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 
 export type HighIncomeLineBasis = W4FilingStatus | "people";
 

@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
-import { W4_FILING_STATUS_VALUES } from "@/lib/config/enum-values";
+import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
 import {
   FILING_STATUS_LABELS,
   filingStatusLabel,

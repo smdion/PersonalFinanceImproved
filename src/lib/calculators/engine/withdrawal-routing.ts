@@ -13,7 +13,6 @@ import type {
   ResolvedDecumulationConfig,
   AccountBalances,
   AccountCategory,
-  FilingStatusType,
 } from "../types";
 import { roundToCents } from "../../utils/math";
 import {
@@ -36,6 +35,7 @@ import type {
 } from "@/lib/pure/withdrawal-eligibility";
 import { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "./withdrawal-cost-ranking";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 /**
  * Route withdrawals from accounts for one year.
@@ -925,7 +925,7 @@ interface RouteBracketInfo {
    *  degrades to the fixed Roth→brokerage→HSA order (no
    *  filingStatus at all skips LTCG/NIIT lookups entirely; the others
    *  default to "no basis tracking / no MAGI headroom known"). */
-  filingStatus?: FilingStatusType | null;
+  filingStatus?: ReturnFilingStatus | null;
   ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
   /** Total Roth BASIS dollars (tax-free, non-qualified-growth-free) still
    *  available across the accounts routing will draw from, from

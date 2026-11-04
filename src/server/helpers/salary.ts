@@ -19,8 +19,8 @@ import type {
   BonusDestination,
   PayPeriod,
   PayWeek,
-  W4FilingStatus,
 } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { Db } from "@/lib/db";
 

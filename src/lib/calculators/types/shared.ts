@@ -10,11 +10,11 @@ import type {
   RothBasisMeta,
 } from "@/lib/pure/tax-bucket-analysis";
 import type { TaxTreatment } from "@/lib/config/enum-values";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type ViewMode = "projected" | "blended" | "ytd";
 
 export type PayPeriodType = "weekly" | "biweekly" | "semimonthly" | "monthly";
-export type FilingStatusType = "MFJ" | "Single" | "HOH";
 
 export type DeductionLine = {
   name: string;
@@ -36,7 +36,7 @@ export type EarningLine = {
 };
 
 export type TaxBracketInput = {
-  filingStatus: FilingStatusType;
+  filingStatus: ReturnFilingStatus;
   w4Checkbox: boolean; // whether this bracket set is the 2(c) checked version
   brackets: { min: number; max: number | null; rate: number }[];
   standardDeduction: number;

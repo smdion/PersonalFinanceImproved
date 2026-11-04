@@ -25,7 +25,7 @@
  * enabled — see `rothBasisAvailable`'s docblock below.
  */
 import { isQualifiedRothOwner } from "@/lib/pure/roth-distribution-tax";
-import type { FilingStatusType, TaxBuckets } from "../types";
+import type { TaxBuckets } from "../types";
 import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import {
@@ -37,6 +37,7 @@ import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
 
@@ -140,7 +141,7 @@ export type WithdrawalTier = {
 };
 
 export interface RankWithdrawalTiersInput {
-  filingStatus: FilingStatusType | null | undefined;
+  filingStatus: ReturnFilingStatus | null | undefined;
   /** Ordinary taxable income already occupying the bracket stack BEFORE
    *  this ranking's own Roth-growth contribution — i.e.
    *  totalTraditionalWithdrawal + taxableSS + any conversion-reserved room
@@ -398,10 +399,7 @@ export function rankWithdrawalTiers(
   // not an all-or-nothing cliff on the whole tier. Split brokerage's
   // remaining capacity at the point this tier's OWN gains would cross the
   // threshold, so the pre-threshold slice prices at the real 0%-NIIT rate
-  // and only the post-threshold slice carries the +3.8% — a household
-  // just under the threshold no longer gets 0% NIIT priced on a draw that
-  // itself pushes them over, and one just over no longer gets 3.8% priced
-  // on the whole tier including the portion that was under.
+  // and only the post-threshold slice carries the +3.8%.
   const niitThreshold = NIIT_THRESHOLDS[filingStatus];
   // `magiBeforeThisDraw` is measured before ANY tier in this ranking
   // draws — it doesn't yet reflect the 0%-LTCG brokerage tier

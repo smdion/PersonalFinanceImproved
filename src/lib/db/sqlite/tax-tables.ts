@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import { referenceOriginColumns } from "./contributions";
 
 // ────────────────────────────────────────────────────────────────────────────

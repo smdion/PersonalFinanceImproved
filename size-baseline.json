@@ -11,7 +11,7 @@
     "src/app/(dashboard)/historical/page.tsx": 1026,
     "src/app/(dashboard)/house/page.tsx": 746,
     "src/app/(dashboard)/networth/page.tsx": 465,
-    "src/app/(dashboard)/paycheck/page.tsx": 719,
+    "src/app/(dashboard)/paycheck/page.tsx": 716,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 907,
     "src/app/(dashboard)/savings/page.tsx": 952,
@@ -21,7 +21,7 @@
     "src/app/(dashboard)/versions/page.tsx": 954,
     "src/components/budget/budget-summary-table.tsx": 772,
     "src/components/budget/contribution-profile-manager.tsx": 2063,
-    "src/components/budget/salary-profile-manager.tsx": 1034,
+    "src/components/budget/salary-profile-manager.tsx": 1031,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 417,
     "src/components/cards/dashboard/contributions-card.tsx": 655,
@@ -94,14 +94,14 @@
     "src/lib/budget-api/ynab-client.ts": 540,
     "src/lib/calculators/engine/contribution-routing.ts": 627,
     "src/lib/calculators/engine/individual-account-tracking.ts": 1480,
-    "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 746,
+    "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 742,
     "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 866,
     "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1629,
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/calculators/engine/rmd-enforcement.ts": 468,
-    "src/lib/calculators/engine/tax-estimation.ts": 519,
+    "src/lib/calculators/engine/tax-estimation.ts": 515,
     "src/lib/calculators/engine/tax-gross-up.ts": 587,
-    "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 506,
+    "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 504,
     "src/lib/calculators/engine/withdrawal-routing.ts": 1442,
     "src/lib/calculators/monte-carlo.ts": 761,
     "src/lib/calculators/mortgage.ts": 424,
@@ -773,7 +773,7 @@
       "evaluateCost": 168
     },
     "src/lib/calculators/engine/withdrawal-cost-ranking.ts": {
-      "rankWithdrawalTiers": 277
+      "rankWithdrawalTiers": 274
     },
     "src/lib/calculators/engine/withdrawal-routing.ts": {
       "routeWithdrawalsBracketFilling": 471,

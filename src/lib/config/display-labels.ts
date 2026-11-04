@@ -3,7 +3,7 @@
 
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
 import { WEALTH_TIER_PAW_MIN, WEALTH_TIER_UAW_MAX } from "@/lib/constants";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import type {
   CompositionBucket,
   InvestmentTransactionKind,

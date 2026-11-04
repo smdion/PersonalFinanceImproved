@@ -8,7 +8,6 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
   RetirementYearOverride,
-  FilingStatusType,
 } from "./shared";
 import type {
   AccumulationDefaults,
@@ -22,6 +21,7 @@ import type {
   ResolvedAccumulationConfig,
   ResolvedDecumulationConfig,
 } from "./engine-config";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 // --- Engine Input ---
 
@@ -261,7 +261,7 @@ export type ProjectionInput = {
   stockShareByAge?: Record<number, number>;
   /** Filing status — used for accurate SS taxation and LTCG brackets.
    *  When omitted, falls back to flat 85% SS taxation and flat LTCG rate. */
-  filingStatus?: FilingStatusType;
+  filingStatus?: ReturnFilingStatus;
   /** Enable IRMAA awareness — report Medicare surcharge cliffs (65+). */
   enableIrmaaAwareness?: boolean;
   /** IRMAA surcharges are paid on top of the retirement budget (a year's

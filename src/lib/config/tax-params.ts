@@ -32,7 +32,8 @@
  * `tax_year` values, i.e. exactly the behaviour before this resolver existed.
  */
 
-import type { HsaCoverageType, W4FilingStatus } from "./enum-values";
+import type { HsaCoverageType } from "./enum-values";
+import type { W4FilingStatus } from "./filing-status";
 
 /**
  * The three per-slice entry shapes, kept local so `src/lib/config/` has no

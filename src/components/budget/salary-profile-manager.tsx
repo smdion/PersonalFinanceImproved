@@ -16,11 +16,8 @@ import {
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
-import {
-  type PayPeriod,
-  type PayWeek,
-  type W4FilingStatus,
-} from "@/lib/config/enum-values";
+import { type PayPeriod, type PayWeek } from "@/lib/config/enum-values";
+import { type W4FilingStatus } from "@/lib/config/filing-status";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 import { PayScheduleSection } from "@/components/paycheck/pay-schedule-section";

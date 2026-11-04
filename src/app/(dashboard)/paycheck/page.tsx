@@ -33,11 +33,8 @@ import {
   EDIT_LOCK_KEYS,
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
-import type {
-  PayPeriod,
-  PayWeek,
-  W4FilingStatus,
-} from "@/lib/config/enum-values";
+import type { PayPeriod, PayWeek } from "@/lib/config/enum-values";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
 import type { BonusDestination } from "@/lib/config/enum-values";

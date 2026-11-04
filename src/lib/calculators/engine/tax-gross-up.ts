@@ -37,7 +37,6 @@ import type {
   ResolvedDecumulationConfig,
   AccountBalances,
   TaxBuckets,
-  FilingStatusType,
   IndividualAccountInput,
 } from "../types";
 import { computeNiit } from "../../config/niit";
@@ -62,6 +61,7 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 /** Input for the convergence estimation. */
 interface TaxEstimationInput {
@@ -80,7 +80,7 @@ interface TaxEstimationInput {
    *  top of the amount by definition). */
   ssSurplus?: number;
   /** Filing status for SS taxation thresholds */
-  filingStatus: FilingStatusType | null | undefined;
+  filingStatus: ReturnFilingStatus | null | undefined;
   /** Resolved decumulation config for this year */
   config: ResolvedDecumulationConfig;
   /** Tax rate configuration from decumulation defaults */

@@ -23,7 +23,7 @@ import {
 import {
   W4_FILING_STATUS_VALUES,
   type W4FilingStatus,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/filing-status";
 import {
   FILING_STATUS_LABELS,
   filingStatusLabel,

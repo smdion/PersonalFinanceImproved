@@ -3,15 +3,13 @@
  * golden tests are written in (gross + pre-tax for a household of one).
  */
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
-import type {
-  FilingStatusType,
-  TaxBracketInput,
-} from "@/lib/calculators/types";
+import type { TaxBracketInput } from "@/lib/calculators/types";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type OnePersonTaxInput = {
   annualGross: number;
   preTaxDeductionsAnnual: number;
-  filingStatus?: FilingStatusType;
+  filingStatus?: ReturnFilingStatus;
   taxBrackets: TaxBracketInput;
   /** Defaults to annualGross. */
   ficaWagesAnnual?: number;

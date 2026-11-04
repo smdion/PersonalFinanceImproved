@@ -10,13 +10,13 @@
 // guard (tests/lint/violations.test.ts) covers it, and so it has the same
 // home every other tax figure in the app has.
 
-import type { FilingStatusType } from "../calculators/types";
+import type { ReturnFilingStatus } from "./filing-status";
 
 /** Provisional-income thresholds by filing status, in dollars. */
 type SsTaxThresholds = { tier1: number; tier2: number };
 
 /** SS taxation thresholds by filing status (unchanged since 1993). */
-export const SS_TAX_THRESHOLDS: Record<FilingStatusType, SsTaxThresholds> = {
+export const SS_TAX_THRESHOLDS: Record<ReturnFilingStatus, SsTaxThresholds> = {
   MFJ: { tier1: 32000, tier2: 44000 },
   Single: { tier1: 25000, tier2: 34000 },
   HOH: { tier1: 25000, tier2: 34000 }, // Same as Single

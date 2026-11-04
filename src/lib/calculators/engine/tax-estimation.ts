@@ -15,7 +15,7 @@
  * Used by the orchestrator (via tax-gross-up.ts) and withdrawal-routing
  * (bracket-filling needs incomeCapForMarginalRate).
  */
-import type { TaxBuckets, FilingStatusType, DecumulationSlot } from "../types";
+import type { TaxBuckets, DecumulationSlot } from "../types";
 import { roundToCents, sumBy } from "../../utils/math";
 import {
   getAccountTypeConfig,
@@ -28,6 +28,7 @@ import {
   SS_TAX_TIER1_INCLUSION_RATE,
   SS_TAX_TIER2_INCLUSION_RATE,
 } from "../../config/ss-tax";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 // ---------------------------------------------------------------------------
 // Tax bracket estimator — computes effective tax rate on traditional withdrawals
@@ -44,14 +45,9 @@ export type WithholdingBracket = {
  * percentage-method table (`WithholdingBracket[]`) is actually denominated
  * in. Worksheet 1A line 1g's real adjustment is `standardDeduction -
  * table's first non-zero threshold` (e.g. $32,200 - $19,300 = $12,900 MFJ
- * for 2026) — the threshold ALONE is not the offset, it's only
- * one term of it (an earlier version of this
- * comment claimed the threshold itself was the full Worksheet 1A offset,
- * which fed directly into a real bug in paycheck.ts's buildBracketInput
- * that used the threshold alone as `w4Adjustment` — see that file's
- * comment for the real-dollar impact). `standardDeduction` undefined
- * returns gross unchanged (the prior behavior, still correct for callers that
- * don't have a standard deduction to thread through, e.g. tests).
+ * for 2026): the threshold alone is only one term of it. `standardDeduction`
+ * undefined returns gross unchanged (callers with no standard deduction to
+ * thread through, e.g. tests).
  *
  * Deliberately does NOT reuse `toLtcgTaxableIncome`/`toTaxableIncomeBrackets`
  * (tax-tables.ts / tax-brackets.ts) — those shift `TaxBracket{min,max,rate}`
@@ -221,7 +217,7 @@ export function marginalRateAtIncome(
 export function computeTaxableSS(
   ssIncome: number,
   otherTaxableIncome: number,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
   taxExemptInterest: number = 0,
 ): number {
   if (ssIncome <= 0) return 0;
@@ -274,7 +270,7 @@ export function taxableSSFor(
     ComputeTaxFromSlotsResult,
     "totalTraditionalWithdrawal" | "rothTaxableGrowth" | "brokerageGainsPortion"
   >,
-  filingStatus: FilingStatusType,
+  filingStatus: ReturnFilingStatus,
 ): number {
   return computeTaxableSS(
     ssIncome,
@@ -345,7 +341,7 @@ interface ComputeTaxFromSlotsInput {
      *  below. Omitted ⇒ 0 (the prior behavior). */
     standardDeduction?: number;
   };
-  filingStatus: FilingStatusType | null | undefined;
+  filingStatus: ReturnFilingStatus | null | undefined;
 }
 
 interface ComputeTaxFromSlotsResult {

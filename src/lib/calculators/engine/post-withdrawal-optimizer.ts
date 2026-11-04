@@ -11,7 +11,7 @@
  * IRMAA: checks if MAGI crosses a Medicare surcharge cliff (age 65+).
  * ACA: checks if MAGI crosses the ACA subsidy cliff (pre-65 retirees).
  */
-import type { AccountCategory, TaxBuckets, FilingStatusType } from "../types";
+import type { AccountCategory, TaxBuckets } from "../types";
 import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,
@@ -38,6 +38,7 @@ import {
 import type { WithholdingBracket } from "./tax-estimation";
 import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,7 +82,7 @@ export interface RothConversionInput {
    * N+2's vintage, not year N's — see `decumulation-year.ts`'s
    * `grownIrmaaBracketsForCap`. */
   irmaaBrackets: Record<string, IrmaaBracket[]>;
-  filingStatus?: FilingStatusType | null;
+  filingStatus?: ReturnFilingStatus | null;
   /** Current balances (mutated in place). */
   balances: TaxBuckets;
   /** Basis ratio of the brokerage money that pays the conversion's tax (the
@@ -151,7 +152,7 @@ interface RothConversionResult {
 
 export interface IrmaaInput {
   enableIrmaaAwareness: boolean | undefined;
-  filingStatus: FilingStatusType | null | undefined;
+  filingStatus: ReturnFilingStatus | null | undefined;
   /** Whether ANY household member is ≥65. */
   anyPersonAge65: boolean;
   /**
@@ -184,15 +185,8 @@ export interface AcaInput {
   totalTraditionalWithdrawal: number;
   rothConversionAmount: number;
   brokerageGainsPortion: number;
-  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
-   *  ordinary income, so it belongs in AGI/MAGI like any other. This
-   *  docblock right here already documents that
-   *  the same omission was fixed for currentYearMagi/NIIT/the IRMAA
-   *  lookback (decumulation-year.ts) "and the ACA subsidy check below" —
-   *  but checkAca's own call site never actually passed it, so a pre-65
-   *  household with a real non-qualified Roth growth draw could see
-   *  acaSubsidyPreserved read true across a cliff that was really
-   *  crossed. */
+  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth):
+   *  ordinary income, so it counts in the ACA MAGI as in every other. */
   rothTaxableGrowth: number;
   /** Full gross Social Security benefit (not the 0-85% taxable slice) — ACA
    *  MAGI per 26 U.S.C. §36B(d)(2)(B) requires adding back the entire
