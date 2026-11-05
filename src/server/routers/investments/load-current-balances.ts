@@ -28,7 +28,7 @@ import {
   reportCalendarDay,
   valuationDateFor,
 } from "@/lib/pure/market-calendar";
-import { dailyMovement } from "@/lib/pure/daily-movement";
+import { dailyMovement } from "@/lib/pure/net-worth/daily-movement";
 
 /** Transactions that change share counts: money in and out, dividends and
  *  interest (reinvested), fees. Trades and sweeps move money inside. */

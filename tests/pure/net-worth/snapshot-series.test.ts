@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   MAX_STACKED_ACCOUNTS,
   stackedSeries,
-} from "@/lib/pure/snapshot-series";
+} from "@/lib/pure/net-worth/snapshot-series";
 
 const snap = (date: string, accounts: [string, number][]) => ({
   date,

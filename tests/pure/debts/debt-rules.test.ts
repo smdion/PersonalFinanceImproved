@@ -3,7 +3,7 @@ import {
   carPaymentShare,
   checkCarLoan,
   firstFullSalary,
-} from "@/lib/pure/debt-rules";
+} from "@/lib/pure/debts/debt-rules";
 
 describe("checkCarLoan (20 and 3)", () => {
   it("20% down exactly and a 36-month term pass", () => {

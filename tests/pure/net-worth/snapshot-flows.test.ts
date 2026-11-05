@@ -4,7 +4,7 @@ import {
   accountFlowsSince,
   flowsSince,
   type FlowRow,
-} from "@/lib/pure/snapshot-flows";
+} from "@/lib/pure/net-worth/snapshot-flows";
 
 const row = (over: Partial<FlowRow>): FlowRow => ({
   posted: "2026-06-10",

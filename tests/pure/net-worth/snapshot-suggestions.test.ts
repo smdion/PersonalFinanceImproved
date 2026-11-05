@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   splitAccountBalance,
   suggestSnapshotAmounts,
-} from "@/lib/pure/snapshot-suggestions";
+} from "@/lib/pure/net-worth/snapshot-suggestions";
 
 const sub = (
   key: string,

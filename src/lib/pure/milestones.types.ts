@@ -290,7 +290,7 @@ export type MilestoneInput = {
   /** Always Be Buying: SimpleFIN months (null when not linked or not
    *  visible to this viewer) and the losing years on record. */
   buying?: { months: BuyingMonth[] | null; downYears: DownYear[] } | null;
-  /** The borrowing rules' inputs (lib/pure/debt-rules.ts): open car
+  /** The borrowing rules' inputs (lib/pure/debts/debt-rules.ts): open car
    *  loans, and each person's student loans with the salary they're judged
    *  against. Absent before it's loaded. */
   borrowing?: {

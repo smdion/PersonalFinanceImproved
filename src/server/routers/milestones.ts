@@ -45,10 +45,10 @@ import { investmentsRouter } from "./investments";
 import { brokerageRouter } from "./brokerage";
 import { zYearEndTargeting } from "./_shared";
 import type { MilestoneDebt } from "@/lib/pure/milestones";
-import { debtPayoffEstimate } from "@/lib/pure/debts";
+import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
 import { raiseHistory } from "@/lib/pure/raise-history";
 import { downYears } from "@/lib/pure/always-buying";
-import { firstFullSalary } from "@/lib/pure/debt-rules";
+import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { toNumber } from "@/server/helpers";
@@ -105,7 +105,7 @@ function finalizedYears(
 
 /** The borrowing rules' inputs: open car loans, and each person's student
  *  loans (paid off or not) with the first full salary they're judged
- *  against (lib/pure/debt-rules.ts). */
+ *  against (lib/pure/debts/debt-rules.ts). */
 function borrowingFrom(
   debtRows: (typeof schema.debts.$inferSelect)[],
   people: readonly { id: number; name: string }[],

@@ -7,7 +7,7 @@ import { toNumber } from "@/server/helpers";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { debtKindSchema } from "@/lib/config/enum-values.schema";
 import { isCalendarDate } from "@/lib/utils/date";
-import { debtPayoffEstimate } from "@/lib/pure/debts";
+import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
 import {
   debtBalance,
   getEffectiveOtherLiabilities,

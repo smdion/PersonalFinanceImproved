@@ -60,7 +60,7 @@ import { sumBy } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
 import { meetsRaiseRule } from "@/lib/pure/raise-history";
 import { recentCoveredMonths } from "@/lib/pure/always-buying";
-import { carPaymentShare, checkCarLoan } from "@/lib/pure/debt-rules";
+import { carPaymentShare, checkCarLoan } from "@/lib/pure/debts/debt-rules";
 import {
   amountMilestone,
   checkpointBalance,

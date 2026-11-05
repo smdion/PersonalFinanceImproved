@@ -4,8 +4,8 @@
  * buildAccountKeys, assembleNetWorthValues, computePortfolioTotal,
  * (the dated job rule moved to lib/pure/profiles.ts — tests/pure/profiles.test.ts).
  * computeHomeImpCumulative (formerly a duplicate here as
- * computeHomeImprovementsCumulative) now lives in lib/pure/historical.ts —
- * see tests/pure/historical.test.ts.
+ * computeHomeImprovementsCumulative) now lives in lib/pure/net-worth/historical.ts —
+ * see tests/pure/net-worth/historical.test.ts.
  */
 import { describe, it, expect } from "vitest";
 import {

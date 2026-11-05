@@ -321,7 +321,7 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/historical.ts",
+    "from": "src/lib/pure/net-worth/historical.ts",
     "to": "src/server/helpers/transforms.ts"
   },
   {

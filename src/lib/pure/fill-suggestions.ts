@@ -21,7 +21,7 @@ import {
   type SubAccountRef,
 } from "./flow-suggestions";
 import { sentTransactions } from "./simplefin-feeds";
-import type { NewMoney } from "./snapshot-suggestions";
+import type { NewMoney } from "./net-worth/snapshot-suggestions";
 
 /** A classified transaction as the fills read it. */
 export type FillRow = FlowRow & {

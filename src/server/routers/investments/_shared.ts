@@ -43,7 +43,7 @@ import type { FeedAccount } from "@/lib/pure/flow-suggestions";
 import {
   suggestSnapshotAmounts,
   type UnplacedFeed,
-} from "@/lib/pure/snapshot-suggestions";
+} from "@/lib/pure/net-worth/snapshot-suggestions";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import {
   accountSplits,

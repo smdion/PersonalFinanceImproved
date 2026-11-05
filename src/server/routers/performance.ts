@@ -29,7 +29,7 @@ import {
   findActiveJob,
   canDeletePerformanceAccount,
 } from "@/lib/pure/profiles";
-import { computeHomeImpCumulative } from "@/lib/pure/historical";
+import { computeHomeImpCumulative } from "@/lib/pure/net-worth/historical";
 import {
   resolveCategoryValues,
   resolvePortfolioValues,

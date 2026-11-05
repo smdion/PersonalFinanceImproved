@@ -634,6 +634,11 @@
       "count": 6
     }
   },
+  "src/lib/pure/net-worth/snapshot-series.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
   "src/lib/pure/retirement-bridge.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -662,11 +667,6 @@
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 8
-    }
-  },
-  "src/lib/pure/snapshot-series.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
     }
   },
   "src/lib/pure/tax-bucket-projection.ts": {

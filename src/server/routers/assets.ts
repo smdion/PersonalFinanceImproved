@@ -19,7 +19,7 @@ import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,
   resolveCarryForwardAssetValue,
-} from "@/lib/pure/historical";
+} from "@/lib/pure/net-worth/historical";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
 
 export const assetsRouter = createTRPCRouter({

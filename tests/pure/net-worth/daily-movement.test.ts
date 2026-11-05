@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dailyMovement } from "@/lib/pure/daily-movement";
+import { dailyMovement } from "@/lib/pure/net-worth/daily-movement";
 
 describe("dailyMovement", () => {
   const sessions = ["2026-10-30", "2026-10-29"];

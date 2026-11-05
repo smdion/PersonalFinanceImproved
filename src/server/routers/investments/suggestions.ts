@@ -25,7 +25,7 @@ import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
 } from "@/lib/pure/simplefin-feeds";
-import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
+import { suggestSnapshotAmounts } from "@/lib/pure/net-worth/snapshot-suggestions";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
 import { toNumber } from "@/server/helpers/transforms";

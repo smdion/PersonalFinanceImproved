@@ -6,7 +6,7 @@
  * the wrong day, and money paid in or out can't read as the market's.
  * That money is shown beside the move, by the close it landed before.
  */
-import { previousTradingDay } from "./market-calendar";
+import { previousTradingDay } from "../market-calendar";
 
 export type EntryMoves = {
   key: string;

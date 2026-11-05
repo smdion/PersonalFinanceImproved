@@ -15,7 +15,7 @@ import { findActiveJob } from "@/lib/pure/profiles";
 import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,
-} from "@/lib/pure/historical";
+} from "@/lib/pure/net-worth/historical";
 import { zYearEndTargeting } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({

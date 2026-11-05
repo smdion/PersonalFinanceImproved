@@ -8,7 +8,7 @@ import {
   resolveCarryForwardAssetValue,
   resolveOtherAssetsForYear,
   computeHomeImpCumulative,
-} from "@/lib/pure/historical";
+} from "@/lib/pure/net-worth/historical";
 
 describe("resolveCarryForwardAssetValue", () => {
   const items = [

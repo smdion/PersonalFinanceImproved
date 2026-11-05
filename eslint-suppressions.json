@@ -3941,17 +3941,12 @@
       "count": 1
     }
   },
-  "src/lib/pure/daily-movement.ts": {
+  "src/lib/pure/debts/debt-rules.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/lib/pure/debt-rules.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/debts.ts": {
+  "src/lib/pure/debts/debts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
@@ -4538,11 +4533,37 @@
       "count": 2
     }
   },
+  "src/lib/pure/net-worth/daily-movement.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/net-worth/net-worth.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     },
     "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-flows.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-series.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-suggestions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -4953,27 +4974,6 @@
   },
   "src/lib/pure/simulation/year-return-range.ts": {
     "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/snapshot-flows.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/snapshot-series.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/snapshot-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },

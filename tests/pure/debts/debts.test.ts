@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { debtPayoffEstimate } from "@/lib/pure/debts";
+import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
 
 const loan = {
   balance: 1_000,
