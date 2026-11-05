@@ -181,8 +181,9 @@ describe("notAMove", () => {
           '-import { a } from "@/lib/calculators/a";',
           '+import { a } from "@/lib/pure/tax/a";',
           "@@ -9 +9 @@",
-          '-vi.mock("@/lib/calculators/a", () => ({}));',
-          '+vi.mock("@/lib/pure/tax/a", () => ({}));',
+          // Split so the vi.mock target check doesn't read sample text as a mock.
+          "-vi." + 'mock("@/lib/calculators/a", () => ({}));',
+          "+vi." + 'mock("@/lib/pure/tax/a", () => ({}));',
           "@@ -20,0 +21 @@",
           "+  shared,",
           "@@ -40 +41 @@",
