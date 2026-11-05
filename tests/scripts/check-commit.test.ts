@@ -196,7 +196,7 @@ describe("notAMove", () => {
 
   it("fails without a rename, or with a changed line that isn't a path", () => {
     expect(notAMove(parseNumstat("1\t1\tsrc/b.ts"), diff([]))).toBe(
-      "git sees no rename",
+      "git sees no rename and no code moved between files",
     );
     expect(
       notAMove(renamed, diff(["-  return total * 2;", "+  return total * 3;"])),
@@ -216,6 +216,140 @@ describe("notAMove", () => {
     ).toEqual(["mechanical", "size"]);
   });
 });
+describe("notAMove: a split moves code between files", () => {
+  const numstat = parseNumstat(
+    "0\t3\tsrc/server/helpers/big.ts\n4\t0\tsrc/lib/pure/area/part.ts",
+  );
+  const split = (oldSide: string[], newSide: string[]) =>
+    [
+      "diff --git a/src/lib/pure/area/part.ts b/src/lib/pure/area/part.ts",
+      "new file mode 100644",
+      "--- /dev/null",
+      "+++ b/src/lib/pure/area/part.ts",
+      "@@ -0,0 +1,4 @@",
+      ...newSide,
+      "diff --git a/src/server/helpers/big.ts b/src/server/helpers/big.ts",
+      "--- a/src/server/helpers/big.ts",
+      "+++ b/src/server/helpers/big.ts",
+      "@@ -10,3 +9,0 @@",
+      ...oldSide,
+    ].join("\n");
+  const body = ["function total(a: number) {", "  return a * 2;", "}"];
+
+  it("passes code moved verbatim into a new part, exported there", () => {
+    const newSide = [
+      '+import { x } from "@/lib/x";',
+      "+export function total(a: number) {",
+      "+  return a * 2;",
+      "+}",
+    ];
+    expect(
+      notAMove(
+        numstat,
+        split(
+          body.map((l) => `-${l}`),
+          newSide,
+        ),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("fails a split that changes a line on the way", () => {
+    const newSide = ["+function total(a: number) {", "+  return a * 3;", "+}"];
+    expect(
+      notAMove(
+        numstat,
+        split(
+          body.map((l) => `-${l}`),
+          newSide,
+        ),
+      ),
+    ).toMatch(/2 changed line\(s\)/);
+  });
+
+  it("fails code deleted rather than moved", () => {
+    expect(
+      notAMove(
+        numstat,
+        split(
+          body.map((l) => `-${l}`),
+          [],
+        ),
+      ),
+    ).toBe("git sees no rename and no code moved between files");
+    const partial = ["+function total(a: number) {", "+}"];
+    expect(
+      notAMove(
+        numstat,
+        split(
+          body.map((l) => `-${l}`),
+          partial,
+        ),
+      ),
+    ).toMatch(/1 changed line\(s\).*return a \* 2/);
+  });
+
+  it("lets a split take its doc comments and reword the old header", () => {
+    const oldSide = [
+      "-/** Doubles it. */",
+      ...body.map((l) => `-${l}`),
+      "-// old header",
+    ];
+    const newSide = [
+      "+/** Doubles it. */",
+      "+export function total(a: number) {",
+      "+  return a * 2;",
+      "+}",
+    ];
+    expect(notAMove(numstat, split(oldSide, newSide))).toBeUndefined();
+  });
+
+  it("reads a register row's code cells as paths, and only those", () => {
+    const row = (fn: string, gap: string) =>
+      `| LIM-20 | Periods per year | ${fn} | Owner design | ${gap} |`;
+    const register = (before: string, after: string) =>
+      [
+        split(
+          body.map((l) => `-${l}`),
+          body.map((l) => `+${l}`),
+        ),
+        "diff --git a/docs/CALCULATIONS.md b/docs/CALCULATIONS.md",
+        "--- a/docs/CALCULATIONS.md",
+        "+++ b/docs/CALCULATIONS.md",
+        "@@ -9 +9 @@",
+        `-${before}`,
+        `+${after}`,
+      ].join("\n");
+    const was = row("`server/helpers/big.ts:total`", "None");
+    expect(
+      notAMove(
+        numstat,
+        register(was, row("`lib/pure/area/part.ts:total`, `jobPay`", "None")),
+      ),
+    ).toBeUndefined();
+    expect(
+      notAMove(
+        numstat,
+        register(was, row("`lib/pure/area/part.ts:total`", "Fixed")),
+      ),
+    ).toMatch(/2 changed line\(s\)/);
+  });
+
+  it("doesn't count a line edited in place as moved", () => {
+    const oneFile = [
+      "diff --git a/src/b.ts b/src/b.ts",
+      "--- a/src/b.ts",
+      "+++ b/src/b.ts",
+      "@@ -1 +1 @@",
+      "-  return total * 2;",
+      "+  return total * 3;",
+    ].join("\n");
+    expect(notAMove(parseNumstat("1\t1\tsrc/b.ts"), oneFile)).toBe(
+      "git sees no rename and no code moved between files",
+    );
+  });
+});
+
 describe("notAMove: a move's bookkeeping and bare names", () => {
   const renamed = parseNumstat(
     "1\t1\tsrc/lib/{calculators/engine/tax-gross-up.ts => pure/engine/withdrawal-solver.ts}\n1\t1\tdocs/DESIGN.md\n2\t2\tsize-baseline.json\n1\t1\tsrc/lib/generated/engine-hash.ts",

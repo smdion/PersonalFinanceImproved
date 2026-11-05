@@ -52,8 +52,8 @@ the reviewer and the owner do.
 - **No growth:** no function over 150 lines grows, and no file grows past its
   recorded size.
 - **Commit size:** at most 400 changed `src/` lines, and at most 8 `src/`
-  files in an engine or tax commit. A pure move or rename carries a
-  `Mechanical:` line and is exempt.
+  files in an engine or tax commit. A pure move, rename or split (code
+  moved unchanged) carries a `Mechanical:` line and is exempt.
 - **Shape pass on bug fixes:** why was the bug possible, and where else does
   it exist? Fix the cause there, not one call site.
 

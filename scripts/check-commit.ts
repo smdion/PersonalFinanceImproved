@@ -8,8 +8,9 @@
  *
  * Checks: a `type:` subject prefix, a body that says why, at most 400 changed
  * `src/` lines and at most 8 `src/` files when the engine or tax code is
- * touched (a `Mechanical:` trailer exempts a pure move or rename: git sees
- * a rename, and every other changed line is an import or a path rewrite), and the
+ * touched (a `Mechanical:` trailer exempts a pure move, rename or split: git
+ * sees a rename or code moved between files, and every other changed line is
+ * an import or a path rewrite), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first.
@@ -187,6 +188,12 @@ const MOVE_BOOKKEEPING =
   /^(size-baseline\.json|eslint-suppressions(-typed)?\.json|\.dependency-cruiser-known-violations\.json|scripts\/calculation-register-baseline\.json|src\/lib\/generated\/.*)$/;
 /** A comment line: a line comment, or a line of a block comment. */
 const COMMENT_LINE = /^\s*(\/\/|\/\*|\*\/|\*(\s|$))/;
+/** The calculation register, whose code-reference cells docs:verify checks. */
+const REGISTER_DOC = "docs/CALCULATIONS.md";
+/** A table cell naming code: a backticked `file.ts` or `file.ts:name`. */
+const CODE_REF_CELL = /`[^`|]*\.tsx?(:[^`|]*)?`/;
+/** A changed line and its file. */
+type Line = { file: string; line: string };
 /** A generated count in the docs (docs:verify checks it). */
 const AUTO_GEN_LINE = /<!-- AUTO-GEN:\w+ -->/;
 
@@ -236,21 +243,24 @@ const withoutPaths = (line: string, names?: RegExp) =>
 
 /**
  * Why a change isn't a move: `numstat` from `-M --numstat` must show a
- * rename, and in `diff` (`-M -U0`) every removed or added line of a file
- * must be an import line, or match a line on the other side of the same
- * file that differs from it only in its paths (a moved entry in a sorted
- * list matches too). A renamed file's bare name counts as a path, and the
- * move's own bookkeeping (MOVE_BOOKKEEPING, AUTO-GEN counts) is left to the
- * checks that guard it.
+ * rename, or code must move between files (a split). In `diff` (`-M -U0`)
+ * every removed or added line must be an import line, or match a line on
+ * the other side that differs from it only in its paths: first in the same
+ * file (a moved entry in a sorted list matches too), then in any other file
+ * of the commit, where a leading `export` may be added or dropped (a split
+ * exports what its parts share). A renamed file's bare name counts as a
+ * path, and the move's own bookkeeping (MOVE_BOOKKEEPING, AUTO-GEN counts)
+ * is left to the checks that guard it.
  */
 export function notAMove(
   numstat: FileChange[],
   diff: string,
 ): string | undefined {
-  if (!numstat.some((change) => change.file.includes(" => ")))
-    return "git sees no rename";
+  const renamed = numstat.some((change) => change.file.includes(" => "));
   const names = renamedNames(numstat);
-  const bad: string[] = [];
+  // Lines no same-file line explains, matched across files once all are read.
+  const leftAdded: Line[] = [];
+  const leftRemoved: Line[] = [];
   let file = "";
   let removed: string[] = [];
   let added: string[] = [];
@@ -271,23 +281,35 @@ export function notAMove(
       added = [];
       return;
     }
+    // The register's code-reference cells change with a move; docs:verify
+    // checks each still names a real file and function.
+    const keyOf = (line: string) =>
+      withoutPaths(
+        file === REGISTER_DOC
+          ? line
+              .split("|")
+              .map((cell) => (CODE_REF_CELL.test(cell) ? " <refs> " : cell))
+              .join("|")
+          : line,
+        names,
+      );
     const pool = new Map<string, number>();
     for (const line of removed) {
-      const key = withoutPaths(line, names);
+      const key = keyOf(line);
       pool.set(key, (pool.get(key) ?? 0) + 1);
     }
     for (const line of added) {
-      const key = withoutPaths(line, names);
+      const key = keyOf(line);
       const left = pool.get(key) ?? 0;
       if (left > 0) pool.set(key, left - 1);
-      else if (!IMPORT_LINE.test(line)) bad.push(`${file}: ${line.trim()}`);
+      else if (!IMPORT_LINE.test(line)) leftAdded.push({ file, line });
     }
     for (const line of removed) {
-      const key = withoutPaths(line, names);
+      const key = keyOf(line);
       const left = pool.get(key) ?? 0;
       if (left === 0) continue;
       pool.set(key, left - 1);
-      if (!IMPORT_LINE.test(line)) bad.push(`${file}: ${line.trim()}`);
+      if (!IMPORT_LINE.test(line)) leftRemoved.push({ file, line });
     }
     removed = [];
     added = [];
@@ -311,8 +333,40 @@ export function notAMove(
     else if (line.startsWith("+")) added.push(line.slice(1));
   }
   settle();
-  if (bad.length === 0) return undefined;
-  return `${bad.length} changed line(s) are neither imports nor path rewrites (first: ${bad.slice(0, 3).join(" | ")})`;
+  const movedKey = (line: string) =>
+    withoutPaths(
+      line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1"),
+      names,
+    );
+  const moved = new Map<string, Line[]>();
+  for (const entry of leftRemoved) {
+    const key = movedKey(entry.line);
+    moved.set(key, [...(moved.get(key) ?? []), entry]);
+  }
+  let unexplained: Line[] = [];
+  let movedAcross = 0;
+  for (const entry of leftAdded) {
+    const sources = moved.get(movedKey(entry.line)) ?? [];
+    const i = sources.findIndex((source) => source.file !== entry.file);
+    if (i < 0) {
+      unexplained.push(entry);
+      continue;
+    }
+    sources.splice(i, 1);
+    movedAcross += 1;
+  }
+  for (const entries of moved.values()) unexplained.push(...entries);
+  if (!renamed && movedAcross === 0)
+    return "git sees no rename and no code moved between files";
+  // A split takes its doc comments with the code and rewords the old file's
+  // header: comments carry no behavior, and the reviewer still reads them.
+  if (movedAcross > 0)
+    unexplained = unexplained.filter(({ line }) => !COMMENT_LINE.test(line));
+  if (unexplained.length === 0) return undefined;
+  const first = unexplained
+    .slice(0, 3)
+    .map(({ file: f, line }) => `${f}: ${line.trim()}`);
+  return `${unexplained.length} changed line(s) are neither imports nor path rewrites (first: ${first.join(" | ")})`;
 }
 
 export function checkCommit(facts: CommitFacts): Warning[] {
