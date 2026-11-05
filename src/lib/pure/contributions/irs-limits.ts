@@ -7,7 +7,7 @@ import {
   isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
-import { requireLimit } from "@/server/helpers/settings";
+import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { ageInYearFromDob } from "@/lib/pure/household/age";
 
 /** The limit row an account's base IRS limit comes from: the coverage

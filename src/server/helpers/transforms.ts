@@ -3,9 +3,6 @@
  */
 import { PAY_PERIOD_CONFIG, payPeriodConfig } from "@/lib/config/pay-periods";
 
-// Re-exported for lib/pure/tax/distribution-tax-rates.ts only.
-export { toNumber } from "@/lib/utils/numbers";
-
 /**
  * Find the primary person from a people array.
  * Falls back to first person if no isPrimaryUser flag is set.

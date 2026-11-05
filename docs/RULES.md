@@ -65,7 +65,6 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Two MAGI sites in the Roth conversion optimizer keep their own term order,** until `yearMagi` rounds to cents (v0.11).
 - **Calculations are answer-keyed only in part.** [CALCULATIONS.md](CALCULATIONS.md) lists every calculation: its Tested column says which rows have hand-worked answer-key cases, and its Gaps column is where calculation bugs are listed. A row with no case has only its pinned tests, which can move with the code. A figure changes only with its source and its cause in dollars.
 - **There is no named layer for composition that needs I/O.** It lives in router procedures and `src/server/helpers/`, and some routers call others. Don't add more; a shared service layer is planned.
-- **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** Both are recorded layer breaks (§ Pure Business Logic Boundary); don't extend them.
 - **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings.
 - **Files and functions over the size limit** are recorded in `size-baseline.json`; a recorded size is a ceiling, not a pass to grow.
 - **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/accounts/roth-basis-tracking.ts`).

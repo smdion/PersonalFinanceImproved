@@ -708,6 +708,7 @@
     "src/lib/pure/tax/data-status.ts:taxYearDeadline",
     "src/lib/pure/tax/filing-status.ts:FILING_STATUS_IF_UNKNOWN",
     "src/lib/pure/tax/filing-status.ts:retirementFilingStatus",
-    "src/lib/pure/tax/roth-distribution-tax.ts:isQualifiedRothOwner"
+    "src/lib/pure/tax/roth-distribution-tax.ts:isQualifiedRothOwner",
+    "src/lib/pure/tax/tax-limits.ts:requireLimit"
   ]
 }

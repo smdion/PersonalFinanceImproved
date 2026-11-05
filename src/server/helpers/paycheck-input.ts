@@ -26,7 +26,7 @@ import type {
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { BonusTerms } from "./salary";
 import { toNumber } from "@/lib/utils/numbers";
-import { requireLimit } from "./settings";
+import { requireLimit } from "@/lib/pure/tax/tax-limits";
 
 /**
  * Every field but `startDate` now comes from the resolved Salary Profile

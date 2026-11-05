@@ -29,7 +29,6 @@ import {
   applyActiveSalary,
   applyActiveBonusTerms,
   buildContribAccounts,
-  requireLimit,
   loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
   applyContribActiveFields,
@@ -39,6 +38,7 @@ import {
   getIncompleteContribAccountIds,
   contributionPay,
 } from "@/server/helpers";
+import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";

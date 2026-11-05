@@ -6,8 +6,8 @@
  */
 import { estimateEffectiveTaxRate } from "@/lib/pure/engine";
 import { getLtcgRate } from "@/lib/pure/tax/ltcg";
-import { requireLimit } from "@/server/helpers/settings";
-import { toNumber } from "@/server/helpers/transforms";
+import { requireLimit } from "@/lib/pure/tax/tax-limits";
+import { toNumber } from "@/lib/utils/numbers";
 import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
 import type { resolveTaxParams } from "@/lib/config/tax-params";
 

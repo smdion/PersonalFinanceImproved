@@ -251,23 +251,8 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/contributions/irs-limits.ts",
-    "to": "src/server/helpers/settings.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
     "from": "src/lib/pure/savings/savings-projection.ts",
     "to": "src/components/savings/types.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/tax/distribution-tax-rates.ts",
-    "to": "src/server/helpers/settings.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/tax/distribution-tax-rates.ts",
-    "to": "src/server/helpers/transforms.ts"
   },
   {
     "rule": "server-pages-prefetch-only",
