@@ -49,9 +49,8 @@ export function validateContributionOrder(
   if (firstOverflowIndex >= 0) {
     // Any tax-advantaged category appearing AFTER the first overflow position
     // means the user is filling taxable first.
-    for (let i = firstOverflowIndex + 1; i < order.length; i++) {
-      const cat = order[i]!;
-      if (taxAdvantaged.includes(cat)) {
+    order.forEach((cat, i) => {
+      if (i > firstOverflowIndex && taxAdvantaged.includes(cat)) {
         warnings.push({
           severity: "warn",
           category: cat,
@@ -64,7 +63,7 @@ export function validateContributionOrder(
             `your situation differs.`,
         });
       }
-    }
+    });
   }
 
   // A triple tax-advantaged type belongs before every other tax-advantaged one.
@@ -73,10 +72,10 @@ export function validateContributionOrder(
   );
   for (const cat of triple) {
     const index = order.indexOf(cat);
-    const earlier = order.slice(0, index);
+    if (index <= 0) continue;
     const isOther = (c: AccountCategory) =>
-      earlier.includes(c) && !triple.includes(c);
-    if (index > 0 && taxAdvantagedTypes.some(isOther)) {
+      order.slice(0, index).includes(c) && !triple.includes(c);
+    if (taxAdvantagedTypes.some(isOther)) {
       const label = getAccountTypeConfig(cat).displayLabel;
       warnings.push({
         severity: "info",
