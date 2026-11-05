@@ -33,7 +33,7 @@ export type FillRow = FlowRow & {
   recordedMoveFrom: string | null;
 };
 
-/** What the fill ledger kept for one year of one fill (see server/helpers/fill-ledger.ts). */
+/** What the fill ledger kept for one year of one fill (see server/services/sync/fill-ledger.ts). */
 type FillLedger = {
   baselines: Readonly<Record<number, string>>;
   counted: Readonly<Record<string, string>>;

@@ -42,7 +42,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { log } from "@/lib/logger";
-import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";

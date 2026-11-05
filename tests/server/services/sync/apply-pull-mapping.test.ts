@@ -9,13 +9,13 @@
  * an otherAssetItems row literally named "Cash" — wrong, and only ever
  * reflecting whichever mapping happened to sync last.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   applyPullMapping,
   clearUnmappedPulledBalances,
-} from "@/server/helpers/apply-pull-mapping";
-import { createTestDb, type TestDbContext } from "./db-harness";
+} from "@/server/services/sync/apply-pull-mapping";
+import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
 
 describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
   let ctx: TestDbContext;

@@ -1,5 +1,5 @@
 /** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
-import { loansFedBySimplefin } from "@/server/helpers/loan-feed";
+import { loansFedBySimplefin } from "@/server/services/sync/loan-feed";
 import { calendarYear } from "@/lib/utils/date";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";

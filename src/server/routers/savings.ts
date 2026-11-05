@@ -63,8 +63,8 @@ import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { SalaryEntryMap } from "@/server/helpers/salary";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
-import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
-import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
+import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   targetModeSchema,

@@ -1,9 +1,9 @@
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, vi } from "vitest";
 import {
   pushSnapshotToBudgetApi,
   snapshotMemoTag,
-} from "@/server/helpers/budget-api-push";
+} from "@/server/services/sync/budget-api-push";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import type { BudgetTransaction } from "@/lib/budget-api/types";

@@ -1,6 +1,6 @@
-import "../helpers/setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
-import { resolveAccountBalance } from "@/server/helpers/api-balance-resolution";
+import { resolveAccountBalance } from "@/server/services/sync/api-balance-resolution";
 import type { AccountMapping } from "@/lib/db/schema";
 
 function makeMapping(overrides: Partial<AccountMapping> = {}): AccountMapping {

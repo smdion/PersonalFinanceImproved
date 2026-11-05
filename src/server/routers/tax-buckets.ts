@@ -20,7 +20,7 @@ import * as schema from "@/lib/db/schema";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { toNumber } from "@/lib/utils/numbers";
 import { zDecimal } from "@/lib/utils/zod-fields";
-import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
+import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
 import {

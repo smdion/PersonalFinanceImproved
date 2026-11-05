@@ -1138,7 +1138,7 @@ export const networthRouter = createTRPCRouter({
             getApiConnection: getConnForPull,
           } = await import("@/lib/budget-api");
           const { getApiAccountBalanceMap: getMapForPull } =
-            await import("@/server/helpers/api-balance-resolution");
+            await import("@/server/services/sync/api-balance-resolution");
           const activeForPull = await getActiveForPull(ctx.db);
           if (activeForPull !== "none") {
             const connForPull = await getConnForPull(ctx.db, activeForPull);

@@ -2,7 +2,7 @@
  * Extra-paycheck materializer tests.
  *
  * Covers the delete/reinsert regeneration cycle in
- * src/server/helpers/extra-paycheck-materializer.ts — specifically that it
+ * src/server/services/budget/extra-paycheck-materializer.ts — specifically that it
  * no longer destroys history (rows before the current month) or orphans
  * settlement records (rows with any row in savings_planned_tx_settlements),
  * both of which the original blanket "delete all source='rule' rows" did.
@@ -11,12 +11,12 @@
  * mocked out here — its own correctness is covered by paycheck.test.ts.
  * This file is only exercising the materializer's transaction logic.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { createTestDb, type TestDbContext } from "./db-harness";
-import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
+import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
+import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { eq } from "drizzle-orm";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 

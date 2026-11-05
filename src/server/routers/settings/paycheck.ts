@@ -13,8 +13,8 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { localDateStr } from "@/lib/utils/date";
-import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
-import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
+import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { getAllPeople } from "@/server/data/people";
 import {

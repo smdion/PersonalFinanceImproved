@@ -3,7 +3,7 @@
  * (portfolioProcedure — built from transaction-level detail). Read-only:
  * the Performance and basis forms prefill from these and the household
  * saves through the usual mutations, which record what was counted (see
- * server/helpers/fill-ledger.ts).
+ * server/services/sync/fill-ledger.ts).
  */
 import { z } from "zod/v4";
 import { and, eq } from "drizzle-orm";
@@ -27,7 +27,7 @@ import {
 } from "@/lib/pure/sync/simplefin-feeds";
 import { suggestSnapshotAmounts } from "@/lib/pure/net-worth/snapshot-suggestions";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
-import { loadFillRecord } from "@/server/helpers/fill-ledger";
+import { loadFillRecord } from "@/server/services/sync/fill-ledger";
 import { toNumber } from "@/lib/utils/numbers";
 import {
   loadAccounts,

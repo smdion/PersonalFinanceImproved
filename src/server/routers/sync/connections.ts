@@ -1,6 +1,6 @@
 /** Sync connections router for CRUD operations on YNAB/Actual budget API credentials and connection status checks. */
 
-import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
+import { clearUnmappedPulledBalances } from "@/server/services/sync/apply-pull-mapping";
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import {

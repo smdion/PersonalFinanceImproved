@@ -5408,38 +5408,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/api-balance-resolution.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/apply-pull-mapping.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/budget-api-push.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/budget-income-materializer.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
   "src/server/helpers/budget.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
@@ -5513,34 +5481,7 @@
       "count": 1
     }
   },
-  "src/server/helpers/extra-paycheck-materializer.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/fill-ledger.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/helpers/household-timezone.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/loan-feed.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -6283,6 +6224,65 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/budget/budget-income-materializer.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/server/services/budget/extra-paycheck-materializer.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/api-balance-resolution.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/apply-pull-mapping.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/sync/budget-api-push.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/fill-ledger.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/loan-feed.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

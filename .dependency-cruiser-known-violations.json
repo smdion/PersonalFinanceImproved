@@ -42,7 +42,7 @@
   {
     "rule": "infra-below-server",
     "from": "src/lib/simplefin/sync.ts",
-    "to": "src/server/helpers/loan-feed.ts"
+    "to": "src/server/services/sync/loan-feed.ts"
   },
   {
     "rule": "no-circular",

@@ -64,7 +64,7 @@ import {
   applyLoanFeedBalances,
   clearLoanBalance,
   loansFedBySimplefin,
-} from "@/server/helpers/loan-feed";
+} from "@/server/services/sync/loan-feed";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";

@@ -149,7 +149,6 @@
     "src/lib/utils/colors.ts": 431,
     "src/lib/utils/format.ts": 421,
     "src/server/data/investments.ts": 636,
-    "src/server/helpers/budget-api-push.ts": 434,
     "src/server/helpers/budget.ts": 636,
     "src/server/helpers/contribution-caps.ts": 560,
     "src/server/helpers/contribution.ts": 1828,
@@ -184,6 +183,7 @@
     "src/server/routers/simplefin.ts": 872,
     "src/server/routers/sync/core.ts": 1118,
     "src/server/routers/utilities.ts": 581,
+    "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/trpc.ts": 591
   },
   "functions": {
@@ -841,9 +841,6 @@
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
-    "src/server/helpers/budget-api-push.ts": {
-      "pushSnapshotToBudgetApi": 237
-    },
     "src/server/helpers/budget.ts": {
       "resolveLinkedBudgetItemAmounts": 152
     },
@@ -852,9 +849,6 @@
     },
     "src/server/helpers/contribution.ts": {
       "buildProfileContribData": 235
-    },
-    "src/server/helpers/extra-paycheck-materializer.ts": {
-      "_materialize": 217
     },
     "src/server/helpers/snapshot.ts": {
       "buildYearEndHistory": 870
@@ -943,6 +937,12 @@
     },
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159
+    },
+    "src/server/services/budget/extra-paycheck-materializer.ts": {
+      "_materialize": 217
+    },
+    "src/server/services/sync/budget-api-push.ts": {
+      "pushSnapshotToBudgetApi": 237
     }
   }
 }

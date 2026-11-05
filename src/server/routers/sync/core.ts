@@ -1,6 +1,6 @@
 /** Sync core router handling full data synchronization, sync preview generation, and expense comparison between budget API and local data. */
 
-import { loansFedBySimplefin } from "@/server/helpers/loan-feed";
+import { loansFedBySimplefin } from "@/server/services/sync/loan-feed";
 import { z } from "zod/v4";
 import { eq, sql, and, like, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -22,7 +22,7 @@ import {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
-import { applyPullMapping } from "@/server/helpers/apply-pull-mapping";
+import { applyPullMapping } from "@/server/services/sync/apply-pull-mapping";
 import type {
   BudgetApiService,
   BudgetAccount,
@@ -128,7 +128,7 @@ export const syncCoreRouter = createTRPCRouter({
           (m) => m.syncDirection === "pull" || m.syncDirection === "both",
         );
         const { getApiAccountBalanceMapFromAccounts } =
-          await import("@/server/helpers/api-balance-resolution");
+          await import("@/server/services/sync/api-balance-resolution");
         const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
         const currentYear = new Date().getFullYear(); // after the fetch
 

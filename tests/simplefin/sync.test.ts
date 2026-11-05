@@ -16,9 +16,9 @@ vi.mock("@/lib/simplefin/client", () => ({
   isSimplefinReplayMode: () => false,
 }));
 // The real loan write, wrapped so a test can make it fail once.
-vi.mock("@/server/helpers/loan-feed", async (importOriginal) => {
+vi.mock("@/server/services/sync/loan-feed", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@/server/helpers/loan-feed")>();
+    await importOriginal<typeof import("@/server/services/sync/loan-feed")>();
   return {
     ...actual,
     applyLoanFeedBalances: vi.fn(actual.applyLoanFeedBalances),
@@ -39,7 +39,7 @@ afterAll(() => {
 });
 
 import { getAccounts, type SimplefinAccount } from "@/lib/simplefin/client";
-import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
+import { applyLoanFeedBalances } from "@/server/services/sync/loan-feed";
 import { eq } from "drizzle-orm";
 import {
   getSimplefinConnection,

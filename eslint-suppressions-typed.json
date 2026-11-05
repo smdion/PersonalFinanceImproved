@@ -724,16 +724,6 @@
       "count": 5
     }
   },
-  "src/server/helpers/extra-paycheck-materializer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/fill-ledger.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/helpers/monte-carlo-worker-client.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -877,6 +867,16 @@
   "src/server/routers/version.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/server/services/budget/extra-paycheck-materializer.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/fill-ledger.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/trpc.ts": {

@@ -1,7 +1,7 @@
 /**
  * Budget-income materializer tests.
  *
- * Covers src/server/helpers/budget-income-materializer.ts — the Budget-mode
+ * Covers src/server/services/budget/budget-income-materializer.ts — the Budget-mode
  * complement of the Savings-mode extra-paycheck materializer. Verifies:
  *  - a Budget-mode job (no rules, or enabled:false) gets one
  *    budget_income_adjustments row per detected extra-paycheck month
@@ -15,12 +15,12 @@
  * isExtraPaycheckBudgetMode is the REAL implementation (importActual) since
  * the mode-detection boundary is exactly what this file is exercising.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { createTestDb, type TestDbContext } from "./db-harness";
-import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
+import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
+import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { eq } from "drizzle-orm";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 

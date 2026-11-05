@@ -11,7 +11,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import {
   getApiAccountBalanceMap,
   resolveAccountBalance,
-} from "@/server/helpers/api-balance-resolution";
+} from "@/server/services/sync/api-balance-resolution";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
