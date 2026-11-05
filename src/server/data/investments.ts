@@ -1,6 +1,6 @@
 /**
- * Shared helpers for the investments router group.
- * Internal to investments/ — do not import from outside this directory.
+ * Table loaders for the investments views: SimpleFIN feeds and their
+ * context, tracked accounts, balances, transactions, holdings and periods.
  */
 import {
   and,
