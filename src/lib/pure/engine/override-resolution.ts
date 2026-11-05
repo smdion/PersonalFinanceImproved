@@ -37,7 +37,7 @@ import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
  * see `withdrawal-routing.ts`'s `phase1Order`).
  *
  * Deliberately scoped to THIS function only, not a universal invariant on
- * `ResolvedDecumulationConfig` itself: `tests/calculators/
+ * `ResolvedDecumulationConfig` itself: `tests/pure/engine/
  * withdrawal-routing.test.ts` constructs partial orders directly
  * (bypassing `resolveDecumulationConfig` entirely) and asserts routing
  * draws ONLY from what's listed — a real, intentional "restrict to these

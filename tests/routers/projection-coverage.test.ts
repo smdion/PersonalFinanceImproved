@@ -32,7 +32,7 @@ vi.mock("@/lib/budget-api", () => ({
 
 // The simulation runs in-process with a handful of trials instead of on the
 // worker thread at full size. These tests check the routers and the
-// projection cache, not the simulation's statistics (calculators/
+// projection cache, not the simulation's statistics (pure/simulation/
 // monte-carlo* and the worker client have their own tests), and a full-size
 // run here cost minutes. The real engine still runs, so results are real;
 // `mcRuns` counts runs so cache tests can prove a hit doesn't recompute.

@@ -91,7 +91,7 @@ The advisor should have enough context to disagree.
   Use `pnpm docs:update` to rewrite the markers in place. The PostToolUse
   hook in `.claude/settings.json` runs this automatically and fails loudly
   on drift.
-- Prefer `pnpm test tests/calculators` (or another scoped path) over the full
+- Prefer `pnpm test tests/pure/engine` (or another scoped path) over the full
   `pnpm test` suite. Run `pnpm lint` before committing.
 
 <!-- BEGIN:nextjs-agent-rules -->

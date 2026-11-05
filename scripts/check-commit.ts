@@ -31,13 +31,9 @@ const GENERATED = [
   /^src\/lib\/db\/sqlite\//,
   /^src\/lib\/db\/schema-sqlite\.ts$/,
 ];
-/**
- * Engine and tax code, where a commit may touch at most 8 `src/` files.
- * `lib/calculators/` holds engine and tax code until it moves to `lib/pure/`.
- */
+/** Engine and tax code, where a commit may touch at most 8 `src/` files. */
 const ENGINE_OR_TAX = [
   /^src\/lib\/pure\/(engine|tax)\//,
-  /^src\/lib\/calculators\//,
   /^src\/lib\/tax-data\//,
   /^src\/lib\/config\/[^/]*tax[^/]*\.ts$/,
 ];

@@ -31,10 +31,9 @@ const SHAPE_FILES =
 const LAYERS = {
   foundation: "^src/lib/(config/|constants(\\.ts$|/)|utils/)",
   shapes: `^src/lib/db/${SHAPE_FILES}`,
-  // lib/calculators and lib/pure merge into lib/pure in v0.10.x.
-  pure: "^src/lib/(pure|calculators)/",
+  pure: "^src/lib/pure/",
   // The engine's public API is its index.ts, and types/index.ts for types.
-  engine: "^src/lib/(pure|calculators)/engine/",
+  engine: "^src/lib/pure/engine/",
   infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting)\\.ts$)`,
   data: "^src/server/data/",
   // server/helpers and server/retirement are today's composition layer;

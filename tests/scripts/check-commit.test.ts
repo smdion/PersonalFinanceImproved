@@ -88,9 +88,7 @@ describe("checkCommit", () => {
   it("limits an engine or tax commit to 8 src/ files", () => {
     const files = Array.from({ length: 9 }, (_, index) => ({
       file:
-        index === 0
-          ? "src/lib/calculators/engine/x.ts"
-          : `src/lib/pure/f${index}.ts`,
+        index === 0 ? "src/lib/pure/engine/x.ts" : `src/lib/pure/f${index}.ts`,
       added: 1,
       deleted: 0,
     }));

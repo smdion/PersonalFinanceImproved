@@ -6,7 +6,7 @@ pnpm test:benchmarks  # engine vs published research (slower)
 pnpm test:coverage    # with coverage report (coverage/)
 pnpm test:stress      # property tests at 200 runs
 pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to override :3000)
-pnpm vitest run tests/calculators   # one area — prefer this while working
+pnpm vitest run tests/pure/engine   # one area — prefer this while working
 ```
 
 **<!-- AUTO-GEN:vitestFiles -->636<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
@@ -15,7 +15,7 @@ pnpm vitest run tests/calculators   # one area — prefer this while working
 
 | Folder                                         | What it tests                                                                                                                               |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calculators/`                                 | Every calculator and the engine: unit tests, snapshot fixtures, property-based invariants, retirement-scope invariance, spending strategies |
+| `pure/engine/`, `pure/<area>/`                 | The engine and every calculator: unit tests, snapshot fixtures, property-based invariants, retirement-scope invariance, spending strategies |
 | `benchmarks/`                                  | The engine against Trinity Study, cFIREsim, asset-class assumptions, glide paths, tax accuracy (own Vitest project)                         |
 | `pure/`                                        | `src/lib/pure/` business logic — no DB, no network (RULES.md § Pure Business Logic Boundary)                                                |
 | `routers/`                                     | tRPC procedures called directly against an isolated SQLite DB, incl. permission enforcement                                                 |
@@ -30,7 +30,7 @@ pnpm vitest run tests/calculators   # one area — prefer this while working
 | `server/`, `utils/`, `scripts/`, `edge-cases/` | Auth callbacks, utilities, repo scripts, extreme inputs                                                                                     |
 | `e2e/`                                         | Playwright smoke tests and the privacy-mode leak scan                                                                                       |
 
-**Coverage** is scoped to `src/server/**` and, under `src/lib/`, `calculators`, `config`, `budget-api`, `db`, `pure`, `simplefin`, `env.ts` and four named `utils` files (`vitest.config.ts`). Components, hooks, `tax-data`, `auth`, `sec` and `tiingo` aren't measured; thresholds in `vitest.config.ts`: statements 85%, branches 70%, functions 80%, lines 85%.
+**Coverage** is scoped to `src/server/**` and, under `src/lib/`, `config`, `budget-api`, `db`, `pure`, `simplefin`, `env.ts` and four named `utils` files (`vitest.config.ts`). Components, hooks, `tax-data`, `auth`, `sec` and `tiingo` aren't measured; thresholds in `vitest.config.ts`: statements 85%, branches 70%, functions 80%, lines 85%.
 
 ## Suites worth knowing
 

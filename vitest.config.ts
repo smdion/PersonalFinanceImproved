@@ -46,7 +46,7 @@ export default defineConfig({
     maxWorkers: "100%",
     globalSetup: ["tests/global-setup.ts"],
     execArgv,
-    // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
+    // Most of the suite (server/routers/pure/db/helpers/etc.) is
     // pure Node logic that never touches the DOM. Only the files that
     // actually render components/hooks or assert on DOM output need jsdom —
     // paying jsdom's setup cost for every file was a measured chunk of the
@@ -110,7 +110,6 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
-        "src/lib/calculators/**",
         "src/lib/config/**",
         "src/lib/budget-api/**",
         "src/lib/db/**",
@@ -136,7 +135,6 @@ export default defineConfig({
         // directory globs above would otherwise try to parse them.
         "**/*.md",
         // Pure type definitions — no runtime code to test
-        "src/lib/calculators/types/**",
         "src/lib/types/**",
         // Auth infrastructure — auth.config.ts is edge-runtime metadata only.
         // auth.ts has its testable pure logic (assignRoleAndPermissions,

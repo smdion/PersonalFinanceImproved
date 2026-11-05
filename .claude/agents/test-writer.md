@@ -22,7 +22,7 @@ Also read the existing test file for that module if one exists. Match its style:
 
 | Code being tested                             | Test type               | Location                                      |
 | --------------------------------------------- | ----------------------- | --------------------------------------------- |
-| Pure calculator function (`lib/calculators/`) | Unit test               | `tests/calculators/<name>.test.ts`            |
+| Pure calculator function (`lib/pure/<area>/`) | Unit test               | `tests/pure/<area>/<name>.test.ts`            |
 | Engine module (`lib/pure/engine/`)            | Unit test or snapshot   | `tests/pure/engine/engine-*.test.ts`          |
 | tRPC router procedure                         | Router integration test | `tests/routers/<name>.test.ts`                |
 | Pure business logic (`lib/pure/`)             | Unit test, no DB        | `tests/pure/<name>.test.ts`                   |
@@ -48,8 +48,8 @@ When in doubt between unit and integration: if the code touches a DB or external
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { calculateXxx } from "@/lib/calculators/xxx";
-import type { XxxInput } from "@/lib/calculators/types";
+import { calculateXxx } from "@/lib/pure/<area>/xxx";
+import type { XxxInput } from "@/lib/pure/<area>/xxx";
 
 describe("calculateXxx", () => {
   it("describes what this specific case tests", () => {

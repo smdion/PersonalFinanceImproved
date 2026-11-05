@@ -36,7 +36,7 @@ Thanks for your interest in contributing! Here's how to get started.
 Read the relevant parts of [`docs/RULES.md`](docs/RULES.md) (the rules), [`docs/DESIGN.md`](docs/DESIGN.md) (how things are built) and [`docs/TESTING.md`](docs/TESTING.md). The ones that matter most:
 
 - **Config declares, code executes.** Account-type behavior comes from `ACCOUNT_TYPE_CONFIG` (`src/lib/config/account-types.ts`) through its helpers — never `if (category === "401k")` or a hardcoded list of categories.
-- **Business logic lives in `src/lib/pure/`** (or `src/lib/calculators/` for calculators) — never inside a DB transaction, router procedure or API handler. Routers fetch, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/` with no database.
+- **Business logic lives in `src/lib/pure/`** — never inside a DB transaction, router procedure or API handler. Routers fetch, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/` with no database.
 - **One computation per figure.** Before writing a formula, label map or display rule, look for the existing one and reuse it.
 - **Format through the helpers** (`formatCurrency`, `formatPercent`, …) so privacy mode can hide amounts.
 
@@ -60,7 +60,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 - **Subject:** a type prefix, `fix:`, `feat:`, `refactor:`, `perf:`, `test:`, `docs:`, `build:`, `ci:`, `chore:`, `style:`, `revert:` or `release:`, with an optional `(scope)`.
 - **Body:** why the change is made, not only what changed.
-- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/calculators/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt; the line is accepted only when git sees a rename (`git show -M`) and every other changed line is an import or a path rewrite.
+- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/pure/engine/`, `src/lib/pure/tax/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt; the line is accepted only when git sees a rename (`git show -M`) and every other changed line is an import or a path rewrite.
 - **Second fix:** a fix to a function that already had a fix in the last 30 days names the missing concept in a `Concept: <concept>` line, or `Concept: none, <reason>`. A third fix there goes to the advisor first.
 - **Ratchets:** CI compares every ratchet (`size-baseline.json`, both suppressions files, the calculation-register baseline and its risk labels, page budgets, coverage thresholds, the known lists in `tests/lint/violations.test.ts`) and the behavior baseline (`tests/baseline/__baseline__/`, `__sync__/`) with the merge base: `pnpm check:ratchets --base "$(git merge-base origin/main HEAD)"`. A move or split hands the old counts to its parts and passes; a raise is its own commit, made only with the owner's OK, and carries a `Ratchet-raise: <file> — <reason>` line per file (CI checks the line, not the OK), and a re-recorded baseline file needs `Baseline-rerecord: <glob> — <reason>`. Deleting a baseline file passes.
 
@@ -68,7 +68,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 ## Coding Conventions
 
-- **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/pure/engine/`) — see DESIGN.md § Engine Modularity.
+- **Pure calculators.** `lib/pure/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/pure/engine/`) — see DESIGN.md § Engine Modularity.
 - **tRPC routers are the bridge.** They fetch from Drizzle, convert decimal strings to numbers via `toNumber()`, call calculators, return results.
 - **tRPC verb prefixes:** `get*` — single stored item or current state; `list*` — collection/array result; `compute*` — derived calculation or aggregation. Never use `get*` for procedures that aggregate or compute.
 - **Variable naming — no abbreviations.** Use full names: `percent` not `pct`, `amount` not `amt`, `account` not `acct`, `year` not `yr`, `index` not `idx`, `month` not `mo`. Existing abbreviations are migrated incrementally when files are touched for other reasons.

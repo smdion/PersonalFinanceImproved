@@ -201,11 +201,7 @@ const config = [
     },
   },
   {
-    files: [
-      "src/server/**/*.ts",
-      "src/lib/pure/**/*.ts",
-      "src/lib/calculators/**/*.ts",
-    ],
+    files: ["src/server/**/*.ts", "src/lib/pure/**/*.ts"],
     rules: {
       "no-restricted-syntax": [
         "warn",
@@ -239,7 +235,6 @@ const config = [
     files: ["src/**/*.{ts,tsx}"],
     ignores: [
       "src/lib/pure/engine/**",
-      "src/lib/calculators/types/**",
       "src/lib/pure/milestone-input.ts",
       "src/components/cards/dashboard/retirement-benchmarks.tsx",
       // Money Guy's Goldilocks rule sizes a lump sum against all invested money.
