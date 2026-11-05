@@ -2924,11 +2924,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/mortgage.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -3814,6 +3809,11 @@
     }
   },
   "src/lib/pure/benchmark-yearly.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/budget.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

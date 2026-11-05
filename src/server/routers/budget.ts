@@ -34,7 +34,7 @@ import {
   columnMonthsSchema,
   budgetAmountsSchema,
 } from "@/lib/db/json-schemas";
-import { calculateBudget } from "@/lib/calculators/budget";
+import { calculateBudget } from "@/lib/pure/budget/budget";
 import type { BudgetInput } from "@/lib/pure/types/calculators";
 import {
   computeBudgetAnnualTotal,
