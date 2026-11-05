@@ -27,7 +27,7 @@ import {
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
-import { applyContributionAccountEdit } from "@/server/helpers";
+import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 /** Read a job's extraPaycheckRouting straight from its entry in the

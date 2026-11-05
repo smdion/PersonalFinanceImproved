@@ -724,11 +724,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/contribution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/server/helpers/performance-edit.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
@@ -870,6 +865,16 @@
     }
   },
   "src/server/services/budget/extra-paycheck-materializer.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/account-edits.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/server/services/contributions/live-data.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

@@ -33,15 +33,11 @@ import {
   resolveCompensation,
   loadEffectiveSalaryProfile,
   resolveActiveSalaryProfileId,
-  buildContribAccounts,
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,
-  applyContribActiveFields,
-  applyDeductionActiveFields,
-  fetchContributionProfile,
   buildPaycheckInputForJob,
   mergeSalaryProfileJobFields,
   setBudgetItemLink,
@@ -51,6 +47,10 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import { applyContribActiveFields } from "@/server/services/contributions/profile";
+import { applyDeductionActiveFields } from "@/server/services/contributions/profile";
+import { fetchContributionProfile } from "@/server/services/contributions/profile";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {

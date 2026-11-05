@@ -28,15 +28,15 @@ import {
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
-  buildContribAccounts,
-  loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
-  applyContribActiveFields,
-  buildSandboxContribRow,
   buildPaycheckInputForJob,
-  fetchContributionProfile,
   contributionPay,
 } from "@/server/helpers";
+import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
+import { applyContribActiveFields } from "@/server/services/contributions/profile";
+import { buildSandboxContribRow } from "@/server/services/contributions/profile";
+import { fetchContributionProfile } from "@/server/services/contributions/profile";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";

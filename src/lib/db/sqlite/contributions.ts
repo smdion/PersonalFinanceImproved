@@ -84,7 +84,7 @@ export const contributionAccounts = sqliteTable(
     index("contribution_accounts_is_active_idx").on(table.isActive),
     // At most one active row per (job, accountType, parentCategory) may
     // carry real employer match config. computeGroupedEmployerMatch
-    // (server/helpers/contribution.ts) combines a physical account's
+    // (lib/pure/contributions/employer-match.ts) combines a physical account's
     // Roth/Traditional splits before applying the match cap once, and
     // requires exactly one "winning" row's config for that group — two
     // independently-configured siblings is an ambiguous state the app

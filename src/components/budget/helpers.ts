@@ -150,7 +150,7 @@ export function buildNonPayrollContribs(
       // The canonical payroll-vs-net-level signal is isPayrollDeducted,
       // falling back to jobId presence only when unset (same resolution
       // used in src/lib/pure/paycheck/paycheck.ts and
-      // src/server/helpers/contribution.ts) — jobId alone just means "tied
+      // src/lib/pure/contributions/contribution-rows.ts) — jobId alone just means "tied
       // to this employer," not "deducted from that employer's paycheck." A
       // job-tied account the user explicitly funds from take-home (box
       // unchecked) must still land in this non-payroll pool.

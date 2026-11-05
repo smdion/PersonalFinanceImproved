@@ -1,0 +1,162 @@
+import { safeDivide, roundToCents } from "@/lib/utils/math";
+import {
+  getDisplayGroup,
+  type AccountCategory,
+  isPayrollFicaExemptCategory,
+} from "@/lib/config/account-types";
+import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
+import {
+  type CapPassed,
+  computeValue,
+} from "@/lib/pure/contributions/contribution-caps";
+import {
+  computeAnnualContribution,
+  fractionFromPercent,
+} from "@/lib/pure/contributions/contribution-amount";
+import { toNumber } from "@/lib/utils/numbers";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { payrollFicaExemptCap } from "@/lib/pure/contributions/irs-limits";
+import {
+  matchPayGroupsWithBonus,
+  matchGroupKey,
+  computeGroupedEmployerMatch,
+} from "@/lib/pure/contributions/employer-match";
+import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
+import type { ContribRowWithActiveFields } from "./profile";
+
+/**
+ * Build ContributionAccountInput[] from DB rows for a given job + person.
+ * Handles percent_of_salary (stored as whole number, e.g. 14 = 14%),
+ * fixed_per_period, and fixed_annual methods. Employer match cap
+ * (employerMaxMatchPct) is stored as a fraction (e.g. 0.06 = 6%); the
+ * match rate (employerMatchValue) is a whole-number percent.
+ *
+ * Employer match is computed via computeGroupedEmployerMatch so a Roth +
+ * Traditional split of the same physical account gets capped against
+ * their combined contribution — see that function's docblock.
+ */
+export function buildContribAccounts(
+  jobContribs: (ContribRowWithActiveFields & CapPassed)[],
+  personalContribs: (ContribRowWithActiveFields & CapPassed)[],
+  salary: number,
+  periodsPerYear: number,
+  /** The year's limits and the person's age at Dec 31 — sizes each
+   *  account's FICA-exempt cap (payrollFicaExemptCap). Required so no
+   *  caller can quietly treat exempt payroll money as FICA wages. */
+  ficaContext: { limits: Record<string, number>; ageAtYearEnd: number | null },
+  /** The job's bonus (contributionPay). Each account takes its share only
+   *  when set to (fromBonus); its match counts it the same way
+   *  (matchPayGroupsWithBonus). */
+  bonusGross = 0,
+): ContributionAccountInput[] {
+  const allContribs = [...jobContribs, ...personalContribs];
+  const bonusGroups = matchPayGroupsWithBonus(allContribs);
+  const matchPay = (c: (typeof allContribs)[number]) =>
+    salary + (bonusGroups.has(matchGroupKey(c)) ? bonusGross : 0);
+
+  const annualById = new Map<number, number>();
+  for (const c of allContribs) {
+    const contribValue = computeValue(c);
+    annualById.set(
+      c.id,
+      computeAnnualContribution(
+        c.contributionMethod,
+        contribValue,
+        salary,
+        periodsPerYear,
+      ),
+    );
+  }
+
+  const matchByRow = computeGroupedEmployerMatch(
+    allContribs.map((c) => ({
+      id: c.id,
+      jobId: c.jobId,
+      personId: c.personId,
+      accountType: c.accountType,
+      parentCategory: c.parentCategory,
+      annual: annualContributionWithBonus(
+        c,
+        { salary, bonusGross },
+        periodsPerYear,
+      ),
+      salary: matchPay(c),
+      employerMatchType: c.employerMatchType,
+      employerMatchValue: toNumber(c.employerMatchValue),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+      employerMatchTaxTreatment: c.employerMatchTaxTreatment,
+    })),
+  );
+
+  // The same match on regular paychecks alone — the difference is what the
+  // bonus check's deferral earns (Year-End estimates place it by date).
+  const baseMatchByRow =
+    bonusGroups.size > 0 && bonusGross > 0
+      ? computeGroupedEmployerMatch(
+          allContribs.map((c) => ({
+            id: c.id,
+            jobId: c.jobId,
+            personId: c.personId,
+            accountType: c.accountType,
+            parentCategory: c.parentCategory,
+            annual: annualById.get(c.id)!,
+            salary,
+            employerMatchType: c.employerMatchType,
+            employerMatchValue: toNumber(c.employerMatchValue),
+            employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+            employerMatchTaxTreatment: c.employerMatchTaxTreatment,
+          })),
+        )
+      : matchByRow;
+
+  const accounts = allContribs.map((c) => {
+    const contribValue = computeValue(c);
+    const annual = annualById.get(c.id)!;
+    const perPeriod =
+      c.contributionMethod === "fixed_per_period"
+        ? contribValue
+        : safeDivide(annual, periodsPerYear, 0);
+
+    const match = matchByRow.get(c.id)!;
+
+    // Group from config displayGroup
+    const group = getDisplayGroup(c.accountType as AccountCategory);
+    const isPayrollDeducted = isPaidThroughPayroll(c);
+
+    return {
+      id: c.id,
+      name: c.subType || c.label || c.accountType,
+      annualContribution: roundToCents(annual),
+      perPeriodContribution: roundToCents(perPeriod),
+      rateOfGross:
+        c.contributionMethod === "percent_of_salary"
+          ? fractionFromPercent(contribValue)
+          : null,
+      taxTreatment: c.taxTreatment,
+      isPayrollDeducted,
+      fromBonus: c.fromBonus === true,
+      group,
+      employerMatch: roundToCents(match.matchAnnual),
+      employerMatchOnBonus: roundToCents(
+        match.matchAnnual - baseMatchByRow.get(c.id)!.matchAnnual,
+      ),
+      employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
+      fullMatchShareOfPay: match.fullMatchShareOfPay,
+      employerMatchTaxTreatment: match.employerMatchTaxTreatment,
+      // A capped row's payroll money is already within the IRS limit less
+      // employer money, so all of it is exempt (one split: the cap pass).
+      ficaExemptAnnualCap: !isPayrollDeducted
+        ? null
+        : c.cap && isPayrollFicaExemptCategory(c.accountType)
+          ? c.cap.cappedAnnual
+          : payrollFicaExemptCap(
+              c.accountType,
+              ficaContext.ageAtYearEnd,
+              c.hsaCoverageType ?? null,
+              ficaContext.limits,
+              match.matchAnnual,
+            ),
+    };
+  });
+  return accounts;
+}

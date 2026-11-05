@@ -36,15 +36,15 @@ import {
   loadEffectiveSalaryProfile,
   mergeSalaryProfileJobFields,
   getLatestSnapshot,
-  fetchContributionProfile,
-  resolveProfile,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { fetchContributionProfile } from "@/server/services/contributions/profile";
+import { resolveProfile } from "@/server/services/contributions/profile";
+import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { getAllPeople } from "@/server/data/people";
-import { type ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import {
   isRetirementParent,

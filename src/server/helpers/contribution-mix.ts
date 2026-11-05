@@ -39,7 +39,7 @@ import {
   matchGroupKey,
   matchPayGroupsWithBonus,
 } from "@/lib/pure/contributions/employer-match";
-import { loadAndApplyContribProfile } from "./contribution";
+import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import {
   annualContributionWithBonus,
   resolveContribPeriods,

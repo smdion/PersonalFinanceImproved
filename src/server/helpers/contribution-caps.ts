@@ -26,7 +26,7 @@ import {
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { sumBy } from "@/lib/utils/math";
 import { computeGroupedEmployerMatch } from "@/lib/pure/contributions/employer-match";
-import { applyContribActiveFields } from "./contribution";
+import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import {
   contribRowAmounts,
   type ContribRow,

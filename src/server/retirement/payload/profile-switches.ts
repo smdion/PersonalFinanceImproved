@@ -20,8 +20,8 @@ import {
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
-  resolveProfile,
 } from "@/server/helpers";
+import { resolveProfile } from "@/server/services/contributions/profile";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { toNumber } from "@/lib/utils/numbers";
 import type { SalaryEntryMap, SalaryProfileActiveMap } from "@/server/helpers";

@@ -253,8 +253,8 @@ export async function loadAndApplySalaryProfile(
  * Salary Profile when no explicit id is given — the "viewing a specific
  * profile" callers (Paycheck/Contribution pages) always pass their own
  * resolved id, so this only matters when a caller genuinely has no
- * preference (historical.ts, savings.ts, retirement.ts, helpers/
- * contribution.ts's loadLiveContribData all call this with `null` for
+ * preference (historical.ts, savings.ts, retirement.ts, services/contributions/
+ * live-data.ts's loadLiveContribData all call this with `null` for
  * exactly that reason — call this instead of hand-rolling the app_settings
  * lookup again). helpers/snapshot.ts's buildYearEndHistory is the one
  * deliberate exception: it already has app_settings batch-fetched as part

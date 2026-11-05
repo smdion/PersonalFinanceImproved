@@ -11,9 +11,9 @@ import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { describe, it, expect } from "vitest";
 import {
   applyContribActiveFields,
-  buildContribAccounts,
   type ContribRowWithActiveFields,
-} from "@/server/helpers/contribution";
+} from "@/server/services/contributions/profile";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";

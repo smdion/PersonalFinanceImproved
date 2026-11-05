@@ -6,7 +6,7 @@
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { capEffectiveContribs } from "@/server/helpers/contribution-caps";
-import { buildContribAccounts } from "@/server/helpers/contribution";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import {
   annualContributionWithBonus,
   type ContribRow,

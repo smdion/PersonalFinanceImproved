@@ -28,13 +28,13 @@ import {
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
-  buildContribAccounts,
-  loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
   applySandboxSalaryEntries,
-  applyContribActiveFields,
-  buildSandboxContribRow,
 } from "@/server/helpers";
+import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
+import { applyContribActiveFields } from "@/server/services/contributions/profile";
+import { buildSandboxContribRow } from "@/server/services/contributions/profile";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/data/people";

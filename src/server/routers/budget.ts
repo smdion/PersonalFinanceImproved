@@ -42,8 +42,6 @@ import type { BudgetInput } from "@/lib/pure/budget/budget.types";
 import {
   computeBudgetAnnualTotal,
   getActiveBudgetProfile,
-  applyContributionAccountEdit,
-  applyContributionAccountEditsBatch,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
@@ -51,6 +49,8 @@ import {
   setBudgetItemLink,
   deleteBudgetItemLink,
 } from "@/server/helpers";
+import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
+import { applyContributionAccountEditsBatch } from "@/server/services/contributions/account-edits";
 import { budgetApiServiceSchema } from "@/lib/config/enum-values.schema";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";

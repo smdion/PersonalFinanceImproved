@@ -10,7 +10,7 @@ import { describe, it, expect } from "vitest";
 import {
   resolveProfile,
   applyContribActiveFields,
-} from "@/server/helpers/contribution";
+} from "@/server/services/contributions/profile";
 import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
 import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";

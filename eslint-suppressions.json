@@ -5512,23 +5512,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/contribution.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 19
-    },
-    "ratchet/max-comment-lines": {
-      "count": 23
-    },
-    "ratchet/no-history-comment": {
-      "count": 6
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
   "src/server/helpers/debts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -6282,6 +6265,53 @@
       "count": 4
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/account-edits.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 7
+    },
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/live-data.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    },
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/paycheck-accounts.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/profile.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 10
+    },
+    "ratchet/no-history-comment": {
+      "count": 5
+    },
+    "ratchet/max-comment-lines": {
+      "count": 12
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },

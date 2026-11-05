@@ -36,7 +36,7 @@ import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
-} from "./contribution";
+} from "@/server/services/contributions/profile";
 import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
 import { resolveJoblessPeriodsPerYear } from "@/lib/pure/contributions/contribution-rows";
 import { resolveContribPeriods } from "@/lib/pure/contributions/contribution-rows";

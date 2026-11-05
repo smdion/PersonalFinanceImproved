@@ -6,8 +6,8 @@
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
-import { buildContribAccounts } from "@/server/helpers/contribution";
-import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 
 const limits = {

@@ -90,7 +90,7 @@ export function parseEmployerMatch(
  * dollar_match/fixed_annual flat-dollar matches). Returns null for
  * none/null, matching every call site's existing "—" fallback for that
  * case. Mirrors computeEmployerMatch's own type branching
- * (src/server/helpers/contribution.ts) — only percent_of_contribution
+ * (src/lib/pure/contributions/employer-match.ts) — only percent_of_contribution
  * reads maxMatchPct at all.
  */
 export function formatEmployerMatch(

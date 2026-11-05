@@ -121,11 +121,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/server/helpers/contribution-caps.ts",
-    "to": "src/server/helpers/contribution.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/server/retirement/build-engine-payload.ts",
     "to": "src/server/retirement/payload/individual-accounts.ts"
   },

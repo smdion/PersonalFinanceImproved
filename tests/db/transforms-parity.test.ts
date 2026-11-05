@@ -53,8 +53,8 @@ import { getTableName } from "drizzle-orm";
 
 import { resolvePersonYearIncome } from "@/server/helpers/salary";
 import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
-import { buildContribAccounts } from "@/server/helpers/contribution";
-import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
 import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
 import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
