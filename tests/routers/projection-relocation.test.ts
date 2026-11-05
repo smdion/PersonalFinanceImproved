@@ -603,6 +603,7 @@ describe("projection.relocation — move-year handoff", () => {
         relocationContributionProfileId: null,
         moveYear: new Date().getFullYear() + 2,
       });
+      expect(spy).toHaveBeenCalled();
       for (const [input] of spy.mock.calls) {
         const { retirementYear } = input;
         for (const o of input.budgetOverrides) {
