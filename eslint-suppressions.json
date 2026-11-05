@@ -5020,6 +5020,11 @@
       "count": 3
     }
   },
+  "src/lib/pure/sync/account-mapping.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/lib/pure/sync/feed-data-date.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -5233,11 +5238,6 @@
   "src/lib/trpc.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/lib/utils/account-mapping.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/utils/colors.ts": {

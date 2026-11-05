@@ -14,7 +14,7 @@ import { loansFedBySimplefin } from "./loan-feed";
 import {
   isPullMapping,
   mappingsWithTypedIds,
-} from "@/lib/utils/account-mapping";
+} from "@/lib/pure/sync/account-mapping";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";

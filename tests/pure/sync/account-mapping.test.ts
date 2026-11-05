@@ -7,7 +7,7 @@ import {
   mappingWithTypedIds,
   mappingsWithTypedIds,
   remotesPulledTwice,
-} from "@/lib/utils/account-mapping";
+} from "@/lib/pure/sync/account-mapping";
 import type { AccountMapping } from "@/lib/db/schema";
 
 describe("mappingWithTypedIds", () => {

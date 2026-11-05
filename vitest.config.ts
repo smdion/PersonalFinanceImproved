@@ -119,7 +119,7 @@ export default defineConfig({
         // get first-class tests. Files not listed are NOT counted toward
         // coverage (neither numerator nor denominator), so gaps stay visible
         // when you audit the exclude list rather than drifting silently.
-        "src/lib/utils/account-mapping.ts",
+        "src/lib/pure/sync/account-mapping.ts",
         "src/lib/utils/format.ts",
         "src/lib/utils/math.ts",
         "src/lib/utils/date.ts",

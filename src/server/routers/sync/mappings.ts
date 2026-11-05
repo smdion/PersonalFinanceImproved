@@ -14,7 +14,7 @@ import {
   localTargetsPulledTwice,
   mappingsWithTypedIds,
   remotesPulledTwice,
-} from "@/lib/utils/account-mapping";
+} from "@/lib/pure/sync/account-mapping";
 import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";

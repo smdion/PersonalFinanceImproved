@@ -4,7 +4,7 @@
 import {
   isPullMapping,
   mappingsWithTypedIds,
-} from "@/lib/utils/account-mapping";
+} from "@/lib/pure/sync/account-mapping";
 import {
   capForRequest,
   loadCapHousehold,
