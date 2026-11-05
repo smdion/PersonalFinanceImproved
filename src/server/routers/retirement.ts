@@ -18,7 +18,7 @@ import { z } from "zod/v4";
 import {
   storedWithdrawalOrderSchema,
   storedWithdrawalSplitsSchema,
-} from "@/lib/pure/engine";
+} from "@/lib/pure/engine/types";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
   createTRPCRouter,

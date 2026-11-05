@@ -41,7 +41,7 @@ import {
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 

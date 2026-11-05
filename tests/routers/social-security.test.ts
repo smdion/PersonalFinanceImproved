@@ -40,7 +40,7 @@ import {
 import { sweepClaimingAges } from "@/lib/calculators/social-security";
 import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {
   AccumulationOverride,
   DecumulationOverride,

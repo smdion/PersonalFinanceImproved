@@ -33,7 +33,7 @@ import {
 import {
   decumulationOverrideArraySchema,
   lumpSumSchema,
-} from "@/lib/pure/engine";
+} from "@/lib/pure/engine/types";
 import {
   getAllStrategyKeys,
   getStrategyDefaults,

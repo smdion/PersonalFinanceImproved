@@ -56,7 +56,7 @@ import {
   resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
   readProjectionCache,

@@ -88,7 +88,7 @@ import {
 } from "@/lib/config/account-types";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { decumulationOverrideArraySchema } from "@/lib/pure/engine";
+import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
