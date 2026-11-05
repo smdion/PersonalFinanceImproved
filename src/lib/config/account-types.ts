@@ -45,6 +45,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "employer_plan",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -100,6 +101,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "employer_plan",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -155,6 +157,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "ira_59_half",
     qcdEligible: true,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -268,6 +271,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "none",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -342,10 +346,8 @@ const KEYWORD_ALIASES: Record<string, string> = {
   "457(b)": "457b",
 };
 
-/**
- * Normalize an account type or budget subcategory to a canonical contribution
- * category key. Returns null if the string doesn't match any known category.
- */
+/** An account type or budget subcategory's canonical contribution category
+ *  key, or null if it matches none. */
 export function normalizeContribKey(name: string): string | null {
   const lower = name.toLowerCase();
   // Check extra aliases first (these don't have full config entries)
@@ -782,9 +784,7 @@ export function getAccountSegments(): AccountSegment<AccountCategory>[] {
   return segments;
 }
 
-/**
- * Parse a column key back to category + sub-key.
- */
+/** Parse a column key back to category + sub-key. */
 export function parseColumnKey(
   key: string,
 ): { category: AccountCategory; subKey: string | null } | null {

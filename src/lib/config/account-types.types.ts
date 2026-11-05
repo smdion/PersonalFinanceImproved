@@ -75,8 +75,8 @@ export type AccountTypeConfig = {
   nonMedicalPenaltyRate: number | null;
   /** Pre-tax in, tax-free growth and tax-free out for qualified expenses
    *  (IRC 223): the best treatment, so it's funded before any other
-   *  tax-advantaged type. Absent: false. */
-  tripleTaxAdvantaged?: boolean;
+   *  tax-advantaged type. */
+  tripleTaxAdvantaged: boolean;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;
