@@ -11,7 +11,8 @@
  * touched (a `Mechanical:` trailer exempts a pure move, rename or split: git
  * sees a rename or code moved between files, and every other changed line is
  * an import, a path rewrite, or code moved in whole top-level statements kept
- * in order), and the
+ * in order, or a function body moved whole into a new top-level function and
+ * called from where it was), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first. A revert says why in its own words: git's "This reverts
@@ -331,6 +332,390 @@ function readDiff(diff: string): FileDiff[] {
   return files;
 }
 
+/**
+ * A function body moved whole into a top-level function (a tRPC procedure's
+ * inline body to a service): the source is an arrow or function expression
+ * with a block body, the destination a new top-level function declaration
+ * whose body is the same statements in the same order.
+ */
+type MovedBodyFunction = ts.ArrowFunction | ts.FunctionExpression;
+/** A cut in one side: its positions, and the text left in their place. */
+type Span = { start: number; end: number; text: string };
+
+function parseSide(file: string, side: DiffSide): ts.SourceFile {
+  return ts.createSourceFile(
+    file,
+    side.lines.join("\n"),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+}
+
+const STRING_TOKEN = new Set([
+  ts.SyntaxKind.StringLiteral,
+  ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+  ts.SyntaxKind.TemplateHead,
+  ts.SyntaxKind.TemplateMiddle,
+  ts.SyntaxKind.TemplateTail,
+]);
+const CLOSER = new Set([")", "]", "}", ">"]);
+
+/**
+ * A node's tokens, without comments and layout: the re-indent and prettier's
+ * re-wrap change neither, and a trailing comma is layout. Strings lose their
+ * paths, as moved lines do.
+ */
+function tokensOf(
+  node: ts.Node,
+  source: ts.SourceFile,
+  names?: RegExp,
+): string[] {
+  const out: string[] = [];
+  const visit = (n: ts.Node) => {
+    if (
+      n.kind >= ts.SyntaxKind.FirstJSDocNode &&
+      n.kind <= ts.SyntaxKind.LastJSDocNode
+    )
+      return;
+    const children = n.getChildren(source);
+    if (children.length > 0) {
+      children.forEach(visit);
+      return;
+    }
+    if (n.kind === ts.SyntaxKind.EndOfFileToken) return;
+    let text = n.getText(source);
+    if (STRING_TOKEN.has(n.kind))
+      text = (names ? text.replace(names, "<path>") : text).replace(
+        PATH_TOKEN,
+        "<path>",
+      );
+    else if (n.kind === ts.SyntaxKind.JsxText)
+      text = text.replace(/\s+/g, " ").trim();
+    if (text !== "") out.push(text);
+  };
+  visit(node);
+  return out.filter((t, i) => !(t === "," && CLOSER.has(out[i + 1] ?? "")));
+}
+
+const isAsync = (node: ts.Node) =>
+  ts.canHaveModifiers(node) &&
+  (ts.getModifiers(node) ?? []).some(
+    (m) => m.kind === ts.SyntaxKind.AsyncKeyword,
+  );
+
+/** The names a parameter list binds, or undefined if one has a default. */
+function boundNames(
+  params: readonly ts.ParameterDeclaration[],
+): string[] | undefined {
+  const out: string[] = [];
+  const bind = (name: ts.BindingName): boolean => {
+    if (ts.isIdentifier(name)) {
+      out.push(name.text);
+      return true;
+    }
+    return name.elements.every(
+      (el) => ts.isOmittedExpression(el) || (!el.initializer && bind(el.name)),
+    );
+  };
+  for (const p of params) {
+    if (p.initializer || !bind(p.name)) return undefined;
+  }
+  return out;
+}
+
+/** Each line of `[start, end]` that holds code is a changed line. */
+function allChanged(
+  side: DiffSide,
+  source: ts.SourceFile,
+  start: number,
+  end: number,
+): boolean {
+  const changed = new Set(side.changed.map((c) => c.at));
+  const first = source.getLineAndCharacterOfPosition(start).line;
+  const last = source.getLineAndCharacterOfPosition(end).line;
+  for (let l = first; l <= last; l++) {
+    const line = side.lines[l]!;
+    if (BLANK_LINE.test(line) || COMMENT_LINE.test(line)) continue;
+    if (!changed.has(l)) return false;
+  }
+  return true;
+}
+
+/** A moved body may not read its own `this` or `arguments`. */
+const OWN_BINDING = new Set(["this", "arguments", "super"]);
+
+/**
+ * The body a source expression gives up: an arrow or function expression
+ * with a block body, not inside another function (its body may then read
+ * only module-level names), every code line of it changed.
+ */
+function movableBody(
+  node: ts.Node,
+  side: DiffSide,
+  source: ts.SourceFile,
+): node is MovedBodyFunction & { body: ts.Block } {
+  if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return false;
+  if (node.asteriskToken || !node.body || !ts.isBlock(node.body)) return false;
+  if (node.body.statements.length === 0) return false;
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+    if (ts.isFunctionLike(up) || ts.isClassStaticBlockDeclaration(up))
+      return false;
+  return allChanged(side, source, node.getStart(source), node.getEnd());
+}
+
+/**
+ * The replacement for a moved body: an arrow or function expression with the
+ * source's own parameters (no defaults), whose only statement is `fn(…)`
+ * passing each bound name once, matched to `fn`'s parameters by name.
+ */
+function passesThrough(
+  r: ts.Node,
+  from: MovedBodyFunction,
+  to: ts.FunctionDeclaration,
+  oldSource: ts.SourceFile,
+  newSource: ts.SourceFile,
+): boolean {
+  if (!ts.isArrowFunction(r) && !ts.isFunctionExpression(r)) return false;
+  if (ts.isFunctionExpression(r) && (r.name || r.asteriskToken)) return false;
+  if (r.typeParameters || r.type) return false;
+  const modifiers = ts.getModifiers(r) ?? [];
+  if (modifiers.some((m) => m.kind !== ts.SyntaxKind.AsyncKeyword))
+    return false;
+  if (isAsync(r) && !isAsync(from)) return false;
+  if (r.parameters.length !== from.parameters.length) return false;
+  const same = r.parameters.every(
+    (p, i) =>
+      tokensOf(p, newSource).join(" ") ===
+      tokensOf(from.parameters[i]!, oldSource).join(" "),
+  );
+  const bound = boundNames(r.parameters);
+  if (!same || !bound) return false;
+  let call: ts.Expression | undefined;
+  if (!ts.isBlock(r.body)) call = r.body;
+  else if (r.body.statements.length === 1) {
+    const only = r.body.statements[0]!;
+    if (ts.isReturnStatement(only)) call = only.expression;
+  }
+  if (!call || !ts.isCallExpression(call)) return false;
+  if (call.typeArguments || call.questionDotToken) return false;
+  if (!ts.isIdentifier(call.expression)) return false;
+  if (call.expression.text !== to.name?.text) return false;
+  const args = call.arguments.map((a) => (ts.isIdentifier(a) ? a.text : ""));
+  if (args.some((a) => a === "")) return false;
+  if (new Set(args).size !== args.length) return false;
+  if ([...args].sort().join() !== [...bound].sort().join()) return false;
+  if (to.parameters.length !== args.length) return false;
+  return to.parameters.every(
+    (p, i) =>
+      ts.isIdentifier(p.name) &&
+      p.name.text === args[i] &&
+      !p.initializer &&
+      !p.dotDotDotToken,
+  );
+}
+
+/** A line of closing brackets and commas only. */
+const CLOSERS_LINE = /^[\s)\]},;]*$/;
+
+/** A side with each span cut to its text (a whole-line span with no text goes). */
+function collapse(
+  side: DiffSide,
+  source: ts.SourceFile,
+  spans: Span[],
+): DiffSide {
+  const groupAt = new Map(side.changed.map((c) => [c.at, c.group]));
+  const next: DiffSide = { lines: [], changed: [] };
+  const push = (line: string, group: number | undefined) => {
+    if (group !== undefined)
+      next.changed.push({ at: next.lines.length, group });
+    next.lines.push(line);
+  };
+  const at = (pos: number) => source.getLineAndCharacterOfPosition(pos);
+  let i = 0;
+  for (const span of [...spans].sort((a, b) => a.start - b.start)) {
+    const s = at(span.start);
+    const e = at(span.end);
+    for (; i < s.line; i++) push(side.lines[i]!, groupAt.get(i));
+    let group: number | undefined;
+    for (let l = s.line; l <= e.line && group === undefined; l++)
+      group = groupAt.get(l);
+    let merged =
+      side.lines[s.line]!.slice(0, s.character) +
+      span.text +
+      side.lines[e.line]!.slice(e.character);
+    i = e.line + 1;
+    if (span.text === "") {
+      if (!BLANK_LINE.test(merged)) push(merged, group);
+      continue;
+    }
+    // Prettier may close the call on later lines (`fn(x) =>\n  call(),\n),`).
+    while (
+      i < side.lines.length &&
+      groupAt.has(i) &&
+      CLOSERS_LINE.test(side.lines[i]!)
+    )
+      merged += side.lines[i++]!.trim();
+    // The marker is a word, so it needs no escaping.
+    const trailing = new RegExp(`${span.text}\\s*,(?=\\s*[)\\]}])`);
+    push(merged.replace(trailing, span.text), group);
+  }
+  for (; i < side.lines.length; i++) push(side.lines[i]!, groupAt.get(i));
+  return next;
+}
+
+/**
+ * Finds each body moved whole into a new top-level function, and cuts it out
+ * of both sides: the source expression and its replacement become one marker,
+ * and the destination function goes (its doc comment stays a comment). The
+ * lines left around the marker are then read as any other changed line.
+ * Returns how many statements moved between files.
+ */
+function cutMovedBodies(files: FileDiff[], names?: RegExp): number {
+  const code = files
+    .map((entry) => ({
+      entry,
+      oldSource: parseSide(entry.file, entry.old),
+      newSource: parseSide(entry.file, entry.new),
+    }))
+    .filter(
+      ({ entry }) =>
+        CODE_FILE.test(entry.file) && !MOVE_BOOKKEEPING.test(entry.file),
+    );
+  const bodyKey = (body: ts.Block, source: ts.SourceFile) =>
+    body.statements.map((s) => tokensOf(s, source, names).join(" "));
+  const sources: {
+    f: number;
+    node: MovedBodyFunction & { body: ts.Block };
+    key: string[];
+  }[] = [];
+  const dests: { f: number; node: ts.FunctionDeclaration; key: string[] }[] =
+    [];
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    const visit = (node: ts.Node) => {
+      if (movableBody(node, entry.old, oldSource)) {
+        const key = bodyKey(node.body, oldSource);
+        if (!key.some((s) => s.split(" ").some((t) => OWN_BINDING.has(t))))
+          sources.push({ f, node, key });
+        return;
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(oldSource);
+    for (const statement of newSource.statements) {
+      if (!ts.isFunctionDeclaration(statement)) continue;
+      if (!statement.name || !statement.body || statement.asteriskToken)
+        continue;
+      const modifiers = ts.getModifiers(statement) ?? [];
+      const allowed = [ts.SyntaxKind.ExportKeyword, ts.SyntaxKind.AsyncKeyword];
+      if (modifiers.some((m) => !allowed.includes(m.kind))) continue;
+      const start = statement.getStart(newSource);
+      const end = statement.getEnd();
+      const { character } = newSource.getLineAndCharacterOfPosition(start);
+      const endLine = newSource.getLineAndCharacterOfPosition(end).line;
+      const after = entry.new.lines[endLine]!.slice(
+        newSource.getLineAndCharacterOfPosition(end).character,
+      );
+      if (character !== 0 || !BLANK_LINE.test(after)) continue;
+      if (!allChanged(entry.new, newSource, start, end)) continue;
+      dests.push({
+        f,
+        node: statement,
+        key: bodyKey(statement.body, newSource),
+      });
+    }
+  });
+
+  const spans = code.map(() => ({ old: [] as Span[], new: [] as Span[] }));
+  const lineOf = (source: ts.SourceFile, pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const free = (taken: Span[], source: ts.SourceFile, s: number, e: number) =>
+    taken.every(
+      (t) =>
+        lineOf(source, e) < lineOf(source, t.start) ||
+        lineOf(source, s) > lineOf(source, t.end),
+    );
+  const groupOf = (side: DiffSide, line: number) =>
+    side.changed.find((c) => c.at === line)?.group;
+  const claimed = new Set<number>();
+  let movedAcross = 0;
+  let marker = 0;
+  for (const dest of dests) {
+    const to = code[dest.f]!;
+    for (const [s, from] of sources.entries()) {
+      if (claimed.has(s)) continue;
+      if (isAsync(from.node) !== isAsync(dest.node)) continue;
+      if (from.key.join("\n") !== dest.key.join("\n")) continue;
+      const at = code[from.f]!;
+      const group = groupOf(
+        at.entry.old,
+        lineOf(at.oldSource, from.node.getStart(at.oldSource)),
+      );
+      let replacement: ts.Node | undefined;
+      const look = (node: ts.Node) => {
+        if (replacement) return;
+        const start = node.getStart(at.newSource);
+        if (
+          groupOf(at.entry.new, lineOf(at.newSource, start)) === group &&
+          passesThrough(
+            node,
+            from.node,
+            dest.node,
+            at.oldSource,
+            at.newSource,
+          ) &&
+          allChanged(at.entry.new, at.newSource, start, node.getEnd())
+        ) {
+          replacement = node;
+          return;
+        }
+        ts.forEachChild(node, look);
+      };
+      if (group !== undefined) look(at.newSource);
+      if (!replacement) continue;
+      const r = {
+        start: replacement.getStart(at.newSource),
+        end: replacement.getEnd(),
+      };
+      const d = {
+        start: dest.node.getStart(to.newSource),
+        end: dest.node.getEnd(),
+      };
+      const e = {
+        start: from.node.getStart(at.oldSource),
+        end: from.node.getEnd(),
+      };
+      const newTaken = spans[from.f]!.new;
+      const destTaken = spans[dest.f]!.new;
+      if (
+        !free(spans[from.f]!.old, at.oldSource, e.start, e.end) ||
+        !free(newTaken, at.newSource, r.start, r.end) ||
+        !free(destTaken, to.newSource, d.start, d.end) ||
+        (from.f === dest.f &&
+          !(
+            lineOf(to.newSource, r.end) < lineOf(to.newSource, d.start) ||
+            lineOf(to.newSource, r.start) > lineOf(to.newSource, d.end)
+          ))
+      )
+        continue;
+      marker += 1;
+      const text = `__movedBody${marker}__`;
+      spans[from.f]!.old.push({ ...e, text });
+      newTaken.push({ ...r, text });
+      destTaken.push({ ...d, text: "" });
+      claimed.add(s);
+      if (from.f !== dest.f) movedAcross += dest.key.length;
+      break;
+    }
+  }
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    if (spans[f]!.old.length > 0)
+      entry.old = collapse(entry.old, oldSource, spans[f]!.old);
+    if (spans[f]!.new.length > 0)
+      entry.new = collapse(entry.new, newSource, spans[f]!.new);
+  });
+  return movedAcross;
+}
+
 /** A side's code lines (not blank, comment or import), with its statements. */
 type CodeSide = {
   file: string;
@@ -539,7 +924,9 @@ function matchCode(code: { old: CodeSide; new: CodeSide }[]): {
  * `import` or `export … from` statement), or match a line on the other side
  * that differs from it only in its paths and a leading `export`: in place
  * (the same change group, in order), or as part of a run of whole top-level
- * statements, kept in order, moved within the file or to another one. Other
+ * statements, kept in order, moved within the file or to another one. An
+ * arrow or function expression's whole body may move into a new top-level
+ * function, its statements compared token by token (cutMovedBodies). Other
  * lines (docs, data, comments) match by path rewrite as a multiset: first in
  * the same file (a moved entry in a sorted list matches too), then in any
  * other file of the commit. A prettier re-wrap of a file's changed lines
@@ -562,7 +949,9 @@ export function notAMove(
       names,
     );
   const code: { old: CodeSide; new: CodeSide }[] = [];
-  for (const entry of readDiff(diff)) {
+  const files = readDiff(diff);
+  const bodiesAcross = cutMovedBodies(files, names);
+  for (const entry of files) {
     const { file, wholeFile } = entry;
     if (MOVE_BOOKKEEPING.test(file)) continue;
     // A file the move creates or deletes brings or takes its comments.
@@ -637,7 +1026,7 @@ export function notAMove(
   const matchedCode = matchCode(code);
   let unexplained = matchedCode.unexplained;
   const { broken } = matchedCode;
-  let movedAcross = matchedCode.movedAcross;
+  let movedAcross = matchedCode.movedAcross + bodiesAcross;
 
   const moved = new Map<string, Line[]>();
   for (const entry of leftRemoved) {

@@ -481,6 +481,183 @@ describe("notAMove: a split moves code between files", () => {
   });
 });
 
+describe("notAMove: a procedure's body moves to a service function", () => {
+  const numstat = parseNumstat(
+    "1\t7\tsrc/server/routers/foo.ts\n7\t0\tsrc/server/services/foo/summary.ts",
+  );
+  const body = [
+    "const rows = await load(ctx.db, input.year);",
+    "const total = rows.reduce(",
+    "  (sum, row) => sum + row.amount,",
+    "  0,",
+    ");",
+    "return { rows, total };",
+  ];
+  /** The same body in the service: re-indented, and prettier joins a call. */
+  const moved = [
+    "const rows = await load(ctx.db, input.year);",
+    "const total = rows.reduce((sum, row) => sum + row.amount, 0);",
+    "return { rows, total };",
+  ];
+  const diff = ({
+    params = "{ ctx, input }",
+    replacement = "({ ctx, input }) => computeFoo(ctx, input)",
+    signature = "export async function computeFoo(ctx: Context, input: Input) {",
+    inService = moved,
+  }: {
+    params?: string;
+    replacement?: string[] | string;
+    signature?: string;
+    inService?: string[];
+  } = {}) =>
+    [
+      "diff --git a/src/server/routers/foo.ts b/src/server/routers/foo.ts",
+      "--- a/src/server/routers/foo.ts",
+      "+++ b/src/server/routers/foo.ts",
+      "@@ -1,12 +1,6 @@",
+      ' import { protectedProcedure } from "../trpc";',
+      '+import { computeFoo } from "@/server/services/foo/summary";',
+      " export const fooRouter = createTRPCRouter({",
+      "   foo: protectedProcedure",
+      "     .input(x)",
+      `-    .query(async (${params}) => {`,
+      ...body.map((l) => `-      ${l}`),
+      "-    }),",
+      ...(typeof replacement === "string"
+        ? [`+    .query(${replacement}),`]
+        : replacement.map((l) => `+${l}`)),
+      " });",
+      "diff --git a/src/server/services/foo/summary.ts b/src/server/services/foo/summary.ts",
+      "new file mode 100644",
+      "--- /dev/null",
+      "+++ b/src/server/services/foo/summary.ts",
+      "@@ -0,0 +1,7 @@",
+      '+import type { Context } from "@/server/trpc";',
+      "+",
+      "+/** The foo summary. */",
+      `+${signature}`,
+      ...inService.map((l) => `+  ${l}`),
+      "+}",
+    ].join("\n");
+
+  it("passes a body moved whole, the router calling it with its parameter", () => {
+    expect(
+      notAMove(
+        numstat,
+        diff({
+          params: "ctx",
+          replacement: "(ctx) => computeFoo(ctx)",
+          signature: "export async function computeFoo(ctx: Context) {",
+          inService: moved.map((l) => l.replace("input.year", "ctx.year")),
+        }).replace(
+          "await load(ctx.db, input.year);\n-",
+          "await load(ctx.db, ctx.year);\n-",
+        ),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("passes a body moved whole, the router passing on destructured { ctx, input }", () => {
+    expect(notAMove(numstat, diff())).toBeUndefined();
+    // Prettier may break the call over lines.
+    expect(
+      notAMove(
+        numstat,
+        diff({
+          replacement: [
+            "    .query(({ ctx, input }) =>",
+            "      computeFoo(ctx, input),",
+            "    ),",
+          ],
+        }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("fails a body with one statement changed", () => {
+    expect(
+      notAMove(
+        numstat,
+        diff({ inService: moved.map((l) => l.replace(", 0)", ", 1)")) }),
+      ),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
+  it("fails a body with one statement dropped", () => {
+    expect(
+      notAMove(numstat, diff({ inService: [moved[0]!, moved[2]!] })),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
+  it("fails a body moved partially", () => {
+    const partial = [
+      "diff --git a/src/server/routers/foo.ts b/src/server/routers/foo.ts",
+      "--- a/src/server/routers/foo.ts",
+      "+++ b/src/server/routers/foo.ts",
+      "@@ -1,9 +1,6 @@",
+      " export const fooRouter = createTRPCRouter({",
+      "   foo: protectedProcedure.query(async ({ ctx, input }) => {",
+      "-    const rows = await load(ctx.db, input.year);",
+      "-    const total = rows.reduce((sum, row) => sum + row.amount, 0);",
+      "+    const { rows, total } = await computeFoo(ctx, input);",
+      "     return { rows, total };",
+      "   }),",
+      " });",
+      "diff --git a/src/server/services/foo/summary.ts b/src/server/services/foo/summary.ts",
+      "new file mode 100644",
+      "--- /dev/null",
+      "+++ b/src/server/services/foo/summary.ts",
+      "@@ -0,0 +1,4 @@",
+      "+export async function computeFoo(ctx: Context, input: Input) {",
+      "+  const rows = await load(ctx.db, input.year);",
+      "+  const total = rows.reduce((sum, row) => sum + row.amount, 0);",
+      "+}",
+    ].join("\n");
+    expect(notAMove(numstat, partial)).toMatch(
+      /changed line\(s\)|not whole top-level statements/,
+    );
+  });
+
+  it("fails a replacement that does more than call", () => {
+    const fails = (replacement: string[] | string) =>
+      expect(notAMove(numstat, diff({ replacement }))).toMatch(
+        /changed line\(s\)|not whole top-level statements/,
+      );
+    fails([
+      "    .query(({ ctx, input }) => {",
+      "      log(input);",
+      "      return computeFoo(ctx, input);",
+      "    }),",
+    ]);
+    fails([
+      "    .query(async ({ ctx, input }) => {",
+      "      await ready(ctx);",
+      "      return computeFoo(ctx, input);",
+      "    }),",
+    ]);
+    fails("async ({ ctx, input }) => computeFoo(ctx, await prepare(input))");
+    // Arguments swapped against the function's parameters.
+    fails("({ ctx, input }) => computeFoo(input, ctx)");
+    // A bound name not passed on.
+    fails("({ ctx, input }) => computeFoo(ctx)");
+    // Its value thrown away.
+    fails([
+      "    .query(({ ctx, input }) => {",
+      "      computeFoo(ctx, input);",
+      "    }),",
+    ]);
+  });
+
+  it("fails a destination function with an extra statement", () => {
+    expect(
+      notAMove(numstat, diff({ inService: [...moved, "log(total);"] })),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+    expect(
+      notAMove(numstat, diff({ inService: ["log(input);", ...moved] })),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+});
+
 describe("notAMove: a move's bookkeeping and bare names", () => {
   const renamed = parseNumstat(
     "1\t1\tsrc/lib/{calculators/engine/tax-gross-up.ts => pure/engine/withdrawal-solver.ts}\n1\t1\tdocs/DESIGN.md\n2\t2\tsize-baseline.json\n1\t1\tsrc/lib/generated/engine-hash.ts",
