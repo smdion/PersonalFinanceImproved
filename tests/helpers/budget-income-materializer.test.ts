@@ -156,7 +156,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
   it("materializes for a job paused into Budget mode via enabled:false, and cleans up when flipped back to Savings mode", async () => {
     // rules present but disabled → Budget mode.
     updateRouting({
-      rules: [{ from: "2026-01", to: null, splits: [], netPaySnapshot: 1000 }],
+      rules: [{ from: "2026-01", to: null, splits: [] }],
       enabled: false,
       baseNetPayPerCheck: 1000,
       baseYear: 2026,
@@ -166,7 +166,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
 
     // Re-enable → Savings mode → budget rows must be cleared.
     updateRouting({
-      rules: [{ from: "2026-01", to: null, splits: [], netPaySnapshot: 1000 }],
+      rules: [{ from: "2026-01", to: null, splits: [] }],
       enabled: true,
       baseNetPayPerCheck: 1000,
       baseYear: 2026,
@@ -177,7 +177,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
 
   it("materializes nothing for a Savings-mode job (active rules)", async () => {
     updateRouting({
-      rules: [{ from: "2026-01", to: null, splits: [], netPaySnapshot: 1000 }],
+      rules: [{ from: "2026-01", to: null, splits: [] }],
       baseNetPayPerCheck: 1000,
       baseYear: 2026,
     });
