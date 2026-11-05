@@ -27,9 +27,9 @@ import type {
 } from "../engine/types";
 import type {
   IndividualAccountInput,
-  LumpSum,
   TaxBuckets,
 } from "../accounts/account-balances.types";
+import type { LumpSum } from "../engine/types";
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
   retirementBuckets: TaxBuckets;

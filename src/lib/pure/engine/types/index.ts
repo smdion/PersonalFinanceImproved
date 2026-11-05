@@ -7,6 +7,7 @@ export type * from "./decumulation";
 export type * from "./routing";
 export type * from "./projection-result";
 export type * from "./year-overrides";
+export type { LumpSum } from "../../accounts/account-balances.types";
 export {
   decumulationDefaultsInputSchema,
   decumulationOverrideArraySchema,

@@ -44,7 +44,7 @@
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 637,
     "src/components/cards/projection/use-projection-queries.ts": 977,
-    "src/components/cards/projection/utils.ts": 872,
+    "src/components/cards/projection/utils.ts": 870,
     "src/components/cards/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,

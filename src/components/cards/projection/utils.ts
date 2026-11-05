@@ -745,10 +745,8 @@ export function computeAccountSplits(
 // Lump sum helpers
 // ---------------------------------------------------------------------------
 
-import type {
-  LumpSum,
-  IndividualAccountYearBalance,
-} from "@/lib/pure/accounts/account-balances.types";
+import type { LumpSum } from "@/lib/pure/engine/types";
+import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 
 type PortfolioTaxBucket = "preTax" | "taxFree" | "hsa" | "afterTax";
 

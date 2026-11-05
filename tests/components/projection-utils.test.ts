@@ -41,7 +41,7 @@ import {
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";
 import type { EngineYearProjection } from "@/lib/pure/engine/types";
-import type { LumpSum } from "@/lib/pure/accounts/account-balances.types";
+import type { LumpSum } from "@/lib/pure/engine/types";
 
 // ---------------------------------------------------------------------------
 // Constants
