@@ -172,7 +172,7 @@
     "src/server/routers/salary-profiles.ts": 694,
     "src/server/routers/savings.ts": 2862,
     "src/server/routers/settings/admin.ts": 423,
-    "src/server/routers/settings/paycheck.ts": 734,
+    "src/server/routers/settings/paycheck.ts": 733,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin.ts": 872,
     "src/server/routers/sync/core.ts": 1118,

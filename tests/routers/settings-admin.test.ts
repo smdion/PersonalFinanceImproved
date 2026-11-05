@@ -7,7 +7,8 @@
  *   - apiConnections.list / delete (no generic upsert)
  *   - getDataFreshness
  *   - rbacGroups.get
- *   - settings/_shared's validation schemas (zDecimal, settingValue)
+ *   - the validation schemas zDecimal (lib/utils/zod-fields) and settingValue
+ *     (settings/_shared)
  *
  * savingsGoals, performanceAccounts, portfolioSnapshots, and
  * relocationScenarios CRUD moved out to savings.ts/performance.ts/
@@ -33,7 +34,8 @@ import {
   adminSession,
   viewerSession,
 } from "./setup";
-import { zDecimal, settingValue } from "@/server/routers/settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import { settingValue } from "@/server/routers/settings/_shared";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
 
@@ -905,7 +907,7 @@ describe("settings.appSettings.setDismissal", () => {
   });
 });
 
-describe("settings/_shared: zDecimal validation", () => {
+describe("zDecimal validation", () => {
   it("accepts a valid decimal string", () => {
     expect(zDecimal.safeParse("123.45").success).toBe(true);
   });

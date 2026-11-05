@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber } from "@/server/helpers";
-import { zDecimal } from "./settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   utilityKindSchema,
   utilityUnitSchema,

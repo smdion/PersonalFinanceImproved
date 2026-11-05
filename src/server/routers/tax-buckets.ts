@@ -19,7 +19,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { toNumber } from "@/server/helpers/transforms";
-import { zDecimal } from "@/server/routers/settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";

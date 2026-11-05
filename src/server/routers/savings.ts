@@ -65,7 +65,7 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
 import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
-import { zDecimal } from "./settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   targetModeSchema,
   budgetApiServiceSchema,

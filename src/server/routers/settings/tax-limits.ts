@@ -7,7 +7,7 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { zDecimal } from "./_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   taxBracketsSchema,
   ltcgBracketsSchema,

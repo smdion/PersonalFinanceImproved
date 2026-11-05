@@ -13,7 +13,7 @@ import {
   resolveAccountBalance,
 } from "@/server/helpers/api-balance-resolution";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
-import { zDecimal } from "@/server/routers/settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 
 /** Positive decimal amount — brokerage goal targets must be > 0. */
 const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);

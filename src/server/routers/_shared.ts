@@ -29,8 +29,7 @@
 // This file is intentionally declaration-only (documentation + re-exports).
 // Import shared utilities from their canonical locations:
 //   toNumber()           → @/server/helpers/transforms
-//   zDecimal             → @/lib/utils/zod-fields (re-exported from
-//                          @/server/routers/settings/_shared for existing imports)
+//   zDecimal             → @/lib/utils/zod-fields
 //   protectedProcedure   → @/server/trpc
 
 import { z } from "zod/v4";

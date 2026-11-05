@@ -34,7 +34,7 @@ import {
 } from "@/server/helpers/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/helpers/snapshot";
 import { zYearEndTargeting } from "./_shared";
-import { zDecimal } from "./settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   accountCategoryEnum,
   parentCategoryEnum,

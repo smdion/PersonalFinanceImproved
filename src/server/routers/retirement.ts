@@ -62,7 +62,7 @@ import {
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { strategyParamInputShape } from "@/lib/config/withdrawal-strategy-inputs";
-import { zDecimal } from "./settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,

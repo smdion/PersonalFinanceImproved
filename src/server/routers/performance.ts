@@ -146,7 +146,7 @@ async function stampPerformanceUpdated(db: DbOrTx) {
 
 // --- Zod schemas for input validation ---
 
-import { zDecimal } from "@/server/routers/settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
 
 /** Optional decimal — for partial-update mutations. */

@@ -371,11 +371,6 @@
   },
   {
     "rule": "no-router-to-router",
-    "from": "src/server/routers/brokerage.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
     "from": "src/server/routers/budget.ts",
     "to": "src/server/routers/_shared.ts"
   },
@@ -441,28 +436,13 @@
   },
   {
     "rule": "no-router-to-router",
-    "from": "src/server/routers/mortgage.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
     "from": "src/server/routers/networth.ts",
     "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/networth.ts",
-    "to": "src/server/routers/settings/_shared.ts"
   },
   {
     "rule": "no-router-to-router",
     "from": "src/server/routers/paycheck.ts",
     "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/performance.ts",
-    "to": "src/server/routers/settings/_shared.ts"
   },
   {
     "rule": "no-router-to-router",
@@ -473,11 +453,6 @@
     "rule": "no-router-to-router",
     "from": "src/server/routers/projection/stress-test.ts",
     "to": "src/server/routers/projection-v5-helpers.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/retirement.ts",
-    "to": "src/server/routers/settings/_shared.ts"
   },
   {
     "rule": "no-router-to-router",
@@ -493,21 +468,6 @@
     "rule": "no-router-to-router",
     "from": "src/server/routers/savings.ts",
     "to": "src/server/routers/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/savings.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/tax-buckets.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/utilities.ts",
-    "to": "src/server/routers/settings/_shared.ts"
   },
   {
     "rule": "pure-has-no-io",
