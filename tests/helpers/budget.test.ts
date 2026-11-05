@@ -6,7 +6,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getAnnualExpensesFromBudget } from "@/server/helpers/budget";
+import { getAnnualExpensesFromBudget } from "@/server/services/budget/annual-expenses";
 import {
   computeBudgetColumnTotal,
   computeWeightedBudgetTotal,

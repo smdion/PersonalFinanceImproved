@@ -4047,6 +4047,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/budget/active-profile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/budget/budget.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5427,6 +5432,11 @@
       "count": 4
     }
   },
+  "src/server/data/budget-profiles.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/data/category-links.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -5508,17 +5518,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
-    }
-  },
-  "src/server/helpers/budget.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
     }
   },
   "src/server/helpers/debts.ts": {
@@ -6171,6 +6170,19 @@
       "count": 2
     }
   },
+  "src/server/services/budget/account-balances.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/budget/annual-expenses.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    }
+  },
   "src/server/services/budget/budget-income-materializer.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
@@ -6265,6 +6277,11 @@
     }
   },
   "src/server/services/investments/market-prices.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/net-worth/other-assets.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     }

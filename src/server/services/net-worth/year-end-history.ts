@@ -26,12 +26,12 @@ import {
 import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { getEffectiveCash } from "@/server/services/budget/account-balances";
+import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
 import {
-  getEffectiveCash,
-  getEffectiveOtherAssets,
   getAnnualExpensesFromBudget,
   type BudgetTargeting,
-} from "@/server/helpers/budget";
+} from "@/server/services/budget/annual-expenses";
 import {
   computeMortgageBalance,
   getActiveMortgageLoan,

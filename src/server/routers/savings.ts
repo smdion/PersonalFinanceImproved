@@ -31,8 +31,6 @@ import {
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
-  getActiveBudgetProfile,
-  resolveTargetBudgetProfile,
   buildPaycheckInputForJob,
   mergeSalaryProfileJobFields,
   setBudgetItemLink,
@@ -42,6 +40,10 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import {
+  getActiveBudgetProfile,
+  resolveTargetBudgetProfile,
+} from "@/server/data/budget-profiles";
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";

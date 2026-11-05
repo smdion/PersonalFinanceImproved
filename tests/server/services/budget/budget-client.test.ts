@@ -11,7 +11,7 @@ vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: async () => m.active,
   getClientForService: async () => m.client,
 }));
-vi.mock("@/server/helpers/budget", () => ({
+vi.mock("@/server/data/budget-profiles", () => ({
   resolveTargetBudgetProfile: async () => m.profile,
 }));
 

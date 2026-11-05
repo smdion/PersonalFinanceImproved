@@ -17,11 +17,11 @@ import {
   getLatestSnapshot,
   computeMortgageBalance,
   getActiveMortgageLoan,
-  getEffectiveCash,
-  getEffectiveOtherAssets,
   invalidateYearEndCache,
   resolvePersonYearIncome,
 } from "@/server/helpers";
+import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
+import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";

@@ -5,7 +5,6 @@
 export * from "@/lib/pure/paycheck/budget-periods";
 export * from "@/lib/pure/household/app-settings";
 export * from "@/lib/pure/household/compensation";
-export * from "./budget";
 export * from "@/lib/pure/debts/mortgage-balance";
 export * from "@/lib/pure/net-worth/snapshot-groups";
 export * from "@/server/data/snapshots";

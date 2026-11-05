@@ -454,6 +454,7 @@
     "src/lib/pure/advice/report/year-table.ts:taxYearFlags",
     "src/lib/pure/advice/standin-advice.ts:STANDIN_COVERAGE_OK",
     "src/lib/pure/advice/standin-advice.ts:adviseStandIn",
+    "src/lib/pure/budget/active-profile.ts:pickActiveBudgetProfile",
     "src/lib/pure/budget/transaction-kind.ts:balanceAsOf",
     "src/lib/pure/budget/transaction-kind.ts:effectiveTransactionKind",
     "src/lib/pure/budget/utility-cost-feed.ts:sameCost",

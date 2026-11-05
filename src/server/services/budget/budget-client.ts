@@ -6,7 +6,7 @@ import {
   type BudgetApiService,
 } from "@/lib/budget-api";
 import type { Db } from "@/lib/db";
-import { resolveTargetBudgetProfile } from "@/server/helpers/budget";
+import { resolveTargetBudgetProfile } from "@/server/data/budget-profiles";
 
 /** The active budget API's service; PRECONDITION_FAILED when none is. */
 export async function requireActiveBudgetApi(

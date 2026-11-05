@@ -894,7 +894,7 @@ describe("sync core — getPreview", () => {
 
   // Found live, 2026-08-31: this preview's cash figure was an independent
   // duplicate of getEffectiveCash's type-based auto-detection, so mapping
-  // "Cash" accounts on the Integrations page (server/helpers/budget.ts's
+  // "Cash" accounts on the Integrations page (server/services/budget/account-balances.ts's
   // sumMappedAccountBalances) fixed Net Worth/Assets but this preview kept
   // showing $0 — a second, differently-computed number for the same thing.
   it("uses mapped Cash accounts for the preview total when mappings exist, ignoring type", async () => {

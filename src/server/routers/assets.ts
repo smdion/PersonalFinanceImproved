@@ -8,10 +8,10 @@ import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   buildYearEndHistory,
-  getEffectiveCash,
   computeMortgageBalance,
   getActiveMortgageLoan,
 } from "@/server/helpers";
+import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { toNumber } from "@/lib/utils/numbers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { zYearEndTargeting } from "./_shared";

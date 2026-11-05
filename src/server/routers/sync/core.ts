@@ -412,7 +412,7 @@ export const syncCoreRouter = createTRPCRouter({
       const categoryGroups = categoriesCache?.data ?? [];
 
       // Compute what cash would be under API control — same precedence as
-      // getEffectiveCash (server/helpers/budget.ts): explicit "cash"
+      // getEffectiveCash (server/services/budget/account-balances.ts): explicit "cash"
       // account mappings win when present (the only path that works for
       // Actual at all, which has no account-type field to auto-detect
       // from), else fall back to type-based
