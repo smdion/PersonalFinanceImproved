@@ -14,9 +14,9 @@ import {
   payPeriodSchema,
   payWeekSchema,
   bonusDestinationSchema,
-  zDecimal,
-  ROTH_IRA_ROUTE_VALUES,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/enum-values.schema";
+import { ROTH_IRA_ROUTE_VALUES } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import { w4FilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 

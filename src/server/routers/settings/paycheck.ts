@@ -35,7 +35,7 @@ import {
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal } from "./_shared";
-import { zFraction } from "@/lib/config/enum-values";
+import { zFraction } from "@/lib/utils/zod-fields";
 import { dropContributionActiveFields } from "@/server/helpers/delete-references";
 
 // --- Zod schemas ---

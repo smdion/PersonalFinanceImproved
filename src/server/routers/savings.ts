@@ -69,7 +69,7 @@ import { zDecimal } from "./settings/_shared";
 import {
   targetModeSchema,
   budgetApiServiceSchema,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/enum-values.schema";
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";

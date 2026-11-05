@@ -4,7 +4,8 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber } from "@/server/helpers";
-import { zDecimal, debtKindSchema } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import { debtKindSchema } from "@/lib/config/enum-values.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 import { debtPayoffEstimate } from "@/lib/pure/debts";
 import {

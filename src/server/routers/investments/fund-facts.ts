@@ -9,10 +9,8 @@ import { and, eq, isNull, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import {
-  compositionBucketSchema,
-  type CompositionBucket,
-} from "@/lib/config/enum-values";
+import { compositionBucketSchema } from "@/lib/config/enum-values.schema";
+import type { CompositionBucket } from "@/lib/config/enum-values";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "./holdings-overview";

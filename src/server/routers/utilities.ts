@@ -8,8 +8,8 @@ import { zDecimal } from "./settings/_shared";
 import {
   utilityKindSchema,
   utilityUnitSchema,
-  type UtilitySource,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/enum-values.schema";
+import type { UtilitySource } from "@/lib/config/enum-values";
 import { cacheGet } from "@/lib/budget-api/cache";
 import { getActiveBudgetApi } from "@/lib/budget-api/factory";
 import type {

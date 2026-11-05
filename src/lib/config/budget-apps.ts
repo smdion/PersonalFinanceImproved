@@ -1,5 +1,5 @@
 // The budget apps Ledgr connects to, with no Zod so client components can
-// read the list and labels; budgetApiServiceSchema stays in enum-values.
+// read the list and labels; budgetApiServiceSchema is in enum-values.schema.ts.
 
 /** Every per-service list derives from these keys;
  *  `lib/budget-api/providers.ts` adds each one's client. */

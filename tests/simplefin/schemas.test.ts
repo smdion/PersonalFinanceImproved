@@ -9,7 +9,7 @@ import os from "os";
 import path from "path";
 import { claimSetupToken, getAccounts } from "@/lib/simplefin/client";
 import { BudgetApiError } from "@/lib/budget-api/errors";
-import { zDecimal } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   sfAccount,
   sfAccountSet,

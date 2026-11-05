@@ -48,7 +48,7 @@ import {
   setBudgetItemLink,
   deleteBudgetItemLink,
 } from "@/server/helpers";
-import { budgetApiServiceSchema } from "@/lib/config/enum-values";
+import { budgetApiServiceSchema } from "@/lib/config/enum-values.schema";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
 import {

@@ -1,5 +1,5 @@
 import { settingValueSchema } from "@/lib/db/json-schemas";
-import { zDecimal } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 
 /** Re-export the centralized decimal-string validator for backward compatibility. */
 export { zDecimal };

@@ -123,7 +123,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 ### Rules
 
-1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/config/enum-values` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
+1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/utils/zod-fields` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
 2. **Account type uses config enum.** Every mutation that accepts `accountType` must use `z.enum(accountCategoryEnum())`. No `z.string().min(1)` on account type fields.
 3. **Shared schemas for shared tables.** When multiple mutations write to the same table, extract the field validators into a shared schema or compose from shared field definitions. Don't define independent schemas with different constraints.
 4. **Year fields are bounded.** All year inputs should use `z.number().int().min(1900).max(2100)` or similar reasonable bounds — not bare `z.number()`.
