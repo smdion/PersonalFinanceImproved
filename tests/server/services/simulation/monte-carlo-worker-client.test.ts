@@ -16,11 +16,11 @@ import path from "node:path";
 import {
   runMonteCarloOffThread,
   getMonteCarloProgress,
-} from "@/server/helpers/monte-carlo-worker-client";
+} from "@/server/services/simulation/monte-carlo-worker-client";
 import {
   makeTrinityInput,
   makeMCInput,
-} from "../../benchmarks/benchmark-helpers";
+} from "../../../benchmarks/benchmark-helpers";
 
 const WORKER_BUNDLE = path.join(process.cwd(), "monte-carlo-worker.js");
 

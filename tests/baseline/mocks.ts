@@ -12,7 +12,7 @@ import { vi } from "vitest";
  *  b's (tests/benchmarks/). */
 const trials = vi.hoisted(() => 10);
 
-vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
+vi.mock("@/server/services/simulation/monte-carlo-worker-client", async () => {
   const { calculateMonteCarlo } =
     await import("@/lib/pure/simulation/monte-carlo");
   return {

@@ -93,7 +93,7 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
   describe("hashEngineInput (day-granularity canonicalization)", () => {
     it("hashes two instants on the SAME Chicago calendar day identically, even straddling UTC midnight", async () => {
       const { hashEngineInput } =
-        await import("@/server/helpers/projection-cache");
+        await import("@/server/services/projection/projection-cache");
       // Both are 2026-09-06 in Chicago: 9pm and 11:55pm local. The second is
       // already 2026-09-07 in UTC (04:55Z) — the cache key must still agree,
       // since day-granularity is defined in the engine's local-time
@@ -107,7 +107,7 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
 
     it("hashes two instants on DIFFERENT Chicago calendar days differently, even on the SAME UTC day", async () => {
       const { hashEngineInput } =
-        await import("@/server/helpers/projection-cache");
+        await import("@/server/services/projection/projection-cache");
       // 2026-09-07T04:55:00Z = 2026-09-06 11:55pm Chicago.
       // 2026-09-07T05:05:00Z = 2026-09-07 12:05am Chicago.
       // Both are 2026-09-07 in UTC -- a UTC-day cache key would collide

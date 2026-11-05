@@ -1,9 +1,9 @@
-import "./setup-mocks";
+import "../../helpers/setup-mocks";
 import { describe, it, expect, afterEach } from "vitest";
 import {
   applyHouseholdTimeZone,
   isValidTimeZone,
-} from "@/server/helpers/household-timezone";
+} from "@/server/data/household-timezone";
 
 const original = process.env.TZ;
 afterEach(() => {

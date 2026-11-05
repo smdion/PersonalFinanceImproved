@@ -2,7 +2,7 @@
  * projection-cache helper — hashEngineInput canonicalization, and the
  * read/write/evict cache lifecycle against a real (SQLite) DB.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   hashEngineInput,
@@ -10,8 +10,8 @@ import {
   writeProjectionCache,
   generateSeed,
   PROJECTION_CACHE_ENGINE_VERSION,
-} from "@/server/helpers/projection-cache";
-import { createTestDb, type TestDbContext } from "./db-harness";
+} from "@/server/services/projection/projection-cache";
+import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
 import * as schema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
 

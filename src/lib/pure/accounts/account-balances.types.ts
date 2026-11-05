@@ -94,7 +94,7 @@ export type IndividualAccountInput = {
    *  entirely for the default (no override) case, so every household not
    *  using this feature has a byte-identical engine input (and so an
    *  unchanged projection-cache hash — see `hashEngineInput` in
-   *  `server/helpers/projection-cache.ts`). One-directional: can only push
+   *  `server/services/projection/projection-cache.ts`). One-directional: can only push
    *  eligibility from true to false. See `projectRuleOf55`'s
    *  `opts.forceIneligible` docblock (`lib/pure/accounts/tax-bucket-projection.ts`)
    *  for the full contract, and why this is threaded as a parameter INTO

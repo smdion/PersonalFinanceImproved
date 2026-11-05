@@ -48,7 +48,7 @@ const mcRuns = vi.hoisted(() => ({ count: 0 }));
 // The cache blocks count runs and compare results, never a rate, so they
 // run 5 trials (`fewTrialsForCacheTests`); every other case runs 25.
 const mcTrialCap = vi.hoisted(() => ({ value: 25 }));
-vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
+vi.mock("@/server/services/simulation/monte-carlo-worker-client", async () => {
   const { calculateMonteCarlo } =
     await import("@/lib/pure/simulation/monte-carlo");
   return {

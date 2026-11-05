@@ -152,7 +152,6 @@
     "src/server/helpers/budget.ts": 636,
     "src/server/helpers/contribution-caps.ts": 560,
     "src/server/helpers/contribution.ts": 1828,
-    "src/server/helpers/projection-cache.ts": 221,
     "src/server/helpers/salary.ts": 497,
     "src/server/helpers/snapshot.ts": 1219,
     "src/server/retirement/build-engine-payload.ts": 1414,
@@ -183,6 +182,7 @@
     "src/server/routers/simplefin.ts": 872,
     "src/server/routers/sync/core.ts": 1118,
     "src/server/routers/utilities.ts": 581,
+    "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/trpc.ts": 591
   },

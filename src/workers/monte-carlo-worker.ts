@@ -23,7 +23,7 @@
  * itself is a pure calculator (no DB, no tRPC, no React) that never needed
  * any.
  *
- * Protocol (see src/server/helpers/monte-carlo-worker-client.ts for the
+ * Protocol (see src/server/services/simulation/monte-carlo-worker-client.ts for the
  * host side): the host posts `{ id, input }`; this worker posts
  * `{ id, type: "progress", done, total }` zero or more times, then exactly
  * one of `{ id, type: "result", result }` or `{ id, type: "error", message }`.

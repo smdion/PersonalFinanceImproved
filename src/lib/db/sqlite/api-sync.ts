@@ -101,7 +101,7 @@ export const projectionCache = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     /** sha256 of the canonicalized engine input this row was computed
-     *  from — see hashEngineInput in server/helpers/projection-cache.ts.
+     *  from — see hashEngineInput in server/services/projection/projection-cache.ts.
      *  Different per procedure (deterministic vs MC vs Coast-FIRE MC
      *  inputs differ), so the kind is folded into the hash input itself
      *  rather than a separate column. */

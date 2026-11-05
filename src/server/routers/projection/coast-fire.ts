@@ -27,7 +27,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
-import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
+import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
   AccumulationOverride,
@@ -50,7 +50,7 @@ import {
   hashEngineInput,
   readProjectionCache,
   writeProjectionCache,
-} from "@/server/helpers/projection-cache";
+} from "@/server/services/projection/projection-cache";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 

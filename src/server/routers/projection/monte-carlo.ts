@@ -35,7 +35,7 @@ import {
 import {
   runMonteCarloOffThread,
   getMonteCarloProgress,
-} from "@/server/helpers/monte-carlo-worker-client";
+} from "@/server/services/simulation/monte-carlo-worker-client";
 import {
   interpolateAllocations,
   geometricMean,
@@ -66,7 +66,7 @@ import {
   writeProjectionCache,
   generateSeed,
   clearProjectionCache,
-} from "@/server/helpers/projection-cache";
+} from "@/server/services/projection/projection-cache";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";

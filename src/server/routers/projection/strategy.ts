@@ -45,7 +45,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/pure/engine";
-import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
+import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
 import {
   interpolateAllocations,
@@ -82,7 +82,7 @@ import {
   hashEngineInput,
   readProjectionCache,
   writeProjectionCache,
-} from "@/server/helpers/projection-cache";
+} from "@/server/services/projection/projection-cache";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";
