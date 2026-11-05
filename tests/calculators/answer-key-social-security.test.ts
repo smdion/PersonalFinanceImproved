@@ -43,7 +43,7 @@ import {
   computeSpousalBenefit,
   sweepClaimingAges,
 } from "@/lib/calculators/social-security";
-import { socialSecurityForYear } from "@/lib/calculators/engine/social-security-income";
+import { socialSecurityForYear } from "@/lib/pure/engine/social-security-income";
 import {
   buildSocialSecurityEntries,
   type SsPerson,

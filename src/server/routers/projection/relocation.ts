@@ -18,7 +18,7 @@ import {
   protectedProcedure,
   adminProcedure,
 } from "../../trpc";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { toNumber } from "@/server/helpers";
 import {
   computeBudgetAnnualTotal,

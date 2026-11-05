@@ -23,7 +23,7 @@ Also read the existing test file for that module if one exists. Match its style:
 | Code being tested                             | Test type               | Location                                      |
 | --------------------------------------------- | ----------------------- | --------------------------------------------- |
 | Pure calculator function (`lib/calculators/`) | Unit test               | `tests/calculators/<name>.test.ts`            |
-| Engine module (`lib/calculators/engine/`)     | Unit test or snapshot   | `tests/calculators/engine-*.test.ts`          |
+| Engine module (`lib/pure/engine/`)            | Unit test or snapshot   | `tests/pure/engine/engine-*.test.ts`          |
 | tRPC router procedure                         | Router integration test | `tests/routers/<name>.test.ts`                |
 | Pure business logic (`lib/pure/`)             | Unit test, no DB        | `tests/pure/<name>.test.ts`                   |
 | Server helper (`server/helpers/`)             | Helper unit test        | `tests/helpers/<name>.test.ts`                |
@@ -33,8 +33,8 @@ Also read the existing test file for that module if one exists. Match its style:
 | Config table (`lib/config/`)                  | Config test             | `tests/config/<name>.test.ts`                 |
 | Cross-calculator consistency                  | Logic gaps              | `tests/calculators/logic-gaps.test.ts`        |
 | Extreme/boundary inputs                       | Edge case               | `tests/edge-cases/edge-cases.test.ts`         |
-| Engine invariant (holds for any input)        | Property-based          | `tests/calculators/engine-invariants.test.ts` |
-| Engine output unchanged after refactor        | Snapshot                | `tests/calculators/engine-snapshot.test.ts`   |
+| Engine invariant (holds for any input)        | Property-based          | `tests/pure/engine/engine-invariants.test.ts` |
+| Engine output unchanged after refactor        | Snapshot                | `tests/pure/engine/engine-snapshot.test.ts`   |
 | Published research validation                 | Benchmark               | `tests/benchmarks/<name>.test.ts`             |
 | Zod schema validation                         | Integration             | `tests/integration/zod-schemas.test.ts`       |
 

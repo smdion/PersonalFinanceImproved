@@ -238,7 +238,7 @@ const config = [
     // FI milestones (liquid net worth, D1) and the Money Guy benchmark.
     files: ["src/**/*.{ts,tsx}"],
     ignores: [
-      "src/lib/calculators/engine/**",
+      "src/lib/pure/engine/**",
       "src/lib/calculators/types/**",
       "src/lib/pure/milestone-input.ts",
       "src/components/cards/dashboard/retirement-benchmarks.tsx",

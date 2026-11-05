@@ -18,7 +18,7 @@ import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { getStressTestScenarios } from "@/lib/pure/stress-test";
 import { roundToCents } from "@/lib/utils/math";
 

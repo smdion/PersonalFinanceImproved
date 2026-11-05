@@ -509,66 +509,6 @@
       "count": 5
     }
   },
-  "src/lib/calculators/engine/balance-utils.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/engine/constant-percentage.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/contribution-routing.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/engine/endowment.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/guyton-klinger.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/engine/override-resolution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/post-withdrawal-optimizer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 7
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/projection.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/tax-estimation.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/withdrawal-routing.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
   "src/lib/calculators/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 8
@@ -657,6 +597,66 @@
   "src/lib/pure/contributions.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/lib/pure/engine/balance-utils.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/engine/constant-percentage.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/contribution-routing.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/engine/endowment.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/guyton-klinger.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/override-resolution.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/post-withdrawal-optimizer.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/tax-estimation.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
     }
   },
   "src/lib/pure/household-income.ts": {

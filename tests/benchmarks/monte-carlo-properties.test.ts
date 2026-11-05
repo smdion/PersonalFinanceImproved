@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import {
   makeTrinityInput,
   makeMCInput,

@@ -55,7 +55,7 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
-import { shortfallFloor } from "@/lib/calculators/engine";
+import { shortfallFloor } from "@/lib/pure/engine";
 import {
   buildEligibilityNote,
   ownerAccountLabel,

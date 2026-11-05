@@ -227,7 +227,7 @@ export type IndividualAccountInput = {
    *  stability convention as `ruleOf55ForceIneligible` above. Consumed by
    *  `computeWithdrawalEligibility` (`lib/pure/withdrawal-eligibility.ts`),
    *  which uses it to compute a second, narrower "still-excluded" aggregate
-   *  that `subtractPenaltyExposed` (`lib/calculators/engine/balance-utils.ts`)
+   *  that `subtractPenaltyExposed` (`lib/pure/engine/balance-utils.ts`)
    *  subtracts instead of the category's full penalty-exposed total — this
    *  account's exposed dollars stay in the routable pool while every other
    *  account's stay excluded. */

@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserProvider } from "@/lib/context/user-context";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { calculateBrokerageGoals } from "@/lib/calculators/brokerage-goals";
 import { formatCurrency } from "@/lib/utils/format";
 import { annAndBo, engineDataFor } from "./projection-household";

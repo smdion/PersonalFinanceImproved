@@ -6,7 +6,7 @@
  * growth, expense inflation, and simple depletion.
  */
 import { describe, it, expect } from "vitest";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import {
   makePureGrowthInput,
   makeStandardInput,

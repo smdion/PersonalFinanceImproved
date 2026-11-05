@@ -35,7 +35,7 @@ import {
   createPRNG,
 } from "@/lib/calculators/random";
 import { calculateMonteCarlo, percentile } from "@/lib/calculators/monte-carlo";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { readSimulationPresetsFile } from "@/lib/db/reference-data";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";

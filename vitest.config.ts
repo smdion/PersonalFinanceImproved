@@ -182,7 +182,7 @@ export default defineConfig({
         ? {}
         : {
             thresholds: {
-              "src/lib/calculators/engine/**": {
+              "src/lib/pure/engine/**": {
                 statements: 90,
                 branches: 80,
                 functions: 90,

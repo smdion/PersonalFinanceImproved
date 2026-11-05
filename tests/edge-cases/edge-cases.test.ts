@@ -660,7 +660,7 @@ describe("savings edge cases", () => {
 
 // ── Retirement / projection edge cases ──
 
-import { calculateProjection } from "@/lib/calculators/engine/projection";
+import { calculateProjection } from "@/lib/pure/engine/projection";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";

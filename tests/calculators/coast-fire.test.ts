@@ -18,7 +18,7 @@ import {
   buildCoastFireProfileSwitches,
   findCoastFireAge,
 } from "@/lib/calculators/coast-fire";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 

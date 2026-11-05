@@ -86,7 +86,7 @@ import {
   getAllCategories,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
@@ -104,9 +104,9 @@ import {
   W4_FILING_STATUS_VALUES,
 } from "@/lib/config/filing-status";
 import { PERMISSIONS } from "@/lib/config/permissions";
-import { routePercentage } from "@/lib/calculators/engine/contribution-routing";
-import { resolveAccumulationConfig } from "@/lib/calculators/engine/override-resolution";
-import { routeWithdrawalsPercentage } from "@/lib/calculators/engine/withdrawal-routing";
+import { routePercentage } from "@/lib/pure/engine/contribution-routing";
+import { resolveAccumulationConfig } from "@/lib/pure/engine/override-resolution";
+import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing";
 import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 import {

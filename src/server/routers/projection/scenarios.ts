@@ -10,7 +10,7 @@ import { jobYearsNote } from "@/lib/pure/profiles";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import {
   hashEngineInput,
   readProjectionCache,

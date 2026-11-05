@@ -13,8 +13,8 @@
 import { planEndAge, planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan, type PlanFailureReason } from "./plan-outcome";
-import { calculateProjection } from "./engine";
-import { buildInflationPath } from "./engine/inflation-path";
+import { calculateProjection } from "../pure/engine";
+import { buildInflationPath } from "../pure/engine/inflation-path";
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import {
   createPRNG,

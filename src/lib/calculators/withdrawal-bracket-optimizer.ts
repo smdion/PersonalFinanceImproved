@@ -23,7 +23,7 @@
  * engine itself.
  */
 import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
-import { calculateProjection } from "./engine";
+import { calculateProjection } from "../pure/engine";
 import type {
   ProjectionInput,
   DecumulationOverride,

@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { buildWatchlist } from "@/lib/pure/report/aca-irmaa-narrative";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { xfail } from "../../fixtures/answer-key";
 import { engineHousehold } from "../../fixtures/answer-key-household";
 

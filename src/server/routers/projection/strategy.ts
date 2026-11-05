@@ -41,7 +41,7 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
 import type { SimulationNotConfigured } from "@/lib/calculators/monte-carlo";
 import {

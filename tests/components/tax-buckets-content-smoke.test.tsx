@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserProvider } from "@/lib/context/user-context";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";
 import { computeTaxBucketProjection } from "@/lib/pure/tax-bucket-projection";

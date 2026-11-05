@@ -169,17 +169,17 @@ describe("a trailer whose files move later", () => {
     const moved = renameMove(
       {
         from: {
-          from: "src/lib/calculators/engine/a.ts",
-          to: "src/lib/calculators/engine/b.ts",
+          from: "src/lib/pure/engine/a.ts",
+          to: "src/lib/pure/engine/b.ts",
         },
         to: {
-          from: "src/lib/calculators/engine/b.ts",
+          from: "src/lib/pure/engine/b.ts",
           to: "src/lib/pure/engine/types/c.ts",
         },
       },
       new Map([
-        ["src/lib/calculators/engine/a.ts", "src/lib/pure/engine/a.ts"],
-        ["src/lib/calculators/engine/b.ts", "src/lib/pure/engine/b.ts"],
+        ["src/lib/pure/engine/a.ts", "src/lib/pure/engine/a.ts"],
+        ["src/lib/pure/engine/b.ts", "src/lib/pure/engine/b.ts"],
       ]),
     );
     expect(moved).toEqual({

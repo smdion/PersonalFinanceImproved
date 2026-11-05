@@ -4,7 +4,7 @@
  * the standard and senior deductions, and the bracket tables themselves.
  * Pure: every input is already resolved by the payload builder.
  */
-import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
+import { estimateEffectiveTaxRate } from "@/lib/pure/engine";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { requireLimit } from "@/server/helpers/settings";
 import { toNumber } from "@/server/helpers/transforms";

@@ -17,11 +17,11 @@ import type {
   DecumulationDefaults,
 } from "@/lib/pure/engine/types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "@/lib/constants";
-import type { WithholdingBracket } from "@/lib/calculators/engine/tax-estimation";
+import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 
 // ---------------------------------------------------------------------------
 // TaxBuckets

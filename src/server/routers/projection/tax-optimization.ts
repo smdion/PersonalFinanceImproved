@@ -30,7 +30,7 @@ import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type {
   AccumulationOverride,

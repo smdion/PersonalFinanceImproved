@@ -62,7 +62,7 @@ the reviewer and the owner do.
 The `advisor` subagent (`.claude/agents/advisor.md`) runs on Opus and exists
 to push back. Use it before committing when:
 
-- Changing anything in `lib/calculators/engine/`, `lib/db/pg/*.ts` or `lib/db/schema*.ts`
+- Changing anything in `lib/pure/engine/`, `lib/db/pg/*.ts` or `lib/db/schema*.ts`
 - Editing `lib/config/account-types.ts` or any `lib/config/*tables*.ts` —
   these are the data-driven foundation the engine reads; a wrong helper here
   silently corrupts every consumer

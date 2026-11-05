@@ -16,7 +16,7 @@
  * Survival only — callers with an extra test (Coast FIRE's first-year need)
  * add it on top.
  */
-import { shortfallFloor } from "./engine/gap-year-draw";
+import { shortfallFloor } from "../pure/engine/gap-year-draw";
 import type {
   EngineDecumulationYear,
   ProjectionResult,

@@ -13,7 +13,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { retiree } from "../fixtures/answer-key-simulation";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 
 /** Stock shares of the grid's rows, as the spec's table keys them. */

@@ -55,8 +55,8 @@ import {
   computeTaxFromSlots,
   taxableSSFor,
   type WithholdingBracket,
-} from "@/lib/calculators/engine/tax-estimation";
-import { computeObbbaSeniorDeduction } from "@/lib/calculators/engine/obbba-senior-deduction";
+} from "@/lib/pure/engine/tax-estimation";
+import { computeObbbaSeniorDeduction } from "@/lib/pure/engine/obbba-senior-deduction";
 import { computeNiit } from "@/lib/config/niit";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";

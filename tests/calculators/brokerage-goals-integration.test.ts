@@ -5,7 +5,7 @@
  * After engine refactoring, these must produce byte-identical results.
  */
 import { describe, it, expect } from "vitest";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { calculateBrokerageGoals } from "@/lib/calculators/brokerage-goals";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import type { BrokerageGoalInput } from "@/lib/calculators/brokerage-goals";

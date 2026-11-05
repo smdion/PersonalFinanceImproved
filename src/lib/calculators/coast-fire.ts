@@ -46,7 +46,7 @@
 import { planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
-import { calculateProjection } from "./engine";
+import { calculateProjection } from "../pure/engine";
 import type { AccountCategory } from "../config/account-types";
 import type {
   EngineDecumulationYear,

@@ -17,7 +17,7 @@ import {
   zeroBalance,
 } from "../config/account-types";
 import { roundToCents } from "../utils/math";
-import { resolveLumpSumTarget } from "./engine/projection-year-handlers/lump-sum";
+import { resolveLumpSumTarget } from "../pure/engine/projection-year-handlers/lump-sum";
 import type { AccountBalance } from "../config/account-types.types";
 import type { AccountCategory } from "../config/account-types";
 import type {

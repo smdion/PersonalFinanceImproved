@@ -134,7 +134,7 @@ export function buildIndividualAccounts({
   // Local join key only — (name, category, taxType, ownerPersonId), same
   // tuple `accountRollup`/`accountBreakdownByCategory` already merge on.
   // Deliberately NOT the engine's own `makeIndKey()` format: that's an
-  // engine-internal concern (`@/lib/calculators/engine/*` absolute imports
+  // engine-internal concern (`@/lib/pure/engine/*` absolute imports
   // outside the barrel are a lint-enforced layering violation —
   // tests/lint/violations.test.ts), and this data attaches directly onto
   // each `individualAccounts` entry below rather than traveling as a

@@ -92,17 +92,6 @@
     "src/components/validation-content.tsx": 578,
     "src/lib/budget-api/actual-client.ts": 835,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/calculators/engine/contribution-routing.ts": 627,
-    "src/lib/calculators/engine/individual-account-tracking.ts": 1476,
-    "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 727,
-    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 852,
-    "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1601,
-    "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": 471,
-    "src/lib/calculators/engine/rmd-enforcement.ts": 468,
-    "src/lib/calculators/engine/tax-estimation.ts": 516,
-    "src/lib/calculators/engine/tax-gross-up.ts": 578,
-    "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 502,
-    "src/lib/calculators/engine/withdrawal-routing.ts": 1438,
     "src/lib/calculators/monte-carlo.ts": 763,
     "src/lib/calculators/mortgage.ts": 424,
     "src/lib/calculators/paycheck.ts": 1381,
@@ -124,8 +113,19 @@
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/contribution-caps.ts": 671,
     "src/lib/pure/contributions.ts": 685,
+    "src/lib/pure/engine/contribution-routing.ts": 627,
+    "src/lib/pure/engine/individual-account-tracking.ts": 1476,
+    "src/lib/pure/engine/post-withdrawal-optimizer.ts": 727,
+    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 852,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 1601,
+    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 471,
+    "src/lib/pure/engine/rmd-enforcement.ts": 465,
+    "src/lib/pure/engine/tax-estimation.ts": 516,
     "src/lib/pure/engine/types/engine-config.ts": 803,
     "src/lib/pure/engine/types/projection-result.ts": 721,
+    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 502,
+    "src/lib/pure/engine/withdrawal-routing.ts": 1438,
+    "src/lib/pure/engine/withdrawal-solver.ts": 578,
     "src/lib/pure/holding-periods.ts": 433,
     "src/lib/pure/milestone-input.ts": 674,
     "src/lib/pure/milestones.ts": 1705,
@@ -737,45 +737,6 @@
     "src/lib/calculators/brokerage-goals.ts": {
       "calculateBrokerageGoals": 206
     },
-    "src/lib/calculators/engine/contribution-routing.ts": {
-      "routePercentage": 189
-    },
-    "src/lib/calculators/engine/gap-year-draw.ts": {
-      "runGapYearDraw": 303
-    },
-    "src/lib/calculators/engine/individual-account-tracking.ts": {
-      "buildIndividualYearBalances": 160,
-      "distributeContributions": 387
-    },
-    "src/lib/calculators/engine/post-withdrawal-optimizer.ts": {
-      "performRothConversion": 375
-    },
-    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 769
-    },
-    "src/lib/calculators/engine/projection-year-handlers/context.ts": {
-      "buildProjectionContext": 188
-    },
-    "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 1499
-    },
-    "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": {
-      "runPreYearSetup": 438
-    },
-    "src/lib/calculators/engine/rmd-enforcement.ts": {
-      "enforceOwnerRmds": 151,
-      "enforceRmd": 155
-    },
-    "src/lib/calculators/engine/tax-gross-up.ts": {
-      "evaluateCost": 160
-    },
-    "src/lib/calculators/engine/withdrawal-cost-ranking.ts": {
-      "rankWithdrawalTiers": 274
-    },
-    "src/lib/calculators/engine/withdrawal-routing.ts": {
-      "routeWithdrawalsBracketFilling": 465,
-      "routeWithdrawalsPercentage": 189
-    },
     "src/lib/calculators/monte-carlo.ts": {
       "calculateMonteCarlo": 579
     },
@@ -805,6 +766,45 @@
     },
     "src/lib/pure/distribution-tax-rates.ts": {
       "buildDistributionTaxRates": 199
+    },
+    "src/lib/pure/engine/contribution-routing.ts": {
+      "routePercentage": 189
+    },
+    "src/lib/pure/engine/gap-year-draw.ts": {
+      "runGapYearDraw": 303
+    },
+    "src/lib/pure/engine/individual-account-tracking.ts": {
+      "buildIndividualYearBalances": 160,
+      "distributeContributions": 387
+    },
+    "src/lib/pure/engine/post-withdrawal-optimizer.ts": {
+      "performRothConversion": 375
+    },
+    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
+      "runAccumulationYear": 769
+    },
+    "src/lib/pure/engine/projection-year-handlers/context.ts": {
+      "buildProjectionContext": 188
+    },
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
+      "runDecumulationYear": 1499
+    },
+    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
+      "runPreYearSetup": 438
+    },
+    "src/lib/pure/engine/rmd-enforcement.ts": {
+      "enforceOwnerRmds": 151,
+      "enforceRmd": 155
+    },
+    "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
+      "rankWithdrawalTiers": 274
+    },
+    "src/lib/pure/engine/withdrawal-routing.ts": {
+      "routeWithdrawalsBracketFilling": 465,
+      "routeWithdrawalsPercentage": 189
+    },
+    "src/lib/pure/engine/withdrawal-solver.ts": {
+      "evaluateCost": 160
     },
     "src/lib/pure/milestone-input.ts": {
       "buildMilestoneInput": 218

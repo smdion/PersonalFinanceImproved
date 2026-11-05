@@ -2,17 +2,17 @@
   {
     "rule": "engine-through-index",
     "from": "src/lib/calculators/monte-carlo.ts",
-    "to": "src/lib/calculators/engine/inflation-path.ts"
+    "to": "src/lib/pure/engine/inflation-path.ts"
   },
   {
     "rule": "engine-through-index",
     "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/calculators/engine/gap-year-draw.ts"
+    "to": "src/lib/pure/engine/gap-year-draw.ts"
   },
   {
     "rule": "engine-through-index",
     "from": "src/lib/calculators/simple-tax-mode.ts",
-    "to": "src/lib/calculators/engine/projection-year-handlers/lump-sum.ts"
+    "to": "src/lib/pure/engine/projection-year-handlers/lump-sum.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -76,96 +76,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/balance-deduction.ts",
-    "to": "src/lib/pure/engine/types/projection-result.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/balance-utils.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/constant-percentage.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/endowment.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/forgo-inflation.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/projection-year-handlers/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/social-security-income.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/early-withdrawal-penalty.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/guyton-klinger.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/rmd-spending.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/spending-decline.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/spending-strategy.ts",
-    "to": "src/lib/calculators/engine/vanguard-dynamic.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/spending-strategy.ts",
-    "to": "src/lib/calculators/engine/vpw.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/db/pg/contribution-profiles.ts",
     "to": "src/lib/db/pg/scenarios.ts"
   },
@@ -173,6 +83,96 @@
     "rule": "no-circular",
     "from": "src/lib/db/pg/retirement.ts",
     "to": "src/lib/db/pg/contribution-profiles.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/early-withdrawal-penalty.ts",
+    "to": "src/lib/pure/withdrawal-eligibility.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/balance-deduction.ts",
+    "to": "src/lib/pure/engine/types/projection-result.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/balance-utils.ts",
+    "to": "src/lib/pure/withdrawal-eligibility.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/constant-percentage.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/endowment.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/forgo-inflation.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/gap-year-draw.ts",
+    "to": "src/lib/pure/engine/individual-account-tracking.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/gap-year-draw.ts",
+    "to": "src/lib/pure/engine/projection-year-handlers/types.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/gap-year-draw.ts",
+    "to": "src/lib/pure/engine/social-security-income.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/gap-year-draw.ts",
+    "to": "src/lib/pure/withdrawal-eligibility.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/guyton-klinger.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/projection-year-handlers/types.ts",
+    "to": "src/lib/pure/engine/types/projection-result.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/projection-year-handlers/types.ts",
+    "to": "src/lib/pure/withdrawal-eligibility.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/rmd-spending.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/spending-decline.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/spending-strategy.ts",
+    "to": "src/lib/pure/engine/vanguard-dynamic.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/spending-strategy.ts",
+    "to": "src/lib/pure/engine/vpw.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/withdrawal-routing.ts",
+    "to": "src/lib/pure/withdrawal-eligibility.ts"
   },
   {
     "rule": "no-circular",

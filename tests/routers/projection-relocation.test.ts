@@ -16,7 +16,7 @@ import {
   seedContributionProfile,
   adminSession,
 } from "./setup";
-import * as engine from "@/lib/calculators/engine";
+import * as engine from "@/lib/pure/engine";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";

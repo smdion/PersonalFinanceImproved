@@ -35,7 +35,7 @@ import {
   buildEnginePayload,
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { SK_RETIREMENT_DEC_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
 import { xfail } from "../fixtures/answer-key";
