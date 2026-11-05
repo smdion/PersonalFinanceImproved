@@ -35,7 +35,7 @@ const LAYERS = {
   pure: "^src/lib/(pure|calculators)/",
   // The engine's public API is its index.ts.
   engine: "^src/lib/(pure|calculators)/engine/",
-  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting|url-safety)\\.ts$)`,
+  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting)\\.ts$)`,
   data: "^src/server/data/",
   // server/helpers and server/retirement are today's composition layer;
   // they dissolve into server/data and server/services.

@@ -334,10 +334,8 @@ export class ActualClient implements BudgetAPIClient {
     apiKey: string,
     private readonly budgetSyncId: string,
   ) {
-    // serverUrl may be http:// (see url-safety.ts —
-    // permitted for LAN-friendly self-hosted use), in which case this
-    // x-api-key header is sent in cleartext. Accepted tradeoff, documented
-    // in validateOutboundUrl()'s doc comment; not fixed here.
+    // serverUrl may be http:// (lib/http/url-safety.ts allows it for
+    // Actual), so this x-api-key can cross the LAN in cleartext.
     this.headers = {
       "x-api-key": apiKey,
       "Content-Type": "application/json",

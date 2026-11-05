@@ -2863,7 +2863,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 13
     },
     "ratchet/no-history-comment": {
       "count": 3
@@ -5125,7 +5125,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/simplefin/ingest.ts": {
@@ -5209,11 +5209,6 @@
   "src/lib/trpc.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/lib/url-safety.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/utils/account-mapping.ts": {
@@ -6205,7 +6200,7 @@
       "count": 4
     },
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/routers/sync/core.ts": {
