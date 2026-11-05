@@ -3751,7 +3751,7 @@
   },
   "src/lib/pure/accounts/account-balances.types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 8
     },
     "ratchet/no-string-closed-set-field": {
       "count": 5
@@ -4373,6 +4373,11 @@
   "src/lib/pure/engine/types/routing.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
+    }
+  },
+  "src/lib/pure/engine/types/year-overrides.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   },
   "src/lib/pure/engine/vanguard-dynamic.ts": {

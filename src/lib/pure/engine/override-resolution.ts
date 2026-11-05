@@ -16,7 +16,7 @@ import type {
   ResolvedDecumulationConfig,
 } from "./types/decumulation";
 import type { AccountCategory } from "../../config/account-types";
-import type { LumpSum } from "../accounts/account-balances.types";
+import type { LumpSum } from "./types/year-overrides";
 import {
   getAllCategories,
   getAccountTypeConfig,
