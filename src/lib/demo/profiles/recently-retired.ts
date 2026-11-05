@@ -21,6 +21,78 @@ import {
   SK_EFUND_BUDGET_COLUMN,
 } from "@/lib/constants/settings-keys";
 
+// ── Per-account performance history, in seeding order ──
+// Hand-written, one row per account-year in seeding order (columns: PerfRow).
+const PERF_ACCOUNTS = {
+  j401k: { institution: "Fidelity", label: "James 401k", owner: "James" },
+  jRollover: {
+    institution: "Fidelity",
+    label: "James Rollover IRA",
+    owner: "James",
+  },
+} as const;
+
+type PerfRow = [
+  account: keyof typeof PERF_ACCOUNTS,
+  year: number,
+  begin: number,
+  contributions: number,
+  gainLoss: number,
+  end: number,
+  /** A fraction: 0.115 = 11.5%. */
+  annualReturn: number,
+  employer: number,
+  fees: number,
+];
+
+// prettier-ignore
+const PERF_HISTORY: PerfRow[] = [
+  ["j401k", 2016, 900000, 37000, 108000, 1045000, 0.115, 18000, 1800],
+  ["j401k", 2017, 1045000, 38000, 219000, 1302000, 0.202, 19000, 1800],
+  ["j401k", 2018, 1302000, 39000, -59000, 1282000, -0.044, 19500, 1800],
+  ["j401k", 2019, 1282000, 40000, 373000, 1695000, 0.282, 20000, 1800],
+  ["j401k", 2020, 1695000, 41000, 297000, 2033000, 0.171, 20500, 1800],
+  ["j401k", 2021, 2033000, 42000, 527000, 2602000, 0.254, 21000, 1800],
+  ["j401k", 2022, 2602000, 43000, -491000, 2154000, -0.186, 21500, 1800],
+  ["j401k", 2023, 2154000, 44000, 551000, 2749000, 0.251, 22000, 1800],
+  ["j401k", 2024, 2749000, 20000, 222000, 2991000, 0.079, 12000, 1400],
+  ["j401k", 2025, 2991000, 0, -117000, 2874000, -0.038, 0, 1000],
+  ["jRollover", 2016, 500000, 0, 58000, 558000, 0.116, 0, 1000],
+  ["jRollover", 2017, 558000, 0, 113000, 671000, 0.203, 0, 1000],
+  ["jRollover", 2018, 671000, 0, -30000, 641000, -0.045, 0, 1000],
+  ["jRollover", 2019, 641000, 0, 181000, 822000, 0.282, 0, 1000],
+  ["jRollover", 2020, 822000, 0, 141000, 963000, 0.172, 0, 1000],
+  ["jRollover", 2021, 963000, 0, 244000, 1207000, 0.253, 0, 1000],
+  ["jRollover", 2022, 1207000, 0, -224000, 983000, -0.186, 0, 1000],
+  ["jRollover", 2023, 983000, 0, 247000, 1230000, 0.251, 0, 1000],
+  ["jRollover", 2024, 1230000, 0, 97000, 1327000, 0.079, 0, 700],
+  ["jRollover", 2025, 1327000, 0, -50000, 1277000, -0.038, 0, 600],
+];
+
+/** The history rows as the profile stores them (amounts as strings). */
+function accountPerformanceRows(): DemoProfile["accountPerformance"] {
+  return PERF_HISTORY.map(
+    ([account, year, begin, contrib, gain, end, ret, employer, fees]) => {
+      const { institution, label, owner } = PERF_ACCOUNTS[account];
+      return {
+        year,
+        institution,
+        accountLabel: label,
+        ownerPersonName: owner,
+        beginningBalance: String(begin),
+        totalContributions: String(contrib),
+        yearlyGainLoss: String(gain),
+        endingBalance: String(end),
+        annualReturnPct: String(ret),
+        employerContributions: String(employer),
+        fees: String(fees),
+        parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
+        perfAccountLabel: label,
+      };
+    },
+  );
+}
+
 export const recentlyRetiredProfile: DemoProfile = {
   slug: "recently-retired",
   name: "Recently Retired",
@@ -635,215 +707,11 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
-  // ── Per-account performance history (10 years × 7 accounts) ─────────────
+  // ── Per-account performance history (10 years × 7 accounts, then 2026) ──
   // annualReturnPct: decimal fraction (0.115 = 11.5%)
   accountPerformance: [
-    // --- James 401k (employer plan, contributions stopped at retirement 2024) ---
-    ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
-      (year) => {
-        const data: Record<
-          number,
-          {
-            begin: string;
-            contrib: string;
-            gain: string;
-            end: string;
-            ret: string;
-            match: string;
-          }
-        > = {
-          2016: {
-            begin: "900000",
-            contrib: "37000",
-            gain: "108000",
-            end: "1045000",
-            ret: "0.115",
-            match: "18000",
-          },
-          2017: {
-            begin: "1045000",
-            contrib: "38000",
-            gain: "219000",
-            end: "1302000",
-            ret: "0.202",
-            match: "19000",
-          },
-          2018: {
-            begin: "1302000",
-            contrib: "39000",
-            gain: "-59000",
-            end: "1282000",
-            ret: "-0.044",
-            match: "19500",
-          },
-          2019: {
-            begin: "1282000",
-            contrib: "40000",
-            gain: "373000",
-            end: "1695000",
-            ret: "0.282",
-            match: "20000",
-          },
-          2020: {
-            begin: "1695000",
-            contrib: "41000",
-            gain: "297000",
-            end: "2033000",
-            ret: "0.171",
-            match: "20500",
-          },
-          2021: {
-            begin: "2033000",
-            contrib: "42000",
-            gain: "527000",
-            end: "2602000",
-            ret: "0.254",
-            match: "21000",
-          },
-          2022: {
-            begin: "2602000",
-            contrib: "43000",
-            gain: "-491000",
-            end: "2154000",
-            ret: "-0.186",
-            match: "21500",
-          },
-          2023: {
-            begin: "2154000",
-            contrib: "44000",
-            gain: "551000",
-            end: "2749000",
-            ret: "0.251",
-            match: "22000",
-          },
-          2024: {
-            begin: "2749000",
-            contrib: "20000",
-            gain: "222000",
-            end: "2991000",
-            ret: "0.079",
-            match: "12000",
-          },
-          2025: {
-            begin: "2991000",
-            contrib: "0",
-            gain: "-117000",
-            end: "2874000",
-            ret: "-0.038",
-            match: "0",
-          },
-        };
-        const d = data[year]!;
-        return {
-          year,
-          institution: "Fidelity",
-          accountLabel: "James 401k",
-          ownerPersonName: "James",
-          beginningBalance: d.begin,
-          totalContributions: d.contrib,
-          yearlyGainLoss: d.gain,
-          endingBalance: d.end,
-          annualReturnPct: d.ret,
-          employerContributions: d.match,
-          fees: year <= 2023 ? "1800" : year === 2024 ? "1400" : "1000",
-          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
-          perfAccountLabel: "James 401k",
-        };
-      },
-    ),
-
-    // --- James Rollover IRA (from prior employer, no contributions) ---
-    ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
-      (year) => {
-        const data: Record<
-          number,
-          {
-            begin: string;
-            gain: string;
-            end: string;
-            ret: string;
-          }
-        > = {
-          2016: {
-            begin: "500000",
-            gain: "58000",
-            end: "558000",
-            ret: "0.116",
-          },
-          2017: {
-            begin: "558000",
-            gain: "113000",
-            end: "671000",
-            ret: "0.203",
-          },
-          2018: {
-            begin: "671000",
-            gain: "-30000",
-            end: "641000",
-            ret: "-0.045",
-          },
-          2019: {
-            begin: "641000",
-            gain: "181000",
-            end: "822000",
-            ret: "0.282",
-          },
-          2020: {
-            begin: "822000",
-            gain: "141000",
-            end: "963000",
-            ret: "0.172",
-          },
-          2021: {
-            begin: "963000",
-            gain: "244000",
-            end: "1207000",
-            ret: "0.253",
-          },
-          2022: {
-            begin: "1207000",
-            gain: "-224000",
-            end: "983000",
-            ret: "-0.186",
-          },
-          2023: {
-            begin: "983000",
-            gain: "247000",
-            end: "1230000",
-            ret: "0.251",
-          },
-          2024: {
-            begin: "1230000",
-            gain: "97000",
-            end: "1327000",
-            ret: "0.079",
-          },
-          2025: {
-            begin: "1327000",
-            gain: "-50000",
-            end: "1277000",
-            ret: "-0.038",
-          },
-        };
-        const d = data[year]!;
-        return {
-          year,
-          institution: "Fidelity",
-          accountLabel: "James Rollover IRA",
-          ownerPersonName: "James",
-          beginningBalance: d.begin,
-          totalContributions: "0",
-          yearlyGainLoss: d.gain,
-          endingBalance: d.end,
-          annualReturnPct: d.ret,
-          employerContributions: "0",
-          fees: year <= 2023 ? "1000" : year === 2024 ? "700" : "600",
-          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
-          perfAccountLabel: "James Rollover IRA",
-        };
-      },
-    ),
-
+    // PERF_HISTORY's rows, then the accounts still written out below.
+    ...accountPerformanceRows(),
     // --- James Roth IRA (smaller allocation) ---
     ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
       (year) => {
