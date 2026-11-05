@@ -136,8 +136,8 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
  *  under IRC §63(f)(1) ("65 or older"). A person is treated as 65 for the
  *  whole tax year if they turn 65 by the first day of the following year, but
  *  the projection works in whole years so a simple `age >= 65` test is used.
- *  Distinct from the OBBBA senior deduction (2025–2028, MAGI-phased), which
- *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
+ *  Separate from the OBBBA senior deduction (2025–2028, MAGI-phased), which
+ *  decumulation years add as well (`obbba-senior-deduction.ts`). */
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b

@@ -949,10 +949,9 @@ interface RouteBracketInfo {
    *  identical balance data, so `traditionalCap - totalTradWithdrawn` IS
    *  that same "unused room" quantity, not an approximation of it. */
   conversionsEnabled?: boolean;
-  /** Household's annual standard deduction — converts the gross ordinary-
-   *  income floor into real taxable income before LTCG bracket lookups.
-   *  Omitted ⇒ 0 (prior behavior: LTCG room systematically
-   *  understated, real LTCG tax overcharged). See `toLtcgTaxableIncome`. */
+  /** Household's annual standard deduction: converts the gross ordinary-income
+   *  floor to taxable income for LTCG lookups (`toLtcgTaxableIncome`);
+   *  omitted subtracts nothing. */
   standardDeduction?: number;
   /** See `RankWithdrawalTiersInput`'s field of the same
    *  name (`withdrawal-cost-ranking.ts`) for the full explanation.
