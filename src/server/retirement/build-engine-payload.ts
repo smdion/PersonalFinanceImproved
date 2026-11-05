@@ -56,7 +56,7 @@ import {
   getDefaultAccumulationOrder,
   isRetirementMoney,
 } from "@/lib/config/account-types";
-import type { SimpleTaxModeParts } from "@/lib/calculators/simple-tax-mode";
+import type { SimpleTaxModeParts } from "@/lib/pure/tax/simple-tax-mode";
 import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
 import {
   findMissingCostBasis,
@@ -1142,7 +1142,7 @@ export async function buildEnginePayload(
     taxSplits: realSplits.taxSplits,
   };
 
-  // Simple tax mode's retirement-only inputs (lib/calculators/simple-tax-mode.ts).
+  // Simple tax mode's retirement-only inputs (lib/pure/tax/simple-tax-mode.ts).
   const simpleTaxMode: SimpleTaxModeParts = {
     retirementBuckets: Object.entries(portfolioByTaxTypeByParentCat)
       .filter(([parent]) => isRetirementMoney(parent))

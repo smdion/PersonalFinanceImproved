@@ -20,8 +20,8 @@ import {
   withheldThroughPeriod,
 } from "@/lib/calculators/paycheck";
 import type { SalarySegment } from "@/lib/calculators/paycheck";
-import { calculateHouseholdTax } from "@/lib/calculators/tax";
-import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
+import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
+import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import {
   toNumber,
   getRegularPeriodsPerMonth,

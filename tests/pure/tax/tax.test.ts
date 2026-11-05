@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
 import { roundToCents } from "@/lib/utils/math";
-import { MFJ_TAXABLE_INCOME_BRACKETS, AS_OF_DATE } from "../pure/fixtures";
+import { MFJ_TAXABLE_INCOME_BRACKETS, AS_OF_DATE } from "../fixtures";
 import type { TaxBracketInput } from "@/lib/pure/types/shared";
 
 describe("household tax, one person", () => {

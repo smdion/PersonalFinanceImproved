@@ -11,7 +11,7 @@
   },
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/simple-tax-mode.ts",
+    "from": "src/lib/pure/tax/simple-tax-mode.ts",
     "to": "src/lib/pure/engine/projection-year-handlers/lump-sum.ts"
   },
   {

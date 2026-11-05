@@ -3051,20 +3051,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/simple-tax-mode.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/social-security.ts": {
     "ratchet/max-comment-lines": {
       "count": 12
@@ -3074,19 +3060,6 @@
     }
   },
   "src/lib/calculators/strategy-spending.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/tax-brackets.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/tax.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -5012,6 +4985,33 @@
     }
   },
   "src/lib/pure/tax-data-status.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/simple-tax-mode.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/tax-brackets.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/tax.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

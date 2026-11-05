@@ -19,7 +19,7 @@ import { assessPlan } from "@/lib/calculators/plan-outcome";
 import {
   toSimpleTaxMode,
   type SimpleTaxModeParts,
-} from "@/lib/calculators/simple-tax-mode";
+} from "@/lib/pure/tax/simple-tax-mode";
 import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import type {
   ProjectionInput,

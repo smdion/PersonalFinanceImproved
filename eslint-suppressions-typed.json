@@ -539,11 +539,6 @@
       "count": 2
     }
   },
-  "src/lib/calculators/tax.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 4
@@ -677,6 +672,11 @@
   "src/lib/pure/tax-bucket-projection.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/lib/pure/tax/tax.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/lib/sec/connection.ts": {

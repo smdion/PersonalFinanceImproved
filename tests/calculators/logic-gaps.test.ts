@@ -13,7 +13,10 @@
 import { FIXTURE_SS_WAGE_BASE_2026 } from "../pure/fixtures";
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
-import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
+import {
+  taxForOnePerson,
+  type OnePersonTaxInput,
+} from "../pure/tax/tax-helpers";
 import { calculateBudget } from "@/lib/calculators/budget";
 import { calculateContributions } from "@/lib/calculators/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";

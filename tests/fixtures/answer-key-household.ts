@@ -1,6 +1,6 @@
 /**
  * Invented households for the answer key's engine-year cases
- * (`tests/calculators/answer-key-tax-engine.test.ts`,
+ * (`tests/pure/tax/answer-key-tax-engine.test.ts`,
  * `answer-key-retirement-engine.test.ts`, and the survivor m30-MAGI in
  * `answer-key-tax.test.ts`), built as a plain
  * `ProjectionInput` the way `build-engine-payload.ts` fills one for a

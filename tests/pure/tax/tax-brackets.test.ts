@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sumBracketTax } from "@/lib/calculators/tax-brackets";
+import { sumBracketTax } from "@/lib/pure/tax/tax-brackets";
 
 const BRACKETS = [
   { min: 0, max: 10000, rate: 0.1 },

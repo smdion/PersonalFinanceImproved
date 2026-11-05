@@ -10,7 +10,7 @@ import type {
   ContributionAccountInput,
 } from "@/lib/pure/types/shared";
 import type { PaycheckInput } from "@/lib/pure/types/calculators";
-import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
+import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 
 // A single source for the 2026 figures repeated across this
 // file's bracket fixtures below, so a January bump is one edit here

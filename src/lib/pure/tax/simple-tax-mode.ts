@@ -15,21 +15,21 @@ import {
   isOverflowTarget,
   isRetirementMoney,
   zeroBalance,
-} from "../config/account-types";
-import { roundToCents } from "../utils/math";
-import { resolveLumpSumTarget } from "../pure/engine/projection-year-handlers/lump-sum";
-import type { AccountBalance } from "../config/account-types.types";
-import type { AccountCategory } from "../config/account-types";
+} from "../../config/account-types";
+import { roundToCents } from "../../utils/math";
+import { resolveLumpSumTarget } from "../engine/projection-year-handlers/lump-sum";
+import type { AccountBalance } from "../../config/account-types.types";
+import type { AccountCategory } from "../../config/account-types";
 import type {
   AccumulationDefaults,
   ProjectionInput,
   RetirementContribSlice,
-} from "../pure/engine/types";
+} from "../engine/types";
 import type {
   IndividualAccountInput,
   LumpSum,
   TaxBuckets,
-} from "../pure/types/shared";
+} from "../types/shared";
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
   retirementBuckets: TaxBuckets;

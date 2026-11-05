@@ -42,13 +42,13 @@
  *   list additions". P25's blindness half stays below as `it.todo`.
  */
 import { describe, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
-import { retiredYear } from "../fixtures/answer-key-household";
-import { readTaxData, taxDataLimitMap } from "../helpers/tax-data";
+import { cents, xfail } from "../../fixtures/answer-key";
+import { retiredYear } from "../../fixtures/answer-key-household";
+import { readTaxData, taxDataLimitMap } from "../../helpers/tax-data";
 import {
   sumBracketTax,
   toTaxableIncomeBrackets,
-} from "@/lib/calculators/tax-brackets";
+} from "@/lib/pure/tax/tax-brackets";
 import { computeLtcgTax, type LtcgBracketTable } from "@/lib/config/tax-tables";
 import {
   computeTaxableSS,
@@ -58,7 +58,7 @@ import {
 } from "@/lib/pure/engine/tax-estimation";
 import { computeObbbaSeniorDeduction } from "@/lib/pure/engine/obbba-senior-deduction";
 import { computeNiit } from "@/lib/config/niit";
-import { calculateHouseholdTax } from "@/lib/calculators/tax";
+import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type { TaxBracketInput } from "@/lib/pure/types/shared";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";

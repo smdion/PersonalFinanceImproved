@@ -23,7 +23,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
 import { readTaxData } from "../helpers/tax-data";
-import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
+import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import type { TaxDataYear } from "@/lib/db/reference-reconcile-core";
 import { PUBLISHED_2025 } from "../fixtures/irs-published/2025";
 import { PUBLISHED_2026 } from "../fixtures/irs-published/2026";

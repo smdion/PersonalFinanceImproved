@@ -10,7 +10,7 @@ import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import {
   taxForOnePerson,
   type OnePersonTaxInput,
-} from "../calculators/tax-helpers";
+} from "../pure/tax/tax-helpers";
 import { calculateBudget } from "@/lib/calculators/budget";
 import { calculateContributions } from "@/lib/calculators/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";

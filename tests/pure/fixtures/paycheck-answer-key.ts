@@ -5,7 +5,7 @@
  * job. Nothing here is an expected figure: the tests work those by hand.
  */
 import { taxDataLimitMap, taxDataWithholding } from "../../helpers/tax-data";
-import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
+import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import type {
   ContributionAccountInput,
   DeductionLine,

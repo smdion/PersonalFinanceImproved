@@ -34,12 +34,12 @@
  * at ±$1").
  */
 import { describe, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
+import { cents, xfail } from "../../fixtures/answer-key";
 import {
   gapYear,
   retiredYear,
   type KeyHousehold,
-} from "../fixtures/answer-key-household";
+} from "../../fixtures/answer-key-household";
 
 /** Gross-up convergence, carried into the tax (see the header). */
 const GROSS_UP = 1;

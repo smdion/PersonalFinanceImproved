@@ -57,7 +57,7 @@ import {
   limit,
 } from "../pure/fixtures/paycheck-answer-key";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
-import { calculateHouseholdTax } from "@/lib/calculators/tax";
+import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { computeAnnualEarnings } from "@/lib/pure/household-income";
 import type {
   PaycheckInput,

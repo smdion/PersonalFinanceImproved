@@ -43,7 +43,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
-import { toSimpleTaxMode } from "@/lib/calculators/simple-tax-mode";
+import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
 import {
   fetchRetirementData,
   buildEnginePayload,
