@@ -504,11 +504,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/contribution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
   "src/lib/calculators/mortgage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -582,6 +577,11 @@
   "src/lib/pure/contributions.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/lib/pure/contributions/contribution.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
     }
   },
   "src/lib/pure/engine/balance-utils.ts": {

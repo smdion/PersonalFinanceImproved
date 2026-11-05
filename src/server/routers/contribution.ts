@@ -7,7 +7,7 @@ import {
   userHasPermission,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateContributions } from "@/lib/calculators/contribution";
+import { calculateContributions } from "@/lib/pure/contributions/contribution";
 import {
   loadLiveContributions,
   liveYearToDate,

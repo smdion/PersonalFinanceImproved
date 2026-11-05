@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { calculateContributions } from "@/lib/calculators/contribution";
+import { calculateContributions } from "@/lib/pure/contributions/contribution";
 import {
   PERSON_A_CONTRIBUTIONS,
   PERSON_B_CONTRIBUTIONS,
   AS_OF_DATE,
-} from "../pure/fixtures";
+} from "../fixtures";
 import type { ContributionAccountInput } from "@/lib/pure/types/shared";
 import type { ContributionInput } from "@/lib/pure/types/calculators";
 

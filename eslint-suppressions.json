@@ -2943,11 +2943,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/contribution.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/efund.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -3911,6 +3906,11 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
+    }
+  },
+  "src/lib/pure/contributions/contribution.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/lib/pure/controlled-overrides.ts": {

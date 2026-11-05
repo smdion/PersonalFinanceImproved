@@ -19,8 +19,8 @@
 import type {
   ContributionInput,
   ContributionResult,
-} from "../pure/types/calculators";
-import { roundToCents, safeDivide, sumBy } from "../utils/math";
+} from "../types/calculators";
+import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 
 export function calculateContributions(
   input: ContributionInput,
