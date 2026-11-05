@@ -21,7 +21,8 @@ import {
   guardedLookup,
   plainLookup,
 } from "@/lib/http/url-safety";
-import { fetchChecked } from "@/lib/http/external-request";
+import { externalRequest, fetchChecked } from "@/lib/http/external-request";
+import { z } from "zod/v4";
 import { BudgetApiError } from "@/lib/budget-api/errors";
 
 const ANSWERS: Record<string, LookupAddress[]> = {
@@ -34,6 +35,7 @@ const ANSWERS: Record<string, LookupAddress[]> = {
   "public.example.com": [{ address: "93.184.215.14", family: 4 }],
   // The one private address a test can listen on stands in for a LAN one.
   "lan.example.com": [{ address: "127.0.0.1", family: 4 }],
+  "empty.example.com": [],
 };
 
 vi.mock("node:dns", async (importOriginal) => {
@@ -150,7 +152,13 @@ describe("the real fetch, through the transport's dispatchers", () => {
   const original = process.env.ALLOWED_ACTUAL_HOSTS;
 
   beforeAll(async () => {
-    server = createServer((_req, res) => res.end('{"ok":true}'));
+    server = createServer((req, res) => {
+      if (req.url === "/start") {
+        res.writeHead(302, { location: "/done" }).end();
+        return;
+      }
+      res.end(JSON.stringify({ ok: true, path: req.url }));
+    });
     server.on("connection", () => connections++);
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     port = (server.address() as AddressInfo).port;
@@ -192,8 +200,37 @@ describe("the real fetch, through the transport's dispatchers", () => {
       {},
       "actual",
     );
-    expect(await res.json()).toEqual({ ok: true });
+    expect(await res.json()).toEqual({ ok: true, path: "/" });
   });
+
+  it("follows a same-origin redirect: the real fetch exposes Location under redirect: manual", async () => {
+    process.env.ALLOWED_ACTUAL_HOSTS = "lan.example.com";
+    const res = await fetchChecked(
+      `http://lan.example.com:${port}/start`,
+      {},
+      "actual",
+    );
+    expect(await res.json()).toEqual({ ok: true, path: "/done" });
+  });
+
+  it.each(["nowhere", "empty"])(
+    "%s.example.com, which resolves to nothing, is a network error, not a refusal",
+    async (name) => {
+      delete process.env.ALLOWED_ACTUAL_HOSTS;
+      const err = await externalRequest({
+        service: "actual",
+        endpoint: "/",
+        url: `http://${name}.example.com:${port}/`,
+        schema: z.unknown(),
+        maxAttempts: 1,
+      }).then(
+        () => null,
+        (e: unknown) => e as BudgetApiError,
+      );
+      expect(err?.code).toBe("network");
+      expect(err?.isRetryable).toBe(true);
+    },
+  );
 
   it("an allowlist entry for another port leaves the name checked", async () => {
     process.env.ALLOWED_ACTUAL_HOSTS = `lan.example.com:${port + 1}`;

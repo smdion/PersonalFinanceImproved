@@ -40,8 +40,9 @@ export class BudgetApiError extends Error {
   service?: string;
   field?: string;
   /** The start of an error answer's body, for code that reads what the
-   *  service said; it can echo the request, so no message or log holds it. */
-  responseText?: string;
+   *  service said. It can echo the request: set by keepResponseText,
+   *  non-enumerable, so no message, JSON or inspect of the error shows it. */
+  declare readonly responseText?: string;
 
   constructor(
     message: string,
@@ -54,6 +55,13 @@ export class BudgetApiError extends Error {
     this.code = code;
     this.status = status;
     this.retryAfterSeconds = retryAfterSeconds;
+  }
+
+  keepResponseText(text: string): void {
+    Object.defineProperty(this, "responseText", {
+      value: text.slice(0, 500),
+      enumerable: false,
+    });
   }
 
   /** True if the error is worth retrying. */

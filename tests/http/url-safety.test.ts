@@ -58,17 +58,25 @@ describe("checkOutboundUrl: IPv6 literals", () => {
     "[ff02::1]",
     "[2002:7f00:1::]",
     "[64:ff9b::a9fe:a9fe]",
+    "[64:ff9b:1::a9fe:a9fe]",
+    "[64:ff9b:1::808:808]",
+    "[2001::1]",
+    "[2001:0:4136:e378:8000:63bf:3fff:fdd2]",
+    "[2001:db8::1]",
+    "[100::1]",
   ])("refuses http://%s", (host) => {
     expect(refused(`http://${host}/`)).toBe(true);
     expect(reason(`http://${host}/`)).toMatch(/private or local address/);
   });
 
-  it.each(["[64:ff9b::808:808]", "[2606:4700::1111]", "[::ffff:808:808]"])(
-    "allows the public address http://%s",
-    (host) => {
-      expect(checkOutboundUrl(`http://${host}/`, "actual").ok).toBe(true);
-    },
-  );
+  it.each([
+    "[64:ff9b::808:808]",
+    "[2606:4700::1111]",
+    "[::ffff:808:808]",
+    "[2001:4860:4860::8888]",
+  ])("allows the public address http://%s", (host) => {
+    expect(checkOutboundUrl(`http://${host}/`, "actual").ok).toBe(true);
+  });
 });
 
 describe("checkOutboundUrl: IPv4 spellings normalised before the check", () => {
@@ -123,6 +131,8 @@ describe("checkOutboundUrl: local and single-label names", () => {
     "a.localhost.",
     "app.localhost",
     "localhost.localdomain.",
+    "localhost..",
+    "a.localhost..",
   ])("refuses %s as a local name", (host) => {
     expect(reason(`http://${host}:5006/`)).toMatch(/local name/);
   });
@@ -268,6 +278,35 @@ describe("ALLOWED_ACTUAL_HOSTS", () => {
     for (const service of ["simplefin", "ynab", "tiingo", "sec"] as const) {
       expect(checkOutboundUrl("https://10.0.0.5", service).ok).toBe(false);
     }
+  });
+
+  it.each([["unset"], [""], [" , "], [","]])(
+    "an empty allowlist (%j) opens nothing",
+    (value) => {
+      if (value === "unset") delete process.env.ALLOWED_ACTUAL_HOSTS;
+      else process.env.ALLOWED_ACTUAL_HOSTS = value;
+      expect(checkOutboundUrl("http://10.0.0.5:5006", "actual").ok).toBe(false);
+      expect(checkOutboundUrl("http://actual:5006", "actual").ok).toBe(false);
+    },
+  );
+
+  it("trims spaces around a host:port entry", () => {
+    process.env.ALLOWED_ACTUAL_HOSTS = "  actual-http-api:5007  , 10.0.0.5 ";
+    expect(checkOutboundUrl("http://actual-http-api:5007", "actual").ok).toBe(
+      true,
+    );
+    expect(checkOutboundUrl("http://actual-http-api:5006", "actual").ok).toBe(
+      false,
+    );
+  });
+
+  it("reads an unbracketed IPv6 entry as an address, never as host:port", () => {
+    process.env.ALLOWED_ACTUAL_HOSTS = "fd00::7:5006";
+    expect(checkOutboundUrl("http://[fd00::7]:5006", "actual").ok).toBe(false);
+    expect(checkOutboundUrl("http://[fd00::7:5006]", "actual").ok).toBe(true);
+    process.env.ALLOWED_ACTUAL_HOSTS = "[fd00::7]:5006";
+    expect(checkOutboundUrl("http://[fd00::7]:5006", "actual").ok).toBe(true);
+    expect(checkOutboundUrl("http://[fd00::7]:5007", "actual").ok).toBe(false);
   });
 
   it("is read on every call", () => {

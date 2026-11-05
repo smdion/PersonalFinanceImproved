@@ -151,13 +151,12 @@ describe("validateCronBearerRequest (Authorization: Bearer, health/detailed)", (
 
 describe("cronRoute", () => {
   const run = vi.fn(() => Promise.resolve(new Response("done")));
-  const call = (header?: string, options?: { logMisconfiguration?: boolean }) =>
+  const call = (header?: string) =>
     cronRoute(
       new Request("http://localhost/api/versions/daily", {
         headers: header ? { "X-Cron-Secret": header } : {},
       }),
       run,
-      options,
     );
 
   beforeEach(() => {
@@ -176,11 +175,13 @@ describe("cronRoute", () => {
     expect(run).not.toHaveBeenCalled();
   });
 
-  it("answers 500 without a log when logMisconfiguration is false", async () => {
+  it("answers 500 and logs when CRON_SECRET is unset", async () => {
     delete process.env.CRON_SECRET;
-    const res = await call(VALID_SECRET, { logMisconfiguration: false });
+    const res = await call(VALID_SECRET);
     expect(res.status).toBe(500);
-    expect(log).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith("error", "cron_secret_misconfigured", {
+      message: "CRON_SECRET is missing or too short",
+    });
     expect(run).not.toHaveBeenCalled();
   });
 

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     );
   }
 
-  return cronRoute(request, runBackfills, { logMisconfiguration: false });
+  return cronRoute(request, runBackfills);
 }
 
 async function runBackfills(): Promise<Response> {

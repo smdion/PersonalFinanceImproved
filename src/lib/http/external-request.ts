@@ -142,15 +142,23 @@ async function sendOnce(
 }
 
 /** Where a redirect may go: the same origin, or http to https on the same
- *  host. Its answer for any other hop is the reason it's refused. */
-function redirectRefusal(from: URL, to: URL, status: number, method: string) {
+ *  host with the same or default port. Any other hop: the reason refused. */
+function redirectRefusal(
+  from: URL,
+  to: URL,
+  status: number,
+  method: string,
+): string | null {
   if (from.protocol === "https:" && to.protocol === "http:")
     return "it redirected from https to http.";
-  const sameHost =
-    from.origin === to.origin ||
-    (from.hostname === to.hostname && to.protocol === "https:");
-  if (!sameHost)
+  if (from.hostname !== to.hostname)
     return `it redirected to another host ("${to.hostname}"); Ledgr doesn't follow that.`;
+  const upgrade =
+    from.protocol === "http:" &&
+    to.protocol === "https:" &&
+    (to.port === "" || to.port === from.port);
+  if (from.origin !== to.origin && !upgrade)
+    return `it redirected to another port ("${to.host}"); Ledgr doesn't follow that.`;
   if (status <= 303 && method !== "GET" && method !== "HEAD")
     return `it redirected a ${method} with ${status}; Ledgr doesn't resend it as a GET.`;
   return null;
@@ -247,8 +255,9 @@ export async function externalRequest<S extends z.ZodType>(request: {
   /** Overrides of the service's rule for this call. */
   maxAttempts?: number;
   timeoutMs?: number;
-  /** Called once per HTTP request sent, retries included, after its answer
-   *  is read: `error` is null for a 2xx answer that read as JSON (or text). */
+  /** Called once per attempt, retries included (a followed redirect is part
+   *  of its attempt), after its answer is read: `error` is null for a 2xx
+   *  answer that read as JSON (or text). */
   onAttempt?: (attempt: {
     status: number | null;
     error: BudgetApiError | null;
@@ -289,7 +298,10 @@ export async function externalRequest<S extends z.ZodType>(request: {
         status = res.status;
         if (!res.ok) {
           const error = classifyResponse(res);
-          error.responseText = (await res.text().catch(() => "")).slice(0, 500);
+          // Only Actual's client reads it ("no budget file is open").
+          if (request.service === "actual")
+            error.keepResponseText(await res.text().catch(() => ""));
+          else await res.body?.cancel().catch(() => undefined);
           throw error;
         }
         const text = await res.text();

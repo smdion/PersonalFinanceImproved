@@ -56,6 +56,10 @@ const IPV6_BLOCKED: readonly [string, number][] = [
   ["fec0::", 10], // site-local
   ["ff00::", 8], // multicast
   ["2002::", 16], // 6to4
+  ["2001::", 32], // Teredo
+  ["2001:db8::", 32], // documentation
+  ["100::", 64], // discard-only
+  ["64:ff9b:1::", 48], // local-use NAT64, its IPv4 placement not fixed
 ];
 
 /** Every blocked range. IPv4 rules also match IPv4-mapped IPv6
@@ -90,12 +94,12 @@ export function isBlockedAddress(ip: string): boolean {
   return BLOCKED.check(hex, "ipv6");
 }
 
-/** A host as matched: no brackets, lowercase, one trailing dot dropped. */
+/** A host as matched: no brackets, lowercase, trailing dots dropped. */
 function bareHost(hostname: string): string {
   return hostname
     .toLowerCase()
     .replace(/^\[|\]$/g, "")
-    .replace(/\.$/, "");
+    .replace(/\.+$/, "");
 }
 
 type AllowEntry = { host: string; port: string | null };
@@ -168,8 +172,9 @@ function refusal(host: string): string | null {
 
 export type UrlCheck = { ok: true; url: URL } | { ok: false; reason: string };
 
-/** Check a URL before Ledgr sends a request to it for `service`. A refusal's
- *  reason names the host at most, never the full URL. */
+/** Check a URL before Ledgr sends a request to it for `service`. A refusal
+ *  names the host at most. Fixed or operator-set URLs (GitHub tax data, the
+ *  OIDC issuer) don't pass this check. */
 export function checkOutboundUrl(
   input: string | URL,
   service: OutboundService,

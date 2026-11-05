@@ -56,21 +56,18 @@ export function validateCronBearerRequest(request: Request): boolean {
 
 /**
  * Runs a cron route's work once its `X-Cron-Secret` header checks out.
- * A missing or short CRON_SECRET answers 500 (logged unless
- * `logMisconfiguration` is false); a wrong or absent header answers 401.
+ * A missing or short CRON_SECRET answers 500 and is logged; a wrong or
+ * absent header answers 401.
  */
 export async function cronRoute(
   request: Request,
   run: () => Promise<Response>,
-  { logMisconfiguration = true }: { logMisconfiguration?: boolean } = {},
 ): Promise<Response> {
   const cronCheck = validateCronHeaderRequest(request);
   if (cronCheck === "misconfigured") {
-    if (logMisconfiguration) {
-      log("error", "cron_secret_misconfigured", {
-        message: "CRON_SECRET is missing or too short",
-      });
-    }
+    log("error", "cron_secret_misconfigured", {
+      message: "CRON_SECRET is missing or too short",
+    });
     return NextResponse.json(
       { error: "Server misconfiguration" },
       { status: 500 },

@@ -6,6 +6,7 @@
  * (tests/http/connect-check.test.ts covers the connected address).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { inspect } from "node:util";
 import { z } from "zod/v4";
 import {
   externalRequest,
@@ -138,6 +139,60 @@ describe.each(APPS)("redirects for $service", (app) => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
+  it.each([301, 303])(
+    "refuses a %i on a POST rather than resend it as a GET",
+    async (status) => {
+      mockFetch.mockResolvedValueOnce(redirect(status, `${app.base}/v1/moved`));
+      await refusal(send(app, "/v1/items", { method: "POST", body: "{}" }));
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("follows a 303 on a GET", async () => {
+    mockFetch
+      .mockResolvedValueOnce(redirect(303, `${app.base}/v1/moved`))
+      .mockResolvedValueOnce(ok());
+    await send(app, "/v1/items");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("follows a 308 on a POST, resending its body", async () => {
+    mockFetch
+      .mockResolvedValueOnce(redirect(308, `${app.base}/v1/moved`))
+      .mockResolvedValueOnce(ok());
+    await send(app, "/v1/items", { method: "POST", body: '{"b":2}' });
+    const second = mockFetch.mock.calls[1]![1] as RequestInit;
+    expect(second.method).toBe("POST");
+    expect(second.body).toBe('{"b":2}');
+  });
+
+  it("refuses a redirect to another port on the same host", async () => {
+    mockFetch.mockResolvedValueOnce(redirect(302, `${app.base}:2375/v1/x`));
+    expect((await refusal(send(app, "/v1/items"))).message).toMatch(
+      /another port \(".*:2375"\)/,
+    );
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("follows exactly 3 redirects", async () => {
+    for (let i = 0; i < 3; i++)
+      mockFetch.mockResolvedValueOnce(redirect(307, `${app.base}/v1/r${i}`));
+    mockFetch.mockResolvedValueOnce(ok({ done: true }));
+    expect(await send(app, "/v1/items")).toEqual({ done: true });
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("returns a 3xx with no Location as it is, unfollowed", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 302 }));
+    const err = await send(app, "/v1/items").then(
+      () => null,
+      (e: unknown) => e as BudgetApiError,
+    );
+    expect(err?.code).toBe("unknown");
+    expect(err?.status).toBe(302);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("refuses a fourth redirect", async () => {
     for (let i = 0; i < 4; i++)
       mockFetch.mockResolvedValueOnce(redirect(307, `${app.base}/v1/r${i}`));
@@ -149,6 +204,25 @@ describe.each(APPS)("redirects for $service", (app) => {
 });
 
 describe("http to https on the same host", () => {
+  it("keeps the port or moves to https's default; any other port is refused", async () => {
+    mockFetch
+      .mockResolvedValueOnce(redirect(301, "https://actual.example.com:5006/a"))
+      .mockResolvedValueOnce(ok());
+    await fetchChecked("http://actual.example.com:5006/a", {}, "actual");
+    expect(mockFetch.mock.calls[1]![0]).toBe(
+      "https://actual.example.com:5006/a",
+    );
+
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValueOnce(
+      redirect(301, "https://actual.example.com:8443/a"),
+    );
+    await refusal(
+      fetchChecked("http://actual.example.com:5006/a", {}, "actual"),
+    );
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("is followed for Actual", async () => {
     mockFetch
       .mockResolvedValueOnce(
@@ -190,6 +264,22 @@ describe("every request", () => {
     expect(inits[0]!.dispatcher).toBeDefined();
     expect(inits[1]!.dispatcher).toBeDefined();
     expect(inits[1]!.dispatcher).not.toBe(inits[0]!.dispatcher);
+  });
+
+  it("an allowlisted IPv6 literal with its port gets the allowlisted connections", async () => {
+    mockFetch.mockResolvedValue(ok());
+    await fetchChecked("https://api.ynab.com/x", {}, "ynab");
+    process.env.ALLOWED_ACTUAL_HOSTS = "[fd00::5]:5006";
+    await fetchChecked("http://[fd00::5]:5006/v1", {}, "actual");
+    await expect(
+      fetchChecked("http://[fd00::5]:5007/v1", {}, "actual"),
+    ).rejects.toThrow(/private or local address/);
+    const [publicOnly, allowlisted] = mockFetch.mock.calls.map(
+      (c) => (c[1] as { dispatcher?: unknown }).dispatcher,
+    );
+    expect(allowlisted).toBeDefined();
+    expect(allowlisted).not.toBe(publicOnly);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it("reaches fetch with the caller's URL spelling unchanged", async () => {
@@ -257,4 +347,43 @@ describe("an error answer", () => {
       expect(err?.message).not.toContain("SECRET-BODY");
     },
   );
+});
+
+describe("Actual's error body", () => {
+  it("is kept for the client to read, but no JSON or inspect of the error shows it", async () => {
+    mockFetch.mockResolvedValue(
+      new Response('{"error":"No budget file is open SECRET-BODY"}', {
+        status: 404,
+      }),
+    );
+    const err = await externalRequest({
+      service: "actual",
+      endpoint: "/v1/budgets/x/accounts",
+      url: "https://actual.example.com/v1/budgets/x/accounts",
+      schema: z.unknown(),
+      maxAttempts: 1,
+    }).then(
+      () => null,
+      (e: unknown) => e as BudgetApiError,
+    );
+    expect(err?.responseText).toMatch(/No budget file is open/);
+    expect(JSON.stringify(err)).not.toContain("SECRET-BODY");
+    expect(inspect(err)).not.toContain("SECRET-BODY");
+    expect(Object.keys(err!)).not.toContain("responseText");
+  });
+
+  it("isn't kept for another service", async () => {
+    mockFetch.mockResolvedValue(new Response("SECRET-BODY", { status: 404 }));
+    const err = await externalRequest({
+      service: "ynab",
+      endpoint: "/budgets",
+      url: "https://api.ynab.com/v1/budgets",
+      schema: z.unknown(),
+      maxAttempts: 1,
+    }).then(
+      () => null,
+      (e: unknown) => e as BudgetApiError,
+    );
+    expect(err?.responseText).toBeUndefined();
+  });
 });
