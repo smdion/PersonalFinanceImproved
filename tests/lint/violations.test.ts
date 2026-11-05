@@ -73,7 +73,7 @@
  * reason, add the file to the EXEMPT set with a comment OR add the inline
  * escape hatch comment.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -2040,6 +2040,13 @@ describe("one config entry adds an account type", () => {
     });
   });
 
+  // The scan below parses all of src/ (seconds, more under coverage). It
+  // runs here, once, so no case pays for it: an `it.fails` case that timed
+  // out on the parse would pass.
+  beforeAll(() => {
+    moduleLoadLists();
+  }, 60_000);
+
   it("no other category list or schema is built when its module loads", () => {
     expect(moduleLoadLists()).toEqual([...BUILT_AT_LOAD].sort());
   });
@@ -2094,8 +2101,15 @@ const CATEGORY_LIST_CALLS = new Set([
 
 /** Every top-level `const` under src/ whose value calls a category-list
  *  function or iterates ACCOUNT_TYPE_CONFIG outside a function body, as
- *  "<file> <name>". */
+ *  "<file> <name>". The scan parses all of src/, so it runs once per file
+ *  and every case reads the same result (src/ doesn't change mid-run). */
+let moduleLoadListsFound: readonly string[] | undefined;
 function moduleLoadLists(): string[] {
+  moduleLoadListsFound ??= scanModuleLoadLists();
+  return [...moduleLoadListsFound];
+}
+
+function scanModuleLoadLists(): string[] {
   const root = path.resolve(__dirname, "../..");
   const readsAtLoad = (node: ts.Node): boolean => {
     if (ts.isFunctionLike(node)) return false;
