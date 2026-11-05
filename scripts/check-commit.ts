@@ -297,9 +297,12 @@ export function notAMove(
     // Prettier re-wraps a line whose path changed length (a long union gains
     // leading pipes, broken call arguments gain trailing commas): the same
     // text once joined.
+    // Only layout goes: prettier's leading union pipe, spaces beside
+    // punctuation, a trailing comma. Operators and words stay apart.
     const joined = (lines: string[]) =>
       withoutPaths(lines.join(" "), names)
-        .replace(/[\s|]+/g, "")
+        .replace(/(^|[=(<,:])\s*\|(?!\|)/g, "$1")
+        .replace(/\s*([()[\]{},;:<>=|&?+*/.!-])\s*/g, "$1")
         .replace(/,(?=[)\]}])/g, "");
     if (removed.length > 0 && joined(removed) === joined(added)) {
       removed = [];

@@ -487,6 +487,30 @@ describe("notAMove: a move's bookkeeping and bare names", () => {
       /neither imports nor path rewrites/,
     );
   });
+  it("refuses an operator or a string changed inside a re-wrap", () => {
+    const wrapped = (one: string, two: string[]) =>
+      file("docs/DESIGN.md", [`-${one}`, ...two.map((l) => `+${l}`)]).join(
+        "\n",
+      );
+    // Bitwise to logical OR.
+    expect(
+      notAMove(
+        renamed,
+        wrapped("const f = a | b;", ["const f =", "  a || b;"]),
+      ),
+    ).toMatch(/neither imports nor path rewrites/);
+    // A space inside a string.
+    expect(
+      notAMove(
+        renamed,
+        wrapped('const s = label("a b");', [
+          "const s = label(",
+          '  "ab",',
+          ");",
+        ]),
+      ),
+    ).toMatch(/neither imports nor path rewrites/);
+  });
 });
 
 describe("looksLikeFix", () => {
