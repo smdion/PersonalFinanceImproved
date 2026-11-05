@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Deploy script for Ledgr
 #
-# Usage: pnpm deploy <version> [--skip-demo] [--force] [--dry-run]
+# Usage: pnpm deploy <version> [--skip-demo] [--force] [--skip-ci-gate] [--dry-run]
 #   e.g.: pnpm deploy 0.3.2
 #         pnpm deploy 0.3.2 --skip-demo   # skip demo health check
-#         pnpm deploy 0.3.2 --force       # deploy despite a version mismatch,
-#                                         # uncommitted changes or no green CI
+#         pnpm deploy 0.3.2 --force       # deploy despite a version mismatch
+#                                         # or uncommitted changes
+#         pnpm deploy 0.3.2 --skip-ci-gate  # deploy without a green CI run
 #         pnpm deploy 0.3.2 --dry-run     # run the local checks (version, CI,
 #                                         # clean tree), then stop: no SSH, no
 #                                         # build; .env.deploy not needed
@@ -48,12 +49,14 @@ NC='\033[0m'
 VERSION=""
 SKIP_DEMO=false
 FORCE=false
+SKIP_CI_GATE=false
 DRY_RUN=false
 
 for arg in "$@"; do
   case "$arg" in
     --skip-demo) SKIP_DEMO=true ;;
     --force) FORCE=true ;;
+    --skip-ci-gate) SKIP_CI_GATE=true ;;
     --dry-run) DRY_RUN=true ;;
     -*) echo -e "${RED}Unknown flag: $arg${NC}"; exit 1 ;;
     *) VERSION="$arg" ;;
@@ -61,7 +64,7 @@ for arg in "$@"; do
 done
 
 if [[ -z "$VERSION" ]]; then
-  echo -e "${RED}Usage: pnpm deploy <version> [--skip-demo] [--force] [--dry-run]${NC}"
+  echo -e "${RED}Usage: pnpm deploy <version> [--skip-demo] [--force] [--skip-ci-gate] [--dry-run]${NC}"
   echo "  e.g.: pnpm deploy 0.3.2"
   exit 1
 fi
@@ -138,18 +141,18 @@ if ! pnpm -s check:engine-hash; then
 fi
 
 # 4. CI must be green for the commit being deployed. Without a green run
-#    (none yet, still running, failed, or a job missing), refuse; --force
-#    deploys anyway with a warning.
+#    (none yet, still running, failed, or a job missing), refuse;
+#    --skip-ci-gate (never --force) deploys anyway with a warning.
 HEAD_SHA=$(git rev-parse HEAD)
 echo "Checking CI for ${HEAD_SHA:0:8}..."
 if npx tsx scripts/ci-gate.ts "$HEAD_SHA"; then
   echo -e "${GREEN}  CI green${NC}"
-elif $FORCE; then
-  echo -e "${YELLOW}${BOLD}WARNING: --force: deploying ${HEAD_SHA:0:8} WITHOUT a green CI run.${NC}"
+elif $SKIP_CI_GATE; then
+  echo -e "${YELLOW}${BOLD}WARNING: --skip-ci-gate: deploying ${HEAD_SHA:0:8} WITHOUT a green CI run.${NC}"
   echo -e "${YELLOW}  This commit has no passing CI run.${NC}"
 else
   echo -e "${RED}Refusing to deploy ${HEAD_SHA:0:8}: no green CI run (reason above).${NC}"
-  echo "Push the commit and wait for CI, or use --force to deploy anyway"
+  echo "Push the commit and wait for CI, or use --skip-ci-gate to deploy anyway"
   exit 1
 fi
 

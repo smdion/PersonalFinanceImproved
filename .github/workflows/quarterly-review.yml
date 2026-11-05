@@ -21,7 +21,7 @@ jobs:
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -39,10 +39,11 @@ jobs:
           MAJOR_PRS=$(gh pr list --state open --label "dependencies" --json title,url \
             --jq '.[] | "- [\(.title)](\(.url))"' 2>/dev/null || echo "- _(unable to fetch)_")
 
-          # Lint warnings count and breakdown
-          LINT_OUTPUT=$(npx next lint 2>&1 || true)
-          LINT_COUNT=$(echo "$LINT_OUTPUT" | grep -c "Warning" || echo "0")
-          LINT_BREAKDOWN=$(echo "$LINT_OUTPUT" | grep "Warning" | sed 's/.*Warning: //' | sort | uniq -c | sort -rn | head -10 | sed 's/^/  /')
+          # Lint: pass or fail, and the suppressed cases the ratchet files hold
+          if pnpm -s lint >/dev/null 2>&1; then LINT_STATUS="passes"; else LINT_STATUS="FAILS"; fi
+          LINT_COUNTS='const t = {}; for (const f of ["eslint-suppressions.json", "eslint-suppressions-typed.json"]) for (const rules of Object.values(require("./" + f))) for (const [r, { count }] of Object.entries(rules)) t[r] = (t[r] ?? 0) + count;'
+          LINT_COUNT=$(node -e "$LINT_COUNTS console.log(Object.values(t).reduce((a, b) => a + b, 0))")
+          LINT_BREAKDOWN=$(node -e "$LINT_COUNTS for (const [r, n] of Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 10)) console.log(String(n).padStart(6) + ' ' + r)")
 
           # Dependency audit
           AUDIT_OUTPUT=$(pnpm audit --audit-level=high 2>&1 || true)
@@ -74,6 +75,9 @@ jobs:
             echo "EOF"
             echo "MAJOR_PRS<<EOF"
             echo "$MAJOR_PRS"
+            echo "EOF"
+            echo "LINT_STATUS<<EOF"
+            echo "$LINT_STATUS"
             echo "EOF"
             echo "LINT_COUNT<<EOF"
             echo "$LINT_COUNT"
@@ -123,20 +127,20 @@ jobs:
           \`\`\`
           </details>
 
-          ### ESLint Warnings
+          ### ESLint ratchet
 
-          **$LINT_COUNT warnings** across the codebase.
+          \`pnpm lint\` $LINT_STATUS. **$LINT_COUNT suppressed cases** in \`eslint-suppressions.json\` and \`eslint-suppressions-typed.json\` (counts only go down).
 
           <details>
-          <summary>Warning breakdown (top 10 rules)</summary>
+          <summary>Suppressed cases by rule (top 10)</summary>
 
           \`\`\`
           $LINT_BREAKDOWN
           \`\`\`
           </details>
 
-          - [ ] Review top warning categories — fix or suppress with justification
-          - [ ] Target: reduce warning count quarter-over-quarter
+          - [ ] Pick the next rule to clean up from the top of the list
+          - [ ] Target: fewer suppressed cases quarter-over-quarter
 
           ### Dependency Audit
 
