@@ -295,9 +295,12 @@ export function notAMove(
     removed = removed.filter((line) => !AUTO_GEN_LINE.test(line));
     added = added.filter((line) => !AUTO_GEN_LINE.test(line));
     // Prettier re-wraps a line whose path changed length (a long union gains
-    // leading pipes): the same text once joined.
+    // leading pipes, broken call arguments gain trailing commas): the same
+    // text once joined.
     const joined = (lines: string[]) =>
-      withoutPaths(lines.join(" "), names).replace(/[\s|]+/g, "");
+      withoutPaths(lines.join(" "), names)
+        .replace(/[\s|]+/g, "")
+        .replace(/,(?=[)\]}])/g, "");
     if (removed.length > 0 && joined(removed) === joined(added)) {
       removed = [];
       added = [];

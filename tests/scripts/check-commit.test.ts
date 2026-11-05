@@ -445,6 +445,20 @@ describe("notAMove: a move's bookkeeping and bare names", () => {
     expect(notAMove(renamed, diff)).toBeUndefined();
   });
 
+  it("passes a call prettier broke into arguments with trailing commas", () => {
+    const diff = file("docs/DESIGN.md", [
+      "-vi." +
+        'mock("@/lib/calculators/a", async (orig) => ({ ...(await orig()) }));',
+      "+vi." + "mock(",
+      '+  "@/lib/pure/tax/a",',
+      "+  async (orig) => ({",
+      "+    ...(await orig()),",
+      "+  }),",
+      "+);",
+    ]).join("\n");
+    expect(notAMove(renamed, diff)).toBeUndefined();
+  });
+
   it("lets a file the move creates or deletes bring or take its comments", () => {
     const diff = [
       "diff --git a/src/lib/old-barrel.ts b/src/lib/old-barrel.ts",
