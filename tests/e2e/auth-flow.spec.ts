@@ -19,7 +19,8 @@ import { test, expect } from "@playwright/test";
  * auto-injects `demoOnlySession` at the tRPC layer, so the /login route is
  * functionally unreachable — visiting it redirects into the dashboard
  * before the form hydrates. The login contract only exists on real
- * deployments with authenticated admin users.
+ * deployments, so the `non-demo` Playwright project runs this spec against
+ * scripts/ci-image-boot.sh's booted install, after first-run.
  *
  * The coverage gap this skip opens is backfilled by
  * tests/components/login-form.test.tsx, which renders the real LoginForm

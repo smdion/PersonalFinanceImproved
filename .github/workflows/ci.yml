@@ -145,7 +145,7 @@ jobs:
             "$SQLITE_PATH" "$DEMO_ONLY" "$NEXTAUTH_SECRET" "$NEXTAUTH_URL" "$AUTH_TRUST_HOST" "$CRON_SECRET" "$ENCRYPTION_KEY" \
             > .next/standalone/.env
           pnpm db:migrate
-          pnpm run test:e2e
+          pnpm run test:e2e --project=chromium
         env:
           CI: true
           DEMO_ONLY: "true"
@@ -212,7 +212,8 @@ jobs:
       # container, and each boots to /api/health 200, answers a public
       # tRPC query with no Authentik, and a browser creates the first admin
       # and runs the wizard to Done (tests/e2e/first-run.spec.ts, no
-      # DEMO_ONLY). Builds reuse the cache from the step above.
+      # DEMO_ONLY), then, on SQLite, the specs DEMO_ONLY skips (the
+      # non-demo Playwright project). Builds reuse the cache from the step above.
       - name: Compose install boots on an empty volume
         if: github.event_name == 'push'
         run: bash scripts/ci-image-boot.sh
@@ -222,7 +223,9 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: first-run-e2e-results
-          path: test-results/first-run-*/
+          path: |
+            test-results/first-run-*/
+            test-results/non-demo-*/
           if-no-files-found: ignore
           retention-days: 7
 

@@ -1,9 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const NON_DEMO_SPECS = [
+  /auth-flow\.spec\.ts$/,
+  /sync-integration-flow\.spec\.ts$/,
+];
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
+  // One retry keeps a failure's trace; in CI a test that passes only on
+  // the retry still fails the run, so a flaky test is named, not hidden.
   retries: 1,
+  failOnFlakyTests: !!process.env.CI,
+  forbidOnly: !!process.env.CI,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     screenshot: "only-on-failure",
@@ -31,6 +40,14 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: NON_DEMO_SPECS,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    // Sign-in and admin pages DEMO_ONLY hides: run against a real install
+    // with its first admin (scripts/ci-image-boot.sh, after first-run).
+    {
+      name: "non-demo",
+      testMatch: NON_DEMO_SPECS,
       use: { ...devices["Desktop Chrome"] },
     },
   ],

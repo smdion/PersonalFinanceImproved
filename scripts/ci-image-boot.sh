@@ -9,11 +9,13 @@
 #      public tRPC query answers 200 with no Authentik configured;
 #   4. a browser creates the first local admin on /login and runs the
 #      onboarding wizard to Done, then signs in again in a new browser
-#      (tests/e2e/first-run.spec.ts; no DEMO_ONLY, no Authentik).
+#      (tests/e2e/first-run.spec.ts; no DEMO_ONLY, no Authentik);
+#   5. on SQLite, signed in as that admin, the specs DEMO_ONLY skips
+#      (Playwright's non-demo project: the sign-in page, integrations).
 #
 # Usage: bash scripts/ci-image-boot.sh   (writes ./.env, removes it on exit)
-# Step 4 needs Playwright's Chromium (`npx playwright install chromium`);
-# SKIP_FIRST_RUN_E2E=true leaves it out.
+# Steps 4-5 need Playwright's Chromium (`npx playwright install chromium`);
+# SKIP_FIRST_RUN_E2E=true leaves them out.
 # Every value below is a throwaway placeholder, not a secret.
 set -euo pipefail
 
@@ -150,6 +152,20 @@ check_first_run() {
   echo "$current_file: first admin signs in and the wizard reaches Done: ok"
 }
 
+# The specs DEMO_ONLY skips (playwright.config.ts's non-demo project), on
+# the install first-run just set up, signed in as its admin. SQLite only:
+# they test the app's pages, not the database.
+check_non_demo() {
+  if [ "${SKIP_FIRST_RUN_E2E:-}" = "true" ] || [ "$current_project" != ledgr-ci-sqlite ]; then
+    return
+  fi
+  PLAYWRIGHT_BASE_URL="http://localhost:3000" \
+    pnpm exec playwright test --project=non-demo --reporter=line \
+    --output "test-results/non-demo-$current_project" ||
+    fail "$current_file: the non-demo specs (sign-in, integrations) failed (Playwright output above)."
+  echo "$current_file: sign-in page and integrations as the admin: ok"
+}
+
 boot() {
   current_file="$1"
   current_project="$2"
@@ -158,6 +174,7 @@ boot() {
   wait_for_health
   check_public_trpc
   check_first_run
+  check_non_demo
   docker compose -f "$current_file" -p "$current_project" down -v --remove-orphans
   current_file=""
 }
