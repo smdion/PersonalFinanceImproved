@@ -39,11 +39,10 @@ const LAYERS = {
   data: "^src/server/data/",
   // server/helpers and server/retirement are today's composition layer;
   // they dissolve into server/data and server/services.
-  services: "^src/server/(services/|retirement/|helpers/(?!server-trpc\\.ts$))",
+  services: "^src/server/(services/|retirement/|helpers/)",
   routers: "^src/server/routers/",
-  // helpers/server-trpc.ts is today's name for trpc-server.ts.
   serverCore:
-    "^src/server/((trpc|auth|auth\\.config|trpc-server|mutation-events)\\.ts$|helpers/server-trpc\\.ts$)",
+    "^src/server/(trpc|auth|auth\\.config|trpc-server|mutation-events)\\.ts$",
   apiRoutes: "^src/app/api/",
   serverPages: serverPageFiles().map((f) => `^${escape(f)}$`),
   // Client components under app/ (every app file that isn't a server page
@@ -209,7 +208,7 @@ const config = {
       to: {
         path: `^src/server/|${L.infra}`,
         pathNot:
-          "^src/server/((trpc-server|auth)\\.ts$|helpers/server-trpc\\.ts$|data/database-status\\.ts$)",
+          "^src/server/((trpc-server|auth)\\.ts$|data/database-status\\.ts$)",
       },
     },
     {
