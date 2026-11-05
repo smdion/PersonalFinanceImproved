@@ -1,6 +1,5 @@
-/** The IRS-limit cap pass over effective contribution rows: each keeps its
- *  configured `contributionValue` and gains `cappedValue` (what every
- *  calculation reads) and `cap` (the verdict). */
+/** The IRS-limit cap pass: each row keeps its configured `contributionValue`
+ *  and gains `cappedValue` (what every calculation reads) and `cap` (the verdict). */
 import {
   type CapPassed,
   capContributionsByLimitGroup,
@@ -82,6 +81,7 @@ const asContribRow = (c: CapPassRow): ContribRow => ({
   fromBonus: c.fromBonus,
 });
 
+/** Run once per row set: after the profile and any What-If sandbox apply, before any yearly figure. */
 export function capEffectiveContribs<R extends CapPassRow>(
   rows: readonly R[],
   ctx: CapPassContext,
