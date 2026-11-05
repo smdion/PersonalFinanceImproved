@@ -91,7 +91,7 @@ import type {
   ProjectionInput,
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountInput } from "@/lib/pure/types/shared";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------
 // Rule level: one call of the dispatcher

@@ -14,7 +14,7 @@ import {
   makeAccountBalances,
   makeDecumulationConfig,
   TEST_BRACKETS,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { shippedTaxTables } from "../helpers/tax-data";
 
 const LTCG = shippedTaxTables().ltcgBrackets;

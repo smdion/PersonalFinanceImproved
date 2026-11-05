@@ -37,7 +37,7 @@ import type {
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 
 const HERE = __dirname;
 const YEAR = 2026;

@@ -47,9 +47,9 @@ import type {
 import {
   makeDecumulationConfig,
   makeTaxBuckets,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { readTaxData, shippedTaxTables } from "../helpers/tax-data";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------
 // Inputs

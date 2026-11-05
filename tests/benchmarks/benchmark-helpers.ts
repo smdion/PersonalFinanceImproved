@@ -7,7 +7,7 @@
 import {
   withConsistentStart,
   makeAccumulationDefaults,
-} from "../calculators/fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";

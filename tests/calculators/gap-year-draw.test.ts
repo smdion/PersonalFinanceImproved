@@ -6,7 +6,7 @@ import { assert, describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 const returnRates = Array.from({ length: 70 }, (_, i) => ({
   label: `Age ${30 + i}`,

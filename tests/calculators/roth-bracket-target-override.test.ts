@@ -16,7 +16,7 @@ import type {
 } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
 
 const isDecumulationYear = (y: {
   phase: string;

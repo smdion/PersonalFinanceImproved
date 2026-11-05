@@ -16,10 +16,7 @@ import { calculateContributions } from "@/lib/calculators/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { calculateSavings } from "@/lib/calculators/savings";
-import {
-  MFJ_2C_BRACKETS,
-  MFJ_TAXABLE_INCOME_BRACKETS,
-} from "../calculators/fixtures";
+import { MFJ_2C_BRACKETS, MFJ_TAXABLE_INCOME_BRACKETS } from "../pure/fixtures";
 import type {
   PaycheckInput,
   NetWorthInput,
@@ -667,7 +664,7 @@ import { calculateProjection } from "@/lib/calculators/engine/projection";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },

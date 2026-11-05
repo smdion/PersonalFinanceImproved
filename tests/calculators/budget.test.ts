@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateBudget } from "@/lib/calculators/budget";
 import type { BudgetInput } from "@/lib/pure/types/calculators";
-import { AS_OF_DATE } from "./fixtures";
+import { AS_OF_DATE } from "../pure/fixtures";
 
 describe("calculateBudget", () => {
   const input: BudgetInput = {

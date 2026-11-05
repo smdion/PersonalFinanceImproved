@@ -10,7 +10,7 @@ import type {
   EngineDecumulationYear,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 // Ann 78 and Bo 75 draw enough Traditional to sit above the first tier.
 const input = (

@@ -10,7 +10,7 @@ import {
   makeDecumulationConfig,
   makeAccountBalances,
   TEST_BRACKETS,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { getAllCategories } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalances } from "@/lib/pure/types/shared";

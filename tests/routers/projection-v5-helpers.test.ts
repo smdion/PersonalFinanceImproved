@@ -8,7 +8,7 @@ import {
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { clearSimulationPresets } from "../helpers/db-harness";
-import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
 
 /**
  * Unit tests for the projection-v5-helpers module. These helpers were

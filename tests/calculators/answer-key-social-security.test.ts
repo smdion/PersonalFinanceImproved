@@ -48,7 +48,7 @@ import {
   buildSocialSecurityEntries,
   type SsPerson,
 } from "@/server/retirement/social-security-entries";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------
 // Inputs: invented people

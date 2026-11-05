@@ -78,7 +78,7 @@ import type {
   EngineDecumulationYear,
 } from "@/lib/pure/engine/types";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------
 // Inputs: invented owners

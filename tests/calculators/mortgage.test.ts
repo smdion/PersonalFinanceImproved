@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import type { MortgageInput } from "@/lib/pure/types/calculators";
-import { AS_OF_DATE } from "./fixtures";
+import { AS_OF_DATE } from "../pure/fixtures";
 
 describe("calculateMortgage", () => {
   // Simplified mortgage for testing — a $280,000 loan at 6.5% for 30 years

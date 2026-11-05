@@ -15,7 +15,7 @@ import {
   makeAccountBalances,
   makeIndividualAccount,
   TEST_BRACKETS,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { makeIndKey } from "@/lib/calculators/engine/individual-account-tracking";
 import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import { shippedTaxTables } from "../helpers/tax-data";

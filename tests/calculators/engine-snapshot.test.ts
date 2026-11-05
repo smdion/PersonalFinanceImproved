@@ -24,11 +24,11 @@ import {
   startingBalanceGaps,
   withConsistentStart,
   makeAccumulationDefaults,
-} from "./fixtures/engine-fixtures";
-import { expectFirstRmdAndClaimYears } from "./fixtures/retirement-milestones";
+} from "../pure/fixtures/engine-fixtures";
+import { expectFirstRmdAndClaimYears } from "../pure/fixtures/retirement-milestones";
 import { describe, it, expect } from "vitest";
 import { calculateProjection as runEngine } from "@/lib/calculators/engine";
-import { recordDrift } from "./fixtures/drift";
+import { recordDrift } from "../pure/fixtures/drift";
 
 const LAST_REVIEWED_AT = "2026-08-27";
 const FRESHNESS_DAYS = 180;

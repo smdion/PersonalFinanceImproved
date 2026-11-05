@@ -11,7 +11,7 @@ import {
   startingBalanceGaps,
   withConsistentStart,
   makeAccumulationDefaults,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";

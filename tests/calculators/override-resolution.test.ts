@@ -7,7 +7,7 @@ import {
 import {
   makeAccumulationDefaults,
   makeDecumulationDefaults,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import type {
   AccumulationOverride,
   DecumulationOverride,

@@ -10,7 +10,7 @@
  * 7. Net worth age-40 wealth formula transition
  * 8. Budget multi-column emergency vs standard comparison
  */
-import { FIXTURE_SS_WAGE_BASE_2026 } from "./fixtures";
+import { FIXTURE_SS_WAGE_BASE_2026 } from "../pure/fixtures";
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
@@ -27,7 +27,7 @@ import {
   PERSON_A_CONTRIBUTIONS,
   PERSON_B_CONTRIBUTIONS,
   AS_OF_DATE,
-} from "./fixtures";
+} from "../pure/fixtures";
 import type {
   PaycheckInput,
   MortgageInput,

@@ -18,7 +18,7 @@
  */
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { acct, household } from "../calculators/fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 /** As of noon, January 1 2026: year 0 is a whole year. */
 export const SIM_AS_OF = new Date(Date.UTC(2026, 0, 1, 12));

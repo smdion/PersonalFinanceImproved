@@ -19,7 +19,10 @@ import type {
   PaycheckInput,
   PaycheckResult,
 } from "@/lib/pure/types/calculators";
-import { PERSON_A_PAYCHECK_INPUT, PERSON_B_PAYCHECK_INPUT } from "./fixtures";
+import {
+  PERSON_A_PAYCHECK_INPUT,
+  PERSON_B_PAYCHECK_INPUT,
+} from "../pure/fixtures";
 
 describe("Additional Medicare in the per-check figures", () => {
   const run = (annualSalary: number, medicareAdditionalRate: number) =>

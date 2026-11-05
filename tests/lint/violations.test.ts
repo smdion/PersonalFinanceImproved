@@ -116,7 +116,7 @@ import {
   makeDecumulationConfig,
   makeEmployerMatch,
   makeYearLimits,
-} from "../calculators/fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).

@@ -74,7 +74,7 @@ describe("calculateXxx", () => {
 - Assert specific numeric outputs — `toBe(23000)` not `toBeTruthy()`
 - One behavior per test — split multiple assertions into multiple `it()` blocks if they test different things
 - Derive the expected figure by hand from the rule or source and write the arithmetic beside it; never paste the function's current output as the expected value
-- Invented households only (`tests/calculators/fixtures.ts`, `tests/fixtures/`), never a real household's figures
+- Invented households only (`tests/pure/fixtures.ts`, `tests/fixtures/`), never a real household's figures
 
 ### Router integration tests
 

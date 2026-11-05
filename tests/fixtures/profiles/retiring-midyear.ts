@@ -50,7 +50,7 @@
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 

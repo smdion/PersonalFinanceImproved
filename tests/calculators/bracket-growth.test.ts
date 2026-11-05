@@ -18,7 +18,7 @@ import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import {
   TEST_BRACKETS,
   makeAccumulationDefaults,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";

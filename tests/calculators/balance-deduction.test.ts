@@ -23,7 +23,7 @@ import type { ProjectionResult } from "@/lib/pure/engine/types";
 import {
   makeDecumulationSlot,
   makeIndividualAccount,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 
 /** Buckets and per-account balances that agree: 401k 300k/100k, IRA
  *  100k/0, HSA 30k, brokerage 120k with 80k basis. */

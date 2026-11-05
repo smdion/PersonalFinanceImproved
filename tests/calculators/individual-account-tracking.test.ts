@@ -29,7 +29,7 @@ import {
   makeIndividualAccount,
   makeAccumulationSlot,
   makeContributionSpec,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";

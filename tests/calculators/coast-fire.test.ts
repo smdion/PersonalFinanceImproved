@@ -8,7 +8,7 @@ import { planRetirementAge } from "@/lib/pure/household-timeline";
 import {
   withConsistentStart,
   makeAccumulationDefaults,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import type {
   EngineAccumulationYear,

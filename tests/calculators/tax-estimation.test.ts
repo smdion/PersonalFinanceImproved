@@ -7,7 +7,10 @@ import {
   taxableSSFor,
 } from "@/lib/calculators/engine/tax-estimation";
 
-import { makeTaxBuckets, TEST_BRACKETS } from "./fixtures/engine-fixtures";
+import {
+  makeTaxBuckets,
+  TEST_BRACKETS,
+} from "../pure/fixtures/engine-fixtures";
 import { shippedTaxTables } from "../helpers/tax-data";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
 

@@ -20,7 +20,7 @@ import type {
   EngineDecumulationYear,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import { acct, household } from "./fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 const decumYears = (input: ProjectionInput) =>
   calculateProjection(input).projectionByYear.filter(

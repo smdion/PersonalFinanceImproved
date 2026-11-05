@@ -43,7 +43,7 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {
   withConsistentStart,
   makeAccumulationDefaults,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 

@@ -18,7 +18,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
 import { clearSimulationPresets } from "../helpers/db-harness";
-import { startingBalanceGaps } from "../calculators/fixtures/engine-fixtures";
+import { startingBalanceGaps } from "../pure/fixtures/engine-fixtures";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),

@@ -12,7 +12,7 @@ import { HOUSEHOLDS } from "./households";
 import { BASELINE_NOW } from "./router-suite";
 import { PROCEDURES, callProcedure } from "./procedures";
 import { seedHousehold } from "./seed";
-import { driftIn } from "../calculators/fixtures/drift";
+import { driftIn } from "../pure/fixtures/drift";
 
 /** Households whose two balance tracks drift today. */
 const KNOWN_DRIFT = ["ws-h1"];

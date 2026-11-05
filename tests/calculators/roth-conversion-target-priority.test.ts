@@ -29,7 +29,7 @@ import type {
 import { calculateProjection } from "@/lib/calculators/engine";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 

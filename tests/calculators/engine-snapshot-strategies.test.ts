@@ -24,7 +24,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { calculateProjection as runEngine } from "@/lib/calculators/engine";
-import { recordDrift } from "./fixtures/drift";
+import { recordDrift } from "../pure/fixtures/drift";
 import type { AccountBalances } from "@/lib/pure/types/shared";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
@@ -36,7 +36,7 @@ import {
   makeTaxBuckets,
   startingBalanceGaps,
   withConsistentStart,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 

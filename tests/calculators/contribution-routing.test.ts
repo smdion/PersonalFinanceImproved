@@ -12,7 +12,7 @@ import {
   makeYearLimits,
   makeEmployerMatch,
   makeContributionSpec,
-} from "./fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 
 function slotFor<T extends { category: string }>(slots: T[], cat: string) {
   return slots.find((s) => s.category === cat);

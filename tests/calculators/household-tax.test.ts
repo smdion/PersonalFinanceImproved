@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { sumBracketTax } from "@/lib/calculators/tax-brackets";
 import type { TaxBracketInput } from "@/lib/pure/types/shared";
-import { MFJ_TAXABLE_INCOME_BRACKETS } from "./fixtures";
+import { MFJ_TAXABLE_INCOME_BRACKETS } from "../pure/fixtures";
 
 const B = MFJ_TAXABLE_INCOME_BRACKETS;
 const MFJ_LIABILITY = 250_000;

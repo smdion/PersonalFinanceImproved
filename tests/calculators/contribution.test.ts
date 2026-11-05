@@ -4,7 +4,7 @@ import {
   PERSON_A_CONTRIBUTIONS,
   PERSON_B_CONTRIBUTIONS,
   AS_OF_DATE,
-} from "./fixtures";
+} from "../pure/fixtures";
 import type { ContributionAccountInput } from "@/lib/pure/types/shared";
 import type { ContributionInput } from "@/lib/pure/types/calculators";
 

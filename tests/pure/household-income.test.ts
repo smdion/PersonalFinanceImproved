@@ -11,7 +11,7 @@ import {
 } from "@/lib/pure/household-income";
 import type { ContributionAccountInput } from "@/lib/pure/types/shared";
 import type { PaycheckInput } from "@/lib/pure/types/calculators";
-import { PERSON_A_PAYCHECK_INPUT } from "../calculators/fixtures";
+import { PERSON_A_PAYCHECK_INPUT } from "./fixtures";
 
 const account = (
   over: Partial<ContributionAccountInput>,

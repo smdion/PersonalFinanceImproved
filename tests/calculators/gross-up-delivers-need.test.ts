@@ -23,8 +23,8 @@ import type {
   ProjectionInput,
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountInput } from "@/lib/pure/types/shared";
-import { acct, household } from "./fixtures/two-person-household";
-import { grossUpWholeBalanceHousehold } from "./fixtures/gross-up-whole-balance";
+import { acct, household } from "../pure/fixtures/two-person-household";
+import { grossUpWholeBalanceHousehold } from "../pure/fixtures/gross-up-whole-balance";
 import { shippedTaxTables } from "../helpers/tax-data";
 
 const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);
