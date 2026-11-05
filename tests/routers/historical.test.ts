@@ -10,7 +10,7 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { createTestCaller, seedPerson, seedJob } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
-import { invalidateYearEndCache } from "@/server/helpers";
+import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 

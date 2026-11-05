@@ -6,11 +6,11 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
 import {
-  buildYearEndHistory,
   computeMortgageBalance,
   getActiveMortgageLoan,
-} from "@/server/helpers";
+} from "@/lib/pure/debts/mortgage-balance";
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { toNumber } from "@/lib/utils/numbers";
 import { getActiveBudgetApi } from "@/lib/budget-api";

@@ -29,7 +29,7 @@ import {
   captureYearRollups,
   syncYearRollups,
 } from "@/server/services/performance/performance-rollups";
-import { pushSnapshotToBudgetApi } from "@/server/helpers";
+import { pushSnapshotToBudgetApi } from "@/server/services/sync/budget-api-push";
 import type { PushSnapshotMode } from "@/server/services/sync/budget-api-push";
 import type { DbOrTx } from "@/lib/db";
 

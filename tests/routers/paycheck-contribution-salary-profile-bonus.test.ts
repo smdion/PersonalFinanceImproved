@@ -22,7 +22,7 @@ vi.mock("@/lib/budget-api", () => ({
 
 import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import type { SalaryEntryMap } from "@/server/helpers";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 
 const LIVE_SALARY = 120000;
 const LIVE_BONUS_PERCENT = 0.1;

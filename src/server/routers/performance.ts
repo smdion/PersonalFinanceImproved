@@ -13,13 +13,13 @@ import {
   performanceProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import {
-  getLatestSnapshot,
   computeMortgageBalance,
   getActiveMortgageLoan,
-  invalidateYearEndCache,
-  resolvePersonYearIncome,
-} from "@/server/helpers";
+} from "@/lib/pure/debts/mortgage-balance";
+import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
+import { resolvePersonYearIncome } from "@/lib/pure/household/compensation";
 import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";

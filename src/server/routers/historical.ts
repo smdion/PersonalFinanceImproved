@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { buildYearEndHistory } from "@/server/helpers";
+import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";
 import { resolveCompensation } from "@/lib/pure/household/compensation";

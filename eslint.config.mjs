@@ -258,11 +258,6 @@ const config = [
         {
           paths: [
             {
-              name: "@/server/helpers",
-              message:
-                "Pure modules cannot import the helpers barrel (it pulls in DB code). toNumber is in @/lib/utils/numbers.",
-            },
-            {
               name: "@/lib/db",
               message: "Pure modules cannot import database code directly.",
             },

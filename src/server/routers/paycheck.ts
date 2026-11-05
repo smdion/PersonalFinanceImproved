@@ -23,12 +23,8 @@ import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import {
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
-  resolveCompensation,
-  applyActiveSalary,
-  applyActiveBonusTerms,
-  buildPaycheckInputForJob,
-  contributionPay,
-} from "@/server/helpers";
+} from "@/lib/pure/paycheck/budget-periods";
+import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
@@ -40,7 +36,13 @@ import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/data/people";
-import { applySandboxSalaryEntries } from "@/lib/pure/household/compensation";
+import {
+  applySandboxSalaryEntries,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
+  contributionPay,
+} from "@/lib/pure/household/compensation";
 import {
   zSandboxSalaryEntries,
   zSandboxDeductionEdits,

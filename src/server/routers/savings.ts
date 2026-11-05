@@ -28,18 +28,22 @@ import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import {
   resolveCompensation,
+  mergeSalaryProfileJobFields,
+  contributionPay,
+} from "@/lib/pure/household/compensation";
+import {
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
-  buildPaycheckInputForJob,
-  mergeSalaryProfileJobFields,
+} from "@/server/services/savings/savings-allocation";
+import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
+import {
   setBudgetItemLink,
   loadSavingsGoalLinks,
   setSavingsGoalLink,
   deleteSavingsGoalLink,
   copySavingsGoalLinks,
-  contributionPay,
-} from "@/server/helpers";
+} from "@/server/data/category-links";
 import {
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,

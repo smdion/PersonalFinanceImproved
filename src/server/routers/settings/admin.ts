@@ -48,7 +48,7 @@ import {
   applyHouseholdTimeZone,
   isValidTimeZone,
 } from "@/server/data/household-timezone";
-import { invalidateYearEndCache } from "@/server/helpers";
+import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { RBAC_SETTINGS_PREFIX, RBAC_ADMIN_GROUP_KEY } from "@/server/auth";
 import { PERMISSIONS } from "@/lib/config/permissions";
 import { settingValue } from "./_shared";

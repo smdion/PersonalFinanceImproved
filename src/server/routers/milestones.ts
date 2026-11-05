@@ -11,7 +11,7 @@ import {
   type Context,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { buildYearEndHistory } from "@/server/helpers";
+import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
 import { wealthFormulaIncome } from "@/lib/pure/net-worth/net-worth";
 import {
   SK_EFUND_BUDGET_COLUMN,

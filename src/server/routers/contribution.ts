@@ -29,7 +29,7 @@ import {
   applyActiveSalary,
   applyActiveBonusTerms,
   applySandboxSalaryEntries,
-} from "@/server/helpers";
+} from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";

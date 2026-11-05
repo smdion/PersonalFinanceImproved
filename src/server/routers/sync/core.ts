@@ -28,12 +28,12 @@ import {
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
 import { applyPullMapping } from "@/server/services/sync/apply-pull-mapping";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
+import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
 import {
-  parseAppSettings,
-  buildMortgageInputs,
   loadBudgetItemLinks,
   loadSavingsGoalLinks,
-} from "@/server/helpers";
+} from "@/server/data/category-links";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";

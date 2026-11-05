@@ -12,7 +12,7 @@ import {
   setBudgetItemLink,
   loadSavingsGoalLinks,
   setSavingsGoalLink,
-} from "@/server/helpers";
+} from "@/server/data/category-links";
 import { serviceEnum } from "./_shared";
 
 export const syncNamesRouter = createTRPCRouter({

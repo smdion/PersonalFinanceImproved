@@ -4,7 +4,10 @@ import { asc, eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
-import { buildMortgageInputs, getActiveMortgageLoan } from "@/server/helpers";
+import {
+  buildMortgageInputs,
+  getActiveMortgageLoan,
+} from "@/lib/pure/debts/mortgage-balance";
 import { toNumber } from "@/lib/utils/numbers";
 import type {
   MortgageInput,

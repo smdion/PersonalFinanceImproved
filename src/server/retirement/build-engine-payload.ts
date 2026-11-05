@@ -33,10 +33,10 @@ import * as schema from "@/lib/db/schema";
 import {
   contributionPay,
   getTotalCompensation,
-  getLatestSnapshot,
   applySalaryProfileRow,
   resolveCompensation,
-} from "@/server/helpers";
+} from "@/lib/pure/household/compensation";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { applyContribProfileRow } from "@/server/services/contributions/profile";

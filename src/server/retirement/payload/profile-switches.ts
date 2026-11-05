@@ -20,11 +20,14 @@ import {
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
-} from "@/server/helpers";
+} from "@/lib/pure/household/compensation";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { toNumber } from "@/lib/utils/numbers";
-import type { SalaryEntryMap, SalaryProfileActiveMap } from "@/server/helpers";
+import type {
+  SalaryEntryMap,
+  SalaryProfileActiveMap,
+} from "@/lib/pure/household/compensation";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ProfileSwitch } from "@/lib/pure/engine/types";

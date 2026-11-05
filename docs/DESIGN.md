@@ -1051,7 +1051,7 @@ Raw provider inputs (withheld, market value, gross proceeds, commission, dividen
 
 Documented deviations from general architectural rules, kept for pragmatic reasons:
 
-1. **Resolution helper lives in `src/server/helpers/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/pure/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
+1. **Resolution helper lives in `src/server/services/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/pure/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
 2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). Revisit if the fields exceed ~25 or change often.
 

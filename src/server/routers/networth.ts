@@ -17,11 +17,10 @@ import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import {
   computeMortgageBalance,
   getActiveMortgageLoan,
-  getLatestSnapshot,
-  parseAppSettings,
-  groupSnapshotAccounts,
-  buildYearEndHistory,
-} from "@/server/helpers";
+} from "@/lib/pure/debts/mortgage-balance";
+import { getLatestSnapshot } from "@/server/data/snapshots";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
+import { groupSnapshotAccounts } from "@/lib/pure/net-worth/snapshot-groups";
 import {
   getEffectiveOtherAssets,
   getEffectiveOtherAssetsDetailed,
@@ -34,7 +33,10 @@ import {
   refreshSnapshotYearDerivatives,
   pushSnapshotIfConfigured,
 } from "@/server/services/net-worth/snapshot-derivatives";
-import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
+import {
+  invalidateYearEndCache,
+  buildYearEndHistory,
+} from "@/server/services/net-worth/year-end-history";
 import { zYearEndTargeting } from "./_shared";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import {

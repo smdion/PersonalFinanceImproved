@@ -34,8 +34,8 @@ import {
   getTotalCompensation,
   resolveCompensation,
   mergeSalaryProfileJobFields,
-  getLatestSnapshot,
-} from "@/server/helpers";
+} from "@/lib/pure/household/compensation";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";

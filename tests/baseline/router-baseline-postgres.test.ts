@@ -81,7 +81,8 @@ describe.skipIf(skipWithoutPostgres)("router baseline on PostgreSQL", () => {
       const { appRouter } = await import("@/server/routers");
       const { createCallerFactory } = await import("@/server/trpc");
       const { db } = await import("@/lib/db");
-      const { invalidateYearEndCache } = await import("@/server/helpers");
+      const { invalidateYearEndCache } =
+        await import("@/server/services/net-worth/year-end-history");
       // The pool outlives each household: drop what was read from the last.
       invalidateYearEndCache();
       const caller: Caller = createCallerFactory(appRouter)({

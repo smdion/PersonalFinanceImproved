@@ -45,8 +45,8 @@ Read the relevant parts of [`docs/RULES.md`](docs/RULES.md) (the rules), [`docs/
 Pure modules import nothing from `src/server/` or the database (`pnpm check:layers` fails it); a small helper they share with the server lives in `src/lib/utils/`:
 
 ```typescript
-// WRONG — server code; the barrel pulls in DB schema
-import { toNumber } from "@/server/helpers";
+// WRONG — server code; it pulls in DB schema
+import { getAllPeople } from "@/server/data/people";
 
 // RIGHT — the shared utility
 import { toNumber } from "@/lib/utils/numbers";
@@ -117,7 +117,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 1. **`_shared.ts` owns intra-group duplication.** Schemas, enums, and helpers used by ≥2 files in a router group (e.g. `sync/`, `projection/`) are extracted to `<group>/_shared.ts` and imported from there. No `serviceEnum` defined in `config.ts` AND `connections.ts` — one source only.
 2. **Procedure types within a group must be consistent unless deliberately scoped.** If 4 of 5 mutations in a group use `adminProcedure` and the fifth uses a different type, document why inline — inconsistency is likely a bug, not a design choice.
-3. **`_shared.ts` is internal to the group.** It is never imported by files outside `<group>/`. Cross-group sharing goes through `src/server/helpers/` or a new shared module.
+3. **`_shared.ts` is internal to the group.** It is never imported by files outside `<group>/`. Cross-group sharing goes through `src/server/data/` (a shared read) or `src/server/services/` (shared composition).
 
 ## Validation Consistency
 

@@ -12,7 +12,7 @@ import {
 } from "@/lib/budget-api/errors";
 
 const push = vi.hoisted((): { fails: unknown } => ({ fails: null }));
-vi.mock("@/server/helpers", () => ({
+vi.mock("@/server/services/sync/budget-api-push", () => ({
   pushSnapshotToBudgetApi: vi.fn(async () => {
     throw push.fails;
   }),

@@ -39,12 +39,12 @@ import {
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/pure/budget/budget";
 import type { BudgetInput } from "@/lib/pure/budget/budget.types";
+import { getResolvedGoalAllocations } from "@/server/services/savings/savings-allocation";
 import {
-  getResolvedGoalAllocations,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
-} from "@/server/helpers";
+} from "@/server/data/category-links";
 import {
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,
