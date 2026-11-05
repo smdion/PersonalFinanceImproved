@@ -4,11 +4,16 @@
  * its length; a recorded entry never grows and is lowered when it shrinks.
  * An unrecorded file over FILE_LIMIT fails. New long functions are caught by
  * ESLint's max-lines-per-function. `--update` lowers entries, never raises.
- * `--record <file>…` records each part of a split at its size, so a part
- * can't regrow to the limit; a file over the limit can't be recorded.
+ * `--move <old> <new>…` keeps a moved file's entries under its new path.
+ * `--record <part>…` records each part of a split at its size, so a part
+ * can't regrow to the limit; a part over the limit is refused. With
+ * `--from <old>`, the parts' long functions carry the old file's entries, a
+ * part of a recorded file may be over the limit, and the parts (with what
+ * is left of the old file) together never exceed its entry.
  */
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import ts from "typescript";
 
 const FILE_LIMIT = 400;
@@ -21,7 +26,7 @@ const GENERATED = [
   /^src\/lib\/db\/schema-sqlite\.ts$/,
 ];
 
-type Baseline = {
+export type Baseline = {
   files: Record<string, number>;
   functions: Record<string, Record<string, number>>;
 };
@@ -181,7 +186,7 @@ const GONE =
   "remove the entry (pnpm check:file-size --update); after a split, record each part at its size";
 const FN_GONE = `not found or now ${FUNCTION_LIMIT} lines or under — remove the entry (pnpm check:file-size --update)`;
 
-function check(baseline: Baseline, measured: Baseline): string[] {
+export function check(baseline: Baseline, measured: Baseline): string[] {
   const failures: string[] = [];
   for (const [file, lines] of Object.entries(measured.files)) {
     const recorded = baseline.files[file];
@@ -222,7 +227,7 @@ function check(baseline: Baseline, measured: Baseline): string[] {
 }
 
 /** Lowers or drops entries; never adds or raises one. */
-function lowered(baseline: Baseline, measured: Baseline): Baseline {
+export function lowered(baseline: Baseline, measured: Baseline): Baseline {
   const files: Record<string, number> = {};
   for (const [file, recorded] of Object.entries(baseline.files)) {
     const lines = measured.files[file];
@@ -239,44 +244,167 @@ function lowered(baseline: Baseline, measured: Baseline): Baseline {
   return { files, functions };
 }
 
-/** Adds new parts of a split at their size; never one over FILE_LIMIT. */
-function recorded(baseline: Baseline, measured: Baseline, files: string[]) {
+/** Moves each old path's entries to its new path; never changes a count. */
+export function moved(baseline: Baseline, measured: Baseline, paths: string[]) {
   const problems: string[] = [];
-  const next = { ...baseline.files };
-  for (const file of files) {
-    const lines = measured.files[file];
-    if (lines === undefined) problems.push(`${file}: not a measured src/ file`);
-    else if (baseline.files[file] !== undefined)
-      problems.push(`${file}: already recorded at ${baseline.files[file]}`);
-    else if (lines > FILE_LIMIT)
-      problems.push(`${file}: ${lines} lines, limit ${FILE_LIMIT} — ${GROW}`);
-    else next[file] = lines;
+  const files = { ...baseline.files };
+  const functions = { ...baseline.functions };
+  if (paths.length === 0 || paths.length % 2 !== 0)
+    problems.push("--move takes <old> <new> pairs");
+  for (let i = 0; i + 1 < paths.length; i += 2) {
+    const [from, to] = [paths[i]!, paths[i + 1]!];
+    if (measured.files[from] !== undefined)
+      problems.push(`${from}: still exists; move the file first`);
+    else if (measured.files[to] === undefined)
+      problems.push(`${to}: not a measured src/ file`);
+    else if (files[to] !== undefined || functions[to] !== undefined)
+      problems.push(`${to}: already recorded`);
+    else {
+      if (files[from] !== undefined) files[to] = files[from];
+      if (functions[from] !== undefined) functions[to] = functions[from];
+      delete files[from];
+      delete functions[from];
+    }
   }
-  return { baseline: { ...baseline, files: next }, problems };
+  return { baseline: { files, functions }, problems };
 }
 
-const measured = measure();
-const mode = process.argv[2];
-if (mode === "--record") {
-  const result = recorded(readBaseline(), measured, process.argv.slice(3));
-  for (const line of result.problems) console.log(line);
-  if (result.problems.length) process.exit(1);
-  writeBaseline(result.baseline);
-  console.log(`Recorded ${process.argv.length - 3} file(s) at their size.`);
-} else if (mode === "--update") {
-  writeBaseline(lowered(readBaseline(), measured));
-  console.log(`Lowered ${BASELINE_PATH} to today's counts.`);
-  const left = check(readBaseline(), measured);
-  for (const line of left) console.log(line);
-  if (left.length) process.exit(1);
-} else {
+/** A key without its first segment: a router const a split renames. */
+const tail = (key: string) => key.slice(key.indexOf(".") + 1);
+
+/** The old file's entry a part's function carries: same key, else same tail. */
+function carriedEntry(
+  key: string,
+  old: Record<string, number>,
+  used: Set<string>,
+): string | undefined {
+  if (old[key] !== undefined && !used.has(key)) return key;
+  if (!key.includes(".")) return undefined;
+  const matches = Object.keys(old).filter(
+    (k) => k.includes(".") && tail(k) === tail(key) && !used.has(k),
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+/**
+ * Adds new parts of a split at their size. Without `from`, never one over
+ * FILE_LIMIT. With `from`, each part's long functions carry `from`'s entries,
+ * and a part of a recorded file may be over FILE_LIMIT while the parts plus
+ * what is left of `from` stay within its entry.
+ */
+export function recorded(
+  baseline: Baseline,
+  measured: Baseline,
+  parts: string[],
+  from?: string,
+) {
+  const problems: string[] = [];
+  const files = { ...baseline.files };
+  const functions = { ...baseline.functions };
+  const oldEntry = from === undefined ? undefined : baseline.files[from];
+  const oldFns = from === undefined ? {} : (baseline.functions[from] ?? {});
+  if (from !== undefined && oldEntry === undefined && !baseline.functions[from])
+    problems.push(`${from}: no entry to split from`);
+  const used = new Set<string>();
+  for (const file of parts) {
+    const lines = measured.files[file];
+    if (lines === undefined) {
+      problems.push(`${file}: not a measured src/ file`);
+      continue;
+    }
+    if (file === from) {
+      problems.push(`${file}: the file split from is not a part`);
+      continue;
+    }
+    if (baseline.files[file] !== undefined) {
+      problems.push(`${file}: already recorded at ${baseline.files[file]}`);
+      continue;
+    }
+    if (lines > FILE_LIMIT && oldEntry === undefined)
+      problems.push(`${file}: ${lines} lines, limit ${FILE_LIMIT} — ${GROW}`);
+    else files[file] = lines;
+    if (from === undefined) continue;
+    for (const [key, fnLines] of Object.entries(
+      measured.functions[file] ?? {},
+    )) {
+      if (baseline.functions[file]?.[key] !== undefined) continue;
+      const carried = carriedEntry(key, oldFns, used);
+      const where = `${file} ${key}()`;
+      if (carried === undefined)
+        problems.push(
+          `${where}: ${fnLines} lines, no entry in ${from} — ${GROW}`,
+        );
+      else if (fnLines > oldFns[carried]!)
+        problems.push(
+          `${where}: ${fnLines} lines, ${from} ${carried}() ${oldFns[carried]} — ${GROW}`,
+        );
+      else {
+        used.add(carried);
+        functions[file] = { ...functions[file], [key]: fnLines };
+      }
+    }
+  }
+  if (from !== undefined && oldEntry !== undefined) {
+    const total =
+      parts.reduce((sum, f) => sum + (measured.files[f] ?? 0), 0) +
+      (measured.files[from] ?? 0);
+    if (total > oldEntry)
+      problems.push(
+        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry} — ${GROW}`,
+      );
+  }
+  return { baseline: { files, functions }, problems };
+}
+
+function main(argv: string[]): number {
+  const measured = measure();
+  const mode = argv[0];
+  const args = argv.slice(1);
+  if (mode === "--record" || mode === "--move") {
+    const fromIdx = args.indexOf("--from");
+    const from = fromIdx >= 0 ? args[fromIdx + 1] : undefined;
+    const parts = args.filter(
+      (_, i) => fromIdx < 0 || (i !== fromIdx && i !== fromIdx + 1),
+    );
+    const result =
+      mode === "--move"
+        ? moved(readBaseline(), measured, args)
+        : recorded(readBaseline(), measured, parts, from);
+    for (const line of result.problems) console.log(line);
+    if (result.problems.length) return 1;
+    writeBaseline(result.baseline);
+    console.log(
+      mode === "--move"
+        ? `Moved ${args.length / 2} file(s)' entries.`
+        : `Recorded ${parts.length} file(s) at their size.`,
+    );
+    if (from !== undefined)
+      console.log(
+        "Then `pnpm check:file-size --update` drops the old entries.",
+      );
+    return 0;
+  }
+  if (mode === "--update") {
+    writeBaseline(lowered(readBaseline(), measured));
+    console.log(`Lowered ${BASELINE_PATH} to today's counts.`);
+    const left = check(readBaseline(), measured);
+    for (const line of left) console.log(line);
+    return left.length ? 1 : 0;
+  }
   const failures = check(readBaseline(), measured);
   for (const line of failures) console.log(line);
   if (failures.length) {
     console.log(
       `\n${failures.length} size failure(s); see docs/RULES.md § Refactoring.`,
     );
-    process.exit(1);
+    return 1;
   }
   console.log("Size baseline: no file or recorded function grew.");
+  return 0;
 }
+
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+)
+  process.exitCode = main(process.argv.slice(2));
