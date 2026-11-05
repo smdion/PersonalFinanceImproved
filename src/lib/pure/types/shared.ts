@@ -1,5 +1,5 @@
-// Shared types used across multiple calculator domains.
-// These are the building blocks that other domain files depend on.
+/** The engine's account inputs and per-year balances (tax buckets,
+ *  individual accounts), lump sums and year overrides. */
 
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
@@ -224,7 +224,3 @@ export type IndividualAccountYearBalance = {
    *  understate real basis, never overstate it. */
   rothBasisUncertain?: boolean;
 };
-
-/** Account category — auto-derived from ACCOUNT_TYPE_CONFIG keys. Re-exported for convenience. */
-export type { AccountCategory } from "@/lib/config/account-types";
-export type { AccountBalance } from "@/lib/config/account-types.types";

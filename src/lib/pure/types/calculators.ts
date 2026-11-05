@@ -1,6 +1,5 @@
-// Calculator-specific input/output types.
-// Decoupled from Drizzle schema types — all numeric fields are `number`, not string.
-// Every result type includes `warnings: string[]` and every input includes `asOfDate: Date`.
+/** calculateMortgage's input and result: loans, extra payments, what-if
+ *  scenarios and the amortization schedule. */
 
 export type * from "../paycheck/paycheck.types";
 export type * from "../budget/budget.types";
@@ -8,8 +7,6 @@ export type * from "../contributions/contribution.types";
 export type * from "../net-worth/net-worth.types";
 export type * from "../savings/savings.types";
 export type * from "../savings/efund.types";
-
-// --- Mortgage ---
 
 export type MortgageLoanInput = {
   id: number;
