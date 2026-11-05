@@ -3074,11 +3074,6 @@
       "count": 5
     }
   },
-  "src/lib/calculators/engine/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/engine/individual-account-tracking.ts": {
     "max-lines-per-function": {
       "count": 2
