@@ -21,7 +21,7 @@ import {
   reconcileFeed,
   sameCost,
   type FeedService,
-} from "@/lib/pure/utility-cost-feed";
+} from "@/lib/pure/budget/utility-cost-feed";
 import { createHash } from "crypto";
 import { TRPCError } from "@trpc/server";
 import { safeDivide } from "@/lib/utils/math";

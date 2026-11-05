@@ -387,6 +387,10 @@
     "src/lib/pure/benchmark-yearly.ts:yearlyResultsFrom",
     "src/lib/pure/benchmark-yearly.ts:yearlyReturn",
     "src/lib/pure/benchmark-yearly.ts:yourWindowMonths",
+    "src/lib/pure/budget/transaction-kind.ts:balanceAsOf",
+    "src/lib/pure/budget/transaction-kind.ts:effectiveTransactionKind",
+    "src/lib/pure/budget/utility-cost-feed.ts:sameCost",
+    "src/lib/pure/budget/utility-cost-feed.ts:serviceMonth",
     "src/lib/pure/cash-positions.ts:currentCashClass",
     "src/lib/pure/cash-positions.ts:hsaCashBuffers",
     "src/lib/pure/cash-positions.ts:judgeHsaCash",
@@ -415,8 +419,6 @@
     "src/lib/pure/daily-movement.ts:UNREPORTED_MIN",
     "src/lib/pure/daily-movement.ts:dailyMovement",
     "src/lib/pure/data-freshness.ts:evaluateDataSources",
-    "src/lib/pure/date-keys.ts:currentMonthKey",
-    "src/lib/pure/date-keys.ts:monthKey",
     "src/lib/pure/debt-rules.ts:carPaymentShare",
     "src/lib/pure/debt-rules.ts:firstFullSalary",
     "src/lib/pure/deposit-check.ts:checkLatestContribution",
@@ -698,10 +700,6 @@
     "src/lib/pure/tax-bucket-projection.ts:projectRuleOf55",
     "src/lib/pure/tax-data-status.ts:expectedTaxYear",
     "src/lib/pure/tax-data-status.ts:taxYearDeadline",
-    "src/lib/pure/transaction-kind.ts:balanceAsOf",
-    "src/lib/pure/transaction-kind.ts:effectiveTransactionKind",
-    "src/lib/pure/utility-cost-feed.ts:sameCost",
-    "src/lib/pure/utility-cost-feed.ts:serviceMonth",
     "src/lib/pure/withdrawal-eligibility.ts:computeNonRetirementExclusion"
   ]
 }

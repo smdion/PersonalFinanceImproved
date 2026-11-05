@@ -6,7 +6,7 @@ import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 import { trpc } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
-import { monthKey as monthKeyStr } from "@/lib/pure/date-keys";
+import { monthKey as monthKeyStr } from "@/lib/utils/date-keys";
 
 function monthLabel(d: Date): string {
   return `${MONTH_NAMES_SHORT[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;

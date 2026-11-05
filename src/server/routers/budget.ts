@@ -69,7 +69,7 @@ import type {
   BudgetMonthDetail,
   PreparedGoalWrite,
 } from "@/lib/budget-api";
-import { currentMonthKey } from "@/lib/pure/date-keys";
+import { currentMonthKey } from "@/lib/utils/date-keys";
 import type { DbOrTx } from "@/lib/db";
 import {
   payProfileSelectionSchema,

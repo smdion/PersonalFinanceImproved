@@ -8,7 +8,7 @@
  * Pure — no DB or network.
  */
 import type { InvestmentTransactionKind } from "@/lib/config/enum-values";
-import { classifySimplefinTransaction } from "./simplefin-transactions";
+import { classifySimplefinTransaction } from "../simplefin-transactions";
 
 type StoredTransactionForKind = {
   amount: number;

@@ -22,7 +22,7 @@ import {
   balanceAsOf,
   effectiveTransactionKind,
   type EffectiveKind,
-} from "@/lib/pure/transaction-kind";
+} from "@/lib/pure/budget/transaction-kind";
 import type {
   InvestmentTransactionKind,
   PortfolioTaxType,

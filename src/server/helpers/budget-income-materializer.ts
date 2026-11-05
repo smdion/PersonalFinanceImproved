@@ -25,7 +25,7 @@ import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
 } from "@/lib/calculators/paycheck";
-import { currentMonthKey } from "@/lib/pure/date-keys";
+import { currentMonthKey } from "@/lib/utils/date-keys";
 import { loadEffectiveSalaryProfile } from "./salary";
 import { localDateStr } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";

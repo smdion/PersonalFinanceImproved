@@ -19,7 +19,7 @@ import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
 } from "@/lib/calculators/paycheck";
-import { currentMonthKey } from "@/lib/pure/date-keys";
+import { currentMonthKey } from "@/lib/utils/date-keys";
 
 const HORIZON_MONTHS = 12;
 

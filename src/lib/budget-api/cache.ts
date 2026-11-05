@@ -6,7 +6,7 @@ import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { BudgetApiService } from "./types";
 import type { BudgetAPIClient } from "./interface";
-import { currentMonthKey } from "@/lib/pure/date-keys";
+import { currentMonthKey } from "@/lib/utils/date-keys";
 import type { Db, DbOrTx } from "@/lib/db";
 
 /** Read a cached value. Returns null if not found or expired. */

@@ -3818,6 +3818,25 @@
       "count": 1
     }
   },
+  "src/lib/pure/budget/transaction-kind.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/utility-cost-feed.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/cash-positions.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -3925,11 +3944,6 @@
   "src/lib/pure/daily-movement.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/lib/pure/date-keys.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/lib/pure/debt-rules.ts": {
@@ -5065,14 +5079,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/transaction-kind.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/lib/pure/types/calculators.ts": {
     "ratchet/no-history-comment": {
       "count": 1
@@ -5090,17 +5096,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 5
-    }
-  },
-  "src/lib/pure/utility-cost-feed.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/withdrawal-eligibility.ts": {
@@ -5255,6 +5250,11 @@
   "src/lib/utils/colors.ts": {
     "ratchet/max-comment-lines": {
       "count": 10
+    }
+  },
+  "src/lib/utils/date-keys.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     }
   },
   "src/lib/utils/date.ts": {

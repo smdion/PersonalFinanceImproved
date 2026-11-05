@@ -301,6 +301,11 @@
   },
   {
     "rule": "pure-has-no-io",
+    "from": "src/lib/pure/budget/utility-cost-feed.ts",
+    "to": "src/lib/budget-api/types.ts"
+  },
+  {
+    "rule": "pure-has-no-io",
     "from": "src/lib/pure/contributions.ts",
     "to": "src/server/helpers/settings.ts"
   },
@@ -338,11 +343,6 @@
     "rule": "pure-has-no-io",
     "from": "src/lib/pure/tax-buckets.ts",
     "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/utility-cost-feed.ts",
-    "to": "src/lib/budget-api/types.ts"
   },
   {
     "rule": "server-pages-prefetch-only",

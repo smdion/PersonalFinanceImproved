@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   balanceAsOf,
   effectiveTransactionKind,
-} from "@/lib/pure/transaction-kind";
+} from "@/lib/pure/budget/transaction-kind";
 
 const row = (description: string, amount: number) => ({
   amount,

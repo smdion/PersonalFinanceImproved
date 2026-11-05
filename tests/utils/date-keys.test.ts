@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { currentMonthKey } from "@/lib/pure/date-keys";
+import { currentMonthKey } from "@/lib/utils/date-keys";
 
 describe("currentMonthKey", () => {
   it("formats as YYYY-MM-01, ignoring the day of month", () => {
