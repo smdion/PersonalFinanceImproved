@@ -28,7 +28,7 @@ A row being Verified says the rule was checked against its source, not that the 
 - **A test only counts as Independent** if its expected value can be worked out without running Ledgr.
 - **An answer-key case** is titled `<area>/<id> [ROW-ID]`, usually in an `answer-key-*` test file (`tests/fixtures/answer-key.ts` has the helpers and rules); run `pnpm docs:update` to refresh Tested.
 - **A moved function or test** gets its path fixed in the row. `pnpm docs:verify` fails when a Function or Test path doesn't exist.
-- **A new export of `lib/calculators/` (the engine included) or `lib/pure/` needs a row naming it.** `pnpm check:calculation-register` (CI) fails an export with no row, and a new row with no risk rating (H, M or L, in `scripts/calculation-register-baseline.json`). The exports without a row today and the high-risk rows with no independent test are listed there; both lists may only shrink, so an entry that gets its row or test (or goes away) is removed in the same commit.
+- **A new export of `lib/pure/` (the engine included) needs a row naming it.** `pnpm check:calculation-register` (CI) fails an export with no row, and a new row with no risk rating (H, M or L, in `scripts/calculation-register-baseline.json`). The exports without a row today and the high-risk rows with no independent test are listed there; both lists may only shrink, so an entry that gets its row or test (or goes away) is removed in the same commit.
 
 Figures that change each year (brackets, limits, thresholds) live in `tax-data/us-federal/<year>.json`, not in code. Rows below cite the law; the year's figure is in the data file, and its `sources` name the notice it came from.
 
