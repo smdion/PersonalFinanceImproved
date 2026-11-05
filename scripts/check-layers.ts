@@ -67,6 +67,40 @@ export function parseEntryMoves(messages: string): EntryMove[] {
   }));
 }
 
+/** A move's paths as they are at HEAD, through the renames made after its commit. */
+export function renameMove(
+  m: EntryMove,
+  renames: Map<string, string>,
+): EntryMove {
+  const at = (p: string) => renames.get(p) ?? p;
+  return {
+    from: { from: at(m.from.from), to: at(m.from.to) },
+    to: { from: at(m.to.from), to: at(m.to.to) },
+  };
+}
+
+/**
+ * Every `Layers-renamed:` trailer since the ref, its paths read at HEAD: a
+ * trailer names paths as they were in its own commit, and a later commit can
+ * move those files.
+ */
+function entryMovesSince(baseRef: string): EntryMove[] {
+  const log = execFileSync(
+    "git",
+    ["log", "--format=%H%x00%B%x1e", `${baseRef}..HEAD`],
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  return log
+    .split("\x1e")
+    .map((record) => record.trim())
+    .filter((record) => record.includes("Layers-renamed:"))
+    .flatMap((record) => {
+      const [sha, message = ""] = record.split("\x00");
+      const renames = renamesSince(sha!);
+      return parseEntryMoves(message).map((m) => renameMove(m, renames));
+    });
+}
+
 /**
  * Base entries re-pointed by the trailers: each move needs its old entry in
  * the base list and gone from the current one, with the rule kept, so the
@@ -239,13 +273,7 @@ function main(argv: string[]): number {
     }
     if (base) {
       base.entries = renameEntries(base.entries, renamesSince(baseRef));
-      base.moved = parseEntryMoves(
-        execFileSync("git", ["log", "--format=%B", `${baseRef}..HEAD`], {
-          cwd: ROOT,
-          encoding: "utf8",
-          maxBuffer: 64 * 1024 * 1024,
-        }),
-      );
+      base.moved = entryMovesSince(baseRef);
     }
   }
 

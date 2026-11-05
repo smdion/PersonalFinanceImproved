@@ -13,6 +13,7 @@ import {
   compareWithKnown,
   parseEntryMoves,
   parseRenames,
+  renameMove,
   renameEntries,
   renamesSince,
   type LayerBase,
@@ -160,5 +161,36 @@ describe("Layers-renamed trailers", () => {
       { rule: "no-circular", from: FROM, to: INDEX },
     ];
     expect(compareWithKnown(now, now, base)).toHaveLength(1);
+  });
+});
+
+describe("a trailer whose files move later", () => {
+  it("reads the trailer's paths through the renames after its commit", () => {
+    const moved = renameMove(
+      {
+        from: {
+          from: "src/lib/calculators/engine/a.ts",
+          to: "src/lib/calculators/engine/b.ts",
+        },
+        to: {
+          from: "src/lib/calculators/engine/b.ts",
+          to: "src/lib/pure/engine/types/c.ts",
+        },
+      },
+      new Map([
+        ["src/lib/calculators/engine/a.ts", "src/lib/pure/engine/a.ts"],
+        ["src/lib/calculators/engine/b.ts", "src/lib/pure/engine/b.ts"],
+      ]),
+    );
+    expect(moved).toEqual({
+      from: {
+        from: "src/lib/pure/engine/a.ts",
+        to: "src/lib/pure/engine/b.ts",
+      },
+      to: {
+        from: "src/lib/pure/engine/b.ts",
+        to: "src/lib/pure/engine/types/c.ts",
+      },
+    });
   });
 });
