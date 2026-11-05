@@ -4,7 +4,7 @@
  * in the lint and baseline tests. Each is read with the TypeScript parser.
  */
 import ts from "typescript";
-import type { Rise, Tree } from "./rise";
+import { named, type Rise, type Tree } from "./rise";
 
 export const BUNDLE_FILE = "scripts/check-bundle-size.ts";
 export const COVERAGE_FILE = "vitest.config.ts";
@@ -89,25 +89,71 @@ export function bundleRises(
   const was = read(base);
   const now = read(head);
   const rises: Rise[] = [];
-  const say = (text: string) => rises.push({ file: BUNDLE_FILE, text });
+  const say = (id: string, text: string, by: number, names = [id]) =>
+    rises.push(named(BUNDLE_FILE, id, text, names, by));
+  /** `/(dashboard)/a/b/page` is named `a/b` (or its last part) in a trailer. */
+  const short = (route: string) => {
+    const parts = route.split("/").filter((p) => p && !/^\(.*\)$/.test(p));
+    if (parts.at(-1) === "page") parts.pop();
+    return [route, parts.join("/"), parts.at(-1) ?? route];
+  };
   if (now.fallback > was.fallback)
-    say(`DEFAULT_PAGE_BUDGET_KB ${was.fallback} → ${now.fallback}`);
-  if (now.chunk > was.chunk) say(`CHUNK_ERROR_KB ${was.chunk} → ${now.chunk}`);
+    say(
+      "DEFAULT_PAGE_BUDGET_KB",
+      `DEFAULT_PAGE_BUDGET_KB ${was.fallback} → ${now.fallback}`,
+      now.fallback - was.fallback,
+    );
+  if (now.chunk > was.chunk)
+    say(
+      "CHUNK_ERROR_KB",
+      `CHUNK_ERROR_KB ${was.chunk} → ${now.chunk}`,
+      now.chunk - was.chunk,
+    );
   const pageExists = (route: string) =>
     [".tsx", ".ts", ".jsx", ".js"].some(
       (ext) => headTree(`src/app${route}${ext}`) !== undefined,
     );
   for (const [route, kb] of Object.entries(was.pages)) {
     const budget = now.pages[route] ?? (pageExists(route) ? now.fallback : 0);
-    if (budget > kb) say(`${route}: budget ${kb} → ${budget} KB`);
+    if (budget > kb)
+      say(
+        route,
+        `${route}: budget ${kb} → ${budget} KB`,
+        budget - kb,
+        short(route),
+      );
   }
   for (const [route, kb] of Object.entries(now.pages))
     if (!(route in was.pages) && kb > was.fallback)
-      say(`${route}: new budget ${kb} KB, over the default ${was.fallback}`);
+      say(
+        route,
+        `${route}: new budget ${kb} KB, over the default ${was.fallback}`,
+        kb - was.fallback,
+        short(route),
+      );
   return rises;
 }
 
-/** Coverage thresholds never fall; the coverage excludes only shrink. */
+/** `a/x/f.ts` moved to `b/x/f.ts` → [a, b]: the folders that differ. */
+function movedPrefixes(moves: Map<string, string>): [string, string][] {
+  const pairs = new Map<string, [string, string]>();
+  for (const [to, from] of moves) {
+    const a = from.split("/");
+    const b = to.split("/");
+    while (a.length > 1 && b.length > 1 && a.at(-1) === b.at(-1)) {
+      a.pop();
+      b.pop();
+    }
+    const pair: [string, string] = [a.join("/"), b.join("/")];
+    pairs.set(pair.join("\0"), pair);
+  }
+  return [...pairs.values()];
+}
+
+/**
+ * Coverage thresholds never fall (a path threshold follows its folder's
+ * move); the coverage excludes only shrink.
+ */
 export function coverageRises(
   base: string,
   head: string,
@@ -135,13 +181,25 @@ export function coverageRises(
   const was = read(base);
   const now = read(head);
   const rises: Rise[] = [];
+  const prefixes = movedPrefixes(moves);
+  /** A path threshold whose folder moved is read under its new path. */
+  const moved = (key: string) =>
+    prefixes
+      .filter(([from]) => key.startsWith(`${from}/`))
+      .map(([from, to]) => to + key.slice(from.length))
+      .find((k) => now.thresholds[k] !== undefined && !(k in was.thresholds));
   for (const [key, value] of Object.entries(was.thresholds)) {
-    const after = now.thresholds[key];
+    const after = now.thresholds[key] ?? now.thresholds[moved(key) ?? ""];
     if (after === undefined || after < value)
-      rises.push({
-        file: COVERAGE_FILE,
-        text: `coverage threshold ${key}: ${value} → ${after ?? "removed"}`,
-      });
+      rises.push(
+        named(
+          COVERAGE_FILE,
+          `threshold ${key}`,
+          `coverage threshold ${key}: ${value} → ${after ?? "removed"}`,
+          [key],
+          after === undefined ? undefined : value - after,
+        ),
+      );
   }
   for (const entry of now.exclude) {
     const from = moves.get(entry);
@@ -150,10 +208,14 @@ export function coverageRises(
       (from && was.exclude.has(from) && !now.exclude.has(from))
     )
       continue;
-    rises.push({
-      file: COVERAGE_FILE,
-      text: `coverage exclude added: ${entry}`,
-    });
+    rises.push(
+      named(
+        COVERAGE_FILE,
+        `exclude ${entry}`,
+        `coverage exclude added: ${entry}`,
+        [entry],
+      ),
+    );
   }
   return rises;
 }
@@ -213,6 +275,9 @@ export function listEntries(
  * word is a file the move map traces back to the old entry's file) is the
  * old entry; counts of entries that trace to one old entry are summed.
  */
+/** `LIST › key › sub` is named by `key › sub` in a trailer. */
+const tail = (entry: string) => entry.split(" › ").slice(1).join(" › ");
+
 export function listRises(
   file: string,
   base: string,
@@ -242,7 +307,7 @@ export function listRises(
   for (const [entry, count] of now) {
     const key = traced(entry);
     if (!was.has(key)) {
-      rises.push({ file, text: `${entry}: added` });
+      rises.push(named(file, entry, `${entry}: added`, [tail(entry)]));
       continue;
     }
     if (count !== undefined) sums.set(key, (sums.get(key) ?? 0) + count);
@@ -250,7 +315,15 @@ export function listRises(
   for (const [key, count] of sums) {
     const before = was.get(key) ?? 0;
     if (count > before)
-      rises.push({ file, text: `${key}: ${before} → ${count}` });
+      rises.push(
+        named(
+          file,
+          key,
+          `${key}: ${before} → ${count}`,
+          [tail(key)],
+          count - before,
+        ),
+      );
   }
   return rises;
 }

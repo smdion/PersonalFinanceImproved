@@ -7,9 +7,10 @@ import {
   baselineRises,
   checkRatchets,
   trailerScopes,
-  unexcused,
   type Commit,
 } from "../../scripts/check-ratchets";
+import { claimsIn, excuse, importLines } from "../../scripts/ratchets/raise";
+import type { Rise } from "../../scripts/ratchets/rise";
 import {
   bundleRises,
   coverageRises,
@@ -307,6 +308,35 @@ describe("coverageRises", () => {
     ).toEqual([]);
   });
 
+  it("reads a path threshold under the folder it moved to", () => {
+    const at = (glob: string, lines: number) =>
+      config(`"${glob}": { lines: ${lines} }`, ``);
+    const moves = new Map([["src/b/engine/x.ts", "src/a/engine/x.ts"]]);
+    expect(
+      coverageRises(
+        at("src/a/engine/**", 90),
+        at("src/b/engine/**", 90),
+        moves,
+      ),
+    ).toEqual([]);
+    expect(
+      texts(
+        coverageRises(
+          at("src/a/engine/**", 90),
+          at("src/b/engine/**", 85),
+          moves,
+        ),
+      ),
+    ).toEqual(["coverage threshold src/a/engine/**.lines: 90 → 85"]);
+    expect(
+      coverageRises(
+        at("src/a/engine/**", 90),
+        at("src/b/engine/**", 90),
+        new Map(),
+      ),
+    ).toHaveLength(1);
+  });
+
   it("fails a lowered or removed threshold and a new exclude", () => {
     expect(
       texts(
@@ -392,22 +422,9 @@ describe("trailers", () => {
     ).toEqual({
       scopes: ["a.json", "b.json"],
       problems: [
-        `"Ratchet-raise: c.json": write Ratchet-raise: <file> — <reason>`,
+        `"Ratchet-raise: c.json": write Ratchet-raise: <file> — <entry> +<N>, <reason>`,
       ],
     });
-  });
-
-  it("excuses a raise only from a commit that changes the file", () => {
-    const rise = [{ file: "size-baseline.json", text: "x" }];
-    const trailer =
-      "chore: raise\n\nRatchet-raise: size-baseline.json — owner OK";
-    expect(unexcused(rise, [commit(trailer, ["size-baseline.json"])])).toEqual(
-      [],
-    );
-    expect(unexcused(rise, [commit(trailer, ["src/a.ts"])])).toEqual(rise);
-    expect(
-      unexcused(rise, [commit("chore: x\n\nbody", ["size-baseline.json"])]),
-    ).toEqual(rise);
   });
 
   it("excuses a re-recorded baseline file matched by the trailer's glob", () => {
@@ -423,6 +440,146 @@ describe("trailers", () => {
       baselineRises([file], [rerecord("tests/baseline/__baseline__/**")]),
     ).toEqual([]);
     expect(baselineRises([file], [rerecord("__sync__/**")])).toHaveLength(1);
+  });
+});
+
+describe("Ratchet-raise claims", () => {
+  const claims = (text: string) =>
+    claimsIn(text).map(({ path, n }) => ({ path, n }));
+
+  it("pairs each path with its +N, the reason in parentheses left out", () => {
+    expect(
+      claims(
+        "owner rule of 2026-11-05, import lines only: src/a.ts +43 (moved from src/b.ts, which drops 39; together +4)",
+      ),
+    ).toEqual([{ path: "src/a.ts", n: 43 }]);
+    expect(
+      claims(
+        "src/a.ts split: parts plus what is left +11 (11 import lines added); src/b.ts: +1 import line",
+      ),
+    ).toEqual([
+      { path: "src/a.ts", n: 11 },
+      { path: "src/b.ts", n: 1 },
+    ]);
+  });
+
+  it("gives an 'each +N' to the paths after it, until one has its own", () => {
+    expect(
+      claims(
+        "+3 import lines each, one import that wraps: components/a.tsx (x); lib/b.ts (y); and +1 import line on server/c.ts",
+      ),
+    ).toEqual([
+      { path: "components/a.tsx", n: 3 },
+      { path: "lib/b.ts", n: 3 },
+      { path: "server/c.ts", n: 1 },
+    ]);
+  });
+
+  it("reads `<name> <a> → <b>` as +(b − a)", () => {
+    expect(claims("milestones 282 → 284, brokerage 240 → 242 KB")).toEqual([
+      { path: undefined, n: 2 },
+      { path: undefined, n: 2 },
+      { path: undefined, n: undefined },
+    ]);
+    expect(claims("src/a.ts 870 -> 872")).toEqual([{ path: "src/a.ts", n: 2 }]);
+  });
+});
+
+describe("excuse", () => {
+  const size = (paths: string[], by: number): Rise => ({
+    file: "size-baseline.json",
+    id: paths.join(),
+    text: "t",
+    by,
+    entry: { paths, names: [] },
+    sized: paths,
+  });
+  const raise = (value: string, body = "Why.") =>
+    `refactor: x\n\n${body}\n\nRatchet-raise: ${value}\n`;
+
+  it("passes a trailer naming the entry with at least its rise", () => {
+    const rise = size(["src/server/x.ts"], 2);
+    expect(
+      excuse(rise, raise("size-baseline.json — src/server/x.ts +2, why")),
+    ).toMatchObject({ ok: true });
+    expect(
+      excuse(rise, raise("size-baseline.json — server/x.ts: +3, why")),
+    ).toMatchObject({ ok: true });
+  });
+
+  it("doesn't excuse one entry by a trailer for another", () => {
+    const rise = size(["src/server/x.ts"], 2);
+    for (const value of [
+      "size-baseline.json — src/server/y.ts +5, why",
+      "size-baseline.json — x.ts +5, why",
+      "eslint-suppressions.json — src/server/x.ts +5, why",
+      "size-baseline.json — owner OK",
+    ])
+      expect(excuse(rise, raise(value))).toEqual({
+        ok: false,
+        why: "no Ratchet-raise trailer in this commit names the entry",
+      });
+  });
+
+  it("fails a +N below the rise", () => {
+    expect(
+      excuse(
+        size(["src/x.ts"], 3),
+        raise("size-baseline.json — src/x.ts +2, why"),
+      ),
+    ).toEqual({
+      ok: false,
+      why: "its Ratchet-raise trailer gives +2, the entry rose +3",
+    });
+  });
+
+  it("names a function, a rule or an export by its word beside the path", () => {
+    const fn: Rise = {
+      ...size(["src/x.tsx"], 1),
+      sized: undefined,
+      entry: { paths: ["src/x.tsx"], names: [["Card"]] },
+    };
+    expect(
+      excuse(fn, raise("size-baseline.json — x.tsx Card: +1, why")),
+    ).toMatchObject({ ok: true });
+    expect(
+      excuse(fn, raise("size-baseline.json — x.tsx: +1, why")),
+    ).toMatchObject({ ok: false });
+    const exp: Rise = {
+      file: "scripts/calculation-register-baseline.json",
+      id: "e",
+      text: "t",
+      entry: { paths: [], names: [["mapping.ts"], ["isPull"]] },
+    };
+    const reg = (v: string) =>
+      excuse(exp, raise(`scripts/calculation-register-baseline.json — ${v}`));
+    expect(reg("sync/mapping.ts:isPull joins the list")).toMatchObject({
+      ok: true,
+    });
+    expect(reg("sync/mapping.ts:isPullOnly joins the list")).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it("reads the body's `- <path> <a> -> <b>` list only when the trailer names no entry", () => {
+    const rise = size(["src/x.ts"], 2);
+    const body = "Size:\n- src/x.ts 870 -> 872 (+2)\n- src/y.ts 10 -> 11";
+    expect(
+      excuse(rise, raise("size-baseline.json — import lines (owner 1c)", body)),
+    ).toMatchObject({ ok: true });
+    expect(
+      excuse(rise, raise("size-baseline.json — src/y.ts +1, why", body)),
+    ).toMatchObject({ ok: false });
+  });
+});
+
+describe("importLines", () => {
+  it("counts import statements and the lines a type holding import() wraps to", () => {
+    const one = `import { a } from "./a";\nconst t = x as import("./b").B | undefined;\n`;
+    const wrapped = `import {\n  a,\n  c,\n} from "./a";\nexport type { D } from "./d";\nconst t = x as\n  | import("./b").B\n  | undefined;\n`;
+    expect(importLines("f.ts", one)).toEqual({ statements: 1, types: 0 });
+    expect(importLines("f.ts", wrapped)).toEqual({ statements: 5, types: 1 });
+    expect(importLines("f.json", one)).toEqual({ statements: 0, types: 0 });
   });
 });
 
@@ -467,7 +624,10 @@ describe("checkRatchets in a repository", () => {
     write("size-baseline.json", size({ "src/r/a.ts": 300, "src/r/b.ts": 300 }));
     fs.rmSync(path.join(dir, "tests/baseline/__baseline__/h1/q.json"));
     commit("refactor: split r\n\nMechanical: split");
-    expect(checkRatchets(base, "HEAD", dir)).toEqual([]);
+    expect(checkRatchets(base, "HEAD", dir)).toEqual({
+      failures: [],
+      excused: [],
+    });
   });
 
   it("fails a raise and a changed baseline file until each carries its trailer", () => {
@@ -475,9 +635,11 @@ describe("checkRatchets in a repository", () => {
     write("size-baseline.json", size({ "src/r.ts": 601 }));
     write("tests/baseline/__baseline__/h1/p.json", '{"a":1}');
     commit("chore: raise\n\nBecause.");
-    const failures = checkRatchets(base, "HEAD", dir);
+    const { failures } = checkRatchets(base, "HEAD", dir);
     expect(failures).toHaveLength(2);
-    expect(failures[0]).toMatch(/size-baseline\.json: files src\/r\.ts: 601/);
+    expect(failures[0]).toMatch(
+      /size-baseline\.json: files src\/r\.ts: 601 .* \(\+1\): no Ratchet-raise trailer in this commit names the entry/,
+    );
     expect(failures[1]).toMatch(
       /__baseline__\/h1\/p\.json: behavior baseline changed/,
     );
@@ -487,8 +649,154 @@ describe("checkRatchets in a repository", () => {
       "-q",
       "--amend",
       "-m",
-      "chore: raise\n\nBecause.\n\nRatchet-raise: size-baseline.json — owner OK\nBaseline-rerecord: __baseline__/h1/* — owner-signed",
+      "chore: raise\n\nBecause.\n\nRatchet-raise: size-baseline.json — src/r.ts +1, owner OK\nBaseline-rerecord: __baseline__/h1/* — owner-signed",
     );
-    expect(checkRatchets(base, "HEAD", dir)).toEqual([]);
+    const report = checkRatchets(base, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toHaveLength(1);
+  });
+  const sha = () => git("rev-parse", "--short=8", "HEAD");
+  const rBody = (aCount: number, bFrom = 0) =>
+    [...lines("a", aCount), ...lines("b", 300).slice(bFrom)].join("\n");
+
+  it("fails a rise whose trailer is in another commit", () => {
+    git("checkout", "-q", "-B", "elsewhere", base);
+    write("src/r.ts", rBody(301));
+    write("size-baseline.json", size({ "src/r.ts": 601 }));
+    commit("chore: grow r\n\nBecause.");
+    const raised = sha();
+    // The second commit changes size-baseline.json too (formatting only).
+    write(
+      "size-baseline.json",
+      JSON.stringify({ files: { "src/r.ts": 601 }, functions: {} }, null, 2),
+    );
+    commit(
+      "chore: other\n\nBecause.\n\nRatchet-raise: size-baseline.json — src/r.ts +1, owner OK",
+    );
+    const { failures, excused } = checkRatchets(base, "HEAD", dir);
+    expect(excused).toEqual([]);
+    expect(failures).toEqual([
+      expect.stringMatching(
+        new RegExp(
+          `^${raised} size-baseline\\.json: files src/r\\.ts: 601 .*names the entry`,
+        ),
+      ),
+    ]);
+  });
+
+  it("hands a renamed file's entry to its new path", () => {
+    git("checkout", "-q", "-B", "rename", base);
+    git("mv", "src/r.ts", "src/q.ts");
+    write("size-baseline.json", size({ "src/q.ts": 600 }));
+    commit("refactor: r becomes q\n\nMechanical: rename");
+    expect(checkRatchets(base, "HEAD", dir)).toEqual({
+      failures: [],
+      excused: [],
+    });
+  });
+
+  it("lists every excused rise with its commit, entry, +N and trailer", () => {
+    git("checkout", "-q", "-B", "listed", base);
+    write("src/r.ts", rBody(301));
+    write(
+      "size-baseline.json",
+      JSON.stringify({
+        files: { "src/r.ts": 601 },
+        functions: { "src/r.ts": { longFn: 160 } },
+      }),
+    );
+    const trailer =
+      "Ratchet-raise: size-baseline.json — src/r.ts +1; src/r.ts longFn +160, owner OK";
+    commit(`chore: grow r\n\nBecause.\n\n${trailer}`);
+    const { failures, excused } = checkRatchets(base, "HEAD", dir);
+    expect(failures).toEqual([]);
+    expect(excused).toEqual([
+      `${sha()} size-baseline.json: files src/r.ts: 601 recorded lines, 600 at the base (+1), by "${trailer}"`,
+      `${sha()} size-baseline.json: functions in src/r.ts: 160 recorded lines (longest 160), 0 (longest 0) at the base (+160), by "${trailer}"`,
+    ]);
+  });
+
+  it("holds a Mechanical: move into a recorded file to the import lines it adds", () => {
+    git("checkout", "-q", "-B", "joined", base);
+    write("src/t.ts", lines("t", 450).join("\n"));
+    write("size-baseline.json", size({ "src/r.ts": 600, "src/t.ts": 450 }));
+    const start = commit("chore: t");
+    const imports = [`import { a } from "./a";`, `import { b } from "./b";`];
+    write("src/r.ts", rBody(300, 50));
+    write(
+      "src/t.ts",
+      [...imports, ...lines("t", 450), ...lines("b", 50)].join("\n"),
+    );
+    write("size-baseline.json", size({ "src/r.ts": 550, "src/t.ts": 502 }));
+    commit(
+      "refactor: b moves to t\n\nMechanical: move\nRatchet-raise: size-baseline.json — src/t.ts +2, its two import lines",
+    );
+    expect(checkRatchets(start, "HEAD", dir)).toMatchObject({
+      failures: [],
+      excused: [expect.stringContaining("src/r.ts, src/t.ts")],
+    });
+
+    write(
+      "src/t.ts",
+      [
+        ...imports,
+        ...lines("t", 450),
+        ...lines("b", 50),
+        "const extra = 1;",
+      ].join("\n"),
+    );
+    write("size-baseline.json", size({ "src/r.ts": 550, "src/t.ts": 503 }));
+    git("add", "-A");
+    git(
+      "commit",
+      "-q",
+      "--amend",
+      "-m",
+      "refactor: b moves to t\n\nMechanical: move\nRatchet-raise: size-baseline.json — src/t.ts +3, why",
+    );
+    expect(checkRatchets(start, "HEAD", dir).failures).toEqual([
+      expect.stringContaining(
+        "rose +3 in a Mechanical: commit, which adds 2 import lines across src/r.ts, src/t.ts",
+      ),
+    ]);
+  });
+
+  it("passes a revert back to the entry's value before the reverted commit", () => {
+    git("checkout", "-q", "-B", "revert", base);
+    write("src/r.ts", rBody(299));
+    write("size-baseline.json", size({ "src/r.ts": 599 }));
+    commit("chore: shrink r\n\nBecause.");
+    git("revert", "--no-edit", "HEAD");
+    expect(checkRatchets(base, "HEAD", dir)).toMatchObject({
+      failures: [],
+      excused: [expect.stringMatching(/\(\+1\), by the revert of [0-9a-f]{8}/)],
+    });
+  });
+
+  it("checks a merge only for what it raises itself", () => {
+    git("checkout", "-q", "-B", "side", base);
+    write("src/r.ts", rBody(301));
+    write("size-baseline.json", size({ "src/r.ts": 601 }));
+    commit(
+      "chore: grow r\n\nBecause.\n\nRatchet-raise: size-baseline.json — src/r.ts +1, owner OK",
+    );
+    git("checkout", "-q", "-B", "trunk", base);
+    write("src/other.ts", "export const x = 1;");
+    commit("chore: other\n\nBecause.");
+    git("merge", "-q", "--no-ff", "--no-edit", "side");
+    expect(checkRatchets(base, "HEAD", dir)).toMatchObject({
+      failures: [],
+      excused: [expect.stringContaining("(+1)")],
+    });
+    git("reset", "-q", "--hard", "HEAD^");
+    git("merge", "-q", "--no-ff", "--no-commit", "side");
+    write("size-baseline.json", size({ "src/r.ts": 602 }));
+    git("add", "-A");
+    git("commit", "-q", "--no-edit");
+    expect(checkRatchets(base, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(
+        /^[0-9a-f]{8} size-baseline\.json: files src\/r\.ts: 602 .*\(\+1\)/,
+      ),
+    ]);
   });
 });

@@ -12,9 +12,14 @@
  *
  * A move or split is a redistribution, not a rise: each added file is matched
  * to the file its lines came from, and the counts of the files so joined are
- * summed against their old entries. A raise passes only when a commit in
- * base..head that changes the file carries `Ratchet-raise: <file> — <reason>`;
- * a re-recorded baseline file needs `Baseline-rerecord: <glob> — <reason>`.
+ * summed against their old entries. Ratchets are compared commit by commit,
+ * each with its parent: a rise passes only when that commit carries a
+ * `Ratchet-raise:` trailer naming the entry and at least its rise
+ * (scripts/ratchets/raise.ts has the format), or the commit reverts the one
+ * that lowered it. In a `Mechanical:` commit a size entry rises by exactly
+ * the import lines the commit adds to the files it joins. Every excused rise
+ * is printed. A re-recorded baseline file needs
+ * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
  *
  *   tsx scripts/check-ratchets.ts --base "$(git merge-base origin/main HEAD)" [--head <ref>]
  */
@@ -47,7 +52,10 @@ import {
   type Git,
 } from "./check-commit";
 import { attributeMoves, groupsOf, parseDiff } from "./ratchets/moves";
+import { RAISE, excuse, importLines } from "./ratchets/raise";
 import type { Rise, Tree } from "./ratchets/rise";
+
+export { RAISE };
 
 export const BASELINE_DIRS = [
   "tests/baseline/__baseline__",
@@ -59,7 +67,6 @@ export const BASELINE_DIRS = [
 // ---------------------------------------------------------------------------
 
 export type Commit = { sha: string; message: string; files: string[] };
-export const RAISE = "Ratchet-raise";
 export const RERECORD = "Baseline-rerecord";
 
 /** `Key: a, b — reason` lines; a line with no reason is reported. */
@@ -72,7 +79,9 @@ export function trailerScopes(
   for (const value of trailerValues(message, key)) {
     const match = /^(.+?)\s+(?:—|--)\s+(\S.*)$/.exec(value);
     if (!match) {
-      problems.push(`"${key}: ${value}": write ${key}: <file> — <reason>`);
+      const form =
+        key === RAISE ? "<file> — <entry> +<N>, <reason>" : "<glob> — <reason>";
+      problems.push(`"${key}: ${value}": write ${key}: ${form}`);
       continue;
     }
     scopes.push(
@@ -110,15 +119,10 @@ export function baselineRises(changed: string[], commits: Commit[]): Rise[] {
     .filter((file) => !allowedBy(commits, RERECORD, file, globMatch))
     .map((file) => ({
       file,
+      id: file,
+      entry: { paths: [file], names: [] },
       text: `${file}: behavior baseline changed (only a deletion passes; a re-record carries ${RERECORD}: <glob> — <reason>)`,
     }));
-}
-
-/** The rises no commit's `Ratchet-raise:` trailer names. */
-export function unexcused(rises: Rise[], commits: Commit[]): Rise[] {
-  return rises.filter(
-    (rise) => !allowedBy(commits, RAISE, rise.file, (s, f) => s === f),
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -146,28 +150,30 @@ function commitsWithFiles(git: Git, base: string, head: string): Commit[] {
   }));
 }
 
-function renamesIn(git: Git, base: string, head: string): Map<string, string> {
+function renamesIn(git: Git, from: string, to: string): Map<string, string> {
   const renames = new Map<string, string>();
-  for (const line of git("diff", "-M", "--name-status", base, head).split(
-    "\n",
-  )) {
-    const [status = "", from, to] = line.split("\t");
-    if (status.startsWith("R") && from && to) renames.set(to, from);
+  for (const line of git("diff", "-M", "--name-status", from, to).split("\n")) {
+    const [status = "", old, now] = line.split("\t");
+    if (status.startsWith("R") && old && now) renames.set(now, old);
   }
   return renames;
 }
 
-export function checkRatchets(
-  base: string,
-  head: string,
-  cwd = process.cwd(),
-): string[] {
-  const git = gitIn(cwd);
-  const was = treeAt(git, base);
-  const now = treeAt(git, head);
-  const commits = commitsWithFiles(git, base, head);
-  const diffs = parseDiff(git("diff", "--no-renames", "-U0", base, head));
-  const moves = attributeMoves(diffs, renamesIn(git, base, head));
+export const RATCHET_FILES = [
+  SIZE_FILE,
+  ...SUPPRESSION_FILES,
+  REGISTER_FILE,
+  BUNDLE_FILE,
+  COVERAGE_FILE,
+  ...LIST_FILES,
+];
+
+/** Every ratchet that rose from `from` to `to`, moves and splits counted. */
+export function risesBetween(git: Git, from: string, to: string): Rise[] {
+  const was = treeAt(git, from);
+  const now = treeAt(git, to);
+  const diffs = parseDiff(git("diff", "--no-renames", "-U0", from, to));
+  const moves = attributeMoves(diffs, renamesIn(git, from, to));
   const group = groupsOf(moves);
   const json = <T>(tree: Tree, file: string, empty: T): T => {
     const text = tree(file);
@@ -208,6 +214,136 @@ export function checkRatchets(
   rises.push(...coverageRises(...both(COVERAGE_FILE), moves));
   for (const file of LIST_FILES)
     rises.push(...listRises(file, ...both(file), moves));
+  return rises;
+}
+
+/**
+ * The rises a merge makes itself: an entry that rose against every parent.
+ * What one parent brings in was checked in its own commits (or is the base's).
+ */
+function mergeRises(git: Git, sha: string): Rise[] {
+  const parents = git("log", "-1", "--format=%P", sha).trim().split(" ");
+  const sides = parents.map((p) => risesBetween(git, p, sha));
+  const [first = [], ...rest] = sides;
+  return first.flatMap((rise) => {
+    const others = rest.map((side) => side.find((r) => r.id === rise.id));
+    if (others.some((r) => r === undefined)) return [];
+    const by = [rise, ...others].map((r) => r!.by);
+    return [
+      {
+        ...rise,
+        by: by.every((n) => n !== undefined) ? Math.min(...by) : undefined,
+      },
+    ];
+  });
+}
+
+const short = (sha: string) => sha.slice(0, 8);
+const plus = (rise: Rise) => (rise.by === undefined ? "" : ` (+${rise.by})`);
+
+/**
+ * In a `Mechanical:` commit an excused size rise is exactly the import lines
+ * the commit adds to the files it joins, net across them; a function's entry
+ * exactly the lines its `import("…")` types grow by.
+ */
+function notImportLines(git: Git, sha: string, rise: Rise): string | undefined {
+  if (rise.file !== SIZE_FILE) return undefined;
+  const files = rise.sized ?? rise.entry.paths;
+  const was = treeAt(git, `${sha}^`);
+  const now = treeAt(git, sha);
+  let added = 0;
+  for (const f of files) {
+    const [before, after] = [importLines(f, was(f)), importLines(f, now(f))];
+    added += after.types - before.types;
+    if (rise.sized) added += after.statements - before.statements;
+  }
+  if (rise.by === added) return undefined;
+  const lines = rise.sized ? "import lines" : `lines of import("…") types`;
+  return `rose +${rise.by} in a Mechanical: commit, which adds ${added} ${lines} across ${files.join(", ")} (a move or split rises by exactly those)`;
+}
+
+/**
+ * Raises the owner approved whose trailer names only the ratchet file and
+ * whose text names no entry; an entry goes once its commit is on main.
+ */
+export const APPROVED_BEFORE_ENTRY_TRAILERS: Record<string, string[]> = {
+  e3768ddbe70c19c90d46273f6b222426c887c11d: [
+    "vitest.config.ts\0threshold statements",
+    "vitest.config.ts\0threshold branches",
+    "vitest.config.ts\0threshold functions",
+    "vitest.config.ts\0threshold lines",
+  ],
+};
+
+/** `This reverts commit <sha>` in a message → that sha. */
+const reverted = (message: string) =>
+  /^This reverts commit ([0-9a-f]{7,40})\b/m.exec(message)?.[1];
+
+export type RatchetReport = { failures: string[]; excused: string[] };
+
+export function checkRatchets(
+  base: string,
+  head: string,
+  cwd = process.cwd(),
+): RatchetReport {
+  const git = gitIn(cwd);
+  const commits = commitsWithFiles(git, base, head);
+  const merges = git("rev-list", "--merges", "--reverse", `${base}..${head}`)
+    .split("\n")
+    .filter(Boolean);
+  const failures: string[] = [];
+  const excused: string[] = [];
+
+  const judge = (sha: string, message: string, rises: Rise[]) => {
+    const mechanical = trailerValues(message, "Mechanical").length > 0;
+    const approved = APPROVED_BEFORE_ENTRY_TRAILERS[sha] ?? [];
+    const undone = reverted(message);
+    // A revert may put an entry back to its value before the reverted commit.
+    let stillHigher: Set<string> | undefined;
+    try {
+      if (undone)
+        stillHigher = new Set(
+          risesBetween(git, `${undone}^`, sha).map((r) => r.id),
+        );
+    } catch {
+      stillHigher = undefined; // the reverted commit isn't in this clone
+    }
+    for (const rise of rises) {
+      const where = `${short(sha)} ${rise.file}: ${rise.text}${plus(rise)}`;
+      if (approved.includes(rise.id)) {
+        excused.push(
+          `${where}, by the owner's OK (named in check-ratchets.ts)`,
+        );
+        continue;
+      }
+      if (stillHigher && !stillHigher.has(rise.id)) {
+        excused.push(
+          `${where}, by the revert of ${short(undone!)}: back to its value before it`,
+        );
+        continue;
+      }
+      const verdict = excuse(rise, message);
+      if (!verdict.ok) {
+        failures.push(
+          `${where}: ${verdict.why} — write "${RAISE}: ${rise.file} — <entry> +<N>, <reason>" in that commit (owner's OK, or a Mechanical: commit's import lines)`,
+        );
+        continue;
+      }
+      const imports = mechanical ? notImportLines(git, sha, rise) : undefined;
+      if (imports) failures.push(`${where}: ${imports}`);
+      else excused.push(`${where}, by "${verdict.trailer}"`);
+    }
+  };
+
+  for (const c of commits) {
+    for (const key of [RAISE, RERECORD])
+      for (const p of trailerScopes(c.message, key).problems)
+        failures.push(`${short(c.sha)}: ${p}`);
+    if (!c.files.some((f) => RATCHET_FILES.includes(f))) continue;
+    judge(c.sha, c.message, risesBetween(git, `${c.sha}^`, c.sha));
+  }
+  for (const sha of merges)
+    judge(sha, git("log", "-1", "--format=%B", sha), mergeRises(git, sha));
 
   const changed = git(
     "diff",
@@ -221,22 +357,8 @@ export function checkRatchets(
   )
     .split("\n")
     .filter(Boolean);
-
-  const problems = commits.flatMap((c) =>
-    [RAISE, RERECORD].flatMap((key) =>
-      trailerScopes(c.message, key).problems.map(
-        (p) => `${c.sha.slice(0, 8)}: ${p}`,
-      ),
-    ),
-  );
-  return [
-    ...problems,
-    ...unexcused(rises, commits).map(
-      (r) =>
-        `${r.file}: ${r.text} — a raise (owner's OK only) carries "${RAISE}: ${r.file} — <reason>"`,
-    ),
-    ...baselineRises(changed, commits).map((r) => r.text),
-  ];
+  failures.push(...baselineRises(changed, commits).map((r) => r.text));
+  return { failures, excused };
 }
 
 function main(argv: string[]): number {
@@ -258,16 +380,20 @@ function main(argv: string[]): number {
     );
     return 1;
   }
-  const failures = checkRatchets(base, head);
+  const { failures, excused } = checkRatchets(base, head);
+  for (const line of excused) console.log(`excused: ${line}`);
   for (const line of failures) console.error(line);
+  const since = base.slice(0, 12);
   if (failures.length > 0) {
     console.error(
-      `\n${failures.length} ratchet failure(s) against ${base.slice(0, 12)}; see docs/RULES.md § Refactoring.`,
+      `\n${failures.length} ratchet failure(s) since ${since}, ${excused.length} rise(s) excused; see docs/RULES.md § Refactoring.`,
     );
     return 1;
   }
   console.log(
-    `Ratchets: nothing rose and no baseline file changed since ${base.slice(0, 12)}.`,
+    excused.length > 0
+      ? `Ratchets: ${excused.length} rise(s) since ${since}, each excused in its own commit (listed above); nothing else rose and no baseline file changed.`
+      : `Ratchets: nothing rose and no baseline file changed since ${since}.`,
   );
   return 0;
 }

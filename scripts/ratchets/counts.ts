@@ -3,7 +3,7 @@
  * the calculation-register baseline, each compared with its base copy.
  */
 import { members, sumByGroup } from "./moves";
-import type { Rise } from "./rise";
+import { named, type Rise } from "./rise";
 
 export const SIZE_FILE = "size-baseline.json";
 export const SUPPRESSION_FILES = [
@@ -39,9 +39,16 @@ export function sizeRises(
     const files = members(Object.keys(head.files), group, g).filter(
       (f) => counted(f, head.files[f]!) > 0,
     );
+    const sized = [
+      ...new Set([...members(Object.keys(base.files), group, g), ...files]),
+    ].sort();
     rises.push({
       file: SIZE_FILE,
+      id: `${SIZE_FILE}\0files ${files.join(", ")}`,
       text: `files ${files.join(", ")}: ${sum} recorded lines, ${was} at the base`,
+      by: sum - was,
+      entry: { paths: sized, names: [] },
+      sized,
     });
   }
   const fnSum = (fns: Record<string, number>) =>
@@ -65,9 +72,21 @@ export function sizeRises(
     const files = members(Object.keys(head.functions), group, g).filter(
       (f) => Object.keys(head.functions[f]!).length > 0,
     );
+    const wasFn = new Map<string, number>();
+    for (const f of members(Object.keys(base.functions), group, g))
+      for (const [fn, n] of Object.entries(base.functions[f]!))
+        wasFn.set(fn, Math.max(n, wasFn.get(fn) ?? 0));
+    const grew = files.flatMap((f) =>
+      Object.entries(head.functions[f]!)
+        .filter(([fn, n]) => n > (wasFn.get(fn) ?? 0))
+        .map(([fn]) => fn),
+    );
     rises.push({
       file: SIZE_FILE,
+      id: `${SIZE_FILE}\0functions in ${files.join(", ")}`,
       text: `functions in ${files.join(", ")}: ${sum} recorded lines (longest ${longest}), ${was} (longest ${wasLongest}) at the base`,
+      by: Math.max(sum - was, longest - wasLongest),
+      entry: { paths: files, names: grew.length > 0 ? [grew] : [] },
     });
   }
   return rises;
@@ -102,7 +121,13 @@ export function suppressionRises(
     );
     rises.push({
       file,
+      id: `${file}\0${rule} in ${files.join(", ")}`,
       text: `${rule} in ${files.join(", ")}: ${count}, ${before} at the base`,
+      by: count - before,
+      entry: {
+        paths: members(Object.keys(base), group, g).concat(files),
+        names: [[rule]],
+      },
     });
   }
   return rises;
@@ -120,23 +145,34 @@ const RISK_ORDER: Record<string, number> = { H: 3, M: 2, L: 1 };
  * that moved keeps its entry: a new `file:symbol` is matched by a removed
  * entry for the same symbol.
  */
+/** `src/a/b.ts:sym` → `b.ts`: a register trailer names the file and the export. */
+const basename = (e: string) => {
+  const file = e.slice(0, e.lastIndexOf(":"));
+  return file.slice(file.lastIndexOf("/") + 1);
+};
+
 export function registerRises(base: Register, head: Register): Rise[] {
   const rises: Rise[] = [];
   for (const [id, risk] of Object.entries(head.risk)) {
     const before = base.risk[id];
     if (before && (RISK_ORDER[risk] ?? 0) < (RISK_ORDER[before] ?? 0))
-      rises.push({
-        file: REGISTER_FILE,
-        text: `${id}: risk ${before} → ${risk}`,
-      });
+      rises.push(
+        named(REGISTER_FILE, `risk ${id}`, `${id}: risk ${before} → ${risk}`, [
+          id,
+        ]),
+      );
   }
   const wasHigh = new Set(base.highRiskWithoutIndependentTest);
   for (const id of head.highRiskWithoutIndependentTest)
     if (!wasHigh.has(id))
-      rises.push({
-        file: REGISTER_FILE,
-        text: `${id}: added to highRiskWithoutIndependentTest`,
-      });
+      rises.push(
+        named(
+          REGISTER_FILE,
+          `high ${id}`,
+          `${id}: added to highRiskWithoutIndependentTest`,
+          [id],
+        ),
+      );
   const now = new Set(head.exportsWithoutRow);
   const symbol = (e: string) => e.slice(e.lastIndexOf(":") + 1);
   const freed = new Map<string, number>();
@@ -149,8 +185,10 @@ export function registerRises(base: Register, head: Register): Rise[] {
     if (left > 0) freed.set(symbol(e), left - 1);
     else
       rises.push({
-        file: REGISTER_FILE,
-        text: `${e}: added to exportsWithoutRow`,
+        ...named(REGISTER_FILE, e, `${e}: added to exportsWithoutRow`, [
+          symbol(e),
+        ]),
+        entry: { paths: [], names: [[basename(e)], [symbol(e)]] },
       });
   }
   return rises;
