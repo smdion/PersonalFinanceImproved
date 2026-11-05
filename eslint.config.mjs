@@ -269,7 +269,17 @@ const config = [
           ],
           patterns: [
             {
-              group: ["@/lib/db/*", "drizzle-orm", "drizzle-orm/*"],
+              // The shape files (types and zod schemas, no I/O) are the
+              // layer manifest's `shapes`, which pure code may read.
+              group: [
+                "@/lib/db/*",
+                "!@/lib/db/json-schemas",
+                "!@/lib/db/salary-entry-defaults",
+                "!@/lib/db/salary-entry-edit",
+                "!@/lib/db/profile-fields",
+                "drizzle-orm",
+                "drizzle-orm/*",
+              ],
               message: "Pure modules cannot import DB or ORM code.",
             },
           ],
