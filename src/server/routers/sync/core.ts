@@ -19,17 +19,15 @@ import {
   getApiConnection,
   cacheGet,
   cacheSet,
+  type BudgetApiService,
+  type BudgetAccount,
+  type BudgetCategoryGroup,
+  type BudgetMonthDetail,
+  type BudgetTransaction,
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
 import { applyPullMapping } from "@/server/services/sync/apply-pull-mapping";
-import type {
-  BudgetApiService,
-  BudgetAccount,
-  BudgetCategoryGroup,
-  BudgetMonthDetail,
-  BudgetTransaction,
-} from "@/lib/budget-api";
 import {
   parseAppSettings,
   buildMortgageInputs,
@@ -43,6 +41,7 @@ import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { serviceEnum } from "./_shared";
 import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
 import { safeDivide, toDecimalColumn } from "@/lib/utils/math";
+import { zCalendarDate } from "@/lib/utils/zod-fields";
 
 /** The cached category list as the comparison reads it. A list cached
  *  before groups carried `isIncome` has none: not income until the next
@@ -1047,10 +1046,10 @@ export const syncCoreRouter = createTRPCRouter({
   computeExpenseComparison: protectedProcedure
     .input(
       z.object({
-        currentStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        currentEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        priorStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        priorEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        currentStart: zCalendarDate,
+        currentEnd: zCalendarDate,
+        priorStart: zCalendarDate,
+        priorEnd: zCalendarDate,
       }),
     )
     .query(async ({ ctx, input }) => {

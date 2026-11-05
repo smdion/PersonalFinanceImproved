@@ -65,7 +65,7 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import {
   targetModeSchema,
   budgetApiServiceSchema,
@@ -603,7 +603,7 @@ async function settleOccurrence(
 
 const plannedTransactionInput = z.object({
   goalId: z.number().int(),
-  transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  transactionDate: zCalendarDate,
   amount: zDecimal, // positive = deposit, negative = withdrawal
   description: z.string().min(1),
   isRecurring: z.boolean().default(false),
@@ -615,11 +615,7 @@ const savingsGoalInput = z.object({
   parentGoalId: z.number().int().nullable().optional(),
   targetAmount: zDecimal.nullable().optional(),
   targetMonths: z.number().int().nullable().optional(),
-  targetDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
-    .optional(),
+  targetDate: zCalendarDate.nullable().optional(),
   priority: z.number().int().default(0),
   isActive: z.boolean().default(true),
   isEmergencyFund: z.boolean().default(false),
@@ -1265,7 +1261,7 @@ export const savingsRouter = createTRPCRouter({
       .input(
         z.object({
           goalId: z.number().int(),
-          monthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          monthDate: zCalendarDate,
           amount: z.number(),
         }),
       )
@@ -1314,7 +1310,7 @@ export const savingsRouter = createTRPCRouter({
     deleteMonth: savingsProcedure
       .input(
         z.object({
-          monthDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+          monthDates: z.array(zCalendarDate),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1334,7 +1330,7 @@ export const savingsRouter = createTRPCRouter({
     upsertMonth: savingsProcedure
       .input(
         z.object({
-          monthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          monthDate: zCalendarDate,
           allocations: z.array(
             z.object({
               goalId: z.number().int(),
@@ -1354,12 +1350,9 @@ export const savingsRouter = createTRPCRouter({
     upsertMonthRange: savingsProcedure
       .input(
         z.object({
-          startMonth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          endMonth: z
-            .string()
-            .regex(/^\d{4}-\d{2}-\d{2}$/)
-            .nullable(),
-          monthDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+          startMonth: zCalendarDate,
+          endMonth: zCalendarDate.nullable(),
+          monthDates: z.array(zCalendarDate),
           allocations: z.array(
             z.object({
               goalId: z.number().int(),
@@ -2369,7 +2362,7 @@ export const savingsRouter = createTRPCRouter({
         z.object({
           fromGoalId: z.number().int(),
           toGoalId: z.number().int(),
-          transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          transactionDate: zCalendarDate,
           amount: z.number().positive(),
           description: z.string().min(1),
           isRecurring: z.boolean().default(false),

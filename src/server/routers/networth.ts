@@ -34,7 +34,7 @@ import {
 } from "@/server/helpers/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/helpers/snapshot";
 import { zYearEndTargeting } from "./_shared";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import {
   accountCategoryEnum,
   parentCategoryEnum,
@@ -49,7 +49,7 @@ import {
 import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const portfolioSnapshotInput = z.object({
-  snapshotDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  snapshotDate: zCalendarDate,
   notes: z.string().nullable().optional(),
   accounts: z.array(
     z.object({

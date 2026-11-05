@@ -34,14 +34,14 @@ import {
   HSA_COVERAGE_TYPE_VALUES,
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
-import { zDecimal, zFraction } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zDecimal, zFraction } from "@/lib/utils/zod-fields";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
 
 // --- Zod schemas ---
 
 const personInput = z.object({
   name: z.string().min(1),
-  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dateOfBirth: zCalendarDate,
   isPrimaryUser: z.boolean().default(false),
 });
 
@@ -75,12 +75,8 @@ const jobInput = z
     personId: z.number().int(),
     employerName: z.string().trim().min(1),
     title: z.string().trim().nullable().optional(),
-    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    endDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable()
-      .optional(),
+    startDate: zCalendarDate,
+    endDate: zCalendarDate.nullable().optional(),
   })
   .refine((data) => !data.endDate || data.endDate >= data.startDate, {
     message: "End date must be on or after start date",

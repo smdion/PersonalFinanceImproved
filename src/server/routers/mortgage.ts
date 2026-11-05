@@ -10,7 +10,7 @@ import type {
   MortgageInput,
   MortgageWhatIf,
 } from "@/lib/pure/debts/mortgage.types";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/data/delete-references";
 import { firstRow } from "@/lib/utils/first-row";
 
@@ -20,11 +20,7 @@ const mortgageLoanInput = z.object({
   name: z.string().min(1),
   isActive: z.boolean().default(false),
   refinancedFromId: z.number().int().nullable().optional(),
-  paidOffDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
-    .optional(),
+  paidOffDate: zCalendarDate.nullable().optional(),
   principalAndInterest: zDecimal,
   pmi: zDecimal.default("0"),
   insuranceAndTaxes: zDecimal.default("0"),
@@ -32,7 +28,7 @@ const mortgageLoanInput = z.object({
   interestRate: zDecimal,
   termYears: z.number().int().min(1).max(50),
   originalLoanAmount: zDecimal,
-  firstPaymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  firstPaymentDate: zCalendarDate,
   propertyValuePurchase: zDecimal,
   propertyValueEstimated: zDecimal.nullable().optional(),
   usePurchaseOrEstimated: z.string().default("purchase"),
