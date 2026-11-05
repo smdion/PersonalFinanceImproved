@@ -1,89 +1,11 @@
-/**
- * Projection router helpers for the Plan Health and stress-test features.
- * Lives alongside the router so the endpoints stay thin.
- *
- *   - buildPlanHealthInputs: derives accumulationOrder and
- *     currentStockAllocationPercent for the PlanHealthCard.
- *     Called from projection.computeProjection.
- *
- *   - runStressTestScenarios: re-runs calculateProjection at the three
- *     canonical stress-test parameter sets (conservative / baseline /
- *     optimistic). Called from projection.computeStressTest.
- */
+/** The stress test: the projection re-run at the three canonical
+ *  scenarios (conservative, baseline, optimistic). */
 
 import { planEndAge } from "@/lib/pure/household/household-timeline";
-import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
-import {
-  classifyAssetClasses,
-  stockShareByAge,
-} from "@/lib/pure/simulation/stock-share";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
-import * as schema from "@/lib/db/schema";
-import type { Db } from "@/lib/db";
 import { calculateProjection } from "@/lib/pure/engine";
-import { getStressTestScenarios } from "@/lib/pure/simulation/stress-test";
+import { getStressTestScenarios } from "./stress-test";
 import { roundToCents } from "@/lib/utils/math";
-
-// ---------------------------------------------------------------------------
-// PlanHealthCard inputs
-// ---------------------------------------------------------------------------
-
-interface ActiveContribLite {
-  accountType: string;
-  allocationPriority?: number | null;
-}
-
-/**
- * accumulationOrder: distinct category names from activeContribs in their
- * allocationPriority order (lower = higher priority = filled first). The
- * validateContributionOrder() helper compares this against the CFP
- * heuristic.
- */
-export function buildAccumulationOrder(
-  activeContribs: readonly ActiveContribLite[],
-): string[] {
-  const sorted = [...activeContribs].sort(
-    (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
-  );
-  const seen = new Set<string>();
-  const order: string[] = [];
-  for (const c of sorted) {
-    if (!seen.has(c.accountType)) {
-      seen.add(c.accountType);
-      order.push(c.accountType);
-    }
-  }
-  return order;
-}
-
-/**
- * The stock allocation (percent, one decimal) the Default preset's glide
- * path assumes at `currentAge` — the same stock share VPW sizes by
- * (lib/pure/simulation/stock-share.ts: a class is stocks when any of its buckets is).
- * Null when there's no glide path or no class is mapped to buckets, so the
- * PlanHealthCard skips the glide-path warning.
- */
-export async function computeCurrentStockAllocationPercent(
-  db: Db,
-  currentAge: number,
-): Promise<number | null> {
-  const [preset, bucketRows] = await Promise.all([
-    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
-    db.select().from(schema.assetClassBuckets),
-  ]);
-  const share = stockShareByAge(
-    preset.glidePath,
-    classifyAssetClasses(bucketRows),
-    currentAge,
-    currentAge,
-  )?.[Math.floor(currentAge)];
-  return share === undefined ? null : Math.round(share * 1000) / 10;
-}
-
-// ---------------------------------------------------------------------------
-// Stress test scenarios (re-run projection at canonical parameter sets)
-// ---------------------------------------------------------------------------
 
 type ProjectionInput = Parameters<typeof calculateProjection>[0];
 

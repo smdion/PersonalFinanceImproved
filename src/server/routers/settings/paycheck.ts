@@ -12,7 +12,6 @@ import {
   contributionProfileProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { localDateStr } from "@/lib/utils/date";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
@@ -36,6 +35,7 @@ import {
 } from "@/lib/config/enum-values";
 import { zCalendarDate, zDecimal, zFraction } from "@/lib/utils/zod-fields";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
+import { speculativeJobValues } from "@/server/data/jobs";
 
 // --- Zod schemas ---
 
@@ -44,25 +44,6 @@ const personInput = z.object({
   dateOfBirth: zCalendarDate,
   isPrimaryUser: z.boolean().default(false),
 });
-
-/**
- * A speculative job is a permanent, auto-provisioned peg for Salary
- * Profiles to pin what-if scenarios against (e.g. "moving to Chicago in 5
- * years") — never a real job. Every person gets exactly one (DB-enforced,
- * see `jobs_one_speculative_per_person_idx` in schema-pg.ts), and it must
- * never be treated as a person's real, active job — see
- * findActiveJob/filterActiveJobs in lib/pure/household/profiles.ts, the single source
- * of truth for that exclusion. Exported so demo.ts and the 0013 migration
- * can use the identical placeholder shape.
- */
-export function speculativeJobValues(personId: number) {
-  return {
-    personId,
-    employerName: "Speculative (What-If Planning)",
-    startDate: localDateStr(),
-    isSpeculative: true,
-  };
-}
 
 // A job is purely identity/lifecycle now — payPeriod/payWeek/anchorPayDate/
 // w4*/bonus-date/bonus-inclusion-flags/budgetPeriodsPerMonth all moved to

@@ -12,7 +12,7 @@ import {
   loadSimulationPreset,
   presetAssetClasses,
 } from "@/server/services/simulation/simulation-preset";
-import { computeCurrentStockAllocationPercent } from "@/server/routers/projection-v5-helpers";
+import { computeCurrentStockAllocationPercent } from "@/server/services/projection/projection-run";
 
 describe("simulation presets", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;

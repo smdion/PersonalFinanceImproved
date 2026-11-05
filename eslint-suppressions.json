@@ -4089,6 +4089,14 @@
       "count": 3
     }
   },
+  "src/lib/pure/contributions/accumulation-order.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/contributions/cap-pass.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
@@ -5167,6 +5175,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/simulation/stress-test-run.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
   "src/lib/pure/simulation/stress-test.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -5497,6 +5513,11 @@
       "count": 1
     }
   },
+  "src/server/data/jobs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/server/data/lock-row.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5819,17 +5840,6 @@
       "count": 2
     }
   },
-  "src/server/routers/projection-v5-helpers.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
   "src/server/routers/projection/_shared.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
@@ -6030,7 +6040,7 @@
       "count": 8
     },
     "ratchet/max-comment-lines": {
-      "count": 11
+      "count": 10
     },
     "ratchet/no-history-comment": {
       "count": 3
@@ -6386,6 +6396,11 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
+    }
+  },
+  "src/server/services/projection/projection-run.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/server/services/savings/savings-allocation.ts": {

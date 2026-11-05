@@ -16,10 +16,8 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
-import {
-  buildAccumulationOrder,
-  computeCurrentStockAllocationPercent,
-} from "../projection-v5-helpers";
+import { buildAccumulationOrder } from "@/lib/pure/contributions/accumulation-order";
+import { computeCurrentStockAllocationPercent } from "@/server/services/projection/projection-run";
 import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { toNumber } from "@/lib/utils/numbers";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
@@ -239,7 +237,7 @@ export const scenariosRouter = createTRPCRouter({
 
       // Plan health inputs — derived inputs
       // the PlanHealthCard needs for contribution-order and glide-path
-      // warnings. Implementation lives in projection-v5-helpers.ts.
+      // warnings. Implementation lives in accumulation-order.ts and projection-run.ts.
       const accumulationOrder = buildAccumulationOrder(activeContribs);
       const currentStockAllocationPercent =
         await computeCurrentStockAllocationPercent(ctx.db, age);

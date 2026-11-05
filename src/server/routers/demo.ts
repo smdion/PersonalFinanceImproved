@@ -23,7 +23,7 @@ import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
-import { speculativeJobValues } from "./settings/paycheck";
+import { speculativeJobValues } from "@/server/data/jobs";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 

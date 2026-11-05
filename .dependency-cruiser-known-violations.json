@@ -136,11 +136,6 @@
   },
   {
     "rule": "no-router-to-router",
-    "from": "src/server/routers/demo.ts",
-    "to": "src/server/routers/settings/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
     "from": "src/server/routers/milestones.ts",
     "to": "src/server/routers/brokerage.ts"
   },
@@ -163,16 +158,6 @@
     "rule": "no-router-to-router",
     "from": "src/server/routers/milestones.ts",
     "to": "src/server/routers/savings.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/projection/scenarios.ts",
-    "to": "src/server/routers/projection-v5-helpers.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/projection/stress-test.ts",
-    "to": "src/server/routers/projection-v5-helpers.ts"
   },
   {
     "rule": "no-router-to-router",

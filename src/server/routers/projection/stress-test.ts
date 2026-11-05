@@ -12,7 +12,7 @@ import {
   fetchRetirementData,
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
-import { runStressTestScenarios } from "../projection-v5-helpers";
+import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
 import {
   buildDecumulationDefaults,
   resolveProjectionOverrides,
@@ -68,7 +68,7 @@ export const stressTestRouter = createTRPCRouter({
       // (computeProjection, computeStrategyComparison, analyzeStrategy).
       // Each of the three stress scenarios then overrides only
       // `withdrawalRate`, its own controlled variable
-      // (runStressTestScenarios, projection-v5-helpers.ts). Previously this
+      // (runStressTestScenarios, stress-test-run.ts). Previously this
       // hand-built the object inline and silently dropped rmdExcessHandling/
       // qcdMaximize/rmdSmoothingEnabled/discretionaryWithdrawalOrder to
       // engine defaults regardless of what was configured.
