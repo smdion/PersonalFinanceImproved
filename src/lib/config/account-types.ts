@@ -207,6 +207,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "hsa_non_medical",
     qcdEligible: false,
     nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
+    tripleTaxAdvantaged: true,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -398,11 +399,9 @@ export function getDisplayConfig(
   return sub ?? cfg;
 }
 
-/** True if this account (type+subtype)'s employer_contributions represents
- *  a purchase-price discount (e.g. ESPP) rather than real cash — i.e. the
- *  cash-basis figure (gainLoss + employerContributions) is meaningful for it.
- *  Always resolve per-account, never assume by category (Brokerage mixes
- *  discount-type ESPP with cash-type sub-types like mega-backdoor/after-tax). */
+/** True if this account's (type + subtype) employer_contributions are an ESPP
+ *  purchase-price discount, not cash, so its cash-basis figure means something.
+ *  Per account, never by category: Brokerage also has cash sub-types. */
 export function isDiscountBasisEmployerContrib(
   accountType: string,
   subType?: string | null,

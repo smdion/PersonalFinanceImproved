@@ -1,5 +1,8 @@
 import type { AccountCategory } from "@/lib/config/account-types";
-import { categoriesWithIrsLimit } from "@/lib/config/account-types";
+import {
+  categoriesWithIrsLimit,
+  getAccountTypeConfig,
+} from "@/lib/config/account-types";
 
 /**
  * Severity of a contribution-order warning. UI surfaces these as
@@ -26,38 +29,29 @@ type ContributionOrderWarning = {
  *   3. Tax-advantaged retirement (Roth IRA, Traditional IRA, 401k beyond match)
  *   4. After-tax / brokerage (no tax advantage)
  *
- * The validator does NOT enforce the exact order. It flags two specific
- * mistakes the audit identified:
+ * It doesn't enforce the exact order; it flags two common mistakes:
  *   - Brokerage / taxable accounts come BEFORE any tax-advantaged account
- *   - HSA appears AFTER any non-HSA tax-advantaged account
- *
- * Both are common foot-guns for users who set up the order without thinking
- * about it. The warnings link to a help doc explaining the rationale.
+ *   - A triple tax-advantaged type (HSA) comes AFTER another tax-advantaged one
  */
 export function validateContributionOrder(
   order: readonly string[],
 ): ContributionOrderWarning[] {
   const warnings: ContributionOrderWarning[] = [];
   if (order.length === 0) return warnings;
+  const taxAdvantagedTypes = categoriesWithIrsLimit();
+  const taxAdvantaged: readonly string[] = taxAdvantagedTypes;
 
   // Find the first taxable / overflow position. If a tax-advantaged
   // category comes after it, the user is filling taxable before tax-
   // advantaged — flag it.
-  let firstOverflowIndex = -1;
-  for (let i = 0; i < order.length; i++) {
-    const cat = order[i]!;
-    if (!categoriesWithIrsLimit().includes(cat as AccountCategory)) {
-      // brokerage or other no-IRS-limit category
-      if (firstOverflowIndex === -1) firstOverflowIndex = i;
-    }
-  }
+  const firstOverflowIndex = order.findIndex((c) => !taxAdvantaged.includes(c));
 
   if (firstOverflowIndex >= 0) {
     // Any tax-advantaged category appearing AFTER the first overflow position
     // means the user is filling taxable first.
     for (let i = firstOverflowIndex + 1; i < order.length; i++) {
       const cat = order[i]!;
-      if (categoriesWithIrsLimit().includes(cat as AccountCategory)) {
+      if (taxAdvantaged.includes(cat)) {
         warnings.push({
           severity: "warn",
           category: cat,
@@ -73,26 +67,26 @@ export function validateContributionOrder(
     }
   }
 
-  // HSA-specific check: HSA has the best tax treatment (triple-advantaged).
-  // If HSA appears after a non-HSA tax-advantaged category, flag it.
-  const hsaIndex = order.indexOf("hsa");
-  if (hsaIndex > 0) {
-    const hasEarlierTaxAdvantaged = order.slice(0, hsaIndex).some(
-      (c) =>
-        // lint-violation-ok: this validator IS the predicate for HSA-specific
-        // ordering, intentionally referring to the category by name
-        c !== "hsa" && categoriesWithIrsLimit().includes(c as AccountCategory),
-    );
-    if (hasEarlierTaxAdvantaged) {
+  // A triple tax-advantaged type belongs before every other tax-advantaged one.
+  const triple = taxAdvantagedTypes.filter(
+    (c) => getAccountTypeConfig(c).tripleTaxAdvantaged,
+  );
+  for (const cat of triple) {
+    const index = order.indexOf(cat);
+    const earlier = order.slice(0, index);
+    const isOther = (c: AccountCategory) =>
+      earlier.includes(c) && !triple.includes(c);
+    if (index > 0 && taxAdvantagedTypes.some(isOther)) {
+      const label = getAccountTypeConfig(cat).displayLabel;
       warnings.push({
         severity: "info",
-        category: "hsa",
-        position: hsaIndex,
+        category: cat,
+        position: index,
         message:
-          "HSA appears after another tax-advantaged account in your order. " +
-          "HSAs have the best tax treatment of any account type (triple " +
+          `${label} appears after another tax-advantaged account in your order. ` +
+          `${label}s have the best tax treatment of any account type (triple ` +
           "tax-advantaged: pre-tax in, tax-free growth, tax-free out for " +
-          "qualified medical expenses). Consider moving HSA earlier.",
+          `qualified medical expenses). Consider moving ${label} earlier.`,
       });
     }
   }

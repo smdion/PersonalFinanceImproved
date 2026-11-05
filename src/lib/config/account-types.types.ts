@@ -73,6 +73,10 @@ export type AccountTypeConfig = {
   /** The penalty rate on an early non-medical withdrawal, in place of the
    *  10% early-withdrawal one (IRC 223(f)(4)); null where there is none. */
   nonMedicalPenaltyRate: number | null;
+  /** Pre-tax in, tax-free growth and tax-free out for qualified expenses
+   *  (IRC 223): the best treatment, so it's funded before any other
+   *  tax-advantaged type. Absent: false. */
+  tripleTaxAdvantaged?: boolean;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;

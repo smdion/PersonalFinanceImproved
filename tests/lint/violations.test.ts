@@ -109,6 +109,7 @@ import { resolveAccumulationConfig } from "@/lib/pure/engine/override-resolution
 import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing";
 import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
+import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
 import {
   makeAccountBalances,
   makeAccumulationConfig,
@@ -1877,6 +1878,21 @@ describe("one config entry adds an account type", () => {
         withdrawnByKey: new Map([["k", 100]]),
       });
       expect(penaltyCost).toBe(20);
+    });
+  });
+
+  it("the contribution order flags a triple tax-advantaged entry by its field, not its name", () => {
+    withSyntheticCategory(() => {
+      Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+        ...ACCOUNT_TYPE_CONFIG.hsa,
+        displayLabel: "Synthetic Plan",
+      });
+      const [warning] = validateContributionOrder(["401k", SYNTHETIC_CATEGORY]);
+      expect(warning).toMatchObject({
+        category: SYNTHETIC_CATEGORY,
+        position: 1,
+      });
+      expect(warning?.message).toContain("Synthetic Plan appears after");
     });
   });
 
