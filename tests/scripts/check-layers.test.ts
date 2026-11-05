@@ -9,7 +9,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import {
+  applyEntryMoves,
   compareWithKnown,
+  parseEntryMoves,
   parseRenames,
   renameEntries,
   renamesSince,
@@ -111,5 +113,52 @@ describe("renamesSince", () => {
 
   it("returns the moved file and nothing else", () => {
     expect([...renamesSince("base", repo)]).toEqual([[OLD, NEW]]);
+  });
+});
+
+describe("Layers-renamed trailers", () => {
+  const BARREL = "src/lib/calculators/types.ts";
+  const INDEX = "src/lib/pure/engine/types/index.ts";
+  const FROM = "src/lib/config/withdrawal-routing.ts";
+  const message = `refactor: move\n\nLayers-renamed: ${FROM} -> ${BARREL} => ${FROM} -> ${INDEX}\n`;
+
+  it("parses one pair per trailer line", () => {
+    expect(parseEntryMoves(message)).toEqual([
+      { from: { from: FROM, to: BARREL }, to: { from: FROM, to: INDEX } },
+    ]);
+    expect(parseEntryMoves("no trailer here")).toEqual([]);
+  });
+
+  it("re-points a base entry that is gone, so the new edge isn't new", () => {
+    const base: LayerBase = {
+      entries: [entry(FROM, BARREL)],
+      rules: new Set([RULE]),
+      moved: parseEntryMoves(message),
+    };
+    const now = [entry(FROM, INDEX)];
+    expect(compareWithKnown(now, now, base)).toEqual([]);
+    expect(compareWithKnown(now, now, { ...base, moved: [] })).toHaveLength(1);
+  });
+
+  it("refuses a trailer whose old entry is still on the list", () => {
+    const known = [entry(FROM, BARREL), entry(FROM, INDEX)];
+    const { errors } = applyEntryMoves(
+      [entry(FROM, BARREL)],
+      known,
+      parseEntryMoves(message),
+    );
+    expect(errors).toHaveLength(1);
+  });
+
+  it("keeps the rule: a trailer can't turn one rule's entry into another's", () => {
+    const base: LayerBase = {
+      entries: [entry(FROM, BARREL)],
+      rules: new Set([RULE, "no-circular"]),
+      moved: parseEntryMoves(message),
+    };
+    const now: LayerViolation[] = [
+      { rule: "no-circular", from: FROM, to: INDEX },
+    ];
+    expect(compareWithKnown(now, now, base)).toHaveLength(1);
   });
 });

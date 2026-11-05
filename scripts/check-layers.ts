@@ -10,6 +10,10 @@
  *     unless its rule is new since that ref (a new rule lands with its list).
  *     The ref's entries are read through the files renamed since it, so a
  *     moved file's known violations are the same entries under its new path.
+ *     A break that moves to another edge without a rename (a deleted barrel,
+ *     a cycle reported on a different pair) is named by a commit trailer
+ *     `Layers-renamed: <from> -> <to> => <from> -> <to>`: it pairs one entry
+ *     gone from the ref's list with one new entry of the same rule.
  *
  * Usage: pnpm check:layers [--base origin/main] [--prune]
  */
@@ -42,6 +46,55 @@ export function sortViolations(list: LayerViolation[]): LayerViolation[] {
 export interface LayerBase {
   entries: LayerViolation[];
   rules: Set<string>;
+  /** `Layers-renamed:` pairs from the commits since the ref. */
+  moved?: EntryMove[];
+}
+
+/** One known break, re-pointed to another edge by a `Layers-renamed:` trailer. */
+export interface EntryMove {
+  from: { from: string; to: string };
+  to: { from: string; to: string };
+}
+
+const MOVE_TRAILER =
+  /^Layers-renamed:\s*(\S+)\s*->\s*(\S+)\s*=>\s*(\S+)\s*->\s*(\S+)\s*$/gm;
+
+/** Every `Layers-renamed:` trailer in commit message text. */
+export function parseEntryMoves(messages: string): EntryMove[] {
+  return [...messages.matchAll(MOVE_TRAILER)].map((m) => ({
+    from: { from: m[1]!, to: m[2]! },
+    to: { from: m[3]!, to: m[4]! },
+  }));
+}
+
+/**
+ * Base entries re-pointed by the trailers: each move needs its old entry in
+ * the base list and gone from the current one, with the rule kept, so the
+ * list can't grow. Returns the re-pointed base list and an error per move
+ * that doesn't qualify.
+ */
+export function applyEntryMoves(
+  entries: LayerViolation[],
+  known: LayerViolation[],
+  moves: EntryMove[],
+): { entries: LayerViolation[]; errors: string[] } {
+  const knownKeys = new Set(known.map(key));
+  const out = [...entries];
+  const errors: string[] = [];
+  for (const m of moves) {
+    const i = out.findIndex(
+      (v) =>
+        v.from === m.from.from && v.to === m.from.to && !knownKeys.has(key(v)),
+    );
+    if (i < 0) {
+      errors.push(
+        `Layers-renamed: ${m.from.from} -> ${m.from.to} names no base entry that is gone from ${KNOWN_FILE}`,
+      );
+      continue;
+    }
+    out[i] = { rule: out[i]!.rule, from: m.to.from, to: m.to.to };
+  }
+  return { entries: out, errors };
 }
 
 /** Every failure line for `found` against the `known` list (and `base`). */
@@ -52,8 +105,14 @@ export function compareWithKnown(
 ): string[] {
   const foundKeys = new Set(found.map(key));
   const knownKeys = new Set(known.map(key));
-  const baseKeys = base ? new Set(base.entries.map(key)) : undefined;
   const errors: string[] = [];
+  let baseEntries = base?.entries;
+  if (base?.moved?.length) {
+    const applied = applyEntryMoves(base.entries, known, base.moved);
+    baseEntries = applied.entries;
+    errors.push(...applied.errors);
+  }
+  const baseKeys = baseEntries ? new Set(baseEntries.map(key)) : undefined;
   for (const v of sortViolations(found)) {
     if (!knownKeys.has(key(v))) {
       errors.push(
@@ -178,7 +237,16 @@ function main(argv: string[]): number {
     } catch {
       console.log(`No ${KNOWN_FILE} at ${baseRef}; skipping the growth check.`);
     }
-    if (base) base.entries = renameEntries(base.entries, renamesSince(baseRef));
+    if (base) {
+      base.entries = renameEntries(base.entries, renamesSince(baseRef));
+      base.moved = parseEntryMoves(
+        execFileSync("git", ["log", "--format=%B", `${baseRef}..HEAD`], {
+          cwd: ROOT,
+          encoding: "utf8",
+          maxBuffer: 64 * 1024 * 1024,
+        }),
+      );
+    }
   }
 
   const errors = compareWithKnown(found, known, base);
