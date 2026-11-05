@@ -1,9 +1,9 @@
 /**
- * A fresh install on SQLite: each case runs the real migrator on an empty
- * temp file, then goes through the app's procedures as a first run does
- * (the cases are in ./fresh-install-cases, shared with PostgreSQL). Not
- * createTestDb: its template applies the tax data directly, which isn't
- * what an install runs.
+ * A fresh install on SQLite: the real migrator runs once on an empty temp
+ * file and each case gets its own copy, then goes through the app's
+ * procedures as a first run does (the cases are in ./fresh-install-cases,
+ * shared with PostgreSQL). Not createTestDb: its template applies the tax
+ * data directly, which isn't what an install runs.
  */
 import "./setup-mocks";
 import { describe, afterAll } from "vitest";
@@ -29,14 +29,23 @@ afterAll(() => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+/** The migrator runs once, on an empty file; each case gets its own copy. */
+let migrated: string | undefined;
+function migratedTemplate(): string {
+  if (migrated) return migrated;
+  const template = path.join(dir, "migrated-template.db");
+  runMigrator({
+    SQLITE_PATH: template,
+    DATABASE_URL: "",
+    LEDGR_BACKUP_DIR: path.join(dir, "backups"),
+  });
+  return (migrated = template);
+}
+
 describe("fresh install (SQLite)", () => {
   freshInstallCases(async () => {
     const dbPath = path.join(dir, `ledgr-${open.length}.db`);
-    runMigrator({
-      SQLITE_PATH: dbPath,
-      DATABASE_URL: "",
-      LEDGR_BACKUP_DIR: path.join(dir, "backups"),
-    });
+    fs.copyFileSync(migratedTemplate(), dbPath);
     const sqlite = new Database(dbPath);
     open.push(sqlite);
     const db = drizzle(sqlite, { schema: sqliteSchema });
