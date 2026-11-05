@@ -815,7 +815,7 @@ bonus check takes) and the employer match's pay both use it: an account's
 match is figured on base salary, plus the bonus only when its own match
 group (job/person + account type + parent category — a Roth/Traditional
 pair is one account) is taken from bonus checks
-(`matchPayGroupsWithBonus`, `server/helpers/contribution.ts`). One account's
+(`matchPayGroupsWithBonus`, `lib/pure/contributions/employer-match.ts`). One account's
 election never moves another account's match. Two consequences of the
 deleted bucket, both intentional:
 
