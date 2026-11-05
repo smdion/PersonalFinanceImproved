@@ -18,11 +18,16 @@ SET `contribution_active_fields` = json_set(
     FROM json_each(`contribution_active_fields`, '$.contributionAccounts') AS e
   ))
 )
-WHERE json_valid(`contribution_active_fields`)
-  AND json_type(`contribution_active_fields`) = 'object'
-  AND json_type(`contribution_active_fields`, '$.contributionAccounts') = 'object'
-  AND EXISTS (
-    SELECT 1
-    FROM json_each(`contribution_active_fields`, '$.contributionAccounts') AS e
-    WHERE CASE WHEN e.type = 'object' THEN json_type(e.value, '$.displayNameActive') END IS NOT NULL
-  );
+-- CASE, not AND: only valid JSON reaches json_type/json_each, whatever order
+-- SQLite evaluates the conditions in.
+WHERE CASE
+  WHEN json_valid(`contribution_active_fields`) THEN
+    json_type(`contribution_active_fields`) = 'object'
+    AND json_type(`contribution_active_fields`, '$.contributionAccounts') = 'object'
+    AND EXISTS (
+      SELECT 1
+      FROM json_each(`contribution_active_fields`, '$.contributionAccounts') AS e
+      WHERE CASE WHEN e.type = 'object' THEN json_type(e.value, '$.displayNameActive') END IS NOT NULL
+    )
+  ELSE 0
+END;

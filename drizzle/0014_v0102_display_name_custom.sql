@@ -18,10 +18,15 @@ SET "contribution_active_fields" = jsonb_set(
     FROM jsonb_each("contribution_active_fields" -> 'contributionAccounts') AS e
   )
 )
-WHERE jsonb_typeof("contribution_active_fields") = 'object'
-  AND jsonb_typeof("contribution_active_fields" -> 'contributionAccounts') = 'object'
-  AND EXISTS (
+-- CASE, not AND: jsonb_each sees only an object, whatever order PostgreSQL
+-- evaluates the conditions in.
+WHERE CASE
+  WHEN jsonb_typeof("contribution_active_fields") = 'object'
+    AND jsonb_typeof("contribution_active_fields" -> 'contributionAccounts') = 'object'
+  THEN EXISTS (
     SELECT 1
     FROM jsonb_each("contribution_active_fields" -> 'contributionAccounts') AS e
     WHERE jsonb_typeof(e.value) = 'object' AND e.value ? 'displayNameActive'
-  );
+  )
+  ELSE false
+END;

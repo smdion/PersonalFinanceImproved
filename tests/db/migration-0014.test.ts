@@ -74,19 +74,35 @@ describe("migration 0014 on SQLite", () => {
     expect(restored).toEqual(RENAME_CASES.map((c) => c.after));
   });
 
-  it("leaves text that isn't JSON alone", () => {
-    const db = profiles([]);
-    db.prepare(
-      "INSERT INTO contribution_profiles (contribution_active_fields) VALUES ('not json')",
-    ).run();
-    exec(db);
-    expect(
-      db
-        .prepare(
-          "SELECT contribution_active_fields AS f FROM contribution_profiles",
-        )
-        .get(),
-    ).toEqual({ f: "not json" });
+  it("leaves text that isn't JSON alone and still converts the other rows", () => {
+    const convertible = RENAME_CASES[0]!;
+    const notJson = [
+      "not json",
+      "{contributionAccounts: {'1': {displayNameActive: 'JSON5'}}}",
+      '{"contributionAccounts": {"1": {"displayNameActive": "cut',
+    ];
+    const db = profiles([convertible.before]);
+    const ins = db.prepare(
+      "INSERT INTO contribution_profiles (contribution_active_fields) VALUES (?)",
+    );
+    for (const text of notJson) ins.run(text);
+    ins.run(JSON.stringify(convertible.before));
+    const rows = () =>
+      (
+        db
+          .prepare(
+            "SELECT contribution_active_fields AS f FROM contribution_profiles ORDER BY id",
+          )
+          .all() as { f: string }[]
+      ).map((r) => r.f);
+    for (let run = 0; run < 2; run++) {
+      exec(db);
+      const [first, ...rest] = rows();
+      expect(JSON.parse(first!)).toEqual(convertible.after);
+      expect(JSON.parse(rest.at(-1)!)).toEqual(convertible.after);
+      expect(rest.slice(0, -1)).toEqual(notJson);
+      expect(rest).toHaveLength(notJson.length + 1);
+    }
   });
 });
 
