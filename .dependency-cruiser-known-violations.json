@@ -600,6 +600,76 @@
     "to": "src/server/routers/projection/_shared.ts"
   },
   {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/app/(dashboard)/paycheck/page.tsx",
+    "to": "src/lib/db/profile-fields.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/app/(dashboard)/paycheck/page.tsx",
+    "to": "src/lib/db/salary-entry-edit.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/budget/salary-profile-manager.tsx",
+    "to": "src/lib/db/salary-entry-edit.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/investments/hsa-cash-buffer.tsx",
+    "to": "src/lib/pure/cash-positions.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/milestones/foo-ladder.tsx",
+    "to": "src/lib/pure/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/milestones/milestones-hero.tsx",
+    "to": "src/lib/pure/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/performance/account-notes-dialog.tsx",
+    "to": "src/lib/pure/performance-annotations.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/performance/update-performance-form.tsx",
+    "to": "src/lib/pure/performance-annotations.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-first-reached.ts",
+    "to": "src/lib/pure/milestone-first-reached.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-investing-findings.ts",
+    "to": "src/lib/pure/cash-positions.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-milestones.ts",
+    "to": "src/lib/pure/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-recommendation-dismissals.ts",
+    "to": "src/lib/pure/recommendation-dismissals.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-recommendations.ts",
+    "to": "src/lib/pure/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-recommendations.ts",
+    "to": "src/lib/pure/recommendation-dismissals.ts"
+  },
+  {
     "rule": "ui-never-runs-infra",
     "from": "src/components/portfolio/contribution-accounts-types.ts",
     "to": "src/lib/db/schema.ts"

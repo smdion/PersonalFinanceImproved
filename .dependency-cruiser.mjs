@@ -8,6 +8,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { cruise } from "dependency-cruiser";
+import extractTSConfig from "dependency-cruiser/config-utl/extract-ts-config";
 
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -56,6 +58,64 @@ const ABOVE_FOUNDATION = `${L.shapes}|${L.pure}|${L.infra}|^src/server/|^src/com
 // Resolved npm paths (pnpm's `.pnpm/<pkg>@<v>/node_modules/<pkg>/` too).
 const IO_PACKAGES =
   "node_modules/(drizzle-orm|better-sqlite3|postgres|pg|next|react|react-dom|server-only|@trpc/server|@trpc/client|@trpc/react-query)/";
+
+/** Cruise options, shared by the layer check and the Zod reach below. */
+const OPTIONS = {
+  doNotFollow: { path: "node_modules" },
+  exclude: {
+    path: "^src/lib/db/sqlite/|schema-sqlite\\.ts$|monte-carlo-worker\\.js$",
+  },
+  // Type-only imports count: the UI ban covers `import type` from server.
+  tsPreCompilationDeps: true,
+  tsConfig: { fileName: "tsconfig.scripts.json" },
+  enhancedResolveOptions: {
+    exportsFields: ["exports"],
+    conditionNames: ["import", "require", "node", "default", "types"],
+    extensions: [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"],
+  },
+};
+
+/** Imports that add nothing to a bundle: `import type`, `import("x").T`. */
+const TYPE_LEVEL = ["type-only", "type-import"];
+
+/**
+ * What a client module must not value-import: Zod itself, and every non-UI
+ * src module whose value imports reach it. A `reachable` rule can't say
+ * this: it follows type-only imports too, and every UI file reaches all of
+ * Zod through lib/trpc.ts's `import type` of the router. So one cruise of
+ * src with the same options finds the value-import reach first.
+ */
+async function zodReachers() {
+  const { output } = await cruise(
+    ["src"],
+    structuredClone(OPTIONS),
+    {},
+    {
+      tsConfig: extractTSConfig(OPTIONS.tsConfig.fileName),
+    },
+  );
+  const isValue = (d) => !d.dependencyTypes.some((t) => TYPE_LEVEL.includes(t));
+  const reaches = new Set();
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const m of output.modules) {
+      if (reaches.has(m.source)) continue;
+      const hit = m.dependencies.some(
+        (d) =>
+          isValue(d) &&
+          (d.resolved.includes("node_modules/zod/") || reaches.has(d.resolved)),
+      );
+      if (hit) reaches.add(m.source);
+      grew ||= hit;
+    }
+  }
+  const ui = new RegExp(LAYERS.ui);
+  const outside = [...reaches].filter((s) => !ui.test(s)).sort();
+  return ["node_modules/zod/", ...outside.map((s) => `^${escape(s)}$`)].join(
+    "|",
+  );
+}
+const ZOD_REACHERS = await zodReachers();
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 const config = {
@@ -165,6 +225,14 @@ const config = {
       to: { path: L.infra, dependencyTypesNot: ["type-only"] },
     },
     {
+      name: "ui-never-bundles-zod",
+      severity: "error",
+      comment:
+        "A value import that reaches Zod puts it in the page's bundle (v0.10.1: +30 KB on Settings and Expenses); type-only imports add nothing. The target is where the import leaves the UI: Zod, or a non-UI module whose value imports reach it.",
+      from: { path: L.ui, pathNot: [...L.serverPages, L.apiRoutes] },
+      to: { path: ZOD_REACHERS, dependencyTypesNot: TYPE_LEVEL },
+    },
+    {
       name: "trpc-client-takes-the-router-type",
       severity: "error",
       comment: "lib/trpc.ts is the one UI file that names AppRouter.",
@@ -196,20 +264,7 @@ const config = {
       to: { path: "^src/server/" },
     },
   ],
-  options: {
-    doNotFollow: { path: "node_modules" },
-    exclude: {
-      path: "^src/lib/db/sqlite/|schema-sqlite\\.ts$|monte-carlo-worker\\.js$",
-    },
-    // Type-only imports count: the UI ban covers `import type` from server.
-    tsPreCompilationDeps: true,
-    tsConfig: { fileName: "tsconfig.scripts.json" },
-    enhancedResolveOptions: {
-      exportsFields: ["exports"],
-      conditionNames: ["import", "require", "node", "default", "types"],
-      extensions: [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"],
-    },
-  },
+  options: OPTIONS,
 };
 
 export default config;
