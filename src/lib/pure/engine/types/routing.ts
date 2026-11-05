@@ -21,13 +21,7 @@
 //    • Waterfall  — fill accounts in priority order up to their limits
 //    • Percentage — split contributions by percentage across accounts
 //
-// 4. STICKY-FORWARD OVERRIDES — Any setting can be changed at any year.
-//    The change persists until the next override for that same field.
-//    Example: Set contribution rate to 30% in 2028. It stays 30% for 2029,
-//    2030, etc. until you set a different rate in another year.
-//    Set `reset: true` to revert ALL fields to page-level defaults.
-//
-// 5. CAPS — Two layers of caps limit contributions:
+// 4. CAPS — Two layers of caps limit contributions:
 //    • IRS limits    — hard legal limits per account type (grow ~2%/year)
 //    • Artificial caps — user-defined limits below IRS limits
 //      - Per-account: "cap my 401k at $15k this year"
@@ -35,18 +29,11 @@
 //      The more restrictive cap always wins. When a cap is hit, excess
 //      flows to the next account (waterfall) or redistributes (percentage).
 //
-// 6. OVERFLOW — When an account can't absorb more money:
+// 5. OVERFLOW — When an account can't absorb more money:
 //    • Waterfall mode: excess flows to the next account in priority order
 //    • Percentage mode: excess redistributes proportionally to remaining
 //      accounts, then to brokerage as the final catch-all
 //    The UI highlights every year where overflow/redistribution occurs.
-//
-// 7. UI VIEWS — The same override data supports two views:
-//    • "By lever" — see all rate changes, all priority changes, etc.
-//      Good for tweaking one setting across time.
-//    • "By year"  — see the full resolved config for each year.
-//      Good for understanding "what's happening in 2035?"
-//    Both views read/write the same AccumulationOverride[] array.
 
 import type { AccountCategory } from "@/lib/config/account-types";
 

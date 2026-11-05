@@ -4232,6 +4232,11 @@
       "count": 2
     }
   },
+  "src/lib/pure/engine/types/accumulation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
   "src/lib/pure/engine/types/contribution-spec.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -4242,7 +4247,7 @@
   },
   "src/lib/pure/engine/types/engine-config.ts": {
     "ratchet/max-comment-lines": {
-      "count": 25
+      "count": 20
     },
     "ratchet/no-history-comment": {
       "count": 1
