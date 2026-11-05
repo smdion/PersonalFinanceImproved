@@ -230,11 +230,6 @@
       "count": 12
     }
   },
-  "src/app/(dashboard)/layout.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
-    }
-  },
   "src/app/(dashboard)/liabilities/page.tsx": {
     "max-lines-per-function": {
       "count": 1

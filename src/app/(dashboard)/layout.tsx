@@ -10,8 +10,7 @@ import { PrivacyProvider } from "@/lib/context/privacy-context";
 import { PRIVACY_COOKIE } from "@/lib/utils/format";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { DEMO_PROFILES } from "@/lib/demo";
-import { db, isPostgres } from "@/lib/db";
-import { sql } from "drizzle-orm";
+import { databaseStatus } from "@/server/data/database-status";
 import { devBypass } from "@/server/auth-mode";
 
 const isDemoOnly = process.env.DEMO_ONLY === "true";
@@ -58,38 +57,7 @@ export default async function DashboardLayout({
     user = session.user;
   }
 
-  // Check database connectivity before rendering dashboard
-  // PG exposes async db.execute(); SQLite (better-sqlite3) only has db.all()/db.get().
-  let dbError: string | null = null;
-  try {
-    if (isPostgres()) {
-      await db.execute(sql`SELECT 1`);
-    } else {
-      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
-      (db as unknown as { all: (q: unknown) => unknown }).all(sql`SELECT 1`);
-    }
-    // Verify at least one core table exists
-    const { tableExistsSQL } = await import("@/lib/db/compat");
-    const query = tableExistsSQL("people");
-    let hasTable: boolean;
-    if (isPostgres()) {
-      const result = await db.execute(query);
-      hasTable = (result.rows[0] as { has_tables: boolean })?.has_tables;
-    } else {
-      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
-      const rows = (db as unknown as { all: (q: unknown) => unknown[] }).all(
-        query,
-      );
-      hasTable = (rows[0] as { has_tables: number })?.has_tables === 1;
-    }
-    if (!hasTable) {
-      dbError =
-        "Database tables not found. Migrations may need to run. Please restart the application.";
-    }
-  } catch {
-    dbError =
-      "Unable to connect to the database. Please check your database configuration and ensure the database server is running.";
-  }
+  const dbError = await databaseStatus();
 
   if (dbError) {
     return (

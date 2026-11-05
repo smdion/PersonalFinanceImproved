@@ -29,11 +29,6 @@
       "count": 3
     }
   },
-  "src/app/(dashboard)/layout.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/app/(dashboard)/networth/page.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3

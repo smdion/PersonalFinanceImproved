@@ -557,16 +557,6 @@
   {
     "rule": "server-pages-prefetch-only",
     "from": "src/app/(dashboard)/layout.tsx",
-    "to": "src/lib/db/compat.ts"
-  },
-  {
-    "rule": "server-pages-prefetch-only",
-    "from": "src/app/(dashboard)/layout.tsx",
-    "to": "src/lib/db/index.ts"
-  },
-  {
-    "rule": "server-pages-prefetch-only",
-    "from": "src/app/(dashboard)/layout.tsx",
     "to": "src/server/auth-mode.ts"
   },
   {
