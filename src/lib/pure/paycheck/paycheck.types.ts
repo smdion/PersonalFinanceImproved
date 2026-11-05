@@ -33,11 +33,9 @@ export type TaxBracketInput = {
   w4Checkbox: boolean; // whether this bracket set is the 2(c) checked version
   brackets: { min: number; max: number | null; rate: number }[];
   standardDeduction: number;
-  /** Pub 15-T Worksheet 1A line 1g: the flat amount subtracted from
-   *  annualized wages (line 1h) before the bracket lookup, when the W-4
-   *  Step 2(c) box is unchecked. 0 when w4Checkbox is true (no worksheet
-   *  adjustment applies — the 2(c) tables already assume it isn't taken).
-   *  Withholding-only; annual tax liability (calculateHouseholdTax) doesn't use it. */
+  /** Pub 15-T Worksheet 1A line 1g: subtracted from annualized wages before
+   *  the bracket lookup when the W-4 2(c) box is unchecked; 0 when checked.
+   *  Withholding only: calculateHouseholdTax doesn't use it. */
   w4Adjustment: number;
   socialSecurityWageBase: number;
   socialSecurityRate: number;
@@ -53,8 +51,8 @@ export type ContributionAccountInput = {
   annualContribution: number;
   perPeriodContribution: number;
   /** Fractional rate of gross pay (e.g. 0.14 for 14%). Non-null only for
-   *  percent_of_salary accounts — used to scale contributions against bonus
-   *  gross rather than reusing the regular per-period dollar amount. */
+   *  percent_of_salary accounts — scales contributions against bonus gross
+   *  rather than reusing the regular per-period dollar amount. */
   rateOfGross: number | null;
   taxTreatment: TaxTreatment;
   isPayrollDeducted: boolean;
