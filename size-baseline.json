@@ -155,7 +155,7 @@
     "src/server/helpers/projection-cache.ts": 221,
     "src/server/helpers/salary.ts": 503,
     "src/server/helpers/snapshot.ts": 1215,
-    "src/server/retirement/build-engine-payload.ts": 1418,
+    "src/server/retirement/build-engine-payload.ts": 1414,
     "src/server/retirement/payload/profile-switches.ts": 506,
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2101,
@@ -860,7 +860,7 @@
       "buildYearEndHistory": 870
     },
     "src/server/retirement/build-engine-payload.ts": {
-      "buildEnginePayload": 1141,
+      "buildEnginePayload": 1137,
       "fetchRetirementData": 164
     },
     "src/server/retirement/payload/individual-accounts.ts": {

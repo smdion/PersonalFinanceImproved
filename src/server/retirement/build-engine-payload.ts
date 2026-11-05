@@ -492,14 +492,12 @@ export async function buildEnginePayload(
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
   const perPersonSettings = people.map((p) => {
     const pp = profilePeople.find((r) => r.personId === p.id);
-    // Legacy path: no profile resolved at all (see `settings` above).
     // Only this profile's row: another profile's values never stand in.
+    // With no profile at all (null), every row has a null profile id.
     const ps =
       pp ??
       retSettings.find(
-        (s) =>
-          s.personId === p.id &&
-          (activeProfileId == null || s.profileId === activeProfileId),
+        (s) => s.personId === p.id && s.profileId === activeProfileId,
       );
     // salary_annual_increase DOES exist as a column on retirement_profile_people
     // (migration 0032 backfilled it, profile duplication clones it) — but
@@ -539,9 +537,7 @@ export async function buildEnginePayload(
       // behaviour-neutral migration.
       withdrawalRate:
         retSettings.find(
-          (s) =>
-            s.personId === p.id &&
-            (activeProfileId == null || s.profileId === activeProfileId),
+          (s) => s.personId === p.id && s.profileId === activeProfileId,
         )?.withdrawalRate ?? settings.withdrawalRate,
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
@@ -552,9 +548,9 @@ export async function buildEnginePayload(
       // inherently per-person, computed from an individual's own earnings
       // record. null means "not opted in," not "use the household default."
       // Read from `pp` specifically (the retirement_profile_people row),
-      // not the wider `ps` union — the legacy fallback branch of `ps`
-      // (a bare retirement_settings row) has no PIA column at all; there's
-      // no household-grain equivalent to fall back to.
+      // not the wider `ps` union — `ps`'s fallback (a bare
+      // retirement_settings row) has no PIA column at all; there's no
+      // household-grain equivalent to fall back to.
       socialSecurityPia: pp?.socialSecurityPia ?? null,
       ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
       ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
