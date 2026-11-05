@@ -101,4 +101,4 @@ The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need
 
 ## Types
 
-Projection types live in `../types/` (re-exported from `../types.ts`): `ProjectionInput` / `ProjectionResult`, the resolved configs, `TaxBuckets` (aggregate by tax treatment), `AccountBalances` (per category; structure varies by account type), `IndividualAccountInput`, and `EngineYearProjection` (accumulation | decumulation). Module-specific input/result types stay in their module.
+Projection types live in `./types/` (the public ones through `./types/index.ts`): `ProjectionInput` / `ProjectionResult`, the resolved configs, `TaxBuckets` (aggregate by tax treatment), `AccountBalances` (per category; structure varies by account type), `IndividualAccountInput`, and `EngineYearProjection` (accumulation | decumulation). Module-specific input/result types stay in their module.
