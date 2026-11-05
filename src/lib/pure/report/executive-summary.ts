@@ -5,7 +5,7 @@
 import {
   assessPlan,
   describePlanFailure,
-} from "@/lib/calculators/plan-outcome";
+} from "@/lib/pure/retirement/plan-outcome";
 import type { ProjectionResult } from "@/lib/pure/engine/types/index";
 import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";

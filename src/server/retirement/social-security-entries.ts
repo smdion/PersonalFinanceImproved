@@ -18,7 +18,7 @@
 import {
   computeAdjustedBenefit,
   computeSpousalBenefit,
-} from "@/lib/calculators/social-security";
+} from "@/lib/pure/retirement/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
 import {
   FILING_STATUS_RULES,

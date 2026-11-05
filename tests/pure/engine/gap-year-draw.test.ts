@@ -4,7 +4,7 @@
  */
 import { assert, describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { acct, household } from "../fixtures/two-person-household";
 

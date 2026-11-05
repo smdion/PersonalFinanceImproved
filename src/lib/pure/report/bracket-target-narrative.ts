@@ -15,7 +15,7 @@
 import type {
   BracketOptimizerResult,
   BracketOptimizerCandidate,
-} from "@/lib/calculators/withdrawal-bracket-optimizer";
+} from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 const RATE_EPSILON = 0.0005;

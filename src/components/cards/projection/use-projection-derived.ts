@@ -1,7 +1,7 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
 import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useFocusMatch } from "@/lib/hooks/use-focus";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { useMemo, useCallback, useEffect } from "react";
 import type {
   EngineYearProjection,

@@ -21,7 +21,7 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { sweepClaimingAges } from "@/lib/calculators/social-security";
+import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
 import type {
   AccumulationOverride,
   DecumulationOverride,

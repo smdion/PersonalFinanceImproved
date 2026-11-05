@@ -534,11 +534,6 @@
       "count": 2
     }
   },
-  "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 9
@@ -657,6 +652,11 @@
   "src/lib/pure/retirement-bridge.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
     }
   },
   "src/lib/pure/simulation/monte-carlo.ts": {

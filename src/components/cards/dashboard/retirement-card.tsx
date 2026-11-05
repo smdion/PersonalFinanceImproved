@@ -9,7 +9,7 @@ import {
   baselineNestEgg,
   simulatedOrBaseline,
 } from "@/lib/pure/nest-egg-display";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { memo } from "react";
 import Link from "next/link";
 import { settingsHref } from "@/lib/config/settings-sections";

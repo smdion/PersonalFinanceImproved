@@ -32,7 +32,7 @@
  * multiplier (verdict U4).
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
+import { cents, xfail } from "../../fixtures/answer-key";
 import {
   fraToMonths,
   getClaimingAdjustmentMultiplier,
@@ -42,13 +42,13 @@ import {
   computeAdjustedBenefit,
   computeSpousalBenefit,
   sweepClaimingAges,
-} from "@/lib/calculators/social-security";
+} from "@/lib/pure/retirement/social-security";
 import { socialSecurityForYear } from "@/lib/pure/engine/social-security-income";
 import {
   buildSocialSecurityEntries,
   type SsPerson,
 } from "@/server/retirement/social-security-entries";
-import { acct, household } from "../pure/fixtures/two-person-household";
+import { acct, household } from "../fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------
 // Inputs: invented people

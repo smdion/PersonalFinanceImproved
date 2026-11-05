@@ -1,7 +1,7 @@
 [
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/plan-outcome.ts",
+    "from": "src/lib/pure/retirement/plan-outcome.ts",
     "to": "src/lib/pure/engine/gap-year-draw.ts"
   },
   {

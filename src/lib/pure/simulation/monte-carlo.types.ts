@@ -1,6 +1,6 @@
 // Monte Carlo simulation types.
 
-import type { PlanFailureReason } from "../../calculators/plan-outcome";
+import type { PlanFailureReason } from "../retirement/plan-outcome";
 import type { ProjectionInput, ProjectionResult } from "../engine/types/index";
 
 /** Per-year percentile band for fan chart rendering. */

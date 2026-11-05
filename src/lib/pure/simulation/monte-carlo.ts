@@ -11,11 +11,8 @@
  * glide path that shifts allocations over time.
  */
 import { planEndAge, planRetirementAge } from "@/lib/pure/household-timeline";
-import { strategySpending } from "../../calculators/strategy-spending";
-import {
-  assessPlan,
-  type PlanFailureReason,
-} from "../../calculators/plan-outcome";
+import { strategySpending } from "../retirement/strategy-spending";
+import { assessPlan, type PlanFailureReason } from "../retirement/plan-outcome";
 import { calculateProjection } from "../engine";
 import { buildInflationPath } from "../engine/inflation-path";
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";

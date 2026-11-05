@@ -24,7 +24,7 @@ import {
   buildEnginePayload,
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
-import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {

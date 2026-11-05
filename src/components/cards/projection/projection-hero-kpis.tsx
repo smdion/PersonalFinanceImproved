@@ -8,8 +8,8 @@ import {
   baselineNestEgg,
   simulatedOrBaseline,
 } from "@/lib/pure/nest-egg-display";
-import { dominantFailureReason } from "@/lib/calculators/plan-outcome";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { dominantFailureReason } from "@/lib/pure/retirement/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { rowTotal } from "./utils";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";

@@ -25,12 +25,12 @@ import type {
   RelocationLargePurchase,
   RelocationResult,
   RelocationYearProjection,
-} from "../pure/retirement/relocation.types";
+} from "./relocation.types";
 import {
   roundToCents,
   calculateLoanMonthlyPayment,
   safeDivide,
-} from "../utils/math";
+} from "../../utils/math";
 
 /**
  * Simple portfolio growth model for a single year.

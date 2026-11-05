@@ -16,8 +16,8 @@
  * across claiming ages.
  */
 import { assessPlan } from "./plan-outcome";
-import { calculateProjection } from "../pure/engine";
-import type { ProjectionInput } from "../pure/engine/types";
+import { calculateProjection } from "../engine";
+import type { ProjectionInput } from "../engine/types";
 import {
   getFullRetirementAge,
   getClaimingAdjustmentMultiplier,
@@ -25,7 +25,7 @@ import {
   SPOUSAL_BENEFIT_BASE_RATE,
   SS_EARLIEST_CLAIMING_AGE_MONTHS,
   SS_LATEST_CLAIMING_AGE_MONTHS,
-} from "../config/social-security";
+} from "../../config/social-security";
 
 /**
  * A worker's own adjusted annual Social Security benefit for claiming at

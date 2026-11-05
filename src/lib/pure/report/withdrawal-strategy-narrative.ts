@@ -6,7 +6,7 @@
  *  dollar-mode toggle) amounts, same convention as every other
  *  tooltip-string builder these were extracted from. */
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type { WithdrawalSourceKind } from "@/lib/pure/engine";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import type { ReportWithdrawalStrategySection } from "./types";

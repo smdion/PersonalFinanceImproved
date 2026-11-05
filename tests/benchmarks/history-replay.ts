@@ -14,7 +14,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { retiree } from "../fixtures/answer-key-simulation";
 import { calculateProjection } from "@/lib/pure/engine";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 
 /** Stock shares of the grid's rows, as the spec's table keys them. */
 export const REPLAY_STOCK_SHARES = ["1", "0.75", "0.6", "0.5", "0.25", "0"];

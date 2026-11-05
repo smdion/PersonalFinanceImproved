@@ -1,6 +1,6 @@
 "use client";
 
-import { strategySpending } from "@/lib/calculators/strategy-spending";
+import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { useEffect, useRef } from "react";
 
 /** Yearly Income Stability chart — shows withdrawal as % of baseline over

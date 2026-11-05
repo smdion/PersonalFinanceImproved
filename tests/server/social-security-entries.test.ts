@@ -106,7 +106,7 @@ describe("buildSocialSecurityEntries", () => {
   // 00204.035). Changes on purpose with v0.11 Retirement rules "Spousal
   // excess is lost for life when the lower earner claims in an earlier
   // year", where answer-key ret/S44 and ret/S45
-  // (`tests/calculators/answer-key-social-security.test.ts`) replace it.
+  // (`tests/pure/retirement/answer-key-social-security.test.ts`) replace it.
   it("MFJ + 2: no spousal top-up before the worker has filed", () => {
     const [, sam] = buildSocialSecurityEntries(
       [

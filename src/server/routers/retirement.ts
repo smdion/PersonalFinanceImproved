@@ -28,7 +28,7 @@ import {
   getSessionUserLabel,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateRelocation } from "@/lib/calculators/relocation";
+import { calculateRelocation } from "@/lib/pure/retirement/relocation";
 import {
   toNumber,
   contributionPay,

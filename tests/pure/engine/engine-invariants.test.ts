@@ -15,7 +15,7 @@ import {
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/pure/engine";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import {
   toSimpleTaxMode,
   type SimpleTaxModeParts,

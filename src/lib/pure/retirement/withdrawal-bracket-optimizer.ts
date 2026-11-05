@@ -23,12 +23,12 @@
  * engine itself.
  */
 import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
-import { calculateProjection } from "../pure/engine";
+import { calculateProjection } from "../engine";
 import type {
   ProjectionInput,
   DecumulationOverride,
   EngineDecumulationYear,
-} from "../pure/engine/types";
+} from "../engine/types";
 
 /**
  * v1 ships this as a fixed constant, empirically checked across a wide

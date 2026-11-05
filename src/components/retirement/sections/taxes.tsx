@@ -43,7 +43,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
   Settings,
   SelectedScenario,

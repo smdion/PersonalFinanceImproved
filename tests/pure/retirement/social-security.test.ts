@@ -12,14 +12,14 @@ import {
   computeAdjustedBenefit,
   computeSpousalBenefit,
   sweepClaimingAges,
-} from "@/lib/calculators/social-security";
+} from "@/lib/pure/retirement/social-security";
 import type {
   EngineDecumulationYear,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
-import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
+import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 

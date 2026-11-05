@@ -13,14 +13,14 @@ import { calculateProjection } from "@/lib/pure/engine";
 import {
   optimizeRothBracketTarget,
   ASSUMED_TERMINAL_RATE,
-} from "@/lib/calculators/withdrawal-bracket-optimizer";
+} from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
   EngineDecumulationYear,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
-import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
+import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 

@@ -39,7 +39,7 @@ import {
   percentile,
 } from "@/lib/pure/simulation/monte-carlo";
 import { calculateProjection } from "@/lib/pure/engine";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { readSimulationPresetsFile } from "@/lib/db/reference-data";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 

@@ -241,9 +241,9 @@ export function buildDecumulationDefaults(
 }
 
 // Coast FIRE's "stop contributing at age N" lives with the calculator
-// (lib/calculators/coast-fire.ts) so the baseline finder and every
+// (lib/pure/retirement/coast-fire.ts) so the baseline finder and every
 // router probe stop contributions the same way.
-export { buildCoastFireProfileSwitches } from "@/lib/calculators/coast-fire";
+export { buildCoastFireProfileSwitches } from "@/lib/pure/retirement/coast-fire";
 
 /** The saved Simulation inflation override (Simulation assumptions). */
 export type SavedInflationOverrides = { stdDev?: number } | null;

@@ -628,7 +628,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
     const schema = await getSchema();
 
     // Born 1963 -> FRA 67y0m (1960+ band), matching
-    // tests/calculators/social-security.test.ts's own fixture so the
+    // tests/pure/retirement/social-security.test.ts's own fixture so the
     // expected multiplier is the same well-known value.
     personId = await seedPerson(db, "Pat", "1963-04-10");
     await markPrimary(db, personId);
@@ -897,7 +897,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
   // 00204.035). Changes on purpose with v0.11 Retirement rules "Spousal
   // excess is lost for life when the lower earner claims in an earlier
   // year", where answer-key ret/S44 and ret/S45
-  // (`tests/calculators/answer-key-social-security.test.ts`) replace it.
+  // (`tests/pure/retirement/answer-key-social-security.test.ts`) replace it.
   it("does NOT pay a spousal top-up for years before the worker has filed", async () => {
     const schema = await getSchema();
     const { eq } = await import("drizzle-orm");

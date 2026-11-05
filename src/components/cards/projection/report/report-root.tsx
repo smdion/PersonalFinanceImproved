@@ -8,7 +8,7 @@
 import type { ProjectionResult } from "@/lib/pure/engine/types/index";
 import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import type { PerPersonSettings } from "@/components/retirement/sections/types";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { buildReportNarrative } from "@/lib/pure/report";
 import { ReportCover } from "./report-cover";
 import { ReportExecutiveSummarySection } from "./report-executive-summary";

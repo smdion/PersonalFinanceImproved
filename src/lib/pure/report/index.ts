@@ -3,7 +3,7 @@
  *  Pure function: same inputs, same output, no React, no side effects. */
 import type { ProjectionResult } from "@/lib/pure/engine/types/index";
 import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { buildExecutiveSummary } from "./executive-summary";
 import { buildWithdrawalStrategyNarrative } from "./withdrawal-strategy-narrative";
 import { buildRiskNarrative, buildRiskBandPoints } from "./risk-narrative";

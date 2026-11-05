@@ -17,7 +17,7 @@
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
   AccumulationOverride,
   DecumulationOverride,

@@ -16,11 +16,8 @@
  * Survival only — callers with an extra test (Coast FIRE's first-year need)
  * add it on top.
  */
-import { shortfallFloor } from "../pure/engine/gap-year-draw";
-import type {
-  EngineDecumulationYear,
-  ProjectionResult,
-} from "../pure/engine/types";
+import { shortfallFloor } from "../engine/gap-year-draw";
+import type { EngineDecumulationYear, ProjectionResult } from "../engine/types";
 
 /** Why a plan failed:
  *  - `depleted`: retirement money ran out;

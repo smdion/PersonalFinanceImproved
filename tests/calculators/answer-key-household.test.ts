@@ -35,7 +35,7 @@ import { describe, expect, it } from "vitest";
 import { cents, xfail } from "../fixtures/answer-key";
 import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { calculateEFund } from "@/lib/calculators/efund";
-import { findCoastFireAge } from "@/lib/calculators/coast-fire";
+import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import { computePortfolioTotal } from "@/lib/pure/performance";
 import { inflateTarget } from "@/lib/pure/milestones.shared";
 import type { NetWorthInput } from "@/lib/pure/types/calculators";

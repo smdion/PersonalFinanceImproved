@@ -8,7 +8,7 @@ import { planRetirementAge } from "@/lib/pure/household-timeline";
 import {
   withConsistentStart,
   makeAccumulationDefaults,
-} from "../pure/fixtures/engine-fixtures";
+} from "../fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import type {
   EngineAccumulationYear,
@@ -17,10 +17,10 @@ import type {
 import {
   buildCoastFireProfileSwitches,
   findCoastFireAge,
-} from "@/lib/calculators/coast-fire";
+} from "@/lib/pure/retirement/coast-fire";
 import { calculateProjection } from "@/lib/pure/engine";
-import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
-import { shippedTaxTables } from "../helpers/tax-data";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
 
 const AS_OF = new Date("2025-03-07");
 

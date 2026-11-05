@@ -2943,17 +2943,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/coast-fire.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
   "src/lib/calculators/contribution.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -3000,22 +2989,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/plan-outcome.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/relocation.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    }
-  },
   "src/lib/calculators/savings-capacity.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -3029,30 +3002,6 @@
       "count": 1
     },
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/social-security.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/strategy-spending.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },
@@ -4759,6 +4708,57 @@
   },
   "src/lib/pure/retirement-bridge.ts": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/coast-fire.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/retirement/plan-outcome.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/retirement/relocation.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/retirement/social-security.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 12
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/strategy-spending.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 12
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },

@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   assessPlan,
   dominantFailureReason,
-} from "@/lib/calculators/plan-outcome";
+} from "@/lib/pure/retirement/plan-outcome";
 import type { ProjectionResult } from "@/lib/pure/engine/types";
 
 type Row = {

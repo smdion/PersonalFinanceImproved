@@ -2,7 +2,7 @@
 
 /** Monte Carlo results — loading spinner, errors, warnings and compact summary bar. */
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
-import { strategySpending } from "@/lib/calculators/strategy-spending";
+import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";

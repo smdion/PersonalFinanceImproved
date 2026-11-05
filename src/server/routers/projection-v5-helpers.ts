@@ -15,7 +15,7 @@ import { planEndAge } from "@/lib/pure/household-timeline";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
 import { calculateProjection } from "@/lib/pure/engine";

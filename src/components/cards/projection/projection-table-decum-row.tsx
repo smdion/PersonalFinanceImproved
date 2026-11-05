@@ -20,7 +20,7 @@ import type {
   DecumulationSlot,
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountYearBalance } from "@/lib/pure/types/shared";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,

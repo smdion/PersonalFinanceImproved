@@ -46,16 +46,16 @@
 import { planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
-import { calculateProjection } from "../pure/engine";
-import type { AccountCategory } from "../config/account-types";
+import { calculateProjection } from "../engine";
+import type { AccountCategory } from "../../config/account-types";
 import type {
   EngineDecumulationYear,
   ProfileSwitch,
   ProjectionInput,
   ProjectionResult,
-} from "../pure/engine/types";
-import { roundToCents } from "../utils/math";
-import { getAllCategories } from "../config/account-types";
+} from "../engine/types";
+import { roundToCents } from "../../utils/math";
+import { getAllCategories } from "../../config/account-types";
 
 type CoastFireStatus = "already_coast" | "found" | "unreachable";
 

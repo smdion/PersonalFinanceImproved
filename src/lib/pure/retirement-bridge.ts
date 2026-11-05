@@ -9,7 +9,7 @@
  * The projection is the fixed-return run: a bad market in these years is
  * exactly how a bridge fails, so callers label it "at assumed returns".
  */
-import { strategySpending } from "@/lib/calculators/strategy-spending";
+import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import {
   isHsaCategory,
   isIraCategory,

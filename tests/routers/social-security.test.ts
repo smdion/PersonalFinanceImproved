@@ -37,7 +37,7 @@ import {
   buildEnginePayload,
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
-import { sweepClaimingAges } from "@/lib/calculators/social-security";
+import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
 import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";

@@ -14,10 +14,10 @@
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
-import { findCoastFireAge } from "@/lib/calculators/coast-fire";
-import { sweepClaimingAges } from "@/lib/calculators/social-security";
-import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
+import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
+import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
+import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
   ContributionSpec,
   ProjectionInput,
@@ -30,8 +30,8 @@ import {
   makeMCInput,
   makeStandardInput,
   AS_OF,
-} from "../benchmarks/benchmark-helpers";
-import { shippedTaxTables } from "../helpers/tax-data";
+} from "../../benchmarks/benchmark-helpers";
+import { shippedTaxTables } from "../../helpers/tax-data";
 
 const MFJ_BRACKETS = [
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },

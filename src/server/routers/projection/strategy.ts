@@ -30,8 +30,8 @@ import {
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import { strategySpending } from "@/lib/calculators/strategy-spending";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
@@ -56,7 +56,7 @@ import {
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
 import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
-import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
+import { computeAdjustedBenefit } from "@/lib/pure/retirement/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {

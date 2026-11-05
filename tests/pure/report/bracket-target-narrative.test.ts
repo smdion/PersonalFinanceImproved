@@ -5,7 +5,7 @@ import {
   describeBracketCeilingMath,
   describeDiscretionaryCapacityMath,
 } from "@/lib/pure/report/bracket-target-narrative";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 
 type Candidate = BracketOptimizerResult["candidates"][number];
 
