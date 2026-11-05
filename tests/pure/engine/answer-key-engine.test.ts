@@ -32,7 +32,7 @@
  *   household. They replace the bounds-only check at
  *   `withdrawal-solver.test.ts:102-104`.
  * - S1, E8 (the server's spec-to-account match and cap pass), T4 and T6
- *   (the Retirement budget in the payload): `tests/server/answer-key-payload.test.ts`.
+ *   (the Retirement budget in the payload): `tests/server/services/projection/engine-payload/answer-key-payload.test.ts`.
  * - The ledgers H1–H7 and E3: `answer-key-ledgers.test.ts`.
  */
 import { describe, it } from "vitest";

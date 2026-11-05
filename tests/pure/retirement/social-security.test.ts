@@ -625,7 +625,7 @@ describe("sweepClaimingAges", () => {
 // version that routed it through socialSecurityEntries instead would still
 // pass this test's assertions (annualAmount is correct either way) while
 // failing the RMD side of the picture, which is why
-// tests/server/build-engine-payload.test.ts separately asserts
+// tests/server/services/projection/engine-payload/build-engine-payload.test.ts separately asserts
 // socialSecurityEntries stays undefined for a single-person household.
 describe("PIA wiring equivalence (plan §8) — engine level", () => {
   it("a PIA-derived annualAmount produces an identical projection to manually passing the same pre-computed amount", () => {

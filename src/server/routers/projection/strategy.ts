@@ -57,8 +57,8 @@ import { roundToCents } from "@/lib/utils/math";
 import {
   fetchRetirementData,
   buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
-import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { computeAdjustedBenefit } from "@/lib/pure/retirement/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";

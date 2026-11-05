@@ -1,6 +1,6 @@
-import "../../routers/setup-mocks";
+import "../../../../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
-import { ageStepAt } from "@/server/retirement/payload/profile-switches";
+import { ageStepAt } from "@/server/services/projection/engine-payload/profile-switches";
 import type { ProfileSwitch } from "@/lib/pure/engine/types";
 
 // Relocation's move-year switch: the relocation profile as capped by the

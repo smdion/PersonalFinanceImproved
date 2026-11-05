@@ -36,9 +36,7 @@ const LAYERS = {
   engine: "^src/lib/pure/engine/",
   infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting)\\.ts$)`,
   data: "^src/server/data/",
-  // server/retirement is composition beside server/services, until it
-  // moves there.
-  services: "^src/server/(services/|retirement/)",
+  services: "^src/server/services/",
   routers: "^src/server/routers/",
   serverCore:
     "^src/server/(trpc|auth|auth\\.config|trpc-server|mutation-events)\\.ts$",

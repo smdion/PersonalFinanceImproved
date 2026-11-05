@@ -36,9 +36,9 @@ import * as schema from "@/lib/db/schema-sqlite";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
-import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
+import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {

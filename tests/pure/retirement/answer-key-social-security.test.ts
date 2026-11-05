@@ -47,7 +47,7 @@ import { socialSecurityForYear } from "@/lib/pure/engine/social-security-income"
 import {
   buildSocialSecurityEntries,
   type SsPerson,
-} from "@/server/retirement/social-security-entries";
+} from "@/lib/pure/retirement/social-security-entries";
 import { acct, household } from "../fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------

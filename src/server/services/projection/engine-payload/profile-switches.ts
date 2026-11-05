@@ -33,7 +33,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { ProfileSwitch } from "@/lib/pure/engine/types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { FALLBACK_CONTRIBUTION_RATE } from "@/lib/constants";
-import type { fetchRetirementData } from "../build-engine-payload";
+import type { fetchRetirementData } from "./build-engine-payload";
 import { retirementContributions } from "./retirement-contributions";
 import type { Db } from "@/lib/db";
 

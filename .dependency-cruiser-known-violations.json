@@ -121,13 +121,13 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/server/retirement/build-engine-payload.ts",
-    "to": "src/server/retirement/payload/individual-accounts.ts"
+    "from": "src/server/services/projection/engine-payload/build-engine-payload.ts",
+    "to": "src/server/services/projection/engine-payload/individual-accounts.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/server/retirement/build-engine-payload.ts",
-    "to": "src/server/retirement/payload/profile-switches.ts"
+    "from": "src/server/services/projection/engine-payload/build-engine-payload.ts",
+    "to": "src/server/services/projection/engine-payload/profile-switches.ts"
   },
   {
     "rule": "no-router-to-router",

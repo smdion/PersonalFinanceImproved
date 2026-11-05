@@ -29,7 +29,7 @@ import { createTestCaller, seedJob, seedPerformanceAccount } from "./setup";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import * as schema from "@/lib/db/schema-sqlite";
 
 const FIXED_NOW = new Date("2026-04-14T12:00:00Z");

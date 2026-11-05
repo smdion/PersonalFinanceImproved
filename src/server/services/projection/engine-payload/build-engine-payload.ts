@@ -11,7 +11,7 @@
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
 import { calendarYear } from "@/lib/utils/date";
-import { loadExpenseEndings } from "./payload/expense-endings";
+import { loadExpenseEndings } from "./expense-endings";
 import {
   householdTimeline,
   planEndAge,
@@ -73,22 +73,22 @@ import {
   FALLBACK_CONTRIBUTION_RATE,
 } from "@/lib/constants";
 import { log } from "@/lib/logger";
-import { buildSocialSecurityEntries } from "./social-security-entries";
+import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
 import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import {
   capEffectiveContribs,
   type CapPassHousehold,
 } from "@/lib/pure/contributions/cap-pass";
-import { resolvePhaseExpenses } from "./payload/budget-expenses";
+import { resolvePhaseExpenses } from "./budget-expenses";
 import {
   buildProfileSwitches,
   capAgeSteps,
   loadSwitchProfiles,
   profileSwitchFrom,
-} from "./payload/profile-switches";
-import { retirementContributions } from "./payload/retirement-contributions";
-import { buildIndividualAccounts } from "./payload/individual-accounts";
+} from "./profile-switches";
+import { retirementContributions } from "./retirement-contributions";
+import { buildIndividualAccounts } from "./individual-accounts";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";

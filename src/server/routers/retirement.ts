@@ -156,7 +156,7 @@ async function collapseReturnRates(db: Db) {
 }
 
 // `fetchRetirementData` and `buildEnginePayload` were moved to
-// `src/server/retirement/build-engine-payload.ts`.
+// `src/server/services/projection/engine-payload/build-engine-payload.ts`.
 // Projection router imports them directly from the new path; nothing else
 // imports from here, so no re-export shim is needed.
 

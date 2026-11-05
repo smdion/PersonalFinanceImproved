@@ -11,7 +11,7 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import {
   fetchRetirementData,
   buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
 import {
   buildDecumulationDefaults,

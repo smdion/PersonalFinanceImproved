@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax -- partial fixtures cast to Drizzle row types */
-import "../../routers/setup-mocks";
+import "../../../../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
-import { resolvePhaseExpenses } from "@/server/retirement/payload/budget-expenses";
+import { resolvePhaseExpenses } from "@/server/services/projection/engine-payload/budget-expenses";
 
 type Profiles = Parameters<typeof resolvePhaseExpenses>[1]["allBudgetProfiles"];
 type Items = Parameters<typeof resolvePhaseExpenses>[1]["allBudgetItems"];

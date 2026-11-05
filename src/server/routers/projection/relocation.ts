@@ -9,7 +9,7 @@
  * that switches from the current path to the relocation path at moveYear.
  */
 import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household/household-timeline";
-import { ageStepAt } from "@/server/retirement/payload/profile-switches";
+import { ageStepAt } from "@/server/services/projection/engine-payload/profile-switches";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { z } from "zod/v4";
 import { eq, desc } from "drizzle-orm";
@@ -25,7 +25,7 @@ import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-
 import {
   fetchRetirementData,
   buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import { buildDecumulationDefaults } from "./_shared";
 import { safeDivide } from "@/lib/utils/math";
 import {

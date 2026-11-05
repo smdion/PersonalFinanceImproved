@@ -1,6 +1,6 @@
 /**
  * Answer key, the engine payload: cases whose fault is in the server's
- * build of the engine input (`src/server/retirement/build-engine-payload.ts`
+ * build of the engine input (`src/server/services/projection/engine-payload/build-engine-payload.ts`
  * and the helpers it calls), so they're run through it on a seeded test
  * database, then (where the figure is a projected one) through
  * `calculateProjection`. Sources: the November review's
@@ -19,7 +19,7 @@
  * onto the Retirement Profile with a migration, so T4's seed moves with
  * that fix.
  */
-import "../routers/setup-mocks";
+import "../../../../routers/setup-mocks";
 import {
   afterAll,
   afterEach,
@@ -34,11 +34,11 @@ import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import { calculateProjection } from "@/lib/pure/engine";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { SK_RETIREMENT_DEC_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
-import { xfail } from "../fixtures/answer-key";
+import { xfail } from "../../../../fixtures/answer-key";
 import {
   createTestCaller,
   seedAppSetting,
@@ -48,7 +48,7 @@ import {
   seedContributionProfile,
   seedJob,
   seedPerformanceAccount,
-} from "../routers/setup";
+} from "../../../../routers/setup";
 import type { Db } from "@/lib/db";
 
 type SqliteDb = BetterSQLite3Database<typeof sqliteSchema>;

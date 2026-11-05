@@ -1,10 +1,10 @@
-import "../routers/setup-mocks";
+import "../../../../routers/setup-mocks";
 import { describe, expect, it } from "vitest";
 import * as schema from "@/lib/db/schema";
 import {
   currentLoan,
   loadExpenseEndings,
-} from "@/server/retirement/payload/expense-endings";
+} from "@/server/services/projection/engine-payload/expense-endings";
 
 const loan = (id: number, over: Record<string, unknown> = {}) =>
   ({

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildSocialSecurityEntries,
   type SsPerson,
-} from "@/server/retirement/social-security-entries";
+} from "@/lib/pure/retirement/social-security-entries";
 
 // birthYear 1963 -> FRA 67 (1960+ band) for everyone below unless noted.
 function person(overrides: Partial<SsPerson> = {}): SsPerson {

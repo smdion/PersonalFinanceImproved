@@ -12,7 +12,7 @@
  * review as the riskiest untested branches — still have no dedicated
  * coverage here; this locks in the base wiring only).
  */
-import "../routers/setup-mocks";
+import "../../../../routers/setup-mocks";
 import {
   describe,
   it,
@@ -28,11 +28,11 @@ import {
   seedJob,
   seedPerformanceAccount,
   seedSnapshot,
-} from "../routers/setup";
+} from "../../../../routers/setup";
 import {
   fetchRetirementData,
   buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";

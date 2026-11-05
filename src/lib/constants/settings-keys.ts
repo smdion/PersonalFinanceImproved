@@ -47,7 +47,7 @@ export const SK_RETIREMENT_COMPARISON_EXPANDED =
   "retirement_comparison_expanded";
 /** Rate the projection engine grows IRS contribution limits by each future
  *  year (fraction, e.g. 0.02). Read at
- *  server/retirement/build-engine-payload.ts; unset → IRS_LIMIT_GROWTH_RATE
+ *  server/services/projection/engine-payload/build-engine-payload.ts; unset → IRS_LIMIT_GROWTH_RATE
  *  constant. Editable in Settings → Reference Data → Return Rates. */
 export const SK_IRS_LIMIT_GROWTH_RATE = "irs_limit_growth_rate";
 

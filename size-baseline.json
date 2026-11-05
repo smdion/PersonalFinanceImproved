@@ -170,8 +170,6 @@
     "src/server/data/retirement-profiles.ts": 19,
     "src/server/data/salaries.ts": 41,
     "src/server/data/snapshots.ts": 107,
-    "src/server/retirement/build-engine-payload.ts": 1414,
-    "src/server/retirement/payload/profile-switches.ts": 509,
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2103,
     "src/server/routers/contribution-profiles.ts": 907,
@@ -213,6 +211,8 @@
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 98,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 1414,
+    "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
@@ -876,16 +876,6 @@
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
-    "src/server/retirement/build-engine-payload.ts": {
-      "buildEnginePayload": 1137,
-      "fetchRetirementData": 164
-    },
-    "src/server/retirement/payload/individual-accounts.ts": {
-      "buildIndividualAccounts": 238
-    },
-    "src/server/retirement/payload/profile-switches.ts": {
-      "buildProfileSwitches": 334
-    },
     "src/server/routers/assets.ts": {
       "assetsRouter.computeSummary.query()": 241
     },
@@ -971,6 +961,16 @@
     },
     "src/server/services/paycheck/job-net-pay.ts": {
       "computeJobNetPayPerCheck": 224
+    },
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": {
+      "buildEnginePayload": 1137,
+      "fetchRetirementData": 164
+    },
+    "src/server/services/projection/engine-payload/individual-accounts.ts": {
+      "buildIndividualAccounts": 238
+    },
+    "src/server/services/projection/engine-payload/profile-switches.ts": {
+      "buildProfileSwitches": 334
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237
