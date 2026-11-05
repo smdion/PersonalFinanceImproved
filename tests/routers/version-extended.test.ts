@@ -90,6 +90,10 @@ describe("version router", () => {
       const result = await caller.version.getById({ id: 99999 });
       expect(result).toBeNull();
     });
+
+    it("rejects non-integer id", async () => {
+      await expect(caller.version.getById({ id: 1.5 })).rejects.toThrow();
+    });
   });
 
   // ── DELETE ──
