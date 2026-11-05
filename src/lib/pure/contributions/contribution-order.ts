@@ -2,6 +2,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
+  isTripleTaxAdvantaged,
 } from "@/lib/config/account-types";
 
 /**
@@ -67,9 +68,7 @@ export function validateContributionOrder(
   }
 
   // A triple tax-advantaged type belongs before every other tax-advantaged one.
-  const triple = taxAdvantagedTypes.filter(
-    (c) => getAccountTypeConfig(c).tripleTaxAdvantaged,
-  );
+  const triple = taxAdvantagedTypes.filter(isTripleTaxAdvantaged);
   for (const cat of triple) {
     const index = order.indexOf(cat);
     if (index <= 0) continue;

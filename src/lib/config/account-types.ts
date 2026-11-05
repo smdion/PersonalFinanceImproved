@@ -481,9 +481,7 @@ export function getAccountTypeConfig(
 // Engine helpers — replace hardcoded if-chains
 // ---------------------------------------------------------------------------
 
-/**
- * Get the Roth fraction for a category from tax splits.
- */
+/** The Roth fraction for a category from tax splits. */
 export function getRothFraction(
   category: AccountCategory,
   taxSplits: Partial<Record<AccountCategory, number>>,
@@ -497,9 +495,7 @@ export function getRothFraction(
   return taxSplits[lookupKey] ?? 0;
 }
 
-/**
- * Get the effective contribution limit for a category.
- */
+/** The effective contribution limit for a category. */
 export function getEffectiveLimit(
   category: AccountCategory,
   irsLimit: number,
@@ -509,9 +505,7 @@ export function getEffectiveLimit(
   return Math.min(irsLimit, accountCap ?? Infinity);
 }
 
-/**
- * Whether this category absorbs overflow from other accounts.
- */
+/** Whether this category absorbs overflow from other accounts. */
 export function isOverflowTarget(category: AccountCategory): boolean {
   return ACCOUNT_TYPE_CONFIG[category].isOverflowTarget;
 }
@@ -570,6 +564,11 @@ export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
 /** A QCD can come from this category (`qcdEligible`). */
 export function isQcdEligible(category: AccountCategory): boolean {
   return ACCOUNT_TYPE_CONFIG[category].qcdEligible;
+}
+
+/** Funded before every other tax-advantaged type (`tripleTaxAdvantaged`). */
+export function isTripleTaxAdvantaged(category: AccountCategory): boolean {
+  return ACCOUNT_TYPE_CONFIG[category].tripleTaxAdvantaged;
 }
 
 /** The non-medical withdrawal penalty rate, or null where there is none. */
