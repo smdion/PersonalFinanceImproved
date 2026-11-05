@@ -57,13 +57,18 @@ function countInFile(filePath: string, pattern: RegExp): number {
 
 // ── Count Functions ──────────────────────────────────────────────────────────
 
+/** The engine's modules in either home (it moves from lib/calculators to lib/pure). */
+const ENGINE_DIRS = ["src/lib/calculators/engine", "src/lib/pure/engine"];
+
 function countEngineModules(): number {
-  const dir = path.join(ROOT, "src/lib/calculators/engine");
-  const files = listFiles(dir, /\.ts$/);
+  const files = ENGINE_DIRS.flatMap((dir) =>
+    listFiles(path.join(ROOT, dir), /\.ts$/),
+  );
   // Exclude index.ts — it's a barrel re-export, not a module
   return files.filter((f) => path.basename(f) !== "index.ts").length;
 }
 
+/** The calculators still in lib/calculators: 0 once they have all moved. */
 function countCalculators(): number {
   const dir = path.join(ROOT, "src/lib/calculators");
   const files = listFiles(dir, /\.ts$/);

@@ -752,7 +752,8 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // files or are identifiers, not this literal two-word phrase).
 //
 // Restricted to .tsx (where JSX text and display strings actually live) —
-// PLUS src/lib/pure/report/**/*.ts (the retirement advisor report's
+// PLUS src/lib/pure/report/**/*.ts, or src/lib/pure/advice/report/ (its
+// home after the move; both are scanned), (the retirement advisor report's
 // narrative-generation module): that directory's whole purpose is
 // generating user-facing prose as plain strings, not JSX, so it's exactly
 // the kind of file this rule exists for even though it isn't a .tsx —
@@ -768,7 +769,11 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // lines whose trimmed content starts with "/*" or "/**".
 const MONTE_CARLO_PATTERN = /\bMonte Carlo\b/;
 function isMonteCarloTerminologyScanned(rel: string): boolean {
-  return rel.endsWith(".tsx") || rel.startsWith("src/lib/pure/report/");
+  return (
+    rel.endsWith(".tsx") ||
+    rel.startsWith("src/lib/pure/report/") ||
+    rel.startsWith("src/lib/pure/advice/report/")
+  );
 }
 function findMonteCarloUserFacingTextViolations(): Violation[] {
   const violations: Violation[] = [];

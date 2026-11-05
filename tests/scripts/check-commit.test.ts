@@ -99,6 +99,26 @@ describe("checkCommit", () => {
     expect(rules(facts({ files: outsideEngine }))).toEqual([]);
   });
 
+  it("counts the engine and tax code in lib/pure, not the other areas", () => {
+    const nine = (first: string) =>
+      Array.from({ length: 9 }, (_, index) => ({
+        file: index === 0 ? first : `src/lib/pure/budget/f${index}.ts`,
+        added: 1,
+        deleted: 0,
+      }));
+    for (const first of [
+      "src/lib/pure/engine/projection.ts",
+      "src/lib/pure/tax/brackets.ts",
+      "src/lib/tax-data/2027.ts",
+      "src/lib/config/tax-tables.ts",
+    ]) {
+      expect(rules(facts({ files: nine(first) }))).toEqual(["engine-files"]);
+    }
+    expect(
+      rules(facts({ files: nine("src/lib/pure/paycheck/net-pay.ts") })),
+    ).toEqual([]);
+  });
+
   it("asks for a Concept: trailer on a second fix in one spot", () => {
     const priorFixes = new Map([["src/lib/pure/a.ts::draw", 1]]);
     expect(rules(facts({ priorFixes }))).toEqual(["second-fix"]);
