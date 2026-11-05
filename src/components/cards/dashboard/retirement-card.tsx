@@ -2,11 +2,7 @@
 
 import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
-import {
-  flatDeflator,
-  simulationDollars,
-  toTodaysDollars,
-} from "@/lib/pure/simulation/dollars";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
 import {
@@ -68,8 +64,8 @@ function RetirementCardImpl() {
   // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
   // just surface whatever the Retirement page's last real run already
   // computed, if the inputs still match. Null result = nothing cached yet.
-  const { data: mcPeek } = trpc.projection.computeMonteCarloProjection.useQuery(
-    { ...engineInput, peekOnly: true },
+  const { data: mcPeek } = trpc.projection.peekMonteCarloSummary.useQuery(
+    engineInput,
     // Always re-read: a run made on the Retirement page should show here
     // as soon as the dashboard is opened again.
     { staleTime: 0, enabled: ready },
@@ -172,9 +168,7 @@ function RetirementCardImpl() {
     : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
     // Today's dollars, from the Simulation's own per-trial deflation.
-    bands: mcPeek?.result
-      ? simulationDollars(mcPeek.result, "real").percentileBands
-      : null,
+    bands: mcPeek?.result?.todayBands,
     baseline: nestEgg,
     targetAge: nestEggAge,
     personFiltered: false,
@@ -388,9 +382,7 @@ function RetirementCardImpl() {
             )}
             {(() => {
               const lastRunAt = [
-                mcPeek && "simulationInputs" in mcPeek
-                  ? mcPeek.simulationInputs.computedAt
-                  : null,
+                mcPeek?.computedAt,
                 coastFireMcPeek?.computedAt,
               ]
                 .filter((v): v is string => !!v)

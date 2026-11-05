@@ -171,6 +171,11 @@ export const PROCEDURES: BaselineProcedure[] = [
     path: "projection.computeMonteCarloProjection",
     input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
+  // After the run above, with its input: the dashboard tile's cache read.
+  {
+    path: "projection.peekMonteCarloSummary",
+    input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
+  },
   { path: "projection.computeStrategyComparison", input: activeSelection },
   { path: "projection.analyzeStrategy", input: activeSelection },
   { path: "projection.computeStressTest", input: activeSelection },

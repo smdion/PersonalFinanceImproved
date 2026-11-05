@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**392 procedures across 54 routers.**
+**393 procedures across 55 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -291,6 +291,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getMonteCarloProgress`       | query    | `protectedProcedure` | running — see monte-carlo-worker-client.ts's module docblock for why this is an in-memory Map rather than a DB table or a subscription. Returns null once the job is done or if the runId is unknown (e. |
 | `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 | `updateGlidePathAllocations`  | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
+
+## `projection/monte-carlo-peek`
+
+| Procedure               | Kind  | Auth                 | Description                                                       |
+| ----------------------- | ----- | -------------------- | ----------------------------------------------------------------- |
+| `peekMonteCarloSummary` | query | `protectedProcedure` | The cached Simulation's success rate, today's bands and run time. |
 
 ## `projection/presets`
 

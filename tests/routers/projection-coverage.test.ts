@@ -921,6 +921,74 @@ describe("projection router — computeMonteCarloProjection", () => {
 });
 
 // ---------------------------------------------------------------------------
+// peekMonteCarloSummary — the dashboard tile's slice of a cached run
+// ---------------------------------------------------------------------------
+
+describe("projection router — peekMonteCarloSummary", () => {
+  it("returns the cached run's success rate, today's bands and run time, never running trials", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = {
+        numTrials: 100,
+        preset: "custom",
+        taxMode: "simple",
+        seed: 42,
+      } as const;
+      const runsBefore = mcRuns.count;
+      const empty = await caller.projection.peekMonteCarloSummary(input);
+      expect(empty).toEqual({ result: null, computedAt: null });
+      expect(mcRuns.count).toBe(runsBefore);
+
+      await caller.projection.computeMonteCarloProjection(input);
+      // What the full query's peek returns (the cache keeps whole seconds).
+      const full = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        peekOnly: true,
+      });
+      assert(full.result && "simulationInputs" in full);
+      const peek = await caller.projection.peekMonteCarloSummary(input);
+      expect(mcRuns.count).toBe(runsBefore + 1);
+      expect(peek).toEqual({
+        result: {
+          successRate: full.result.successRate,
+          // Today's dollars (deflated per trial), not the nominal bands.
+          todayBands: full.result.today.percentileBands.map(
+            ({ age, year, p25, p50, p75 }) => ({ age, year, p25, p50, p75 }),
+          ),
+        },
+        computedAt: full.simulationInputs.computedAt,
+      });
+      expect(peek.result!.todayBands).not.toEqual(
+        full.result.percentileBands.map(({ age, year, p25, p50, p75 }) => ({
+          age,
+          year,
+          p25,
+          p50,
+          p75,
+        })),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("rejects what the full query's input rejects", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await expect(
+        caller.projection.peekMonteCarloSummary({ numTrials: 5 }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeMonteCarloProjection — persistent projection cache
 // ---------------------------------------------------------------------------
 

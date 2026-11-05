@@ -27,7 +27,7 @@
     "src/components/cards/dashboard/contributions-card.tsx": 655,
     "src/components/cards/dashboard/linked-balance-card.tsx": 451,
     "src/components/cards/dashboard/living-costs-card.tsx": 679,
-    "src/components/cards/dashboard/retirement-card.tsx": 448,
+    "src/components/cards/dashboard/retirement-card.tsx": 440,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,
     "src/components/cards/mc-simulation-assumptions.tsx": 1071,
     "src/components/cards/projection/decumulation-config.tsx": 480,
@@ -333,7 +333,7 @@
       "LivingCostsCardImpl": 583
     },
     "src/components/cards/dashboard/retirement-card.tsx": {
-      "RetirementCardImpl": 400
+      "RetirementCardImpl": 396
     },
     "src/components/cards/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 407

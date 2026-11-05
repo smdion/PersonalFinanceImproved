@@ -8,6 +8,7 @@
  * - `coast-fire.ts`   — `computeCoastFire`, `computeCoastFireMC`
  * - `monte-carlo.ts`  — `computeMonteCarloProjection`,
  *                       `updateGlidePathAllocations`, `updateClampBounds`
+ * - `monte-carlo-peek.ts` — `peekMonteCarloSummary` (the dashboard tile)
  * - `strategy.ts`     — `computeStrategyComparison`, `analyzeStrategy`,
  *                       `updateAssetClassOverrides`
  * - `stress-test.ts`  — `computeStressTest`
@@ -33,6 +34,7 @@ import { mergeRouters } from "../../trpc";
 import { coastFireRouter } from "./coast-fire";
 import { coastFireProbeRouter } from "./coast-fire-probe";
 import { monteCarloRouter } from "./monte-carlo";
+import { monteCarloPeekRouter } from "./monte-carlo-peek";
 import { presetsRouter } from "./presets";
 import { relocationProjectionRouter } from "./relocation";
 import { scenariosRouter } from "./scenarios";
@@ -47,6 +49,7 @@ export const projectionRouter = mergeRouters(
   coastFireRouter,
   coastFireProbeRouter,
   monteCarloRouter,
+  monteCarloPeekRouter,
   strategyRouter,
   stressTestRouter,
   presetsRouter,
