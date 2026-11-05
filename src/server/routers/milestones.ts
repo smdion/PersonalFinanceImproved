@@ -36,7 +36,7 @@ import {
 } from "@/lib/pure/advice/milestone-first-reached";
 import { effectiveHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
-import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
+import { mergeSettingAtomically } from "@/server/data/settings";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { contributionRouter } from "./contribution";
 import { savingsRouter } from "./savings";

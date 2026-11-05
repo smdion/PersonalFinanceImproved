@@ -8,7 +8,7 @@ import { z } from "zod/v4";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/utils/date";
-import { mergeSettingAtomically } from "./merge-setting";
+import { mergeSettingAtomically } from "@/server/data/settings";
 import type { Db, DbOrTx } from "@/lib/db";
 
 const FILL_LEDGER_KEY = "simplefin_fill_ledger";

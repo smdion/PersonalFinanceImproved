@@ -53,11 +53,10 @@ import { RBAC_SETTINGS_PREFIX, RBAC_ADMIN_GROUP_KEY } from "@/server/auth";
 import { PERMISSIONS } from "@/lib/config/permissions";
 import { settingValue } from "./_shared";
 import { applyPlan } from "@/server/helpers/plans";
-import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { firstReachedSchema } from "@/lib/pure/advice/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
-import { upsertSetting } from "@/server/data/settings";
+import { mergeSettingAtomically, upsertSetting } from "@/server/data/settings";
 
 // --- Zod schemas ---
 

@@ -10,7 +10,8 @@ import { execRaw } from "@/lib/db/compat";
 import type { DbOrTx } from "@/lib/db";
 
 /** First key of every lock here (two-key form): never collides with
- *  single-key locks such as merge-setting.ts's. "LDGR" in ASCII. */
+ *  single-key locks such as mergeSettingAtomically's (data/settings.ts).
+ *  "LDGR" in ASCII. */
 const LOCK_NAMESPACE = 0x4c444752;
 
 /** Call first inside `db.transaction(async (tx) => …)`, with that `tx`. */
