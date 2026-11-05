@@ -3910,6 +3910,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/budget/budget.types.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/budget/transaction-kind.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -5087,11 +5092,6 @@
   },
   "src/lib/pure/total-return.ts": {
     "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/types/calculators.ts": {
-    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },

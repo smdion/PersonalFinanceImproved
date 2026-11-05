@@ -2,64 +2,12 @@
 // Decoupled from Drizzle schema types — all numeric fields are `number`, not string.
 // Every result type includes `warnings: string[]` and every input includes `asOfDate: Date`.
 
-import type { ContributionAccountInput } from "./shared";
-
 export type * from "../paycheck/paycheck.types";
-
-// --- Budget ---
-
-type BudgetItemInput = {
-  category: string;
-  label: string;
-  amounts: number[];
-  isEssential: boolean;
-};
-
-export type BudgetInput = {
-  items: BudgetItemInput[];
-  columnLabels: string[];
-  selectedColumn: number; // index into columnLabels/amounts (0=Standard, 1=Tight, 2=Emergency)
-  asOfDate: Date;
-};
-
-export type BudgetResult = {
-  totalMonthly: number;
-  essentialTotal: number;
-  discretionaryTotal: number;
-  categories: {
-    name: string;
-    total: number;
-    items: { label: string; amount: number; isEssential: boolean }[];
-  }[];
-  warnings: string[];
-};
-
-// --- Contribution ---
-
-export type ContributionInput = {
-  annualSalary: number;
-  /** Total compensation (always includes bonus) — used as denominator for savings rates.
-   *  Falls back to annualSalary if not provided. */
-  totalCompensation?: number;
-  contributionAccounts: ContributionAccountInput[];
-  limits: Record<string, number>;
-  asOfDate: Date;
-};
-
-export type ContributionResult = {
-  groupRates: Record<string, number>; // includes employer match
-  groupRatesExMatch: Record<string, number>; // employee contributions only (no match)
-  totalAnnualContributions: number; // employee + employer
-  totalEmployeeOnly: number; // employee contributions only
-  accounts: {
-    name: string;
-    group: string;
-    annualContribution: number;
-    employerMatch: number;
-    percentOfSalary: number;
-  }[];
-  warnings: string[];
-};
+export type * from "../budget/budget.types";
+export type * from "../contributions/contribution.types";
+export type * from "../net-worth/net-worth.types";
+export type * from "../savings/savings.types";
+export type * from "../savings/efund.types";
 
 // --- Mortgage ---
 
@@ -178,95 +126,4 @@ export type MortgageResult = {
   monthsSavedByExtras: number;
   /** Total months saved vs. the original loan with no extras and no refinancing. */
   totalMonthsSaved: number;
-};
-
-// --- Net Worth ---
-
-export type NetWorthInput = {
-  portfolioTotal: number;
-  cash: number;
-  homeValueEstimated: number; // current market estimate (for NW+)
-  homeValueConservative: number; // purchase price + improvements (for NW-)
-  otherAssets: number;
-  mortgageBalance: number; // current amortized balance
-  otherLiabilities: number;
-  averageAge: number; // average of all people's ages (was: primary person only)
-  effectiveIncome: number; // combinedAgi, optionally 3yr averaged (was: annualSalary)
-  lifetimeEarnings: number; // cumulative AGI through this year
-  annualExpenses: number;
-  withdrawalRate: number; // e.g. 0.04 for the 4% rule — from retirement settings
-  asOfDate: Date;
-};
-
-export type NetWorthResult = {
-  netWorthMarket: number; // uses current market value for home
-  netWorthCostBasis: number; // uses purchase price + improvements for home
-  netWorth: number; // alias for netWorthMarket (primary display)
-  totalAssets: number;
-  totalLiabilities: number;
-  wealthScoreMarket: number; // netWorthMarket / lifetimeEarnings
-  wealthScoreCostBasis: number; // netWorthCostBasis / lifetimeEarnings
-  aawScoreMarket: number; // Money Guy formula using market NW
-  aawScoreCostBasis: number; // Money Guy formula using cost basis NW
-  fiProgress: number;
-  fiTarget: number;
-  warnings: string[];
-};
-
-// --- Savings ---
-
-export type SavingsGoalInput = {
-  id: number;
-  name: string;
-  currentBalance: number;
-  targetBalance: number;
-  allocationPercent: number; // share of the monthly savings pool
-  isEmergencyFund: boolean;
-  isActive: boolean;
-};
-
-export type SavingsInput = {
-  goals: SavingsGoalInput[];
-  monthlySavingsPool: number; // from budget — total available for savings
-  essentialMonthlyExpenses: number;
-  asOfDate: Date;
-};
-
-export type SavingsResult = {
-  efundMonthsCovered: number | null;
-  totalSaved: number;
-  goals: {
-    goalId: number;
-    name: string;
-    current: number;
-    target: number;
-    monthlyAllocation: number;
-    progress: number;
-    monthsToTarget: number | null;
-  }[];
-  warnings: string[];
-};
-
-// --- E-Fund ---
-
-export type EFundInput = {
-  emergencyFundBalance: number;
-  outstandingSelfLoans: number; // money owed back to the e-fund (subtracted from true balance, added in "with repay")
-  essentialMonthlyExpenses: number;
-  targetMonths: number; // user-configurable target (e.g. 4 months)
-  asOfDate: Date;
-};
-
-export type EFundResult = {
-  rawBalance: number; // current balance (before subtracting loans)
-  trueBalance: number; // balance minus outstanding self-loans
-  outstandingSelfLoans: number;
-  balanceWithRepay: number; // rawBalance + selfLoans (what you'd have once loans are repaid)
-  monthsCovered: number | null; // rawBalance / essentialExpenses ("Current Months")
-  monthsCoveredWithRepay: number | null; // balanceWithRepay / essentialExpenses ("Repaid Months")
-  targetMonths: number;
-  targetAmount: number; // targetMonths × essentialMonthlyExpenses
-  neededAfterRepay: number; // targetAmount - balanceWithRepay (negative = ahead of target)
-  progress: number; // monthsCoveredWithRepay / targetMonths
-  warnings: string[];
 };
