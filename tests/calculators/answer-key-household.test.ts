@@ -33,7 +33,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { cents, xfail } from "../fixtures/answer-key";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import { computePortfolioTotal } from "@/lib/pure/performance";

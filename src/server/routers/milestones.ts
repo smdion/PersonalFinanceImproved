@@ -12,7 +12,7 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { buildYearEndHistory } from "@/server/helpers";
-import { wealthFormulaIncome } from "@/lib/calculators/net-worth";
+import { wealthFormulaIncome } from "@/lib/pure/net-worth/net-worth";
 import {
   SK_EFUND_BUDGET_COLUMN,
   SK_HIGH_INCOME_THRESHOLD,

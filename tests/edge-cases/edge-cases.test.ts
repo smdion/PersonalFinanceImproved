@@ -14,7 +14,7 @@ import {
 import { calculateBudget } from "@/lib/calculators/budget";
 import { calculateContributions } from "@/lib/pure/contributions/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { MFJ_2C_BRACKETS, MFJ_TAXABLE_INCOME_BRACKETS } from "../pure/fixtures";
 import type {

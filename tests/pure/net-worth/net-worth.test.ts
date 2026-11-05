@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   calculateNetWorth,
   wealthFormulaIncome,
-} from "@/lib/calculators/net-worth";
+} from "@/lib/pure/net-worth/net-worth";
 import type { NetWorthInput } from "@/lib/pure/types/calculators";
-import { AS_OF_DATE } from "../pure/fixtures";
+import { AS_OF_DATE } from "../fixtures";
 
 describe("calculateNetWorth", () => {
   const input: NetWorthInput = {

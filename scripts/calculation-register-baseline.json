@@ -364,7 +364,6 @@
     "WDR-19"
   ],
   "exportsWithoutRow": [
-    "src/lib/calculators/net-worth.ts:wealthFormulaIncome",
     "src/lib/calculators/paycheck.ts:contribRemainingFraction",
     "src/lib/calculators/paycheck.ts:contribStepFraction",
     "src/lib/calculators/paycheck.ts:countPeriodsElapsed",
@@ -549,6 +548,7 @@
     "src/lib/pure/milestones.types.ts:parseMilestoneSettings",
     "src/lib/pure/milestones.types.ts:savingsTargetSourceSchema",
     "src/lib/pure/nest-egg-display.ts:baselineNestEgg",
+    "src/lib/pure/net-worth/net-worth.ts:wealthFormulaIncome",
     "src/lib/pure/paycheck-edit-target.ts:resolvePaycheckEditTarget",
     "src/lib/pure/paystub-check.ts:ledgrCheckFor",
     "src/lib/pure/paystub-check.ts:paystubCheckNumber",

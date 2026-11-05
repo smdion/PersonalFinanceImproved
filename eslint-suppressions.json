@@ -2956,14 +2956,6 @@
       "count": 3
     }
   },
-  "src/lib/calculators/net-worth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/paycheck.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -4524,6 +4516,14 @@
   "src/lib/pure/nest-egg-display.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
+    }
+  },
+  "src/lib/pure/net-worth/net-worth.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
     }
   },
   "src/lib/pure/paycheck-edit-target.ts": {

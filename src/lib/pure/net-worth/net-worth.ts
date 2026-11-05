@@ -28,12 +28,12 @@
  *
  * All division operations use safeDivide() to handle zero-income or zero-target edge cases.
  */
-import type { NetWorthInput, NetWorthResult } from "../pure/types/calculators";
-import { safeDivide } from "../utils/math";
+import type { NetWorthInput, NetWorthResult } from "../types/calculators";
+import { safeDivide } from "../../utils/math";
 import {
   WEALTH_FORMULA_AGE_CUTOFF,
   WEALTH_FORMULA_BASE_DENOMINATOR,
-} from "../constants";
+} from "../../constants";
 
 /**
  * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase

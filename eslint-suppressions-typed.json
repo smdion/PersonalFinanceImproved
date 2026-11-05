@@ -509,11 +509,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/net-worth.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
   "src/lib/calculators/paycheck.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 4
@@ -647,6 +642,11 @@
   "src/lib/pure/household-income.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/net-worth.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
     }
   },
   "src/lib/pure/retirement-bridge.ts": {
