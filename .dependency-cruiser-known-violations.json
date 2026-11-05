@@ -40,11 +40,6 @@
     "to": "src/lib/pure/engine/types/index.ts"
   },
   {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/utils/account-mapping.ts",
-    "to": "src/lib/db/schema.ts"
-  },
-  {
     "rule": "infra-below-server",
     "from": "src/lib/db/backfill-local-ids.ts",
     "to": "src/server/helpers/portfolio-labels.ts"

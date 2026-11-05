@@ -10,7 +10,21 @@
  * a UI breadcrumb.
  */
 
-import type { AccountMapping } from "@/lib/db/schema";
+import type { ApiSyncDirection } from "@/lib/config/enum-values";
+
+/** The fields of a stored sync mapping (the schema's `AccountMapping`) that
+ *  these rules read and set. Each function takes the caller's own mapping
+ *  type, so the schema's extra fields pass through. */
+type MappingFields = {
+  localId?: string;
+  remoteAccountId: string;
+  syncDirection: ApiSyncDirection;
+  assetId?: number;
+  loanId?: number;
+  loanMapType?: "propertyValue" | "loanBalance";
+  debtId?: number;
+  performanceAccountId?: number;
+};
 
 const PERFORMANCE_PREFIX = "performance:";
 const ASSET_PREFIX = "asset:";
@@ -22,7 +36,9 @@ const DEBT_PREFIX = "debt:";
  * If a typed field is already set, it wins (we never overwrite explicit data).
  * If `localId` is missing or unrecognized, the mapping is returned unchanged.
  */
-export function mappingWithTypedIds(mapping: AccountMapping): AccountMapping {
+export function mappingWithTypedIds<M extends MappingFields>(
+  mapping: M,
+): M & MappingFields {
   const localId = mapping.localId;
   if (!localId) return mapping;
 
@@ -78,7 +94,7 @@ export function isPullOnlyLocalId(localId: string): boolean {
   );
 }
 
-export type SyncDirection = AccountMapping["syncDirection"];
+export type SyncDirection = ApiSyncDirection;
 
 /**
  * The sync directions a mapping target allows — one rule per target.
@@ -96,8 +112,8 @@ export function allowedDirectionsForLocalId(localId: string): SyncDirection[] {
 
 /** Same rule for a stored mapping, also honouring its typed ID fields so a
  *  mapping missing its `localId` breadcrumb can't slip past. */
-export function allowedDirectionsForMapping(
-  m: AccountMapping,
+export function allowedDirectionsForMapping<M extends MappingFields>(
+  m: M,
 ): SyncDirection[] {
   if (m.performanceAccountId != null) return ["push"];
   if (m.debtId != null) return ["pull"];
@@ -105,7 +121,7 @@ export function allowedDirectionsForMapping(
 }
 
 /** Pulls the balance into Ledgr (pull or both). */
-export function isPullMapping(m: AccountMapping): boolean {
+export function isPullMapping<M extends MappingFields>(m: M): boolean {
   return m.syncDirection === "pull" || m.syncDirection === "both";
 }
 
@@ -114,7 +130,9 @@ export function isPullMapping(m: AccountMapping): boolean {
  * two pulled mappings on one remote account count it twice (say, as a
  * credit card and again as a debt). Each such remote id, once.
  */
-export function remotesPulledTwice(mappings: AccountMapping[]): string[] {
+export function remotesPulledTwice<M extends MappingFields>(
+  mappings: M[],
+): string[] {
   const seen = new Set<string>();
   const twice = new Set<string>();
   for (const m of mappings.filter(isPullMapping)) {
@@ -127,7 +145,7 @@ export function remotesPulledTwice(mappings: AccountMapping[]): string[] {
 /** The one Ledgr row a pulled balance is written into — a debt, a loan's
  *  balance or property value, an asset — or null for the Cash and Credit
  *  Card pseudo-accounts, which sum every account mapped to them. */
-function pulledTarget(m: AccountMapping): string | null {
+function pulledTarget(m: MappingFields): string | null {
   const t = mappingWithTypedIds(m);
   if (t.debtId != null) return `${DEBT_PREFIX}${t.debtId}`;
   if (t.loanId != null && t.loanMapType != null)
@@ -140,7 +158,9 @@ function pulledTarget(m: AccountMapping): string | null {
  * Ledgr rows two pulled mappings write into — each sync, the last one
  * written wins, silently. Each such target (its `localId` form), once.
  */
-export function localTargetsPulledTwice(mappings: AccountMapping[]): string[] {
+export function localTargetsPulledTwice<M extends MappingFields>(
+  mappings: M[],
+): string[] {
   const seen = new Set<string>();
   const twice = new Set<string>();
   for (const m of mappings.filter(isPullMapping)) {
@@ -153,9 +173,9 @@ export function localTargetsPulledTwice(mappings: AccountMapping[]): string[] {
 }
 
 /** Apply `mappingWithTypedIds` to every entry in an array. */
-export function mappingsWithTypedIds(
-  mappings: AccountMapping[],
-): AccountMapping[] {
+export function mappingsWithTypedIds<M extends MappingFields>(
+  mappings: M[],
+): (M & MappingFields)[] {
   return mappings.map(mappingWithTypedIds);
 }
 
