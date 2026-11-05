@@ -11,7 +11,7 @@ import type {
   MortgageWhatIf,
 } from "@/lib/pure/debts/mortgage.types";
 import { zDecimal } from "@/lib/utils/zod-fields";
-import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { dropMappingsTo } from "@/server/data/delete-references";
 import { firstRow } from "@/lib/utils/first-row";
 
 // --- CRUD Zod schemas ---

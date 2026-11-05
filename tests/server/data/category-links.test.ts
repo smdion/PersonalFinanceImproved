@@ -9,7 +9,7 @@
  * point of the budget_item_category_links / savings_goal_category_links
  * tables replacing the old columns.
  */
-import "./setup-mocks";
+import "../../helpers/setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   loadBudgetItemLinks,
@@ -19,8 +19,8 @@ import {
   setSavingsGoalLink,
   deleteSavingsGoalLink,
   copySavingsGoalLinks,
-} from "@/server/helpers/category-links";
-import { createTestDb, type TestDbContext } from "./db-harness";
+} from "@/server/data/category-links";
+import { createTestDb, type TestDbContext } from "../../helpers/db-harness";
 
 describe("category-links helpers", () => {
   let ctx: TestDbContext;

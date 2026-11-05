@@ -6,7 +6,7 @@
 import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { defaultHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
-import { getAllPeople } from "./people";
+import { getAllPeople } from "@/server/data/people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import {
   pickProfileSettingsRow,

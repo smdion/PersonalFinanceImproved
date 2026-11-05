@@ -3,7 +3,7 @@ import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import { eq, asc, sql, lt, isNull, and, ne, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -761,7 +761,7 @@ export const savingsRouter = createTRPCRouter({
       // non-API-synced goal already gets in projectGoalBalances.
       // Read-only display path — resolve against the currently active
       // service only (no cross-service ambiguity here; see
-      // src/server/helpers/category-links.ts).
+      // src/server/data/category-links.ts).
       const activeServiceForSummary = await getActiveBudgetApi(ctx.db);
       // Loaded for EVERY goal (not just active ones) — goalsForClient below
       // sends the full goals list to the client, and each goal's

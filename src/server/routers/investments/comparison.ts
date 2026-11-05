@@ -43,12 +43,12 @@ import {
   matchedMixRun,
 } from "@/lib/pure/contributions/matched-mix";
 import { toNumber } from "@/lib/utils/numbers";
-import { toFactRows } from "@/server/helpers/fund-facts";
+import { toFactRows } from "@/server/data/fund-facts";
 import {
   loadDailyPositions,
   loadEnteredPeriods,
   loadHoldingSplits,
-} from "./_shared";
+} from "@/server/data/investments";
 import type { Db } from "@/lib/db";
 
 /** Label of the matched-mix entry (key "matched_mix"). */

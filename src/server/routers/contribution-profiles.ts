@@ -22,7 +22,7 @@ import {
   loadCapHousehold,
   touchedContribAccounts,
 } from "@/server/helpers/contribution-caps";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";

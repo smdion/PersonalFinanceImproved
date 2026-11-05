@@ -10,7 +10,7 @@ import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isPreTaxTreatment, isTaxFree } from "@/lib/config/account-types";

@@ -9,7 +9,7 @@ import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

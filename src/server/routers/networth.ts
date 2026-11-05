@@ -1,6 +1,6 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary, plus portfolio snapshot CRUD (including budget-API pull/push side-effects). */
 import { calendarYear } from "@/lib/utils/date";
-import { loadTrackedAccountNames } from "@/server/helpers/account-names";
+import { loadTrackedAccountNames } from "@/server/data/account-names";
 import { eq, asc, desc, sql, gte, lte, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -27,7 +27,7 @@ import {
 } from "@/server/helpers";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import {
   refreshSnapshotYearDerivatives,
   pushSnapshotIfConfigured,

@@ -56,7 +56,7 @@ import {
   stopAtSimplefinQuota,
 } from "@/lib/simplefin/request-log";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
-import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
+import { loadLatestSubAccounts } from "@/server/data/sub-accounts";
 import { suggestLinks } from "@/lib/pure/sync/simplefin-link-suggestions";
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
 import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/sync/simplefin-feeds";

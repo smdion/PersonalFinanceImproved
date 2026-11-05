@@ -9,7 +9,7 @@ import {
   versionProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { settleFirstRunGate } from "@/server/helpers/first-run";
+import { settleFirstRunGate } from "@/server/data/first-run";
 import {
   createVersion,
   restoreVersion,

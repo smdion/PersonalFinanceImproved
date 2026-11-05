@@ -16,7 +16,7 @@ import { localDateStr } from "@/lib/utils/date";
 import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import {
   addPersonToRetirementProfile,
   lockFirstRetirementProfile,
@@ -35,7 +35,7 @@ import {
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal, zFraction } from "@/lib/utils/zod-fields";
-import { dropContributionActiveFields } from "@/server/helpers/delete-references";
+import { dropContributionActiveFields } from "@/server/data/delete-references";
 
 // --- Zod schemas ---
 

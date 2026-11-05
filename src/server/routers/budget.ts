@@ -663,7 +663,7 @@ export const budgetRouter = createTRPCRouter({
 
       // Read-only display path — resolve links for the currently active
       // service only (no cross-service ambiguity here; see
-      // src/server/helpers/category-links.ts).
+      // src/server/data/category-links.ts).
       const displayService = await getActiveBudgetApi(ctx.db);
       const displayItemLinks =
         displayService === "none"

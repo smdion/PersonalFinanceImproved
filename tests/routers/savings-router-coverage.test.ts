@@ -58,7 +58,7 @@ vi.mock("@/lib/budget-api", async (importOriginal) => {
  * Link a seeded savings goal to a service's category via the real
  * savings_goal_category_links table — the raw isApiSyncEnabled/
  * apiCategoryId/apiCategoryName/reimbursementApiCategoryId columns are dead
- * (see src/server/helpers/category-links.ts).
+ * (see src/server/data/category-links.ts).
  */
 function linkGoal(
   db: BetterSQLite3Database<typeof sqliteSchema>,

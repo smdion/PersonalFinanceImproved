@@ -7,7 +7,7 @@ import {
   investmentHealthIssues,
 } from "@/lib/pure/investments/investment-health";
 import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
-import { loadAccounts } from "./_shared";
+import { loadAccounts } from "@/server/data/investments";
 
 export const investmentHealthRouter = createTRPCRouter({
   /** Accounts whose holdings stopped arriving or don't add up to the balance. */

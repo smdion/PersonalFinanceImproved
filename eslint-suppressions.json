@@ -5346,6 +5346,60 @@
       "count": 4
     }
   },
+  "src/server/data/category-links.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/data/first-run.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/data/investments.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/data/lock-row.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/data/people.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/data/sub-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/server/helpers/api-balance-resolution.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5390,14 +5444,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 2
-    }
-  },
-  "src/server/helpers/category-links.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/helpers/contribution-caps.ts": {
@@ -5481,14 +5527,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/first-run.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/helpers/household-timezone.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5518,14 +5556,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 2
-    }
-  },
-  "src/server/helpers/people.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/helpers/performance-edit.ts": {
@@ -5626,25 +5656,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
-    }
-  },
-  "src/server/helpers/sub-accounts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/transaction-lock.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/local-admin-login.ts": {
@@ -5812,17 +5823,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
-    }
-  },
-  "src/server/routers/investments/_shared.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/investments/account-insights.ts": {

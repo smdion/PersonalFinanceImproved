@@ -22,8 +22,8 @@ import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/helpers/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
-import { loadBucketLinks, toFactRows } from "@/server/helpers/fund-facts";
-import { loadAccounts, loadLatestHoldings } from "./_shared";
+import { loadBucketLinks, toFactRows } from "@/server/data/fund-facts";
+import { loadAccounts, loadLatestHoldings } from "@/server/data/investments";
 import { SK_CURRENT_GLIDE_PATH } from "@/lib/constants/settings-keys";
 import {
   parseCurrentGlidePath,

@@ -7,7 +7,10 @@ import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { REDACTED_MEDICAL_DESCRIPTION } from "@/lib/simplefin/ingest";
 import { utcDayOf } from "@/lib/utils/date";
 import { INVESTMENT_TRANSACTION_KIND_LABELS } from "@/lib/config/display-labels";
-import { countedFeed, loadClassifiedTransactions } from "./_shared";
+import {
+  countedFeed,
+  loadClassifiedTransactions,
+} from "@/server/data/investments";
 
 /** Kinds worth showing as recent activity on the dashboard. */
 const ACTIVITY_KINDS = new Set([

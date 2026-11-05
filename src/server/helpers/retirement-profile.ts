@@ -20,7 +20,7 @@ import { projectionJobs } from "@/lib/pure/household/profiles";
 import { asc, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { lockForTransaction } from "./transaction-lock";
+import { lockForTransaction } from "@/server/data/lock-row";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import type { Db, DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";

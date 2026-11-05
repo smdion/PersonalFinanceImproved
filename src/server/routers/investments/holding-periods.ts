@@ -23,14 +23,14 @@ import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { getSecContact } from "@/lib/sec/connection";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { inferSecurityKind } from "@/lib/pure/sync/simplefin-holdings";
-import { loadTrackedAccountNames } from "@/server/helpers/account-names";
-import { toFactRows } from "@/server/helpers/fund-facts";
+import { loadTrackedAccountNames } from "@/server/data/account-names";
+import { toFactRows } from "@/server/data/fund-facts";
 import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   loadEnteredPeriods,
   loadHoldingSplits,
   loadObservedPeriods,
-} from "./_shared";
+} from "@/server/data/investments";
 import type { Db } from "@/lib/db";
 
 const PROBLEM_TEXT: Record<string, string> = {

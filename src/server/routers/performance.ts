@@ -24,7 +24,7 @@ import {
   resolvePersonYearIncome,
 } from "@/server/helpers";
 import { toNumber } from "@/lib/utils/numbers";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import {
   findActiveJob,
   canDeletePerformanceAccount,
@@ -193,7 +193,7 @@ export {
   sumAccounts,
   sumAnnualRows,
 } from "@/lib/pure/investments/returns";
-import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { dropMappingsTo } from "@/server/data/delete-references";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
 export type { AccountLike } from "@/lib/pure/investments/returns";

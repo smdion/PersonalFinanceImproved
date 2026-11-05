@@ -33,7 +33,7 @@ import {
   loadAccounts,
   loadClassifiedTransactions,
   loadFeedContext,
-} from "./_shared";
+} from "@/server/data/investments";
 import { savingsPace } from "@/lib/pure/savings/savings-pace";
 import { loadLiveContributions, toPaceInput } from "./live-contributions";
 import { loadPerformanceSuggestions, loadYearRows } from "./fills";

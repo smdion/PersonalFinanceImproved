@@ -26,7 +26,7 @@ import {
   loadFeedContext,
   loadLatestHoldings,
   loadBalanceHistory,
-} from "./_shared";
+} from "@/server/data/investments";
 import { valueHoldings } from "./holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({

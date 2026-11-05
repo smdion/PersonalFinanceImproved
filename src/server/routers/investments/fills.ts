@@ -11,7 +11,10 @@ import {
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
 import { toNumber } from "@/lib/utils/numbers";
-import { loadClassifiedTransactions, loadFeedContext } from "./_shared";
+import {
+  loadClassifiedTransactions,
+  loadFeedContext,
+} from "@/server/data/investments";
 import type { Db } from "@/lib/db";
 
 /** The year's transactions (voided ones too, so a fill can take them back out). */

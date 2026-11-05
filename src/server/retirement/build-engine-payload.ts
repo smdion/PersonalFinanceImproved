@@ -45,7 +45,7 @@ import {
 } from "@/server/helpers";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import {
   resolveRetirementProfileIdFrom,
   retirementProfileIsFallback,

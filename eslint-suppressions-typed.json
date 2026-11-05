@@ -714,6 +714,11 @@
       "count": 2
     }
   },
+  "src/server/data/investments.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
   "src/server/helpers/contribution.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 5
@@ -785,11 +790,6 @@
     }
   },
   "src/server/routers/historical.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/routers/investments/_shared.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

@@ -37,7 +37,7 @@ import {
 } from "@/server/helpers";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import {
   zSandboxSalaryEntries,

@@ -267,7 +267,7 @@
   {
     "rule": "server-pages-prefetch-only",
     "from": "src/app/login/page.tsx",
-    "to": "src/server/helpers/first-run.ts"
+    "to": "src/server/data/first-run.ts"
   },
   {
     "rule": "services-below-routers",

@@ -13,7 +13,7 @@ import {
   getEffectiveOtherLiabilities,
   isOpenDebt,
 } from "@/server/helpers/debts";
-import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { dropMappingsTo } from "@/server/data/delete-references";
 
 const zDate = z.string().refine(isCalendarDate, "Not a date (YYYY-MM-DD)");
 /** Annual rate as a fraction: 0 ≤ r < 1 (6.5% is 0.065, not 6.5). */

@@ -33,7 +33,7 @@ vi.mock("@/lib/db/version-logic", () => ({
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@/server/helpers/first-run", () => ({
+vi.mock("@/server/data/first-run", () => ({
   settleFirstRunGate: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -157,7 +157,7 @@ describe("/api/versions/import settles the first-admin gate", () => {
 
     const { POST } = await import("@/app/api/versions/import/route");
     const { importBackup } = await import("@/lib/db/version-logic");
-    const { settleFirstRunGate } = await import("@/server/helpers/first-run");
+    const { settleFirstRunGate } = await import("@/server/data/first-run");
     const body = new FormData();
     const backup = {
       schemaVersion: "0001",

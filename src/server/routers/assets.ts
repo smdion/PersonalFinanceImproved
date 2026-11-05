@@ -20,7 +20,7 @@ import {
   resolveOtherAssetsForYear,
   resolveCarryForwardAssetValue,
 } from "@/lib/pure/net-worth/historical";
-import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { dropMappingsTo } from "@/server/data/delete-references";
 
 export const assetsRouter = createTRPCRouter({
   /**

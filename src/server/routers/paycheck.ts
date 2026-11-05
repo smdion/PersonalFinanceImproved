@@ -41,7 +41,7 @@ import {
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
   zSandboxSalaryEntries,

@@ -6,7 +6,7 @@ import {
   loadAccounts,
   loadBalanceHistory,
   loadClassifiedTransactions,
-} from "./_shared";
+} from "@/server/data/investments";
 
 export const investmentBuyingRouter = createTRPCRouter({
   getBuyingMonths: portfolioProcedure.query(async ({ ctx }) => {

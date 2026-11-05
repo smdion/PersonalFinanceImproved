@@ -7,7 +7,7 @@ import "./setup-mocks";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { loadDailyPositions } from "@/server/routers/investments/_shared";
+import { loadDailyPositions } from "@/server/data/investments";
 import {
   createTestCaller,
   seedPerformanceAccount,

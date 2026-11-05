@@ -43,7 +43,7 @@ import {
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import {
   aggregateContributionsByCategory,
   type ContribRowWithActiveFields,

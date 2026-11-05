@@ -16,7 +16,7 @@ import { REDACTED_MEDICAL_DESCRIPTION } from "@/lib/simplefin/ingest";
 import {
   loadClassifiedTransactions,
   loadLatestHoldings,
-} from "@/server/routers/investments/_shared";
+} from "@/server/data/investments";
 
 const daysAgo = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10); // lint-violation-ok: test fixture dates, compared only to each other

@@ -7,7 +7,7 @@ import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { buildYearEndHistory } from "@/server/helpers";
 import { toNumber } from "@/lib/utils/numbers";
-import { getAllPeople } from "@/server/helpers/people";
+import { getAllPeople } from "@/server/data/people";
 import {
   loadEffectiveSalaryProfile,
   resolveCompensation,

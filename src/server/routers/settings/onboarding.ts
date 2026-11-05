@@ -10,8 +10,8 @@ import { hashPassword } from "@/lib/auth/password";
 import {
   checkOnboardingComplete,
   firstRunState,
-} from "@/server/helpers/first-run";
-import { lockForTransaction } from "@/server/helpers/transaction-lock";
+} from "@/server/data/first-run";
+import { lockForTransaction } from "@/server/data/lock-row";
 import { adoptFirstRetirementProfile } from "@/server/helpers/retirement-profile";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";

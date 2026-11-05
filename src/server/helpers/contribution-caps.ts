@@ -13,7 +13,7 @@ import {
   type CapPassed,
 } from "@/lib/pure/contributions/contribution-caps";
 import { TRPCError } from "@trpc/server";
-import { getAllPeople } from "./people";
+import { getAllPeople } from "@/server/data/people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
 import { accountDisplayName } from "@/lib/utils/format";
