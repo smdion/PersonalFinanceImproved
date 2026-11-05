@@ -63,28 +63,66 @@ describe("ci-changes.sh", () => {
   it("always tests the image on a pull request and a v* push", () => {
     const sha = commit("src/app/page.tsx");
     expect(run("pull_request", "refs/pull/1/merge", [sha])).toEqual([
+      "code=true",
       "image=true",
     ]);
-    expect(run("push", "refs/heads/v0.10.2", [sha])).toEqual(["image=true"]);
+    expect(run("push", "refs/heads/v0.10.2", [sha])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
   });
 
   it("on main, tests the image only when its inputs changed since the newest green ancestor", () => {
     const green = commit("src/app/a.tsx");
     commit("src/app/b.tsx");
-    expect(run("push", "refs/heads/main", [green])).toEqual(["image=false"]);
+    expect(run("push", "refs/heads/main", [green])).toEqual([
+      "code=true",
+      "image=false",
+    ]);
     commit("Dockerfile");
-    expect(run("push", "refs/heads/main", [green])).toEqual(["image=true"]);
+    expect(run("push", "refs/heads/main", [green])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
   });
 
   it("compares with the green ancestor, not the cancelled push before", () => {
     const green = commit("src/app/c.tsx");
     commit("pnpm-lock.yaml"); // its run was cancelled: never green
     commit("src/app/d.tsx");
-    expect(run("push", "refs/heads/main", [green])).toEqual(["image=true"]);
+    expect(run("push", "refs/heads/main", [green])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
+  });
+
+  it("skips the heavy steps and the image for a docs-only push", () => {
+    const green = commit("src/app/f.tsx");
+    commit("docs/OPS.md");
+    commit("README.md");
+    for (const ref of ["refs/heads/main", "refs/heads/v0.10.2"])
+      expect(run("push", ref, [green])).toEqual(["code=false", "image=false"]);
+    expect(run("pull_request", "refs/pull/1/merge", [green])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
+    commit("docs/CALCULATIONS.md");
+    expect(run("push", "refs/heads/v0.10.2", [green])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
+    commit("src/app/g.tsx");
+    expect(run("push", "refs/heads/v0.10.2", [green])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
   });
 
   it("tests everything with no green ancestor", () => {
     commit("src/app/e.tsx");
-    expect(run("push", "refs/heads/main", [])).toEqual(["image=true"]);
+    expect(run("push", "refs/heads/main", [])).toEqual([
+      "code=true",
+      "image=true",
+    ]);
   });
 });

@@ -21,7 +21,9 @@ concurrency:
 # `postgres` (PostgreSQL) are the aggregators; a job added here goes in
 # `ci`'s needs.
 jobs:
-  # What this run must test (scripts/ci-changes.sh).
+  # What this run must test (scripts/ci-changes.sh): `code` false for a
+  # docs-only push, when the other jobs skip their heavy steps (docs:verify
+  # and the register still run); `image` for the image job.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -29,6 +31,7 @@ jobs:
       contents: read
       actions: read
     outputs:
+      code: ${{ steps.changes.outputs.code }}
       image: ${{ steps.changes.outputs.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,6 +48,9 @@ jobs:
   # other quick ones.
   static:
     runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 15
     steps:
       # Full history: the ratchets, commit rules, layer rules and tax-data
@@ -75,17 +81,21 @@ jobs:
       # Layer rules: no new violation, and the known list only shrinks
       # (checked against main's copy).
       - name: Layer rules (dependency-cruiser)
+        if: env.RUN == 'true'
         run: pnpm check:layers --base origin/main
 
       - name: Size baseline (no file or recorded function grows)
+        if: env.RUN == 'true'
         run: pnpm check:file-size
 
       - name: Dead code (unused files, exports, dependencies)
+        if: env.RUN == 'true'
         run: pnpm check:dead-code
 
       # Production mode: an export only tests import is dead code too
       # (tag a deliberate test seam @internal).
       - name: Dead code, production (test imports don't count)
+        if: env.RUN == 'true'
         run: pnpm check:dead-code:production
 
       - name: Verify docs freshness
@@ -93,6 +103,7 @@ jobs:
 
       # The projection cache's engine version is a hash of the engine code.
       - name: Verify the engine hash is current
+        if: env.RUN == 'true'
         run: pnpm check:engine-hash
 
       # Every calculator, engine and lib/pure export has a row in
@@ -103,6 +114,7 @@ jobs:
         run: pnpm check:calculation-register
 
       - name: Check migrations
+        if: env.RUN == 'true'
         run: pnpm check:migrations
 
       # A missing tax year blocks only a change to the tax data or its
@@ -115,47 +127,64 @@ jobs:
 
   types:
     runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - name: Type-check
+        if: env.RUN == 'true'
         run: npx tsc --noEmit
 
       - name: Type-check tests
+        if: env.RUN == 'true'
         run: pnpm check:types-tests
 
       - name: Type-check scripts
+        if: env.RUN == 'true'
         run: pnpm check:types-scripts
 
   lint:
     runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - name: Lint
+        if: env.RUN == 'true'
         run: pnpm run lint
 
       - name: Lint, type-aware ratchet
+        if: env.RUN == 'true'
         run: pnpm lint:typed
 
   # The unit suite in six shards. Each writes a blob report with its
@@ -163,6 +192,9 @@ jobs:
   # (LEDGR_COVERAGE_SHARD keeps a shard from checking its part alone).
   unit:
     runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -172,20 +204,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - name: Unit tests, one shard, with coverage
+        if: env.RUN == 'true'
         run: pnpm test:coverage --shard=${{ matrix.shard }}/6 --reporter=blob --reporter=default
         env:
           LEDGR_COVERAGE_SHARD: "true"
 
       - name: Upload the shard's blob report
+        if: env.RUN == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: blob-report-${{ matrix.shard }}
@@ -196,21 +233,27 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    needs: [changes, unit]
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 10
-    needs: unit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        if: env.RUN == 'true'
         with:
           pattern: blob-report-*
           path: .vitest-reports
@@ -218,6 +261,7 @@ jobs:
 
       # The thresholds cover the engine and lib/pure (vitest.config.ts).
       - name: Coverage thresholds over the merged shards
+        if: env.RUN == 'true'
         run: pnpm test:coverage --merge-reports
 
   # By file, from the times measured on the test VM; the slowest file's
@@ -225,6 +269,9 @@ jobs:
   # goes in a group (tests/scripts/ci-test-files.test.ts checks).
   benchmarks:
     runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -249,41 +296,53 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - name: Benchmark tests, one group
+        if: env.RUN == 'true'
         run: pnpm test:benchmarks ${{ matrix.files }} --testNamePattern="$FILTER"
         env:
           FILTER: ${{ matrix.filter }}
 
   # Build → prerender check → bundle budgets → E2E, in Playwright's image
   # (browsers and their system libraries included, same version as
-  # @playwright/test).
+  # @playwright/test). A docs-only push runs on the bare runner instead (an
+  # empty image), so it doesn't pull the image to skip every step.
   e2e:
     runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
     timeout-minutes: 20
     container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
+      image: ${{ needs.changes.outputs.code == 'true' && 'mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f' || '' }}
       options: --ipc=host
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - name: Cache Next.js build
+        if: env.RUN == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .next/cache
@@ -295,6 +354,7 @@ jobs:
             nextjs-${{ runner.os }}-
 
       - name: Build
+        if: env.RUN == 'true'
         run: pnpm build
         env:
           DATABASE_URL: postgresql://build:build@localhost:5432/build
@@ -306,6 +366,7 @@ jobs:
       # database) must render per request: a prerendered one would ship
       # the build machine's answer. Built above with no Authentik issuer.
       - name: No prerendered sign-in or dashboard page
+        if: env.RUN == 'true'
         run: pnpm tsx scripts/check-prerender.ts
 
       # Blocking: each page's first-load JS (gzipped) against its budget,
@@ -313,11 +374,13 @@ jobs:
       # The report prints every page's measured size (and the budget block)
       # before the check, so a failing run shows what moved.
       - name: Check bundle size
+        if: env.RUN == 'true'
         run: |
           pnpm check:bundle --report
           pnpm check:bundle
 
       - name: E2E tests (SQLite + demo mode)
+        if: env.RUN == 'true'
         run: |
           cp -r .next/static .next/standalone/.next/static
           if [ -d public ]; then cp -r public .next/standalone/public; fi
@@ -348,7 +411,7 @@ jobs:
           ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
       - name: Upload Playwright report
-        if: failure()
+        if: env.RUN == 'true' && (failure())
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
@@ -356,7 +419,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload Playwright test results (screenshots, traces)
-        if: failure()
+        if: env.RUN == 'true' && (failure())
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-test-results
@@ -444,6 +507,7 @@ jobs:
   # own throwaway service database; every test step drops and rebuilds it.
   postgres-suites:
     runs-on: ubuntu-latest
+    needs: changes
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -451,6 +515,7 @@ jobs:
         part: [install, seeded-1, seeded-2, seeded-3, baseline]
 
     env:
+      RUN: ${{ needs.changes.outputs.code }}
       # Throwaway service database; not a secret.
       TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
       # A missing database fails the PostgreSQL tests instead of skipping them.
@@ -475,18 +540,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       # The service database starts empty. db-migrate.ts reads no .env:
       # the URL comes from the step's environment.
       - name: Migrations from empty on PostgreSQL
-        if: matrix.part == 'install'
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm db:migrate
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
@@ -496,27 +564,27 @@ jobs:
       # from empty, against scripts/constraints/<dialect>.txt (a migration
       # that drops one still applies cleanly).
       - name: Constraint snapshot on PostgreSQL
-        if: matrix.part == 'install'
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm check:constraints
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
       - name: Constraint snapshot on SQLite
-        if: matrix.part == 'install'
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm check:constraints
 
       - name: Demo profiles on PostgreSQL (DEMO_ONLY)
-        if: matrix.part == 'install'
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/routers/demo-postgres.test.ts
         env:
           DEMO_ONLY: "true"
 
       - name: Fresh install on PostgreSQL
-        if: matrix.part == 'install'
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/routers/fresh-install-postgres.test.ts
 
       - name: Seeded routers and backup round trip on PostgreSQL
-        if: startsWith(matrix.part, 'seeded-')
+        if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))
         run: pnpm test tests/routers/seeded-postgres.test.ts
         env:
           SEEDED_SHARD: ${{ matrix.part == 'seeded-1' && '1/3' || matrix.part == 'seeded-2' && '2/3' || '3/3' }}
@@ -524,7 +592,7 @@ jobs:
       # Behavior baseline part c: every router query for the 17 households
       # in tests/baseline/, compared with the files SQLite pins.
       - name: Router baseline on PostgreSQL (same numbers as SQLite)
-        if: matrix.part == 'baseline'
+        if: env.RUN == 'true' && (matrix.part == 'baseline')
         run: pnpm test tests/baseline/router-baseline-postgres.test.ts
 
   # The required check `PostgreSQL`: every part above succeeded.
