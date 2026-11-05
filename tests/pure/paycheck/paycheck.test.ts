@@ -13,16 +13,13 @@ import {
   periodsBeforeStart,
   checksPaidYtd,
   type SalarySegment,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 import type { ContributionAccountInput } from "@/lib/pure/types/shared";
 import type {
   PaycheckInput,
   PaycheckResult,
 } from "@/lib/pure/types/calculators";
-import {
-  PERSON_A_PAYCHECK_INPUT,
-  PERSON_B_PAYCHECK_INPUT,
-} from "../pure/fixtures";
+import { PERSON_A_PAYCHECK_INPUT, PERSON_B_PAYCHECK_INPUT } from "../fixtures";
 
 describe("Additional Medicare in the per-check figures", () => {
   const run = (annualSalary: number, medicareAdditionalRate: number) =>

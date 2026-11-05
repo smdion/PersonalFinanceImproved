@@ -25,9 +25,9 @@ import { eq } from "drizzle-orm";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetExtraPaycheckMonthKeys = vi.fn();
-vi.mock("@/lib/calculators/paycheck", async (importActual) => {
+vi.mock("@/lib/pure/paycheck/paycheck", async (importActual) => {
   const actual =
-    await importActual<typeof import("@/lib/calculators/paycheck")>();
+    await importActual<typeof import("@/lib/pure/paycheck/paycheck")>();
   return {
     ...actual,
     getExtraPaycheckMonthKeys: (...args: unknown[]) =>

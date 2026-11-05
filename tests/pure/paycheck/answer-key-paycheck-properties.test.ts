@@ -27,8 +27,8 @@ import {
   job,
   liabilityInput,
   limit,
-} from "../pure/fixtures/paycheck-answer-key";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+} from "../fixtures/paycheck-answer-key";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { PaycheckResult } from "@/lib/pure/types/calculators";
 import type { PayPeriodType } from "@/lib/pure/types/shared";

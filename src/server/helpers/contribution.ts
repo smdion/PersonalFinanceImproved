@@ -44,7 +44,7 @@ import {
 import {
   bonusCheckContribution,
   isPaidThroughPayroll,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 import { payrollFicaExemptCap } from "@/lib/pure/contributions";
 import {
   contributionPay,

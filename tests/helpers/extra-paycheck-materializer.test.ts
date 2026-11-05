@@ -21,7 +21,7 @@ import { eq } from "drizzle-orm";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetExtraPaycheckMonthKeys = vi.fn();
-vi.mock("@/lib/calculators/paycheck", () => ({
+vi.mock("@/lib/pure/paycheck/paycheck", () => ({
   getExtraPaycheckMonthKeys: (...args: unknown[]) =>
     mockGetExtraPaycheckMonthKeys(...args),
 }));

@@ -2929,26 +2929,6 @@
       "count": 3
     }
   },
-  "src/lib/calculators/paycheck.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 26
-    },
-    "ratchet/no-guarded-division": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
   "src/lib/client-address.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4626,6 +4606,26 @@
   },
   "src/lib/pure/paycheck-edit-target.ts": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 26
+    },
+    "ratchet/no-guarded-division": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    },
+    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },

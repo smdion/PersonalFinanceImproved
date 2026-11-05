@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PaystubCheck } from "@/components/paycheck/paystub-check";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import { ledgrCheckFor, type FicaRates } from "@/lib/pure/paystub-check";
 import { PERSON_A_PAYCHECK_INPUT } from "../pure/fixtures";
 

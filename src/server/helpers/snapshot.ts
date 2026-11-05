@@ -39,7 +39,10 @@ import {
   calculateNetWorth,
   wealthFormulaIncome,
 } from "@/lib/pure/net-worth/net-worth";
-import { checksPaidYtd, periodsBeforeStart } from "@/lib/calculators/paycheck";
+import {
+  checksPaidYtd,
+  periodsBeforeStart,
+} from "@/lib/pure/paycheck/paycheck";
 import type { NetWorthInput } from "@/lib/pure/types/calculators";
 import { payPeriodConfig } from "@/lib/config/pay-periods";
 import {

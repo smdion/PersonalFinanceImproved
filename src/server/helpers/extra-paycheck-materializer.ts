@@ -19,7 +19,7 @@ import type {
   ExtraPaycheckRoutingData,
   YearlyGrowthEntry,
 } from "@/lib/db/schema-pg";
-import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
+import { getExtraPaycheckMonthKeys } from "@/lib/pure/paycheck/paycheck";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { loadEffectiveSalaryProfile } from "./salary";
 import { localDateStr } from "@/lib/utils/date";

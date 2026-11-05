@@ -24,7 +24,7 @@ import type { YearlyGrowthEntry } from "@/lib/db/schema-pg";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { loadEffectiveSalaryProfile } from "./salary";
 import { localDateStr } from "@/lib/utils/date";

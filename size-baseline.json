@@ -93,7 +93,6 @@
     "src/lib/budget-api/actual-client.ts": 835,
     "src/lib/budget-api/ynab-client.ts": 540,
     "src/lib/calculators/mortgage.ts": 419,
-    "src/lib/calculators/paycheck.ts": 1381,
     "src/lib/config/account-types.ts": 860,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 779,
@@ -136,6 +135,7 @@
     "src/lib/pure/holding-periods.ts": 433,
     "src/lib/pure/milestone-input.ts": 674,
     "src/lib/pure/milestones.ts": 1705,
+    "src/lib/pure/paycheck/paycheck.ts": 1381,
     "src/lib/pure/paystub-check.ts": 459,
     "src/lib/pure/performance.ts": 599,
     "src/lib/pure/retirement/relocation.ts": 490,
@@ -154,7 +154,7 @@
     "src/server/helpers/contribution.ts": 1827,
     "src/server/helpers/projection-cache.ts": 221,
     "src/server/helpers/salary.ts": 503,
-    "src/server/helpers/snapshot.ts": 1212,
+    "src/server/helpers/snapshot.ts": 1215,
     "src/server/retirement/build-engine-payload.ts": 1415,
     "src/server/retirement/payload/profile-switches.ts": 506,
     "src/server/routers/assets.ts": 528,
@@ -741,9 +741,6 @@
     "src/components/validation-content.tsx": {
       "ValidationContent": 548
     },
-    "src/lib/calculators/paycheck.ts": {
-      "calculatePaycheck": 295
-    },
     "src/lib/db/backfill-perf-ids.ts": {
       "backfillPerformanceAccountIds": 160
     },
@@ -816,6 +813,9 @@
     },
     "src/lib/pure/milestone-input.ts": {
       "buildMilestoneInput": 218
+    },
+    "src/lib/pure/paycheck/paycheck.ts": {
+      "calculatePaycheck": 295
     },
     "src/lib/pure/paystub-check.ts": {
       "checkPaystub": 162

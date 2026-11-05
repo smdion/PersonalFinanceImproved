@@ -13,7 +13,7 @@ import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
 import { splitLineLabel } from "./deduction-row";
-import { isPreTax } from "@/lib/calculators/paycheck";
+import { isPreTax } from "@/lib/pure/paycheck/paycheck";
 import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";

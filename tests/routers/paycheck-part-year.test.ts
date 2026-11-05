@@ -13,7 +13,7 @@ import {
   householdWithheldSoFar,
   periodsBeforeStart,
   withheldThroughPeriod,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 
 const NOW = new Date("2026-08-14T12:00:00");
 const NEW_START = "2026-06-01";

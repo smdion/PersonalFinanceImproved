@@ -1144,7 +1144,7 @@ function findBroadCitationViolations(): Violation[] {
 // UTC-consistent, reviewed.
 const TZ_UNSAFE_DATE_EXEMPT = new Set<string>([
   "src/lib/utils/date.ts",
-  "src/lib/calculators/paycheck.ts",
+  "src/lib/pure/paycheck/paycheck.ts",
 ]);
 const TZ_UNSAFE_DATE_PATTERN =
   /\.toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*(?:10|7)\s*\)|\.toISOString\(\)\s*\.\s*split\(\s*["']T["']\s*\)\s*\[\s*0\s*\]|new Date\(\s*["']\d{4}-\d{2}-\d{2}["']\s*\)/;

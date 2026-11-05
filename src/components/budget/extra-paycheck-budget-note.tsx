@@ -18,7 +18,7 @@ import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 
 const HORIZON_MONTHS = 12;

@@ -3,7 +3,7 @@
  * paycheck calculator's result (fictional households).
  */
 import { describe, it, expect } from "vitest";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import {
   bonusSpendingNet,
   computeAnnualEarnings,

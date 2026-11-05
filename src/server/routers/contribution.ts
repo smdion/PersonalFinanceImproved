@@ -20,7 +20,7 @@ import {
   checksPaidYtd,
   bonusCheckContribution,
   isPaidThroughPayroll,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,

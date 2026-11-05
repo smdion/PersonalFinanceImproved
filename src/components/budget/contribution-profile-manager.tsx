@@ -4,7 +4,7 @@ import { isRothIraContribution } from "@/lib/pure/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
-import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
+import { takesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";

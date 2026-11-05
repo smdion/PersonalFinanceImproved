@@ -30,7 +30,7 @@
  * Not written: the probe's extra runs that aren't key rows (an HSA with
  * no coverage, N3 under the limit, a percent-of-pay N3, N2 biweekly at
  * $250,000, N5 weekly, a semimonthly June 15 bonus); the semimonthly split
- * at the 16th is pinned in `tests/calculators/paycheck.test.ts`.
+ * at the 16th is pinned in `tests/pure/paycheck/paycheck.test.ts`.
  *
  * The year-to-date panel (Y1) multiplies the average check by the checks
  * paid in the component (`annual-summary.tsx`); its figure is rebuilt
@@ -49,7 +49,7 @@ import {
   seedPerson,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
-import { withheldThroughPeriod } from "@/lib/calculators/paycheck";
+import { withheldThroughPeriod } from "@/lib/pure/paycheck/paycheck";
 import { cents, xfail } from "../fixtures/answer-key";
 
 vi.mock("@/lib/budget-api", () => ({

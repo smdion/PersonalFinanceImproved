@@ -10,7 +10,7 @@ import {
   type FicaRates,
   type PaystubLedgrCheck,
 } from "@/lib/pure/paystub-check";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import { PERSON_A_PAYCHECK_INPUT } from "./fixtures";
 import { PAYSTUB_MAX_LINES as MAX_LINES } from "@/lib/constants";
 

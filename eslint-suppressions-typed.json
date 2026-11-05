@@ -504,11 +504,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/paycheck.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 9
@@ -642,6 +637,11 @@
   "src/lib/pure/net-worth/snapshot-series.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
     }
   },
   "src/lib/pure/retirement-bridge.ts": {

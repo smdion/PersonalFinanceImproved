@@ -27,7 +27,7 @@ import {
   contribStepFraction,
   monthsDoneYtd,
   periodsElapsedYtd,
-} from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import {
   contributionPay,

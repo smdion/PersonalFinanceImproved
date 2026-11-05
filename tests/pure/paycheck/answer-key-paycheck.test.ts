@@ -48,15 +48,15 @@
  *   owner hasn't recorded, so only the year totals and January are held.
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
+import { cents, xfail } from "../../fixtures/answer-key";
 import {
   account,
   deduction,
   job,
   liabilityInput,
   limit,
-} from "../pure/fixtures/paycheck-answer-key";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+} from "../fixtures/paycheck-answer-key";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { computeAnnualEarnings } from "@/lib/pure/household-income";
 import type {

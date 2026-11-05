@@ -27,14 +27,14 @@ import type {
   BlendedAnnualTotals,
   PeriodBreakdown,
   BonusEstimate,
-} from "../pure/types/calculators";
-import type { DeductionLine } from "../pure/types/shared";
-import { formatCurrency, formatPercent } from "../utils/format";
-import { roundToCents, safeDivide, sumBy } from "../utils/math";
-import { MS_PER_DAY } from "../constants";
-import { PAY_PERIOD_LABELS } from "../config/display-labels";
-import { getPeriodsPerYear } from "../config/pay-periods";
-import { sumBracketTax } from "../pure/tax/tax-brackets";
+} from "../types/calculators";
+import type { DeductionLine } from "../types/shared";
+import { formatCurrency, formatPercent } from "../../utils/format";
+import { roundToCents, safeDivide, sumBy } from "../../utils/math";
+import { MS_PER_DAY } from "../../constants";
+import { PAY_PERIOD_LABELS } from "../../config/display-labels";
+import { getPeriodsPerYear } from "../../config/pay-periods";
+import { sumBracketTax } from "../tax/tax-brackets";
 
 /**
  * IRS annualized bracket lookup for federal withholding.

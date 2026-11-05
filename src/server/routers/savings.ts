@@ -19,7 +19,7 @@ import * as schema from "@/lib/db/schema";
 import { safeDivide } from "@/lib/utils/math";
 import { calculateSavings } from "@/lib/pure/savings/savings";
 import { calculateEFund } from "@/lib/pure/savings/efund";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import {
   computeMaxMonthlyFunding,
   deriveBudgetMonthlyTotal,

@@ -21,7 +21,7 @@
  * creation path at all.
  */
 
-import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormField, FormInput, FormSelect } from "@/components/forms";

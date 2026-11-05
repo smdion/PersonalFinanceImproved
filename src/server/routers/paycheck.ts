@@ -18,8 +18,8 @@ import {
   countPeriodsElapsed,
   calculateBlendedAnnual,
   withheldThroughPeriod,
-} from "@/lib/calculators/paycheck";
-import type { SalarySegment } from "@/lib/calculators/paycheck";
+} from "@/lib/pure/paycheck/paycheck";
+import type { SalarySegment } from "@/lib/pure/paycheck/paycheck";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import {
