@@ -30,7 +30,7 @@ import {
   nothingChanged,
   userMessageFor,
 } from "@/lib/budget-api/errors";
-import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
+import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
 import {
   getSimplefinConnection,
@@ -57,9 +57,9 @@ import {
 } from "@/lib/simplefin/request-log";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
-import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
+import { suggestLinks } from "@/lib/pure/sync/simplefin-link-suggestions";
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
-import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/simplefin-feeds";
+import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/sync/simplefin-feeds";
 import {
   applyLoanFeedBalances,
   clearLoanBalance,

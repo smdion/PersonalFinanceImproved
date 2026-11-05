@@ -22,7 +22,7 @@ import {
   reportCalendarDay,
   tradingDayOnOrBefore,
   valuationDateFor,
-} from "./market-calendar";
+} from "../market-calendar";
 
 /** Lags that balance patterns can tell apart. */
 const MAX_LAG = 1;

@@ -15,7 +15,7 @@ import {
 } from "@/server/helpers/apply-pull-mapping";
 import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
 import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
-import { countsInLiveBalance } from "@/lib/pure/simplefin-feeds";
+import { countsInLiveBalance } from "@/lib/pure/sync/simplefin-feeds";
 
 const loanInput = {
   name: "Example Loan",

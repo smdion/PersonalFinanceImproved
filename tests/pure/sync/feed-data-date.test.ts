@@ -4,7 +4,7 @@ import {
   learnReportLag,
   provenDataDay,
   laggedSession,
-} from "@/lib/pure/feed-data-date";
+} from "@/lib/pure/sync/feed-data-date";
 
 /** Reports at an Eastern hour, with a balance that steps at given days. */
 const et = (day: string, hour: number) =>

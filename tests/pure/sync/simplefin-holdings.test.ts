@@ -10,7 +10,7 @@ import {
   newestReportPerDay,
   planHoldingObservations,
   type HoldingInput,
-} from "@/lib/pure/simplefin-holdings";
+} from "@/lib/pure/sync/simplefin-holdings";
 
 const h = (
   symbol: string,

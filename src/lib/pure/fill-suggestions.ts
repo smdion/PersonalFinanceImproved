@@ -20,7 +20,7 @@ import {
   type FlowRow,
   type SubAccountRef,
 } from "./flow-suggestions";
-import { sentTransactions } from "./simplefin-feeds";
+import { sentTransactions } from "./sync/simplefin-feeds";
 import type { NewMoney } from "./net-worth/snapshot-suggestions";
 
 /** A classified transaction as the fills read it. */

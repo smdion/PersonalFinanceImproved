@@ -1,6 +1,6 @@
 /** Saved this year at today's setup. Invented figures only. */
 import { describe, it, expect } from "vitest";
-import { savingsPace } from "@/lib/pure/savings-pace";
+import { savingsPace } from "@/lib/pure/savings/savings-pace";
 
 // A $26,000-a-year setup, $6,000 of it still to come this year.
 const plan = { yearly: 26_000, remaining: 6_000 };

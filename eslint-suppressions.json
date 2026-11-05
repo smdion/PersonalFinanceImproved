@@ -4368,11 +4368,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/feed-data-date.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/lib/pure/filing-status.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4451,11 +4446,6 @@
   "src/lib/pure/household-timeline.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/lib/pure/internal-transfers.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/investment-income.ts": {
@@ -4848,19 +4838,6 @@
       "count": 8
     }
   },
-  "src/lib/pure/savings-pace.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/savings-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
   "src/lib/pure/savings/brokerage-goals.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
@@ -4883,12 +4860,30 @@
       "count": 1
     }
   },
+  "src/lib/pure/savings/internal-transfers.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/lib/pure/savings/savings-capacity.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 2
+    }
+  },
+  "src/lib/pure/savings/savings-pace.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings-projection.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
     }
   },
   "src/lib/pure/savings/savings.ts": {
@@ -4911,34 +4906,6 @@
     }
   },
   "src/lib/pure/sec-identity.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simplefin-feeds.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/simplefin-holdings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/simplefin-link-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simplefin-reconcile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simplefin-transactions.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4998,6 +4965,39 @@
   "src/lib/pure/stress-test.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
+    }
+  },
+  "src/lib/pure/sync/feed-data-date.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/sync/simplefin-feeds.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/sync/simplefin-holdings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/sync/simplefin-link-suggestions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/sync/simplefin-reconcile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/sync/simplefin-transactions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/lib/pure/tax-bucket-analysis.ts": {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { recommendationsFromDataSources } from "@/lib/pure/recommendations-data";
-import { evaluateDataSources } from "@/lib/pure/data-freshness";
+import { evaluateDataSources } from "@/lib/pure/sync/data-freshness";
 
 describe("Keep data current recommendations", () => {
   it("lists only the sources the freshness check flagged", () => {

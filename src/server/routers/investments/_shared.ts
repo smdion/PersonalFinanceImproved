@@ -14,7 +14,7 @@ import {
   max,
   sql,
 } from "drizzle-orm";
-import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
+import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { addDays, utcDayOf } from "@/lib/utils/date";
@@ -31,7 +31,7 @@ import {
   matchInternalTransfers,
   recordedMoveDeposits,
   type TransferMatch,
-} from "@/lib/pure/internal-transfers";
+} from "@/lib/pure/savings/internal-transfers";
 import {
   loadAccountPartHistory,
   loadLatestSubAccounts,
@@ -44,7 +44,7 @@ import {
   suggestSnapshotAmounts,
   type UnplacedFeed,
 } from "@/lib/pure/net-worth/snapshot-suggestions";
-import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import { countsAsFeed } from "@/lib/pure/sync/simplefin-feeds";
 import {
   accountSplits,
   deriveObservedPeriods,
@@ -86,7 +86,7 @@ type AccountInfo = {
 };
 
 /**
- * SQL form of countsAsFeed (lib/pure/simplefin-feeds.ts): linked to a
+ * SQL form of countsAsFeed (lib/pure/sync/simplefin-feeds.ts): linked to a
  * tracked account and included. Unchecked accounts are ignored everywhere.
  */
 export const countedFeed = and(

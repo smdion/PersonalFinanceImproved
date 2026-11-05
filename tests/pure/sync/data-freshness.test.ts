@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluateDataSources } from "@/lib/pure/data-freshness";
+import { evaluateDataSources } from "@/lib/pure/sync/data-freshness";
 
 const now = new Date("2026-06-15T12:00:00");
 const byKey = (inputs: Parameters<typeof evaluateDataSources>[0], at = now) =>

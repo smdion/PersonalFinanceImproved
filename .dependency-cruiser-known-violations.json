@@ -331,7 +331,7 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/savings-projection.ts",
+    "from": "src/lib/pure/savings/savings-projection.ts",
     "to": "src/components/savings/types.ts"
   },
   {

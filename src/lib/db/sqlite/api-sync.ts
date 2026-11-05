@@ -149,7 +149,7 @@ export const simplefinBalanceSnapshots = sqliteTable(
 // ── Investments data foundation (v0.8.5) ─────────────────────────────────
 // What SimpleFIN only keeps for 90 days (holdings, transactions) is stored
 // here as sent. Transaction classification is NOT stored — it is computed on
-// read by lib/pure/simplefin-transactions.ts from these inputs plus the
+// read by lib/pure/sync/simplefin-transactions.ts from these inputs plus the
 // built-in and user rules, so a rule change re-classifies history (RULES:
 // computed values are not stored). Only explicit overrides are stored.
 
@@ -366,7 +366,7 @@ export const holdingObservations = sqliteTable(
     balanceDate: integer("balance_date", { mode: "timestamp" }),
     /** The close assumed from balanceDate's time alone — no feed lag. The
      *  close the data really reflects is worked out on read
-     *  (lib/pure/feed-data-date.ts), since a feed's lag is learned. */
+     *  (lib/pure/sync/feed-data-date.ts), since a feed's lag is learned. */
     asOf: text("as_of").notNull(),
     shares: text("shares").notNull(),
     /** As reported — evidence only, never summed as a balance. */

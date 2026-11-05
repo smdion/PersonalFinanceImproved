@@ -13,7 +13,7 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { countsInLiveBalance } from "@/lib/pure/simplefin-feeds";
+import { countsInLiveBalance } from "@/lib/pure/sync/simplefin-feeds";
 import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import {

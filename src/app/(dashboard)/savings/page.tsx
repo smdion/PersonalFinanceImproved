@@ -23,7 +23,7 @@ import {
   buildSettledOccurrencesSet,
   computeDerivedPoolByYear,
   type PoolGrowthEarner,
-} from "@/lib/pure/savings-projection";
+} from "@/lib/pure/savings/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
 

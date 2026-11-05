@@ -1,6 +1,6 @@
 "use client";
 
-import { isGoalMet } from "@/lib/pure/savings-goal-met";
+import { isGoalMet } from "@/lib/pure/savings/savings-goal-met";
 import React, { useRef, useState } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";

@@ -18,9 +18,9 @@ import {
   hasInvestedHoldings,
   planHoldingObservations,
   securityIdentity,
-} from "@/lib/pure/simplefin-holdings";
-import { planReconcile } from "@/lib/pure/simplefin-reconcile";
-import { classifySimplefinTransaction } from "@/lib/pure/simplefin-transactions";
+} from "@/lib/pure/sync/simplefin-holdings";
+import { planReconcile } from "@/lib/pure/sync/simplefin-reconcile";
+import { classifySimplefinTransaction } from "@/lib/pure/sync/simplefin-transactions";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import { valuationDateFor } from "@/lib/pure/market-calendar";
 import { isHsaCategory } from "@/lib/config/account-types";

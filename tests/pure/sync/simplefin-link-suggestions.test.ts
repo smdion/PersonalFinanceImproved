@@ -4,7 +4,7 @@ import {
   sameInstitution,
   suggestLinks,
   type SubAccountCandidate,
-} from "@/lib/pure/simplefin-link-suggestions";
+} from "@/lib/pure/sync/simplefin-link-suggestions";
 
 const sub = (over: Partial<SubAccountCandidate>): SubAccountCandidate => ({
   performanceAccountId: 1,

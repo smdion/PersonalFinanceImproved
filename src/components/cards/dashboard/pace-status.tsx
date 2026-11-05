@@ -2,9 +2,9 @@
 
 /**
  * Whether money is actually going in as set up — the live status next to
- * each account on the Contributions card (see lib/pure/savings-pace).
+ * each account on the Contributions card (see lib/pure/savings/savings-pace).
  */
-import type { PaceStatus } from "@/lib/pure/savings-pace";
+import type { PaceStatus } from "@/lib/pure/savings/savings-pace";
 import type { LatestContribution } from "@/lib/pure/deposit-check";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 

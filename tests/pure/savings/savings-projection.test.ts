@@ -1,5 +1,5 @@
 /**
- * Tests for src/lib/pure/savings-projection.ts — the single source of
+ * Tests for src/lib/pure/savings/savings-projection.ts — the single source of
  * truth for "what will this goal's balance be N months from now."
  *
  * Highest-priority test gap identified by the audit (Pass 41): this module
@@ -22,7 +22,7 @@ import {
   computeDerivedPoolByYear,
   type ProjectionGoalInput,
   type PoolGrowthEarner,
-} from "@/lib/pure/savings-projection";
+} from "@/lib/pure/savings/savings-projection";
 import type { PlannedTransaction } from "@/components/savings/types";
 
 function makeGoal(

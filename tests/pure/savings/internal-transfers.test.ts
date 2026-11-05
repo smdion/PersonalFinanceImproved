@@ -4,7 +4,7 @@ import {
   recordedMoveDeposits,
   matchInternalTransfers,
   type TransferCandidate,
-} from "@/lib/pure/internal-transfers";
+} from "@/lib/pure/savings/internal-transfers";
 
 let next = 1;
 const row = (over: Partial<TransferCandidate>): TransferCandidate => ({

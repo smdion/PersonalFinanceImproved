@@ -4,7 +4,7 @@ import {
   planReconcile,
   type IncomingTransaction,
   type StoredTransaction,
-} from "@/lib/pure/simplefin-reconcile";
+} from "@/lib/pure/sync/simplefin-reconcile";
 
 const t = (
   externalId: string,

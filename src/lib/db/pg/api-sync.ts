@@ -153,7 +153,7 @@ export const simplefinBalanceSnapshots = pgTable(
 // ── Investments data foundation (v0.8.5) ─────────────────────────────────
 // What SimpleFIN only keeps for 90 days (holdings, transactions) is stored
 // here as sent. Transaction classification is NOT stored — it is computed on
-// read by lib/pure/simplefin-transactions.ts from these inputs plus the
+// read by lib/pure/sync/simplefin-transactions.ts from these inputs plus the
 // built-in and user rules, so a rule change re-classifies history (RULES:
 // computed values are not stored). Only explicit overrides are stored.
 
@@ -379,7 +379,7 @@ export const holdingObservations = pgTable(
     balanceDate: timestamp("balance_date", { withTimezone: true }),
     /** The close assumed from balanceDate's time alone — no feed lag. The
      *  close the data really reflects is worked out on read
-     *  (lib/pure/feed-data-date.ts), since a feed's lag is learned. */
+     *  (lib/pure/sync/feed-data-date.ts), since a feed's lag is learned. */
     asOf: date("as_of").notNull(),
     shares: decimal("shares", { precision: 20, scale: 8 }).notNull(),
     /** As reported — evidence only, never summed as a balance. */

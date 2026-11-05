@@ -3,7 +3,7 @@
 import React from "react";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { GoalProjection } from "./types";
-import { monthKey } from "@/lib/pure/savings-projection";
+import { monthKey } from "@/lib/pure/savings/savings-projection";
 
 interface FundTimelineDetailProps {
   projection: GoalProjection;

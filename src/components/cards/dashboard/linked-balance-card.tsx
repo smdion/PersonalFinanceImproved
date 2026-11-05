@@ -1,6 +1,6 @@
 "use client";
 
-import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import { countsAsFeed } from "@/lib/pure/sync/simplefin-feeds";
 import React, { memo, useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";

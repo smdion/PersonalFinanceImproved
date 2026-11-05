@@ -20,7 +20,7 @@ import { roundToCents } from "@/lib/utils/math";
 import type {
   LatestContribution,
   LatestContributionVerdict,
-} from "./deposit-check";
+} from "../deposit-check";
 
 export type PaceStatus =
   /** Saved the full year's plan already. */

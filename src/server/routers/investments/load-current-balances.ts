@@ -1,7 +1,7 @@
 /**
  * The Current Balances figures: the most accurate balance for each tracked
  * account (lib/pure/current-balances.ts), part by part, with the market day
- * each feed's data really is from (lib/pure/feed-data-date.ts). Reads only
+ * each feed's data really is from (lib/pure/sync/feed-data-date.ts). Reads only
  * — nothing here is written to a snapshot or to Performance.
  */
 import { and, asc, desc, eq, gte, isNotNull, isNull } from "drizzle-orm";
@@ -22,7 +22,7 @@ import {
   learnReportLag,
   provenDataDay,
   type DataDateBasis,
-} from "@/lib/pure/feed-data-date";
+} from "@/lib/pure/sync/feed-data-date";
 import {
   previousTradingDay,
   reportCalendarDay,

@@ -17,8 +17,8 @@ import {
 import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
-} from "@/lib/pure/simplefin-feeds";
-import type { PaceAccountInput } from "@/lib/pure/savings-pace";
+} from "@/lib/pure/sync/simplefin-feeds";
+import type { PaceAccountInput } from "@/lib/pure/savings/savings-pace";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toNumber } from "@/server/helpers/transforms";
@@ -198,7 +198,7 @@ export function liveYearToDate(c: LiveContribution): {
   };
 }
 
-/** The pace view of one account (lib/pure/savings-pace). */
+/** The pace view of one account (lib/pure/savings/savings-pace). */
 export function toPaceInput(c: LiveContribution): PaceAccountInput {
   return {
     performanceAccountId: c.performanceAccountId,

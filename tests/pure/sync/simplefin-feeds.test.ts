@@ -4,7 +4,7 @@ import {
   countsAsFeed,
   dailyEstimates,
   liveCoversAccount,
-} from "@/lib/pure/simplefin-feeds";
+} from "@/lib/pure/sync/simplefin-feeds";
 
 describe("countsAsFeed", () => {
   it("needs both a link and the checkbox", () => {

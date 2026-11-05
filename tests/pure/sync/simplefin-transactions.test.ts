@@ -3,7 +3,7 @@
  * invented examples in each institution's format — no real account data.
  */
 import { describe, it, expect } from "vitest";
-import { classifySimplefinTransaction } from "@/lib/pure/simplefin-transactions";
+import { classifySimplefinTransaction } from "@/lib/pure/sync/simplefin-transactions";
 
 const tx = (_iso: string, amount: number, description: string) => ({
   amount,

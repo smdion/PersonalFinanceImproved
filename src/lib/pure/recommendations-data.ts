@@ -1,9 +1,9 @@
 /**
  * "Keep data current" recommendations — the data sources the freshness
- * check already flagged (lib/pure/data-freshness.ts). Only maps fields: no
+ * check already flagged (lib/pure/sync/data-freshness.ts). Only maps fields: no
  * new staleness rule.
  */
-import type { DataSourceStatus } from "@/lib/pure/data-freshness";
+import type { DataSourceStatus } from "@/lib/pure/sync/data-freshness";
 import type { Recommendation } from "@/lib/pure/recommendations";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/filing-status";

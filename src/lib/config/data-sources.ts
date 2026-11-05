@@ -5,7 +5,7 @@
  * failed — a yearly source is not "stale" for 11 months of the year.
  *
  * Adding a source = one entry here plus its input in
- * `lib/pure/data-freshness.ts`'s `DataSourceInputs`.
+ * `lib/pure/sync/data-freshness.ts`'s `DataSourceInputs`.
  */
 
 import type { Focus } from "./focus-topics";

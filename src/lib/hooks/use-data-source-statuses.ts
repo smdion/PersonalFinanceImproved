@@ -10,7 +10,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import {
   evaluateDataSources,
   type DataSourceStatus,
-} from "@/lib/pure/data-freshness";
+} from "@/lib/pure/sync/data-freshness";
 import { localDateStr } from "@/lib/utils/date";
 
 /** A sync time as ISO text — tRPC sends Dates as strings at runtime even

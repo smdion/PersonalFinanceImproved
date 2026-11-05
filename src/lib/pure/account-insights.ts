@@ -14,7 +14,7 @@ import {
 import { checkDeposits } from "./deposit-check";
 import { suggestCostBasis, type CostHolding } from "./cost-basis";
 import { accountFlowsSince, type FlowRow } from "./net-worth/snapshot-flows";
-import { liveCoversAccount } from "./simplefin-feeds";
+import { liveCoversAccount } from "./sync/simplefin-feeds";
 import type { UnplacedFeed } from "./net-worth/snapshot-suggestions";
 
 type InsightFeed = {

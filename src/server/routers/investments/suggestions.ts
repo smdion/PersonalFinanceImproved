@@ -24,7 +24,7 @@ import {
 import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
-} from "@/lib/pure/simplefin-feeds";
+} from "@/lib/pure/sync/simplefin-feeds";
 import { suggestSnapshotAmounts } from "@/lib/pure/net-worth/snapshot-suggestions";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
@@ -34,7 +34,7 @@ import {
   loadClassifiedTransactions,
   loadFeedContext,
 } from "./_shared";
-import { savingsPace } from "@/lib/pure/savings-pace";
+import { savingsPace } from "@/lib/pure/savings/savings-pace";
 import { loadLiveContributions, toPaceInput } from "./live-contributions";
 import { loadPerformanceSuggestions, loadYearRows } from "./fills";
 

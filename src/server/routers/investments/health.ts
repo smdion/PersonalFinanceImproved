@@ -6,7 +6,7 @@ import {
   holdingsGapSince,
   investmentHealthIssues,
 } from "@/lib/pure/investment-health";
-import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
+import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import { loadAccounts } from "./_shared";
 
 export const investmentHealthRouter = createTRPCRouter({
