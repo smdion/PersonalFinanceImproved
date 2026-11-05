@@ -150,6 +150,29 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     }
   }, 300_000);
 
+  it("each profile's demo schema fills every data table but the listed empty ones", async () => {
+    // The SQLite guard (tests/demo/demo-completeness.test.ts) on the real
+    // demo path, for the tables: the same list and the same empty cases.
+    const { DEMO_PROFILES } = await import("@/lib/demo");
+    const { DEMO_DATA_TABLES, expectedEmptyTables } =
+      await import("../demo/demo-tables");
+    for (const profile of Object.values(DEMO_PROFILES)) {
+      const { schemaName: demo } = await (
+        await callerFor(null)
+      ).demo.activateProfile({ slug: profile.slug });
+      const empty: string[] = [];
+      for (const table of DEMO_DATA_TABLES) {
+        const { rows } = await admin.query<{ filled: boolean }>(
+          `SELECT EXISTS (SELECT 1 FROM "${demo}"."${table}") AS filled`,
+        );
+        if (!rows[0]!.filled) empty.push(table);
+      }
+      expect
+        .soft(empty.sort(), profile.slug)
+        .toEqual(expectedEmptyTables(profile.slug, DEMO_DATA_TABLES));
+    }
+  }, 300_000);
+
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
     await expect(
