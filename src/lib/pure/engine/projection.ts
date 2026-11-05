@@ -59,22 +59,21 @@ function validateEngineInputs(
   // routing draws from) and the individual accounts must describe the same
   // money: a gap is counted as retirement money the router may never
   // reach, which moves withdrawals, depletion and the plan's verdict.
-  if (input.startingAccountBalances) {
-    const byBucket = emptyTaxBucketMap();
-    for (const bal of Object.values(input.startingAccountBalances)) {
-      if (bal.structure === "roth_traditional") {
-        byBucket.preTax += bal.traditional;
-        byBucket.taxFree += bal.roth;
-      } else if (bal.structure === "single_bucket") byBucket.hsa += bal.balance;
-      else byBucket.afterTax += bal.balance;
-    }
-    for (const [key, sum] of Object.entries(byBucket)) {
-      const start = input.startingBalances[key as keyof typeof byBucket];
-      if (Math.abs(sum - start) > 1)
-        warnings.push(
-          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the account categories hold $${sum.toFixed(2)}`,
-        );
-    }
+  const categoryTotals = emptyTaxBucketMap();
+  for (const bal of Object.values(input.startingAccountBalances)) {
+    if (bal.structure === "roth_traditional") {
+      categoryTotals.preTax += bal.traditional;
+      categoryTotals.taxFree += bal.roth;
+    } else if (bal.structure === "single_bucket")
+      categoryTotals.hsa += bal.balance;
+    else categoryTotals.afterTax += bal.balance;
+  }
+  for (const [key, sum] of Object.entries(categoryTotals)) {
+    const start = input.startingBalances[key as keyof typeof categoryTotals];
+    if (Math.abs(sum - start) > 1)
+      warnings.push(
+        `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the account categories hold $${sum.toFixed(2)}`,
+      );
   }
   if (input.individualAccounts?.length) {
     const byBucket = emptyTaxBucketMap();

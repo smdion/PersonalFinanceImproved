@@ -8,10 +8,7 @@ import type {
   TaxBuckets,
 } from "../../accounts/account-balances.types";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
-import {
-  accountBalancesFromTaxBuckets,
-  cloneAccountBalances,
-} from "../balance-utils";
+import { cloneAccountBalances } from "../balance-utils";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { initialCrossYearState } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
@@ -45,9 +42,9 @@ export function buildProjectionState(
 
   // Running balances -- AccountBalances is the source of truth;
   // TaxBuckets is derived for backward compatibility.
-  const acctBal: AccountBalances = input.startingAccountBalances
-    ? cloneAccountBalances(input.startingAccountBalances)
-    : accountBalancesFromTaxBuckets(input.startingBalances);
+  const acctBal: AccountBalances = cloneAccountBalances(
+    input.startingAccountBalances,
+  );
   const balances: TaxBuckets = { ...input.startingBalances };
 
   // RMD tracking: prior year-end Traditional balance (used to compute RMD for current year)

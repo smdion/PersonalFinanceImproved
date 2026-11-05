@@ -50,7 +50,9 @@ export function scopedBalances(
   };
 }
 
-/** Derive AccountBalances from TaxBuckets using a config-derived split (fallback). */
+/** Derive AccountBalances from TaxBuckets using a config-derived split.
+ *  @public — test fixtures only: the engine input carries
+ *  startingAccountBalances, so no src path calls it. */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
   // Without real per-account data, split preTax/taxFree proportionally across
   // limit groups that contain roth_traditional categories. Weights are derived

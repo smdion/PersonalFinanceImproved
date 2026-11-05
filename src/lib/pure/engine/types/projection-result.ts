@@ -210,10 +210,9 @@ export type ProjectionInput = {
   // --- Starting balances (for decumulation projection) ---
   /** Starting portfolio balances per tax bucket (includes afterTaxBasis for cost basis tracking). */
   startingBalances: TaxBuckets;
-  /** Per-account starting balances (401k/IRA split). When provided, the engine
-   *  tracks per-account balances through both phases instead of using a heuristic
-   *  70/30 split during decumulation. Built from portfolio_accounts snapshot. */
-  startingAccountBalances?: AccountBalances;
+  /** Per-account starting balances (401k/IRA split), tracked through both
+   *  phases. Built from portfolio_accounts snapshot. */
+  startingAccountBalances: AccountBalances;
 
   /** Individual account starting balances from portfolio snapshot.
    *  When provided, the engine tracks each named account separately through

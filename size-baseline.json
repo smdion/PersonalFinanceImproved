@@ -130,7 +130,7 @@
     "src/lib/pure/engine/types/accumulation.ts": 163,
     "src/lib/pure/engine/types/contribution-spec.ts": 96,
     "src/lib/pure/engine/types/decumulation.ts": 396,
-    "src/lib/pure/engine/types/projection-result.ts": 721,
+    "src/lib/pure/engine/types/projection-result.ts": 720,
     "src/lib/pure/engine/types/routing.ts": 136,
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 492,
     "src/lib/pure/engine/withdrawal-routing.ts": 1435,
