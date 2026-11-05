@@ -1212,7 +1212,7 @@ describe("each retirement profile stands alone", () => {
 
   it("the planned retirement year never comes from another profile's row", async () => {
     const { householdRetirementYear } =
-      await import("@/server/helpers/retirement-profile");
+      await import("@/server/services/profiles/retirement-year");
     expect(await householdRetirementYear(appDb)).toBeNull();
   });
 });

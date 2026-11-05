@@ -25,7 +25,7 @@ import {
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "./settings/paycheck";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { adoptFirstRetirementProfile } from "../helpers/retirement-profile";
+import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 
 /** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
 const DEMO_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;

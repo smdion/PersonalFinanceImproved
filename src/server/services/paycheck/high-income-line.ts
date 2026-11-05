@@ -11,7 +11,7 @@ import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import {
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
-} from "@/server/helpers/retirement-profile";
+} from "@/lib/pure/household/retirement-profile";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import type { Db } from "@/lib/db";
 

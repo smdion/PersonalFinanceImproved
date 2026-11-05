@@ -4699,6 +4699,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/household/retirement-profile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
   "src/lib/pure/investments/account-insights.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5520,14 +5525,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/retirement-profile.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
   "src/server/local-admin-login.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -6331,6 +6328,14 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/server/services/profiles/first-retirement-profile.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   },
   "src/server/services/profiles/plans.ts": {

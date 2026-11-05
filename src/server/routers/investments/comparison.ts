@@ -11,7 +11,7 @@ import {
   BUCKET_INDEX_PROXIES,
   resolveBenchmark,
 } from "@/lib/config/benchmarks";
-import { householdRetirementYear } from "@/server/helpers/retirement-profile";
+import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
   firstRealYear,
   runBenchmark,

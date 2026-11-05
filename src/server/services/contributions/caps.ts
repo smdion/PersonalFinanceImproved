@@ -17,8 +17,8 @@ import * as schema from "@/lib/db/schema";
 import {
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
-  householdRetirementYear,
-} from "@/server/helpers/retirement-profile";
+} from "@/lib/pure/household/retirement-profile";
+import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
   type SalaryProfileActiveMap,
   mergeSalaryProfileJobFields,

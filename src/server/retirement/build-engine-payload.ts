@@ -50,7 +50,7 @@ import {
   resolveRetirementProfileIdFrom,
   retirementProfileIsFallback,
   pickProfileSettingsRow,
-} from "@/server/helpers/retirement-profile";
+} from "@/lib/pure/household/retirement-profile";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAllCategories,

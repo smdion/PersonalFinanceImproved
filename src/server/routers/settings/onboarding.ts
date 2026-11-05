@@ -12,7 +12,7 @@ import {
   firstRunState,
 } from "@/server/data/first-run";
 import { lockForTransaction } from "@/server/data/lock-row";
-import { adoptFirstRetirementProfile } from "@/server/helpers/retirement-profile";
+import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
 

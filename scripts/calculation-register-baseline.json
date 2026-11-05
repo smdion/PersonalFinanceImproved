@@ -549,6 +549,8 @@
     "src/lib/pure/household/raise-history.ts:meetsRaiseRule",
     "src/lib/pure/household/raise-history.ts:raiseHistory",
     "src/lib/pure/household/raise-rates.ts:annualRaiseLabel",
+    "src/lib/pure/household/retirement-profile.ts:resolveRetirementProfileIdFrom",
+    "src/lib/pure/household/retirement-profile.ts:retirementProfileIsFallback",
     "src/lib/pure/investments/account-insights.ts:accountInsight",
     "src/lib/pure/investments/always-buying.ts:downYears",
     "src/lib/pure/investments/always-buying.ts:recentCoveredMonths",

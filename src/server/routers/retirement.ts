@@ -1,5 +1,5 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
-import { householdRetirementYear } from "@/server/helpers/retirement-profile";
+import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
   capResolvedProfile,
   loadCapHousehold,
@@ -64,10 +64,12 @@ import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
-  resolveRetirementProfileId,
+} from "@/lib/pure/household/retirement-profile";
+import { resolveRetirementProfileId } from "@/server/data/retirement-profiles";
+import {
   adoptFirstRetirementProfile,
   lockFirstRetirementProfile,
-} from "@/server/helpers/retirement-profile";
+} from "@/server/services/profiles/first-retirement-profile";
 import type { Db } from "@/lib/db";
 
 // --- CRUD Zod schemas ---

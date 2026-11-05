@@ -512,7 +512,7 @@ the active profiles, and an edit to a profile field saves to the profile it
 belongs to.
 
 **The first Retirement profile** is "Current Retirement", made once by
-`adoptFirstRetirementProfile` (`server/helpers/retirement-profile.ts`) from
+`adoptFirstRetirementProfile` (`server/services/profiles/first-retirement-profile.ts`) from
 the household's first saved retirement settings: on the first
 `retirementSettings.upsert` with no profile, on `completeOnboarding`, and by
 the demo seed. It takes every settings row with no profile, adds everyone

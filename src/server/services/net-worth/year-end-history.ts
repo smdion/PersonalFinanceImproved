@@ -8,7 +8,7 @@ import { getAllPeople } from "@/server/data/people";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
-} from "@/server/helpers/retirement-profile";
+} from "@/lib/pure/household/retirement-profile";
 import { safeDivide } from "@/lib/utils/math";
 import {
   parseLocalDateOnly,

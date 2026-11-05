@@ -20,7 +20,7 @@ import { getAllPeople } from "@/server/data/people";
 import {
   addPersonToRetirementProfile,
   lockFirstRetirementProfile,
-} from "@/server/helpers/retirement-profile";
+} from "@/server/services/profiles/first-retirement-profile";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
