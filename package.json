@@ -43,6 +43,8 @@
     "check:types-scripts": "tsc -p tsconfig.scripts.json",
     "check:known-diffs": "tsx scripts/check-known-diffs.ts",
     "gate": "bash scripts/gate.sh",
+    "check:batch": "bash scripts/check-batch.sh",
+    "check:release": "bash scripts/check-release.sh",
     "release": "bash scripts/release.sh",
     "deploy": "bash scripts/deploy.sh",
     "analyze": "ANALYZE=true pnpm build",
