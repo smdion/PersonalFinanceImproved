@@ -233,7 +233,7 @@ export const scenariosRouter = createTRPCRouter({
       // warnings. Implementation lives in accumulation-order.ts and projection-run.ts.
       const accumulationOrder = buildAccumulationOrder(activeContribs);
       const currentStockAllocationPercent =
-        await computeCurrentStockAllocationPercent(ctx.db, age);
+        computeCurrentStockAllocationPercent(data, age);
       // portfolioAccountLabel wants id → name, for the contributionSpecs
       // perf-account-label fallback below.
       const nameMap = new Map(people.map((p) => [p.id, p.name] as const));

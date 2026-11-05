@@ -7,13 +7,10 @@ import {
   buildEnginePayload,
   fetchRetirementData,
 } from "@/server/services/projection/engine-payload/build-engine-payload";
-import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   stockShareByAge,
   classifyAssetClasses,
 } from "@/lib/pure/simulation/stock-share";
-import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
 
 /**
@@ -44,17 +41,16 @@ export async function prepareProjectionRun(
  * Null when there's no glide path or no class is mapped to buckets, so the
  * PlanHealthCard skips the glide-path warning.
  */
-export async function computeCurrentStockAllocationPercent(
-  db: Db,
+export function computeCurrentStockAllocationPercent(
+  data: Pick<
+    Awaited<ReturnType<typeof fetchRetirementData>>,
+    "defaultPreset" | "classBucketRows"
+  >,
   currentAge: number,
-): Promise<number | null> {
-  const [preset, bucketRows] = await Promise.all([
-    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
-    db.select().from(schema.assetClassBuckets),
-  ]);
+): number | null {
   const share = stockShareByAge(
-    preset.glidePath,
-    classifyAssetClasses(bucketRows),
+    data.defaultPreset.glidePath,
+    classifyAssetClasses(data.classBucketRows),
     currentAge,
     currentAge,
   )?.[Math.floor(currentAge)];

@@ -9,12 +9,17 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
     const { createTestCaller } = await import("../../../routers/setup");
     const { computeCurrentStockAllocationPercent } =
       await import("@/server/services/projection/projection-run");
+    const { fetchRetirementData } =
+      await import("@/server/services/projection/engine-payload/build-engine-payload");
     const sqlite = await import("@/lib/db/schema-sqlite");
     const { db, cleanup } = await createTestCaller();
     try {
       clearSimulationPresets(db);
       expect(
-        await computeCurrentStockAllocationPercent(db as never, 35),
+        computeCurrentStockAllocationPercent(
+          await fetchRetirementData(db as never),
+          35,
+        ),
       ).toBeNull();
       const cls = (name: string) =>
         db
@@ -35,7 +40,10 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
       db.delete(sqlite.assetClassBuckets).run();
       // Nothing mapped: unknown, not "all bonds".
       expect(
-        await computeCurrentStockAllocationPercent(db as never, 35),
+        computeCurrentStockAllocationPercent(
+          await fetchRetirementData(db as never),
+          35,
+        ),
       ).toBeNull();
       db.insert(sqlite.assetClassBuckets)
         .values([
@@ -44,7 +52,10 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
         ])
         .run();
       expect(
-        await computeCurrentStockAllocationPercent(db as never, 35),
+        computeCurrentStockAllocationPercent(
+          await fetchRetirementData(db as never),
+          35,
+        ),
       ).toBeCloseTo(60, 1);
     } finally {
       cleanup();
