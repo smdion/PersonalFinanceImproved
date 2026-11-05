@@ -343,6 +343,63 @@ describe("computeViewAwareTotals", () => {
 });
 
 describe("validateContributionOrder (M1 — CFP heuristic)", () => {
+  const overflowWarn = (cat: string, position: number) => ({
+    severity: "warn",
+    category: cat,
+    position,
+    message:
+      `${cat} (tax-advantaged) appears after brokerage in your contribution ` +
+      "order. Most CFP guidance recommends filling tax-advantaged accounts " +
+      "before taxable / brokerage to maximize tax savings. Move " +
+      `${cat} earlier in the list, or document why your situation differs.`,
+  });
+
+  it("returns every warning in order, the HSA one word for word", () => {
+    expect(validateContributionOrder(["brokerage", "401k", "hsa"])).toEqual([
+      overflowWarn("401k", 1),
+      overflowWarn("hsa", 2),
+      {
+        severity: "info",
+        category: "hsa",
+        position: 2,
+        message:
+          "HSA appears after another tax-advantaged account in your order. " +
+          "HSAs have the best tax treatment of any account type (triple " +
+          "tax-advantaged: pre-tax in, tax-free growth, tax-free out for " +
+          "qualified medical expenses). Consider moving HSA earlier.",
+      },
+    ]);
+  });
+
+  it("without HSA, only the overflow warning", () => {
+    expect(validateContributionOrder(["401k", "brokerage", "ira"])).toEqual([
+      expect.objectContaining({ severity: "warn", category: "ira" }),
+    ]);
+  });
+
+  it("HSA alone or first draws no HSA warning", () => {
+    expect(validateContributionOrder(["hsa"])).toEqual([]);
+    expect(validateContributionOrder(["hsa", "brokerage", "401k"])).toEqual([
+      overflowWarn("401k", 2),
+    ]);
+  });
+
+  it("an unknown category before HSA is not a tax-advantaged one", () => {
+    expect(validateContributionOrder(["crypto", "hsa"])).toEqual([
+      expect.objectContaining({ severity: "warn", category: "hsa" }),
+    ]);
+  });
+
+  it("a repeated HSA is judged at its first place", () => {
+    expect(validateContributionOrder(["401k", "hsa", "hsa"])).toEqual([
+      expect.objectContaining({
+        severity: "info",
+        category: "hsa",
+        position: 1,
+      }),
+    ]);
+  });
+
   it("returns no warnings for an empty order", () => {
     expect(validateContributionOrder([])).toEqual([]);
   });

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getLtcgRate,
   ltcgRateForNextDollar,
+  computeLtcgTax,
   ltcgRoomForRate,
   toLtcgTaxableIncome,
 } from "@/lib/pure/tax/ltcg";
@@ -16,6 +17,15 @@ const LTCG = shippedTaxTables(2026).ltcgBrackets;
 describe("toLtcgTaxableIncome", () => {
   it("subtracts the standard deduction from gross ordinary income", () => {
     expect(toLtcgTaxableIncome(120100, 32200)).toBe(87900);
+  });
+
+  it("is 0 at exactly the deduction and for a negative gross", () => {
+    expect(toLtcgTaxableIncome(32200, 32200)).toBe(0);
+    expect(toLtcgTaxableIncome(-5000, 32200)).toBe(0);
+  });
+
+  it("a 0 deduction subtracts nothing", () => {
+    expect(toLtcgTaxableIncome(120100, 0)).toBe(120100);
   });
 
   it("floors at 0 rather than going negative", () => {
@@ -131,5 +141,21 @@ describe("ltcgRateForNextDollar", () => {
     };
     expect(ltcgRateForNextDollar(50000, "MFJ", dbBrackets)).toBe(0.15);
     expect(ltcgRateForNextDollar(200000, "MFJ", dbBrackets)).toBe(0.2);
+  });
+});
+
+// Hand-worked against the shipped 2026 MFJ thresholds ($98,900 / $613,700).
+describe("computeLtcgTax", () => {
+  it("stacks gains on ordinary income: $18,900 at 0%, $11,100 at 15%", () => {
+    expect(computeLtcgTax(80000, 30000, "MFJ", LTCG)).toBe(1665);
+  });
+
+  it("gains past the 15% ceiling are taxed at 20%", () => {
+    // 613,700 − 600,000 = 13,700 at 15% (2,055) and 6,300 at 20% (1,260).
+    expect(computeLtcgTax(600000, 20000, "MFJ", LTCG)).toBe(3315);
+  });
+
+  it("no gains, no tax", () => {
+    expect(computeLtcgTax(80000, 0, "MFJ", LTCG)).toBe(0);
   });
 });

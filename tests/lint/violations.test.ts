@@ -1896,6 +1896,29 @@ describe("one config entry adds an account type", () => {
     });
   });
 
+  it("two triple tax-advantaged types don't flag each other", () => {
+    withSyntheticCategory(() => {
+      Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+        ...ACCOUNT_TYPE_CONFIG.hsa,
+        displayLabel: "Synthetic Plan",
+      });
+      const infos = (order: string[]) =>
+        validateContributionOrder(order).filter((w) => w.severity === "info");
+      expect(infos([SYNTHETIC_CATEGORY, "hsa"])).toEqual([]);
+      expect(infos(["hsa", SYNTHETIC_CATEGORY])).toEqual([]);
+      // Config order: hsa, then the synthetic entry added at the end.
+      expect(
+        infos(["401k", SYNTHETIC_CATEGORY, "hsa"]).map((w) => [
+          w.category,
+          w.position,
+        ]),
+      ).toEqual([
+        ["hsa", 2],
+        [SYNTHETIC_CATEGORY, 1],
+      ]);
+    });
+  });
+
   it("percentage withdrawal routing draws from it", () => {
     withSyntheticCategory(() => {
       const config = makeDecumulationConfig({
