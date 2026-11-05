@@ -115,7 +115,7 @@ describe("localMidnight", () => {
   });
 
   it("used together with parseLocalDateOnly gives a stable whole-day difference", () => {
-    // This is exactly server/helpers/snapshot.ts's snapshotAgeDays fix: a
+    // This is exactly server/services/net-worth/year-end-history.ts's snapshotAgeDays fix: a
     // snapshot dated "yesterday" should read as exactly 1 day old regardless
     // of what time of day "now" is.
     const snapshotDate = "2026-06-01";

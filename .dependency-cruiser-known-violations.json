@@ -266,7 +266,7 @@
   },
   {
     "rule": "services-below-routers",
-    "from": "src/server/helpers/snapshot.ts",
+    "from": "src/server/services/net-worth/year-end-history.ts",
     "to": "src/server/mutation-events.ts"
   },
   {

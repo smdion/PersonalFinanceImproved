@@ -1534,7 +1534,7 @@ export const performanceRouter = createTRPCRouter({
           asOfDate,
         );
         // Same addition as buildYearEndHistory's current-year branch
-        // (snapshot.ts) — locks in whatever the live view showed right
+        // (year-end-history.ts) — locks in whatever the live view showed right
         // before finalizing, so the permanently-stored figure doesn't
         // silently drop the debts list or the API-mapped credit cards.
         // Which debts count is judged at Dec 31 (local) of the year being

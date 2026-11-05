@@ -32,7 +32,7 @@ export async function loadAndApplySalaryProfile(
  * preference (historical.ts, savings.ts, retirement.ts, services/contributions/
  * live-data.ts's loadLiveContribData all call this with `null` for
  * exactly that reason — call this instead of hand-rolling the app_settings
- * lookup again). helpers/snapshot.ts's buildYearEndHistory is the one
+ * lookup again). services/net-worth/year-end-history.ts's buildYearEndHistory is the one
  * deliberate exception: it already has app_settings batch-fetched as part
  * of a larger Promise.all, so re-deriving the active id from that
  * in-memory array avoids a redundant query on a hot path.

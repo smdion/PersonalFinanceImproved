@@ -32,7 +32,7 @@ import {
   refreshSnapshotYearDerivatives,
   pushSnapshotIfConfigured,
 } from "@/server/helpers/snapshot-derivatives";
-import { invalidateYearEndCache } from "@/server/helpers/snapshot";
+import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { zYearEndTargeting } from "./_shared";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import {

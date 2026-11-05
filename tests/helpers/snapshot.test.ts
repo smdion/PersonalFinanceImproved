@@ -6,12 +6,12 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { groupSnapshotAccounts } from "@/lib/pure/net-worth/snapshot-groups";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import {
-  groupSnapshotAccounts,
-  getLatestSnapshot,
   buildYearEndHistory,
   invalidateYearEndCache,
-} from "@/server/helpers/snapshot";
+} from "@/server/services/net-worth/year-end-history";
 import { createTestDb, type TestDbContext } from "./db-harness";
 
 // ---------------------------------------------------------------------------
@@ -403,7 +403,7 @@ describe("buildYearEndHistory", () => {
   });
 
   it("includes rollovers in the Modified-Dietz return% denominator", async () => {
-    // Regression test: snapshot.ts previously hand-rolled the denominator
+    // Regression test: year-end-history.ts previously hand-rolled the denominator
     // without `rollovers`, diverging from computeReturn() in
     // src/lib/pure/investments/returns.ts. Uses a fresh year (2021) to avoid
     // interfering with the 2023 fixtures shared across this describe block.

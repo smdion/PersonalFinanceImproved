@@ -635,7 +635,7 @@ function findStringEnumFieldViolations(): Violation[] {
 // adding a missing term like rollovers) doesn't need to be applied in N
 // places again. This regex is name-dependent (keyed on `beginBal`), not
 // structural — it catches the exact shape previously duplicated in
-// snapshot.ts, not a differently-named future reimplementation.
+// year-end-history.ts, not a differently-named future reimplementation.
 function findHandRolledDietzDenominatorViolations(): Violation[] {
   return findPatternViolations(
     /\bbeginBal\s*\+\s*\([^)]*distributions[^)]*fees[^)]*\)\s*\/\s*2/,

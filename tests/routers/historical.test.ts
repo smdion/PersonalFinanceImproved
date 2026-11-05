@@ -16,7 +16,7 @@ import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 
 // buildYearEndHistory (behind historical.computeSummary) keeps a 5-second,
 // untargeted, module-level cache to dedupe concurrent calls in production
-// (see its docblock in server/helpers/snapshot.ts). That cache is agnostic
+// (see its docblock in server/services/net-worth/year-end-history.ts). That cache is agnostic
 // of which DB a caller was built against, so two describes below — each with
 // their OWN isolated SQLite file — can otherwise read back a PREVIOUS
 // describe's cached result if both call computeSummary() with no explicit

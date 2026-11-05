@@ -146,6 +146,7 @@
     "src/lib/pure/household/compensation.ts": 369,
     "src/lib/pure/investments/holding-periods.ts": 433,
     "src/lib/pure/investments/returns.ts": 599,
+    "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/paycheck/paycheck.ts": 1381,
     "src/lib/pure/paycheck/paystub-check.ts": 459,
     "src/lib/pure/retirement/relocation.ts": 490,
@@ -159,8 +160,8 @@
     "src/lib/utils/format.ts": 421,
     "src/server/data/investments.ts": 636,
     "src/server/data/salaries.ts": 41,
+    "src/server/data/snapshots.ts": 107,
     "src/server/helpers/budget.ts": 383,
-    "src/server/helpers/snapshot.ts": 1219,
     "src/server/retirement/build-engine-payload.ts": 1414,
     "src/server/retirement/payload/profile-switches.ts": 506,
     "src/server/routers/assets.ts": 528,
@@ -195,6 +196,7 @@
     "src/server/services/contributions/live-data.ts": 108,
     "src/server/services/contributions/paycheck-accounts.ts": 162,
     "src/server/services/contributions/profile.ts": 387,
+    "src/server/services/net-worth/year-end-history.ts": 1093,
     "src/server/services/profiles/salary-profile.ts": 98,
     "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/sync/budget-api-push.ts": 434,
@@ -861,9 +863,6 @@
     "src/server/helpers/contribution-mix.ts": {
       "loadContributionMix": 187
     },
-    "src/server/helpers/snapshot.ts": {
-      "buildYearEndHistory": 870
-    },
     "src/server/retirement/build-engine-payload.ts": {
       "buildEnginePayload": 1137,
       "fetchRetirementData": 164
@@ -951,6 +950,9 @@
     },
     "src/server/services/budget/linked-items.ts": {
       "resolveLinkedBudgetItemAmounts": 152
+    },
+    "src/server/services/net-worth/year-end-history.ts": {
+      "buildYearEndHistory": 870
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237

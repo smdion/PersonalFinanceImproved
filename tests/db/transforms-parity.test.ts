@@ -63,11 +63,11 @@ import type {
 } from "@/lib/pure/paycheck/paycheck-input";
 import { getResolvedGoalAllocations } from "@/server/helpers/savings-allocation";
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import {
-  getLatestSnapshot,
   buildYearEndHistory,
   invalidateYearEndCache,
-} from "@/server/helpers/snapshot";
+} from "@/server/services/net-worth/year-end-history";
 
 // ---------------------------------------------------------------------------
 // Table-dispatching db mock
@@ -385,7 +385,7 @@ describe("roth-basis.ts — PG string mode", () => {
   });
 });
 
-describe("snapshot.ts — PG string mode", () => {
+describe("year-end-history.ts — PG string mode", () => {
   beforeEach(() => {
     // buildYearEndHistory has a 5s module-level cache — a second test would
     // otherwise assert against the first test's fixture.

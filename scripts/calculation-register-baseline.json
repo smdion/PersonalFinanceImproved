@@ -627,6 +627,7 @@
     "src/lib/pure/net-worth/historical.ts:resolveOtherAssetsForYear",
     "src/lib/pure/net-worth/net-worth.ts:wealthFormulaIncome",
     "src/lib/pure/net-worth/snapshot-flows.ts:accountFlowsSince",
+    "src/lib/pure/net-worth/snapshot-groups.ts:groupSnapshotAccounts",
     "src/lib/pure/net-worth/snapshot-series.ts:MAX_STACKED_ACCOUNTS",
     "src/lib/pure/net-worth/snapshot-series.ts:stackedSeries",
     "src/lib/pure/net-worth/snapshot-suggestions.ts:splitAccountBalance",

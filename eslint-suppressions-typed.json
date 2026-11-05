@@ -729,11 +729,6 @@
       "count": 2
     }
   },
-  "src/server/helpers/snapshot.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/server/retirement/build-engine-payload.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
@@ -872,6 +867,11 @@
   "src/server/services/contributions/live-data.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/server/services/net-worth/year-end-history.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
     }
   },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {

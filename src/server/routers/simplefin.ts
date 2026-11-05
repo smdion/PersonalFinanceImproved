@@ -69,7 +69,7 @@ import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
-import { getLatestSnapshot } from "@/server/helpers/snapshot";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import { accountDisplayName } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
 import {

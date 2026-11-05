@@ -185,7 +185,7 @@ describe("household: the FI number and progress", () => {
     todo: 'v0.11 Household math "One `fiTarget` in `lib/pure`" (decisions H1 and "FI target = (Retirement budget − Social Security) ÷ the FI rate")',
     // Budget 120,000; Retirement budget 90,000; Social Security 40,000; FI
     // rate 4% (its own setting): (90,000 − 40,000) / 0.04 = 1,250,000.
-    // Today the caller (`server/helpers/snapshot.ts`) passes the Budget and
+    // Today the caller (`server/services/net-worth/year-end-history.ts`) passes the Budget and
     // the Initial Withdrawal Rate: 120,000 / 0.04 = 3,000,000. The fix
     // gives the FI target its own inputs; this run changes with it.
     run: () =>

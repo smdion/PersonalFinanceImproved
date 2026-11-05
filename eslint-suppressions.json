@@ -5488,6 +5488,17 @@
       "count": 1
     }
   },
+  "src/server/data/snapshots.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/server/data/sub-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
@@ -5593,26 +5604,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    }
-  },
-  "src/server/helpers/snapshot.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
     }
   },
   "src/server/local-admin-login.ts": {
@@ -6318,6 +6309,26 @@
     },
     "ratchet/max-comment-lines": {
       "count": 12
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/net-worth/year-end-history.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 9
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
