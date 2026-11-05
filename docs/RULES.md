@@ -109,9 +109,9 @@ Key files, adding a behavior field, and contribution stubs: DESIGN.md § Data-Dr
 
 **All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: coupling logic to I/O makes it untestable regardless of database, and a transaction held open across an `await` lets other requests on the one SQLite connection see its uncommitted work.
 
-1. **Pure functions** (`src/lib/pure/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Never import from barrel re-exports that pull in DB code.
+1. **Pure functions** (`src/lib/pure/<area>/`, one folder per area; the engine is `engine/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Never import from barrel re-exports that pull in DB code.
 2. **Routers/handlers** (`src/server/routers/`): fetch data, call pure functions, persist results. Thin wrappers only — if you're writing an `if` or a `for` loop that computes a value, it belongs in a pure function.
-3. **Tests** (`tests/pure/`): every pure function gets a unit test that runs without any database, network, or environment setup.
+3. **Tests** (`tests/pure/<area>/`): every pure function gets a unit test that runs without any database, network, or environment setup.
 
 **How to tell if logic is in the wrong place:** it's in a `.transaction()` callback; it's in a `protectedProcedure` handler doing math/validation/aggregation; it needs `import * as schema` or `import { eq } from "drizzle-orm"` to work; or it can't be tested without mocking the database.
 

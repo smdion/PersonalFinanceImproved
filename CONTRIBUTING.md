@@ -36,7 +36,7 @@ Thanks for your interest in contributing! Here's how to get started.
 Read the relevant parts of [`docs/RULES.md`](docs/RULES.md) (the rules), [`docs/DESIGN.md`](docs/DESIGN.md) (how things are built) and [`docs/TESTING.md`](docs/TESTING.md). The ones that matter most:
 
 - **Config declares, code executes.** Account-type behavior comes from `ACCOUNT_TYPE_CONFIG` (`src/lib/config/account-types.ts`) through its helpers — never `if (category === "401k")` or a hardcoded list of categories.
-- **Business logic lives in `src/lib/pure/`** — never inside a DB transaction, router procedure or API handler. Routers fetch, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/` with no database.
+- **Business logic lives in `src/lib/pure/`** — never inside a DB transaction, router procedure or API handler. Routers fetch, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/<area>/` with no database.
 - **One computation per figure.** Before writing a formula, label map or display rule, look for the existing one and reuse it.
 - **Format through the helpers** (`formatCurrency`, `formatPercent`, …) so privacy mode can hide amounts.
 
@@ -52,7 +52,7 @@ import { toNumber } from "@/server/helpers";
 import { toNumber } from "@/server/helpers/transforms";
 ```
 
-See `ls src/lib/pure/` for the existing modules — check there before adding one.
+`src/lib/pure/` has one folder per area (`accounts`, `advice`, `budget`, `contributions`, `debts`, `household`, `investments`, `net-worth`, `paycheck`, `retirement`, `savings`, `simulation`, `sync`, `tax`; the projection engine in `engine/`). Check the area's folder before adding a module, and add a new one there, with its I/O types in a `*.types.ts` beside it, never flat in `lib/pure/`. Small helpers with no domain (dates, formatting, math) live in `src/lib/utils/`.
 
 ## Commit rules
 
