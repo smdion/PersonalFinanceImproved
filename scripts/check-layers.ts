@@ -8,6 +8,8 @@
  *     deletes every such entry; it never adds one);
  *   - with `--base <git ref>`, an entry missing from that ref's list fails,
  *     unless its rule is new since that ref (a new rule lands with its list).
+ *     The ref's entries are read through the files renamed since it, so a
+ *     moved file's known violations are the same entries under its new path.
  *
  * Usage: pnpm check:layers [--base origin/main] [--prune]
  */
@@ -71,6 +73,39 @@ export function compareWithKnown(
     }
   }
   return errors;
+}
+
+/** Old path → new path for each `R` line of `git diff --name-status`. */
+export function parseRenames(nameStatus: string): Map<string, string> {
+  const renames = new Map<string, string>();
+  for (const line of nameStatus.split("\n")) {
+    const [status, from, to] = line.split("\t");
+    if (status?.startsWith("R") && from && to) renames.set(from, to);
+  }
+  return renames;
+}
+
+/** The base list's entries under the paths they have at HEAD. */
+export function renameEntries(
+  entries: LayerViolation[],
+  renames: Map<string, string>,
+): LayerViolation[] {
+  return entries.map((v) => ({
+    rule: v.rule,
+    from: renames.get(v.from) ?? v.from,
+    to: renames.get(v.to) ?? v.to,
+  }));
+}
+
+/** Renames between `baseRef` and HEAD (every file pair weighed: `-l0`). */
+export function renamesSince(baseRef: string, cwd = ROOT) {
+  return parseRenames(
+    execFileSync(
+      "git",
+      ["diff", "-M", "-l0", "--name-status", "--no-color", baseRef, "HEAD"],
+      { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    ),
+  );
 }
 
 interface CruiseOutput {
@@ -143,6 +178,7 @@ function main(argv: string[]): number {
     } catch {
       console.log(`No ${KNOWN_FILE} at ${baseRef}; skipping the growth check.`);
     }
+    if (base) base.entries = renameEntries(base.entries, renamesSince(baseRef));
   }
 
   const errors = compareWithKnown(found, known, base);
