@@ -3,7 +3,7 @@
  *
  * Usage in a server component (layout or page wrapper):
  *
- *   import { prefetchForPage } from '@/server/helpers/server-trpc';
+ *   import { prefetchForPage } from '@/server/trpc-server';
  *
  *   export default async function Page() {
  *     const dehydratedState = await prefetchForPage(async (helpers) => {
@@ -20,12 +20,8 @@ import { dehydrate, type DehydratedState } from "@tanstack/react-query";
 import { createServerSideHelpers } from "@trpc/react-query/server";
 import { cookies } from "next/headers";
 import { PRIVACY_COOKIE } from "@/lib/utils/format";
-import {
-  createContext,
-  internalCtx,
-  takeAuthenticatedRateToken,
-} from "../trpc";
-import { appRouter } from "../routers";
+import { createContext, internalCtx, takeAuthenticatedRateToken } from "./trpc";
+import { appRouter } from "./routers";
 
 /**
  * Server helpers for a page render. Its queries run as internal calls (no

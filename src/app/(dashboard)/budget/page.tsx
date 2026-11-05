@@ -16,7 +16,7 @@
 
 import { HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { BudgetContent } from "./budget-content";
 import { PROFILE_TABS, profilesHref } from "@/lib/config/profile-tabs";
 

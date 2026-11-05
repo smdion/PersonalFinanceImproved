@@ -15,7 +15,7 @@
  * contributions/page.tsx: a guessed input wouldn't match either.
  */
 import { HydrationBoundary } from "@tanstack/react-query";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { TaxBucketsContent } from "./tax-buckets-content";
 
 export default async function TaxBucketsPage() {

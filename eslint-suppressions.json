@@ -5588,11 +5588,6 @@
       "count": 2
     }
   },
-  "src/server/helpers/server-trpc.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/server/helpers/simulation-preset.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -6291,6 +6286,11 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/server/trpc-server.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     }
   },
   "src/server/trpc.ts": {

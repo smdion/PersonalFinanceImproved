@@ -21,7 +21,7 @@ const state = vi.hoisted(
     helperCtx: null,
   }),
 );
-vi.mock("../../../src/server/trpc", () => ({
+vi.mock("../../src/server/trpc", () => ({
   createContext: async () => ({ session: { user: { id: "1" } } }),
   internalCtx: (ctx: object) => ({ ...ctx, internal: true }),
   takeAuthenticatedRateToken: async (_ctx: unknown, path: string) => {
@@ -33,7 +33,7 @@ vi.mock("../../../src/server/trpc", () => ({
     };
   },
 }));
-vi.mock("../../../src/server/routers", () => ({ appRouter: {} }));
+vi.mock("../../src/server/routers", () => ({ appRouter: {} }));
 
 let settingsPrefetch: () => Promise<void>;
 const shellCalls: string[] = [];
@@ -62,7 +62,7 @@ vi.mock("@trpc/react-query/server", () => ({
   },
 }));
 
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 
 type Helpers = { page: { prefetch: () => Promise<void> } };
 const pagePrefetch = (h: unknown) => (h as Helpers).page.prefetch();

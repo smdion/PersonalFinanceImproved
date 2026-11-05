@@ -145,7 +145,7 @@ export default defineConfig({
         // in vitest. Leaving auth.ts in coverage so the testable pieces count.
         "src/server/auth.config.ts",
         // Server-side tRPC caller — requires Next.js Server Component context
-        "src/server/helpers/server-trpc.ts",
+        "src/server/trpc-server.ts",
         // Demo router — requires Postgres pool, cookies, schema isolation
         "src/server/routers/demo.ts",
         // Router re-export barrels and documentation-only files

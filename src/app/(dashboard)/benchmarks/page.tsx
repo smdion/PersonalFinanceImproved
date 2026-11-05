@@ -4,7 +4,7 @@
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { BenchmarksContent } from "./benchmarks-content";
 
 export default async function BenchmarksPage() {
