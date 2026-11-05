@@ -355,7 +355,7 @@ type SalaryEntryOverrides = Partial<
  * existed pre-Stage-B), written as a complete entry into the shared default
  * Salary Profile (see seedDefaultSalaryProfileEntry) instead of a job
  * column, so every existing call site keeps working unchanged. See
- * resolveCompensation's docblock (server/helpers/salary.ts) for why a job
+ * resolveCompensation's docblock (lib/pure/household/compensation.ts) for why a job
  * needs a Salary Profile entry to resolve to anything but $0.
  */
 export function seedJob(

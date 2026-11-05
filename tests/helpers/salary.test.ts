@@ -10,7 +10,7 @@ import {
   resolveCompensation,
   applySalaryProfileRow,
   type SalaryProfileActiveMap,
-} from "@/server/helpers/salary";
+} from "@/lib/pure/household/compensation";
 import type { BonusTerms } from "@/lib/pure/paycheck/paycheck.types";
 
 describe("computeBonusGross", () => {

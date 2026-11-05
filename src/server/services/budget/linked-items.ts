@@ -18,7 +18,7 @@ import {
   applySandboxSalaryEntries,
   resolveCompensation,
   applyActiveSalary,
-} from "@/server/helpers/salary";
+} from "@/lib/pure/household/compensation";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,

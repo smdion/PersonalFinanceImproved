@@ -16,7 +16,7 @@ import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
+import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 
 // ---------------------------------------------------------------------------
 // Helpers

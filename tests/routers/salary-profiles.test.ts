@@ -30,7 +30,7 @@ import { eq, and } from "drizzle-orm";
 import {
   applySalaryProfileRow,
   resolveCompensation,
-} from "@/server/helpers/salary";
+} from "@/lib/pure/household/compensation";
 import { fetchSalaryProfile } from "@/server/data/salaries";
 import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
 import { canDeleteSalaryProfile } from "@/lib/pure/household/profiles";

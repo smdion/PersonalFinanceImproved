@@ -42,7 +42,7 @@ import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/data/people";
-import { applySandboxSalaryEntries } from "@/server/helpers/salary";
+import { applySandboxSalaryEntries } from "@/lib/pure/household/compensation";
 import {
   zSandboxSalaryEntries,
   zSandboxDeductionEdits,

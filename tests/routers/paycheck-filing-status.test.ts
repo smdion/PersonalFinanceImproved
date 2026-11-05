@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { type SalaryProfileActiveMap } from "@/server/helpers/salary";
+import { type SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
 import {
   buildEnginePayload,

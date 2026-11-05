@@ -10,7 +10,7 @@ import {
   taxFilingStatusSetting,
   type FilingStatusSource,
 } from "@/lib/pure/tax/filing-status";
-import { type SalaryProfileActiveMap } from "@/server/helpers/salary";
+import { type SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
 

@@ -25,9 +25,9 @@ import {
   getTotalCompensation,
   resolveCompensation,
   mergeSalaryProfileJobFields,
-} from "./salary";
+} from "@/lib/pure/household/compensation";
 import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
-import type { SalaryProfileActiveMap } from "./salary";
+import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getEffectiveCash,

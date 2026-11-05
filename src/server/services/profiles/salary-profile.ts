@@ -5,7 +5,7 @@ import type { Db } from "@/lib/db";
 import {
   applySalaryProfileRow,
   type SalaryProfileActiveMap,
-} from "@/server/helpers/salary";
+} from "@/lib/pure/household/compensation";
 import {
   fetchSalaryProfile,
   resolveActiveSalaryProfileId,

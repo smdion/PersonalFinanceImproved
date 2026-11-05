@@ -8,7 +8,7 @@ import * as schema from "@/lib/db/schema";
 import { buildYearEndHistory } from "@/server/helpers";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";
-import { resolveCompensation } from "@/server/helpers/salary";
+import { resolveCompensation } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { findActiveJob } from "@/lib/pure/household/profiles";
 import {

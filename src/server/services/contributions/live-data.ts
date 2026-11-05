@@ -9,7 +9,7 @@ import {
   resolveCompensation,
   contributionPay,
   getTotalCompensation,
-} from "@/server/helpers/salary";
+} from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
 

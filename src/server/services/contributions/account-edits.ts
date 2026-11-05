@@ -3,7 +3,7 @@ import * as schema from "@/lib/db/schema";
 import type { EntityFieldMap } from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import type { ContribSaveChecker } from "@/server/services/contributions/caps";
-import { mergeSalaryProfileJobFields } from "@/server/helpers/salary";
+import { mergeSalaryProfileJobFields } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { DbOrTx, Db } from "@/lib/db";
 import { resolveJoblessPeriodsPerYear } from "@/lib/pure/contributions/contribution-rows";

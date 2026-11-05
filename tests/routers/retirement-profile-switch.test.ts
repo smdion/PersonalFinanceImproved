@@ -23,7 +23,7 @@
  * one, which is a new way to get this wrong under the presence encoding.
  */
 import "./setup-mocks";
-import type { SalaryEntryMap } from "@/server/helpers/salary";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedJob, seedPerformanceAccount } from "./setup";
 import {

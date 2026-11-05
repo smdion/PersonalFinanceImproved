@@ -13,7 +13,7 @@ import {
 import {
   type SalaryProfileActiveMap,
   mergeSalaryProfileJobFields,
-} from "@/server/helpers/salary";
+} from "@/lib/pure/household/compensation";
 import type { Db } from "@/lib/db";
 
 /**

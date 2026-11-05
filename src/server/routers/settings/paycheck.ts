@@ -69,7 +69,7 @@ export function speculativeJobValues(personId: number) {
 // the Salary Profile entry's complete 16-field shape (see salaryEntrySchema
 // in json-schemas.ts) and no longer exist as `jobs` columns at all. Salary/
 // bonus amounts were already off this table (see resolveCompensation's
-// docblock in server/helpers/salary.ts).
+// docblock in lib/pure/household/compensation.ts).
 const jobInput = z
   .object({
     personId: z.number().int(),
@@ -85,7 +85,7 @@ const jobInput = z
 
 // A job carries no salary of its own — creating one establishes no
 // compensation at all until a Salary Profile gives it a complete entry
-// (see resolveCompensation's docblock in server/helpers/salary.ts).
+// (see resolveCompensation's docblock in lib/pure/household/compensation.ts).
 const jobCreateInput = z.object(jobInput.shape);
 
 // contributionMethod/contributionValue are deliberately NOT here — an

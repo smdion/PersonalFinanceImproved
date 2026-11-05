@@ -60,7 +60,7 @@ import {
 } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
-import type { SalaryEntryMap } from "@/server/helpers/salary";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";

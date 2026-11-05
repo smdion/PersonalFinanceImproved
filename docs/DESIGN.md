@@ -482,7 +482,7 @@ What each kind holds:
   the bonus goes (`bonusDestination`), pay schedule, W-4 elections,
   extra-paycheck routing, other pay (see
   `resolveCompensation`/`mergeSalaryProfileJobFields` in
-  `server/helpers/salary.ts` and § The Salary Profile layer). "How
+  `lib/pure/household/compensation.ts` and § The Salary Profile layer). "How
   much do I earn" and "what withholding/schedule elections apply" are one axis
   — an accepted tradeoff. A job's employer name is fixed once created.
 - **Contribution Profile** — contribution account values/methods/match,
@@ -712,7 +712,7 @@ Portfolio Snapshots + Performance Data + Settings
 | Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`                                           | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                                                                                                                                                                                |
 | Budget column                      | `app_settings`                                                                | `budget_active_column`                                                                                                                                                                                                                                      |
 | Annual expenses                    | `getAnnualExpensesFromBudget()` (DB) over `computeBudgetAnnualTotal()` (pure) | Uses `budget_active_column`                                                                                                                                                                                                                                 |
-| Total compensation (profile-aware) | `resolveCompensation()`                                                       | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                         |
+| Total compensation (profile-aware) | `resolveCompensation()`                                                       | `lib/pure/household/compensation.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                               |
 | Salary override merge              | `applyActiveSalary()`                                                         | Final `active ?? raw` merge of the What-If sandbox salary onto an already-resolved raw salary                                                                                                                                                               |
 | Salary override map                | `loadAndApplySalaryProfile()`                                                 | The active (or requested) Salary Profile's entries                                                                                                                                                                                                          |
 | Portfolio balances                 | `getLatestSnapshot()`                                                         | Latest `portfolio_snapshots` row                                                                                                                                                                                                                            |
@@ -793,7 +793,7 @@ a different entry within one) — there is no way to vary only one axis
 independently of the other.
 
 **One definition of compensation.** `resolveCompensation()` in
-`server/helpers/salary.ts` is the single place salary-plus-bonus is computed
+`lib/pure/household/compensation.ts` is the single place salary-plus-bonus is computed
 under a profile entry, and `resolveProfile`, `build-engine-payload`, and the
 `salaryProfile.getById` editor preview all go through it. They previously
 re-derived it separately and disagreed. Do not add a fourth derivation.

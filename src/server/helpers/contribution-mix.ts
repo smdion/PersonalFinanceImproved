@@ -29,7 +29,10 @@ import {
   periodsElapsedYtd,
 } from "@/lib/pure/paycheck/paycheck";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { contributionPay, resolveCompensation } from "./salary";
+import {
+  contributionPay,
+  resolveCompensation,
+} from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
   computeGroupedEmployerMatch,

@@ -94,7 +94,7 @@ export type JobRef = {
   payPeriod: string | undefined;
 };
 
-/** A job's contributionPay (server/helpers/salary.ts): base salary and the bonus. */
+/** A job's contributionPay (lib/pure/household/compensation.ts): base salary and the bonus. */
 export type JobSalaryRef = {
   job: { id: number; personId: number };
   salary: number;

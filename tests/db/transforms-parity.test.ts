@@ -51,8 +51,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { getTableName } from "drizzle-orm";
 
-import { resolvePersonYearIncome } from "@/server/helpers/salary";
-import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
+import { resolvePersonYearIncome } from "@/lib/pure/household/compensation";
+import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
 import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
