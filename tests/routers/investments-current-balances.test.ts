@@ -7,7 +7,7 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedPerson } from "./setup";
 import * as sqlite from "@/lib/db/schema-sqlite";
-import { loadCurrentBalances } from "@/server/routers/investments/load-current-balances";
+import { loadCurrentBalances } from "@/server/services/investments/current-balances";
 
 vi.mock("@/server/services/investments/market-prices", () => ({
   getLatestMarketClose: async () => null,

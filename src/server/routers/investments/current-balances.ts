@@ -1,6 +1,6 @@
-/** The Current Balances card's figures (load-current-balances.ts). */
+/** The Current Balances card's figures (services/investments/current-balances.ts). */
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { loadCurrentBalances } from "./load-current-balances";
+import { loadCurrentBalances } from "@/server/services/investments/current-balances";
 
 export const investmentCurrentBalancesRouter = createTRPCRouter({
   /** Totals, each account's figure and move, each feed's dates and the

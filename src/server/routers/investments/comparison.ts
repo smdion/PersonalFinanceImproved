@@ -30,7 +30,7 @@ import {
 import { localDateStr } from "@/lib/utils/date";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
-import { buildMcInputs } from "../projection/_shared";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
 import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   dailyWeightsByAccount,

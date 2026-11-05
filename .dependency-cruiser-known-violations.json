@@ -136,18 +136,8 @@
   },
   {
     "rule": "no-router-to-router",
-    "from": "src/server/routers/contribution.ts",
-    "to": "src/server/routers/investments/live-contributions.ts"
-  },
-  {
-    "rule": "no-router-to-router",
     "from": "src/server/routers/demo.ts",
     "to": "src/server/routers/settings/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/investments/comparison.ts",
-    "to": "src/server/routers/projection/_shared.ts"
   },
   {
     "rule": "no-router-to-router",
@@ -233,11 +223,6 @@
     "rule": "shapes-above-foundation-only",
     "from": "src/lib/db/profile-fields.ts",
     "to": "src/lib/pure/paycheck/paycheck-edit-target.ts"
-  },
-  {
-    "rule": "shared-stays-in-group",
-    "from": "src/server/routers/investments/comparison.ts",
-    "to": "src/server/routers/projection/_shared.ts"
   },
   {
     "rule": "ui-never-bundles-zod",

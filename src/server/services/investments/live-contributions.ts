@@ -26,7 +26,7 @@ import {
   loadClassifiedTransactions,
   loadFeedContext,
 } from "@/server/data/investments";
-import { loadPerformanceSuggestions } from "./fills";
+import { loadPerformanceSuggestions } from "./fill-suggestions";
 import type { Db } from "@/lib/db";
 
 type LiveContribution = {

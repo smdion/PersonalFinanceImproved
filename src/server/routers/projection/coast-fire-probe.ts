@@ -44,9 +44,9 @@ import {
   decumulationOverrideSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
-  buildMcInputs,
   resolveProjectionOverrides,
 } from "./_shared";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,

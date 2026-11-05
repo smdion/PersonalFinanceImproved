@@ -5123,6 +5123,11 @@
       "count": 3
     }
   },
+  "src/lib/pure/simulation/inflation-risk.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5751,25 +5756,6 @@
       "count": 1
     }
   },
-  "src/server/routers/investments/live-contributions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/server/routers/investments/load-current-balances.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/routers/investments/suggestions.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -5846,10 +5832,10 @@
   },
   "src/server/routers/projection/_shared.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 5
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 5
     }
   },
   "src/server/routers/projection/coast-fire-probe.ts": {
@@ -6283,6 +6269,25 @@
       "count": 1
     }
   },
+  "src/server/services/investments/current-balances.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/live-contributions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
   "src/server/services/investments/market-prices.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -6386,6 +6391,14 @@
   "src/server/services/savings/savings-allocation.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
+    }
+  },
+  "src/server/services/simulation/mc-inputs.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {

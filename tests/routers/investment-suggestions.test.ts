@@ -554,7 +554,7 @@ describe("investment suggestions", () => {
     vi.setSystemTime(new Date("2026-10-12T12:00:00"));
     try {
       const { loadLiveContributions, liveYearToDate } =
-        await import("@/server/routers/investments/live-contributions");
+        await import("@/server/services/investments/live-contributions");
       const perf = await ctx.caller.investments.suggestPerformance({
         year: 2026,
       });

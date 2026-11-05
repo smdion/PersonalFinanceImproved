@@ -1734,7 +1734,7 @@ describe("projection router — MC edge cases", () => {
     const { db, cleanup } = await createTestCaller(adminSession);
     try {
       const { buildMcInputs } =
-        await import("@/server/routers/projection/_shared");
+        await import("@/server/services/simulation/mc-inputs");
       for (const key of ["aggressive", "default", "conservative"] as const)
         expect(
           (await buildMcInputs(db as never, key)).notConfigured,

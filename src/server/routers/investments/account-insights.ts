@@ -5,7 +5,7 @@
  * and whether deposits match the paycheck setup.
  */
 import { changeSinceSnapshot } from "@/lib/pure/accounts/current-balances";
-import { loadCurrentBalances } from "./load-current-balances";
+import { loadCurrentBalances } from "@/server/services/investments/current-balances";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { addDays, utcDayOf } from "@/lib/utils/date";

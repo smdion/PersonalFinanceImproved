@@ -35,8 +35,14 @@ import {
   loadFeedContext,
 } from "@/server/data/investments";
 import { savingsPace } from "@/lib/pure/savings/savings-pace";
-import { loadLiveContributions, toPaceInput } from "./live-contributions";
-import { loadPerformanceSuggestions, loadYearRows } from "./fills";
+import {
+  loadLiveContributions,
+  toPaceInput,
+} from "@/server/services/investments/live-contributions";
+import {
+  loadPerformanceSuggestions,
+  loadYearRows,
+} from "@/server/services/investments/fill-suggestions";
 
 export const investmentSuggestionsRouter = createTRPCRouter({
   /**

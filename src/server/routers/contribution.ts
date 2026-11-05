@@ -11,7 +11,7 @@ import { calculateContributions } from "@/lib/pure/contributions/contribution-to
 import {
   loadLiveContributions,
   liveYearToDate,
-} from "./investments/live-contributions";
+} from "@/server/services/investments/live-contributions";
 import {
   contribRemainingFraction,
   monthsDoneYtd,

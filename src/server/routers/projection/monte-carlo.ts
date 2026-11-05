@@ -55,10 +55,10 @@ import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
-  buildMcInputs,
-  resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
+import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,

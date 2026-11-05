@@ -69,11 +69,11 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import {
   buildStrategyParams,
-  buildMcInputs,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
 } from "./_shared";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
 import type {
   AccumulationOverride,
   DecumulationOverride,

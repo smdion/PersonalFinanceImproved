@@ -153,6 +153,7 @@
     "src/lib/pure/paycheck/paycheck.ts": 1381,
     "src/lib/pure/paycheck/paystub-check.ts": 459,
     "src/lib/pure/retirement/relocation.ts": 490,
+    "src/lib/pure/simulation/inflation-risk.ts": 26,
     "src/lib/pure/simulation/monte-carlo.ts": 763,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 474,
@@ -173,12 +174,11 @@
     "src/server/routers/contribution-profiles.ts": 907,
     "src/server/routers/contribution.ts": 1428,
     "src/server/routers/demo.ts": 663,
-    "src/server/routers/investments/load-current-balances.ts": 508,
     "src/server/routers/milestones.ts": 411,
     "src/server/routers/networth.ts": 1485,
     "src/server/routers/paycheck.ts": 875,
     "src/server/routers/performance.ts": 1893,
-    "src/server/routers/projection/_shared.ts": 366,
+    "src/server/routers/projection/_shared.ts": 235,
     "src/server/routers/projection/coast-fire.ts": 472,
     "src/server/routers/projection/monte-carlo.ts": 548,
     "src/server/routers/projection/relocation.ts": 664,
@@ -203,6 +203,7 @@
     "src/server/services/contributions/paycheck-accounts.ts": 162,
     "src/server/services/contributions/profile.ts": 387,
     "src/server/services/debts/other-liabilities.ts": 67,
+    "src/server/services/investments/current-balances.ts": 508,
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 1093,
     "src/server/services/paycheck/job-net-pay.ts": 285,
@@ -210,6 +211,7 @@
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 98,
     "src/server/services/projection/projection-cache.ts": 221,
+    "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/trpc.ts": 591
   },
@@ -903,9 +905,6 @@
     "src/server/routers/investments/holdings-overview.ts": {
       "loadHoldingsOverview": 158
     },
-    "src/server/routers/investments/load-current-balances.ts": {
-      "computeCurrentBalances": 382
-    },
     "src/server/routers/networth.ts": {
       "networthRouter.computeComparison.query()": 216,
       "networthRouter.computeSummary.query()": 245,
@@ -960,6 +959,9 @@
     },
     "src/server/services/contributions/contribution-mix.ts": {
       "loadContributionMix": 187
+    },
+    "src/server/services/investments/current-balances.ts": {
+      "computeCurrentBalances": 382
     },
     "src/server/services/net-worth/year-end-history.ts": {
       "buildYearEndHistory": 870
