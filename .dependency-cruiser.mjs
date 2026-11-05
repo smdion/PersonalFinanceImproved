@@ -53,6 +53,11 @@ const LAYERS = {
   scripts: "^(scripts/|db-migrate\\.ts$)",
 };
 
+/** The src/ modules db-migrate.ts imports: esbuild bundles them into the
+ *  image's migrator, which runs with no src/, env or Next. */
+const MIGRATOR_SRC =
+  "^src/lib/db/(reference-reconcile-core|demo-schema-marker|version-tables)\\.ts$";
+
 const L = LAYERS;
 const ABOVE_FOUNDATION = `${L.shapes}|${L.pure}|${L.infra}|^src/server/|^src/components/|^src/app/`;
 // Resolved npm paths (pnpm's `.pnpm/<pkg>@<v>/node_modules/<pkg>/` too).
@@ -256,6 +261,18 @@ const config = {
       severity: "error",
       from: { path: L.worker },
       to: { path: `^src/server/|${L.infra}|^src/components/` },
+    },
+    {
+      name: "migrator-imports-listed-src",
+      severity: "error",
+      from: { path: "^db-migrate\\.ts$" },
+      to: { path: "^src/", pathNot: MIGRATOR_SRC },
+    },
+    {
+      name: "migrator-src-stays-standalone",
+      severity: "error",
+      from: { path: MIGRATOR_SRC },
+      to: { dependencyTypesNot: ["core"], pathNot: MIGRATOR_SRC },
     },
     {
       name: "scripts-skip-server",
