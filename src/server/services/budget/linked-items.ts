@@ -1,7 +1,5 @@
-import {
-  capForRequest,
-  loadCapHousehold,
-} from "@/server/services/contributions/caps";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { getAllPeople } from "@/server/data/people";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { eq } from "drizzle-orm";

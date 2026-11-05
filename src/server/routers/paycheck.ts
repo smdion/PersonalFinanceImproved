@@ -1,9 +1,7 @@
 /** Paycheck router for gross-to-net pay calculations including federal tax withholding (no state tax), pre-tax deductions, and per-period contribution breakdowns. */
 import { localDateStr } from "@/lib/utils/date";
-import {
-  capForRequest,
-  loadCapHousehold,
-} from "@/server/services/contributions/caps";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";

@@ -69,10 +69,8 @@ import {
   combinedCoverage,
   computeValue,
 } from "@/lib/pure/contributions/contribution-caps";
-import {
-  capForRequest,
-  loadCapHousehold,
-} from "@/server/services/contributions/caps";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import type { ContributionInput } from "@/lib/pure/contributions/contribution.types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";

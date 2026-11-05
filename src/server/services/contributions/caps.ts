@@ -14,7 +14,6 @@ import type {
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { type JobLike, findActiveJob } from "@/lib/pure/household/profiles";
 import {
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
@@ -22,14 +21,13 @@ import {
 } from "@/server/helpers/retirement-profile";
 import {
   type SalaryProfileActiveMap,
-  type SalaryActiveMap,
-  thisYearJobPay,
   mergeSalaryProfileJobFields,
 } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
 import {
   capEffectiveContribs,
+  capForRequest,
   type CapPassHousehold,
   type CapPassRow,
   type CappedRowFields,
@@ -96,43 +94,6 @@ export async function loadCapHousehold(
     filingStatusSource: thisYear.source,
     taxYear,
   };
-}
-
-/**
- * Cap a request's effective rows: each person's active job paid this
- * year's pay (thisYearJobPay — the same pay the request's figures use).
- */
-export function capForRequest<R extends CapPassRow>(
-  rows: readonly R[],
-  household: CapPassHousehold,
-  jobs: readonly (JobRef & JobLike)[],
-  salaryProfileActiveMap: SalaryProfileActiveMap,
-  salaryActiveMap: SalaryActiveMap,
-): (R & CappedRowFields)[] {
-  // The job current in the tax year: today in this one, its last day in
-  // another (a later year's cap sees the job held then).
-  const now = new Date();
-  const asOf =
-    household.taxYear === now.getFullYear()
-      ? now
-      : new Date(household.taxYear, 11, 31);
-  const activeJobs = household.people.flatMap((p) => {
-    const job = findActiveJob(jobs, p.id, asOf);
-    return job ? [job] : [];
-  });
-  return capEffectiveContribs(rows, {
-    ...household,
-    activeJobs,
-    jobSalaries: activeJobs.map((job) => {
-      const pay = thisYearJobPay(job, salaryProfileActiveMap, salaryActiveMap);
-      return {
-        job: { id: job.id, personId: job.personId },
-        salary: pay.salary,
-        bonusGross: pay.bonusGross,
-        totalComp: pay.totalComp,
-      };
-    }),
-  });
 }
 
 /** A resolved profile's rows capped on that profile's own jobs and pay

@@ -6,10 +6,8 @@
  * Uses the globally active Contribution and Salary Profiles — the setup
  * every page shows unless the household picks another.
  */
-import {
-  capForRequest,
-  loadCapHousehold,
-} from "@/server/services/contributions/caps";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { getAllPeople } from "@/server/data/people";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

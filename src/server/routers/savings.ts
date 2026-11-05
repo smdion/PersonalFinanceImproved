@@ -1,8 +1,6 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import {
-  capForRequest,
-  loadCapHousehold,
-} from "@/server/services/contributions/caps";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { getAllPeople } from "@/server/data/people";
 import { eq, asc, sql, lt, isNull, and, ne, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
