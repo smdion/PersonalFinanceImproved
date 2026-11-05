@@ -122,7 +122,7 @@
     "src/lib/demo/profiles/debt-payoff.ts": 446,
     "src/lib/demo/profiles/dual-income-family.ts": 866,
     "src/lib/demo/profiles/early-retirement.ts": 666,
-    "src/lib/demo/profiles/recently-retired.ts": 1225,
+    "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/contribution-caps.ts": 671,
     "src/lib/pure/contributions.ts": 685,

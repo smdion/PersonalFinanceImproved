@@ -4083,10 +4083,7 @@
   },
   "src/lib/demo/profiles/recently-retired.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 28
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
+      "count": 19
     }
   },
   "src/lib/demo/types.ts": {
