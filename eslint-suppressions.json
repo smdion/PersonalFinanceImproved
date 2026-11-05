@@ -4629,6 +4629,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/paycheck.types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/paystub-check.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5095,10 +5103,7 @@
   },
   "src/lib/pure/types/shared.ts": {
     "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 10
     },
     "ratchet/no-string-closed-set-field": {
       "count": 5
