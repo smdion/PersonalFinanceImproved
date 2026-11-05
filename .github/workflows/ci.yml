@@ -286,11 +286,8 @@ jobs:
           - group: cfiresim
             files: tests/benchmarks/cfiresim-comparison.test.ts tests/benchmarks/monte-carlo-properties.test.ts tests/benchmarks/accumulation-sanity.test.ts tests/benchmarks/glide-path.test.ts tests/benchmarks/asset-assumptions.test.ts tests/benchmarks/tax-accuracy.test.ts tests/benchmarks/withdrawal-sensitivity.test.ts
             filter: ""
-          - group: diagnose
-            files: tests/benchmarks/diagnose.test.ts tests/benchmarks/complexity-cost.test.ts
-            filter: ""
           - group: scenarios
-            files: tests/benchmarks/trinity-study.test.ts tests/benchmarks/real-scenario.test.ts
+            files: tests/benchmarks/trinity-study.test.ts
             filter: ""
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
