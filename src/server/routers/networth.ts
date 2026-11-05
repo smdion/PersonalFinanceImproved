@@ -22,10 +22,10 @@ import {
   getEffectiveCash,
   getEffectiveOtherAssets,
   getEffectiveOtherAssetsDetailed,
-  getPrimaryPerson,
   groupSnapshotAccounts,
   buildYearEndHistory,
 } from "@/server/helpers";
+import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/helpers/people";
 import {

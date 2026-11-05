@@ -523,6 +523,7 @@
     "src/lib/pure/household/plans.ts:planMatchesActive",
     "src/lib/pure/household/plans.ts:planProfileIds",
     "src/lib/pure/household/plans.ts:planSaveBlockedReason",
+    "src/lib/pure/household/primary-person.ts:getPrimaryPerson",
     "src/lib/pure/household/profiles.ts:canDeleteBudgetProfile",
     "src/lib/pure/household/profiles.ts:canDeleteContribProfile",
     "src/lib/pure/household/profiles.ts:canDeletePerformanceAccount",

@@ -4,16 +4,6 @@
 import { PAY_PERIOD_CONFIG, payPeriodConfig } from "@/lib/config/pay-periods";
 
 /**
- * Find the primary person from a people array.
- * Falls back to first person if no isPrimaryUser flag is set.
- */
-export function getPrimaryPerson<T extends { isPrimaryUser: boolean }>(
-  people: T[],
-): T | null {
-  return people.find((p) => p.isPrimaryUser) ?? people[0] ?? null;
-}
-
-/**
  * Standard number of pay periods per calendar month (not annualized).
  * For budget/savings contexts where extra paycheck months (biweekly/weekly)
  * are handled separately and should not be amortized into monthly income.

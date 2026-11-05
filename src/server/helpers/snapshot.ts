@@ -5,7 +5,7 @@ import { onMutationSucceeded } from "@/server/mutation-events";
 import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { getPrimaryPerson } from "./transforms";
+import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "./people";
 import {

@@ -33,7 +33,7 @@ import {
   type JobRef,
   type JobSalaryRef,
 } from "./contribution";
-import { getPrimaryPerson } from "./transforms";
+import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { findActiveJob, type JobLike } from "@/lib/pure/household/profiles";
