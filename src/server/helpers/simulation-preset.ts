@@ -22,7 +22,7 @@ import {
   MC_RETURN_CLAMP_MIN,
   type SimulationPresetKey,
 } from "@/lib/constants";
-import { glidePathFromRows } from "@/lib/pure/stock-share";
+import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
 import { toNumber } from "./transforms";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";

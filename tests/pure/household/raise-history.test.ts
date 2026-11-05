@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { raiseHistory, meetsRaiseRule } from "@/lib/pure/raise-history";
+import {
+  raiseHistory,
+  meetsRaiseRule,
+} from "@/lib/pure/household/raise-history";
 
 const pay = (entries: [number, number][]) => new Map(entries);
 const saved = (entries: [number, number, boolean?][]) =>

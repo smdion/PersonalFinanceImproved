@@ -4036,11 +4036,6 @@
       "count": 2
     }
   },
-  "src/lib/pure/current-glide-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/debts/debt-rules.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4494,17 +4489,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/glide-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/lib/pure/goldilocks.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/high-income-line.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4514,7 +4499,7 @@
       "count": 7
     }
   },
-  "src/lib/pure/household-income.ts": {
+  "src/lib/pure/household/household-income.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -4522,7 +4507,25 @@
       "count": 1
     }
   },
-  "src/lib/pure/household-timeline.ts": {
+  "src/lib/pure/household/household-timeline.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/plans.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/profiles.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/household/raise-history.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4623,7 +4626,12 @@
       "count": 1
     }
   },
-  "src/lib/pure/paycheck-edit-target.ts": {
+  "src/lib/pure/paycheck/high-income-line.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck-edit-target.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4653,7 +4661,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/paystub-check.ts": {
+  "src/lib/pure/paycheck/paystub-check.ts": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -4685,29 +4693,6 @@
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/projection-bands.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/raise-history.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -4902,11 +4887,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/return-rate-breakpoints.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/savings/brokerage-goals.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
@@ -4979,9 +4959,19 @@
       "count": 1
     }
   },
+  "src/lib/pure/simulation/current-glide-path.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/simulation/dollars.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/lib/pure/simulation/glide-path.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     }
   },
   "src/lib/pure/simulation/monte-carlo.ts": {
@@ -5000,11 +4990,31 @@
       "count": 5
     }
   },
+  "src/lib/pure/simulation/projection-bands.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
   "src/lib/pure/simulation/random.ts": {
     "ratchet/max-comment-lines": {
       "count": 6
     },
     "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/simulation/return-rate-breakpoints.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/stock-share.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/stress-test.ts": {
+    "ratchet/max-comment-lines": {
       "count": 3
     }
   },
@@ -5016,16 +5026,6 @@
   "src/lib/pure/standin-advice.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/lib/pure/stock-share.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/stress-test.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/lib/pure/sync/account-mapping.ts": {

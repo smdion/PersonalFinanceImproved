@@ -24,7 +24,7 @@
  * household query instead.
  */
 
-import type { FicaRates } from "@/lib/pure/paystub-check";
+import type { FicaRates } from "@/lib/pure/paycheck/paystub-check";
 import type { BonusDestination } from "@/lib/config/enum-values";
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";

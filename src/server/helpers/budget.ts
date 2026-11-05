@@ -25,7 +25,7 @@ import {
 import {
   filterActiveJobs,
   type ContribResolutionStatus,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 import {
   loadEffectiveSalaryProfile,
   resolveCompensation,

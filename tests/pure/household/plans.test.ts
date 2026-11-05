@@ -4,7 +4,7 @@ import {
   planInUseMessage,
   planMatchesActive,
   planProfileIds,
-} from "@/lib/pure/plans";
+} from "@/lib/pure/household/plans";
 
 const active = { salary: 1, contribution: 2, budget: 3, retirement: 4 };
 

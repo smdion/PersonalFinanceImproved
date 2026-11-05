@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultHighIncomeLine } from "@/lib/pure/high-income-line";
+import { defaultHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 import { HIGH_INCOME_LINE } from "@/lib/config/milestones";
 

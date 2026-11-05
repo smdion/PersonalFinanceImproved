@@ -9,8 +9,8 @@ import {
   STRESS_TEST_BASELINE,
   getStressTestScenarios,
   detectRosyAssumptions,
-} from "@/lib/pure/stress-test";
-import { deriveProjectionBand } from "@/lib/pure/projection-bands";
+} from "@/lib/pure/simulation/stress-test";
+import { deriveProjectionBand } from "@/lib/pure/simulation/projection-bands";
 import {
   recommendWithdrawalStrategy,
   type PlanCharacteristics,

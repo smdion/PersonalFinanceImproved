@@ -14,7 +14,7 @@ import {
   shareScaleTicks,
 } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { bonusSpendingNet } from "@/lib/pure/household-income";
+import { bonusSpendingNet } from "@/lib/pure/household/household-income";
 import {
   RAMSEY_RANGES,
   DEFAULT_LIVING_COST_MAPPING,

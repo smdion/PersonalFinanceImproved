@@ -28,7 +28,10 @@ import {
   zSandboxContribAdditions,
 } from "./_shared";
 import * as schema from "@/lib/db/schema";
-import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
+import {
+  canDeleteBudgetProfile,
+  canRemoveColumn,
+} from "@/lib/pure/household/profiles";
 import {
   columnLabelsSchema,
   columnMonthsSchema,

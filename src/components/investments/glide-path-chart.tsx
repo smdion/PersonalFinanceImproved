@@ -24,7 +24,7 @@ import {
   glidePathSeries,
   vanguardStockShare,
   type GlidePathPoint,
-} from "@/lib/pure/glide-path-chart";
+} from "@/lib/pure/simulation/glide-path-chart";
 
 export type GlidePathClass = {
   assetClassId: number;

@@ -11,15 +11,18 @@
  *     optimistic). Called from projection.computeStressTest.
  */
 
-import { planEndAge } from "@/lib/pure/household-timeline";
+import { planEndAge } from "@/lib/pure/household/household-timeline";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
 import { calculateProjection } from "@/lib/pure/engine";
-import { getStressTestScenarios } from "@/lib/pure/stress-test";
+import { getStressTestScenarios } from "@/lib/pure/simulation/stress-test";
 import { roundToCents } from "@/lib/utils/math";
 
 // ---------------------------------------------------------------------------
@@ -57,7 +60,7 @@ export function buildAccumulationOrder(
 /**
  * The stock allocation (percent, one decimal) the Default preset's glide
  * path assumes at `currentAge` — the same stock share VPW sizes by
- * (lib/pure/stock-share.ts: a class is stocks when any of its buckets is).
+ * (lib/pure/simulation/stock-share.ts: a class is stocks when any of its buckets is).
  * Null when there's no glide path or no class is mapped to buckets, so the
  * PlanHealthCard skips the glide-path warning.
  */

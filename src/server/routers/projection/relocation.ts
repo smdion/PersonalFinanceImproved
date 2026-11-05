@@ -8,7 +8,7 @@
  * comparison table, and (when moveYear is provided) a blended projection
  * that switches from the current path to the relocation path at moveYear.
  */
-import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household-timeline";
+import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household/household-timeline";
 import { ageStepAt } from "@/server/retirement/payload/profile-switches";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { z } from "zod/v4";

@@ -11,7 +11,7 @@ import {
   loadEffectiveSalaryProfile,
   resolveCompensation,
 } from "@/server/helpers/salary";
-import { findActiveJob } from "@/lib/pure/profiles";
+import { findActiveJob } from "@/lib/pure/household/profiles";
 import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,

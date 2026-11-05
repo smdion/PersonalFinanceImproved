@@ -5,7 +5,10 @@
  * the change in the household's own contributions, and the share saved.
  */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { meetsRaiseRule, type RaiseYear } from "@/lib/pure/raise-history";
+import {
+  meetsRaiseRule,
+  type RaiseYear,
+} from "@/lib/pure/household/raise-history";
 
 export function RaiseHistoryTable({ raises }: { raises: RaiseYear[] }) {
   if (raises.length === 0) return null;

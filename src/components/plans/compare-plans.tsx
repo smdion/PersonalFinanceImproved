@@ -21,7 +21,7 @@ import {
   type PlanProfileIds,
   type PlanProfileKind,
 } from "@/lib/config/plans";
-import { planProfileIds } from "@/lib/pure/plans";
+import { planProfileIds } from "@/lib/pure/household/plans";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 

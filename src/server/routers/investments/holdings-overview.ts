@@ -28,7 +28,7 @@ import { SK_CURRENT_GLIDE_PATH } from "@/lib/constants/settings-keys";
 import {
   parseCurrentGlidePath,
   unknownAssetClassIds,
-} from "@/lib/pure/current-glide-path";
+} from "@/lib/pure/simulation/current-glide-path";
 import type { Db } from "@/lib/db";
 
 /**

@@ -29,7 +29,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
-import { canDeleteContribProfile } from "@/lib/pure/profiles";
+import { canDeleteContribProfile } from "@/lib/pure/household/profiles";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";

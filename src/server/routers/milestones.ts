@@ -34,7 +34,7 @@ import {
   mergeFirstReached,
   parseFirstReached,
 } from "@/lib/pure/milestone-first-reached";
-import { effectiveHighIncomeLine } from "@/lib/pure/high-income-line";
+import { effectiveHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
@@ -46,7 +46,7 @@ import { brokerageRouter } from "./brokerage";
 import { zYearEndTargeting } from "./_shared";
 import type { MilestoneDebt } from "@/lib/pure/milestones";
 import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
-import { raiseHistory } from "@/lib/pure/raise-history";
+import { raiseHistory } from "@/lib/pure/household/raise-history";
 import { downYears } from "@/lib/pure/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/performance-annotations";

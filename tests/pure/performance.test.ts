@@ -2,7 +2,7 @@
  * Tests for pure business logic extracted from performance router's finalizeYear.
  * Covers: resolveCategoryValues, resolvePortfolioValues, filterAccountsForNextYear,
  * buildAccountKeys, assembleNetWorthValues, computePortfolioTotal,
- * (the dated job rule moved to lib/pure/profiles.ts — tests/pure/profiles.test.ts).
+ * (the dated job rule moved to lib/pure/household/profiles.ts — tests/pure/household/profiles.test.ts).
  * computeHomeImpCumulative (formerly a duplicate here as
  * computeHomeImprovementsCumulative) now lives in lib/pure/net-worth/historical.ts —
  * see tests/pure/net-worth/historical.test.ts.

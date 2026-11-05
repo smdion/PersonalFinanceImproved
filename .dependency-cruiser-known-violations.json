@@ -17,7 +17,7 @@
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/display-labels.ts",
-    "to": "src/lib/pure/profiles.ts"
+    "to": "src/lib/pure/household/profiles.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -317,7 +317,7 @@
   {
     "rule": "shapes-above-foundation-only",
     "from": "src/lib/db/profile-fields.ts",
-    "to": "src/lib/pure/paycheck-edit-target.ts"
+    "to": "src/lib/pure/paycheck/paycheck-edit-target.ts"
   },
   {
     "rule": "shared-stays-in-group",

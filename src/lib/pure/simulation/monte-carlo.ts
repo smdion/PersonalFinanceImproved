@@ -10,7 +10,10 @@
  * correlated log-normal distributions based on asset class parameters and a
  * glide path that shifts allocations over time.
  */
-import { planEndAge, planRetirementAge } from "@/lib/pure/household-timeline";
+import {
+  planEndAge,
+  planRetirementAge,
+} from "@/lib/pure/household/household-timeline";
 import { strategySpending } from "../retirement/strategy-spending";
 import { assessPlan, type PlanFailureReason } from "../retirement/plan-outcome";
 import { calculateProjection } from "../engine";

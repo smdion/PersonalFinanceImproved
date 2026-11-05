@@ -58,7 +58,7 @@ import {
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import { sumBy } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
-import { meetsRaiseRule } from "@/lib/pure/raise-history";
+import { meetsRaiseRule } from "@/lib/pure/household/raise-history";
 import { recentCoveredMonths } from "@/lib/pure/always-buying";
 import { carPaymentShare, checkCarLoan } from "@/lib/pure/debts/debt-rules";
 import {

@@ -9,7 +9,7 @@
  * linked), so a few big years don't dominate a simple average.
  */
 import { chainReturns } from "./performance";
-import { returnRateAtAge } from "./return-rate-breakpoints";
+import { returnRateAtAge } from "./simulation/return-rate-breakpoints";
 
 type ReturnRateRow = { age: number; rate: number };
 

@@ -9,9 +9,9 @@ import {
   linesSummingTo,
   type FicaRates,
   type PaystubLedgrCheck,
-} from "@/lib/pure/paystub-check";
+} from "@/lib/pure/paycheck/paystub-check";
 import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
-import { PERSON_A_PAYCHECK_INPUT } from "./fixtures";
+import { PERSON_A_PAYCHECK_INPUT } from "../fixtures";
 import { PAYSTUB_MAX_LINES as MAX_LINES } from "@/lib/constants";
 
 // $4,000 gross; a $400 traditional 401(k) (pre-tax, FICA wages), $150

@@ -58,16 +58,19 @@ import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
 import {
   computeAnnualEarnings,
   sumHouseholdIncome,
-} from "@/lib/pure/household-income";
+} from "@/lib/pure/household/household-income";
 import {
   rothIraRouteOf,
   rothIraSummary,
 } from "@/lib/pure/contributions/roth-ira";
-import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
+import {
+  deductionLine,
+  earningLines,
+} from "@/lib/pure/paycheck/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
 import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
-import { findActiveJob } from "@/lib/pure/profiles";
+import { findActiveJob } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 

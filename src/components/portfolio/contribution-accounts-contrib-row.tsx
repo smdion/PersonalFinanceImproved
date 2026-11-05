@@ -22,7 +22,7 @@ import { InlineText, InlineSelect } from "./contribution-accounts-inline";
 import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";

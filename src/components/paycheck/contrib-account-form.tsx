@@ -40,7 +40,7 @@ import {
   HSA_COVERAGE_LABELS,
 } from "@/lib/config/display-labels";
 import { InstitutionPicker } from "./institution-picker";
-import { resolveContribFieldDisplayState } from "@/lib/pure/profiles";
+import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =

@@ -5,7 +5,7 @@ import {
   planEndAge,
   planRetirementAge,
   planRetirementYear,
-} from "@/lib/pure/household-timeline";
+} from "@/lib/pure/household/household-timeline";
 
 /** Fictional households: the timeline must handle any of them. */
 const person = (

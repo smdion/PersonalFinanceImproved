@@ -4,7 +4,7 @@
  * Verifies the four status branches (already_coast, found, unreachable,
  * already-retired) and the binary-search earliest-age guarantee.
  */
-import { planRetirementAge } from "@/lib/pure/household-timeline";
+import { planRetirementAge } from "@/lib/pure/household/household-timeline";
 import {
   withConsistentStart,
   makeAccumulationDefaults,

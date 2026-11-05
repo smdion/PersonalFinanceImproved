@@ -28,7 +28,7 @@ import { getAllPeople } from "@/server/helpers/people";
 import {
   findActiveJob,
   canDeletePerformanceAccount,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 import { computeHomeImpCumulative } from "@/lib/pure/net-worth/historical";
 import {
   resolveCategoryValues,

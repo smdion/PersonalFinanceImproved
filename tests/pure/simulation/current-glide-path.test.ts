@@ -3,7 +3,7 @@ import {
   currentGlidePathSchema,
   parseCurrentGlidePath,
   unknownAssetClassIds,
-} from "@/lib/pure/current-glide-path";
+} from "@/lib/pure/simulation/current-glide-path";
 
 describe("current glide path", () => {
   const path = [

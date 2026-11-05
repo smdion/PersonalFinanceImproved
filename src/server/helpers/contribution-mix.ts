@@ -18,7 +18,7 @@ import type {
   AccountContributionMix,
   ContributionMix,
 } from "@/lib/pure/flow-suggestions";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { toNumber } from "./transforms";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";

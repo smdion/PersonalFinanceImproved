@@ -256,7 +256,7 @@ export type ProjectionInput = {
    *  When omitted, RMDs are not enforced (backward-compatible). */
   birthYear?: number;
   /** Stock share of the portfolio (0–1) by age, from the allocation glide
-   *  path (lib/pure/stock-share.ts) — what VPW sizes its percentage by.
+   *  path (lib/pure/simulation/stock-share.ts) — what VPW sizes its percentage by.
    *  Absent: no allocation, the strategy's own stock share applies. */
   stockShareByAge?: Record<number, number>;
   /** Filing status — used for accurate SS taxation and LTCG brackets.

@@ -9,7 +9,7 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildMilestoneInput } from "@/lib/pure/milestone-input";
 import { evaluateMilestones } from "@/lib/pure/milestones";
-import { effectiveHighIncomeLine } from "@/lib/pure/high-income-line";
+import { effectiveHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import {
   createTestCaller,
   seedPerson,

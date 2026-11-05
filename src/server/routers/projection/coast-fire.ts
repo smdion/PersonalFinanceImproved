@@ -12,8 +12,11 @@
 import {
   planEndAge as planEndAgeOf,
   planRetirementAge as planRetirementAgeOf,
-} from "@/lib/pure/household-timeline";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+} from "@/lib/pure/household/household-timeline";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
 import {

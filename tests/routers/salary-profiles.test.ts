@@ -33,7 +33,7 @@ import {
   fetchSalaryProfile,
   resolveCompensation,
 } from "@/server/helpers/salary";
-import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
+import { canDeleteSalaryProfile } from "@/lib/pure/household/profiles";
 
 /** A complete entry — every field required, matching the stored shape. */
 function entry(overrides: Partial<SalaryEntry> = {}): SalaryEntry {

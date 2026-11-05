@@ -1,8 +1,11 @@
 /**
- * Tests for src/lib/pure/glide-path.ts
+ * Tests for src/lib/pure/simulation/glide-path.ts
  */
 import { describe, it, expect } from "vitest";
-import { recommendedStockPercent, checkGlidePath } from "@/lib/pure/glide-path";
+import {
+  recommendedStockPercent,
+  checkGlidePath,
+} from "@/lib/pure/simulation/glide-path";
 
 describe("recommendedStockPercent (110-age rule)", () => {
   it("returns 80 for age 30", () => {

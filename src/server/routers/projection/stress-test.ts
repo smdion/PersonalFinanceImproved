@@ -3,7 +3,7 @@
  *
  * Re-runs the deterministic projection three times — once each at the
  * conservative, baseline, and optimistic stress-test parameter sets defined
- * in `src/lib/pure/stress-test.ts`. Used by the PlanHealthCard stress-test
+ * in `src/lib/pure/simulation/stress-test.ts`. Used by the PlanHealthCard stress-test
  * panel to render side-by-side outcomes.
  */
 import { z } from "zod/v4";
@@ -27,7 +27,7 @@ export const stressTestRouter = createTRPCRouter({
    *
    * Re-runs the deterministic projection three times — once each at the
    * conservative, baseline, and optimistic stress test parameter sets
-   * defined in src/lib/pure/stress-test.ts. Each scenario overrides
+   * defined in src/lib/pure/simulation/stress-test.ts. Each scenario overrides
    * returnRates / inflationRate / salaryGrowthRate / withdrawalRate
    * before calling calculateProjection. Returns summary metrics
    * (nest egg at retirement, sustainable withdrawal, depletion age) so

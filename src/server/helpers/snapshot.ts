@@ -51,7 +51,7 @@ import {
   PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
 import { sumAccounts, computeReturn } from "@/lib/pure/performance";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 import { getEffectiveOtherLiabilities } from "./debts";
 import type { Db } from "@/lib/db";

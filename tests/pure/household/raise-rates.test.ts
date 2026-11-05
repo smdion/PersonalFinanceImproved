@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { annualRaiseLabel } from "@/lib/pure/raise-rates";
+import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 
 describe("annualRaiseLabel", () => {
   it("one rate when there's one person or the rates match", () => {

@@ -69,7 +69,8 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
 
   describe("filterActiveJobs", () => {
     it("does not activate a job on its start DATE until CHICAGO local midnight, not UTC midnight", async () => {
-      const { filterActiveJobs } = await import("@/lib/pure/profiles");
+      const { filterActiveJobs } =
+        await import("@/lib/pure/household/profiles");
       const job = {
         startDate: "2026-09-07",
         endDate: null,

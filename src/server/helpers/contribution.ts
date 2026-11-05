@@ -43,7 +43,7 @@ import {
   filterActiveJobs,
   resolveContribFieldDisplayState,
   type ContribResolutionStatus,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 import {
   bonusCheckContribution,
   isPaidThroughPayroll,

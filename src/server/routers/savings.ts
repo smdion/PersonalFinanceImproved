@@ -96,7 +96,10 @@ import type {
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
-import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
+import {
+  deductionLine,
+  earningLines,
+} from "@/lib/pure/paycheck/paycheck-lines";
 import type { DbOrTx } from "@/lib/db";
 import {
   payProfileSelectionSchema,

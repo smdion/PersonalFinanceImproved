@@ -3,7 +3,7 @@
  * Covers: deriveProjectionBand.
  */
 import { describe, it, expect } from "vitest";
-import { deriveProjectionBand } from "@/lib/pure/projection-bands";
+import { deriveProjectionBand } from "@/lib/pure/simulation/projection-bands";
 import { compactCurrency } from "@/lib/utils/format";
 
 describe("deriveProjectionBand", () => {

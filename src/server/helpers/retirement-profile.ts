@@ -15,8 +15,8 @@
  * merging. This returns exactly one id, and the caller reads that profile's
  * rows and nothing else.
  */
-import { planRetirementYear } from "@/lib/pure/household-timeline";
-import { projectionJobs } from "@/lib/pure/profiles";
+import { planRetirementYear } from "@/lib/pure/household/household-timeline";
+import { projectionJobs } from "@/lib/pure/household/profiles";
 import { asc, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";

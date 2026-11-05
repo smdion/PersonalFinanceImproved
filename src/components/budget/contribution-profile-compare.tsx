@@ -24,7 +24,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 
 export function ContributionProfileCompare() {
   const { data, isLoading } = trpc.contributionProfile.compareData.useQuery();

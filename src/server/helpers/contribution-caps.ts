@@ -36,7 +36,7 @@ import {
 import { getPrimaryPerson } from "./transforms";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { findActiveJob, type JobLike } from "@/lib/pure/profiles";
+import { findActiveJob, type JobLike } from "@/lib/pure/household/profiles";
 import {
   householdRetirementYear,
   pickProfileSettingsRow,

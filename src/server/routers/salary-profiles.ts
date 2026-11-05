@@ -46,7 +46,7 @@ import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
+import { canDeleteSalaryProfile } from "@/lib/pure/household/profiles";
 import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";

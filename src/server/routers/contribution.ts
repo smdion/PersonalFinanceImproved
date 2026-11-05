@@ -63,7 +63,7 @@ import type {
   AccountViewMetrics,
   ViewAwareTotals,
 } from "@/lib/pure/contributions/view-metrics";
-import { findActiveJob } from "@/lib/pure/profiles";
+import { findActiveJob } from "@/lib/pure/household/profiles";
 import {
   capMessage,
   combinedCoverage,

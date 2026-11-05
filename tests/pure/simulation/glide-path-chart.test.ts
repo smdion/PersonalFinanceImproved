@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   glidePathSeries,
   vanguardStockShare,
-} from "@/lib/pure/glide-path-chart";
+} from "@/lib/pure/simulation/glide-path-chart";
 
 describe("glide path chart data", () => {
   it("interpolates the mix by age and holds steady past the ends", () => {

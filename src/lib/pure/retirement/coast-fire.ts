@@ -43,7 +43,7 @@
  * need" — but it means their Coast FIRE result rests entirely on the plan
  * judge.
  */
-import { planRetirementAge } from "@/lib/pure/household-timeline";
+import { planRetirementAge } from "@/lib/pure/household/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "../engine";

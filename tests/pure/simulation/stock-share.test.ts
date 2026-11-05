@@ -3,7 +3,7 @@ import {
   classifyAssetClasses,
   glidePathFromRows,
   stockShareByAge,
-} from "@/lib/pure/stock-share";
+} from "@/lib/pure/simulation/stock-share";
 
 describe("stock share by age", () => {
   const glide = glidePathFromRows([

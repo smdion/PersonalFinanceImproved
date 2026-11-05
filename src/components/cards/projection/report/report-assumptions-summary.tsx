@@ -6,7 +6,7 @@
  *  echo `projection.computeProjection` returns), so this reads exactly what
  *  drove the numbers above it rather than a second, possibly-stale query.
  */
-import { annualRaiseLabel } from "@/lib/pure/raise-rates";
+import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";

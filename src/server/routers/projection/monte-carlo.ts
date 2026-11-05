@@ -6,13 +6,16 @@
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
 import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
-import { planEndAge as planEndAgeOf } from "@/lib/pure/household-timeline";
+import { planEndAge as planEndAgeOf } from "@/lib/pure/household/household-timeline";
 import {
   loadSimulationPreset,
   presetAssetClasses,
 } from "@/server/helpers/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";

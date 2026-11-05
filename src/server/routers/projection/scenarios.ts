@@ -6,7 +6,7 @@
  * live in the sibling `coast-fire.ts` file.
  */
 import { calendarYear } from "@/lib/utils/date";
-import { jobYearsNote } from "@/lib/pure/profiles";
+import { jobYearsNote } from "@/lib/pure/household/profiles";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";

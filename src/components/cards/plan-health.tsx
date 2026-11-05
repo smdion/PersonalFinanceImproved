@@ -33,17 +33,17 @@ import { Card } from "@/components/ui/card";
 import { Disclaimer } from "@/components/ui/disclaimer";
 import { trpc } from "@/lib/trpc";
 import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
-import { checkGlidePath } from "@/lib/pure/glide-path";
+import { checkGlidePath } from "@/lib/pure/simulation/glide-path";
 import {
   detectRosyAssumptions,
   getStressTestScenarios,
   type RosyAssumptionFlag,
-} from "@/lib/pure/stress-test";
+} from "@/lib/pure/simulation/stress-test";
 import {
   recommendWithdrawalStrategy,
   type WithdrawalStrategyRecommendation,
 } from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
-import { deriveProjectionBand } from "@/lib/pure/projection-bands";
+import { deriveProjectionBand } from "@/lib/pure/simulation/projection-bands";
 import {
   formatPercent,
   formatCurrency,
@@ -194,7 +194,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
 /**
  * Stress test panel. Compares the user's
  * current assumptions against the canonical conservative / baseline /
- * optimistic scenarios from src/lib/pure/stress-test.ts.
+ * optimistic scenarios from src/lib/pure/simulation/stress-test.ts.
  *
  * Fires the projection.computeStressTest endpoint which re-runs the
  * deterministic engine three times (once per scenario). The resulting

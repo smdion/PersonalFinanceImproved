@@ -624,7 +624,7 @@
       "count": 6
     }
   },
-  "src/lib/pure/household-income.ts": {
+  "src/lib/pure/household/household-income.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

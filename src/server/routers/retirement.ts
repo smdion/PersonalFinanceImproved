@@ -10,7 +10,7 @@ import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import {
   redundantReturnRateIds,
   returnRateAtAge,
-} from "@/lib/pure/return-rate-breakpoints";
+} from "@/lib/pure/simulation/return-rate-breakpoints";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { eq, ne, asc, and, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -58,7 +58,7 @@ import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   filterActiveJobs,
   canDeleteRetirementProfile,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { strategyParamInputShape } from "@/lib/config/withdrawal-strategy-inputs";
@@ -144,7 +144,7 @@ const returnRateInput = z.object({
 });
 
 /** Remove breakpoints that repeat the previous rate — one entry per run of
- *  equal rates (lib/pure/return-rate-breakpoints.ts). */
+ *  equal rates (lib/pure/simulation/return-rate-breakpoints.ts). */
 async function collapseReturnRates(db: Db) {
   const ids = redundantReturnRateIds(
     await db.select().from(schema.returnRateTable),

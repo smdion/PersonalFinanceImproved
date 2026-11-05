@@ -1,11 +1,11 @@
 /**
- * The default high-income line for this household (lib/pure/high-income-line.ts)
+ * The default high-income line for this household (lib/pure/paycheck/high-income-line.ts)
  * — from this year's filing status, the same resolver the paycheck and caps
  * use. The saved setting, when there is one, is applied by the client hook.
  */
 import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { defaultHighIncomeLine } from "@/lib/pure/high-income-line";
+import { defaultHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import { getAllPeople } from "./people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import {

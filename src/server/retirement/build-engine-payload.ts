@@ -16,10 +16,13 @@ import {
   householdTimeline,
   planEndAge,
   planRetirementAge,
-} from "@/lib/pure/household-timeline";
+} from "@/lib/pure/household/household-timeline";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import {
   retirementFilingStatus,
   storedProfileFilingStatus,
@@ -87,7 +90,7 @@ import {
 import { retirementContributions } from "./payload/retirement-contributions";
 import { buildIndividualAccounts } from "./payload/individual-accounts";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
-import { projectionJobs, workingYears } from "@/lib/pure/profiles";
+import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
@@ -228,7 +231,7 @@ export async function fetchRetirementData(
       .from(schema.contributionAccounts),
     db.select().from(schema.accountBasis),
     // The Default preset's glide path and which classes are stocks — VPW
-    // sizes its percentage by the stock share (lib/pure/stock-share.ts). A
+    // sizes its percentage by the stock share (lib/pure/simulation/stock-share.ts). A
     // Simulation run replaces this with its own preset's.
     loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
     db.select().from(schema.assetClassBuckets),

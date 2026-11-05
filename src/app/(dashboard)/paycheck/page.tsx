@@ -17,7 +17,7 @@ import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import {
   resolvePaycheckEditTarget,
   type PaycheckFieldKind,
-} from "@/lib/pure/paycheck-edit-target";
+} from "@/lib/pure/paycheck/paycheck-edit-target";
 import {
   contributionAccountFieldKind,
   deductionFieldKind,
@@ -151,7 +151,7 @@ export default function PaycheckPage() {
     (p) => p.id === displaySalaryId,
   );
   // Where each kind of edit saves — one rule for the write and its label
-  // (lib/pure/paycheck-edit-target.ts).
+  // (lib/pure/paycheck/paycheck-edit-target.ts).
   const editContext = {
     locked: profileLocked,
     canEditProfiles,

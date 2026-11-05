@@ -4,7 +4,7 @@
  * summaries) into the MilestoneInput that evaluateMilestones() judges.
  * Split from milestones.ts, which holds the rules themselves.
  */
-import type { RaiseYear } from "@/lib/pure/raise-history";
+import type { RaiseYear } from "@/lib/pure/household/raise-history";
 import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import {
   getAccountTypeConfig,

@@ -64,7 +64,7 @@ describe("buildAccumulationOrder (M1)", () => {
 
 describe("computeCurrentStockAllocationPercent (M6)", () => {
   // The glide path's stock share at an age — the same helper VPW sizes by
-  // (lib/pure/stock-share.ts, which has the interpolation cases).
+  // (lib/pure/simulation/stock-share.ts, which has the interpolation cases).
   it("the mapped stock share at the age; null without a glide path or mapping", async () => {
     const { createTestCaller } = await import("./setup");
     const { computeCurrentStockAllocationPercent } =
@@ -319,7 +319,7 @@ describe("runStressTestScenarios (M2)", () => {
     // spending is whatever accumulation-phase `annualExpenses` inflates to
     // by retirement — 30 years compounded at each SCENARIO's OWN
     // inflationRate (conservative 4% vs optimistic 2%, see
-    // lib/pure/stress-test.ts). Higher assumed inflation produces a bigger
+    // lib/pure/simulation/stress-test.ts). Higher assumed inflation produces a bigger
     // nominal-dollar year-1 budget regardless of portfolio size, so
     // conservative's sustainableWithdrawal is correctly LARGER than
     // optimistic's here — the opposite of nestEggAtRetirement's ordering,

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   resolvePaycheckEditTarget,
   type PaycheckEditContext,
-} from "@/lib/pure/paycheck-edit-target";
+} from "@/lib/pure/paycheck/paycheck-edit-target";
 import {
   contributionAccountFieldKind,
   deductionFieldKind,

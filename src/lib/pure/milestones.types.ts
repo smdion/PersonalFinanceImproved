@@ -21,7 +21,7 @@ import {
   type SavingsTargetSource,
 } from "@/lib/config/milestones";
 import type { HouseholdSavings } from "@/lib/pure/contributions/savings-rate";
-import type { RaiseYear } from "@/lib/pure/raise-history";
+import type { RaiseYear } from "@/lib/pure/household/raise-history";
 import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import type { CompositionBucket, DebtKind } from "@/lib/config/enum-values";
 
@@ -284,7 +284,7 @@ export type MilestoneInput = {
       value?: number;
     }[];
   } | null;
-  /** Each judged raise, oldest first (lib/pure/raise-history.ts); null/
+  /** Each judged raise, oldest first (lib/pure/household/raise-history.ts); null/
    *  absent when there's no salary or finalized contribution history. */
   raises?: RaiseYear[] | null;
   /** Always Be Buying: SimpleFIN months (null when not linked or not

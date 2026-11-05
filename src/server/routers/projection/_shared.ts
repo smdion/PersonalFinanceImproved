@@ -12,7 +12,7 @@ import {
   type SimulationPreset,
 } from "@/server/helpers/simulation-preset";
 import type { SimulationPresetKey } from "@/lib/constants";
-import { glidePathFromRows } from "@/lib/pure/stock-share";
+import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
 import {
   simulationNotConfigured,
   type SimulationNotConfigured,

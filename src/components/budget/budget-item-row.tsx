@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { ApiCategoryPicker } from "./api-category-picker";
 import type { RawItem } from "./types";
-import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
 import {
   CONTRIB_RESOLUTION_LABELS,
   CONTRIB_RESOLUTION_TOOLTIPS,

@@ -7,7 +7,7 @@ import { z } from "zod/v4";
 import {
   parseCurrentGlidePath,
   unknownAssetClassIds,
-} from "@/lib/pure/current-glide-path";
+} from "@/lib/pure/simulation/current-glide-path";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, desc } from "drizzle-orm";
 import {
@@ -29,7 +29,7 @@ import {
   SK_ROTH_IRA_DIRECT_MARGIN,
   SK_HSA_CASH_BUFFER,
 } from "@/lib/constants/settings-keys";
-import { currentGlidePathSchema } from "@/lib/pure/current-glide-path";
+import { currentGlidePathSchema } from "@/lib/pure/simulation/current-glide-path";
 import {
   dismissalIdSchema,
   dismissalSchema,

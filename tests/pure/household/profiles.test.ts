@@ -18,7 +18,7 @@ import {
   canDeletePerformanceAccount,
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 
 describe("canDeleteBudgetProfile", () => {
   it("allows deleting inactive profile", () => {

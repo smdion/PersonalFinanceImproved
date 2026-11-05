@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   redundantReturnRateIds,
   returnRateAtAge,
-} from "@/lib/pure/return-rate-breakpoints";
+} from "@/lib/pure/simulation/return-rate-breakpoints";
 
 describe("redundantReturnRateIds", () => {
   it("returns rows that repeat the previous breakpoint's rate", () => {

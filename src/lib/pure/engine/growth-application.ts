@@ -11,7 +11,7 @@ import type {
 } from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
 import { MIN_RETURN_RATE } from "../../constants";
-import { returnRateAtAge } from "@/lib/pure/return-rate-breakpoints";
+import { returnRateAtAge } from "@/lib/pure/simulation/return-rate-breakpoints";
 import { getAllCategories } from "../../config/account-types";
 import {
   setTraditional,

@@ -27,7 +27,7 @@ import {
   planChanges,
   planInUseMessage,
   planProfileIds,
-} from "@/lib/pure/plans";
+} from "@/lib/pure/household/plans";
 import { resolveRetirementProfileIdFrom } from "./retirement-profile";
 import type { Permission } from "@/lib/config/permissions";
 import type { Db } from "@/lib/db";

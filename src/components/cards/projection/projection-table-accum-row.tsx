@@ -1,5 +1,5 @@
 /** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
-import { annualRaiseLabel } from "@/lib/pure/raise-rates";
+import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";

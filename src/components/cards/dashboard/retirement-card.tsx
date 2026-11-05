@@ -1,6 +1,9 @@
 "use client";
 
-import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
+import {
+  planAgeLabel,
+  yearOfPlanAge,
+} from "@/lib/pure/household/household-timeline";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { FocusLink } from "@/components/ui/focus-link";
@@ -13,7 +16,7 @@ import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { memo } from "react";
 import Link from "next/link";
 import { settingsHref } from "@/lib/config/settings-sections";
-import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
+import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/simulation/return-rate-breakpoints";
 
 import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";

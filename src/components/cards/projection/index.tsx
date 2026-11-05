@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { settingsHref } from "@/lib/config/settings-sections";
-import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
+import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/simulation/return-rate-breakpoints";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {

@@ -12,7 +12,7 @@ import {
   planChanges,
   planMatchesActive,
   planProfileIds,
-} from "@/lib/pure/plans";
+} from "@/lib/pure/household/plans";
 import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";

@@ -35,7 +35,7 @@ import type {
 } from "./types";
 import type { ContribAccountFormValues } from "./contrib-account-form";
 import { PaystubCheck } from "./paystub-check";
-import type { FicaRates } from "@/lib/pure/paystub-check";
+import type { FicaRates } from "@/lib/pure/paycheck/paystub-check";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 import type {
   BlendedAnnualTotals,

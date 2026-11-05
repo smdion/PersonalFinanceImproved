@@ -23,7 +23,7 @@ import { FormError } from "@/components/ui/form-error";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { profilesHref } from "@/lib/config/profile-tabs";
 import type { PlanProfileKind } from "@/lib/config/plans";
-import { planSaveBlockedReason } from "@/lib/pure/plans";
+import { planSaveBlockedReason } from "@/lib/pure/household/plans";
 
 const VIEW_MODES = [
   {
