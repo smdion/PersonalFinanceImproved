@@ -15,6 +15,7 @@ import type {
 } from "@/lib/pure/types/calculators";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { firstRow } from "@/lib/utils/first-row";
 
 // --- CRUD Zod schemas ---
 
@@ -119,13 +120,15 @@ export const mortgageRouter = createTRPCRouter({
         .from(schema.mortgageLoans)
         .orderBy(asc(schema.mortgageLoans.id)),
     ),
-    create: adminProcedure.input(mortgageLoanInput).mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(schema.mortgageLoans)
-        .values(input)
-        .returning()
-        .then((r) => r[0]),
-    ),
+    create: adminProcedure
+      .input(mortgageLoanInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.mortgageLoans)
+          .values(input)
+          .returning()
+          .then(firstRow),
+      ),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(mortgageLoanInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>
@@ -134,7 +137,7 @@ export const mortgageRouter = createTRPCRouter({
           .set(data)
           .where(eq(schema.mortgageLoans.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -162,7 +165,7 @@ export const mortgageRouter = createTRPCRouter({
           .insert(schema.mortgageWhatIfScenarios)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -174,7 +177,7 @@ export const mortgageRouter = createTRPCRouter({
           .set(data)
           .where(eq(schema.mortgageWhatIfScenarios.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -199,7 +202,7 @@ export const mortgageRouter = createTRPCRouter({
           .insert(schema.mortgageExtraPayments)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -213,7 +216,7 @@ export const mortgageRouter = createTRPCRouter({
           .set(data)
           .where(eq(schema.mortgageExtraPayments.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

@@ -24,6 +24,7 @@ import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
 import { formatList } from "@/lib/utils/format";
 import { serviceEnum } from "./_shared";
 import { toDecimalColumn } from "@/lib/utils/math";
+import { firstRow } from "@/lib/utils/first-row";
 
 /** Why a mapping's direction isn't allowed for its target, or null when it
  *  is. Names the account by its localName, never a raw id. */
@@ -220,7 +221,7 @@ export const syncMappingsRouter = createTRPCRouter({
         .select()
         .from(schema.portfolioSnapshots)
         .where(eq(schema.portfolioSnapshots.id, input.snapshotId))
-        .then((r) => r[0]);
+        .then(firstRow);
       if (!snapshot) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -239,7 +240,7 @@ export const syncMappingsRouter = createTRPCRouter({
         .from(schema.portfolioSnapshots)
         .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
         .limit(1)
-        .then((r) => r[0]);
+        .then(firstRow);
       const isLatest = latest?.id === snapshot.id;
       if (!isLatest && !input.confirmNonLatest) {
         throw new TRPCError({

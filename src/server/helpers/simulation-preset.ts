@@ -25,6 +25,7 @@ import {
 import { glidePathFromRows } from "@/lib/pure/stock-share";
 import { toNumber } from "./transforms";
 import type { Db } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 type CustomClampBounds = { returnClampMin: number; returnClampMax: number };
 type AssetClassOverride = { id: number; meanReturn?: number; stdDev?: number };
@@ -55,11 +56,7 @@ export async function loadSimulationPreset(
   const [presetRow, customRows, savedRow, customClamps] = await Promise.all([
     isCustom
       ? Promise.resolve(undefined)
-      : db
-          .select()
-          .from(p)
-          .where(eq(p.key, key))
-          .then((r) => r[0]),
+      : db.select().from(p).where(eq(p.key, key)).then(firstRow),
     db.select().from(schema.glidePathAllocations),
     db
       .select({ value: schema.appSettings.value })

@@ -14,6 +14,7 @@ import {
 } from "@/server/helpers/api-balance-resolution";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { zDecimal } from "@/lib/utils/zod-fields";
+import { firstRow } from "@/lib/utils/first-row";
 
 /** Positive decimal amount — brokerage goal targets must be > 0. */
 const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
@@ -151,7 +152,7 @@ export const brokerageRouter = createTRPCRouter({
             .from(schema.portfolioSnapshots)
             .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
             .limit(1)
-            .then((r) => r[0]);
+            .then(firstRow);
 
           if (latestSnapshot) {
             const [snapshotAccounts, perfAccounts] = await Promise.all([

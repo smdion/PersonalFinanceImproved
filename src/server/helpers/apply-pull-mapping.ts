@@ -17,6 +17,7 @@ import {
 } from "@/lib/utils/account-mapping";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 type ApplyPullMappingResult =
   | { applied: false }
@@ -141,7 +142,7 @@ export async function applyPullMapping(
       .select()
       .from(schema.otherAssetItems)
       .where(eq(schema.otherAssetItems.id, assetId))
-      .then((r) => r[0]);
+      .then(firstRow);
     // Typed mapping whose target row no longer exists (e.g. asset deleted).
     // Skip rather than writing under the stale localName — resurrecting a
     // deleted asset by name would be worse than silently not syncing it.
