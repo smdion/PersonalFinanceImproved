@@ -37,22 +37,42 @@ import {
 import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 
-type PerfAccount = typeof schema.performanceAccounts.$inferSelect;
 type AnnualRow = typeof schema.annualPerformance.$inferSelect;
 
-export function buildPerfAcctLookups(perfAccounts: PerfAccount[]) {
+/** The performance_accounts columns these helpers read; a schema row fits
+ *  (the account type is what the category lookup takes). */
+type PerfAccountRef = {
+  id: number;
+  accountType: Parameters<typeof accountTypeToPerformanceCategory>[0];
+};
+
+/** The annual_performance columns read back as a rollup; a schema row fits. */
+type AnnualRollupColumns = {
+  beginningBalance: string;
+  totalContributions: string;
+  yearlyGainLoss: string;
+  endingBalance: string;
+  employerContributions: string;
+  distributions: string;
+  fees: string;
+  rollovers: string;
+};
+
+export function buildPerfAcctLookups<P extends PerfAccountRef>(
+  perfAccounts: P[],
+) {
   return new Map(perfAccounts.map((pa) => [pa.id, pa]));
 }
 
-export function resolveMaster(
+export function resolveMaster<P extends PerfAccountRef>(
   a: {
     id: number;
     performanceAccountId: number | null;
     institution: string;
     accountLabel: string;
   },
-  byId: Map<number, PerfAccount>,
-): PerfAccount {
+  byId: Map<number, P>,
+): P {
   if (a.performanceAccountId == null) {
     throw new Error(
       `account_performance.id=${a.id} (${a.institution}:${a.accountLabel}) has null performanceAccountId`,
@@ -76,7 +96,7 @@ export function getEffectiveCategory(
     institution: string;
     accountLabel: string;
   },
-  byId: Map<number, PerfAccount>,
+  byId: Map<number, PerfAccountRef>,
 ): PerfCategory {
   return accountTypeToPerformanceCategory(
     resolveMaster(a, byId).accountType,
@@ -129,7 +149,7 @@ function rollupColumns(r: Rollup) {
   };
 }
 
-function rowRollup(row: AnnualRow): Rollup {
+function rowRollup(row: AnnualRollupColumns): Rollup {
   return {
     beginBal: toNumber(row.beginningBalance),
     contribs: toNumber(row.totalContributions),
