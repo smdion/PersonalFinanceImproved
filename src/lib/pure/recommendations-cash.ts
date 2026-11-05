@@ -1,8 +1,8 @@
 /**
  * Cash-drag and HSA-cash recommendations — adapters over the findings
- * judged once in lib/pure/cash-positions.ts. Only maps fields.
+ * judged once in lib/pure/accounts/cash-positions.ts. Only maps fields.
  */
-import type { CashFinding } from "@/lib/pure/cash-positions";
+import type { CashFinding } from "@/lib/pure/accounts/cash-positions";
 import type { Recommendation } from "@/lib/pure/recommendations";
 import { formatCurrency, formatList, formatPercent } from "@/lib/utils/format";
 import { goldilocksPlan } from "@/lib/pure/goldilocks";

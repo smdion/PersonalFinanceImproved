@@ -22,7 +22,7 @@ import { roundToCents } from "../../utils/math";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 
 /**
  * A balance in its two scopes: every account (net-worth views), and

@@ -1,6 +1,6 @@
 /** Per-institution balance freshness. Invented institutions only. */
 import { describe, it, expect } from "vitest";
-import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
+import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
 import { tradingDaysBetween } from "@/lib/pure/market-calendar";
 
 // 2026-05-15 is a Friday; 2026-05-25 is Memorial Day. 22:00 UTC = after the close.

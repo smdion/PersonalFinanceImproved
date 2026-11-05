@@ -11,7 +11,7 @@ import {
   seedPerformanceAccount,
   seedSnapshot,
 } from "./setup";
-import { snapshotAccountKey } from "@/lib/pure/portfolio";
+import { snapshotAccountKey } from "@/lib/pure/accounts/portfolio";
 
 describe("simplefin sub-account links", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;

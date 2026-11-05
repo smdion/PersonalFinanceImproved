@@ -1,5 +1,5 @@
 /**
- * Combines the shared tax-bucket extraction (src/lib/pure/tax-buckets.ts)
+ * Combines the shared tax-bucket extraction (src/lib/pure/accounts/tax-buckets.ts)
  * with rothBasis rows and the early-access helper (Rule of 55 / Roth
  * ordering rules) into the per-account view the Tax Buckets analysis page
  * needs. Kept as its own pure function — not inline in the router handler —
@@ -15,7 +15,7 @@ import {
 } from "@/lib/config/account-types";
 import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
 import { ageInYear } from "@/lib/utils/date";
-import type { TaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import type { TaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   resolveSeparationYear,
   isRuleOf55Eligible,
@@ -27,7 +27,7 @@ import {
   computeHsaAccess,
   type EarlyAccessSlice,
   type SeparationSource,
-} from "@/lib/pure/early-access";
+} from "@/lib/pure/accounts/early-access";
 
 export type PersonInfo = { id: number; name: string; birthYear: number };
 
@@ -51,7 +51,7 @@ type JobLinkInfo = {
 };
 
 /** The already-selected "current" row for one (account, owner) pair — see
- *  src/lib/pure/roth-basis-rollover.ts's buildCurrentRothBasisMap, which the
+ *  src/lib/pure/accounts/roth-basis-rollover.ts's buildCurrentRothBasisMap, which the
  *  router uses before calling into this module. */
 type RothBasisRow = {
   performanceAccountId: number;

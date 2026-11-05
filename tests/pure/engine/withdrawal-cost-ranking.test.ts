@@ -4,7 +4,7 @@ import {
   deriveBasisRankingInputs,
   type RankWithdrawalTiersInput,
 } from "@/lib/pure/engine/withdrawal-cost-ranking";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
 function rothState(

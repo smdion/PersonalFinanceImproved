@@ -14,7 +14,7 @@ import {
 import { getAllCategories } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalances } from "@/lib/pure/types/shared";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
 /** Read only with a filing status; these tests mostly route without one. */

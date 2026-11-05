@@ -8,7 +8,7 @@ import {
   snapshotDataDay,
   summarizeCurrentBalances,
   type CurrentBalanceInput,
-} from "@/lib/pure/current-balances";
+} from "@/lib/pure/accounts/current-balances";
 
 /** The close balances are brought to. */
 const T = "2026-10-30";

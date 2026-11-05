@@ -5,7 +5,7 @@
  * an earlier day — unlike a provider's back-adjusted close — and only
  * ratios between days mean anything.
  */
-import type { DailyClose } from "./current-balances";
+import type { DailyClose } from "./accounts/current-balances";
 
 export type RawClose = {
   date: string;

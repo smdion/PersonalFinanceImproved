@@ -69,10 +69,10 @@ import {
 import {
   computeNonRetirementExclusion,
   computeWithdrawalEligibility,
-} from "@/lib/pure/withdrawal-eligibility";
-import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
+} from "@/lib/pure/accounts/eligibility";
+import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import {
   deductWithdrawals,
   clampBalances,

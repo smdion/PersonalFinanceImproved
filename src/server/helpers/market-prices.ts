@@ -17,7 +17,7 @@ import {
 } from "@/lib/tiingo/client";
 import { getTiingoApiKey } from "@/lib/tiingo/connection";
 import { log } from "@/lib/logger";
-import type { DailyClose } from "@/lib/pure/current-balances";
+import type { DailyClose } from "@/lib/pure/accounts/current-balances";
 import { valuationDateFor } from "@/lib/pure/market-calendar";
 import { totalReturnSeries } from "@/lib/pure/total-return";
 import { addDays } from "@/lib/utils/date";

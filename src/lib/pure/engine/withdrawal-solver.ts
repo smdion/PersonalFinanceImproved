@@ -53,15 +53,15 @@ import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 import {
   distributeWithdrawals,
   depleteIndividualBasis,
 } from "./individual-account-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 /** Input for the convergence estimation. */

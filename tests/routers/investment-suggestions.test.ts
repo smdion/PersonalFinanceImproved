@@ -14,7 +14,7 @@ import {
   seedPerformanceAccount,
   seedSnapshot,
 } from "./setup";
-import { snapshotAccountKey } from "@/lib/pure/portfolio";
+import { snapshotAccountKey } from "@/lib/pure/accounts/portfolio";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 describe("investment suggestions", () => {

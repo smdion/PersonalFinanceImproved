@@ -14,11 +14,11 @@ import {
   drawFromBasis,
   applyBasisDraw,
   clampBasisToBalance,
-} from "@/lib/pure/roth-basis-tracking";
+} from "@/lib/pure/accounts/roth-basis-tracking";
 import {
   computeRothIraAccess,
   computeEmployerPlanRothAccess,
-} from "@/lib/pure/early-access";
+} from "@/lib/pure/accounts/early-access";
 
 describe("initRothBasisState", () => {
   it("seeds an all-zero state when there is no account_basis row", () => {

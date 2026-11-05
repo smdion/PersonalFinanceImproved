@@ -45,7 +45,7 @@ import {
   resolveAccountActiveStatus,
   resolveSnapshotParentCategory,
   resolveSnapshotAccountAmounts,
-} from "@/lib/pure/portfolio";
+} from "@/lib/pure/accounts/portfolio";
 import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const portfolioSnapshotInput = z.object({

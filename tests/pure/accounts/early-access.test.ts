@@ -11,7 +11,7 @@ import {
   computeEmployerPlanPreTaxAccess,
   computeEmployerPlanRothAccess,
   computeRothIraAccess,
-} from "@/lib/pure/early-access";
+} from "@/lib/pure/accounts/early-access";
 
 describe("resolveSeparationYear", () => {
   it("prefers an explicit separation year over derived data", () => {
@@ -217,7 +217,7 @@ describe("computeRothIraAccess", () => {
   // the rule; each conversion has its own (IRC 408A(d)(3)(F); Reg.
   // 1.408A-6 A-5). Changes on purpose with v0.11 Retirement rules
   // "Retirement rules the skeptic confirmed" (K-E), where answer-key
-  // ret/E19 (`tests/pure/answer-key-penalties.test.ts`) replaces it.
+  // ret/E19 (`tests/pure/accounts/answer-key-penalties.test.ts`) replaces it.
   it("gates conversion basis on the 5-year clock from the LATEST tracked conversion year", () => {
     // Multi-year ladder pooled into one number: converted in 2020 and 2025,
     // latestConversionYear=2025 (the conservative choice). In 2026, only 1

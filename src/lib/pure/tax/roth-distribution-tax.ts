@@ -21,7 +21,7 @@
  * still-unmodeled cost — see the design doc's Q1) — so it plays no role
  * here.
  */
-import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
+import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { ageInYear } from "@/lib/utils/date";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";

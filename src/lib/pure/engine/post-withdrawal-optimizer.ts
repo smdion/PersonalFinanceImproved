@@ -43,7 +43,7 @@ import {
   incomeCapForMarginalRate,
 } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
+import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 

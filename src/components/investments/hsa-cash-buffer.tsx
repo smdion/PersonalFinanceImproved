@@ -12,7 +12,7 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { SK_HSA_CASH_BUFFER } from "@/lib/constants/settings-keys";
-import { resolveHsaCashBuffer } from "@/lib/pure/cash-positions";
+import { resolveHsaCashBuffer } from "@/lib/pure/accounts/cash-positions";
 
 export function HsaCashBuffer({
   ownerPersonId,

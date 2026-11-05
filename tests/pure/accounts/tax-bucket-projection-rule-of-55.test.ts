@@ -8,8 +8,8 @@
  * override must be applied AFTER that recompute, inside this function.
  */
 import { describe, it, expect } from "vitest";
-import { projectRuleOf55 } from "@/lib/pure/tax-bucket-projection";
-import type { RuleOf55Status } from "@/lib/pure/tax-bucket-analysis";
+import { projectRuleOf55 } from "@/lib/pure/accounts/tax-bucket-projection";
+import type { RuleOf55Status } from "@/lib/pure/accounts/tax-bucket-analysis";
 
 describe("projectRuleOf55 — forceIneligible", () => {
   it("source 'active': forceIneligible overrides the recomputed eligible=true", () => {

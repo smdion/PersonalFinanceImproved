@@ -19,7 +19,7 @@ import {
 import {
   findBasisGaps,
   findMissingCostBasis,
-} from "@/lib/pure/basis-consistency";
+} from "@/lib/pure/accounts/basis-consistency";
 import { parseBasisEditField } from "@/components/performance/basis-cell";
 import {
   PERF_CATEGORY_PORTFOLIO,

@@ -25,7 +25,7 @@ import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
 } from "@/lib/pure/report/bracket-target-narrative";
-import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 import {
   getAccountSegments,
   getAllCategories,

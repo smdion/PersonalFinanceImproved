@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Investing findings — uninvested cash (lib/pure/cash-positions.ts) and
+ * Investing findings — uninvested cash (lib/pure/accounts/cash-positions.ts) and
  * per-fund findings (lib/pure/fund-findings.ts), each judged once,
  * from the holdings overview (portfolio permission), the current glide
  * path's cash target, the HSA buffer defaults and setting, and the Roth
@@ -19,7 +19,7 @@ import {
   judgeCashDrag,
   judgeHsaCash,
   type CashFinding,
-} from "@/lib/pure/cash-positions";
+} from "@/lib/pure/accounts/cash-positions";
 import {
   judgeCheaperFunds,
   judgeTaxLossHarvest,

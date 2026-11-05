@@ -1,7 +1,7 @@
 /**
  * Roth basis year-end rollover — called from performance.ts's finalizeYear
  * transaction (one line in the orchestrator; the actual logic is here and
- * in src/lib/pure/roth-basis-rollover.ts, per RULES.md's thin-orchestrator
+ * in src/lib/pure/accounts/roth-basis-rollover.ts, per RULES.md's thin-orchestrator
  * rule). Mirrors accountPerformance's own finalize-then-seed-next-year
  * shape, but keyed as its own table since accountPerformance doesn't split
  * a jointly-labeled account per owner the way Roth basis correctness needs.
@@ -9,7 +9,7 @@
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { toNumber } from "./transforms";
-import { computeRothBasisRollover } from "@/lib/pure/roth-basis-rollover";
+import { computeRothBasisRollover } from "@/lib/pure/accounts/roth-basis-rollover";
 import type { Db } from "@/lib/db";
 
 /**

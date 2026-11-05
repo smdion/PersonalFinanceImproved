@@ -7,7 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeTaxBucketBreakdown,
   type TaxBucketSnapshotAccount,
-} from "@/lib/pure/tax-buckets";
+} from "@/lib/pure/accounts/tax-buckets";
 
 const people = [
   { id: 1, name: "Alex" },

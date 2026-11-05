@@ -1,6 +1,6 @@
 /** Suggested cost basis from reported average cost. Invented figures only. */
 import { describe, it, expect } from "vitest";
-import { suggestCostBasis } from "@/lib/pure/cost-basis";
+import { suggestCostBasis } from "@/lib/pure/accounts/cost-basis";
 
 describe("suggestCostBasis", () => {
   it("sums shares × average cost, counting a $1 fund at its value", () => {

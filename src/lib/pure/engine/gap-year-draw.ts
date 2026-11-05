@@ -49,11 +49,11 @@ import { followDraws, retirementBrokerageBasisRatio } from "./brokerage-basis";
 import {
   computeNonRetirementExclusion,
   computeWithdrawalEligibility,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
-import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
+import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import type {
   ProjectionContext,
   ProjectionLoopState,

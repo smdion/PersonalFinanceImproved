@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
-import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
+import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 
 function makeDraw(overrides: Partial<BasisDraw> = {}): BasisDraw {

@@ -14,7 +14,7 @@
  * the fund, so their unit price is their total return.
  */
 import { IMPLIED_PRICE_MAX_ERROR } from "@/lib/config/fund-prices";
-import type { DailyClose } from "./current-balances";
+import type { DailyClose } from "./accounts/current-balances";
 
 export type DatedHoldingReport = {
   feedId: number;

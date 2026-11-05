@@ -61,7 +61,7 @@ import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
 import {
   findMissingCostBasis,
   missingCostBasisWarning,
-} from "@/lib/pure/basis-consistency";
+} from "@/lib/pure/accounts/basis-consistency";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   DEFAULT_SIMULATION,
@@ -88,7 +88,7 @@ import { retirementContributions } from "./payload/retirement-contributions";
 import { buildIndividualAccounts } from "./payload/individual-accounts";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import { projectionJobs, workingYears } from "@/lib/pure/profiles";
-import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_IRS_LIMIT_GROWTH_RATE,
@@ -671,7 +671,7 @@ export async function buildEnginePayload(
   );
 
   // Portfolio by tax bucket + per-account balances (combined for engine).
-  // Shared with the Tax Buckets analysis tool — see src/lib/pure/tax-buckets.ts.
+  // Shared with the Tax Buckets analysis tool — see src/lib/pure/accounts/tax-buckets.ts.
   const taxBucketBreakdown = computeTaxBucketBreakdown(
     snapshotData,
     people,

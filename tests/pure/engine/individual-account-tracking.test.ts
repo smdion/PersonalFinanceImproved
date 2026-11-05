@@ -30,9 +30,9 @@ import {
   makeAccumulationSlot,
   makeContributionSpec,
 } from "../fixtures/engine-fixtures";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
-import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
+import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 
 /** No account allows a penalized draw: what's "still excluded" is all of
  *  the exposure, and nothing caps what a category can reach. */

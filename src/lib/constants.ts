@@ -106,7 +106,7 @@ export const RMD_EXCISE_TAX_RATE = 0.25;
 // ---------------------------------------------------------------------------
 // Early-Access Ages (shared by the Tax Buckets analysis tool and
 // the retirement projection engine's withdrawal-eligibility gate —
-// both consume `src/lib/pure/early-access.ts`'s leaf predicates, which read
+// both consume `src/lib/pure/accounts/early-access.ts`'s leaf predicates, which read
 // these constants)
 // ---------------------------------------------------------------------------
 
@@ -143,7 +143,7 @@ export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
  *  (IRC §72(t)): every gated account type but HSA, whose non-medical
  *  penalty is 20% (`HSA_NON_MEDICAL_PENALTY_RATE`). Used by
- *  `src/lib/pure/early-withdrawal-penalty.ts`. */
+ *  `src/lib/pure/accounts/early-withdrawal-penalty.ts`. */
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
 
 /** 20% early-withdrawal penalty rate for HSA non-medical distributions

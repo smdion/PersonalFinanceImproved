@@ -1,6 +1,6 @@
 /**
  * The Current Balances figures: the most accurate balance for each tracked
- * account (lib/pure/current-balances.ts), part by part, with the market day
+ * account (lib/pure/accounts/current-balances.ts), part by part, with the market day
  * each feed's data really is from (lib/pure/sync/feed-data-date.ts). Reads only
  * — nothing here is written to a snapshot or to Performance.
  */
@@ -16,7 +16,7 @@ import {
   summarizeCurrentBalances,
   type BalanceFeed,
   type DailyClose,
-} from "@/lib/pure/current-balances";
+} from "@/lib/pure/accounts/current-balances";
 import {
   feedDataDay,
   learnReportLag,

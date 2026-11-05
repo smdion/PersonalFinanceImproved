@@ -4,7 +4,7 @@
  * configured age and rate.
  */
 import { describe, it, expect } from "vitest";
-import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 
 describe("HSA_DRAW_TREATMENT", () => {
   it("says the projection's assumption, with the configured age and rate", () => {

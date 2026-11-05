@@ -6,7 +6,7 @@ import type { AccountBalance } from "@/lib/config/account-types.types";
 import type {
   RuleOf55Status,
   RothBasisMeta,
-} from "@/lib/pure/tax-bucket-analysis";
+} from "@/lib/pure/accounts/tax-bucket-analysis";
 import type { TaxTreatment } from "@/lib/config/enum-values";
 import type { FilingStatusKey } from "@/lib/config/filing-status";
 
@@ -179,7 +179,7 @@ export type IndividualAccountInput = {
    *  (`accountType` config's `rothOrderingRules === "pro_rata"`) with a
    *  resolvable owner. The engine re-evaluates this for a future projected
    *  year itself via `projectRuleOf55`
-   *  (`src/lib/pure/tax-bucket-projection.ts`) rather than trusting a
+   *  (`src/lib/pure/accounts/tax-bucket-projection.ts`) rather than trusting a
    *  precomputed "now" answer for a different year. Not yet consumed by
    *  the engine (Group 2 wires the withdrawal-ordering eligibility gate) —
    *  purely additive data threading in this pass. */
@@ -209,7 +209,7 @@ export type IndividualAccountInput = {
    *  unchanged projection-cache hash — see `hashEngineInput` in
    *  `server/helpers/projection-cache.ts`). One-directional: can only push
    *  eligibility from true to false. See `projectRuleOf55`'s
-   *  `opts.forceIneligible` docblock (`lib/pure/tax-bucket-projection.ts`)
+   *  `opts.forceIneligible` docblock (`lib/pure/accounts/tax-bucket-projection.ts`)
    *  for the full contract, and why this is threaded as a parameter INTO
    *  that function rather than checked by either of its two callers —
    *  short-circuiting to "locked" in the consumer was a real bug
@@ -225,7 +225,7 @@ export type IndividualAccountInput = {
    *  follow-up for true last-resort ordering). Only ever set `true` —
    *  omitted entirely for the default (no override) case, same cache-hash-
    *  stability convention as `ruleOf55ForceIneligible` above. Consumed by
-   *  `computeWithdrawalEligibility` (`lib/pure/withdrawal-eligibility.ts`),
+   *  `computeWithdrawalEligibility` (`lib/pure/accounts/eligibility.ts`),
    *  which uses it to compute a second, narrower "still-excluded" aggregate
    *  that `subtractPenaltyExposed` (`lib/pure/engine/balance-utils.ts`)
    *  subtracts instead of the category's full penalty-exposed total — this
@@ -281,7 +281,7 @@ export type IndividualAccountYearBalance = {
   /** The household lets this account take penalized draws. */
   allowPenalizedWithdrawals?: boolean;
   /** Tracked Roth basis remaining at END of this year, both phases
-   *  (see `@/lib/pure/roth-basis-tracking`). Contribution + conversion basis
+   *  (see `@/lib/pure/accounts/roth-basis-tracking`). Contribution + conversion basis
    *  combined. Present only for taxFree-bucket accounts; absent (not
    *  zero) for everything else, so "no data" is never confused with
    *  "$0 left". */

@@ -19,13 +19,13 @@ import {
   PROJECTED_RETIREMENT_BROKERAGE_LABEL,
 } from "@/lib/config/display-labels";
 import type { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
-import type { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   computeTaxBucketAnalysis,
   type RuleOf55Status,
   type RothBasisMeta,
-} from "@/lib/pure/tax-bucket-analysis";
-import { buildCurrentRothBasisMap } from "@/lib/pure/roth-basis-rollover";
+} from "@/lib/pure/accounts/tax-bucket-analysis";
+import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
 import { toNumber } from "@/server/helpers";
 import type { fetchRetirementData } from "../build-engine-payload";
 

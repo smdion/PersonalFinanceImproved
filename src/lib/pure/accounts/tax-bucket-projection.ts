@@ -40,14 +40,14 @@ import {
   computeRothIraAccess,
   computeHsaAccess,
   type EarlyAccessSlice,
-} from "@/lib/pure/early-access";
+} from "@/lib/pure/accounts/early-access";
 import type {
   AccountAnalysisEntry,
   AgeThresholdStatus,
   PersonInfo,
   RothBasisMeta,
   RuleOf55Status,
-} from "@/lib/pure/tax-bucket-analysis";
+} from "@/lib/pure/accounts/tax-bucket-analysis";
 import { ageInYear } from "@/lib/utils/date";
 
 function matchKey(

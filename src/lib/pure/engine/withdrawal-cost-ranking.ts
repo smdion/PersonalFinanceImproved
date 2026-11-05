@@ -35,7 +35,7 @@ import {
 } from "../../config/tax-tables";
 import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, niitThresholdFor } from "../../config/niit";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 

@@ -11,7 +11,7 @@ import {
   computeSnapshotEndingBalances,
   resolveSnapshotParentCategory,
   resolveSnapshotAccountAmounts,
-} from "@/lib/pure/portfolio";
+} from "@/lib/pure/accounts/portfolio";
 
 describe("buildPrevInactiveKeys", () => {
   it("collects keys for inactive accounts", () => {

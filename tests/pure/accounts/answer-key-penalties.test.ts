@@ -39,23 +39,23 @@
  * Blocked with an item that unblocks them: the `it.todo`s at the end.
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
+import { cents, xfail } from "../../fixtures/answer-key";
 import {
   computeWithdrawalEligibility,
   type EligibilityAccountInput,
-} from "@/lib/pure/withdrawal-eligibility";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+} from "@/lib/pure/accounts/eligibility";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import {
   isRuleOf55Eligible,
   resolveSeparationYear,
-} from "@/lib/pure/early-access";
+} from "@/lib/pure/accounts/early-access";
 import {
   drawFromBasis,
   type RothBasisState,
-} from "@/lib/pure/roth-basis-tracking";
+} from "@/lib/pure/accounts/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import { getAccountTypeConfig } from "@/lib/config/account-types";
-import type { RuleOf55Status } from "@/lib/pure/tax-bucket-analysis";
+import type { RuleOf55Status } from "@/lib/pure/accounts/tax-bucket-analysis";
 
 // ---------------------------------------------------------------------------
 // Inputs: one invented owner, one account, one plan year
@@ -471,7 +471,7 @@ describe("answer key: Roth ordering and the conversion clocks", () => {
     // 2022 10,000 (clear from 1/1/2027) is free, then 5,000 of 2025's (in
     // its clock to 12/31/2029): 10% × 5,000 = 500. Today one clock from
     // the latest conversion (2025) locks both: 10% × 15,000 = 1,500
-    // (verdict K-E; the pin at `tests/pure/early-access.test.ts:216`).
+    // (verdict K-E; the pin at `tests/pure/accounts/early-access.test.ts:216`).
     xfail({
       id: "ret/E19 [RET-21]",
       todo: `${SKEPTIC_CONFIRMED} (verdict K-E: one conversion clock)`,

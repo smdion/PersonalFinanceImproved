@@ -9,7 +9,7 @@ import {
   routeWithdrawalsPercentage,
 } from "@/lib/pure/engine/withdrawal-routing";
 import { deriveBasisRankingInputs } from "@/lib/pure/engine/withdrawal-cost-ranking";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import {
   makeAccountBalances,
   makeDecumulationConfig,

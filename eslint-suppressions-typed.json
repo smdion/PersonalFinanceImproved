@@ -554,6 +554,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/accounts/tax-bucket-projection.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
   "src/lib/pure/contributions/contribution.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 5
@@ -667,11 +672,6 @@
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 8
-    }
-  },
-  "src/lib/pure/tax-bucket-projection.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
     }
   },
   "src/lib/pure/tax/tax.ts": {

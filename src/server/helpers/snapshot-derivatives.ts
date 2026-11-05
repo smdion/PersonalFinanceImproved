@@ -18,7 +18,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { userMessageFor } from "@/lib/budget-api/errors";
-import { computeSnapshotEndingBalances } from "@/lib/pure/portfolio";
+import { computeSnapshotEndingBalances } from "@/lib/pure/accounts/portfolio";
 import { ownerKey, type YearEndSnapshot } from "@/lib/pure/performance-checks";
 import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
 import { toNumber } from "@/server/helpers/transforms";

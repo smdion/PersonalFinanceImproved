@@ -10,7 +10,7 @@ import {
   buildCurrentRothBasisMap,
   computeRothBasisRollover,
   type RothBasisRollupRow,
-} from "@/lib/pure/roth-basis-rollover";
+} from "@/lib/pure/accounts/roth-basis-rollover";
 
 function row(overrides: Partial<RothBasisRollupRow>): RothBasisRollupRow {
   return {

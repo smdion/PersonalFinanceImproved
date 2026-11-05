@@ -89,7 +89,7 @@ import {
 import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
-import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
 import { engineHousehold } from "../fixtures/answer-key-household";
@@ -107,8 +107,8 @@ import { PERMISSIONS } from "@/lib/config/permissions";
 import { routePercentage } from "@/lib/pure/engine/contribution-routing";
 import { resolveAccumulationConfig } from "@/lib/pure/engine/override-resolution";
 import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing";
-import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import {
   makeAccountBalances,
   makeAccumulationConfig,

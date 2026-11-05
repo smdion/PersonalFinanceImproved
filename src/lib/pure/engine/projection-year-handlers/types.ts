@@ -25,8 +25,8 @@ import type { DecumulationOverride } from "../types/decumulation";
 import type { SpendingCrossYearState } from "../spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-account-tracking";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
-import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
+import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
 
@@ -77,7 +77,7 @@ export type ProjectionLoopState = {
   // Individual account tracking
   indBal: Map<string, number>;
   /** Tracked Roth basis per taxFree-bucket account (see
-   *  `@/lib/pure/roth-basis-tracking`). Present only for accounts
+   *  `@/lib/pure/accounts/roth-basis-tracking`). Present only for accounts
    *  where `isTaxFreeBucket(ia.taxType)`; absent for everything else. */
   indBasis: Map<string, RothBasisState>;
   /** Brokerage cost basis per basis-tracking account (brokerage-basis.ts). */

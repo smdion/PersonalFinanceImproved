@@ -59,7 +59,7 @@ import {
 import { rothIraRouteOf, rothIraSummary } from "@/lib/pure/roth-ira";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
-import { hsaCashBuffers } from "@/lib/pure/cash-positions";
+import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
 import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";

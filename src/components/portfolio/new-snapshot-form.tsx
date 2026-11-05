@@ -13,8 +13,8 @@ import {
   personDisplayName,
 } from "@/lib/utils/format";
 import { localDateStr } from "@/lib/utils/date";
-import { snapshotAccountKey } from "@/lib/pure/portfolio";
-import { snapshotRowLabel } from "@/lib/pure/portfolio/snapshot-row-label";
+import { snapshotAccountKey } from "@/lib/pure/accounts/portfolio";
+import { snapshotRowLabel } from "@/lib/pure/accounts/snapshot-row-label";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { SettingsLink } from "@/components/ui/settings-link";
 import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";

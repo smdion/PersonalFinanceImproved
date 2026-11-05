@@ -67,7 +67,7 @@ import {
 } from "@/server/helpers/loan-feed";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
-import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
+import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { accountDisplayName } from "@/lib/utils/format";

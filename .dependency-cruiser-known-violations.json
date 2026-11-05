@@ -81,8 +81,23 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/early-withdrawal-penalty.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
+    "from": "src/lib/pure/accounts/early-withdrawal-penalty.ts",
+    "to": "src/lib/pure/accounts/eligibility.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/accounts/eligibility.ts",
+    "to": "src/lib/pure/accounts/tax-bucket-projection.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/accounts/tax-bucket-analysis.ts",
+    "to": "src/lib/pure/accounts/tax-buckets.ts"
+  },
+  {
+    "rule": "no-circular",
+    "from": "src/lib/pure/accounts/tax-bucket-projection.ts",
+    "to": "src/lib/pure/engine/types/index.ts"
   },
   {
     "rule": "no-circular",
@@ -92,7 +107,7 @@
   {
     "rule": "no-circular",
     "from": "src/lib/pure/engine/balance-utils.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
+    "to": "src/lib/pure/accounts/eligibility.ts"
   },
   {
     "rule": "no-circular",
@@ -112,11 +127,6 @@
   {
     "rule": "no-circular",
     "from": "src/lib/pure/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/gap-year-draw.ts",
     "to": "src/lib/pure/engine/projection-year-handlers/types.ts"
   },
   {
@@ -126,23 +136,18 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/pure/engine/guyton-klinger.ts",
     "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
     "from": "src/lib/pure/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/engine/types/projection-result.ts"
+    "to": "src/lib/pure/accounts/eligibility.ts"
   },
   {
     "rule": "no-circular",
     "from": "src/lib/pure/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
+    "to": "src/lib/pure/engine/types/projection-result.ts"
   },
   {
     "rule": "no-circular",
@@ -167,12 +172,7 @@
   {
     "rule": "no-circular",
     "from": "src/lib/pure/engine/withdrawal-routing.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/tax-bucket-analysis.ts",
-    "to": "src/lib/pure/tax-buckets.ts"
+    "to": "src/lib/pure/accounts/eligibility.ts"
   },
   {
     "rule": "no-circular",
@@ -296,6 +296,16 @@
   },
   {
     "rule": "pure-has-no-io",
+    "from": "src/lib/pure/accounts/portfolio.ts",
+    "to": "src/server/helpers/transforms.ts"
+  },
+  {
+    "rule": "pure-has-no-io",
+    "from": "src/lib/pure/accounts/tax-buckets.ts",
+    "to": "src/server/helpers/transforms.ts"
+  },
+  {
+    "rule": "pure-has-no-io",
     "from": "src/lib/pure/budget/utility-cost-feed.ts",
     "to": "src/lib/budget-api/types.ts"
   },
@@ -316,18 +326,8 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/portfolio.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
     "from": "src/lib/pure/savings/savings-projection.ts",
     "to": "src/components/savings/types.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/tax-buckets.ts",
-    "to": "src/server/helpers/transforms.ts"
   },
   {
     "rule": "pure-has-no-io",
@@ -392,7 +392,7 @@
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/components/investments/hsa-cash-buffer.tsx",
-    "to": "src/lib/pure/cash-positions.ts"
+    "to": "src/lib/pure/accounts/cash-positions.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
@@ -422,7 +422,7 @@
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-investing-findings.ts",
-    "to": "src/lib/pure/cash-positions.ts"
+    "to": "src/lib/pure/accounts/cash-positions.ts"
   },
   {
     "rule": "ui-never-bundles-zod",

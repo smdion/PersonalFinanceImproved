@@ -12,8 +12,8 @@ import {
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { initialCrossYearState } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
-import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
 

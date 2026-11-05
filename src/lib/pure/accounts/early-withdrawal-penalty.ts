@@ -3,7 +3,7 @@
  * account's penalty-free amount in the eligibility record, at 10% (IRC
  * §72(t)) or the type's non-medical penalty (HSA's 20%, IRC §223(f)(4)).
  */
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import { nonMedicalPenaltyRate } from "@/lib/config/account-types";
 import { EARLY_WITHDRAWAL_PENALTY_RATE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";

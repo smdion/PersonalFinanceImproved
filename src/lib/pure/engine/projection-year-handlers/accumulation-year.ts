@@ -57,7 +57,7 @@ import {
   reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
-import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
+import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type {
   PreYearSetup,
   ProjectionContext,

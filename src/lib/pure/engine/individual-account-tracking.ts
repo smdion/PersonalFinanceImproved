@@ -32,7 +32,7 @@ import {
 } from "../../config/account-balance";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/tax-treatment-buckets";
 import { projectSpecAmount } from "./contribution-projection";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   accrueContributionBasis,
@@ -41,7 +41,7 @@ import {
   clampBasisToBalance,
   type RothBasisState,
   type BasisDraw,
-} from "@/lib/pure/roth-basis-tracking";
+} from "@/lib/pure/accounts/roth-basis-tracking";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1003,7 +1003,7 @@ export function applyIndividualGrowth(
 // ---------------------------------------------------------------------------
 //
 // Thin per-account loops — all arithmetic delegates to the pure module
-// (@/lib/pure/roth-basis-tracking). This "aspect module" (see file
+// (@/lib/pure/accounts/roth-basis-tracking). This "aspect module" (see file
 // docblock) branches on isTaxFreeBucket + rothOrderingRules and calls the
 // pure functions; it owns no basis math of its own.
 
@@ -1080,7 +1080,7 @@ export function depleteIndividualBasis(input: {
  * are read straight from the matching `AccountEligibility` entry, so the
  * UI can show why the engine did or didn't prefer an account this year.
  * Purely a read/pass-through here — this module never computes eligibility
- * itself (see `@/lib/pure/withdrawal-eligibility`).
+ * itself (see `@/lib/pure/accounts/eligibility`).
  *
  * `maps.basis`/`maps.draws` (tracked Roth basis follow-up) — when
  * provided, populate `rothBasisRemaining`/`rothBasisDrawn`/

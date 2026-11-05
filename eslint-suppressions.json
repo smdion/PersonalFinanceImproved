@@ -3787,24 +3787,149 @@
       "count": 2
     }
   },
+  "src/lib/pure/accounts/balance-dates.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/basis-consistency.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/cash-positions.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/accounts/cost-basis.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/current-balances.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 6
+    }
+  },
+  "src/lib/pure/accounts/early-access.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 11
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/early-withdrawal-penalty.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/eligibility.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 19
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/accounts/portfolio.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/roth-basis-rollover.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/accounts/roth-basis-tracking.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/snapshot-row-label.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/accounts/tax-bucket-analysis.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/tax-bucket-projection.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 13
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/tax-buckets.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 7
+    }
+  },
   "src/lib/pure/always-buying.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/balance-dates.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/basis-consistency.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -3835,14 +3960,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    }
-  },
-  "src/lib/pure/cash-positions.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/contrib-profile-diff.ts": {
@@ -3923,19 +4040,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/cost-basis.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/current-balances.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
   "src/lib/pure/current-glide-path.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -3956,19 +4060,6 @@
       "count": 2
     },
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/early-access.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/early-withdrawal-penalty.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -4594,22 +4685,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/portfolio.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/portfolio/snapshot-row-label.ts": {
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
   "src/lib/pure/profiles.ts": {
     "ratchet/max-comment-lines": {
       "count": 8
@@ -4793,22 +4868,6 @@
       "count": 4
     }
   },
-  "src/lib/pure/roth-basis-rollover.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/roth-basis-tracking.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/lib/pure/roth-ira.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -4982,48 +5041,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/tax-bucket-analysis.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/tax-bucket-projection.ts": {
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 13
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/tax-buckets.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 7
-    }
-  },
   "src/lib/pure/tax/data-status.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5090,23 +5107,6 @@
   "src/lib/pure/types/shared.ts": {
     "ratchet/max-comment-lines": {
       "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 5
-    }
-  },
-  "src/lib/pure/withdrawal-eligibility.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 19
     },
     "ratchet/no-history-comment": {
       "count": 1

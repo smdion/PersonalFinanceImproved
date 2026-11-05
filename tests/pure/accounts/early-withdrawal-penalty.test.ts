@@ -11,11 +11,11 @@
  *      never negative, never double-counted.
  */
 import { describe, it, expect } from "vitest";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import type {
   AccountEligibility,
   EligibilityRecord,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   EARLY_WITHDRAWAL_PENALTY_RATE,

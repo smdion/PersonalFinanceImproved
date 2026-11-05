@@ -21,12 +21,12 @@ import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { toNumber } from "@/server/helpers/transforms";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
-import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
-import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
+import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
 import {
   buildCurrentRothBasisMap,
   selectCurrentRothBasisRow,
-} from "@/lib/pure/roth-basis-rollover";
+} from "@/lib/pure/accounts/roth-basis-rollover";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";

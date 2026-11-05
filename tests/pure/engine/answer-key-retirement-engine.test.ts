@@ -11,7 +11,7 @@
  * (plan commit 15).
  *
  * - The penalty priced (P9, E13, E17; engine audit M08, RT56): the
- *   function-level figures are `tests/pure/answer-key-penalties.test.ts`'s.
+ *   function-level figures are `tests/pure/accounts/answer-key-penalties.test.ts`'s.
  * - IRMAA per enrolled person (I10, I11; RT34) and the on-top surcharge in
  *   the third retired year (RT38): `tests/config/answer-key-irmaa.test.ts`.
  * - The two-year lookback (I26, I29, C5; RT33): the same file, and spec

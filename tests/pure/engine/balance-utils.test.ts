@@ -17,7 +17,7 @@ import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 import { getAllCategories } from "@/lib/config/account-types";
 
 function makeBuckets(overrides: Partial<TaxBuckets> = {}): TaxBuckets {

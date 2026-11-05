@@ -50,17 +50,17 @@ import {
   earlyAccessSlices,
   penaltyFreePrefixAmount,
   type EarlyAccessSlice,
-} from "@/lib/pure/early-access";
-import { projectRuleOf55 } from "@/lib/pure/tax-bucket-projection";
+} from "@/lib/pure/accounts/early-access";
+import { projectRuleOf55 } from "@/lib/pure/accounts/tax-bucket-projection";
 import { ageInYear } from "@/lib/utils/date";
 import type {
   RuleOf55Status,
   RothBasisMeta,
-} from "@/lib/pure/tax-bucket-analysis";
+} from "@/lib/pure/accounts/tax-bucket-analysis";
 import { formatCurrency } from "@/lib/utils/format";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
-import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 /** The account shape this module needs — a structural subset of
@@ -221,7 +221,7 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
  *
  * `indBasis` (tracked Roth basis follow-up, optional): when supplied,
  * Roth basis figures come from `indBasis.get(key)` (a running, per-year
- * tracked balance — see `@/lib/pure/roth-basis-tracking`) instead of each
+ * tracked balance — see `@/lib/pure/accounts/roth-basis-tracking`) instead of each
  * account's static `ia.rothBasisMeta` snapshot. When omitted, behavior is
  * byte-identical to before tracked basis existed — this keeps every
  * non-engine caller and existing test unchanged. The gate and the UI

@@ -7,9 +7,9 @@ import { describe, it, expect } from "vitest";
 import {
   computeWithdrawalEligibility,
   computeNonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
-import type { EligibilityAccountInput } from "@/lib/pure/withdrawal-eligibility";
-import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
+} from "@/lib/pure/accounts/eligibility";
+import type { EligibilityAccountInput } from "@/lib/pure/accounts/eligibility";
+import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 
 const indKey = (ia: {
   name: string;

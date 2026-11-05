@@ -7,7 +7,7 @@
  * and isn't "behind" one from Friday. Each institution is as current as its
  * least current account.
  */
-import { tradingDaysBetween, valuationDateFor } from "./market-calendar";
+import { tradingDaysBetween, valuationDateFor } from "../market-calendar";
 
 type AccountBalanceDate = {
   institution: string;

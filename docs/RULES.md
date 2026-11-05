@@ -68,7 +68,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** Both are recorded layer breaks (§ Pure Business Logic Boundary); don't extend them.
 - **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings.
 - **Files and functions over the size limit** are recorded in `size-baseline.json`; a recorded size is a ceiling, not a pass to grow.
-- **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/roth-basis-tracking.ts`).
+- **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/accounts/roth-basis-tracking.ts`).
 - **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
 - **Year totals come from three places** (the schedule, the blended walk, average × checks), until fixed. Only the schedule is right.
 - **Over-limit contributions overflow only in some later years,** until they overflow in every year (decision C4, v0.11). Money configured over this year's limit is capped and goes nowhere.

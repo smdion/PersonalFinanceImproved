@@ -109,6 +109,8 @@
     "src/lib/demo/profiles/early-retirement.ts": 666,
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
+    "src/lib/pure/accounts/eligibility.ts": 484,
+    "src/lib/pure/accounts/tax-bucket-projection.ts": 527,
     "src/lib/pure/contribution-caps.ts": 671,
     "src/lib/pure/contributions.ts": 223,
     "src/lib/pure/contributions/contribution-amount.ts": 110,
@@ -139,8 +141,6 @@
     "src/lib/pure/retirement/relocation.ts": 490,
     "src/lib/pure/roth-ira.ts": 543,
     "src/lib/pure/simulation/monte-carlo.ts": 760,
-    "src/lib/pure/tax-bucket-projection.ts": 527,
-    "src/lib/pure/withdrawal-eligibility.ts": 484,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 474,
     "src/lib/simplefin/ingest.ts": 534,
@@ -759,6 +759,19 @@
     "src/lib/hooks/use-paycheck-person-views.ts": {
       "usePaycheckPersonViews": 245
     },
+    "src/lib/pure/accounts/eligibility.ts": {
+      "computeWithdrawalEligibility": 182
+    },
+    "src/lib/pure/accounts/tax-bucket-analysis.ts": {
+      "computeTaxBucketAnalysis": 244
+    },
+    "src/lib/pure/accounts/tax-bucket-projection.ts": {
+      "computeTaxBucketProjection": 280,
+      "computeTaxBucketProjection.entries.map()": 191
+    },
+    "src/lib/pure/accounts/tax-buckets.ts": {
+      "computeTaxBucketBreakdown": 243
+    },
     "src/lib/pure/contribution-caps.ts": {
       "capContributionsByLimitGroup": 271
     },
@@ -816,21 +829,8 @@
     "src/lib/pure/simulation/monte-carlo.ts": {
       "calculateMonteCarlo": 579
     },
-    "src/lib/pure/tax-bucket-analysis.ts": {
-      "computeTaxBucketAnalysis": 244
-    },
-    "src/lib/pure/tax-bucket-projection.ts": {
-      "computeTaxBucketProjection": 280,
-      "computeTaxBucketProjection.entries.map()": 191
-    },
-    "src/lib/pure/tax-buckets.ts": {
-      "computeTaxBucketBreakdown": 243
-    },
     "src/lib/pure/tax/distribution-tax-rates.ts": {
       "buildDistributionTaxRates": 199
-    },
-    "src/lib/pure/withdrawal-eligibility.ts": {
-      "computeWithdrawalEligibility": 182
     },
     "src/lib/sec/facts-sync.ts": {
       "refreshOne": 205

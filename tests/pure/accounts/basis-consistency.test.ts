@@ -4,7 +4,7 @@ import {
   findBasisGaps,
   findMissingCostBasis,
   missingCostBasisWarning,
-} from "@/lib/pure/basis-consistency";
+} from "@/lib/pure/accounts/basis-consistency";
 
 const row = (
   year: number,

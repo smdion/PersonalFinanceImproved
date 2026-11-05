@@ -25,7 +25,7 @@
  * figure. `drawFromBasis` is the dollar-flow dual of the same ordering
  * rules those predicates already encode — same rule, different question —
  * verified against them by the "full distribution" equivalence test in
- * `tests/pure/roth-basis-tracking.test.ts`.
+ * `tests/pure/accounts/roth-basis-tracking.test.ts`.
  *
  * Conversion basis is DECREMENT-ONLY this pass: `performRothConversion`
  * (engine/post-withdrawal-optimizer.ts) moves money at the aggregate/
@@ -37,7 +37,7 @@
  * in one diff.
  */
 import { roundToCents } from "@/lib/utils/math";
-import type { RothBasisMeta } from "@/lib/pure/tax-bucket-analysis";
+import type { RothBasisMeta } from "@/lib/pure/accounts/tax-bucket-analysis";
 
 /** Running per-account Roth basis state for one projected year. */
 export type RothBasisState = {

@@ -32,7 +32,7 @@ import { subtractExcluded, applySlotsToBalances } from "./balance-utils";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 import { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "./withdrawal-cost-ranking";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";

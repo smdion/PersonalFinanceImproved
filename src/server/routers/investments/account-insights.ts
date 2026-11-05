@@ -4,7 +4,7 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
-import { changeSinceSnapshot } from "@/lib/pure/current-balances";
+import { changeSinceSnapshot } from "@/lib/pure/accounts/current-balances";
 import { loadCurrentBalances } from "./load-current-balances";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";

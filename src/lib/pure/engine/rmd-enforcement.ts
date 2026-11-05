@@ -18,7 +18,7 @@ import {
 import { getTraditionalBalance } from "../../config/account-balance";
 import { computeRmdAmount } from "../../config/rmd-tables";
 import { RMD_EXCISE_TAX_RATE } from "../../constants";
-import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
+import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------

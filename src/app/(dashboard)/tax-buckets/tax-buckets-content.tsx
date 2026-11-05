@@ -16,10 +16,10 @@ import { SlidePanel } from "@/components/ui/slide-panel";
 import { KpiCard } from "@/components/cards/projection/projection-hero-kpis";
 import { formatCurrency } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
-import { computeTaxBucketProjection } from "@/lib/pure/tax-bucket-projection";
+import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import type { AccountAnalysisEntry } from "@/lib/pure/tax-bucket-analysis";
+import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-bucket-analysis";
 import {
   isTaxFreeBucket,
   isPreTaxType,
@@ -30,7 +30,7 @@ import {
   tracksCostBasis,
   tracksRothBasis,
 } from "@/lib/config/account-types";
-import { penaltyFreePrefixAmount } from "@/lib/pure/early-access";
+import { penaltyFreePrefixAmount } from "@/lib/pure/accounts/early-access";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
@@ -82,7 +82,7 @@ function buildBuckets(entries: AccountEntry[]) {
     b.entries.push(entry);
     if (entry.slices.length > 0) {
       // Penalty-free capacity is the LEADING, CONTIGUOUS prefix of
-      // penalty-free slices (penaltyFreePrefixAmount, @/lib/pure/early-access)
+      // penalty-free slices (penaltyFreePrefixAmount, @/lib/pure/accounts/early-access)
       // — the SAME single computation path the withdrawal-routing engine
       // uses — NOT a sum of every penalty-free slice regardless of
       // position. An unseasoned Roth conversion slice blocks access to any

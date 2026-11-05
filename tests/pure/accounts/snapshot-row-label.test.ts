@@ -7,7 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   snapshotRowLabel,
   type SnapshotRowLabelInput,
-} from "@/lib/pure/portfolio/snapshot-row-label";
+} from "@/lib/pure/accounts/snapshot-row-label";
 
 const row = (o: Partial<SnapshotRowLabelInput>): SnapshotRowLabelInput => ({
   owner: null,
