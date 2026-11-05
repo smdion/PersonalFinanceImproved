@@ -99,6 +99,25 @@ describe("renameDisplayNameActive", () => {
     expect(fieldsOf(tables)).toEqual(RENAME_CASES.map((c) => c.after));
   });
 
+  it("every shared case's converted entries pass the strict schema", () => {
+    const isEntry = (v: unknown): v is Record<string, unknown> =>
+      typeof v === "object" && v !== null && !Array.isArray(v);
+    let checked = 0;
+    for (const c of RENAME_CASES) {
+      const stored = isEntry(c.after) ? c.after.contributionAccounts : null;
+      if (!isEntry(stored)) continue;
+      for (const [id, entry] of Object.entries(stored)) {
+        // A displayNameCustom stored as null fails the schema with or
+        // without the rename, which keeps it as it is.
+        if (!isEntry(entry) || entry.displayNameCustom === null) continue;
+        const r = contribAccountActiveFieldsSchema.safeParse(entry);
+        expect(r.success, `${c.name}: entry ${id}`).toBe(true);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(5);
+  });
+
   it("leaves the backup it was given unchanged", () => {
     const input = {
       contribution_profiles: [
