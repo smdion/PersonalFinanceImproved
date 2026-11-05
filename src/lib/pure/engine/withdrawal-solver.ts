@@ -125,7 +125,7 @@ interface TaxEstimationInput {
    *  same record `decumulation-year.ts`'s real execution passes to its own
    *  `routeForMode` call: the single-dispatch invariant this module's
    *  header docblock documents applies to this parameter too — a mismatch
-   *  here would desync the tax-gross-up estimate's slot mix from the real
+   *  here would desync the withdrawal-solver estimate's slot mix from the real
    *  router's, the same class of bug the routeForMode extraction fixed for
    *  the routing-mode-specific rules. */
   eligibility?: EligibilityRecord;

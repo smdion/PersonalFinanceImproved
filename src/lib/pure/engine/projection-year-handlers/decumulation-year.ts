@@ -576,7 +576,7 @@ export function runDecumulationYear(
     ssSurplus = Math.max(0, ssIncome - state.projectedExpenses - irmaaInNeed);
   }
 
-  // SS convergence + gross-up estimation (extracted to tax-gross-up module)
+  // SS convergence + gross-up estimation (extracted to withdrawal-solver module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
     fixedGrossWithdrawal: state.portfolioWithdrawal ?? undefined,

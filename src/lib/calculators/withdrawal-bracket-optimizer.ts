@@ -223,7 +223,7 @@ function scoreCandidate(
 /**
  * `shortfallScore` isn't bit-identical across candidates even when the
  * underlying shortfall is genuinely target-independent (the design doc's
- * "known limitation" — a tax-gross-up convergence artifact, not something
+ * "known limitation" — a withdrawal-solver convergence artifact, not something
  * this feature causes): different `rothBracketTarget` overrides produce
  * slightly different intermediate rounding paths through the same
  * shortfall year, so two candidates that are financially identical on

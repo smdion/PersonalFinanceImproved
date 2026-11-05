@@ -2,7 +2,7 @@
  * Full-pipeline integration test for Roth growth-vs-basis taxability.
  *
  * Acceptance criteria exercised here:
- *   4. Both paths agree — the tax-gross-up estimate and the real
+ *   4. Both paths agree — the withdrawal-solver estimate and the real
  *      decumulation execution must not diverge on rothTaxableGrowth for the
  *      same routed slots. Not asserted directly (both paths aren't
  *      separately inspectable from calculateProjection's output), but
