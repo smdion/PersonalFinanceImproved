@@ -9,8 +9,9 @@ import { readFileSync } from "node:fs";
 
 const CI_ONLY: Record<string, string> = {
   "Cache Next.js build": "CI cache, not a check",
+  "What this run tests":
+    "decides from CI's own run history which jobs' steps run; not a check",
   "Cache Playwright browsers": "CI cache, not a check",
-  "Install Playwright system deps": "CI runner setup",
   "Install Playwright browsers": "CI runner setup",
   "E2E tests (SQLite + demo mode)":
     "needs the standalone build and a browser; runs in CI only",

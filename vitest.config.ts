@@ -175,12 +175,27 @@ export default defineConfig({
         "src/lib/db/backfill-local-ids.ts",
         "src/lib/db/backfill-perf-ids.ts",
       ],
-      thresholds: {
-        statements: 85,
-        branches: 70,
-        functions: 80,
-        lines: 85,
-      },
+      // The gate covers the engine and lib/pure, the code that produces the
+      // figures. CI's unit shards (LEDGR_COVERAGE_SHARD) each see part of the
+      // suite, so only the merged report is checked.
+      ...(process.env.LEDGR_COVERAGE_SHARD
+        ? {}
+        : {
+            thresholds: {
+              "src/lib/calculators/engine/**": {
+                statements: 90,
+                branches: 80,
+                functions: 90,
+                lines: 90,
+              },
+              "src/lib/pure/**": {
+                statements: 90,
+                branches: 80,
+                functions: 90,
+                lines: 90,
+              },
+            },
+          }),
     },
   },
   resolve: {
