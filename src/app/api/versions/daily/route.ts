@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { appSettings, stateVersions } from "@/lib/db/schema";
 import { createVersion } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
-import { validateCronHeaderRequest } from "@/lib/auth/cron";
+import { cronRoute } from "@/lib/auth/cron";
 
 export async function GET(request: Request) {
   if (process.env.DEMO_ONLY === "true") {
@@ -14,21 +14,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const cronCheck = validateCronHeaderRequest(request);
-  if (cronCheck === "misconfigured") {
-    log("error", "cron_secret_misconfigured", {
-      message: "CRON_SECRET is missing or too short",
-    });
-    return NextResponse.json(
-      { error: "Server misconfiguration" },
-      { status: 500 },
-    );
-  }
+  return cronRoute(request, createDailyVersion);
+}
 
-  if (cronCheck !== "ok") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function createDailyVersion(): Promise<Response> {
   try {
     // Check if auto-versioning is enabled
     const settings = await db.select().from(appSettings);

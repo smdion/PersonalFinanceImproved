@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getSecConnection } from "@/lib/sec/connection";
 import { secFactsRefreshDue, syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { log } from "@/lib/logger";
-import { validateCronHeaderRequest } from "@/lib/auth/cron";
+import { cronRoute } from "@/lib/auth/cron";
 
 /** Weekly SEC fund-facts refresh — polled hourly by instrumentation.node.ts; runs once a week. */
 export async function GET(request: Request) {
@@ -13,20 +13,10 @@ export async function GET(request: Request) {
       { status: 403 },
     );
   }
-  const cronCheck = validateCronHeaderRequest(request);
-  if (cronCheck === "misconfigured") {
-    log("error", "cron_secret_misconfigured", {
-      message: "CRON_SECRET is missing or too short",
-    });
-    return NextResponse.json(
-      { error: "Server misconfiguration" },
-      { status: 500 },
-    );
-  }
-  if (cronCheck !== "ok") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return cronRoute(request, refreshSecFacts);
+}
 
+async function refreshSecFacts(): Promise<Response> {
   try {
     if (!(await getSecConnection(db)))
       return NextResponse.json({ skipped: true, reason: "SEC not set up" });

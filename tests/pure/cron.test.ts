@@ -6,12 +6,16 @@
  * for this header check, so a bug here is a real auth-bypass surface, not
  * just a missing-test nit.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+const log = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/logger", () => ({ log }));
 import {
   getValidCronSecret,
   timingSafeSecretMatch,
   validateCronHeaderRequest,
   validateCronBearerRequest,
+  cronRoute,
 } from "@/lib/auth/cron";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -142,5 +146,59 @@ describe("validateCronBearerRequest (Authorization: Bearer, health/detailed)", (
       headers: { Authorization: `Bearer ${VALID_SECRET}` },
     });
     expect(validateCronBearerRequest(request)).toBe(true);
+  });
+});
+
+describe("cronRoute", () => {
+  const run = vi.fn(() => Promise.resolve(new Response("done")));
+  const call = (header?: string, options?: { logMisconfiguration?: boolean }) =>
+    cronRoute(
+      new Request("http://localhost/api/versions/daily", {
+        headers: header ? { "X-Cron-Secret": header } : {},
+      }),
+      run,
+      options,
+    );
+
+  beforeEach(() => {
+    log.mockClear();
+    run.mockClear();
+  });
+
+  it("answers 500 and logs when CRON_SECRET is too short", async () => {
+    process.env.CRON_SECRET = "a".repeat(31);
+    const res = await call("a".repeat(31));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Server misconfiguration" });
+    expect(log).toHaveBeenCalledWith("error", "cron_secret_misconfigured", {
+      message: "CRON_SECRET is missing or too short",
+    });
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("answers 500 without a log when logMisconfiguration is false", async () => {
+    delete process.env.CRON_SECRET;
+    const res = await call(VALID_SECRET, { logMisconfiguration: false });
+    expect(res.status).toBe(500);
+    expect(log).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("answers 401 for a wrong or absent header, without a log", async () => {
+    process.env.CRON_SECRET = VALID_SECRET;
+    for (const header of ["b".repeat(32), undefined]) {
+      const res = await call(header);
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "Unauthorized" });
+    }
+    expect(log).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("runs the work and returns its response for the right header", async () => {
+    process.env.CRON_SECRET = VALID_SECRET;
+    const res = await call(VALID_SECRET);
+    expect(await res.text()).toBe("done");
+    expect(run).toHaveBeenCalledTimes(1);
   });
 });

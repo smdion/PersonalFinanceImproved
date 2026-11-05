@@ -6,7 +6,7 @@ import {
   hasSyncedToday,
 } from "@/lib/simplefin/sync";
 import { log } from "@/lib/logger";
-import { validateCronHeaderRequest } from "@/lib/auth/cron";
+import { cronRoute } from "@/lib/auth/cron";
 
 export async function GET(request: Request) {
   if (process.env.DEMO_ONLY === "true") {
@@ -16,21 +16,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const cronCheck = validateCronHeaderRequest(request);
-  if (cronCheck === "misconfigured") {
-    log("error", "cron_secret_misconfigured", {
-      message: "CRON_SECRET is missing or too short",
-    });
-    return NextResponse.json(
-      { error: "Server misconfiguration" },
-      { status: 500 },
-    );
-  }
+  return cronRoute(request, syncSimplefin);
+}
 
-  if (cronCheck !== "ok") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function syncSimplefin(): Promise<Response> {
   // Resolved once and threaded through both the "already synced today"
   // check and the sync call itself — two independent `new Date()` calls in
   // one request can disagree right at a midnight boundary (docs/RULES.md
