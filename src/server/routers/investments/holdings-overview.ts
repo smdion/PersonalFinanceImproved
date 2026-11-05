@@ -3,7 +3,7 @@
  * for the investments routers (Benchmarks, Portfolio account insights).
  */
 import { sumBy } from "@/lib/utils/math";
-import { accountFeesForYears } from "@/lib/pure/performance";
+import { accountFeesForYears } from "@/lib/pure/investments/returns";
 import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
@@ -16,7 +16,7 @@ import {
   effectiveFacts,
   portfolioBuckets,
   valueByClass,
-} from "@/lib/pure/fund-facts";
+} from "@/lib/pure/investments/fund-facts";
 import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";

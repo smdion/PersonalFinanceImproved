@@ -13,7 +13,7 @@ import { roundToCents } from "@/lib/utils/math";
 import {
   checkLatestContribution,
   type LatestContribution,
-} from "@/lib/pure/deposit-check";
+} from "@/lib/pure/investments/deposit-check";
 import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,

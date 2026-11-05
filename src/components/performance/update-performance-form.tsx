@@ -7,7 +7,7 @@ import {
   formatDate,
   accountDisplayName,
 } from "@/lib/utils/format";
-import { computeGainLoss } from "@/lib/pure/performance";
+import { computeGainLoss } from "@/lib/pure/investments/returns";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   CASH_BASIS_HELP,
@@ -22,7 +22,7 @@ import {
   PERF_FIELDS,
   PERF_NOTE_MAX,
   type PerfField,
-} from "@/lib/pure/performance-annotations";
+} from "@/lib/pure/investments/performance-annotations";
 import type { UpdateFormRow, UpdatePerformanceFormProps } from "./types";
 
 type EndingBalanceSource = "snapshot" | "manual";

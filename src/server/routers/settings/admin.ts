@@ -36,14 +36,14 @@ import {
   dismissalsSchema,
   nextDismissals,
   parseDismissals,
-} from "@/lib/pure/recommendation-dismissals";
+} from "@/lib/pure/advice/recommendation-dismissals";
 import { isCalendarDate } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
   milestoneChecklistSchema,
   savingsTargetSourceSchema,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 import {
   applyHouseholdTimeZone,
   isValidTimeZone,
@@ -54,7 +54,7 @@ import { PERMISSIONS } from "@/lib/config/permissions";
 import { settingValue } from "./_shared";
 import { applyPlan } from "@/server/helpers/plans";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
-import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
+import { firstReachedSchema } from "@/lib/pure/advice/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";

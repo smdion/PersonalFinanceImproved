@@ -41,7 +41,7 @@ import {
   sumAnnualRows,
   computeReturn,
   type AnnualRowLike,
-} from "@/lib/pure/performance";
+} from "@/lib/pure/investments/returns";
 import { accountDisplayName, buildAccountLabel } from "@/lib/utils/format";
 import {
   isRetirementParent,
@@ -84,7 +84,7 @@ import {
   perfCheckKindSchema,
   perfFieldSchema,
   PERF_NOTE_MAX,
-} from "@/lib/pure/performance-annotations";
+} from "@/lib/pure/investments/performance-annotations";
 import {
   localDateStr,
   parseLocalDateOnly,
@@ -187,16 +187,17 @@ const accountCreateInput = z.object({
   isActive: z.boolean().default(true),
 });
 
-// --- Shared helpers — canonical implementations live in @/lib/pure/performance ---
+// --- Shared helpers — canonical implementations live in @/lib/pure/investments/returns ---
 export {
   computeReturn,
   sumAccounts,
   sumAnnualRows,
-} from "@/lib/pure/performance";
+} from "@/lib/pure/investments/returns";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
-export type { AccountLike, AnnualRowLike } from "@/lib/pure/performance";
+export type { AccountLike } from "@/lib/pure/investments/returns";
+export type { AnnualRowLike } from "@/lib/pure/investments/returns";
 
 export const performanceRouter = createTRPCRouter({
   /**

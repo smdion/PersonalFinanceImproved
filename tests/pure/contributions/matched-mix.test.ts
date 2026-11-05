@@ -4,7 +4,7 @@ import {
   type MatchedMixInput,
 } from "@/lib/pure/contributions/matched-mix";
 import type { CompositionBucket } from "@/lib/config/enum-values";
-import type { EffectiveFacts } from "@/lib/pure/fund-facts";
+import type { EffectiveFacts } from "@/lib/pure/investments/fund-facts";
 
 const facts = (
   buckets: Partial<Record<CompositionBucket, number>>,

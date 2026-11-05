@@ -1,6 +1,9 @@
 "use client";
 
-import { currentFooStep, type MilestoneResult } from "@/lib/pure/milestones";
+import {
+  currentFooStep,
+  type MilestoneResult,
+} from "@/lib/pure/advice/milestones/milestones";
 import { MILESTONE_STATUS_LABELS } from "@/lib/config/display-labels";
 import { STATUS_STYLE, StatusIcon } from "./milestone-row";
 

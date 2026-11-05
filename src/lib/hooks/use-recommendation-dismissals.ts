@@ -13,8 +13,8 @@ import {
   parseDismissals,
   snoozeUntil,
   type Dismissals,
-} from "@/lib/pure/recommendation-dismissals";
-import type { Recommendation } from "@/lib/pure/recommendations";
+} from "@/lib/pure/advice/recommendation-dismissals";
+import type { Recommendation } from "@/lib/pure/advice/recommendations";
 
 /** How long "Snooze" hides a recommendation. */
 const SNOOZE_MONTHS = 3;

@@ -1,7 +1,7 @@
 /**
  * What the paycheck setup sends to each tracked account in a year, split by
  * who pays and how it's taxed. Used to estimate the split of a deposit a
- * feed reports as one amount (see lib/pure/flow-suggestions.ts).
+ * feed reports as one amount (see lib/pure/investments/flow-suggestions.ts).
  *
  * Uses the globally active Contribution and Salary Profiles — the setup
  * every page shows unless the household picks another.
@@ -17,7 +17,7 @@ import { isPreTaxTreatment, isTaxFree } from "@/lib/config/account-types";
 import type {
   AccountContributionMix,
   ContributionMix,
-} from "@/lib/pure/flow-suggestions";
+} from "@/lib/pure/investments/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { toNumber } from "./transforms";

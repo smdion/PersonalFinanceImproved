@@ -31,8 +31,11 @@ import {
   runBenchmark,
   type MonthlyPrices,
   type YearlyResult,
-} from "@/lib/pure/benchmark-yearly";
-import { portfolioBuckets, type EffectiveFacts } from "@/lib/pure/fund-facts";
+} from "@/lib/pure/investments/benchmark-yearly";
+import {
+  portfolioBuckets,
+  type EffectiveFacts,
+} from "@/lib/pure/investments/fund-facts";
 import { sumBy } from "@/lib/utils/math";
 import {
   holderKey,
@@ -40,7 +43,7 @@ import {
   periodOn,
   type HoldingPeriod,
   type SnapshotParts,
-} from "@/lib/pure/holding-periods";
+} from "@/lib/pure/investments/holding-periods";
 
 export type MatchedMixInput = {
   /** Calendar years to build (ascending). */

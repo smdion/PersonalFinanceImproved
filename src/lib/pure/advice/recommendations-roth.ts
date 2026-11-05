@@ -1,0 +1,88 @@
+/**
+ * Backdoor Roth and pro-rata recommendations — adapters over the Roth IRA
+ * view judged once in lib/pure/contributions/roth-ira.ts (buildRothIraView). Only maps
+ * fields and picks urgency from the dated windows in config; no rule is
+ * judged here.
+ */
+import { ROTH_RECOMMENDATION_WINDOWS as W } from "@/lib/config/recommendations";
+import type {
+  Recommendation,
+  RecommendationUrgency,
+} from "@/lib/pure/advice/recommendations";
+import { formatCurrency } from "@/lib/utils/format";
+import { filingStatusLabel } from "@/lib/config/display-labels";
+import {
+  rothIraAdvice,
+  type RothIraView,
+} from "@/lib/pure/contributions/roth-ira";
+
+export function recommendationsFromRothIra(
+  view: RothIraView | null,
+  /** The tax year the view is for. */
+  taxYear: number,
+  /** Today, YYYY-MM-DD. */
+  today: string,
+): Recommendation[] {
+  const j = view?.judgement;
+  if (!view || !j) return [];
+  const usesBackdoor = view.routes.some((r) => r.route === "backdoor");
+  if (j.verdict === "direct" && !usesBackdoor) return [];
+  const thisYear = Number(today.slice(0, 4));
+  const monthDay = today.slice(5);
+  // A past year: only the contribution decision is left, until the filing
+  // deadline the following spring. A future year: nothing pressing.
+  const pastYear = taxYear < thisYear;
+  if (pastYear && (taxYear < thisYear - 1 || monthDay > W.contributionDeadline))
+    return [];
+  const urgency = (nowFrom: string): RecommendationUrgency =>
+    pastYear || (taxYear === thisYear && monthDay >= nowFrom) ? "now" : "soon";
+  const deadline = pastYear
+    ? `by the ${taxYear} filing deadline`
+    : "until the tax-filing deadline";
+  const range = `${formatCurrency(j.phaseOutStart, 0)}–${formatCurrency(j.phaseOutEnd, 0)}`;
+  // What to do given how each person contributes (direct or backdoor) —
+  // nothing when the route they use already fits this income.
+  const advice = rothIraAdvice(view, deadline);
+  // The figures behind it, for the household's own filing status.
+  const facts = `${filingStatusLabel(view.filingStatus)}: ${taxYear} income (MAGI) about ${formatCurrency(view.magi, 0)}, phase-out ${range}`;
+  const context = advice?.detail ? `${advice.detail} ${facts}` : facts;
+  const out: Recommendation[] = advice?.action
+    ? [
+        {
+          id: "rothIra",
+          area: "moneyMoves",
+          urgency: urgency(W.rothIra.nowFrom),
+          title: `${taxYear} Roth IRA: direct or backdoor`,
+          action: advice.action,
+          context,
+          impact: null,
+          // Someone contributes directly: the fix is their route, set
+          // with the contribution elections; otherwise the Roth IRA check.
+          focus: view.routes.some((r) => r.route === "direct")
+            ? { topic: "contributionElections" }
+            : { topic: "rothIra" },
+          source: "ledgr",
+        },
+      ]
+    : [];
+  // The pro-rata blocker is measured on Dec 31 of the conversion year —
+  // only actionable while that date is ahead.
+  if (pastYear) return out;
+  for (const p of view.proRata)
+    out.push({
+      id: `proRata:${p.personId}`,
+      area: "moneyMoves",
+      urgency: urgency(W.proRata.nowFrom),
+      title: `${p.name}: pre-tax IRA money blocks a clean backdoor`,
+      action: p.hasEmployerPlan
+        ? `Roll ${p.name}'s ${formatCurrency(p.amount, 0)} pre-tax IRA into the workplace plan before Dec 31`
+        : `${p.name}'s ${formatCurrency(p.amount, 0)} pre-tax IRA makes a backdoor conversion mostly taxable`,
+      context: p.hasEmployerPlan
+        ? "Otherwise most of a backdoor conversion is taxable (pro-rata rule). Check the plan takes roll-ins. The Dec 31 balance of traditional, SEP and SIMPLE IRAs counts."
+        : "Pro-rata rule: the Dec 31 balance of traditional, SEP and SIMPLE IRAs counts — weigh the tax before converting.",
+      impact: null,
+      focus: { topic: "rothIra" },
+      source: "ledgr",
+    });
+  return out;
+}

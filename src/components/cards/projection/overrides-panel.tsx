@@ -14,7 +14,7 @@ import type { ProjectionState } from "./projection-table-types";
 import type { AccumOverride, DecumOverride } from "./types";
 import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
-import { investedAtStartOf } from "@/lib/pure/goldilocks";
+import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 
 type OverridesPanelProps = {
   state: ProjectionState;

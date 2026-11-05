@@ -21,7 +21,7 @@ import {
   previousTradingDay,
   tradingDayOnOrBefore,
   valuationDateFor,
-} from "../market-calendar";
+} from "../investments/market-calendar";
 
 export type BalanceSource = "reported" | "snapshot";
 

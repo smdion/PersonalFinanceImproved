@@ -166,7 +166,7 @@ export function useProjectionQueries(
   // rationale: a household's balances don't meaningfully change
   // mid-session). Feeds the "why THIS bracket, not another" explanation
   // in both the table/chart tooltips (projection-table-decum-row.tsx) and
-  // the advisor report (lib/pure/report) — one shared query, one shared
+  // the advisor report (lib/pure/advice/report) — one shared query, one shared
   // narrative function, not two independently-worded explanations.
   // `debouncedBaseInput` (not `debouncedInput`) matches coastFireQuery's
   // own precedent above: always the baseline plan, not a scenario

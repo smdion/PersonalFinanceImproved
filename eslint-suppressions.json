@@ -3744,11 +3744,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/account-insights.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/accounts/account-balances.types.ts": {
     "ratchet/max-comment-lines": {
       "count": 8
@@ -3900,7 +3895,55 @@
       "count": 7
     }
   },
-  "src/lib/pure/always-buying.ts": {
+  "src/lib/pure/advice/goldilocks.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/milestone-first-reached.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/milestones/input.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/advice/milestones/milestones.shared.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/milestones/milestones.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-guarded-division": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/advice/milestones/milestones.types.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendation-dismissals.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -3908,7 +3951,90 @@
       "count": 1
     }
   },
-  "src/lib/pure/benchmark-yearly.ts": {
+  "src/lib/pure/advice/recommendations-caps.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendations-roth.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendations.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/report/aca-irmaa-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/action-items.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/bracket-target-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 10
+    }
+  },
+  "src/lib/pure/advice/report/executive-summary.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/report/index.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/lifetime-tax-summary.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/mc-freshness.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/risk-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/report/withdrawal-strategy-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 9
+    }
+  },
+  "src/lib/pure/advice/report/year-table.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/standin-advice.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4049,14 +4175,6 @@
   "src/lib/pure/debts/mortgage.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
-    }
-  },
-  "src/lib/pure/deposit-check.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/balance-deduction.ts": {
@@ -4452,53 +4570,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/fill-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/flow-suggestions.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/fund-facts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-guarded-division": {
-      "count": 6
-    }
-  },
-  "src/lib/pure/fund-findings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/fund-prices.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/goldilocks.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/holding-periods.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    }
-  },
   "src/lib/pure/household/household-income.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4530,7 +4601,75 @@
       "count": 1
     }
   },
-  "src/lib/pure/investment-income.ts": {
+  "src/lib/pure/investments/account-insights.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/always-buying.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/benchmark-yearly.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/deposit-check.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/fill-suggestions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/investments/flow-suggestions.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/fund-facts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-guarded-division": {
+      "count": 6
+    }
+  },
+  "src/lib/pure/investments/fund-findings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/fund-prices.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/holding-periods.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/investments/investment-income.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -4541,7 +4680,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/market-calendar.ts": {
+  "src/lib/pure/investments/market-calendar.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -4549,45 +4688,52 @@
       "count": 2
     }
   },
-  "src/lib/pure/milestone-first-reached.ts": {
+  "src/lib/pure/investments/performance-annotations.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/performance-checks.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/lib/pure/milestone-input.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
+  "src/lib/pure/investments/realized-vs-assumed.ts": {
+    "ratchet/max-comment-lines": {
       "count": 1
-    },
+    }
+  },
+  "src/lib/pure/investments/returns.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 3
+      "count": 1
     }
   },
-  "src/lib/pure/milestones.shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/milestones.ts": {
+  "src/lib/pure/investments/sec-composition.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 1
     },
     "ratchet/no-guarded-division": {
-      "count": 3
+      "count": 1
     }
   },
-  "src/lib/pure/milestones.types.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
+  "src/lib/pure/investments/sec-identity.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/total-return.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4670,126 +4816,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
-    }
-  },
-  "src/lib/pure/performance-annotations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/performance-checks.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/performance.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/realized-vs-assumed.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendation-dismissals.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendations-caps.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendations-roth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendations.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/report/aca-irmaa-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/action-items.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/bracket-target-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    }
-  },
-  "src/lib/pure/report/executive-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/report/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/lifetime-tax-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/mc-freshness.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/risk-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/report/withdrawal-strategy-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
-    }
-  },
-  "src/lib/pure/report/year-table.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/retirement/coast-fire.ts": {
@@ -4943,22 +4969,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/sec-composition.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/sec-identity.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/simulation/current-glide-path.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5019,11 +5029,6 @@
     }
   },
   "src/lib/pure/simulation/year-return-range.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/standin-advice.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -5112,11 +5117,6 @@
     }
   },
   "src/lib/pure/tax/tax.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/total-return.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

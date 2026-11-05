@@ -465,7 +465,7 @@ describe("checkAca", () => {
   // report says the subsidy was lost. Changes on purpose with the v0.11
   // Retirement rules item: ACA reported "lost" when never checked (a
   // status of not checked, preserved or lost); answer-key ret/A31
-  // (`tests/pure/report/aca-irmaa-narrative.test.ts`) holds the decided
+  // (`tests/pure/advice/report/aca-irmaa-narrative.test.ts`) holds the decided
   // report.
   it("returns false/0 when disabled", () => {
     const result = checkAca(makeAcaInput({ enableAcaAwareness: false }));

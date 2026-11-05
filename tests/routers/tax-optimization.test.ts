@@ -155,7 +155,7 @@ describe("projection router — projectTaxYears", () => {
   // though this household has ACA awareness off and nothing was checked.
   // Changes on purpose with the v0.11 Retirement rules item: ACA reported
   // "lost" when never checked (answer-key ret/A31,
-  // `tests/pure/report/aca-irmaa-narrative.test.ts`).
+  // `tests/pure/advice/report/aca-irmaa-narrative.test.ts`).
   it("derived TaxYearRow[] shape is stable (golden file)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

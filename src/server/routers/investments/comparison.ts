@@ -21,7 +21,7 @@ import {
   yourWindowMonths,
   type MonthlyPrices,
   type YearlyResult,
-} from "@/lib/pure/benchmark-yearly";
+} from "@/lib/pure/investments/benchmark-yearly";
 import { getBenchmarkMonthlyPrices } from "@/server/helpers/market-prices";
 import {
   COMPOSITION_BUCKET_VALUES,
@@ -31,11 +31,11 @@ import { localDateStr } from "@/lib/utils/date";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
 import { buildMcInputs } from "../projection/_shared";
-import { effectiveFacts } from "@/lib/pure/fund-facts";
+import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   dailyWeightsByAccount,
   dailyWeightsByHolder,
-} from "@/lib/pure/holding-periods";
+} from "@/lib/pure/investments/holding-periods";
 import {
   accountValuesByYear,
   matchedMixDescription,

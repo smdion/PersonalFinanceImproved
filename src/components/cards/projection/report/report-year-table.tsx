@@ -1,6 +1,6 @@
 /** Simplified year-by-year table for the advisor report — see
- *  lib/pure/report/year-table.ts. Presentational only. */
-import type { YearTableRow } from "@/lib/pure/report/year-table";
+ *  lib/pure/advice/report/year-table.ts. Presentational only. */
+import type { YearTableRow } from "@/lib/pure/advice/report/year-table";
 
 export function ReportYearTable({ rows }: { rows: YearTableRow[] }) {
   if (rows.length === 0) return null;

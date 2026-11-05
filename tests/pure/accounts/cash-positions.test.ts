@@ -7,9 +7,9 @@ import {
   judgeHsaCash,
   type CashAccountInput,
 } from "@/lib/pure/accounts/cash-positions";
-import { recommendationsFromCash } from "@/lib/pure/recommendations-cash";
+import { recommendationsFromCash } from "@/lib/pure/advice/recommendations-cash";
 import type { CompositionBucket } from "@/lib/config/enum-values";
-import type { ValuedHolding } from "@/lib/pure/fund-facts";
+import type { ValuedHolding } from "@/lib/pure/investments/fund-facts";
 
 const mix = (over: Partial<Record<CompositionBucket, number>>) => ({
   us_equity: 0,

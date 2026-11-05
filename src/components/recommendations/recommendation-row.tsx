@@ -9,7 +9,7 @@ import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import type {
   Recommendation,
   RecommendationUrgency,
-} from "@/lib/pure/recommendations";
+} from "@/lib/pure/advice/recommendations";
 
 /** Urgency at a glance — the same left rail and icon as a milestone's
  *  status (milestone-row.tsx), so the two pages read alike. */

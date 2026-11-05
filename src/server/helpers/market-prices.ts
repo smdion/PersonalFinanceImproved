@@ -18,8 +18,8 @@ import {
 import { getTiingoApiKey } from "@/lib/tiingo/connection";
 import { log } from "@/lib/logger";
 import type { DailyClose } from "@/lib/pure/accounts/current-balances";
-import { valuationDateFor } from "@/lib/pure/market-calendar";
-import { totalReturnSeries } from "@/lib/pure/total-return";
+import { valuationDateFor } from "@/lib/pure/investments/market-calendar";
+import { totalReturnSeries } from "@/lib/pure/investments/total-return";
 import { addDays } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";
 

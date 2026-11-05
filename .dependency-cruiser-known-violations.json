@@ -22,12 +22,12 @@
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/performance-help.ts",
-    "to": "src/lib/pure/performance-annotations.ts"
+    "to": "src/lib/pure/investments/performance-annotations.ts"
   },
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/performance-help.ts",
-    "to": "src/lib/pure/performance-checks.ts"
+    "to": "src/lib/pure/investments/performance-checks.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -266,12 +266,12 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/net-worth/historical.ts",
+    "from": "src/lib/pure/investments/returns.ts",
     "to": "src/server/helpers/transforms.ts"
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/performance.ts",
+    "from": "src/lib/pure/net-worth/historical.ts",
     "to": "src/server/helpers/transforms.ts"
   },
   {
@@ -347,27 +347,27 @@
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/components/milestones/foo-ladder.tsx",
-    "to": "src/lib/pure/milestones.ts"
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/components/milestones/milestones-hero.tsx",
-    "to": "src/lib/pure/milestones.ts"
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/components/performance/account-notes-dialog.tsx",
-    "to": "src/lib/pure/performance-annotations.ts"
+    "to": "src/lib/pure/investments/performance-annotations.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/components/performance/update-performance-form.tsx",
-    "to": "src/lib/pure/performance-annotations.ts"
+    "to": "src/lib/pure/investments/performance-annotations.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-first-reached.ts",
-    "to": "src/lib/pure/milestone-first-reached.ts"
+    "to": "src/lib/pure/advice/milestone-first-reached.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
@@ -377,22 +377,22 @@
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-milestones.ts",
-    "to": "src/lib/pure/milestones.ts"
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-recommendation-dismissals.ts",
-    "to": "src/lib/pure/recommendation-dismissals.ts"
+    "to": "src/lib/pure/advice/recommendation-dismissals.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-recommendations.ts",
-    "to": "src/lib/pure/milestones.ts"
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-recommendations.ts",
-    "to": "src/lib/pure/recommendation-dismissals.ts"
+    "to": "src/lib/pure/advice/recommendation-dismissals.ts"
   },
   {
     "rule": "ui-never-runs-infra",

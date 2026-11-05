@@ -21,7 +21,10 @@ import {
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
 } from "@/lib/constants/settings-keys";
-import type { CustomGoal, MilestoneChecklist } from "@/lib/pure/milestones";
+import type {
+  CustomGoal,
+  MilestoneChecklist,
+} from "@/lib/pure/advice/milestones/milestones";
 import { toast } from "@/lib/hooks/use-toast";
 
 function useSaveMilestoneSetting() {

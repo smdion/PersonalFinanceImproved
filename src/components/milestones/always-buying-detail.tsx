@@ -12,7 +12,7 @@ import type {
   BuyingMonth,
   BuyingMonthState,
   DownYear,
-} from "@/lib/pure/always-buying";
+} from "@/lib/pure/investments/always-buying";
 
 const MONTH_STYLE: Record<BuyingMonthState, string> = {
   invested: `${STATUS_COLORS.green.bg} ${STATUS_COLORS.green.text}`,

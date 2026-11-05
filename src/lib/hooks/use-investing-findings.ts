@@ -2,7 +2,7 @@
 
 /**
  * Investing findings — uninvested cash (lib/pure/accounts/cash-positions.ts) and
- * per-fund findings (lib/pure/fund-findings.ts), each judged once,
+ * per-fund findings (lib/pure/investments/fund-findings.ts), each judged once,
  * from the holdings overview (portfolio permission), the current glide
  * path's cash target, the HSA buffer defaults and setting, and the Roth
  * verdict (a traditional IRA mid-backdoor isn't drag). Fetching only.
@@ -25,7 +25,7 @@ import {
   judgeTaxLossHarvest,
   type CheaperFundFinding,
   type HarvestFinding,
-} from "@/lib/pure/fund-findings";
+} from "@/lib/pure/investments/fund-findings";
 
 export function useInvestingFindings(): {
   isLoading: boolean;

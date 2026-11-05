@@ -4,7 +4,7 @@ import {
   evaluateMilestones,
   type MilestoneInput,
   type MilestoneResult,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 import { makeInput } from "../fixtures/milestones";
 import {
   holdMutation,

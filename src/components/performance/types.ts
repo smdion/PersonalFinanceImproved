@@ -1,10 +1,10 @@
 import React from "react";
 import type { PerfCategory } from "@/lib/config/display-labels";
-import type { PerfCheck } from "@/lib/pure/performance-checks";
+import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
 import type {
   AcceptedChecks,
   PerfField,
-} from "@/lib/pure/performance-annotations";
+} from "@/lib/pure/investments/performance-annotations";
 
 export type EditingCell = {
   type: "annual" | "account" | "master" | "basis";
@@ -72,7 +72,7 @@ export type AccountRow = {
     /** False when no basis row exists yet for this person and year. */
     recorded?: boolean;
   }[];
-  /** Reconciliation checks (lib/pure/performance-checks.ts). */
+  /** Reconciliation checks (lib/pure/investments/performance-checks.ts). */
   checks?: PerfCheck[];
   /** The household's note, still-estimated figures, accepted gaps. */
   note?: string | null;

@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FULL_SHARE } from "@/lib/constants";
 import { COST_KINDS } from "@/lib/config/performance-help";
-import { allInYearlyCost } from "@/lib/pure/performance";
-import { compoundedFundCost } from "@/lib/pure/fund-facts";
+import { allInYearlyCost } from "@/lib/pure/investments/returns";
+import { compoundedFundCost } from "@/lib/pure/investments/fund-facts";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 

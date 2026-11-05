@@ -24,8 +24,11 @@ import { HDHP_MIN_DEDUCTIBLE_KEY } from "@/lib/config/tax-params";
 import type { HsaCoverageType } from "@/lib/config/enum-values";
 import { REBALANCE_BANDS } from "@/lib/config/milestones";
 import { CASH_DRAG_MIN_EXCESS } from "@/lib/config/recommendations";
-import { portfolioBuckets, type ValuedHolding } from "@/lib/pure/fund-facts";
-import { outsideRebalanceBand } from "@/lib/pure/milestones";
+import {
+  portfolioBuckets,
+  type ValuedHolding,
+} from "@/lib/pure/investments/fund-facts";
+import { outsideRebalanceBand } from "@/lib/pure/advice/milestones/milestones";
 
 export type CashAccountInput = {
   simplefinAccountId: number;

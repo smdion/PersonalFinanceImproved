@@ -15,12 +15,12 @@ import {
 } from "@/lib/config/account-types";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { addDays, utcDayOf } from "@/lib/utils/date";
-import { mixFor } from "@/lib/pure/flow-suggestions";
+import { mixFor } from "@/lib/pure/investments/flow-suggestions";
 import {
   rowsPerAccount,
   snapshotNewMoney,
   suggestBasisRow,
-} from "@/lib/pure/fill-suggestions";
+} from "@/lib/pure/investments/fill-suggestions";
 import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,

@@ -58,7 +58,7 @@ import {
   aggregateAccountsByYear,
   chainReturns,
   type AccountRowLike,
-} from "@/lib/pure/performance";
+} from "@/lib/pure/investments/returns";
 
 export function PerformanceContent() {
   const user = useUser();

@@ -24,7 +24,7 @@ import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dism
 import {
   retirementValue,
   type Recommendation,
-} from "@/lib/pure/recommendations";
+} from "@/lib/pure/advice/recommendations";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 
 /** How many lead the page before the full list. */

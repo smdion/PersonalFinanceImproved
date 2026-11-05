@@ -8,7 +8,7 @@
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { localDateStr } from "@/lib/utils/date";
-import { isNewlyReached } from "@/lib/pure/milestone-first-reached";
+import { isNewlyReached } from "@/lib/pure/advice/milestone-first-reached";
 
 export function useFirstReached(): (
   id: string,

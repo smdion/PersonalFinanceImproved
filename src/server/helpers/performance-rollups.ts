@@ -33,7 +33,7 @@ import {
   rollupDeltas,
   sumAccounts,
   type Rollup,
-} from "@/lib/pure/performance";
+} from "@/lib/pure/investments/returns";
 import { toNumber } from "@/server/helpers/transforms";
 import type { DbOrTx } from "@/lib/db";
 

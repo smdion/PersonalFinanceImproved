@@ -4,7 +4,7 @@ import type {
   MilestoneInput,
   MilestoneProjectionYear,
   MilestoneYear,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 
 export function makeYear(
   overrides: Partial<MilestoneYear> = {},

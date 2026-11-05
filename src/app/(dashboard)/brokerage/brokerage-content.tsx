@@ -2,7 +2,7 @@
 
 /** Client content for the Brokerage page — prefetched by page.tsx. */
 
-import { investedAtStartOf } from "@/lib/pure/goldilocks";
+import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import React, { useState } from "react";

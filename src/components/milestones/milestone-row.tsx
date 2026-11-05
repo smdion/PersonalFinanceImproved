@@ -18,7 +18,10 @@ import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { MILESTONE_STATUS_LABELS } from "@/lib/config/display-labels";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { formatDate } from "@/lib/utils/format";
-import type { MilestoneResult, MilestoneStatus } from "@/lib/pure/milestones";
+import type {
+  MilestoneResult,
+  MilestoneStatus,
+} from "@/lib/pure/advice/milestones/milestones";
 
 export const STATUS_STYLE: Record<
   MilestoneStatus,

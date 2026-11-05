@@ -3,11 +3,11 @@ import { and, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { utcDayOf } from "@/lib/utils/date";
-import { mixFor } from "@/lib/pure/flow-suggestions";
+import { mixFor } from "@/lib/pure/investments/flow-suggestions";
 import {
   rowsPerAccount,
   suggestPerformanceRow,
-} from "@/lib/pure/fill-suggestions";
+} from "@/lib/pure/investments/fill-suggestions";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
 import { toNumber } from "@/server/helpers/transforms";

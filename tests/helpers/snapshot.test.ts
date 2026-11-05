@@ -405,7 +405,7 @@ describe("buildYearEndHistory", () => {
   it("includes rollovers in the Modified-Dietz return% denominator", async () => {
     // Regression test: snapshot.ts previously hand-rolled the denominator
     // without `rollovers`, diverging from computeReturn() in
-    // src/lib/pure/performance.ts. Uses a fresh year (2021) to avoid
+    // src/lib/pure/investments/returns.ts. Uses a fresh year (2021) to avoid
     // interfering with the 2023 fixtures shared across this describe block.
     // A net_worth_annual row is required for the year to appear in
     // buildYearEndHistory's output at all — historical rows are built from

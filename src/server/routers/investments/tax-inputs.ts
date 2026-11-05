@@ -17,7 +17,7 @@ import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   estimateTaxableInvestmentIncome,
   investmentIncomeGaps,
-} from "@/lib/pure/investment-income";
+} from "@/lib/pure/investments/investment-income";
 import {
   PENDING_CONVERSION_WINDOW_DAYS,
   pendingConversion,

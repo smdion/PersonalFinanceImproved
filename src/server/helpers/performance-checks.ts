@@ -8,11 +8,11 @@ import {
   performanceChecks,
   type CheckRow,
   type PerfCheck,
-} from "@/lib/pure/performance-checks";
+} from "@/lib/pure/investments/performance-checks";
 import {
   acceptedAmounts,
   parseAcceptedChecks,
-} from "@/lib/pure/performance-annotations";
+} from "@/lib/pure/investments/performance-annotations";
 import { loadYearEndSnapshots } from "@/server/helpers/snapshot-derivatives";
 import { toNumber } from "@/server/helpers/transforms";
 import type { DbOrTx } from "@/lib/db";

@@ -24,7 +24,7 @@ import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-br
 import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
-} from "@/lib/pure/report/bracket-target-narrative";
+} from "@/lib/pure/advice/report/bracket-target-narrative";
 import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 import {
   getAccountSegments,
@@ -202,7 +202,7 @@ function buildRoutingReasonClause(
     const targetPct = yr.config.rothBracketTarget;
     // "Why THIS bracket" — shares
     // describeBracketTargetChoice with the advisor report
-    // (lib/pure/report/bracket-target-narrative.ts) so the two can never
+    // (lib/pure/advice/report/bracket-target-narrative.ts) so the two can never
     // disagree; folds in the real numeric comparison from the bracket
     // optimizer when available, falls back to the qualitative-only
     // version otherwise.

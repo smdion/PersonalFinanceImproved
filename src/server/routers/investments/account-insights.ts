@@ -9,7 +9,7 @@ import { loadCurrentBalances } from "./load-current-balances";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { addDays, utcDayOf } from "@/lib/utils/date";
-import { accountInsight } from "@/lib/pure/account-insights";
+import { accountInsight } from "@/lib/pure/investments/account-insights";
 import { tracksCostBasis } from "@/lib/config/account-types";
 import {
   dailyEstimates,

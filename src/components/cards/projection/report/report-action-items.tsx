@@ -2,9 +2,9 @@
  *  engine's own raw disclosure warnings (kept separate: recommendations
  *  above are derived from structured fields, disclosures below are the
  *  engine's own warning text, never parsed — see
- *  lib/pure/report/action-items.ts). Presentational only. */
+ *  lib/pure/advice/report/action-items.ts). Presentational only. */
 import { maskAmountsInText } from "@/lib/utils/format";
-import type { ActionItemsSection } from "@/lib/pure/report/action-items";
+import type { ActionItemsSection } from "@/lib/pure/advice/report/action-items";
 
 export function ReportActionItemsSection({
   actionItems,

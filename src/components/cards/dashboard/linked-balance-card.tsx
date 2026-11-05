@@ -12,7 +12,7 @@ import { roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
-import { previousTradingDay } from "@/lib/pure/market-calendar";
+import { previousTradingDay } from "@/lib/pure/investments/market-calendar";
 import { LoadingCard } from "./utils";
 
 /** How the breakdown groups balances; the button steps through them in order. */

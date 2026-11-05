@@ -14,8 +14,8 @@
 import { and, eq, gte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { HALF_CENT } from "@/lib/constants";
-import { computeGainLoss } from "@/lib/pure/performance";
-import type { PerfCheck } from "@/lib/pure/performance-checks";
+import { computeGainLoss } from "@/lib/pure/investments/returns";
+import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
 import {
   captureYearRollups,
   syncYearRollups,

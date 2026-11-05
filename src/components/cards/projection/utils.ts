@@ -643,7 +643,7 @@ export function iaBelongsToBucket(
 
 // --- Shared calculation helpers ---
 
-// Moved to lib/pure/report/withdrawal-strategy-narrative.ts so
+// Moved to lib/pure/advice/report/withdrawal-strategy-narrative.ts so
 // the retirement advisor report can reuse them without a pure module
 // importing this component-layer file — re-exported here so the existing
 // tooltip call sites (projection-table-decum-row.tsx) don't need to change
@@ -651,7 +651,7 @@ export function iaBelongsToBucket(
 export {
   formatDiscretionaryTierBreakdown,
   formatRmdDivisorDetail,
-} from "@/lib/pure/report/withdrawal-strategy-narrative";
+} from "@/lib/pure/advice/report/withdrawal-strategy-narrative";
 
 export function percentOf(value: number, total: number): number {
   return Math.round(safeDivide(value, total) * 100);

@@ -1,5 +1,5 @@
 /** Milestones router — the year-level history and saved choices the
- *  Milestones engine (lib/pure/milestones.ts) reads. Judging happens in the
+ *  Milestones engine (lib/pure/advice/milestones/milestones.ts) reads. Judging happens in the
  *  pure engine; this only fetches and maps. */
 import { eq, inArray } from "drizzle-orm";
 import type { z } from "zod/v4";
@@ -25,15 +25,15 @@ import {
 import {
   evaluateMilestones,
   parseMilestoneSettings,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 import {
   buildMilestoneInput,
   milestoneYearFromHistory,
-} from "@/lib/pure/milestone-input";
+} from "@/lib/pure/advice/milestones/input";
 import {
   mergeFirstReached,
   parseFirstReached,
-} from "@/lib/pure/milestone-first-reached";
+} from "@/lib/pure/advice/milestone-first-reached";
 import { effectiveHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
@@ -44,12 +44,12 @@ import { mortgageRouter } from "./mortgage";
 import { investmentsRouter } from "./investments";
 import { brokerageRouter } from "./brokerage";
 import { zYearEndTargeting } from "./_shared";
-import type { MilestoneDebt } from "@/lib/pure/milestones";
+import type { MilestoneDebt } from "@/lib/pure/advice/milestones/milestones";
 import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
 import { raiseHistory } from "@/lib/pure/household/raise-history";
-import { downYears } from "@/lib/pure/always-buying";
+import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
-import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
+import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { toNumber } from "@/server/helpers";
 import {

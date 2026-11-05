@@ -5,7 +5,7 @@ import * as schema from "@/lib/db/schema";
 import {
   holdingsGapSince,
   investmentHealthIssues,
-} from "@/lib/pure/investment-health";
+} from "@/lib/pure/investments/investment-health";
 import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import { loadAccounts } from "./_shared";
 

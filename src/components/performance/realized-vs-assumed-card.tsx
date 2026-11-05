@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatPercent } from "@/lib/utils/format";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
-import { realizedVsAssumed } from "@/lib/pure/realized-vs-assumed";
+import { realizedVsAssumed } from "@/lib/pure/investments/realized-vs-assumed";
 
 export function RealizedVsAssumedCard() {
   const { data: perf } = trpc.performance.computeSummary.useQuery();

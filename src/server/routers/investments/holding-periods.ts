@@ -5,7 +5,7 @@
  * account with no feed). An account whose feeds are linked per part (a
  * joint IRA, one feed per person and tax type) keeps one history per part;
  * every other account one for the whole account. Rules live in
- * lib/pure/holding-periods.ts.
+ * lib/pure/investments/holding-periods.ts.
  */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -17,7 +17,7 @@ import {
   holderKey,
   isOrphaned,
   validateHoldingPeriod,
-} from "@/lib/pure/holding-periods";
+} from "@/lib/pure/investments/holding-periods";
 import { fetchFundTickers } from "@/lib/sec/client";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { getSecContact } from "@/lib/sec/connection";
@@ -25,7 +25,7 @@ import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { inferSecurityKind } from "@/lib/pure/sync/simplefin-holdings";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toFactRows } from "@/server/helpers/fund-facts";
-import { effectiveFacts } from "@/lib/pure/fund-facts";
+import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   loadEnteredPeriods,
   loadHoldingSplits,

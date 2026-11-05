@@ -21,7 +21,7 @@ import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import {
   computeLifetimeTaxSummary,
   type LifetimeTaxSummary,
-} from "@/lib/pure/report/lifetime-tax-summary";
+} from "@/lib/pure/advice/report/lifetime-tax-summary";
 
 export function TaxSummaryCard({ state }: { state: ProjectionState }) {
   const { result, deflate } = state;

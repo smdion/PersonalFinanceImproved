@@ -36,8 +36,8 @@ import { cents, xfail } from "../../fixtures/answer-key";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateEFund } from "@/lib/pure/savings/efund";
 import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
-import { computePortfolioTotal } from "@/lib/pure/performance";
-import { inflateTarget } from "@/lib/pure/milestones.shared";
+import { computePortfolioTotal } from "@/lib/pure/investments/returns";
+import { inflateTarget } from "@/lib/pure/advice/milestones/milestones.shared";
 import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {

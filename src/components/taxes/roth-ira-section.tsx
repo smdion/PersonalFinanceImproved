@@ -14,7 +14,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
-import type { InvestmentIncomeBasis } from "@/lib/pure/investment-income";
+import type { InvestmentIncomeBasis } from "@/lib/pure/investments/investment-income";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
 import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira";

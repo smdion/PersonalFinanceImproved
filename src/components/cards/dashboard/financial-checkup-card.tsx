@@ -13,8 +13,8 @@ import { Disclaimer } from "@/components/ui/disclaimer";
 import { formatSavingsRate } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
-import { type MilestoneResult } from "@/lib/pure/milestones";
-import { meetsRateTarget } from "@/lib/pure/milestones.shared";
+import { type MilestoneResult } from "@/lib/pure/advice/milestones/milestones";
+import { meetsRateTarget } from "@/lib/pure/advice/milestones/milestones.shared";
 import {
   householdSavings,
   householdTotalCompensation,

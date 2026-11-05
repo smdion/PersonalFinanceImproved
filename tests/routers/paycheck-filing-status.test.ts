@@ -18,7 +18,7 @@ import {
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
 import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/tax/filing-status";
-import { recommendationsFromFilingStatus } from "@/lib/pure/recommendations-data";
+import { recommendationsFromFilingStatus } from "@/lib/pure/advice/recommendations-data";
 
 describe("paycheck: the household's filing status", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;

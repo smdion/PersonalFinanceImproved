@@ -1,7 +1,7 @@
 /** Risk-watchlist section of the advisor report: RMD shortfall/excise
  *  exposure + ACA/IRMAA cliff proximity, aggregated across years — see
- *  lib/pure/report/aca-irmaa-narrative.ts. Presentational only. */
-import type { WatchlistSection } from "@/lib/pure/report/aca-irmaa-narrative";
+ *  lib/pure/advice/report/aca-irmaa-narrative.ts. Presentational only. */
+import type { WatchlistSection } from "@/lib/pure/advice/report/aca-irmaa-narrative";
 import { maskAmountsInText } from "@/lib/utils/format";
 
 export function ReportRiskWatchlistSection({

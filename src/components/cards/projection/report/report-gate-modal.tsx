@@ -4,8 +4,8 @@
  *  explains why and offers a one-click fix where one exists (running the
  *  simulation). Modeled on push-preview-modal.tsx's shell. print:hidden so
  *  it can never itself end up in a printed page. */
-import type { ReportGateFailure } from "@/lib/pure/report/mc-freshness";
-import { reportGateFailureMessage } from "@/lib/pure/report/mc-freshness";
+import type { ReportGateFailure } from "@/lib/pure/advice/report/mc-freshness";
+import { reportGateFailureMessage } from "@/lib/pure/advice/report/mc-freshness";
 
 export function ReportGateModal({
   failure,

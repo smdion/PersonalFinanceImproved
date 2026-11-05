@@ -1,6 +1,6 @@
 /**
  * Which SimpleFIN transactions a saved Performance / basis fill already
- * counted (see lib/pure/flow-suggestions.ts). One app setting, per scope
+ * counted (see lib/pure/investments/flow-suggestions.ts). One app setting, per scope
  * and year: each row's baseline day (fixed at its first fill) and the
  * counted transaction ids with how each was counted.
  */

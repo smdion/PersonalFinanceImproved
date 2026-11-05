@@ -39,7 +39,7 @@ import {
 } from "@/server/helpers/sub-accounts";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toNumber } from "@/server/helpers/transforms";
-import type { FeedAccount } from "@/lib/pure/flow-suggestions";
+import type { FeedAccount } from "@/lib/pure/investments/flow-suggestions";
 import {
   suggestSnapshotAmounts,
   type UnplacedFeed,
@@ -51,7 +51,7 @@ import {
   partKeyOf,
   type DailyPosition,
   type HoldingPeriod,
-} from "@/lib/pure/holding-periods";
+} from "@/lib/pure/investments/holding-periods";
 import type { Db, DbOrTx } from "@/lib/db";
 
 type AccountInfo = {

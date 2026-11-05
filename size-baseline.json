@@ -51,7 +51,7 @@
     "src/components/historical/cells.tsx": 683,
     "src/components/investments/fund-holding-row.tsx": 498,
     "src/components/investments/holding-history-section.tsx": 522,
-    "src/components/investments/holdings-section.tsx": 790,
+    "src/components/investments/holdings-section.tsx": 793,
     "src/components/layout/scenario-bar.tsx": 497,
     "src/components/layout/sidebar.tsx": 525,
     "src/components/liabilities/debts-card.tsx": 536,
@@ -109,6 +109,8 @@
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 484,
     "src/lib/pure/accounts/tax-bucket-projection.ts": 527,
+    "src/lib/pure/advice/milestones/input.ts": 677,
+    "src/lib/pure/advice/milestones/milestones.ts": 1705,
     "src/lib/pure/contributions/contribution-amount.ts": 110,
     "src/lib/pure/contributions/contribution-caps.ts": 674,
     "src/lib/pure/contributions/contribution-order.ts": 93,
@@ -133,12 +135,10 @@
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 492,
     "src/lib/pure/engine/withdrawal-routing.ts": 1435,
     "src/lib/pure/engine/withdrawal-solver.ts": 578,
-    "src/lib/pure/holding-periods.ts": 433,
-    "src/lib/pure/milestone-input.ts": 674,
-    "src/lib/pure/milestones.ts": 1705,
+    "src/lib/pure/investments/holding-periods.ts": 433,
+    "src/lib/pure/investments/returns.ts": 599,
     "src/lib/pure/paycheck/paycheck.ts": 1381,
     "src/lib/pure/paycheck/paystub-check.ts": 459,
-    "src/lib/pure/performance.ts": 599,
     "src/lib/pure/retirement/relocation.ts": 490,
     "src/lib/pure/simulation/monte-carlo.ts": 763,
     "src/lib/sec/facts-sync.ts": 585,
@@ -167,7 +167,7 @@
     "src/server/routers/milestones.ts": 414,
     "src/server/routers/networth.ts": 1481,
     "src/server/routers/paycheck.ts": 951,
-    "src/server/routers/performance.ts": 1890,
+    "src/server/routers/performance.ts": 1891,
     "src/server/routers/projection/_shared.ts": 366,
     "src/server/routers/projection/coast-fire.ts": 472,
     "src/server/routers/projection/monte-carlo.ts": 548,
@@ -769,6 +769,9 @@
     "src/lib/pure/accounts/tax-buckets.ts": {
       "computeTaxBucketBreakdown": 243
     },
+    "src/lib/pure/advice/milestones/input.ts": {
+      "buildMilestoneInput": 218
+    },
     "src/lib/pure/contributions/contribution-caps.ts": {
       "capContributionsByLimitGroup": 271
     },
@@ -810,9 +813,6 @@
     },
     "src/lib/pure/engine/withdrawal-solver.ts": {
       "evaluateCost": 160
-    },
-    "src/lib/pure/milestone-input.ts": {
-      "buildMilestoneInput": 218
     },
     "src/lib/pure/paycheck/paycheck.ts": {
       "calculatePaycheck": 295

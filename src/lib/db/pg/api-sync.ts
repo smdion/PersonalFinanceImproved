@@ -161,7 +161,7 @@ export const simplefinBalanceSnapshots = pgTable(
  * Daily closes from Tiingo, kept so a restart or a rate limit doesn't lose
  * them and each close is fetched once. Raw close plus that day's
  * distribution and split — total return is built from these
- * (lib/pure/total-return.ts), never from Tiingo's adjusted close, which is
+ * (lib/pure/investments/total-return.ts), never from Tiingo's adjusted close, which is
  * re-based on each new distribution. Re-fetchable; not household data.
  */
 export const marketCloses = pgTable(

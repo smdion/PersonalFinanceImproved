@@ -1,12 +1,12 @@
 /**
  * Plain-language help for entering Performance figures: what each field
  * holds (and the usual traps), situation tips by account type, and the
- * wording of the reconciliation checks (lib/pure/performance-checks.ts).
+ * wording of the reconciliation checks (lib/pure/investments/performance-checks.ts).
  * Copy lives here, not in components, so the form, the table and Finalize
  * say the same thing.
  */
-import type { PerfCheck } from "@/lib/pure/performance-checks";
-import type { PerfField } from "@/lib/pure/performance-annotations";
+import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
+import type { PerfField } from "@/lib/pure/investments/performance-annotations";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { formatCurrency } from "@/lib/utils/format";
 

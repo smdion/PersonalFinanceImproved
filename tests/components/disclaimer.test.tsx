@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { evaluateMilestones } from "@/lib/pure/milestones";
+import { evaluateMilestones } from "@/lib/pure/advice/milestones/milestones";
 import { makeInput } from "../fixtures/milestones";
 import { setQueryState } from "./trpc-mock";
 

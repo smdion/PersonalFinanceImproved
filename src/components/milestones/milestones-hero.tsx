@@ -9,7 +9,7 @@ import {
   sinceLastYear,
   type MilestoneInput,
   type MilestoneResult,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 import { MILESTONE_STATUS_LABELS } from "@/lib/config/display-labels";
 import { STATUS_STYLE, StatusIcon } from "./milestone-row";
 

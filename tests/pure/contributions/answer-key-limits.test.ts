@@ -52,7 +52,7 @@ import {
   judgeRothIra,
   rothIraAllowed,
 } from "@/lib/pure/contributions/roth-ira";
-import { megaBackdoorRoom } from "@/lib/pure/milestone-input";
+import { megaBackdoorRoom } from "@/lib/pure/advice/milestones/input";
 import { computeEmployerMatch } from "@/server/helpers/contribution-match";
 import { taxDataLimitMap } from "../../helpers/tax-data";
 import { cents, xfail } from "../../fixtures/answer-key";

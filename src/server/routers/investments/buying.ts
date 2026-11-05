@@ -1,7 +1,7 @@
 /** Always Be Buying, month by month: whether SimpleFIN saw a deposit into
- *  a counted feed each whole month it covered (lib/pure/always-buying.ts). */
+ *  a counted feed each whole month it covered (lib/pure/investments/always-buying.ts). */
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
-import { buyingMonths } from "@/lib/pure/always-buying";
+import { buyingMonths } from "@/lib/pure/investments/always-buying";
 import {
   loadAccounts,
   loadBalanceHistory,
@@ -24,7 +24,7 @@ export const investmentBuyingRouter = createTRPCRouter({
     const posted = rows.filter(
       (r) => counted.has(r.simplefinAccountId) && !r.pending && !r.voided,
     );
-    // Per feed — coverage is judged feed by feed (lib/pure/always-buying.ts).
+    // Per feed — coverage is judged feed by feed (lib/pure/investments/always-buying.ts).
     return buyingMonths({
       feeds: [...counted].map((id) => ({
         contributionDays: posted

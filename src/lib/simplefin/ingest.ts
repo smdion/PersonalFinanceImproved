@@ -22,7 +22,7 @@ import {
 import { planReconcile } from "@/lib/pure/sync/simplefin-reconcile";
 import { classifySimplefinTransaction } from "@/lib/pure/sync/simplefin-transactions";
 import { addDays, utcDayOf } from "@/lib/utils/date";
-import { valuationDateFor } from "@/lib/pure/market-calendar";
+import { valuationDateFor } from "@/lib/pure/investments/market-calendar";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";

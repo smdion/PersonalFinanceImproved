@@ -8,8 +8,8 @@ import {
   PERF_FIELDS,
   PERF_NOTE_MAX,
   type PerfField,
-} from "@/lib/pure/performance-annotations";
-import type { PerfCheckKind } from "@/lib/pure/performance-checks";
+} from "@/lib/pure/investments/performance-annotations";
+import type { PerfCheckKind } from "@/lib/pure/investments/performance-checks";
 import type { AccountRow } from "./types";
 
 /**

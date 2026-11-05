@@ -1,7 +1,7 @@
 /**
  * Milestones — the registry of financial rules and milestones the Milestones
  * page, the dashboard Financial Checkup and the Retirement card's readiness
- * row all judge through `evaluateMilestones()` (lib/pure/milestones.ts).
+ * row all judge through `evaluateMilestones()` (lib/pure/advice/milestones/milestones.ts).
  *
  * Every threshold lives here, once. Rules come from The Money Guy Show (their
  * adapted versions — `adaptedNote` says how they differ from the original

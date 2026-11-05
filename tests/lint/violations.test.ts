@@ -631,7 +631,7 @@ function findStringEnumFieldViolations(): Violation[] {
 
 // Rule 12: hand-rolled Modified-Dietz denominators outside computeReturn().
 // The shape `beginBal + (... - distributions - fees) / 2` must live in
-// exactly one place — src/lib/pure/performance.ts — so a formula fix (e.g.
+// exactly one place — src/lib/pure/investments/returns.ts — so a formula fix (e.g.
 // adding a missing term like rollovers) doesn't need to be applied in N
 // places again. This regex is name-dependent (keyed on `beginBal`), not
 // structural — it catches the exact shape previously duplicated in
@@ -640,7 +640,7 @@ function findHandRolledDietzDenominatorViolations(): Violation[] {
   return findPatternViolations(
     /\bbeginBal\s*\+\s*\([^)]*distributions[^)]*fees[^)]*\)\s*\/\s*2/,
     "no-hand-rolled-dietz-denominator",
-    { additionalExempt: new Set(["src/lib/pure/performance.ts"]) },
+    { additionalExempt: new Set(["src/lib/pure/investments/returns.ts"]) },
   );
 }
 
@@ -753,7 +753,7 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // files or are identifiers, not this literal two-word phrase).
 //
 // Restricted to .tsx (where JSX text and display strings actually live) —
-// PLUS src/lib/pure/report/**/*.ts, or src/lib/pure/advice/report/ (its
+// PLUS src/lib/pure/advice/report/**/*.ts, or src/lib/pure/advice/report/ (its
 // home after the move; both are scanned), (the retirement advisor report's
 // narrative-generation module): that directory's whole purpose is
 // generating user-facing prose as plain strings, not JSX, so it's exactly
@@ -772,7 +772,7 @@ const MONTE_CARLO_PATTERN = /\bMonte Carlo\b/;
 function isMonteCarloTerminologyScanned(rel: string): boolean {
   return (
     rel.endsWith(".tsx") ||
-    rel.startsWith("src/lib/pure/report/") ||
+    rel.startsWith("src/lib/pure/advice/report/") ||
     rel.startsWith("src/lib/pure/advice/report/")
   );
 }
@@ -1305,12 +1305,12 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/performance.ts)", () => {
+  it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/investments/returns.ts)", () => {
     const violations = findHandRolledDietzDenominatorViolations();
     if (violations.length > 0) {
       expect.fail(
         `Found ${violations.length} hand-rolled-dietz-denominator violations. ` +
-          `Use computeReturn()/sumAccounts() from src/lib/pure/performance.ts ` +
+          `Use computeReturn()/sumAccounts() from src/lib/pure/investments/returns.ts ` +
           `instead of reimplementing the return formula.\n` +
           formatViolations("Violations", violations),
       );

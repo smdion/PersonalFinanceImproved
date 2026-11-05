@@ -235,10 +235,10 @@ const config = [
     files: ["src/**/*.{ts,tsx}"],
     ignores: [
       "src/lib/pure/engine/**",
-      "src/lib/pure/milestone-input.ts",
+      "src/lib/pure/advice/milestones/input.ts",
       "src/components/cards/dashboard/retirement-benchmarks.tsx",
       // Money Guy's Goldilocks rule sizes a lump sum against all invested money.
-      "src/lib/pure/goldilocks.ts",
+      "src/lib/pure/advice/goldilocks.ts",
     ],
     plugins: { local: localRules },
     rules: { "local/no-all-accounts-balance": "error" },
