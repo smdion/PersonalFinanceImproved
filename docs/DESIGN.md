@@ -900,10 +900,12 @@ reference-data reconcile, the demo-schema stamp and the versioned table list
 already do. Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
-also drops the columns the migration drops. A conversion plain SQL can express
-(a JSON key rename, migration 0014) may instead be one SQL file per dialect
-plus a restore step in `src/lib/db/`, held together by one shared case list
-that all three must pass (`tests/db/display-name-custom-cases.ts`). A new migration's tag reaches
+also drops the columns the migration drops. A migration that only renames
+or removes a JSON key, moving the value unchanged (no arithmetic, no lookup
+across rows; migration 0014), may instead be one SQL file per dialect plus a
+restore step in `src/lib/db/`, held together by one shared case list that
+all three must pass (`tests/db/display-name-custom-cases.ts`). Any
+conversion that computes a value uses the one converter. A new migration's tag reaches
 `KNOWN_SCHEMA_VERSIONS` from the drizzle journal, so only a data-changing
 one needs a transform. The journal has two read paths: `version-logic.ts`
 reads it from disk at startup, `backup-transforms.ts` bundles it. Pending migrations apply
