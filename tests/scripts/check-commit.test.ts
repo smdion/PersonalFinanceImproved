@@ -112,12 +112,18 @@ describe("checkCommit", () => {
       "src/lib/pure/tax/brackets.ts",
       "src/lib/tax-data/2027.ts",
       "src/lib/config/tax-tables.ts",
+      // Withholding and the IRS limits are tax law too.
+      "src/lib/pure/paycheck/paycheck.ts",
+      "src/lib/pure/contributions/irs-limits.ts",
     ]) {
       expect(rules(facts({ files: nine(first) }))).toEqual(["engine-files"]);
     }
-    expect(
-      rules(facts({ files: nine("src/lib/pure/paycheck/net-pay.ts") })),
-    ).toEqual([]);
+    for (const first of [
+      "src/lib/pure/contributions/contribution-totals.ts",
+      "src/lib/pure/savings/savings.types.ts",
+    ]) {
+      expect(rules(facts({ files: nine(first) }))).toEqual([]);
+    }
   });
 
   it("asks for a Concept: trailer on a second fix in one spot", () => {

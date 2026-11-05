@@ -35,7 +35,8 @@ const GENERATED = [
 ];
 /** Engine and tax code, where a commit may touch at most 8 `src/` files. */
 const ENGINE_OR_TAX = [
-  /^src\/lib\/pure\/(engine|tax)\//,
+  /^src\/lib\/pure\/(engine|tax|paycheck)\//,
+  /^src\/lib\/pure\/contributions\/irs-limits\.ts$/,
   /^src\/lib\/tax-data\//,
   /^src\/lib\/config\/[^/]*tax[^/]*\.ts$/,
 ];
