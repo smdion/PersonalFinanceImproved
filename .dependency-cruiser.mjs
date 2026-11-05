@@ -33,7 +33,7 @@ const LAYERS = {
   shapes: `^src/lib/db/${SHAPE_FILES}`,
   // lib/calculators and lib/pure merge into lib/pure in v0.10.x.
   pure: "^src/lib/(pure|calculators)/",
-  // The engine's public API is its index.ts.
+  // The engine's public API is its index.ts, and types/index.ts for types.
   engine: "^src/lib/(pure|calculators)/engine/",
   infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting)\\.ts$)`,
   data: "^src/server/data/",
@@ -158,7 +158,7 @@ const config = {
       severity: "error",
       comment: "Resolved paths: relative imports count as much as @/ ones.",
       from: { path: "^src/", pathNot: L.engine },
-      to: { path: L.engine, pathNot: `${L.engine}index\\.ts$` },
+      to: { path: L.engine, pathNot: `${L.engine}(types/)?index\\.ts$` },
     },
     {
       name: "infra-below-server",
