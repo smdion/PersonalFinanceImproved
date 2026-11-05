@@ -10,6 +10,7 @@ import {
 } from "@/lib/config/enum-values";
 import { assertNever } from "@/lib/utils/assert-never";
 import { storedCeiling, type Ceiling } from "@/lib/utils/ceiling";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 /** A share as a fraction: 0.06 means 6%. */
 export type Fraction = number & { readonly __unit: "fraction" };
@@ -79,4 +80,31 @@ export function parseEmployerMatch(
     default:
       return assertNever(type);
   }
+}
+
+/**
+ * Format an account's employer match for read-only display — the one
+ * computation shared by every summary/detail view (previously three
+ * independent hand-rolled copies, one of which — the Portfolio page's
+ * contribution row — hardcoded "% match" for every type, including
+ * dollar_match/fixed_annual flat-dollar matches). Returns null for
+ * none/null, matching every call site's existing "—" fallback for that
+ * case. Mirrors computeEmployerMatch's own type branching
+ * (src/server/helpers/contribution.ts) — only percent_of_contribution
+ * reads maxMatchPct at all.
+ */
+export function formatEmployerMatch(
+  matchType: string | null | undefined,
+  matchValue: string | number | null | undefined,
+  maxMatchPct: string | number | null | undefined,
+): string | null {
+  if (!matchType || matchType === "none") return null;
+  const value = parseFloat(String(matchValue ?? "0"));
+  if (matchType === "percent_of_contribution") {
+    const cap = parseFloat(String(maxMatchPct ?? "0"));
+    return cap > 0 ? `${value}% of ${formatPercent(cap, 2)}` : `${value}%`;
+  }
+  // dollar_match / fixed_annual — a flat dollar amount, not a rate, so no
+  // "%" suffix and no cap (computeEmployerMatch ignores maxMatchPct here).
+  return `${formatCurrency(value)}/yr`;
 }
