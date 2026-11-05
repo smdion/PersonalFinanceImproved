@@ -49,6 +49,7 @@ import {
 } from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
@@ -902,13 +903,7 @@ export const contributionProfileRouter = createTRPCRouter({
           message: "Profile not found",
         });
 
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: SK_ACTIVE_CONTRIB_PROFILE_ID, value: input.id })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.id },
-        });
+      await upsertSetting(ctx.db, SK_ACTIVE_CONTRIB_PROFILE_ID, input.id);
       return { success: true };
     }),
 });

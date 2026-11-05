@@ -82,6 +82,7 @@ import {
 } from "@/server/helpers/projection-cache";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { upsertSetting } from "@/server/data/settings";
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -834,13 +835,7 @@ export const strategyRouter = createTRPCRouter({
           .where(eq(schema.appSettings.key, key));
         return { updated: true, count: 0 };
       }
-      await db
-        .insert(schema.appSettings)
-        .values({ key, value: input })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input },
-        });
+      await upsertSetting(db, key, input);
       return { updated: true, count: input.length };
     }),
 });

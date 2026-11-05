@@ -135,13 +135,7 @@ class DryRunRollback extends Error {}
 /** Stamp performance_last_updated in app_settings */
 async function stampPerformanceUpdated(db: DbOrTx) {
   const now = new Date().toISOString();
-  await db
-    .insert(schema.appSettings)
-    .values({ key: "performance_last_updated", value: now })
-    .onConflictDoUpdate({
-      target: schema.appSettings.key,
-      set: { value: now },
-    });
+  await upsertSetting(db, "performance_last_updated", now);
 }
 
 // --- Zod schemas for input validation ---
@@ -201,6 +195,7 @@ export {
 } from "@/lib/pure/performance";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
 import type { DbOrTx } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 export type { AccountLike, AnnualRowLike } from "@/lib/pure/performance";
 
 export const performanceRouter = createTRPCRouter({

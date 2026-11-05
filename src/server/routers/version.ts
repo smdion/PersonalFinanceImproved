@@ -19,6 +19,7 @@ import {
   VERSION_PREVIEW_WITHHELD_TABLES,
   VERSION_TABLE_NAMES,
 } from "@/lib/db/version-tables";
+import { upsertSetting } from "@/server/data/settings";
 
 export const versionRouter = createTRPCRouter({
   /** List all versions (metadata only, no JSONB data). */
@@ -165,13 +166,7 @@ export const versionRouter = createTRPCRouter({
     .input(z.object({ count: z.number().int().min(1).max(365) }))
     .mutation(async ({ ctx, input }) => {
       // Upsert the setting
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: "version_retention_count", value: input.count })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.count },
-        });
+      await upsertSetting(ctx.db, "version_retention_count", input.count);
 
       // Trigger cleanup of auto versions beyond new retention
       const autoVersions = await ctx.db
@@ -220,23 +215,11 @@ export const versionRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: "version_auto_schedule", value: input.schedule })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.schedule },
-        });
+      await upsertSetting(ctx.db, "version_auto_schedule", input.schedule);
 
       // Save custom cron expression if provided
       if (input.cronExpression) {
-        await ctx.db
-          .insert(schema.appSettings)
-          .values({ key: "version_auto_cron", value: input.cronExpression })
-          .onConflictDoUpdate({
-            target: schema.appSettings.key,
-            set: { value: input.cronExpression },
-          });
+        await upsertSetting(ctx.db, "version_auto_cron", input.cronExpression);
       }
 
       return { ok: true, schedule: input.schedule };

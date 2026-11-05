@@ -14,6 +14,7 @@ import type { ActualConfig } from "@/lib/budget-api";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { serviceEnum } from "./_shared";
+import { upsertSetting } from "@/server/data/settings";
 
 const YNAB_APP_URL = "https://app.youneedabudget.com/";
 
@@ -52,13 +53,7 @@ export const syncConfigRouter = createTRPCRouter({
         }
       }
 
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: "active_budget_api", value: input.value })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.value },
-        });
+      await upsertSetting(ctx.db, "active_budget_api", input.value);
 
       return { success: true };
     }),

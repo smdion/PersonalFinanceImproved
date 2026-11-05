@@ -8,6 +8,7 @@ import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isPostgres, type Db } from "@/lib/db";
 import { execRaw } from "@/lib/db/compat";
+import { upsertSetting } from "@/server/data/settings";
 
 let queue: Promise<unknown> = Promise.resolve();
 function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
@@ -31,10 +32,7 @@ export function mergeSettingAtomically<T>(
         .where(eq(schema.appSettings.key, key));
       const value = change(row?.value ?? null);
       if (value === null) return value;
-      await tx
-        .insert(schema.appSettings)
-        .values({ key, value })
-        .onConflictDoUpdate({ target: schema.appSettings.key, set: { value } });
+      await upsertSetting(tx, key, value);
       return value;
     };
     // SQLite: one process, one connection — the queue is the lock

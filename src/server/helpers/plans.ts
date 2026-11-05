@@ -31,6 +31,7 @@ import {
 import { resolveRetirementProfileIdFrom } from "./retirement-profile";
 import type { Permission } from "@/lib/config/permissions";
 import type { Db } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 /** Who may make a profile of each kind active — the rule that kind's own
  *  "make active" enforces (budget.setActiveProfile, contributionProfile /
@@ -165,15 +166,4 @@ export async function applyPlan(
     }
     await upsertSetting(tx, SK_LAST_APPLIED_PLAN_ID, plan.id);
   });
-}
-
-async function upsertSetting(
-  db: Pick<Db, "insert">,
-  key: string,
-  value: number,
-): Promise<void> {
-  await db
-    .insert(schema.appSettings)
-    .values({ key, value })
-    .onConflictDoUpdate({ target: schema.appSettings.key, set: { value } });
 }

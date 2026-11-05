@@ -29,6 +29,7 @@ import {
 } from "@/lib/pure/roth-basis-rollover";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { DbOrTx } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 /** Stamp basis_last_updated in app_settings — mirrors performance.ts's
  *  stampPerformanceUpdated. Called on every real basis write (single or
@@ -36,13 +37,7 @@ import type { DbOrTx } from "@/lib/db";
  *  subtitle stay current automatically. */
 async function stampBasisUpdated(db: DbOrTx) {
   const now = new Date().toISOString();
-  await db
-    .insert(schema.appSettings)
-    .values({ key: "basis_last_updated", value: now })
-    .onConflictDoUpdate({
-      target: schema.appSettings.key,
-      set: { value: now },
-    });
+  await upsertSetting(db, "basis_last_updated", now);
 }
 
 export const taxBucketsRouter = createTRPCRouter({

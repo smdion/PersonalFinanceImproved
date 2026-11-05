@@ -9,6 +9,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { oidcConfigured } from "@/server/auth-mode";
 import type { DbOrTx } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 const ONBOARDING_KEY = "onboarding_completed";
 
@@ -70,13 +71,7 @@ export async function settleFirstRunGate(
   after: "reset" | "restore" | "import",
 ): Promise<void> {
   const signInRemains = (await localAdminExists(db)) || oidcConfigured();
-  await db
-    .insert(schema.appSettings)
-    .values({ key: ONBOARDING_KEY, value: signInRemains })
-    .onConflictDoUpdate({
-      target: schema.appSettings.key,
-      set: { value: signInRemains },
-    });
+  await upsertSetting(db, ONBOARDING_KEY, signInRemains);
   if (!signInRemains)
     log("warn", "first_admin_gate_open", {
       after,

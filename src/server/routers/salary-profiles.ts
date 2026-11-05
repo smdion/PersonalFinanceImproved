@@ -53,6 +53,7 @@ import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { resolveActiveSalaryProfileId } from "@/server/helpers/salary";
 import { computeJobNetPayPerCheck } from "./savings";
+import { upsertSetting } from "@/server/data/settings";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -682,13 +683,7 @@ export const salaryProfileRouter = createTRPCRouter({
           message: "Profile not found",
         });
 
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: SK_ACTIVE_SALARY_PROFILE_ID, value: input.id })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.id },
-        });
+      await upsertSetting(ctx.db, SK_ACTIVE_SALARY_PROFILE_ID, input.id);
       return { success: true };
     }),
 });

@@ -66,6 +66,7 @@ import {
 } from "@/server/helpers/projection-cache";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { upsertSetting } from "@/server/data/settings";
 
 export const monteCarloRouter = createTRPCRouter({
   /**
@@ -530,13 +531,7 @@ export const monteCarloRouter = createTRPCRouter({
         returnClampMin: input.returnClampMin,
         returnClampMax: input.returnClampMax,
       };
-      await db
-        .insert(schema.appSettings)
-        .values({ key: SK_MC_CUSTOM_CLAMP_BOUNDS, value })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value },
-        });
+      await upsertSetting(db, SK_MC_CUSTOM_CLAMP_BOUNDS, value);
       return { updated: true };
     }),
 

@@ -57,6 +57,7 @@ import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 // --- Zod schemas ---
 
@@ -179,25 +180,14 @@ export const adminProcedures = {
         }
       }
       if (input.performanceDate) {
-        await ctx.db
-          .insert(schema.appSettings)
-          .values({
-            key: "performance_last_updated",
-            value: input.performanceDate,
-          })
-          .onConflictDoUpdate({
-            target: schema.appSettings.key,
-            set: { value: input.performanceDate },
-          });
+        await upsertSetting(
+          ctx.db,
+          "performance_last_updated",
+          input.performanceDate,
+        );
       }
       if (input.basisDate) {
-        await ctx.db
-          .insert(schema.appSettings)
-          .values({ key: "basis_last_updated", value: input.basisDate })
-          .onConflictDoUpdate({
-            target: schema.appSettings.key,
-            set: { value: input.basisDate },
-          });
+        await upsertSetting(ctx.db, "basis_last_updated", input.basisDate);
       }
       return { ok: true };
     }),

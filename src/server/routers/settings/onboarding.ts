@@ -14,6 +14,7 @@ import {
 import { lockForTransaction } from "@/server/helpers/transaction-lock";
 import { adoptFirstRetirementProfile } from "@/server/helpers/retirement-profile";
 import type { DbOrTx } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 /** Refuse unless the install still needs its first admin (first-run.ts). */
 async function requireAdminNeeded(db: DbOrTx): Promise<void> {
@@ -31,13 +32,7 @@ export const onboardingProcedures = {
   }),
 
   completeOnboarding: adminProcedure.mutation(async ({ ctx }) => {
-    await ctx.db
-      .insert(schema.appSettings)
-      .values({ key: "onboarding_completed", value: true })
-      .onConflictDoUpdate({
-        target: schema.appSettings.key,
-        set: { value: true },
-      });
+    await upsertSetting(ctx.db, "onboarding_completed", true);
     // Settings saved before onboarding finished become the first profile.
     await adoptFirstRetirementProfile(ctx.db);
     return { ok: true };

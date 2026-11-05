@@ -23,6 +23,7 @@ import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { lockForTransaction } from "./transaction-lock";
 import { getPrimaryPerson } from "./transforms";
 import type { Db, DbOrTx } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
 /** Coerce an app_settings jsonb value to a profile id. Stored as a bare
  *  number (`1`), but tolerate a numeric string from older writes. */
@@ -190,13 +191,7 @@ export async function adoptFirstRetirementProfile(
     for (const p of people)
       if (!byPerson.has(p.id))
         await addPersonToRetirementProfile(tx, profileId, p.id, primary?.id);
-    await tx
-      .insert(schema.appSettings)
-      .values({ key: SK_ACTIVE_RETIREMENT_PROFILE_ID, value: profileId })
-      .onConflictDoUpdate({
-        target: schema.appSettings.key,
-        set: { value: profileId },
-      });
+    await upsertSetting(tx, SK_ACTIVE_RETIREMENT_PROFILE_ID, profileId);
     return profileId;
   });
 }
