@@ -20,10 +20,8 @@ import {
 } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
-import {
-  computeBudgetAnnualTotal,
-  resolveLinkedBudgetItemAmounts,
-} from "@/server/helpers/budget";
+import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import {
   fetchRetirementData,
   buildEnginePayload,

@@ -6,12 +6,12 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { getAnnualExpensesFromBudget } from "@/server/helpers/budget";
 import {
   computeBudgetColumnTotal,
   computeWeightedBudgetTotal,
   computeBudgetAnnualTotal,
-  getAnnualExpensesFromBudget,
-} from "@/server/helpers/budget";
+} from "@/lib/pure/budget/annual-total";
 import { createTestDb, type TestDbContext } from "./db-harness";
 
 // ---------------------------------------------------------------------------

@@ -29,7 +29,6 @@ import {
 import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import {
-  computeBudgetAnnualTotal,
   resolveCompensation,
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
@@ -45,6 +44,7 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";

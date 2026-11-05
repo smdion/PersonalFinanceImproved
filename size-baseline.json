@@ -111,6 +111,7 @@
     "src/lib/pure/accounts/tax-bucket-projection.ts": 527,
     "src/lib/pure/advice/milestones/input.ts": 677,
     "src/lib/pure/advice/milestones/milestones.ts": 1705,
+    "src/lib/pure/budget/annual-total.ts": 51,
     "src/lib/pure/contributions/account-match.ts": 84,
     "src/lib/pure/contributions/cap-pass.ts": 182,
     "src/lib/pure/contributions/category-totals.ts": 157,
@@ -157,7 +158,7 @@
     "src/lib/utils/format.ts": 421,
     "src/server/data/investments.ts": 636,
     "src/server/data/salaries.ts": 41,
-    "src/server/helpers/budget.ts": 636,
+    "src/server/helpers/budget.ts": 383,
     "src/server/helpers/salary.ts": 369,
     "src/server/helpers/snapshot.ts": 1219,
     "src/server/retirement/build-engine-payload.ts": 1414,
@@ -175,7 +176,7 @@
     "src/server/routers/projection/_shared.ts": 366,
     "src/server/routers/projection/coast-fire.ts": 472,
     "src/server/routers/projection/monte-carlo.ts": 548,
-    "src/server/routers/projection/relocation.ts": 666,
+    "src/server/routers/projection/relocation.ts": 664,
     "src/server/routers/projection/scenarios.ts": 490,
     "src/server/routers/projection/strategy.ts": 844,
     "src/server/routers/projection/tax-optimization.ts": 536,
@@ -188,6 +189,7 @@
     "src/server/routers/simplefin.ts": 872,
     "src/server/routers/sync/core.ts": 1118,
     "src/server/routers/utilities.ts": 581,
+    "src/server/services/budget/linked-items.ts": 208,
     "src/server/services/contributions/account-edits.ts": 256,
     "src/server/services/contributions/caps.ts": 385,
     "src/server/services/contributions/live-data.ts": 108,
@@ -856,9 +858,6 @@
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
-    "src/server/helpers/budget.ts": {
-      "resolveLinkedBudgetItemAmounts": 152
-    },
     "src/server/helpers/contribution-mix.ts": {
       "loadContributionMix": 187
     },
@@ -952,6 +951,9 @@
     },
     "src/server/services/budget/extra-paycheck-materializer.ts": {
       "_materialize": 217
+    },
+    "src/server/services/budget/linked-items.ts": {
+      "resolveLinkedBudgetItemAmounts": 152
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237

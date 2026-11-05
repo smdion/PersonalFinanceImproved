@@ -5,11 +5,9 @@
  * dollars, or the caller's flat override.
  */
 import type * as schema from "@/lib/db/schema";
-import {
-  computeBudgetAnnualTotal,
-  pickActiveBudgetProfile,
-  resolveLinkedBudgetItemAmounts,
-} from "@/server/helpers";
+import { pickActiveBudgetProfile } from "@/server/helpers";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
+import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import type { Db } from "@/lib/db";
 
 export async function resolvePhaseExpenses(

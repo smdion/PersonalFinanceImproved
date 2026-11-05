@@ -36,8 +36,8 @@ import {
   getLatestSnapshot,
   applySalaryProfileRow,
   resolveCompensation,
-  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { applyContribProfileRow } from "@/server/services/contributions/profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";

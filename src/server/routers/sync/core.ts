@@ -35,8 +35,8 @@ import {
   buildMortgageInputs,
   loadBudgetItemLinks,
   loadSavingsGoalLinks,
-  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";

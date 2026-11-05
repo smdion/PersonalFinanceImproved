@@ -35,8 +35,8 @@ import {
   resolveCompensation,
   mergeSalaryProfileJobFields,
   getLatestSnapshot,
-  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";
 import { resolveProfile } from "@/server/services/contributions/profile";

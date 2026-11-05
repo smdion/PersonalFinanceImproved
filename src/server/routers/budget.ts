@@ -40,15 +40,15 @@ import {
 import { calculateBudget } from "@/lib/pure/budget/budget";
 import type { BudgetInput } from "@/lib/pure/budget/budget.types";
 import {
-  computeBudgetAnnualTotal,
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
-  resolveLinkedBudgetItemAmounts,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
 } from "@/server/helpers";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
+import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
 import { applyContributionAccountEditsBatch } from "@/server/services/contributions/account-edits";
 import { budgetApiServiceSchema } from "@/lib/config/enum-values.schema";

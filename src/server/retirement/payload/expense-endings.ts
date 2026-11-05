@@ -10,7 +10,7 @@
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type { ExpenseEnding } from "@/lib/pure/engine/types";
-import { computeBudgetAnnualTotal } from "@/server/helpers";
+import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
 import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
