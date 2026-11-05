@@ -22,7 +22,7 @@ import {
   type MonthlyPrices,
   type YearlyResult,
 } from "@/lib/pure/investments/benchmark-yearly";
-import { getBenchmarkMonthlyPrices } from "@/server/helpers/market-prices";
+import { getBenchmarkMonthlyPrices } from "@/server/services/investments/market-prices";
 import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,

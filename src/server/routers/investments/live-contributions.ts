@@ -19,7 +19,7 @@ import {
   sentTransactions,
 } from "@/lib/pure/sync/simplefin-feeds";
 import type { PaceAccountInput } from "@/lib/pure/savings/savings-pace";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { loadTrackedAccountNames } from "@/server/data/account-names";
 import { toNumber } from "@/lib/utils/numbers";
 import {

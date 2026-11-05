@@ -10,7 +10,7 @@ import {
   loadSimulationPreset,
   presetAssetClasses,
   type SimulationPreset,
-} from "@/server/helpers/simulation-preset";
+} from "@/server/services/simulation/simulation-preset";
 import type { SimulationPresetKey } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
 import {
@@ -287,7 +287,7 @@ export async function loadSavedInflationOverrides(
 
 /**
  * The Simulation's inputs: asset classes, correlations, glide path and
- * inflation risk, under `presetKey` (helpers/simulation-preset.ts). Without
+ * inflation risk, under `presetKey` (services/simulation/simulation-preset.ts). Without
  * one, the raw table values — computeMonteCarloProjection applies the
  * run's preset itself, with the run's own asset-class changes on top.
  */

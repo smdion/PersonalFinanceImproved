@@ -28,7 +28,7 @@ import {
   planInUseMessage,
   planProfileIds,
 } from "@/lib/pure/household/plans";
-import { resolveRetirementProfileIdFrom } from "./retirement-profile";
+import { resolveRetirementProfileIdFrom } from "@/server/helpers/retirement-profile";
 import type { Permission } from "@/lib/config/permissions";
 import type { Db } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";

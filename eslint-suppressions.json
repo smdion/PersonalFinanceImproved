@@ -4085,14 +4085,14 @@
     }
   },
   "src/lib/pure/contributions/cap-pass.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
-    },
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
     }
   },
   "src/lib/pure/contributions/category-totals.ts": {
@@ -5521,20 +5521,6 @@
       "count": 2
     }
   },
-  "src/server/helpers/contribution-mix.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/helpers/debts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5543,67 +5529,12 @@
       "count": 1
     }
   },
-  "src/server/helpers/market-prices.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/performance-edit.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/performance-rollups.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/server/helpers/retirement-profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 5
-    }
-  },
-  "src/server/helpers/roth-basis.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/savings-allocation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/simulation-preset.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/snapshot-derivatives.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/local-admin-login.ts": {
@@ -6235,6 +6166,11 @@
       "count": 1
     }
   },
+  "src/server/services/accounts/roth-basis.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/services/budget/budget-income-materializer.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
@@ -6260,11 +6196,11 @@
     }
   },
   "src/server/services/contributions/account-edits.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
+    },
+    "ratchet/max-comment-lines": {
+      "count": 7
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -6278,25 +6214,39 @@
       "count": 4
     }
   },
+  "src/server/services/contributions/contribution-mix.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/server/services/contributions/live-data.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
     "ratchet/max-comment-lines": {
       "count": 3
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
     },
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
   "src/server/services/contributions/paycheck-accounts.ts": {
-    "ratchet/max-comment-lines": {
+    "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "@typescript-eslint/consistent-type-assertions": {
+    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6304,13 +6254,26 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 10
     },
-    "ratchet/no-history-comment": {
-      "count": 5
-    },
     "ratchet/max-comment-lines": {
       "count": 12
     },
+    "ratchet/no-history-comment": {
+      "count": 5
+    },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/market-prices.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/net-worth/snapshot-derivatives.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
@@ -6334,6 +6297,30 @@
       "count": 1
     }
   },
+  "src/server/services/performance/performance-edit.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/performance/performance-rollups.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/profiles/plans.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/services/profiles/salary-profile.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -6350,11 +6337,24 @@
       "count": 4
     }
   },
+  "src/server/services/savings/savings-allocation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
     },
     "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/simulation/simulation-preset.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
       "count": 2
     }
   },

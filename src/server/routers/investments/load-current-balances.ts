@@ -42,7 +42,7 @@ const SHARE_CHANGING_KINDS = new Set([
 import { impliedUnitPrices } from "@/lib/pure/investments/fund-prices";
 import { CASH_LIKE_SECURITY_KINDS } from "@/lib/config/enum-values";
 import { loadTrackedAccountNames } from "@/server/data/account-names";
-import { getDailyMarketCloses } from "@/server/helpers/market-prices";
+import { getDailyMarketCloses } from "@/server/services/investments/market-prices";
 import {
   loadAccounts,
   loadClassifiedTransactions,

@@ -28,7 +28,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import {
   captureYearRollups,
   syncYearRollups,
-} from "@/server/helpers/performance-rollups";
+} from "@/server/services/performance/performance-rollups";
 import { pushSnapshotToBudgetApi } from "@/server/helpers";
 import type { PushSnapshotMode } from "@/server/services/sync/budget-api-push";
 import type { DbOrTx } from "@/lib/db";

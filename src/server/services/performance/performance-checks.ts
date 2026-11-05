@@ -13,7 +13,7 @@ import {
   acceptedAmounts,
   parseAcceptedChecks,
 } from "@/lib/pure/investments/performance-annotations";
-import { loadYearEndSnapshots } from "@/server/helpers/snapshot-derivatives";
+import { loadYearEndSnapshots } from "@/server/services/net-worth/snapshot-derivatives";
 import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 

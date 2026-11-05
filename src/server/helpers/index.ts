@@ -12,7 +12,7 @@ export * from "@/server/data/snapshots";
 export * from "@/server/services/net-worth/year-end-history";
 export * from "@/server/services/sync/api-balance-resolution";
 export * from "@/server/services/sync/budget-api-push";
-export * from "./savings-allocation";
+export * from "@/server/services/savings/savings-allocation";
 export * from "@/lib/pure/paycheck/paycheck-input";
 export * from "@/lib/pure/accounts/portfolio-labels";
 export * from "@/server/data/category-links";

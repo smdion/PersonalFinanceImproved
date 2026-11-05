@@ -26,7 +26,7 @@ import {
   sentTransactions,
 } from "@/lib/pure/sync/simplefin-feeds";
 import { suggestSnapshotAmounts } from "@/lib/pure/net-worth/snapshot-suggestions";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { loadFillRecord } from "@/server/services/sync/fill-ledger";
 import { toNumber } from "@/lib/utils/numbers";
 import {

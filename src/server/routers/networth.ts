@@ -31,7 +31,7 @@ import { getAllPeople } from "@/server/data/people";
 import {
   refreshSnapshotYearDerivatives,
   pushSnapshotIfConfigured,
-} from "@/server/helpers/snapshot-derivatives";
+} from "@/server/services/net-worth/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { zYearEndTargeting } from "./_shared";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";

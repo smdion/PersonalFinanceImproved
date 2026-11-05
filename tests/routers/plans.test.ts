@@ -16,7 +16,7 @@ import {
   adminSession,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
-import { applyPlan } from "@/server/helpers/plans";
+import { applyPlan } from "@/server/services/profiles/plans";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_RETIREMENT_PROFILE_ID,

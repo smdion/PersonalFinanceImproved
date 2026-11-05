@@ -19,8 +19,8 @@ import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
 import {
   captureYearRollups,
   syncYearRollups,
-} from "@/server/helpers/performance-rollups";
-import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
+} from "@/server/services/performance/performance-rollups";
+import { loadPerformanceChecks } from "@/server/services/performance/performance-checks";
 import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 

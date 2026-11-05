@@ -6,7 +6,7 @@
  * from bonus checks (fromBonus) counts what the bonus check takes; a
  * paycheck's worth is the regular paychecks' part. Fictional household.
  */
-import "../routers/setup-mocks";
+import "../../../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import {
@@ -15,9 +15,9 @@ import {
   seedJob,
   seedPerformanceAccount,
   seedContributionProfile,
-} from "../routers/setup";
+} from "../../../routers/setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
 

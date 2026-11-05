@@ -13,7 +13,7 @@ import {
   seedPerformanceAccount,
   seedSnapshot,
 } from "./setup";
-import { refreshSnapshotYearDerivatives } from "@/server/helpers/snapshot-derivatives";
+import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),

@@ -18,7 +18,7 @@ import {
   sentTransactions,
 } from "@/lib/pure/sync/simplefin-feeds";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { toNumber } from "@/lib/utils/numbers";
 import {
   loadAccounts,

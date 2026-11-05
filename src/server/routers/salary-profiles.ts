@@ -37,7 +37,7 @@ import {
   BLANK_SALARY_ENTRY,
   type SalaryEntry,
 } from "@/lib/db/salary-entry-defaults";
-import { assertNoPlanUses } from "@/server/helpers/plans";
+import { assertNoPlanUses } from "@/server/services/profiles/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";

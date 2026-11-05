@@ -21,7 +21,7 @@ import {
 import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";
-import { getLatestMarketClose } from "@/server/helpers/market-prices";
+import { getLatestMarketClose } from "@/server/services/investments/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
 import { toFactRows } from "@/server/data/fund-facts";
 import { loadAccounts, loadLatestHoldings } from "@/server/data/investments";

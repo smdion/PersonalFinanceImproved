@@ -1,7 +1,7 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
 import { currentLoan } from "@/server/retirement/payload/expense-endings";
 import { assertWithinIrsLimits } from "@/server/services/contributions/caps";
-import { assertNoPlanUses } from "@/server/helpers/plans";
+import { assertNoPlanUses } from "@/server/services/profiles/plans";
 import {
   SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
   SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,

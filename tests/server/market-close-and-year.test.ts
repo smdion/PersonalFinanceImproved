@@ -3,7 +3,7 @@ import "../routers/setup-mocks";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { calendarYear } from "@/lib/utils/date";
 import { getLatestClose } from "@/lib/tiingo/client";
-import { getLatestMarketClose } from "@/server/helpers/market-prices";
+import { getLatestMarketClose } from "@/server/services/investments/market-prices";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/tiingo/connection", () => ({

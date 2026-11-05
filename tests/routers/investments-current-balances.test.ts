@@ -9,7 +9,7 @@ import { createTestCaller, seedPerson } from "./setup";
 import * as sqlite from "@/lib/db/schema-sqlite";
 import { loadCurrentBalances } from "@/server/routers/investments/load-current-balances";
 
-vi.mock("@/server/helpers/market-prices", () => ({
+vi.mock("@/server/services/investments/market-prices", () => ({
   getLatestMarketClose: async () => null,
   getBenchmarkMonthlyPrices: async () => null,
   getDailyMarketCloses: async (_db: unknown, ticker: string) =>

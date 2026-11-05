@@ -66,19 +66,19 @@ import {
 import {
   captureYearRollups,
   syncYearRollups,
-} from "@/server/helpers/performance-rollups";
+} from "@/server/services/performance/performance-rollups";
 import {
   buildPerfAcctLookups,
   getEffectiveCategory,
   resolveMaster,
 } from "@/lib/pure/investments/annual-rollups";
-import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
-import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
+import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis";
+import { loadPerformanceChecks } from "@/server/services/performance/performance-checks";
 import {
   editAccountRow,
   type AccountEdit,
   type EditPreview,
-} from "@/server/helpers/performance-edit";
+} from "@/server/services/performance/performance-edit";
 import {
   acceptedCheckSchema,
   parseAcceptedChecks,

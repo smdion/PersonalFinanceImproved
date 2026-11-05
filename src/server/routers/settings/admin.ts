@@ -52,7 +52,7 @@ import { invalidateYearEndCache } from "@/server/helpers";
 import { RBAC_SETTINGS_PREFIX, RBAC_ADMIN_GROUP_KEY } from "@/server/auth";
 import { PERMISSIONS } from "@/lib/config/permissions";
 import { settingValue } from "./_shared";
-import { applyPlan } from "@/server/helpers/plans";
+import { applyPlan } from "@/server/services/profiles/plans";
 import { firstReachedSchema } from "@/lib/pure/advice/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
@@ -319,7 +319,7 @@ export const adminProcedures = {
     }),
   }),
 
-  // ══ PLANS (a named set of profiles — see server/helpers/plans.ts) ══
+  // ══ PLANS (a named set of profiles — see server/services/profiles/plans.ts) ══
   scenarios: createTRPCRouter({
     /** Every saved Plan. */
     list: protectedProcedure.query(({ ctx }) =>

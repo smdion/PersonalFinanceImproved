@@ -2,7 +2,7 @@
  * pushSnapshotIfConfigured's `error` (shown after a net-worth save) is what
  * the user is told: the service sentence and what the push changed.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as budgetApi from "@/lib/budget-api";
 import {
@@ -18,7 +18,7 @@ vi.mock("@/server/helpers", () => ({
   }),
 }));
 
-import { pushSnapshotIfConfigured } from "@/server/helpers/snapshot-derivatives";
+import { pushSnapshotIfConfigured } from "@/server/services/net-worth/snapshot-derivatives";
 import type { DbOrTx } from "@/lib/db";
 
 // setup-mocks owns the budget-api mock; this file sets what it needs.

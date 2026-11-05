@@ -61,8 +61,8 @@ import type {
   JobForPaycheckInput,
   ResolvedPaycheckInputs,
 } from "@/lib/pure/paycheck/paycheck-input";
-import { getResolvedGoalAllocations } from "@/server/helpers/savings-allocation";
-import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
+import { getResolvedGoalAllocations } from "@/server/services/savings/savings-allocation";
+import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import {
   buildYearEndHistory,

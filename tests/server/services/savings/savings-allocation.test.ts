@@ -1,11 +1,11 @@
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
-} from "@/server/helpers/savings-allocation";
-import { createTestDb, type TestDbContext } from "./db-harness";
+} from "@/server/services/savings/savings-allocation";
+import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
 
 describe("savings-allocation", () => {
   let ctx: TestDbContext;

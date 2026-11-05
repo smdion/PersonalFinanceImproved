@@ -11,7 +11,7 @@ import {
   redundantReturnRateIds,
   returnRateAtAge,
 } from "@/lib/pure/simulation/return-rate-breakpoints";
-import { assertNoPlanUses } from "@/server/helpers/plans";
+import { assertNoPlanUses } from "@/server/services/profiles/plans";
 import { eq, ne, asc, and, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";

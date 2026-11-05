@@ -23,7 +23,7 @@ import {
   buildEnginePayload,
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
 import { assertWithinIrsLimits } from "@/server/services/contributions/caps";

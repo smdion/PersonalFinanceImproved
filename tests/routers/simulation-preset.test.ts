@@ -11,7 +11,7 @@ import * as sqlite from "@/lib/db/schema-sqlite";
 import {
   loadSimulationPreset,
   presetAssetClasses,
-} from "@/server/helpers/simulation-preset";
+} from "@/server/services/simulation/simulation-preset";
 import { computeCurrentStockAllocationPercent } from "@/server/routers/projection-v5-helpers";
 
 describe("simulation presets", () => {

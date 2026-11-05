@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 
-vi.mock("@/server/helpers/market-prices", () => ({
+vi.mock("@/server/services/investments/market-prices", () => ({
   getLatestMarketClose: vi.fn(async (_db: unknown, ticker: string) =>
     ticker === "EXSTX" ? { date: "2026-10-09", close: 50 } : null,
   ),

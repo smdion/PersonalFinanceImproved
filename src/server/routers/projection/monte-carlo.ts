@@ -10,7 +10,7 @@ import { planEndAge as planEndAgeOf } from "@/lib/pure/household/household-timel
 import {
   loadSimulationPreset,
   presetAssetClasses,
-} from "@/server/helpers/simulation-preset";
+} from "@/server/services/simulation/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import {
   classifyAssetClasses,
@@ -232,7 +232,7 @@ export const monteCarloRouter = createTRPCRouter({
           ? toSimpleTaxMode(engineInput, payload.simpleTaxMode)
           : engineInput;
 
-      // ----- What this run's preset means (helpers/simulation-preset.ts) -----
+      // ----- What this run's preset means (services/simulation/simulation-preset.ts) -----
       const preset = await loadSimulationPreset(ctx.db, input.preset);
 
       // Validate asset class override IDs match DB

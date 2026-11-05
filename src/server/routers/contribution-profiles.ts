@@ -24,7 +24,7 @@ import {
 } from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
-import { assertNoPlanUses } from "@/server/helpers/plans";
+import { assertNoPlanUses } from "@/server/services/profiles/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";

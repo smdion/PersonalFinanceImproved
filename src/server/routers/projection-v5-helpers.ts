@@ -12,7 +12,7 @@
  */
 
 import { planEndAge } from "@/lib/pure/household/household-timeline";
-import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
+import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   classifyAssetClasses,

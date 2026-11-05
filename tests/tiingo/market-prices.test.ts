@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   getBenchmarkMonthlyPrices,
   getLatestMarketClose,
-} from "@/server/helpers/market-prices";
+} from "@/server/services/investments/market-prices";
 import { tiingoPrice } from "../fixtures/tiingo";
 
 vi.mock("@/lib/tiingo/connection", () => ({

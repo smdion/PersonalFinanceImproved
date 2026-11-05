@@ -38,7 +38,7 @@ import { buildContribAccounts } from "@/server/services/contributions/paycheck-a
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/data/people";
-import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
+import { householdHighIncomeLine } from "@/server/services/paycheck/high-income-line";
 import {
   zSandboxSalaryEntries,
   zSandboxContribActiveFields,

@@ -14,7 +14,7 @@ import type { CompositionBucket } from "@/lib/config/enum-values";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "./holdings-overview";
-import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
+import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 
 /** How far a hand-entered mix may stray from 100% (rounding). */
