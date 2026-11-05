@@ -124,6 +124,7 @@ export default defineConfig({
         "src/lib/utils/format.ts",
         "src/lib/utils/math.ts",
         "src/lib/utils/date.ts",
+        "src/lib/utils/date-keys.ts",
         // src/lib/env.ts — production env invariants (CRON_SECRET,
         // ENCRYPTION_KEY, DEMO_ONLY + NEXT_PHASE carve-outs from v0.5.0).
         // Load-bearing at container boot.
