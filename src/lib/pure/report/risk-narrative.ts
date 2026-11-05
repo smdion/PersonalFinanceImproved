@@ -2,7 +2,7 @@
  *  centerpiece. Pure functions: no React, no chart library — the
  *  percentile-band data is shaped here for a static, print-safe SVG the
  *  component layer renders (no Recharts/canvas at print time). */
-import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 export interface RiskNarrative {

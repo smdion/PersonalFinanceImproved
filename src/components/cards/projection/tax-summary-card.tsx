@@ -17,7 +17,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { KpiCard } from "./projection-hero-kpis";
 import type { ProjectionState } from "./projection-table-types";
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import {
   computeLifetimeTaxSummary,
   type LifetimeTaxSummary,

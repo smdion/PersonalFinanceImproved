@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax -- as unknown as casts required to build minimal EngineDecumulationYear fixtures without satisfying every unrelated field of the full engine type */
 import { describe, it, expect } from "vitest";
 import { buildWatchlist } from "@/lib/pure/report/aca-irmaa-narrative";
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { xfail } from "../../fixtures/answer-key";
 import { engineHousehold } from "../../fixtures/answer-key-household";

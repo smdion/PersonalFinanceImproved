@@ -1,5 +1,5 @@
 /** Domain types for the projection card — tooltip data shapes, accumulation/decumulation override form types, serialized override payloads, and account split computation inputs. */
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getDefaultAccumulationOrder,
   getDefaultDecumulationOrder,

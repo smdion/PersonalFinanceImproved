@@ -5,7 +5,7 @@
  *  computed per year and ready to sum; EngineAccumulationYear has no
  *  equivalent field — see tax-summary-card.tsx's docblock for why
  *  accumulation isn't included. */
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 
 type LifetimeTaxDecade = {
   /** e.g. "50s" for ages 50-59. */

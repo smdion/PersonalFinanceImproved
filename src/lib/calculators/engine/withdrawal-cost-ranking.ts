@@ -25,7 +25,7 @@
  * enabled — see `rothBasisAvailable`'s docblock below.
  */
 import { isQualifiedRothOwner } from "@/lib/pure/roth-distribution-tax";
-import type { TaxBuckets } from "../types";
+import type { TaxBuckets } from "../../pure/types/shared";
 import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import {

@@ -9,7 +9,7 @@ import type {
   ContributionSpec,
   EngineAccumulationYear,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { acct, household } from "./fixtures/two-person-household";
 
 const returnRates = Array.from({ length: 60 }, (_, i) => ({

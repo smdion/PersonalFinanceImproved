@@ -4,7 +4,7 @@ import {
   buildRiskNarrative,
   buildRiskBandPoints,
 } from "@/lib/pure/report/risk-narrative";
-import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 
 function distribution(median: number) {
   return {

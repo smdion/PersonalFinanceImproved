@@ -9,12 +9,10 @@ import {
   groupBasisRatio,
   syncAggregateBasis,
 } from "../brokerage-basis";
-import type {
-  AccountCategory,
-  AccumulationSlot,
-  EngineAccumulationYear,
-  IndividualAccountYearBalance,
-} from "../../types";
+import type { AccountCategory } from "../../../config/account-types";
+import type { AccumulationSlot } from "../../../pure/engine/types/engine-config";
+import type { EngineAccumulationYear } from "../../../pure/engine/types/projection-result";
+import type { IndividualAccountYearBalance } from "../../../pure/types/shared";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
 import {
   buildCategoryRecord,

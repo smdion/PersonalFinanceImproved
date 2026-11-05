@@ -7,10 +7,8 @@
  * Retirement brokerage when there's none to receive that money.
  */
 import { calendarYear } from "@/lib/utils/date";
-import type {
-  AccountCategory,
-  IndividualAccountInput,
-} from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import {
   getAllCategories,
   isOverflowTarget,

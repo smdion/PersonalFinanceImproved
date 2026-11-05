@@ -70,7 +70,7 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   EngineDecumulationYear,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { cents } from "../fixtures/answer-key";
 import {
   engineHousehold,

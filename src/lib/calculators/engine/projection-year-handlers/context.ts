@@ -2,7 +2,8 @@
  * buildProjectionContext — builds the immutable context for a projection run.
  */
 import { buildInflationPath } from "../inflation-path";
-import type { ProjectionInput, AccountCategory } from "../../types";
+import type { ProjectionInput } from "../../../pure/engine/types/projection-result";
+import type { AccountCategory } from "../../../config/account-types";
 import {
   getAllCategories,
   categoriesWithIrsLimit,

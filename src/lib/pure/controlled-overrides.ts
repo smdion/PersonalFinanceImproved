@@ -6,7 +6,7 @@
  * the what-if from that year on. The controlled fields win: they're removed
  * from the saved rows before the what-if rows are added.
  */
-import type { DecumulationOverride } from "@/lib/calculators/types";
+import type { DecumulationOverride } from "@/lib/pure/engine/types";
 
 export function withControlledOverrides(
   saved: readonly DecumulationOverride[],

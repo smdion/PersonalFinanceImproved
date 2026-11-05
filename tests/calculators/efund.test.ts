@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateEFund } from "@/lib/calculators/efund";
-import type { EFundInput } from "@/lib/calculators/types";
+import type { EFundInput } from "@/lib/pure/types/calculators";
 
 describe("calculateEFund", () => {
   const input: EFundInput = {

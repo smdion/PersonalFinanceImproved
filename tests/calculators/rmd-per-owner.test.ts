@@ -13,11 +13,13 @@ import {
 } from "@/lib/calculators/engine/rmd-enforcement";
 import type {
   AccountBalances,
+  IndividualAccountInput,
+} from "@/lib/pure/types/shared";
+import type {
   DecumulationSlot,
   EngineDecumulationYear,
-  IndividualAccountInput,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { acct, household } from "./fixtures/two-person-household";
 
 const decumYears = (input: ProjectionInput) =>

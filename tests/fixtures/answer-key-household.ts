@@ -22,9 +22,9 @@ import {
 import type {
   EngineAccumulationYear,
   EngineDecumulationYear,
-  IndividualAccountInput,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import { readTaxData, shippedTaxTables } from "../helpers/tax-data";
 import { runOneYear } from "./answer-key";
 import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";

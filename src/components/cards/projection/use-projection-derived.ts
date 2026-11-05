@@ -6,7 +6,7 @@ import { useMemo, useCallback, useEffect } from "react";
 import type {
   EngineYearProjection,
   EngineAccumulationYear,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   type AccountCategory,
   getAccountSegments,

@@ -13,7 +13,7 @@
  *  a slope from two trials a cent apart (rounding noise of 0.99999999),
  *  stepped to billions, capped at the balance and accepted that trial:
  *  it withdrew all $1,643,726.52 and the plan failed in 2059. */
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { makeAccumulationDefaults } from "./engine-fixtures";
 
 const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =

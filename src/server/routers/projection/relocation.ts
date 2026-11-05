@@ -40,7 +40,7 @@ import * as schema from "@/lib/db/schema";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 

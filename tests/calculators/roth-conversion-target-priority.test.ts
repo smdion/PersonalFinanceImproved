@@ -22,9 +22,11 @@
  * Retirement page's decumulation override form.
  */
 import { describe, it, expect } from "vitest";
-import type { EngineDecumulationYear } from "@/lib/calculators/types";
+import type {
+  EngineDecumulationYear,
+  ProjectionInput,
+} from "@/lib/pure/engine/types";
 import { calculateProjection } from "@/lib/calculators/engine";
-import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";

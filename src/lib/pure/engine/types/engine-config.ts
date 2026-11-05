@@ -51,11 +51,11 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContributionMethod } from "@/lib/config/enum-values";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import type { LumpSum } from "./shared";
+import type { LumpSum } from "../../types/shared";
 import type { z } from "zod/v4";
-import type { decumulationOverrideArraySchema } from "@/lib/pure/engine";
-import type { LtcgBracketTable } from "../../config/tax-tables";
-import type { IrmaaBracketTable } from "../../config/irmaa-tables";
+import type { decumulationOverrideArraySchema } from "@/lib/pure/engine/types/overrides.schema";
+import type { LtcgBracketTable } from "../../../config/tax-tables";
+import type { IrmaaBracketTable } from "../../../config/irmaa-tables";
 
 /**
  * How contributions are distributed across account categories.

@@ -35,8 +35,8 @@ const FRESHNESS_DAYS = 180;
 import type {
   ProjectionInput,
   ContributionSpec,
-  AccountCategory,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 

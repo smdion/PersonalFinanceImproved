@@ -17,7 +17,7 @@
  */
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
-import type { ProjectionInput } from "./types";
+import type { ProjectionInput } from "../pure/engine/types";
 import {
   getFullRetirementAge,
   getClaimingAdjustmentMultiplier,

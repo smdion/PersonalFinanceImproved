@@ -2,7 +2,8 @@
  * buildProjectionState — initializes mutable projection state.
  */
 import { seedBrokerageBasis } from "../brokerage-basis";
-import type { ProjectionInput, AccountBalances, TaxBuckets } from "../../types";
+import type { ProjectionInput } from "../../../pure/engine/types/projection-result";
+import type { AccountBalances, TaxBuckets } from "../../../pure/types/shared";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
 import {
   accountBalancesFromTaxBuckets,

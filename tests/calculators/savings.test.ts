@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { calculateSavings } from "@/lib/calculators/savings";
-import type { SavingsInput, SavingsGoalInput } from "@/lib/calculators/types";
+import type {
+  SavingsInput,
+  SavingsGoalInput,
+} from "@/lib/pure/types/calculators";
 import { AS_OF_DATE } from "./fixtures";
 
 function makeGoal(overrides: Partial<SavingsGoalInput> = {}): SavingsGoalInput {

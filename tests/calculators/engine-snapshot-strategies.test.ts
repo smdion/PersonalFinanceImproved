@@ -25,7 +25,8 @@
 import { describe, expect, it } from "vitest";
 import { calculateProjection as runEngine } from "@/lib/calculators/engine";
 import { recordDrift } from "./fixtures/drift";
-import type { AccountBalances, ProjectionInput } from "@/lib/calculators/types";
+import type { AccountBalances } from "@/lib/pure/types/shared";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
   TEST_BRACKETS,

@@ -16,7 +16,10 @@
  * Year-level logic is extracted to projection-year-handlers.ts for
  * maintainability. This file owns validation, orchestration, and result building.
  */
-import type { ProjectionInput, ProjectionResult } from "../types";
+import type {
+  ProjectionInput,
+  ProjectionResult,
+} from "../../pure/engine/types/projection-result";
 import { formatPercent } from "../../utils/format";
 import { roundToCents } from "../../utils/math";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";

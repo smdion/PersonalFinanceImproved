@@ -10,8 +10,8 @@
 import type {
   ProjectionResult,
   EngineDecumulationYear,
-} from "@/lib/calculators/types/engine-projection";
-import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+} from "@/lib/pure/engine/types/index";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 
 interface ActionItem {
   title: string;

@@ -20,9 +20,9 @@ import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   EngineDecumulationYear,
-  IndividualAccountInput,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import { acct, household } from "./fixtures/two-person-household";
 import { grossUpWholeBalanceHousehold } from "./fixtures/gross-up-whole-balance";
 import { shippedTaxTables } from "../helpers/tax-data";

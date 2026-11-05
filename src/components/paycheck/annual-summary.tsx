@@ -5,7 +5,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { FieldRow } from "@/components/ui/field-row";
 import { SectionHeader } from "./section-header";
 import type { PaycheckResult, ViewMode } from "./types";
-import type { BlendedAnnualTotals } from "@/lib/calculators/types/calculators";
+import type { BlendedAnnualTotals } from "@/lib/pure/types/calculators";
 
 type Totals = {
   gross: number;

@@ -13,7 +13,7 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "@/lib/calculators/engine/projection-year-handlers/types";
-import type { LumpSum } from "@/lib/calculators/types";
+import type { LumpSum } from "@/lib/pure/types/shared";
 
 // ---------------------------------------------------------------------------
 // Minimal stubs (only fields the functions actually read)

@@ -88,9 +88,9 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type {
   EngineYearProjection,
-  IndividualAccountInput,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import { acct, household } from "./fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------

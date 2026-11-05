@@ -25,10 +25,10 @@ import type {
   PaycheckInput,
   PaycheckResult,
   BlendedAnnualTotals,
-  DeductionLine,
   PeriodBreakdown,
   BonusEstimate,
-} from "./types";
+} from "../pure/types/calculators";
+import type { DeductionLine } from "../pure/types/shared";
 import { formatCurrency, formatPercent } from "../utils/format";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { MS_PER_DAY } from "../constants";

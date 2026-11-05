@@ -11,7 +11,12 @@
  * IRMAA: checks if MAGI crosses a Medicare surcharge cliff (age 65+).
  * ACA: checks if MAGI crosses the ACA subsidy cliff (pre-65 retirees).
  */
-import type { AccountCategory, TaxBuckets } from "../types";
+import type { AccountCategory } from "../../config/account-types";
+import type {
+  TaxBuckets,
+  AccountBalances,
+  IndividualAccountInput,
+} from "../../pure/types/shared";
 import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,
@@ -26,7 +31,6 @@ import {
   setBalance,
   setBasis,
 } from "../../config/account-balance";
-import type { AccountBalances, IndividualAccountInput } from "../types";
 import {
   getIrmaaCost,
   getNextIrmaaCliff,

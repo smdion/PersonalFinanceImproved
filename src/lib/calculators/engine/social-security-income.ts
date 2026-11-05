@@ -12,7 +12,7 @@
  */
 import { ageInYear } from "../../utils/date";
 import { roundToCents } from "../../utils/math";
-import type { ProjectionInput } from "../types";
+import type { ProjectionInput } from "../../pure/engine/types/projection-result";
 
 export function socialSecurityForYear(
   input: Pick<

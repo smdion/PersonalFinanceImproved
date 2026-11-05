@@ -20,7 +20,7 @@ import {
   tipColorClass,
   formatDiscretionaryTierBreakdown,
 } from "./utils";
-import type { EngineYearProjection } from "@/lib/calculators/types";
+import type { EngineYearProjection } from "@/lib/pure/engine/types";
 import {
   ComposedChart,
   Bar,

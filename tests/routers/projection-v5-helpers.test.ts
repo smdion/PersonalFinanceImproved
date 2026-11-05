@@ -1,6 +1,6 @@
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {
   buildAccumulationOrder,
   runStressTestScenarios,

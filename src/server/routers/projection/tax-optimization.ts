@@ -36,8 +36,8 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
   RoutingMode,
-} from "@/lib/calculators/types";
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+} from "@/lib/pure/engine/types";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { taxYearFlags } from "@/lib/pure/report/year-table";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import {

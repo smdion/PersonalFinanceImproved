@@ -9,7 +9,7 @@ import {
 
 import { makeTaxBuckets, TEST_BRACKETS } from "./fixtures/engine-fixtures";
 import { shippedTaxTables } from "../helpers/tax-data";
-import type { DecumulationSlot } from "@/lib/calculators/types";
+import type { DecumulationSlot } from "@/lib/pure/engine/types";
 
 function makeSlot(
   category: DecumulationSlot["category"],

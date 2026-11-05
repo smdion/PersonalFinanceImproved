@@ -71,10 +71,12 @@ import {
 } from "@/lib/calculators/engine/qcd";
 import type {
   AccountBalances,
+  IndividualAccountInput,
+} from "@/lib/pure/types/shared";
+import type {
   DecumulationSlot,
   EngineDecumulationYear,
-  IndividualAccountInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { acct, household } from "./fixtures/two-person-household";
 

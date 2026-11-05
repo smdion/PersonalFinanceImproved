@@ -22,7 +22,7 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   EngineYearProjection,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 
 /** Function-level money tolerance: half a cent. */
 const CENT_TOLERANCE = 0.005;

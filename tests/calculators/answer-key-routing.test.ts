@@ -38,12 +38,12 @@ import {
   setRoth,
   setTraditional,
 } from "@/lib/config/account-balance";
+import type { AccountBalances } from "@/lib/pure/types/shared";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type {
-  AccountBalances,
-  AccountCategory,
   DecumulationSlot,
   ResolvedDecumulationConfig,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   makeDecumulationConfig,
   makeTaxBuckets,

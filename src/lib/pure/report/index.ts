@@ -1,8 +1,8 @@
 /** Orchestrator for the retirement advisor report's narrative content —
  *  combines the individual section builders into one `ReportNarrative`.
  *  Pure function: same inputs, same output, no React, no side effects. */
-import type { ProjectionResult } from "@/lib/calculators/types/engine-projection";
-import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { ProjectionResult } from "@/lib/pure/engine/types/index";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { buildExecutiveSummary } from "./executive-summary";
 import { buildWithdrawalStrategyNarrative } from "./withdrawal-strategy-narrative";

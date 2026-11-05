@@ -13,7 +13,7 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   ProjectionInput,
   EngineDecumulationYear,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";

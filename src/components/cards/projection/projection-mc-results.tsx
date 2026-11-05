@@ -15,7 +15,7 @@ import {
   formatRelativeTime,
   maskAmountsInText,
 } from "@/lib/utils/format";
-import type { EngineDecumulationYear } from "@/lib/calculators/types";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
 

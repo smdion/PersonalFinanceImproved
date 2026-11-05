@@ -31,7 +31,7 @@ import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   fetchRetirementData,
   buildEnginePayload,

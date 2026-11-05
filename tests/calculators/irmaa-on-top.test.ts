@@ -9,7 +9,7 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   EngineDecumulationYear,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { acct, household } from "./fixtures/two-person-household";
 
 // Ann 78 and Bo 75 draw enough Traditional to sit above the first tier.

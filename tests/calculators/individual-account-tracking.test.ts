@@ -16,12 +16,14 @@ import {
 } from "@/lib/calculators/engine/individual-account-tracking";
 import type {
   IndividualAccountInput,
+  AccountBalances,
+} from "@/lib/pure/types/shared";
+import type {
   DecumulationSlot,
-  AccountCategory,
   ContributionSpec,
   AccumulationSlot,
-  AccountBalances,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   makeDecumulationSlot,
   makeIndividualAccount,

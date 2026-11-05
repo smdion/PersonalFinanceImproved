@@ -15,7 +15,8 @@
  * Used by the orchestrator (via tax-gross-up.ts) and withdrawal-routing
  * (bracket-filling needs incomeCapForMarginalRate).
  */
-import type { TaxBuckets, DecumulationSlot } from "../types";
+import type { TaxBuckets } from "../../pure/types/shared";
+import type { DecumulationSlot } from "../../pure/engine/types/engine-config";
 import { roundToCents, sumBy } from "../../utils/math";
 import {
   getAccountTypeConfig,

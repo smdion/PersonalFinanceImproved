@@ -9,7 +9,7 @@ import type {
   DistributionSummary,
   MonteCarloPercentileBand,
   MonteCarloResult,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/simulation/monte-carlo.types";
 import type { DollarBasis } from "@/lib/config/enum-values";
 
 export function simulationDollars(

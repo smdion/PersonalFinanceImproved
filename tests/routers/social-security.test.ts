@@ -44,7 +44,7 @@ import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 
 /** Same shape as withdrawal-bracket-optimizer.test.ts's
  *  seedFullProjectionData — duplicated locally rather than imported (not

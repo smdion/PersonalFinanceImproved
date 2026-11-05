@@ -3,7 +3,7 @@
  * golden tests are written in (gross + pre-tax for a household of one).
  */
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
-import type { TaxBracketInput } from "@/lib/calculators/types";
+import type { TaxBracketInput } from "@/lib/pure/types/shared";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type OnePersonTaxInput = {

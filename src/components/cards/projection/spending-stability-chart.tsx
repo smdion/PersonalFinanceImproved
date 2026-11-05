@@ -18,7 +18,7 @@ import {
 } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { safeDivide } from "@/lib/utils/math";
-import type { EngineDecumulationYear } from "@/lib/calculators/types";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,

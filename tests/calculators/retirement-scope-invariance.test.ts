@@ -20,9 +20,9 @@ import { sweepClaimingAges } from "@/lib/calculators/social-security";
 import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type {
   ContributionSpec,
-  IndividualAccountInput,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import {
   CORRELATIONS,
   IBBOTSON_CLASSES,

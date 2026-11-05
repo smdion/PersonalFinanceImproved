@@ -23,10 +23,8 @@ import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
 import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
-import type {
-  AccountCategory,
-  DecumulationDefaults,
-} from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
+import type { DecumulationDefaults } from "@/lib/pure/engine/types";
 import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,

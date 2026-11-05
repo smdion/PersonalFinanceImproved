@@ -3,7 +3,7 @@
  * apart by more than $1 shows as this warning in a projection year.
  */
 import { expect } from "vitest";
-import type { ProjectionResult } from "@/lib/calculators/types";
+import type { ProjectionResult } from "@/lib/pure/engine/types";
 
 const DRIFT_WARNING = "[DIAG] indBal/acctBal reconciliation";
 

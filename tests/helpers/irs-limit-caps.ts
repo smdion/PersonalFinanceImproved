@@ -8,7 +8,7 @@
  * production; a fixture with no specs routes a household total, so its
  * people hold every group it set a limit for.
  */
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 
 const KEYS: Record<
   string,

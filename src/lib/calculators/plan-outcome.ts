@@ -17,7 +17,10 @@
  * add it on top.
  */
 import { shortfallFloor } from "./engine/gap-year-draw";
-import type { EngineDecumulationYear, ProjectionResult } from "./types";
+import type {
+  EngineDecumulationYear,
+  ProjectionResult,
+} from "../pure/engine/types";
 
 /** Why a plan failed:
  *  - `depleted`: retirement money ran out;

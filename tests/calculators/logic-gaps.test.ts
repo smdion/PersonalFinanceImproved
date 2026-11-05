@@ -32,7 +32,7 @@ import type {
   PaycheckInput,
   MortgageInput,
   NetWorthInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/calculators";
 
 // ════════════════════════════════════════
 // 1. FICA BASE DISTINCTION

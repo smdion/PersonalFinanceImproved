@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { computeTaxBucketProjection } from "@/lib/pure/tax-bucket-projection";
 import type { AccountAnalysisEntry } from "@/lib/pure/tax-bucket-analysis";
-import type { EngineYearProjection } from "@/lib/calculators/types/engine-projection";
+import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
 
 const now: AccountAnalysisEntry = {
   performanceAccountId: 4,

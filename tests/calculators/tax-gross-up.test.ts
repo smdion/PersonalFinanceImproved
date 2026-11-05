@@ -22,7 +22,7 @@ import {
   setBasis,
   setTraditional,
 } from "@/lib/config/account-balance";
-import type { AccountBalances } from "@/lib/calculators/types";
+import type { AccountBalances } from "@/lib/pure/types/shared";
 
 import {
   makeDecumulationConfig,

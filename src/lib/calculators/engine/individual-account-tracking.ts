@@ -12,11 +12,13 @@ import type {
   ContributionSpec,
   AccumulationSlot,
   DecumulationSlot,
-  AccountCategory,
+} from "../../pure/engine/types/engine-config";
+import type { AccountCategory } from "../../config/account-types";
+import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
   AccountBalances,
-} from "../types";
+} from "../../pure/types/shared";
 import { roundToCents } from "../../utils/math";
 import {
   getAccountTypeConfig,

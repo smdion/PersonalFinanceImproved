@@ -5,17 +5,21 @@ import type { InflationPath } from "../inflation-path";
 import type {
   ProjectionInput,
   ProjectionResult,
-  AccountCategory,
+  EngineYearProjection,
+} from "../../../pure/engine/types/projection-result";
+import type { AccountCategory } from "../../../config/account-types";
+import type {
   TaxBuckets,
   AccountBalances,
-  EngineYearProjection,
+  IndividualAccountInput,
+} from "../../../pure/types/shared";
+import type {
   ContributionSpec,
   ProfileSwitch,
   AccumulationDefaults,
   AccumulationOverride,
   DecumulationOverride,
-  IndividualAccountInput,
-} from "../../types";
+} from "../../../pure/engine/types/engine-config";
 import type { SpendingCrossYearState } from "../spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-account-tracking";

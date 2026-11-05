@@ -14,11 +14,11 @@ import {
   formatPercent,
   maskAmountsInText,
 } from "@/lib/utils/format";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type {
-  AccountCategory,
   EngineAccumulationYear,
   AccumulationSlot,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   getAccountSegments,
   getAllCategories,

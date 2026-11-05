@@ -28,7 +28,7 @@ import {
 } from "../fixtures/answer-key-simulation";
 import { createPRNG, sampleCorrelatedReturns } from "@/lib/calculators/random";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
-import type { MonteCarloResult } from "@/lib/calculators/types";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { REPLAY_RATES, replayGrid } from "./history-replay";
 import { REPLAY_GRID_BASELINE } from "./behavior-baseline-replay-grid";
 

@@ -6,11 +6,8 @@
  * two that can silently drift apart (RULES.md § Pure Business Logic
  * Boundary / no second computation path).
  */
-import type {
-  TaxBuckets,
-  AccountBalances,
-  AccountCategory,
-} from "@/lib/calculators/types";
+import type { TaxBuckets, AccountBalances } from "@/lib/pure/types/shared";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAllCategories,
   zeroBalance,

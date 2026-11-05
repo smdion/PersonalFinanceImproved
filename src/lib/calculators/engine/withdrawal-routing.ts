@@ -11,9 +11,9 @@
 import type {
   DecumulationSlot,
   ResolvedDecumulationConfig,
-  AccountBalances,
-  AccountCategory,
-} from "../types";
+} from "../../pure/engine/types/engine-config";
+import type { AccountBalances } from "../../pure/types/shared";
+import type { AccountCategory } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,

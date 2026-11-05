@@ -17,9 +17,9 @@ import { makeIndKey } from "@/lib/calculators/engine/individual-account-tracking
 import type {
   AccountBalances,
   IndividualAccountInput,
-  ProjectionResult,
   TaxBuckets,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/shared";
+import type { ProjectionResult } from "@/lib/pure/engine/types";
 import {
   makeDecumulationSlot,
   makeIndividualAccount,

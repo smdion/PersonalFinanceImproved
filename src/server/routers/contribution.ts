@@ -48,8 +48,8 @@ import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContribWindow } from "@/lib/utils/date";
 import { ageOnDate } from "@/lib/pure/household/age";
-import { ficaCapContext } from "@/lib/pure/contributions";
 import {
+  ficaCapContext,
   resolveIrsLimit,
   resolvePriorYearLimit,
   computeSiblingTotal,
@@ -71,11 +71,9 @@ import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
-import type {
-  ContributionInput,
-  AccountCategory,
-  ViewMode,
-} from "@/lib/calculators/types";
+import type { ContributionInput } from "@/lib/pure/types/calculators";
+import type { AccountCategory } from "@/lib/config/account-types";
+import type { ViewMode } from "@/lib/pure/types/shared";
 import {
   isOverflowTarget,
   getAccountTypeConfig,

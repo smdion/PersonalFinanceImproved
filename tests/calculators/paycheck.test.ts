@@ -14,11 +14,11 @@ import {
   checksPaidYtd,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
+import type { ContributionAccountInput } from "@/lib/pure/types/shared";
 import type {
-  ContributionAccountInput,
   PaycheckInput,
   PaycheckResult,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/calculators";
 import { PERSON_A_PAYCHECK_INPUT, PERSON_B_PAYCHECK_INPUT } from "./fixtures";
 
 describe("Additional Medicare in the per-check figures", () => {

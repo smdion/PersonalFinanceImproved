@@ -25,7 +25,7 @@ import type {
   RelocationLargePurchase,
   RelocationResult,
   RelocationYearProjection,
-} from "./types";
+} from "../pure/retirement/relocation.types";
 import {
   roundToCents,
   calculateLoanMonthlyPayment,

@@ -47,7 +47,7 @@
  *
  * ── THIS TEST IS INTENTIONALLY RED until B1b lands ────────────────────────
  */
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";

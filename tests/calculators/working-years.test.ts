@@ -8,9 +8,9 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   ProjectionInput,
   ContributionSpec,
-  AccountCategory,
   EngineAccumulationYear,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { makeAccumulationDefaults } from "./fixtures/engine-fixtures";

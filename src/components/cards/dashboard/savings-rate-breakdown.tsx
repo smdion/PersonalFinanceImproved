@@ -9,7 +9,7 @@ import {
   formatSavingsRate,
 } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
-import type { ViewMode } from "@/lib/calculators/types";
+import type { ViewMode } from "@/lib/pure/types/shared";
 import type {
   HouseholdSavings,
   SavingsTreatment,

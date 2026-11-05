@@ -3444,55 +3444,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/types/calculators.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/types/engine-config.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 31
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/types/engine-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 31
-    },
-    "ratchet/no-history-comment": {
-      "count": 5
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/types/monte-carlo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/types/shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 5
-    }
-  },
   "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
     "ratchet/max-comment-lines": {
       "count": 12
@@ -4492,6 +4443,31 @@
       "count": 1
     }
   },
+  "src/lib/pure/engine/types/engine-config.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 31
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/types/projection-result.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 31
+    },
+    "ratchet/no-history-comment": {
+      "count": 5
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
   "src/lib/pure/feed-data-date.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -4949,6 +4925,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/simulation/monte-carlo.types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
   "src/lib/pure/snapshot-flows.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5051,6 +5032,25 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/lib/pure/types/calculators.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/types/shared.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 11
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
     }
   },
   "src/lib/pure/utility-cost-feed.ts": {

@@ -20,7 +20,10 @@ import {
   MFJ_2C_BRACKETS,
   MFJ_TAXABLE_INCOME_BRACKETS,
 } from "../calculators/fixtures";
-import type { PaycheckInput, NetWorthInput } from "@/lib/calculators/types";
+import type {
+  PaycheckInput,
+  NetWorthInput,
+} from "@/lib/pure/types/calculators";
 
 const JAN_1 = new Date(2025, 0, 1); // local-time constructor — avoids UTC-string timezone shift
 const DEC_31 = new Date(2025, 11, 31);
@@ -661,7 +664,7 @@ describe("savings edge cases", () => {
 // ── Retirement / projection edge cases ──
 
 import { calculateProjection } from "@/lib/calculators/engine/projection";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";

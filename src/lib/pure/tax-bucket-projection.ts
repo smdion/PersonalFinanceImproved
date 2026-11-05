@@ -21,7 +21,7 @@
 import type {
   EngineAccumulationYear,
   EngineYearProjection,
-} from "@/lib/calculators/types/engine-projection";
+} from "@/lib/pure/engine/types/index";
 import {
   isTaxFreeBucket,
   isAfterTaxType,

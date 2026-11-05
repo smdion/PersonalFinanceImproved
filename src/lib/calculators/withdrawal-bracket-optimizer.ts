@@ -28,7 +28,7 @@ import type {
   ProjectionInput,
   DecumulationOverride,
   EngineDecumulationYear,
-} from "./types";
+} from "../pure/engine/types";
 
 /**
  * v1 ships this as a fixed constant, empirically checked across a wide

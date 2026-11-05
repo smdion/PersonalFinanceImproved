@@ -40,7 +40,7 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   EngineDecumulationYear,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { cents, runOneYear, xfail } from "../fixtures/answer-key";
 import {
   ledgerInput,

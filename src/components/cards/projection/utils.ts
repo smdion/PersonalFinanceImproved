@@ -3,8 +3,7 @@ import type {
   EngineYearProjection,
   EngineAccumulationYear,
   AccumulationSlot,
-  IndividualAccountYearBalance,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   type AccountCategory,
   getAllCategories,
@@ -487,7 +486,7 @@ export function colKeyParts(key: string): {
 
 /** Read a column's balance from balanceByAccount — data-driven, no if-chains. */
 export function colBalance(
-  ba: import("@/lib/calculators/types").AccountBalances,
+  ba: import("@/lib/pure/types/shared").AccountBalances,
   key: string,
 ): number {
   const { category, treatment } = colKeyParts(key);
@@ -746,7 +745,10 @@ export function computeAccountSplits(
 // Lump sum helpers
 // ---------------------------------------------------------------------------
 
-import type { LumpSum } from "@/lib/calculators/types/shared";
+import type {
+  LumpSum,
+  IndividualAccountYearBalance,
+} from "@/lib/pure/types/shared";
 
 type PortfolioTaxBucket = "preTax" | "taxFree" | "hsa" | "afterTax";
 

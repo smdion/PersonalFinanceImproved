@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import {
   taxGrowthYears,
   taxGrowthFactor,
@@ -20,7 +20,7 @@ import {
   makeAccumulationDefaults,
 } from "./fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 

@@ -10,10 +10,8 @@ import {
   retirementBrokerageBasisRatio,
   syncAggregateBasis,
 } from "../brokerage-basis";
-import type {
-  EngineDecumulationYear,
-  IndividualAccountYearBalance,
-} from "../../types";
+import type { EngineDecumulationYear } from "../../../pure/engine/types/projection-result";
+import type { IndividualAccountYearBalance } from "../../../pure/types/shared";
 import { roundToCents, sumBy } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import {

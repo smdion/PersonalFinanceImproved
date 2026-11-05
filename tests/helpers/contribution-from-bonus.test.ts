@@ -17,7 +17,7 @@ import {
   buildContribAccounts,
   type ContribRowWithActiveFields,
 } from "@/server/helpers/contribution";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 
 const SALARY = 100_000;
 const BONUS = 20_000;

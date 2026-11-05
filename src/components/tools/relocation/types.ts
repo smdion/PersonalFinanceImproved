@@ -5,7 +5,7 @@
 // The calculator-side result type lives in `lib/` and is the authoritative
 // shape for `relocQuery.data.result`. Re-exporting lets us keep lib imports
 // local to this module.
-import type { RelocationResult as CalculatorRelocationResult } from "@/lib/calculators/types/relocation";
+import type { RelocationResult as CalculatorRelocationResult } from "@/lib/pure/retirement/relocation.types";
 import type { RouterOutputs } from "@/lib/trpc";
 
 type RelocationAnalysis = Extract<

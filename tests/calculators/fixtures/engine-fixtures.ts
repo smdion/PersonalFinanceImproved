@@ -5,16 +5,18 @@
 import type {
   TaxBuckets,
   AccountBalances,
+  IndividualAccountInput,
+} from "@/lib/pure/types/shared";
+import type {
   ResolvedAccumulationConfig,
   ResolvedDecumulationConfig,
   AccumulationSlot,
   DecumulationSlot,
-  AccountCategory,
   ContributionSpec,
   AccumulationDefaults,
   DecumulationDefaults,
-  IndividualAccountInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";

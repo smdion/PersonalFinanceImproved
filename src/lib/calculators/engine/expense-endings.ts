@@ -8,7 +8,7 @@
  * A figure the household typed for a year (a budget override) is what it
  * says: an ending never trims it, then or after.
  */
-import type { ExpenseEnding } from "../types";
+import type { ExpenseEnding } from "../../pure/engine/types/projection-result";
 
 type Phase = "accumulation" | "decumulation";
 

@@ -6,13 +6,13 @@
  * RMD floor, the shortfall is distributed proportionally across Traditional
  * accounts. Applies to ALL routing modes.
  */
+import type { DecumulationSlot } from "../../pure/engine/types/engine-config";
+import type { AccountCategory } from "../../config/account-types";
 import type {
-  DecumulationSlot,
-  AccountCategory,
   IndividualAccountInput,
-} from "../types";
+  AccountBalances,
+} from "../../pure/types/shared";
 import { roundToCents } from "../../utils/math";
-import type { AccountBalances } from "../types";
 import {
   categoriesWithTaxPreference,
   isPreTaxType,

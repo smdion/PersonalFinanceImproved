@@ -41,7 +41,7 @@ import type {
   EngineDecumulationYear,
   EngineYearProjection,
   ProjectionResult,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { ledgerRow, runOneYear, xfail } from "../fixtures/answer-key";
 import {
   ledgerInput,

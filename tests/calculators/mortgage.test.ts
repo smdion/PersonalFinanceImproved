@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
-import type { MortgageInput } from "@/lib/calculators/types";
+import type { MortgageInput } from "@/lib/pure/types/calculators";
 import { AS_OF_DATE } from "./fixtures";
 
 describe("calculateMortgage", () => {

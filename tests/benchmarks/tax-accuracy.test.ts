@@ -8,7 +8,7 @@ import { taxDataWithholding } from "../helpers/tax-data";
 import { describe, it, expect } from "vitest";
 import { taxForOnePerson } from "../calculators/tax-helpers";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
-import type { TaxBracketInput } from "@/lib/calculators/types";
+import type { TaxBracketInput } from "@/lib/pure/types/shared";
 
 // 2025 MFJ brackets (standard, no W-4 2(c) checkbox)
 // Source: IRS Rev. Proc. 2024-40 brackets; standard deduction as amended by

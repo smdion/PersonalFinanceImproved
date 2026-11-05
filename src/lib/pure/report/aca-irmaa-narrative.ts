@@ -18,7 +18,7 @@
  * multi-year ranges state the condition and point to that table instead
  * of a specific amount; a single-year entry still shows its real figure.
  */
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { formatCurrency } from "@/lib/utils/format";
 
 interface WatchlistItem {

@@ -1,9 +1,7 @@
 /** A two-person household (Ann 78, Bo 65) with owned accounts, for the
  *  per-person RMD and Medicare tests. */
-import type {
-  IndividualAccountInput,
-  ProjectionInput,
-} from "@/lib/calculators/types";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import {

@@ -17,8 +17,8 @@
 import type {
   ContributionAccountInput,
   DeductionLine,
-  PaycheckResult,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/shared";
+import type { PaycheckResult } from "@/lib/pure/types/calculators";
 import { bonusCheckContribution, isPreTax } from "@/lib/calculators/paycheck";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";

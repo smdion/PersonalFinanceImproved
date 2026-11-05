@@ -59,7 +59,10 @@ import {
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { computeAnnualEarnings } from "@/lib/pure/household-income";
-import type { PaycheckInput, PaycheckResult } from "@/lib/calculators/types";
+import type {
+  PaycheckInput,
+  PaycheckResult,
+} from "@/lib/pure/types/calculators";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const row = (r: PaycheckResult, check: number) => r.yearSchedule[check - 1]!;

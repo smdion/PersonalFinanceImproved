@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   getRothBalance,
   getTraditionalBalance,
+  getTotalBalance,
+  getBasis,
 } from "@/lib/config/account-balance";
 import {
   accountBalancesFromTaxBuckets,
@@ -10,17 +12,13 @@ import {
   subtractExcluded,
   applySlotsToBalances,
 } from "@/lib/calculators/engine/balance-utils";
-import type {
-  AccountBalances,
-  TaxBuckets,
-  DecumulationSlot,
-} from "@/lib/calculators/types";
+import type { AccountBalances, TaxBuckets } from "@/lib/pure/types/shared";
+import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
 } from "@/lib/pure/withdrawal-eligibility";
 import { getAllCategories } from "@/lib/config/account-types";
-import { getTotalBalance, getBasis } from "@/lib/config/account-balance";
 
 function makeBuckets(overrides: Partial<TaxBuckets> = {}): TaxBuckets {
   return {

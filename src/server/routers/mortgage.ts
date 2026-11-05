@@ -9,7 +9,10 @@ import {
   buildMortgageInputs,
   getActiveMortgageLoan,
 } from "@/server/helpers";
-import type { MortgageInput, MortgageWhatIf } from "@/lib/calculators/types";
+import type {
+  MortgageInput,
+  MortgageWhatIf,
+} from "@/lib/pure/types/calculators";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
 

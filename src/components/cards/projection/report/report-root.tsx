@@ -5,8 +5,8 @@
  *  Advanced-tax-mode Monte Carlo result — index.tsx only reaches this
  *  component after `checkReportGate` has passed, so `mcResult` here is
  *  always real, never degraded. */
-import type { ProjectionResult } from "@/lib/calculators/types/engine-projection";
-import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { ProjectionResult } from "@/lib/pure/engine/types/index";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import type { PerPersonSettings } from "@/components/retirement/sections/types";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { buildReportNarrative } from "@/lib/pure/report";

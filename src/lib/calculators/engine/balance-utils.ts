@@ -4,7 +4,8 @@
  * Shared helpers for working with AccountBalances and TaxBuckets.
  * Used by the orchestrator and multiple extraction modules.
  */
-import type { TaxBuckets, AccountBalances, DecumulationSlot } from "../types";
+import type { TaxBuckets, AccountBalances } from "../../pure/types/shared";
+import type { DecumulationSlot } from "../../pure/engine/types/engine-config";
 import {
   getAllCategories,
   getLimitGroup,

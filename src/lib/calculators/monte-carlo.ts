@@ -30,15 +30,17 @@ import type {
   MonteCarloResult,
   MonteCarloPercentileBand,
   DistributionSummary,
+} from "../pure/simulation/monte-carlo.types";
+import type {
   ProjectionInput,
-} from "./types";
+  EngineDecumulationYear,
+} from "../pure/engine/types";
 import { roundToCents, sumBy, safeDivide } from "../utils/math";
 import {
   MC_RETURN_CLAMP_MIN,
   MC_RETURN_CLAMP_MAX,
   MC_SPENDING_STABILITY_THRESHOLD,
 } from "../constants";
-import type { EngineDecumulationYear } from "./types";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "../config/withdrawal-strategies";
 

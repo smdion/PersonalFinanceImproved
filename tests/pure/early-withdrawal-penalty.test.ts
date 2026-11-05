@@ -16,7 +16,7 @@ import type {
   AccountEligibility,
   EligibilityRecord,
 } from "@/lib/pure/withdrawal-eligibility";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   EARLY_WITHDRAWAL_PENALTY_RATE,
   HSA_NON_MEDICAL_PENALTY_RATE,

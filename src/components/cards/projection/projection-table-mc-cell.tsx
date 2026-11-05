@@ -7,8 +7,8 @@ import type {
   EngineYearProjection,
   EngineAccumulationYear,
   EngineDecumulationYear,
-  MonteCarloPercentileBand,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { MonteCarloPercentileBand } from "@/lib/pure/simulation/monte-carlo.types";
 
 export type RenderMcCellOptions = {
   mcBandsByYear: Map<number, MonteCarloPercentileBand> | null;

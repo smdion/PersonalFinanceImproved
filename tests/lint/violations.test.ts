@@ -87,7 +87,7 @@ import {
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
 import { calculateProjection } from "@/lib/calculators/engine";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import { categoryChartHex } from "@/lib/utils/colors";
@@ -901,7 +901,7 @@ const FILING_STATUS_LITERAL_EXEMPT = new Set([
   // defensively since they're the canonical definition site for the
   // enum itself, not a figure.
   "src/lib/config/enum-values.ts",
-  "src/lib/calculators/types/shared.ts",
+  "src/lib/pure/types/shared.ts",
   // Schema files reference the column's runtime type, not a literal.
   "src/lib/db/schema-pg.ts",
   "src/lib/db/schema-sqlite.ts",

@@ -9,7 +9,7 @@
  */
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
-import type { ExpenseEnding } from "@/lib/calculators/types";
+import type { ExpenseEnding } from "@/lib/pure/engine/types";
 import { computeBudgetAnnualTotal } from "@/server/helpers";
 import { buildMortgageInputs } from "@/server/helpers/mortgage";
 import { toNumber } from "@/server/helpers/transforms";

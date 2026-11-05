@@ -21,8 +21,8 @@ import {
 import type {
   EngineDecumulationYear,
   EngineYearProjection,
-} from "@/lib/calculators/types/engine-projection";
-import type { IndividualAccountYearBalance } from "@/lib/calculators/types/shared";
+} from "@/lib/pure/engine/types/index";
+import type { IndividualAccountYearBalance } from "@/lib/pure/types/shared";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 
 /** Where penalty-free money at the start of the bridge sits. */

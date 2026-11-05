@@ -35,7 +35,7 @@ import {
   budgetAmountsSchema,
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/calculators/budget";
-import type { BudgetInput } from "@/lib/calculators/types";
+import type { BudgetInput } from "@/lib/pure/types/calculators";
 import {
   computeBudgetAnnualTotal,
   getActiveBudgetProfile,
@@ -57,6 +57,7 @@ import {
   cacheGet,
   refreshCategoryCache,
   BudgetApiError,
+  YNAB_INTERNAL_GROUPS,
 } from "@/lib/budget-api";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import type {
@@ -64,7 +65,6 @@ import type {
   BudgetMonthDetail,
   PreparedGoalWrite,
 } from "@/lib/budget-api";
-import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import type { DbOrTx } from "@/lib/db";
 import {

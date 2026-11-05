@@ -3,7 +3,7 @@
  *  on-screen exploration, print-hostile — see index.tsx's print:hidden on
  *  it in advisor mode). Condensed columns plus a flags column surfacing
  *  only the years where something notable happened. */
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { formatCurrency } from "@/lib/utils/format";
 
 export interface YearTableRow {

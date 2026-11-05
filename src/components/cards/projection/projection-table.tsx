@@ -13,7 +13,7 @@ import {
   taxTypeTextColor,
   taxTypeLabel,
 } from "@/lib/utils/colors";
-import type { EngineDecumulationYear } from "@/lib/calculators/types";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import {
   getAccountSegments,
   getAllCategories,

@@ -15,11 +15,6 @@
     "to": "src/lib/calculators/engine/projection-year-handlers/lump-sum.ts"
   },
   {
-    "rule": "engine-through-index",
-    "from": "src/lib/calculators/types/engine-projection.ts",
-    "to": "src/lib/calculators/engine/gap-year-draw.ts"
-  },
-  {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/display-labels.ts",
     "to": "src/lib/pure/profiles.ts"
@@ -42,7 +37,7 @@
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/withdrawal-routing.ts",
-    "to": "src/lib/calculators/types.ts"
+    "to": "src/lib/pure/engine/types/index.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -81,13 +76,13 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/balance-utils.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
+    "from": "src/lib/calculators/engine/balance-deduction.ts",
+    "to": "src/lib/pure/engine/types/projection-result.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/bracket-growth.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
+    "from": "src/lib/calculators/engine/balance-utils.ts",
+    "to": "src/lib/pure/withdrawal-eligibility.ts"
   },
   {
     "rule": "no-circular",
@@ -107,22 +102,7 @@
   {
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/balance-deduction.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/brokerage-basis.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
     "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/override-resolution.ts"
   },
   {
     "rule": "no-circular",
@@ -137,37 +117,7 @@
   {
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/withdrawal-cost-ranking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/withdrawal-routing.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
     "to": "src/lib/pure/early-withdrawal-penalty.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/roth-distribution-tax.ts"
   },
   {
     "rule": "no-circular",
@@ -181,38 +131,8 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/individual-account-tracking.ts",
-    "to": "src/lib/calculators/engine/contribution-projection.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/individual-account-tracking.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/individual-account-tracking.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/inflation-path.ts",
-    "to": "src/lib/calculators/engine/bracket-growth.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/calculators/engine/brokerage-basis.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
     "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
   },
   {
     "rule": "no-circular",
@@ -241,78 +161,8 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/pure/roth-distribution-tax.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/calculators/engine/balance-utils.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/calculators/engine/withdrawal-cost-ranking.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/withdrawal-routing.ts",
     "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/calculators/engine/gap-year-draw.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types.ts",
-    "to": "src/lib/calculators/types/calculators.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types.ts",
-    "to": "src/lib/calculators/types/engine-config.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types.ts",
-    "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-projection.ts",
-    "to": "src/lib/calculators/types/engine-config.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-projection.ts",
-    "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/monte-carlo.ts",
-    "to": "src/lib/calculators/types/engine-projection.ts"
   },
   {
     "rule": "no-circular",
@@ -328,26 +178,6 @@
     "rule": "no-circular",
     "from": "src/lib/pure/tax-bucket-analysis.ts",
     "to": "src/lib/pure/tax-buckets.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/tax-bucket-projection.ts",
-    "to": "src/lib/calculators/types/engine-projection.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/tax-bucket-projection.ts",
-    "to": "src/lib/pure/tax-bucket-analysis.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/withdrawal-eligibility.ts",
-    "to": "src/lib/pure/tax-bucket-analysis.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/withdrawal-eligibility.ts",
-    "to": "src/lib/pure/tax-bucket-projection.ts"
   },
   {
     "rule": "no-circular",

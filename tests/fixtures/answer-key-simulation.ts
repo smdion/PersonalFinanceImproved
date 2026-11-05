@@ -16,7 +16,8 @@
  * padded by one and the run has exactly `years` rows. After D10 the pad
  * goes.
  */
-import type { MonteCarloInput, ProjectionInput } from "@/lib/calculators/types";
+import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { acct, household } from "../calculators/fixtures/two-person-household";
 
 /** As of noon, January 1 2026: year 0 is a whole year. */

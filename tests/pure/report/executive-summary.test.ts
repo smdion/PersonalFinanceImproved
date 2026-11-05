@@ -4,8 +4,8 @@ import {
   buildVerdict,
   buildExecutiveSummary,
 } from "@/lib/pure/report/executive-summary";
-import type { ProjectionResult } from "@/lib/calculators/types/engine-projection";
-import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { ProjectionResult } from "@/lib/pure/engine/types/index";
+import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 
 function projectionResult(
   overrides: Partial<ProjectionResult> = {},

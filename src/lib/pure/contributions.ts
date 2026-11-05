@@ -14,7 +14,7 @@ import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { requireLimit } from "@/server/helpers/settings";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
 import { ageInYearFromDob } from "@/lib/pure/household/age";
-import type { ViewMode } from "@/lib/calculators/types";
+import type { ViewMode } from "@/lib/pure/types/shared";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 /**

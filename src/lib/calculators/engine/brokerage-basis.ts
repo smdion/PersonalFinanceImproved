@@ -27,7 +27,7 @@ import type {
   AccountBalances,
   IndividualAccountInput,
   TaxBuckets,
-} from "../types";
+} from "../../pure/types/shared";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 export type BrokerageBasis = Map<string, number>;

@@ -1,7 +1,7 @@
 /** The bridge to penalty-free money — read from the engine's projection. */
 import { describe, it, expect } from "vitest";
 import { retirementBridge } from "@/lib/pure/retirement-bridge";
-import type { EngineYearProjection } from "@/lib/calculators/types/engine-projection";
+import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
 
 type Acct = {
   name: string;

@@ -38,7 +38,8 @@ import { calculateEFund } from "@/lib/calculators/efund";
 import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import { computePortfolioTotal } from "@/lib/pure/performance";
 import { inflateTarget } from "@/lib/pure/milestones.shared";
-import type { NetWorthInput, ProjectionInput } from "@/lib/calculators/types";
+import type { NetWorthInput } from "@/lib/pure/types/calculators";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {
   withConsistentStart,
   makeAccumulationDefaults,

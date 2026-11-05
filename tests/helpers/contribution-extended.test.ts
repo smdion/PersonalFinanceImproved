@@ -15,7 +15,7 @@ import {
   buildContributionDisplaySpecs,
   classifyContribResolution,
 } from "@/server/helpers/contribution";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
 
 // ---------------------------------------------------------------------------

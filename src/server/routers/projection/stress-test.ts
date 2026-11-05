@@ -17,7 +17,7 @@ import {
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 

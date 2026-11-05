@@ -21,7 +21,7 @@ import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   fetchRetirementData,
   buildEnginePayload,

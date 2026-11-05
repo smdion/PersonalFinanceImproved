@@ -10,13 +10,15 @@ import {
   makeAccumulationDefaults,
 } from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
-import type { EngineAccumulationYear } from "@/lib/calculators/types";
+import type {
+  EngineAccumulationYear,
+  ProjectionInput,
+} from "@/lib/pure/engine/types";
 import {
   buildCoastFireProfileSwitches,
   findCoastFireAge,
 } from "@/lib/calculators/coast-fire";
 import { calculateProjection } from "@/lib/calculators/engine";
-import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 

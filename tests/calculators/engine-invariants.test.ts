@@ -20,13 +20,13 @@ import {
   toSimpleTaxMode,
   type SimpleTaxModeParts,
 } from "@/lib/calculators/simple-tax-mode";
+import type { IndividualAccountInput } from "@/lib/pure/types/shared";
 import type {
-  IndividualAccountInput,
   ProjectionInput,
   EngineDecumulationYear,
   EngineAccumulationYear,
   EngineYearProjection,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getTotalBalance,

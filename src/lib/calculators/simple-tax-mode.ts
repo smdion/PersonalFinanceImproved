@@ -18,16 +18,18 @@ import {
 } from "../config/account-types";
 import { roundToCents } from "../utils/math";
 import { resolveLumpSumTarget } from "./engine/projection-year-handlers/lump-sum";
+import type { AccountBalance } from "../config/account-types.types";
+import type { AccountCategory } from "../config/account-types";
 import type {
-  AccountBalance,
-  AccountCategory,
   AccumulationDefaults,
-  IndividualAccountInput,
-  LumpSum,
   ProjectionInput,
   RetirementContribSlice,
+} from "../pure/engine/types";
+import type {
+  IndividualAccountInput,
+  LumpSum,
   TaxBuckets,
-} from "./types";
+} from "../pure/types/shared";
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
   retirementBuckets: TaxBuckets;

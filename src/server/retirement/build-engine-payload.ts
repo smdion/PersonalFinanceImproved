@@ -48,7 +48,7 @@ import {
   retirementProfileIsFallback,
   pickProfileSettingsRow,
 } from "@/server/helpers/retirement-profile";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAllCategories,
   getAccountTypeConfig,

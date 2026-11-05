@@ -6,14 +6,14 @@
  * no negative balances, tracking per-account depletions, and zeroing out
  * rounding dust when the portfolio is effectively depleted.
  */
+import type { DecumulationSlot } from "../../pure/engine/types/engine-config";
+import type { AccountCategory } from "../../config/account-types";
 import type {
-  DecumulationSlot,
-  AccountCategory,
   TaxBuckets,
   AccountBalances,
   IndividualAccountInput,
-  ProjectionResult,
-} from "../types";
+} from "../../pure/types/shared";
+import type { ProjectionResult } from "../../pure/engine/types/projection-result";
 import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,

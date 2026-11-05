@@ -5,7 +5,7 @@
  * needs. Kept as its own pure function — not inline in the router handler —
  * per RULES.md's Pure Business Logic Boundary.
  */
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   isTaxFreeBucket,
   isHsaCategory,

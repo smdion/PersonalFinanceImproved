@@ -12,7 +12,7 @@ import { makeIndKey } from "@/lib/calculators/engine/individual-account-tracking
 import type {
   IndividualAccountInput,
   TaxBuckets,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/shared";
 
 const indKey = makeIndKey();
 const brokerage = (

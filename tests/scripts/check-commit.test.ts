@@ -268,7 +268,7 @@ describe("notAMove: a move's bookkeeping and bare names", () => {
 
   it("passes a line prettier re-wrapped because its path changed length", () => {
     const diff = file("docs/DESIGN.md", [
-      '-  const x: import("@/lib/calculators/types/calculators").T | undefined;',
+      '-  const x: import("@/lib/pure/types/calculators").T | undefined;',
       "+  const x:",
       '+    | import("@/lib/pure/types/calculators").T',
       "+    | undefined;",

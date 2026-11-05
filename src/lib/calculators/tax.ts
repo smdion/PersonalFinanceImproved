@@ -32,7 +32,7 @@
  * Liability uses the standard (non-2(c)) brackets: the W-4 Step 2(c)
  * tables only shape paycheck withholding.
  */
-import type { TaxBracketInput } from "./types";
+import type { TaxBracketInput } from "../pure/types/shared";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { formatCurrency } from "../utils/format";
 import { sumBracketTax } from "./tax-brackets";

@@ -14,12 +14,12 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type {
-  AccountCategory,
   EngineDecumulationYear,
   DecumulationSlot,
-  IndividualAccountYearBalance,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountYearBalance } from "@/lib/pure/types/shared";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import {
   describeBracketTargetChoice,

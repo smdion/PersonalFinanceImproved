@@ -5,7 +5,7 @@
  *  formatters: callers pass already-deflated (real/nominal per the page's
  *  dollar-mode toggle) amounts, same convention as every other
  *  tooltip-string builder these were extracted from. */
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type { WithdrawalSourceKind } from "@/lib/calculators/engine";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";

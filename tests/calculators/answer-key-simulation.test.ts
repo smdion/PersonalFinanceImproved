@@ -38,7 +38,7 @@ import { calculateMonteCarlo, percentile } from "@/lib/calculators/monte-carlo";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { readSimulationPresetsFile } from "@/lib/db/reference-data";
-import type { MonteCarloInput } from "@/lib/calculators/types";
+import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 
 /** `A × Bᵀ` for square matrices. */
 function timesTranspose(a: number[][], b: number[][]): number[][] {

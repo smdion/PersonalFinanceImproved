@@ -9,7 +9,7 @@
  * filter, since the simulation is the whole household's — the baseline
  * alone.
  */
-import type { MonteCarloPercentileBand } from "@/lib/calculators/types";
+import type { MonteCarloPercentileBand } from "@/lib/pure/simulation/monte-carlo.types";
 
 type NestEggDisplay =
   | {

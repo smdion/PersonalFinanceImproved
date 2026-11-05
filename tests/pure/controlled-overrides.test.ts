@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
-import type { DecumulationOverride } from "@/lib/calculators/types";
+import type { DecumulationOverride } from "@/lib/pure/engine/types";
 
 const row = (o: Record<string, unknown>) => o as DecumulationOverride;
 

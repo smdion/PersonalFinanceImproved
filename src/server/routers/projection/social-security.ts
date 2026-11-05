@@ -26,7 +26,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   fetchRetirementData,
   buildEnginePayload,

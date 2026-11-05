@@ -42,7 +42,7 @@ import { sumBy } from "@/lib/utils/math";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { toSimpleTaxMode } from "@/lib/calculators/simple-tax-mode";
 import {
   fetchRetirementData,

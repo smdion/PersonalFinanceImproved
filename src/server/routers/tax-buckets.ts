@@ -27,7 +27,7 @@ import {
   buildCurrentRothBasisMap,
   selectCurrentRothBasisRow,
 } from "@/lib/pure/roth-basis-rollover";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { DbOrTx } from "@/lib/db";
 
 /** Stamp basis_last_updated in app_settings — mirrors performance.ts's

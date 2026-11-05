@@ -7,7 +7,7 @@ import {
   assessPlan,
   dominantFailureReason,
 } from "@/lib/calculators/plan-outcome";
-import type { ProjectionResult } from "@/lib/calculators/types";
+import type { ProjectionResult } from "@/lib/pure/engine/types";
 
 type Row = {
   age: number;

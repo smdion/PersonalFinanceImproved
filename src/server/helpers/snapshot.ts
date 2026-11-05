@@ -4,7 +4,7 @@
 import { onMutationSucceeded } from "@/server/mutation-events";
 import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { toNumber, getPrimaryPerson } from "./transforms";
 import { getAllPeople } from "./people";
 import {
@@ -40,7 +40,7 @@ import {
   wealthFormulaIncome,
 } from "@/lib/calculators/net-worth";
 import { checksPaidYtd, periodsBeforeStart } from "@/lib/calculators/paycheck";
-import type { NetWorthInput } from "@/lib/calculators/types";
+import type { NetWorthInput } from "@/lib/pure/types/calculators";
 import { payPeriodConfig } from "@/lib/config/pay-periods";
 import {
   accountTypeToPerformanceCategory,

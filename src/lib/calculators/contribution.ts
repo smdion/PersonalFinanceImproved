@@ -16,7 +16,10 @@
  *
  * Each rate = (employee contributions + employer matches for that group) ÷ annual salary.
  */
-import type { ContributionInput, ContributionResult } from "./types";
+import type {
+  ContributionInput,
+  ContributionResult,
+} from "../pure/types/calculators";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 
 export function calculateContributions(

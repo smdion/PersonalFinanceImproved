@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { enforceRmd } from "@/lib/calculators/engine/rmd-enforcement";
 import type { RmdEnforcementInput } from "@/lib/calculators/engine/rmd-enforcement";
-import type { DecumulationSlot } from "@/lib/calculators/types";
+import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import { makeAccountBalances } from "./fixtures/engine-fixtures";
 import { getAllCategories } from "@/lib/config/account-types";
 

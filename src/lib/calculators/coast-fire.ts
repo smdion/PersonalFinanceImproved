@@ -47,13 +47,13 @@ import { planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
+import type { AccountCategory } from "../config/account-types";
 import type {
-  AccountCategory,
   EngineDecumulationYear,
   ProfileSwitch,
   ProjectionInput,
   ProjectionResult,
-} from "./types";
+} from "../pure/engine/types";
 import { roundToCents } from "../utils/math";
 import { getAllCategories } from "../config/account-types";
 

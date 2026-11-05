@@ -17,7 +17,7 @@
  * The `amounts` array on each item MUST match the length of `columnLabels` — this is validated
  * via Zod `.refine()` on every database write.
  */
-import type { BudgetInput, BudgetResult } from "./types";
+import type { BudgetInput, BudgetResult } from "../pure/types/calculators";
 import { roundToCents, sumBy } from "../utils/math";
 
 export function calculateBudget(input: BudgetInput): BudgetResult {

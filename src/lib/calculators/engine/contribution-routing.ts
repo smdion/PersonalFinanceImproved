@@ -12,9 +12,9 @@ import type {
   ContributionSpec,
   ResolvedAccumulationConfig,
   AccumulationSlot,
-  AccountCategory,
   TaxSplitConfig,
-} from "../types";
+} from "../../pure/engine/types/engine-config";
+import type { AccountCategory } from "../../config/account-types";
 import { roundToCents, sumBy } from "../../utils/math";
 import {
   getRothFraction as configGetRothFraction,

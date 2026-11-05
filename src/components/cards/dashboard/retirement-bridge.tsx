@@ -8,7 +8,7 @@ import {
   type BridgeYear,
   type RetirementBridge as Bridge,
 } from "@/lib/pure/retirement-bridge";
-import type { EngineYearProjection } from "@/lib/calculators/types/engine-projection";
+import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
 import { compactCurrency, formatCurrency } from "@/lib/utils/format";
 
 /** Below this age at retirement, the bridge question applies. */

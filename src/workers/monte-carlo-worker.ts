@@ -33,7 +33,7 @@
  */
 import { parentPort } from "node:worker_threads";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
-import type { MonteCarloInput } from "@/lib/calculators/types/monte-carlo";
+import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 
 export type WorkerRequest = {
   id: string;

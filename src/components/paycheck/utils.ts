@@ -1,4 +1,4 @@
-import type { DeductionLine } from "@/lib/calculators/types";
+import type { DeductionLine } from "@/lib/pure/types/shared";
 import type { RawDeduction, DeductionRowData } from "./types";
 
 /**

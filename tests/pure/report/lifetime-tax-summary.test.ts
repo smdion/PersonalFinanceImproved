@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeLifetimeTaxSummary } from "@/lib/pure/report/lifetime-tax-summary";
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function decumYear(overrides: Record<string, unknown> = {}): any {

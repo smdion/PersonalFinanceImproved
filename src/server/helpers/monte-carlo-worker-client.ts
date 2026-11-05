@@ -23,7 +23,7 @@
 import { Worker } from "node:worker_threads";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import type { MonteCarloInput } from "@/lib/calculators/types/monte-carlo";
+import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 import type { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import { log } from "@/lib/logger";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateRelocation } from "@/lib/calculators/relocation";
-import type { RelocationInput } from "@/lib/calculators/types";
+import type { RelocationInput } from "@/lib/pure/retirement/relocation.types";
 import { AS_OF_DATE } from "./fixtures";
 
 function makeInput(overrides: Partial<RelocationInput> = {}): RelocationInput {

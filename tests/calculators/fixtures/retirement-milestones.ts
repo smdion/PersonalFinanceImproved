@@ -23,7 +23,7 @@ import { expect } from "vitest";
 import type {
   ProjectionInput,
   ProjectionResult,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 
 /**
  * RMD start age by birth year, hand-keyed: SECURE 2.0 Act § 107 (IRC

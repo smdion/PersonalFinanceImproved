@@ -17,13 +17,13 @@
  * object-construction tail — mapping already-resolved values onto
  * PaycheckInput's fields — needs to be, and is, shared here.
  */
+import type { PaycheckInput } from "@/lib/pure/types/calculators";
 import type {
-  PaycheckInput,
   DeductionLine,
   EarningLine,
   TaxBracketInput,
   ContributionAccountInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/shared";
 import type { BonusTerms } from "./salary";
 import { toNumber } from "./transforms";
 import { requireLimit } from "./settings";

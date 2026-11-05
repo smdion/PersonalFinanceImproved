@@ -5,7 +5,7 @@ import {
   formatRmdDivisorDetail,
   buildWithdrawalStrategyNarrative,
 } from "@/lib/pure/report/withdrawal-strategy-narrative";
-import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 
 const noopDeflate = (v: number) => v;
 

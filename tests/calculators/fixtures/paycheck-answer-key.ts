@@ -9,10 +9,10 @@ import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import type {
   ContributionAccountInput,
   DeductionLine,
-  PaycheckInput,
   PayPeriodType,
   TaxBracketInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/types/shared";
+import type { PaycheckInput } from "@/lib/pure/types/calculators";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type Year = 2025 | 2026;

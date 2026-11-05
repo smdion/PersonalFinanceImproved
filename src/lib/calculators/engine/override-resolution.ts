@@ -12,9 +12,9 @@ import type {
   DecumulationDefaults,
   DecumulationOverride,
   ResolvedDecumulationConfig,
-  AccountCategory,
-  LumpSum,
-} from "../types";
+} from "../../pure/engine/types/engine-config";
+import type { AccountCategory } from "../../config/account-types";
+import type { LumpSum } from "../../pure/types/shared";
 import {
   getAllCategories,
   getAccountTypeConfig,

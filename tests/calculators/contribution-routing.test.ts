@@ -6,7 +6,7 @@ import {
   capSpecs,
   slotLimits,
 } from "@/lib/calculators/engine/contribution-routing";
-import type { ContributionSpec } from "@/lib/calculators/types";
+import type { ContributionSpec } from "@/lib/pure/engine/types";
 import {
   makeAccumulationConfig,
   makeYearLimits,

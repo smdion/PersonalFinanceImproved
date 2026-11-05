@@ -6,14 +6,9 @@ import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { EntityFieldMap } from "@/lib/db/schema";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
-import { isRetirementMoney, isTaxFree } from "@/lib/config/account-types";
-import type {
-  ContributionAccountInput,
-  ContributionSpec,
-  AccountCategory,
-  RetirementContribSlice,
-} from "@/lib/calculators/types";
 import {
+  isRetirementMoney,
+  isTaxFree,
   buildCategoryRecord,
   categoriesWithTaxPreference,
   getAllCategories,
@@ -22,6 +17,12 @@ import {
   getDefaultTaxTreatment,
   isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
+import type { ContributionAccountInput } from "@/lib/pure/types/shared";
+import type {
+  ContributionSpec,
+  RetirementContribSlice,
+} from "@/lib/pure/engine/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   type TaxTreatment,
   type ContributionMethod,

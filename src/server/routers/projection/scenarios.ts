@@ -25,7 +25,7 @@ import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   getAllCategories,
   categoriesWithTaxPreference,

@@ -40,8 +40,8 @@ import {
 } from "@/components/cards/projection/utils";
 import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";
-import type { EngineYearProjection } from "@/lib/calculators/types";
-import type { LumpSum } from "@/lib/calculators/types/shared";
+import type { EngineYearProjection } from "@/lib/pure/engine/types";
+import type { LumpSum } from "@/lib/pure/types/shared";
 
 // ---------------------------------------------------------------------------
 // Constants
