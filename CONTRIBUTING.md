@@ -62,6 +62,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 - **Body:** why the change is made, not only what changed.
 - **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/calculators/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt.
 - **Second fix:** a fix to a function that already had a fix in the last 30 days names the missing concept in a `Concept: <concept>` line, or `Concept: none, <reason>`. A third fix there goes to the advisor first.
+- **Ratchets:** CI compares every ratchet (`size-baseline.json`, both suppressions files, the calculation-register baseline and its risk labels, page budgets, coverage thresholds, the known lists in `tests/lint/violations.test.ts`) and the behavior baseline (`tests/baseline/__baseline__/`, `__sync__/`) with the merge base: `pnpm check:ratchets --base "$(git merge-base origin/main HEAD)"`. A move or split hands the old counts to its parts and passes; a raise is its own commit, made only with the owner's OK, and carries a `Ratchet-raise: <file> — <reason>` line per file (CI checks the line, not the OK), and a re-recorded baseline file needs `Baseline-rerecord: <glob> — <reason>`. Deleting a baseline file passes.
 
 `pnpm tsx scripts/check-commit.ts --history 50` reports how the last 50 commits measure against these, repeat fixes in one spot included.
 

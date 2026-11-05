@@ -64,23 +64,41 @@ export type Warning = { rule: string; text: string };
 
 const TRAILER = /^([A-Za-z][\w-]*): (.+)$/;
 
-export function parseMessage(raw: string): ParsedMessage {
-  const lines = raw
+/** A message's lines, without git's comment lines. */
+const messageLines = (raw: string) =>
+  raw
     .split("\n")
     .filter((line) => !line.startsWith("#"))
     .map((line) => line.trimEnd());
+
+/** `Key: value` on one line, or undefined. */
+export function readTrailer(
+  line: string,
+): { key: string; value: string } | undefined {
+  const [, key, value] = TRAILER.exec(line) ?? [];
+  if (!key || !value || key === "http" || key === "https") return undefined;
+  return { key, value };
+}
+
+/** Every value of a trailer that may repeat (parseMessage keeps the last). */
+export function trailerValues(raw: string, key: string): string[] {
+  return messageLines(raw)
+    .slice(1)
+    .flatMap((line) => {
+      const trailer = readTrailer(line);
+      return trailer?.key === key ? [trailer.value] : [];
+    });
+}
+
+export function parseMessage(raw: string): ParsedMessage {
+  const lines = messageLines(raw);
   const subject = (lines[0] ?? "").trim();
-  const rest = lines.slice(1);
   const trailers: Record<string, string> = {};
   const bodyLines: string[] = [];
-  for (const line of rest) {
-    const match = TRAILER.exec(line);
-    const [, key, value] = match ?? [];
-    if (key && value && key !== "http" && key !== "https") {
-      trailers[key] = value;
-    } else {
-      bodyLines.push(line);
-    }
+  for (const line of lines.slice(1)) {
+    const trailer = readTrailer(line);
+    if (trailer) trailers[trailer.key] = trailer.value;
+    else bodyLines.push(line);
   }
   return { subject, body: bodyLines.join("\n").trim(), trailers };
 }
@@ -206,8 +224,20 @@ export function checkCommit(facts: CommitFacts): Warning[] {
 // git
 // ---------------------------------------------------------------------------
 
-const git = (...args: string[]) =>
-  execFileSync("git", args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+export type Git = (...args: string[]) => string;
+
+/** git in `cwd` (default: this process's directory). */
+export const gitIn =
+  (cwd?: string): Git =>
+  (...args) =>
+    execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+const git = gitIn();
 
 type HistoryCommit = {
   sha: string;
@@ -306,8 +336,9 @@ function runMessageFile(file: string): Warning[] {
   return warnings;
 }
 
-function commitsIn(range: string): string[] {
-  return git("rev-list", "--no-merges", "--reverse", range)
+/** The non-merge commits in `range`, oldest first. */
+export function commitsIn(range: string, run: Git = git): string[] {
+  return run("rev-list", "--no-merges", "--reverse", range)
     .split("\n")
     .filter(Boolean);
 }

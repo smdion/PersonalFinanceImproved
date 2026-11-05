@@ -27,6 +27,7 @@ step "lint:typed" pnpm -s lint:typed
 step "dead code" pnpm -s check:dead-code
 step "dead code, production" pnpm -s check:dead-code:production
 step "layer rules (base $base)" pnpm -s check:layers --base "$base"
+step "ratchets and behavior baseline (base $base)" pnpm -s check:ratchets --base "$base"
 step "size baseline" pnpm -s check:file-size
 step "build" pnpm -s build
 step "no prerendered sign-in or dashboard page" pnpm -s tsx scripts/check-prerender.ts

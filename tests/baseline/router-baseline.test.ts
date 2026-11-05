@@ -25,6 +25,8 @@
  *   in the same commit, naming them in the commit body.
  * - Nothing else edits a baseline file. A figure that changes is a bug in
  *   the change (or a v0.11 fix that waits for v0.11).
+ * - CI checks this against the merge base (scripts/check-ratchets.ts); an
+ *   owner-signed re-record carries a `Baseline-rerecord:` line.
  *
  * Regenerating is only for the deletion case above, and only on SQLite:
  *
