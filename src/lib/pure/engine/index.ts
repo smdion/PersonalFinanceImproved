@@ -1,5 +1,6 @@
-/** The public API of `lib/pure/engine`; the rest of the engine is reached
- *  through `lib/calculators/engine/index.ts`. */
+/** The projection engine's public API: code outside `lib/pure/engine` imports
+ *  values from here, and types and input schemas from `./types` (module map:
+ *  ARCHITECTURE.md). */
 export {
   decumulationDefaultsInputSchema,
   decumulationOverrideArraySchema,
