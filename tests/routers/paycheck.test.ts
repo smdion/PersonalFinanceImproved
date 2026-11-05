@@ -20,10 +20,8 @@ import {
   seedRetirementProfilePerson,
 } from "./setup";
 import { eq } from "drizzle-orm";
-import {
-  buildBracketInput,
-  buildLiabilityBracketInput,
-} from "@/server/routers/paycheck";
+import { buildLiabilityBracketInput } from "@/server/routers/paycheck";
+import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";

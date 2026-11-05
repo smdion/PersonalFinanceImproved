@@ -4949,6 +4949,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/withholding.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/retirement/coast-fire.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5808,10 +5816,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 17
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 14
     }
   },
   "src/server/routers/performance.ts": {

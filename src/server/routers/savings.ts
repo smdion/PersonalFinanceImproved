@@ -62,7 +62,7 @@ import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_EFUND_BUDGET_COLUMN,
 } from "@/lib/constants/settings-keys";
-import { buildBracketInput } from "./paycheck";
+import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";

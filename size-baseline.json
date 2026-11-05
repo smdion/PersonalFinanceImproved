@@ -176,7 +176,7 @@
     "src/server/routers/investments/load-current-balances.ts": 508,
     "src/server/routers/milestones.ts": 411,
     "src/server/routers/networth.ts": 1485,
-    "src/server/routers/paycheck.ts": 951,
+    "src/server/routers/paycheck.ts": 875,
     "src/server/routers/performance.ts": 1893,
     "src/server/routers/projection/_shared.ts": 366,
     "src/server/routers/projection/coast-fire.ts": 472,
