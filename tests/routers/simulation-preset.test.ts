@@ -12,7 +12,7 @@ import {
   loadSimulationPreset,
   presetAssetClasses,
 } from "@/server/services/simulation/simulation-preset";
-import { computeCurrentStockAllocationPercent } from "@/server/services/projection/projection-run";
+import { computeCurrentStockAllocationPercent } from "@/lib/pure/simulation/stock-share";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/build-engine-payload";
 
 describe("simulation presets", () => {

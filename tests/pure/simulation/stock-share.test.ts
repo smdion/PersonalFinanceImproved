@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   classifyAssetClasses,
+  computeCurrentStockAllocationPercent,
   glidePathFromRows,
   stockShareByAge,
 } from "@/lib/pure/simulation/stock-share";
@@ -46,6 +47,47 @@ describe("stock share by age", () => {
     );
     expect(
       stockShareByAge(withUnmapped, classifyAssetClasses([]), 60, 60),
+    ).toBeNull();
+  });
+
+  it("Plan Health's stock allocation: the percent at the whole age, one decimal; null when there's none", () => {
+    const bucketRows = [
+      { assetClassId: 1, bucket: "us_equity" as const },
+      { assetClassId: 2, bucket: "us_bond" as const },
+    ];
+    // 63 is 30% of the way from 60 (80%) to 70 (40%): 80 − 12 = 68.
+    expect(
+      computeCurrentStockAllocationPercent(
+        { defaultPreset: { glidePath: glide }, classBucketRows: bucketRows },
+        63.9,
+      ),
+    ).toBeCloseTo(68, 10);
+    // 0.5 of the 0.75 that's mapped: 66.666… → 66.7.
+    const withUnmapped = glidePathFromRows([
+      { age: 60, assetClassId: 1, allocation: "0.5" },
+      { age: 60, assetClassId: 2, allocation: "0.25" },
+      { age: 60, assetClassId: 9, allocation: "0.25" },
+    ]);
+    expect(
+      computeCurrentStockAllocationPercent(
+        {
+          defaultPreset: { glidePath: withUnmapped },
+          classBucketRows: bucketRows,
+        },
+        60,
+      ),
+    ).toBe(66.7);
+    expect(
+      computeCurrentStockAllocationPercent(
+        { defaultPreset: { glidePath: [] }, classBucketRows: bucketRows },
+        60,
+      ),
+    ).toBeNull();
+    expect(
+      computeCurrentStockAllocationPercent(
+        { defaultPreset: { glidePath: glide }, classBucketRows: [] },
+        60,
+      ),
     ).toBeNull();
   });
 });

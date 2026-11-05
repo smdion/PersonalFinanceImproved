@@ -6398,11 +6398,6 @@
       "count": 4
     }
   },
-  "src/server/services/projection/projection-run.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/services/savings/savings-allocation.ts": {
     "ratchet/max-comment-lines": {
       "count": 2

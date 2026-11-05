@@ -75,3 +75,25 @@ export function stockShareByAge(
   }
   return any ? out : null;
 }
+
+/** Plan Health's stock allocation: the percent (one decimal) of stocks in
+ *  the Default preset's glide path at `currentAge`, by the share VPW uses.
+ *  Null without a glide path or a mapped class (no glide-path warning). */
+export function computeCurrentStockAllocationPercent(
+  data: {
+    defaultPreset: { glidePath: GlidePathEntry[] };
+    classBucketRows: readonly {
+      assetClassId: number;
+      bucket: CompositionBucket;
+    }[];
+  },
+  currentAge: number,
+): number | null {
+  const share = stockShareByAge(
+    data.defaultPreset.glidePath,
+    classifyAssetClasses(data.classBucketRows),
+    currentAge,
+    currentAge,
+  )?.[Math.floor(currentAge)];
+  return share === undefined ? null : Math.round(share * 1000) / 10;
+}

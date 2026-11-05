@@ -8,7 +8,7 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
   it("the mapped stock share at the age; null without a glide path or mapping", async () => {
     const { createTestCaller } = await import("../../../routers/setup");
     const { computeCurrentStockAllocationPercent } =
-      await import("@/server/services/projection/projection-run");
+      await import("@/lib/pure/simulation/stock-share");
     const { fetchRetirementData } =
       await import("@/server/services/projection/engine-payload/build-engine-payload");
     const sqlite = await import("@/lib/db/schema-sqlite");
