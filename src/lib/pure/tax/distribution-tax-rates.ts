@@ -205,7 +205,7 @@ export function buildDistributionTaxRates({
       settings.rothConversionTarget != null
         ? toNumber(settings.rothConversionTarget)
         : undefined,
-    // Paired with `toLtcgTaxableIncome` (tax-tables.ts):
+    // Paired with `toLtcgTaxableIncome` (tax/ltcg.ts):
     // LTCG bracket lookups need real taxable income, not gross ordinary
     // income — this sources the deduction from real config
     // (`contribution_limits`, already loaded into limitsMap above) rather

@@ -7,60 +7,6 @@
 
 import type { ReturnFilingStatus } from "./filing-status";
 
-/**
- * Convert GROSS ordinary income (Traditional withdrawals + taxable SS +
- * non-qualified Roth growth + Roth conversions, before any deduction) into
- * the TAXABLE ordinary income LTCG brackets are actually denominated in.
- *
- * every LTCG-stacking call site in the engine
- * (`withdrawal-cost-ranking.ts`'s Tier 1 0%-room calc, `tax-estimation.ts`'s
- * `computeTaxFromSlots`, `decumulation-year.ts`'s Roth-conversion-revised
- * LTCG recompute) fed `ltcgBrackets` a gross figure with
- * nothing subtracted. LTCG brackets use real IRS taxable-income thresholds
- * (see this file's header) — gross income sits ABOVE the true stacking
- * floor by roughly the household's standard deduction, so every one of
- * those call sites systematically understated 0%/15% LTCG room and
- * overcharged real capital-gains tax. Single conversion point so all of
- * them apply the exact same correction — RULES.md's single-computation-path
- * rule applies here same as anywhere else; fixing only one call site would
- * leave withdrawal ROUTING and the actual TAX CHARGE disagreeing about how
- * much 0% room existed.
- *
- * Deliberately NOT used for the ordinary W-4 withholding brackets
- * (`incomeCapForMarginalRate`/`estimateEffectiveTaxRate`/`marginalRateAtIncome`
- * in `tax-estimation.ts`) — those already embed a (different, smaller) Pub
- * 15-T Worksheet 1A offset in their own threshold scale, so subtracting the
- * FULL standard deduction there would double-count. They have their own,
- * separate correction (`toOrdinaryBracketIncome`) that subtracts only
- * the residual between the two — do not "consolidate" the two helpers, the
- * bracket shapes they operate on (`TaxBracket{min,max,rate}` here vs.
- * `WithholdingBracket{threshold,baseWithholding,rate}` there) aren't
- * interchangeable.
- *
- * `standardDeduction` omitted/undefined ⇒ subtracts 0, reproducing the
- * pre-fix (bugged) behavior exactly — every caller must pass a real
- * filing-status-keyed deduction (`distributionTaxRates.standardDeduction`,
- * sourced from `contribution_limits`) to actually get the correction; this
- * default keeps the fix additive rather than a forced behavior change for
- * any caller that hasn't been updated to supply it.
- *
- * Both the IRC §63(f)(1) age-65+ additional standard deduction and the
- * temporary OBBBA senior deduction (2025-2028) ARE modeled as of this
- * version: `decumulation-year.ts` folds
- * both into the deduction before growth, so the `standardDeduction` this
- * helper receives from a decumulation year is already senior-adjusted for
- * both. See `obbba-senior-deduction.ts`'s docblock for the OBBBA mechanism
- * (MAGI-phased, sunset-gated, uses last year's MAGI as the phaseout basis —
- * decumulation year 1 gets $0 OBBBA deduction, no prior-year MAGI exists
- * yet).
- */
-export function toLtcgTaxableIncome(
-  grossOrdinaryIncome: number,
-  standardDeduction: number | undefined,
-): number {
-  return Math.max(0, grossOrdinaryIncome - (standardDeduction ?? 0));
-}
-
 /** LTCG brackets by filing status, as stored (`ltcg_brackets`): each
  *  threshold is that bracket's ceiling; `null` is the open top bracket. */
 export type LtcgBracketTable = Record<

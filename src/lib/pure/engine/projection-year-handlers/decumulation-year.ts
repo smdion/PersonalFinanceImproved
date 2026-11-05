@@ -33,11 +33,8 @@ import {
 import { shortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
-import {
-  getLtcgRate,
-  computeLtcgTax,
-  toLtcgTaxableIncome,
-} from "../../../config/tax-tables";
+import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
+import { toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
 import { computeNiit } from "../../../config/niit";
 import {
   growAmount,

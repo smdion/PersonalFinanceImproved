@@ -31,8 +31,8 @@ import type { WithholdingBracket } from "./tax-estimation";
 import {
   ltcgRoomForRate,
   ltcgRateForNextDollar,
-  toLtcgTaxableIncome,
 } from "../../config/tax-tables";
+import { toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
 import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, niitThresholdFor } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";

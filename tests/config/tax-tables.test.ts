@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   ltcgRoomForRate,
-  toLtcgTaxableIncome,
   getLtcgRate,
   ltcgRateForNextDollar,
 } from "@/lib/config/tax-tables";
@@ -57,42 +56,6 @@ describe("ltcgRoomForRate", () => {
   it("throws when the filing status has no brackets (never guesses)", () => {
     expect(() => ltcgRoomForRate(0, 0, "MFJ", {})).toThrow(/MFJ/);
     expect(() => getLtcgRate(0, "MFJ", { Single: [] })).toThrow(/MFJ/);
-  });
-});
-
-// Regression coverage for the 2026-08-30 fix: LTCG bracket lookups were
-// being fed GROSS ordinary income (Traditional withdrawal + taxable SS,
-// with nothing subtracted) where the brackets are denominated in real
-// taxable income — systematically understating 0%-LTCG room. Confirmed
-// against a real household: $120,100 gross Traditional withdrawal +
-// $0 taxable SS, MFJ $32,200 standard deduction ⇒ real taxable income
-// $87,900, comfortably under the $98,900 0%-LTCG ceiling (~$11,000 of
-// room the pre-fix code never saw, since 120,100 alone already exceeds
-// 98,900).
-describe("toLtcgTaxableIncome", () => {
-  it("subtracts the standard deduction from gross ordinary income", () => {
-    expect(toLtcgTaxableIncome(120100, 32200)).toBe(87900);
-  });
-
-  it("floors at 0 rather than going negative", () => {
-    expect(toLtcgTaxableIncome(10000, 32200)).toBe(0);
-  });
-
-  it("undefined standardDeduction ⇒ subtracts 0 (pre-fix behavior, not a throw)", () => {
-    expect(toLtcgTaxableIncome(120100, undefined)).toBe(120100);
-  });
-
-  it("real household scenario: crosses from 15% into 0%-LTCG room once the deduction is applied", () => {
-    const grossOrdinary = 120100;
-    const withoutFix = ltcgRoomForRate(0, grossOrdinary, "MFJ", LTCG);
-    const withFix = ltcgRoomForRate(
-      0,
-      toLtcgTaxableIncome(grossOrdinary, 32200),
-      "MFJ",
-      LTCG,
-    );
-    expect(withoutFix).toBe(0); // the bug: no 0%-LTCG room at all
-    expect(withFix).toBe(11000); // 98,900 - 87,900
   });
 });
 

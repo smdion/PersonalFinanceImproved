@@ -22,7 +22,8 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
 } from "../../config/account-types";
-import { computeLtcgTax, toLtcgTaxableIncome } from "../../config/tax-tables";
+import { computeLtcgTax } from "../../config/tax-tables";
+import { toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
   ssTaxThresholdsFor,
@@ -50,11 +51,10 @@ export type WithholdingBracket = {
  * undefined returns gross unchanged (callers with no standard deduction to
  * thread through, e.g. tests).
  *
- * Deliberately does NOT reuse `toLtcgTaxableIncome`/`toTaxableIncomeBrackets`
- * (tax-tables.ts / tax-brackets.ts) — those shift `TaxBracket{min,max,rate}`
- * boundaries for a true progressive walk; this shifts the INCOME instead,
- * which is the only safe move against `WithholdingBracket{threshold,
- * baseWithholding,rate}`'s baseWithholding-shortcut shape (shifting
+ * Deliberately not `toLtcgTaxableIncome`/`toTaxableIncomeBrackets` (tax/):
+ * those shift `TaxBracket{min,max,rate}` boundaries for a true progressive
+ * walk; this shifts the INCOME, the only safe move against
+ * `WithholdingBracket{threshold,baseWithholding,rate}`'s shape (shifting
  * `threshold` alone without recomputing `baseWithholding` would be wrong).
  */
 function toOrdinaryBracketIncome(

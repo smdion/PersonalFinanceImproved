@@ -3139,10 +3139,7 @@
   },
   "src/lib/config/tax-tables.ts": {
     "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 6
     }
   },
   "src/lib/config/withdrawal-routing.ts": {
