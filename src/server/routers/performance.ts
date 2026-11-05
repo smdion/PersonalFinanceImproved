@@ -64,12 +64,14 @@ import {
   CONTRIBUTION_SCALING_VALUES,
 } from "@/lib/config/enum-values";
 import {
-  buildPerfAcctLookups,
   captureYearRollups,
-  getEffectiveCategory,
-  resolveMaster,
   syncYearRollups,
 } from "@/server/helpers/performance-rollups";
+import {
+  buildPerfAcctLookups,
+  getEffectiveCategory,
+  resolveMaster,
+} from "@/lib/pure/investments/annual-rollups";
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
 import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
 import {

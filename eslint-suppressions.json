@@ -4707,6 +4707,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/investments/annual-rollups.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
   "src/lib/pure/investments/benchmark-yearly.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5544,9 +5549,6 @@
     }
   },
   "src/server/helpers/performance-rollups.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 1
     },
