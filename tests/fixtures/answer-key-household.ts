@@ -14,7 +14,7 @@
  * off, the 12% Roth bracket target the builder always sets left unset.
  * The plan starts 2026-01-01, so 2026 is a whole year.
  */
-import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
+import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
 import {
   getAllCategories,
   type AccountCategory,

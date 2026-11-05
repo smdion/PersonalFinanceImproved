@@ -15,7 +15,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
-import type { FilingStatusSource } from "@/lib/pure/filing-status";
+import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
 import { accountDisplayName } from "@/lib/utils/format";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
@@ -213,7 +213,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
 
 /**
  * The household's cap context for a request: who (birth years), the year's
- * limits, and this year's filing status (lib/pure/filing-status.ts — a W-4
+ * limits, and this year's filing status (lib/pure/tax/filing-status.ts — a W-4
  * status is a withholding choice, only a last stand-in). The paycheck's
  * household tax and Roth IRA view read it from here too, so there is one
  * answer.

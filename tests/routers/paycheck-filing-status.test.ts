@@ -17,7 +17,7 @@ import {
   buildEnginePayload,
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
-import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/filing-status";
+import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/tax/filing-status";
 import { recommendationsFromFilingStatus } from "@/lib/pure/recommendations-data";
 
 describe("paycheck: the household's filing status", () => {

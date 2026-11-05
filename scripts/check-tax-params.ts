@@ -34,7 +34,7 @@ import {
 import {
   taxDataStatus,
   taxYearDeadline,
-} from "../src/lib/pure/tax-data-status";
+} from "../src/lib/pure/tax/data-status";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -45,7 +45,7 @@ const ROOT = path.resolve(__dirname, "..");
 
 // Each table's publication date and the "should have it by now" rule are
 // shared with the app's notice: lib/config/tax-data-publication.ts,
-// lib/pure/tax-data-status.ts.
+// lib/pure/tax/data-status.ts.
 
 type TaxDataFileJson = {
   years: Record<
@@ -137,7 +137,7 @@ const TAX_PATHS = [
   "src/lib/config/tax-tables.ts",
   "src/lib/config/tax-params.ts",
   "src/lib/config/tax-data-publication.ts",
-  "src/lib/pure/tax-data-status.ts",
+  "src/lib/pure/tax/data-status.ts",
 ];
 
 /** Files under TAX_PATHS that differ between `base` and the working tree. */

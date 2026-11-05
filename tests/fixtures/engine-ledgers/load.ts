@@ -26,7 +26,7 @@
  */
 import * as fs from "fs";
 import * as path from "path";
-import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
+import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
 import {
   getAllCategories,
   type AccountCategory,

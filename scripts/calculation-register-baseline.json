@@ -455,8 +455,6 @@
     "src/lib/pure/engine/tax-estimation.ts:marginalRateAboveTarget",
     "src/lib/pure/engine/tax-estimation.ts:taxableSSFor",
     "src/lib/pure/engine/withdrawal-cost-ranking.ts:deriveBasisRankingInputs",
-    "src/lib/pure/filing-status.ts:FILING_STATUS_IF_UNKNOWN",
-    "src/lib/pure/filing-status.ts:retirementFilingStatus",
     "src/lib/pure/fill-suggestions.ts:gapAfter",
     "src/lib/pure/fill-suggestions.ts:recordedMovesSince",
     "src/lib/pure/fill-suggestions.ts:rowsPerAccount",
@@ -637,7 +635,6 @@
     "src/lib/pure/roth-basis-tracking.ts:applyBasisDraw",
     "src/lib/pure/roth-basis-tracking.ts:clampBasisToBalance",
     "src/lib/pure/roth-basis-tracking.ts:initRothBasisState",
-    "src/lib/pure/roth-distribution-tax.ts:isQualifiedRothOwner",
     "src/lib/pure/roth-ira.ts:PENDING_CONVERSION_WINDOW_DAYS",
     "src/lib/pure/roth-ira.ts:backdoorPlanned",
     "src/lib/pure/roth-ira.ts:isRothIraContribution",
@@ -698,8 +695,11 @@
     "src/lib/pure/sync/simplefin-reconcile.ts:planReconcile",
     "src/lib/pure/sync/simplefin-transactions.ts:classifySimplefinTransaction",
     "src/lib/pure/tax-bucket-projection.ts:projectRuleOf55",
-    "src/lib/pure/tax-data-status.ts:expectedTaxYear",
-    "src/lib/pure/tax-data-status.ts:taxYearDeadline",
+    "src/lib/pure/tax/data-status.ts:expectedTaxYear",
+    "src/lib/pure/tax/data-status.ts:taxYearDeadline",
+    "src/lib/pure/tax/filing-status.ts:FILING_STATUS_IF_UNKNOWN",
+    "src/lib/pure/tax/filing-status.ts:retirementFilingStatus",
+    "src/lib/pure/tax/roth-distribution-tax.ts:isQualifiedRothOwner",
     "src/lib/pure/withdrawal-eligibility.ts:computeNonRetirementExclusion"
   ]
 }

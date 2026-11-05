@@ -53,7 +53,7 @@ import {
   drawFromBasis,
   type RothBasisState,
 } from "@/lib/pure/roth-basis-tracking";
-import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import { getAccountTypeConfig } from "@/lib/config/account-types";
 import type { RuleOf55Status } from "@/lib/pure/tax-bucket-analysis";
 

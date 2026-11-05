@@ -762,9 +762,6 @@
     "src/lib/pure/contribution-caps.ts": {
       "capContributionsByLimitGroup": 271
     },
-    "src/lib/pure/distribution-tax-rates.ts": {
-      "buildDistributionTaxRates": 199
-    },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189
     },
@@ -828,6 +825,9 @@
     },
     "src/lib/pure/tax-buckets.ts": {
       "computeTaxBucketBreakdown": 243
+    },
+    "src/lib/pure/tax/distribution-tax-rates.ts": {
+      "buildDistributionTaxRates": 199
     },
     "src/lib/pure/withdrawal-eligibility.ts": {
       "computeWithdrawalEligibility": 182

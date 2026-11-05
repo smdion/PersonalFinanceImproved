@@ -3,7 +3,7 @@
 /**
  * Settings → Reference Data: how tax data updates work, whether this
  * install's tax data is current, and the carried-forward figures to check
- * (lib/pure/tax-data-status.ts; server: settings.taxData).
+ * (lib/pure/tax/data-status.ts; server: settings.taxData).
  */
 import { useState } from "react";
 import Link from "next/link";

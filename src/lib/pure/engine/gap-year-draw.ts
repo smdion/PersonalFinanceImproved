@@ -50,7 +50,7 @@ import {
   computeNonRetirementExclusion,
   computeWithdrawalEligibility,
 } from "@/lib/pure/withdrawal-eligibility";
-import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";

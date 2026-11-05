@@ -3959,14 +3959,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/distribution-tax-rates.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    }
-  },
   "src/lib/pure/early-access.ts": {
     "ratchet/max-comment-lines": {
       "count": 11
@@ -4365,11 +4357,6 @@
       "count": 18
     },
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/filing-status.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -4822,11 +4809,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/roth-distribution-tax.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/lib/pure/roth-ira.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5042,9 +5024,27 @@
       "count": 7
     }
   },
-  "src/lib/pure/tax-data-status.ts": {
+  "src/lib/pure/tax/data-status.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/lib/pure/tax/distribution-tax-rates.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 11
+    }
+  },
+  "src/lib/pure/tax/filing-status.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/roth-distribution-tax.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   },
   "src/lib/pure/tax/simple-tax-mode.ts": {

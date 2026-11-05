@@ -6,7 +6,7 @@
 import type { DataSourceStatus } from "@/lib/pure/sync/data-freshness";
 import type { Recommendation } from "@/lib/pure/recommendations";
 import { filingStatusLabel } from "@/lib/config/display-labels";
-import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/filing-status";
+import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/tax/filing-status";
 
 export function recommendationsFromDataSources(
   statuses: readonly DataSourceStatus[],

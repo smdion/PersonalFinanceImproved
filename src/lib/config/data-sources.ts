@@ -93,7 +93,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     key: "taxData",
     label: "Tax data",
     mode: "automatic",
-    // Judged by its own publication dates (lib/pure/tax-data-status.ts),
+    // Judged by its own publication dates (lib/pure/tax/data-status.ts),
     // reported as warnings — never by age.
     rhythm: { kind: "days", days: 100_000 },
     rhythmLabel: "Yearly, with Ledgr updates",

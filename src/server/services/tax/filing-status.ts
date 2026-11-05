@@ -1,5 +1,5 @@
 // This year's filing status and where it came from (the whole chain is in
-// lib/pure/filing-status.ts): one resolver for the paycheck, the caps and
+// lib/pure/tax/filing-status.ts): one resolver for the paycheck, the caps and
 // the retirement engine.
 import type {
   FilingStatusKey,
@@ -9,7 +9,7 @@ import type {
 import {
   taxFilingStatusSetting,
   type FilingStatusSource,
-} from "@/lib/pure/filing-status";
+} from "@/lib/pure/tax/filing-status";
 import {
   w4FilingStatusOf,
   type SalaryProfileActiveMap,

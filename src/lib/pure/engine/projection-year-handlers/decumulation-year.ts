@@ -71,7 +71,7 @@ import {
   computeWithdrawalEligibility,
 } from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
-import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 import {
   deductWithdrawals,

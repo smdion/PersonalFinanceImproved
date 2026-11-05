@@ -834,7 +834,7 @@ export const retirementRouter = createTRPCRouter({
               ),
             );
           // filing_status: null = "Auto" (follow this year's filing status,
-          // resolved when read — lib/pure/filing-status.ts); not sent = keep
+          // resolved when read — lib/pure/tax/filing-status.ts); not sent = keep
           // what's stored. Never defaulted here.
           const { profileId: _profileIdKey, ...inputFields } = input;
           const resolvedInput = {

@@ -5,7 +5,7 @@
  * as qualified — matching withdrawal-eligibility.ts's identical handling.
  */
 import { describe, it, expect } from "vitest";
-import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 

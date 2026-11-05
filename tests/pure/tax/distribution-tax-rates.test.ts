@@ -5,12 +5,12 @@
  * fails (survivors m32, m36, m45 in the November tax verdicts).
  */
 import { describe, it, expect } from "vitest";
-import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
+import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
 import {
   shippedTaxTables,
   taxDataLimitMap,
   taxDataWithholding,
-} from "../helpers/tax-data";
+} from "../../helpers/tax-data";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const settings = {

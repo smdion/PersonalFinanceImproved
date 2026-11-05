@@ -319,7 +319,7 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   }
 
   // 12. Retirement settings — filing status left as "Auto" (null): it
-  // follows this year's, here the demo jobs' W-4 (lib/pure/filing-status.ts).
+  // follows this year's, here the demo jobs' W-4 (lib/pure/tax/filing-status.ts).
   const rs = profile.retirementSettings;
   const personId = personIdByName.get(rs.personName)!;
   await db.insert(schema.retirementSettings).values({

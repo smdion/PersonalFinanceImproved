@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { storedProfileFilingStatus } from "@/lib/pure/filing-status";
+import { storedProfileFilingStatus } from "@/lib/pure/tax/filing-status";
 
 describe("storedProfileFilingStatus", () => {
   it("reads null as Auto and a known status as itself", () => {

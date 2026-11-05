@@ -59,7 +59,7 @@ import {
   depleteIndividualBasis,
 } from "./individual-account-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";

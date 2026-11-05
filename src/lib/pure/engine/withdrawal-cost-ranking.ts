@@ -24,7 +24,7 @@
  * fixed order automatically when individual-account tracking isn't
  * enabled — see `rothBasisAvailable`'s docblock below.
  */
-import { isQualifiedRothOwner } from "@/lib/pure/roth-distribution-tax";
+import { isQualifiedRothOwner } from "@/lib/pure/tax/roth-distribution-tax";
 import type { TaxBuckets } from "../types/shared";
 import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";

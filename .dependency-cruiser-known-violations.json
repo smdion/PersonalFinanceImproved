@@ -306,16 +306,6 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/distribution-tax-rates.ts",
-    "to": "src/server/helpers/settings.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/distribution-tax-rates.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
     "from": "src/lib/pure/net-worth/historical.ts",
     "to": "src/server/helpers/transforms.ts"
   },
@@ -337,6 +327,16 @@
   {
     "rule": "pure-has-no-io",
     "from": "src/lib/pure/tax-buckets.ts",
+    "to": "src/server/helpers/transforms.ts"
+  },
+  {
+    "rule": "pure-has-no-io",
+    "from": "src/lib/pure/tax/distribution-tax-rates.ts",
+    "to": "src/server/helpers/settings.ts"
+  },
+  {
+    "rule": "pure-has-no-io",
+    "from": "src/lib/pure/tax/distribution-tax-rates.ts",
     "to": "src/server/helpers/transforms.ts"
   },
   {

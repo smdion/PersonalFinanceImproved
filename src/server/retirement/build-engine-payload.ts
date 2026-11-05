@@ -23,7 +23,7 @@ import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import {
   retirementFilingStatus,
   storedProfileFilingStatus,
-} from "@/lib/pure/filing-status";
+} from "@/lib/pure/tax/filing-status";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -71,7 +71,7 @@ import {
 } from "@/lib/constants";
 import { log } from "@/lib/logger";
 import { buildSocialSecurityEntries } from "./social-security-entries";
-import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
+import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
 import { accountGroupLimits } from "@/lib/pure/contribution-caps";
 import {
   capEffectiveContribs,
@@ -386,7 +386,7 @@ export async function buildEnginePayload(
   if (!settings) return null;
 
   // This year's return, and retirement years' (the profile's, or "Auto" =
-  // this year's) — lib/pure/filing-status.ts. Nothing known: the cautious
+  // this year's) — lib/pure/tax/filing-status.ts. Nothing known: the cautious
   // fallback, and the household is asked (a recommendation).
   const profileStatus = storedProfileFilingStatus(settings.filingStatus);
   const thisYearFiling = await thisYearFilingStatus(db, {

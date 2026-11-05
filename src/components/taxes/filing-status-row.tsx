@@ -2,7 +2,7 @@
 
 /**
  * This year's filing status on the Taxes page — the household setting
- * (lib/pure/filing-status.ts). Admins set it here; unset, it follows the
+ * (lib/pure/tax/filing-status.ts). Admins set it here; unset, it follows the
  * active Retirement Profile's status, else a W-4, and says which.
  */
 import { HelpTip } from "@/components/ui/help-tip";
@@ -16,7 +16,7 @@ import {
   FILING_STATUS_LABELS,
   filingStatusLabel,
 } from "@/lib/config/display-labels";
-import type { FilingStatusSource } from "@/lib/pure/filing-status";
+import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
 
 const SOURCE_TEXT: Record<Exclude<FilingStatusSource, "household">, string> = {
   retirementProfile: "the Retirement Profile's",
