@@ -29,7 +29,7 @@ import type {
   IndividualAccountInput,
   LumpSum,
   TaxBuckets,
-} from "../types/shared";
+} from "../accounts/account-balances.types";
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
   retirementBuckets: TaxBuckets;

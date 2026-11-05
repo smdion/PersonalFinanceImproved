@@ -3,7 +3,10 @@
  */
 import { seedBrokerageBasis } from "../brokerage-basis";
 import type { ProjectionInput } from "../types/projection-result";
-import type { AccountBalances, TaxBuckets } from "../../types/shared";
+import type {
+  AccountBalances,
+  TaxBuckets,
+} from "../../accounts/account-balances.types";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
 import {
   accountBalancesFromTaxBuckets,

@@ -8,9 +8,6 @@ import type {
   RothBasisMeta,
 } from "@/lib/pure/accounts/tax-bucket-analysis";
 
-export type * from "../paycheck/paycheck.types";
-export type * from "../contributions/view-mode";
-
 /**
  * A one-time dollar-amount injection or withdrawal in a specific year.
  * NOT sticky-forward — only applied in the exact override year.

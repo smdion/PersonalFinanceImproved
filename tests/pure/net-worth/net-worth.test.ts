@@ -3,7 +3,7 @@ import {
   calculateNetWorth,
   wealthFormulaIncome,
 } from "@/lib/pure/net-worth/net-worth";
-import type { NetWorthInput } from "@/lib/pure/types/calculators";
+import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
 import { AS_OF_DATE } from "../fixtures";
 
 describe("calculateNetWorth", () => {

@@ -12,7 +12,7 @@ import {
 import type { AccountCategory } from "../../../config/account-types";
 import type { AccumulationSlot } from "../types/routing";
 import type { EngineAccumulationYear } from "../types/projection-result";
-import type { IndividualAccountYearBalance } from "../../types/shared";
+import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
 import {
   buildCategoryRecord,

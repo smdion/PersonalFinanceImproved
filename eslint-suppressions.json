@@ -3749,6 +3749,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/accounts/account-balances.types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 10
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
+    }
+  },
   "src/lib/pure/accounts/account-part.ts": {
     "ratchet/no-string-closed-set-field": {
       "count": 2
@@ -5093,14 +5101,6 @@
   "src/lib/pure/total-return.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/lib/pure/types/shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 5
     }
   },
   "src/lib/pure/withdrawal-strategy-recommendation.ts": {

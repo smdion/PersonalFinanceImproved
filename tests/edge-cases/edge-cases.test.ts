@@ -17,10 +17,8 @@ import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateSavings } from "@/lib/pure/savings/savings";
 import { MFJ_2C_BRACKETS, MFJ_TAXABLE_INCOME_BRACKETS } from "../pure/fixtures";
-import type {
-  PaycheckInput,
-  NetWorthInput,
-} from "@/lib/pure/types/calculators";
+import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
+import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
 
 const JAN_1 = new Date(2025, 0, 1); // local-time constructor — avoids UTC-string timezone shift
 const DEC_31 = new Date(2025, 11, 31);

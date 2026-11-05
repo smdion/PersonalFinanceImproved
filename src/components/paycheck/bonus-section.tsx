@@ -11,7 +11,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
 import type { BonusDestination } from "@/lib/config/enum-values";
 import type { PaycheckResult } from "./types";
-import type { BonusEstimate } from "@/lib/pure/types/calculators";
+import type { BonusEstimate } from "@/lib/pure/paycheck/paycheck.types";
 
 /** "Bonus goes to: Budget | Extra spending" — like the extra paycheck's
  *  choice, saved in the Salary Profile entry. Extra spending gets its own

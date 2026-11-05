@@ -8,7 +8,7 @@
  */
 import { calendarYear } from "@/lib/utils/date";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import {
   getAllCategories,
   isOverflowTarget,

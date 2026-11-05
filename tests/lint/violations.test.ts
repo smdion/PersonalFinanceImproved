@@ -902,7 +902,7 @@ const FILING_STATUS_LITERAL_EXEMPT = new Set([
   // defensively since they're the canonical definition site for the
   // enum itself, not a figure.
   "src/lib/config/enum-values.ts",
-  "src/lib/pure/types/shared.ts",
+  "src/lib/pure/accounts/account-balances.types.ts",
   // Schema files reference the column's runtime type, not a literal.
   "src/lib/db/schema-pg.ts",
   "src/lib/db/schema-sqlite.ts",

@@ -12,7 +12,7 @@ import {
 import type {
   MortgageInput,
   MortgageWhatIf,
-} from "@/lib/pure/types/calculators";
+} from "@/lib/pure/debts/mortgage.types";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
 import { firstRow } from "@/lib/utils/first-row";

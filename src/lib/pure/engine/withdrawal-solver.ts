@@ -38,7 +38,7 @@ import type {
   AccountBalances,
   TaxBuckets,
   IndividualAccountInput,
-} from "../types/shared";
+} from "../accounts/account-balances.types";
 import { computeNiit } from "../../config/niit";
 import { yearMagi } from "@/lib/pure/tax/year-income";
 import { roundToCents } from "../../utils/math";

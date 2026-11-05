@@ -5,7 +5,10 @@
  * by the effective return rate while preserving cost basis (brokerage basis
  * does NOT grow — only market value does).
  */
-import type { TaxBuckets, AccountBalances } from "../types/shared";
+import type {
+  TaxBuckets,
+  AccountBalances,
+} from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
 import { MIN_RETURN_RATE } from "../../constants";
 import { returnRateAtAge } from "@/lib/pure/return-rate-breakpoints";

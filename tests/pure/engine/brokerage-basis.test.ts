@@ -12,7 +12,7 @@ import { makeIndKey } from "@/lib/pure/engine/individual-account-tracking";
 import type {
   IndividualAccountInput,
   TaxBuckets,
-} from "@/lib/pure/types/shared";
+} from "@/lib/pure/accounts/account-balances.types";
 
 const indKey = makeIndKey();
 const brokerage = (

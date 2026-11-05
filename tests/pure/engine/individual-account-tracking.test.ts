@@ -17,7 +17,7 @@ import {
 import type {
   IndividualAccountInput,
   AccountBalances,
-} from "@/lib/pure/types/shared";
+} from "@/lib/pure/accounts/account-balances.types";
 import type {
   DecumulationSlot,
   ContributionSpec,

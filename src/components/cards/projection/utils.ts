@@ -486,7 +486,7 @@ export function colKeyParts(key: string): {
 
 /** Read a column's balance from balanceByAccount — data-driven, no if-chains. */
 export function colBalance(
-  ba: import("@/lib/pure/types/shared").AccountBalances,
+  ba: import("@/lib/pure/accounts/account-balances.types").AccountBalances,
   key: string,
 ): number {
   const { category, treatment } = colKeyParts(key);
@@ -748,7 +748,7 @@ export function computeAccountSplits(
 import type {
   LumpSum,
   IndividualAccountYearBalance,
-} from "@/lib/pure/types/shared";
+} from "@/lib/pure/accounts/account-balances.types";
 
 type PortfolioTaxBucket = "preTax" | "taxFree" | "hsa" | "afterTax";
 

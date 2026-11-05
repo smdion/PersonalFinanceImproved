@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { sumBracketTax } from "@/lib/pure/tax/tax-brackets";
-import type { TaxBracketInput } from "@/lib/pure/types/shared";
+import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
 import { MFJ_TAXABLE_INCOME_BRACKETS } from "../fixtures";
 
 const B = MFJ_TAXABLE_INCOME_BRACKETS;

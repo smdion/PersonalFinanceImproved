@@ -10,7 +10,7 @@
  */
 import type { DecumulationSlot } from "./types/routing";
 import type { ResolvedDecumulationConfig } from "./types/decumulation";
-import type { AccountBalances } from "../types/shared";
+import type { AccountBalances } from "../accounts/account-balances.types";
 import type { AccountCategory } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
 import {

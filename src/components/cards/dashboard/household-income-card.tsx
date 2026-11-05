@@ -42,7 +42,8 @@ function HouseholdIncomeCardImpl() {
       : d.paycheck!.periodsPerYear;
   const blendedOf = (d: (typeof people)[0]) =>
     (d as Record<string, unknown>).blendedAnnual as
-      import("@/lib/pure/types/calculators").BlendedAnnualTotals | undefined;
+      | import("@/lib/pure/paycheck/paycheck.types").BlendedAnnualTotals
+      | undefined;
   // Every view uses the resolved bonus — the set (actual) bonus if there
   // is one, else the formula — the same bonus the taxes below are figured
   // on, so gross, net and tax reconcile. When a set bonus differs from the

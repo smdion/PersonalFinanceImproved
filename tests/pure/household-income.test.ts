@@ -9,8 +9,8 @@ import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
-import type { ContributionAccountInput } from "@/lib/pure/types/shared";
-import type { PaycheckInput } from "@/lib/pure/types/calculators";
+import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
+import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
 import { PERSON_A_PAYCHECK_INPUT } from "./fixtures";
 
 const account = (

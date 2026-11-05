@@ -20,7 +20,7 @@ import {
   toSimpleTaxMode,
   type SimpleTaxModeParts,
 } from "@/lib/pure/tax/simple-tax-mode";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import type {
   ProjectionInput,
   EngineDecumulationYear,

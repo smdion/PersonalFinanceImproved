@@ -6,7 +6,7 @@ import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type {
   MortgageLoanInput,
   MortgageExtraPayment,
-} from "@/lib/pure/types/calculators";
+} from "@/lib/pure/debts/mortgage.types";
 import { MAX_EXTRA_PAYMENTS } from "@/lib/constants";
 import { toNumber } from "./transforms";
 

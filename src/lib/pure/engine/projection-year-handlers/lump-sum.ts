@@ -3,7 +3,10 @@
  * tracking. Shared by the accumulation-year and decumulation-year handlers,
  * which previously carried byte-identical copies.
  */
-import type { IndividualAccountInput, LumpSum } from "../../types/shared";
+import type {
+  IndividualAccountInput,
+  LumpSum,
+} from "../../accounts/account-balances.types";
 import {
   getAccountTypeConfig,
   isRothType,

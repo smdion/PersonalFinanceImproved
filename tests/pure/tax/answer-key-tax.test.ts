@@ -61,7 +61,7 @@ import { computeObbbaSeniorDeduction } from "@/lib/pure/engine/obbba-senior-dedu
 import { computeNiit } from "@/lib/config/niit";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
-import type { TaxBracketInput } from "@/lib/pure/types/shared";
+import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 type Year = 2025 | 2026;

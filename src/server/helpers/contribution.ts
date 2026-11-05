@@ -17,7 +17,7 @@ import {
   getDefaultTaxTreatment,
   isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
-import type { ContributionAccountInput } from "@/lib/pure/types/shared";
+import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
 import type {
   ContributionSpec,
   RetirementContribSlice,

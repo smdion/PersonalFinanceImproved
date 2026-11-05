@@ -35,7 +35,7 @@ import type {
   ContributionSpec,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 

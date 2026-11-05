@@ -43,7 +43,7 @@ import {
   checksPaidYtd,
   periodsBeforeStart,
 } from "@/lib/pure/paycheck/paycheck";
-import type { NetWorthInput } from "@/lib/pure/types/calculators";
+import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
 import { payPeriodConfig } from "@/lib/config/pay-periods";
 import {
   accountTypeToPerformanceCategory,

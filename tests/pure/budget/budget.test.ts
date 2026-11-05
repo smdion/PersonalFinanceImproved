@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateBudget } from "@/lib/pure/budget/budget";
-import type { BudgetInput } from "@/lib/pure/types/calculators";
+import type { BudgetInput } from "@/lib/pure/budget/budget.types";
 import { AS_OF_DATE } from "../fixtures";
 
 describe("calculateBudget", () => {

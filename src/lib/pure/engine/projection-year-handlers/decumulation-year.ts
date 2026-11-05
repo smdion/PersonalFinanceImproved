@@ -11,7 +11,7 @@ import {
   syncAggregateBasis,
 } from "../brokerage-basis";
 import type { EngineDecumulationYear } from "../types/projection-result";
-import type { IndividualAccountYearBalance } from "../../types/shared";
+import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { roundToCents, sumBy } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import {

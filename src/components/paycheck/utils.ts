@@ -1,4 +1,4 @@
-import type { DeductionLine } from "@/lib/pure/types/shared";
+import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { RawDeduction, DeductionRowData } from "./types";
 
 /**

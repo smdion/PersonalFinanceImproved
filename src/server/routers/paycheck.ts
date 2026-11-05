@@ -50,8 +50,11 @@ import {
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
-import type { DeductionLine, TaxBracketInput } from "@/lib/pure/types/shared";
-import type { BlendedAnnualTotals } from "@/lib/pure/types/calculators";
+import type {
+  DeductionLine,
+  TaxBracketInput,
+} from "@/lib/pure/paycheck/paycheck.types";
+import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
 import {
   computeAnnualEarnings,
   sumHouseholdIncome,

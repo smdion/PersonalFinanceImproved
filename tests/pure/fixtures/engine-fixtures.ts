@@ -6,7 +6,7 @@ import type {
   TaxBuckets,
   AccountBalances,
   IndividualAccountInput,
-} from "@/lib/pure/types/shared";
+} from "@/lib/pure/accounts/account-balances.types";
 import type {
   ResolvedAccumulationConfig,
   ResolvedDecumulationConfig,

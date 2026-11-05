@@ -12,7 +12,7 @@ import type {
   TaxBuckets,
   AccountBalances,
   IndividualAccountInput,
-} from "../../types/shared";
+} from "../../accounts/account-balances.types";
 import type {
   ContributionSpec,
   ProfileSwitch,

@@ -59,7 +59,7 @@ import {
   SK_EFUND_BUDGET_COLUMN,
 } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
-import type { DeductionLine } from "@/lib/pure/types/shared";
+import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { SalaryEntryMap } from "@/server/helpers/salary";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
@@ -72,7 +72,8 @@ import {
 } from "@/lib/config/enum-values.schema";
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { log } from "@/lib/logger";
-import type { SavingsInput, EFundInput } from "@/lib/pure/types/calculators";
+import type { SavingsInput } from "@/lib/pure/savings/savings.types";
+import type { EFundInput } from "@/lib/pure/savings/efund.types";
 import {
   getActiveBudgetApi,
   cacheGet,

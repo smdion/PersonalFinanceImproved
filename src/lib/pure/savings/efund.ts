@@ -15,7 +15,7 @@
  * Essential expenses come from the budget calculator (items with isEssential = true).
  * The target months is user-configurable (default 4, matching the spreadsheet).
  */
-import type { EFundInput, EFundResult } from "../types/calculators";
+import type { EFundInput, EFundResult } from "./efund.types";
 import { safeDivide } from "../../utils/math";
 
 export function calculateEFund(input: EFundInput): EFundResult {

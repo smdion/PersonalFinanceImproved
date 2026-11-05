@@ -22,7 +22,7 @@ import type {
   EngineDecumulationYear,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { acct, household } from "../fixtures/two-person-household";
 import { grossUpWholeBalanceHousehold } from "../fixtures/gross-up-whole-balance";
 import { shippedTaxTables } from "../../helpers/tax-data";

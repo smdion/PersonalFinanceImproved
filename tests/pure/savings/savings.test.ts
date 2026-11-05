@@ -3,7 +3,7 @@ import { calculateSavings } from "@/lib/pure/savings/savings";
 import type {
   SavingsInput,
   SavingsGoalInput,
-} from "@/lib/pure/types/calculators";
+} from "@/lib/pure/savings/savings.types";
 import { AS_OF_DATE } from "../fixtures";
 
 function makeGoal(overrides: Partial<SavingsGoalInput> = {}): SavingsGoalInput {

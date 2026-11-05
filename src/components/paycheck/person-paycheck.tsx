@@ -40,7 +40,7 @@ import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 import type {
   BlendedAnnualTotals,
   BonusEstimate,
-} from "@/lib/pure/types/calculators";
+} from "@/lib/pure/paycheck/paycheck.types";
 
 /**
  * Everything in this card that writes. Expressed as ONE discriminated prop

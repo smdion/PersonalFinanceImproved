@@ -90,7 +90,7 @@ import type {
   EngineYearProjection,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { acct, household } from "../fixtures/two-person-household";
 
 // ---------------------------------------------------------------------------

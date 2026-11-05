@@ -16,7 +16,7 @@ import type {
   TaxBuckets,
   AccountBalances,
   IndividualAccountInput,
-} from "../types/shared";
+} from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,

@@ -64,7 +64,7 @@ import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 /** The account shape this module needs — a structural subset of
- *  `IndividualAccountInput` (`lib/pure/types/shared.ts`), named
+ *  `IndividualAccountInput` (`lib/pure/accounts/account-balances.types.ts`), named
  *  locally rather than importing that type so this module (and the engine,
  *  its only intended caller) don't have to agree on every unrelated field
  *  `IndividualAccountInput` carries. */
@@ -93,7 +93,7 @@ export type EligibilityAccountInput = {
   /** Household is fine paying the penalty on THIS account if it avoids an
    *  otherwise-real shortfall. Only ever `true` when set — see
    *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
-   *  (`lib/pure/types/shared.ts`) for the full contract. This
+   *  (`lib/pure/accounts/account-balances.types.ts`) for the full contract. This
    *  module doesn't gate on it directly (same "compute the partition,
    *  don't decide policy" boundary as the module docblock's § Q0 note) —
    *  it just carries the flag onto `AccountEligibility` and folds it into

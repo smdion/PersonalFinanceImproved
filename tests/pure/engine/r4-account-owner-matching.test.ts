@@ -20,7 +20,7 @@ import type {
   ProjectionInput,
   ContributionSpec,
 } from "@/lib/pure/engine/types";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";

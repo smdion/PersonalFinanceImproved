@@ -71,9 +71,9 @@ import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
-import type { ContributionInput } from "@/lib/pure/types/calculators";
+import type { ContributionInput } from "@/lib/pure/contributions/contribution.types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { ViewMode } from "@/lib/pure/types/shared";
+import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 import {
   isOverflowTarget,
   getAccountTypeConfig,

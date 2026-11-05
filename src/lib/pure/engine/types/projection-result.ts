@@ -8,7 +8,7 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
   RetirementYearOverride,
-} from "../../types/shared";
+} from "../../accounts/account-balances.types";
 import type {
   AccumulationDefaults,
   AccumulationOverride,

@@ -1,5 +1,5 @@
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { LumpSum } from "../../types/shared";
+import type { LumpSum } from "../../accounts/account-balances.types";
 import type { RoutingMode, RoutingTaxType, TaxSplitConfig } from "./routing";
 
 /**

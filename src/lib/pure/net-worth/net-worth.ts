@@ -28,7 +28,7 @@
  *
  * All division operations use safeDivide() to handle zero-income or zero-target edge cases.
  */
-import type { NetWorthInput, NetWorthResult } from "../types/calculators";
+import type { NetWorthInput, NetWorthResult } from "./net-worth.types";
 import { safeDivide } from "../../utils/math";
 import {
   WEALTH_FORMULA_AGE_CUTOFF,

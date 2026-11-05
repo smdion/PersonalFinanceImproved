@@ -1,6 +1,6 @@
 import { isRetirementParent } from "@/lib/config/account-types";
 import { safeDivide } from "@/lib/utils/math";
-import type { ViewMode } from "@/lib/pure/types/shared";
+import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 import type { ViewAwareTotals } from "./view-metrics";
 
 /** One account's share of a household savings breakdown — the subset of

@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
 import { roundToCents } from "@/lib/utils/math";
 import { MFJ_TAXABLE_INCOME_BRACKETS, AS_OF_DATE } from "../fixtures";
-import type { TaxBracketInput } from "@/lib/pure/types/shared";
+import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
 
 describe("household tax, one person", () => {
   describe("household combined income (MFJ, no checkbox)", () => {

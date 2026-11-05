@@ -28,11 +28,9 @@ import {
   PERSON_B_CONTRIBUTIONS,
   AS_OF_DATE,
 } from "./fixtures";
-import type {
-  PaycheckInput,
-  MortgageInput,
-  NetWorthInput,
-} from "@/lib/pure/types/calculators";
+import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
+import type { MortgageInput } from "@/lib/pure/debts/mortgage.types";
+import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
 
 // ════════════════════════════════════════
 // 1. FICA BASE DISTINCTION

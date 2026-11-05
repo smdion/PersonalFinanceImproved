@@ -38,7 +38,7 @@ import {
   setRoth,
   setTraditional,
 } from "@/lib/config/account-balance";
-import type { AccountBalances } from "@/lib/pure/types/shared";
+import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   DecumulationSlot,

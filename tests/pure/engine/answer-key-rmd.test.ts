@@ -69,7 +69,7 @@ import { computeQcdAmounts, totalQcdAmount } from "@/lib/pure/engine/qcd";
 import type {
   AccountBalances,
   IndividualAccountInput,
-} from "@/lib/pure/types/shared";
+} from "@/lib/pure/accounts/account-balances.types";
 import type {
   DecumulationSlot,
   EngineDecumulationYear,

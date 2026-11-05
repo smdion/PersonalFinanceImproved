@@ -35,7 +35,7 @@ import {
   budgetAmountsSchema,
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/pure/budget/budget";
-import type { BudgetInput } from "@/lib/pure/types/calculators";
+import type { BudgetInput } from "@/lib/pure/budget/budget.types";
 import {
   computeBudgetAnnualTotal,
   getActiveBudgetProfile,

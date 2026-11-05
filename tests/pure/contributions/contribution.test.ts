@@ -5,8 +5,8 @@ import {
   PERSON_B_CONTRIBUTIONS,
   AS_OF_DATE,
 } from "../fixtures";
-import type { ContributionAccountInput } from "@/lib/pure/types/shared";
-import type { ContributionInput } from "@/lib/pure/types/calculators";
+import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
+import type { ContributionInput } from "@/lib/pure/contributions/contribution.types";
 
 describe("calculateContributions", () => {
   describe("Person A contributions", () => {

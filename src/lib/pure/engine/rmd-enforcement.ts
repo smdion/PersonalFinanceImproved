@@ -8,7 +8,10 @@
  */
 import type { DecumulationSlot } from "./types/routing";
 import type { AccountCategory } from "../../config/account-types";
-import type { IndividualAccountInput, AccountBalances } from "../types/shared";
+import type {
+  IndividualAccountInput,
+  AccountBalances,
+} from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
 import {
   categoriesWithTaxPreference,

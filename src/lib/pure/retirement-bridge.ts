@@ -22,7 +22,7 @@ import type {
   EngineDecumulationYear,
   EngineYearProjection,
 } from "@/lib/pure/engine/types/index";
-import type { IndividualAccountYearBalance } from "@/lib/pure/types/shared";
+import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 
 /** Where penalty-free money at the start of the bridge sits. */

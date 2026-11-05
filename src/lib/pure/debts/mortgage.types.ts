@@ -1,13 +1,6 @@
 /** calculateMortgage's input and result: loans, extra payments, what-if
  *  scenarios and the amortization schedule. */
 
-export type * from "../paycheck/paycheck.types";
-export type * from "../budget/budget.types";
-export type * from "../contributions/contribution.types";
-export type * from "../net-worth/net-worth.types";
-export type * from "../savings/savings.types";
-export type * from "../savings/efund.types";
-
 export type MortgageLoanInput = {
   id: number;
   name: string;

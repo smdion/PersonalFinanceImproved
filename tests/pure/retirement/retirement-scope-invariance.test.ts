@@ -22,7 +22,7 @@ import type {
   ContributionSpec,
   ProjectionInput,
 } from "@/lib/pure/engine/types";
-import type { IndividualAccountInput } from "@/lib/pure/types/shared";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import {
   CORRELATIONS,
   IBBOTSON_CLASSES,

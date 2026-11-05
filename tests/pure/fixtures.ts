@@ -8,8 +8,8 @@ import type {
   TaxBracketInput,
   DeductionLine,
   ContributionAccountInput,
-} from "@/lib/pure/types/shared";
-import type { PaycheckInput } from "@/lib/pure/types/calculators";
+} from "@/lib/pure/paycheck/paycheck.types";
+import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
 import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 
 // A single source for the 2026 figures repeated across this

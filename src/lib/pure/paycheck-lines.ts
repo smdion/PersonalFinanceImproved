@@ -3,7 +3,10 @@
  * mapping both the Paycheck summary and the extra-paycheck routing use, so
  * a deduction's or earning's tax treatment can't differ between them.
  */
-import type { DeductionLine, EarningLine } from "@/lib/pure/types/shared";
+import type {
+  DeductionLine,
+  EarningLine,
+} from "@/lib/pure/paycheck/paycheck.types";
 
 /** A deduction row (flags) with its resolved per-check amount. */
 export function deductionLine(

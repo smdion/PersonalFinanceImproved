@@ -38,7 +38,7 @@ import type {
   MortgageInput,
   MortgageLoanInput,
   MortgageWhatIf,
-} from "@/lib/pure/types/calculators";
+} from "@/lib/pure/debts/mortgage.types";
 import {
   calculateLoanMonthlyPayment,
   loanPayoffMonths,

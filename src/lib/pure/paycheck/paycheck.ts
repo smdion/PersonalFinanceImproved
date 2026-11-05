@@ -27,8 +27,8 @@ import type {
   BlendedAnnualTotals,
   PeriodBreakdown,
   BonusEstimate,
-} from "../types/calculators";
-import type { DeductionLine } from "../types/shared";
+} from "./paycheck.types";
+import type { DeductionLine } from "./paycheck.types";
 import { formatCurrency, formatPercent } from "../../utils/format";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { MS_PER_DAY } from "../../constants";

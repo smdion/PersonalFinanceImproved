@@ -1,5 +1,5 @@
 import { safeDivide, roundToCents } from "@/lib/utils/math";
-import type { ViewMode } from "@/lib/pure/types/shared";
+import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 
 export type AccountViewMetrics = {
   employeeContrib: number;

@@ -12,7 +12,10 @@ import {
   subtractExcluded,
   applySlotsToBalances,
 } from "@/lib/pure/engine/balance-utils";
-import type { AccountBalances, TaxBuckets } from "@/lib/pure/types/shared";
+import type {
+  AccountBalances,
+  TaxBuckets,
+} from "@/lib/pure/accounts/account-balances.types";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type {
   EligibilityRecord,

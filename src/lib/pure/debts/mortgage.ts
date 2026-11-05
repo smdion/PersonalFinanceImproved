@@ -31,7 +31,7 @@ import type {
   MortgageWhatIfResult,
   AmortizationEntry,
   MortgageExtraPayment,
-} from "../types/calculators";
+} from "./mortgage.types";
 import { formatPercent } from "../../utils/format";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import {

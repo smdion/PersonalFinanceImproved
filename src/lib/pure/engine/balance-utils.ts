@@ -4,7 +4,10 @@
  * Shared helpers for working with AccountBalances and TaxBuckets.
  * Used by the orchestrator and multiple extraction modules.
  */
-import type { TaxBuckets, AccountBalances } from "../types/shared";
+import type {
+  TaxBuckets,
+  AccountBalances,
+} from "../accounts/account-balances.types";
 import type { DecumulationSlot } from "./types/routing";
 import {
   getAllCategories,

@@ -30,8 +30,8 @@ import {
 } from "../fixtures/paycheck-answer-key";
 import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
-import type { PaycheckResult } from "@/lib/pure/types/calculators";
-import type { PayPeriodType } from "@/lib/pure/types/shared";
+import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
+import type { PayPeriodType } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);

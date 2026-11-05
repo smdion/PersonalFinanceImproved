@@ -15,7 +15,7 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
   AccountBalances,
-} from "../types/shared";
+} from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
 import {
   getAccountTypeConfig,

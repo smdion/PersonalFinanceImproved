@@ -1298,7 +1298,7 @@ export async function buildEnginePayload(
     // `rmdStartAgeByPerson` (engine/projection-year-handlers/context.ts) is
     // built EXCLUSIVELY from it, and that map gates per-person RMD
     // tracking, which OVERRIDES the household RMD calculation
-    // (decumulation-year.ts) once populated. `types/shared.ts`'s own
+    // (decumulation-year.ts) once populated. `lib/pure/accounts/account-balances.types.ts`'s own
     // docblock states the assumption this table's per-person UI relies on:
     // "socialSecurityEntries/rmdStartAgeByPerson are only populated for
     // multi-person households." Populating a length-1 entries array for a

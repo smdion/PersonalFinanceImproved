@@ -1,6 +1,6 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import type { LumpSum } from "../../types/shared";
+import type { LumpSum } from "../../accounts/account-balances.types";
 import type { z } from "zod/v4";
 import type { decumulationOverrideArraySchema } from "@/lib/pure/engine/types/overrides.schema";
 import type { LtcgBracketTable } from "../../../config/tax-tables";

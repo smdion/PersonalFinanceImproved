@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PersonPaycheck } from "@/components/paycheck/person-paycheck";
-import type { PaycheckResult } from "@/lib/pure/types/calculators";
+import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 
 vi.mock("@/components/ui/inline-edit", () => ({
   InlineEdit: ({

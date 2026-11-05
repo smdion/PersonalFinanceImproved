@@ -18,7 +18,7 @@ import type {
   AccountBalances,
   IndividualAccountInput,
   TaxBuckets,
-} from "@/lib/pure/types/shared";
+} from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionResult } from "@/lib/pure/engine/types";
 import {
   makeDecumulationSlot,

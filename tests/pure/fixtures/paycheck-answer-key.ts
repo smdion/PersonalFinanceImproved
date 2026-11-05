@@ -11,8 +11,8 @@ import type {
   DeductionLine,
   PayPeriodType,
   TaxBracketInput,
-} from "@/lib/pure/types/shared";
-import type { PaycheckInput } from "@/lib/pure/types/calculators";
+} from "@/lib/pure/paycheck/paycheck.types";
+import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type Year = 2025 | 2026;
