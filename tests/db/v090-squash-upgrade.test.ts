@@ -181,9 +181,9 @@ describe("schemaLabel — what a pre-squash backup is labelled", () => {
 
   it("nothing recorded but the v0.9 columns present → by shape", () => {
     // The newest migration whose tables and columns match — a label, not a
-    // record of what ran (0007 is data only, 0009 indexes only).
+    // record of what ran (0007 and 0014 are data only, 0009 indexes only).
     expect(schemaLabel(journal, FOLDER, new Set(), allApplied, crypto)).toBe(
-      "0013_v097_loan_feed",
+      "0014_v0102_display_name_custom",
     );
   });
 });

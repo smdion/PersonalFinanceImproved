@@ -367,11 +367,11 @@ describe("contribAccountActiveFieldsSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("still accepts the deprecated displayNameActive key (R22 — pre-rename blobs)", () => {
+  it("rejects the old displayNameActive key (a restore renames it)", () => {
     const result = contribAccountActiveFieldsSchema.safeParse({
       displayNameActive: "My Custom Name",
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 });
 

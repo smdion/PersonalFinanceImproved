@@ -1553,8 +1553,8 @@ function ProfileInlineEditor({
                       ? String(af.contributionValue)
                       : "";
                   const storedName =
-                    (af.displayNameCustom ?? af.displayNameActive) !== undefined
-                      ? String(af.displayNameCustom ?? af.displayNameActive)
+                    af.displayNameCustom !== undefined
+                      ? String(af.displayNameCustom)
                       : "";
                   // A profile that resolves no value for this account
                   // (hasValue false) contributes nothing to the engine —

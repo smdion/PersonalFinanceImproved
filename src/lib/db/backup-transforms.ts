@@ -11,6 +11,7 @@
 
 import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "./v0810-profile-sets";
+import { renameDisplayNameActive } from "./v0102-display-name-custom";
 import pgJournal from "../../../drizzle/meta/_journal.json";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
@@ -1039,12 +1040,10 @@ export function transformBackupToCurrentSchema(
   schemaVersion: string,
   currentVersion: string,
 ): TransformResult {
-  // Already current — no transform needed
   if (schemaVersion === currentVersion) {
     return { tables, transformed: false, sourceVersion: schemaVersion };
   }
 
-  // Check if it's a known version we can transform from
   if (!KNOWN_SCHEMA_VERSIONS.includes(schemaVersion as KnownSchemaVersion)) {
     throw new Error(
       `Unknown schema version: "${schemaVersion}". ` +
@@ -1103,6 +1102,7 @@ export function transformBackupToCurrentSchema(
   dropPreReleaseV085Fields(cloned);
   transformV0810ProfileSets(cloned);
   transformV095SsInAmount(cloned);
+  renameDisplayNameActive(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

@@ -83,7 +83,7 @@ function bonusAccountName(
   raw: RawContrib,
   lines: Parameters<typeof splitLineLabel>[2],
 ): string {
-  const custom = raw.displayNameCustom ?? raw.displayNameActive;
+  const custom = raw.displayNameCustom;
   if (custom) return custom;
   // The account's line on the pay stub is named this (buildContribAccounts).
   const lineName = raw.subType || raw.label || raw.accountType;

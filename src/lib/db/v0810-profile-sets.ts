@@ -37,7 +37,8 @@ function v0810Json(value: unknown): unknown {
   }
 }
 
-function v0810Object(value: unknown): Record<string, unknown> | null {
+/** v0810Json, kept only when it is a plain object. */
+export function v0810Object(value: unknown): Record<string, unknown> | null {
   const v = v0810Json(value);
   return v && typeof v === "object" && !Array.isArray(v)
     ? (v as Record<string, unknown>)

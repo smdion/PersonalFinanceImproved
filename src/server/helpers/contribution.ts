@@ -1128,7 +1128,7 @@ export function resolveProfile<
 /**
  * Apply a contribution profile's active fields to raw DB contribution
  * account rows. Merges all active fields onto the row generically — both DB
- * columns and profile-only fields (e.g. displayNameActive). The Zod
+ * columns and profile-only fields (e.g. displayNameCustom). The Zod
  * .strict() schema on the write path prevents invalid fields from entering.
  * Rows marked isActive=false are filtered out.
  *
@@ -1143,8 +1143,6 @@ export type ContribRowWithActiveFields =
     /** A Roth IRA account's route — absent = direct. */
     rothRoute?: RothIraRoute;
     displayNameCustom?: string;
-    /** @deprecated legacy key. */
-    displayNameActive?: string;
   };
 
 export function applyContribActiveFields(

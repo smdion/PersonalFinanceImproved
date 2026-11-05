@@ -25,8 +25,6 @@ type ContribFieldSet = {
   rothRoute?: string | null;
   /** Cosmetic only — deliberately excluded from the comparison below. */
   displayNameCustom?: string | null;
-  /** @deprecated legacy key. */
-  displayNameActive?: string | null;
 };
 
 export type DiffAccount = {

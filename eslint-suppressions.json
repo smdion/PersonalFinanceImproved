@@ -3220,7 +3220,7 @@
   },
   "src/lib/db/json-schemas.ts": {
     "ratchet/max-comment-lines": {
-      "count": 11
+      "count": 9
     },
     "ratchet/no-history-comment": {
       "count": 1

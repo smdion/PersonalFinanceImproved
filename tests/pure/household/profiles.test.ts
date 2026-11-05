@@ -385,15 +385,15 @@ describe("resolveContribFieldDisplayState", () => {
 
   it("has no value when an entry exists only for an unrelated field (e.g. a custom display name)", () => {
     // Reachable via the Profile Manager's "Custom name..." field, which can
-    // patch displayNameActive onto an account that was never given a
+    // patch displayNameCustom onto an account that was never given a
     // contribution value. hasValue must key off contributionValue itself,
     // not "does an entry object exist" — otherwise this cell falls through
     // to rendering the literal string "undefined" (see git history/PR for
     // the live bug this regression test locks in).
-    // displayNameActive isn't part of the narrow ContribAccountActiveFields
+    // displayNameCustom isn't part of the narrow ContribAccountActiveFields
     // type this function reads, but real stored entries carry it alongside
     // these fields — build it as a loosely-typed record to simulate that.
-    const entry: Record<string, unknown> = { displayNameActive: "Custom name" };
+    const entry: Record<string, unknown> = { displayNameCustom: "Custom name" };
     const state = resolveContribFieldDisplayState(
       entry as ContribAccountActiveFields,
     );

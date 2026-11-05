@@ -366,16 +366,9 @@ export const contribAccountActiveFieldsPatchSchema = z
     fromBonus: z.boolean().optional(),
     /** A Roth IRA account's route (ROTH_IRA_ROUTE_VALUES). Absent = direct. */
     rothRoute: z.enum(ROTH_IRA_ROUTE_VALUES).optional(),
-    /** A custom display label for this account within this profile —
-     *  cosmetic, not financial (was `displayNameActive`, whose `Active`
-     *  suffix falsely implied it behaves like `isActive` for swap-safety —
-     *  it doesn't, see contrib-profile-diff.ts). */
+    /** A custom display label for this account within this profile,
+     *  cosmetic only (see contrib-profile-diff.ts). */
     displayNameCustom: z.string().optional(),
-    /** @deprecated legacy key. Still accepted so profiles saved before
-     *  the rename pass `.strict()` validation; readers fall back to it
-     *  (`displayNameCustom ?? displayNameActive`) and writers only emit the
-     *  new key, so it decays to dead weight. Drop in the next schema squash. */
-    displayNameActive: z.string().optional(),
   })
   .strict();
 

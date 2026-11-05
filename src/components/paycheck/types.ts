@@ -50,8 +50,6 @@ export type RawContrib = {
    *  absent = direct. */
   rothRoute?: RothIraRoute;
   displayNameCustom?: string;
-  /** @deprecated legacy key — see json-schemas.ts. */
-  displayNameActive?: string;
   performanceAccountId: number | null;
 };
 
