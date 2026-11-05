@@ -50,16 +50,6 @@ import {
   annualContributionWithBonus,
 } from "@/lib/pure/contributions/contribution-rows";
 
-// Employer match lives in employer-match.ts; re-exported so callers
-// keep importing contribution helpers from one place.
-export {
-  computeEmployerMatch,
-  computeGroupedEmployerMatch,
-  matchGroupKey,
-  matchPayGroupsWithBonus,
-  type GroupableMatchRow,
-} from "@/lib/pure/contributions/employer-match";
-
 /**
  * Inverse of computeAnnualContribution for the flat-dollar methods a
  * budget-linked contribution account can use (linking is restricted to

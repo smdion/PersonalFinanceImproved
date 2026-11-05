@@ -36,10 +36,10 @@ import {
 } from "./salary";
 import {
   computeGroupedEmployerMatch,
-  loadAndApplyContribProfile,
   matchGroupKey,
   matchPayGroupsWithBonus,
-} from "./contribution";
+} from "@/lib/pure/contributions/employer-match";
+import { loadAndApplyContribProfile } from "./contribution";
 import {
   annualContributionWithBonus,
   resolveContribPeriods,

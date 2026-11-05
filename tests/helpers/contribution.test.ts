@@ -14,7 +14,7 @@ import {
   computeEmployerMatch,
   computeGroupedEmployerMatch,
   type GroupableMatchRow,
-} from "@/server/helpers/contribution";
+} from "@/lib/pure/contributions/employer-match";
 
 describe("computeEmployerMatch", () => {
   it("returns 0 for no match type", () => {
