@@ -1,7 +1,6 @@
 /**
  * Mortgage balance computation helpers.
  */
-import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type {
   MortgageLoanInput,
@@ -9,6 +8,31 @@ import type {
 } from "@/lib/pure/debts/mortgage.types";
 import { MAX_EXTRA_PAYMENTS } from "@/lib/constants";
 import { toNumber } from "@/lib/utils/numbers";
+
+/** The mortgage_loans columns these helpers read; a schema row fits. */
+type MortgageLoanRow = {
+  id: number;
+  name: string;
+  isActive: boolean;
+  refinancedFromId: number | null;
+  paidOffDate: string | null;
+  principalAndInterest: string;
+  interestRate: string;
+  termYears: number;
+  originalLoanAmount: string;
+  firstPaymentDate: string;
+  apiBalance: string | null;
+  apiBalanceDate: string | null;
+};
+
+/** The mortgage_extra_payments columns these helpers read; a schema row fits. */
+type MortgageExtraPaymentRow = {
+  loanId: number;
+  paymentDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  amount: string;
+};
 
 /**
  * The active mortgage loan — the only place that should resolve `isActive`
@@ -38,8 +62,8 @@ export function addMonthsClamped(start: Date, months: number): Date {
  * Used by networth and historical routers.
  */
 export function buildMortgageInputs(
-  mortgageLoans: (typeof schema.mortgageLoans.$inferSelect)[],
-  extraPayments: (typeof schema.mortgageExtraPayments.$inferSelect)[],
+  mortgageLoans: MortgageLoanRow[],
+  extraPayments: MortgageExtraPaymentRow[],
 ): { loanInputs: MortgageLoanInput[]; extras: MortgageExtraPayment[] } {
   const loanInputs: MortgageLoanInput[] = mortgageLoans.map((l) => ({
     id: l.id,
@@ -92,8 +116,8 @@ export function buildMortgageInputs(
  *  (api_balance) applies only to the current period from its own date on;
  *  `currentDate` is today unless a caller's clock is pinned. */
 export function computeMortgageBalance(
-  mortgageLoans: (typeof schema.mortgageLoans.$inferSelect)[],
-  extraPayments: (typeof schema.mortgageExtraPayments.$inferSelect)[],
+  mortgageLoans: MortgageLoanRow[],
+  extraPayments: MortgageExtraPaymentRow[],
   asOfDate: Date = new Date(),
   currentDate: Date = new Date(),
 ): number {

@@ -186,3 +186,10 @@ export type BlendedAnnualTotals = {
     effectiveDate: string | null;
   }[];
 };
+
+/** The bonus terms computeBonusGross takes, in its own argument types. */
+export type BonusTerms = {
+  bonusPercent: string | null;
+  bonusMultiplier: string | null;
+  monthsInBonusYear: number | null;
+};

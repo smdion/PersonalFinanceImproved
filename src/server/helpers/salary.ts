@@ -16,6 +16,7 @@ import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import type { W4FilingStatus } from "@/lib/config/filing-status";
 import { toNumber } from "@/lib/utils/numbers";
+import type { BonusTerms } from "@/lib/pure/paycheck/paycheck.types";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
 
@@ -127,13 +128,6 @@ export type SalaryEntryMap = Record<string, SalaryEntry>;
 
 /** jobId → that job's complete entry in the active Salary Profile, if any. */
 export type SalaryProfileActiveMap = Map<number, SalaryEntry>;
-
-/** The bonus terms computeBonusGross takes, in its own argument types. */
-export type BonusTerms = {
-  bonusPercent: string | null;
-  bonusMultiplier: string | null;
-  monthsInBonusYear: number | null;
-};
 
 /**
  * THE definition of what one job earns under a Salary Profile: the

@@ -153,7 +153,7 @@
     "src/server/helpers/contribution-caps.ts": 560,
     "src/server/helpers/contribution.ts": 1830,
     "src/server/helpers/projection-cache.ts": 221,
-    "src/server/helpers/salary.ts": 503,
+    "src/server/helpers/salary.ts": 497,
     "src/server/helpers/snapshot.ts": 1216,
     "src/server/retirement/build-engine-payload.ts": 1414,
     "src/server/retirement/payload/profile-switches.ts": 506,

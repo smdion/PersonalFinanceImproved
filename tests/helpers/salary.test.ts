@@ -9,9 +9,9 @@ import {
   applyActiveBonusTerms,
   resolveCompensation,
   applySalaryProfileRow,
-  type BonusTerms,
   type SalaryProfileActiveMap,
 } from "@/server/helpers/salary";
+import type { BonusTerms } from "@/lib/pure/paycheck/paycheck.types";
 
 describe("computeBonusGross", () => {
   it("computes bonus from percent and multiplier", () => {
