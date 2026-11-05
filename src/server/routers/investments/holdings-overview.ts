@@ -9,6 +9,7 @@ import * as schema from "@/lib/db/schema";
 import {
   COMPOSITION_BUCKET_VALUES,
   MAJOR_COMPOSITION_BUCKETS,
+  type CompositionBucket,
 } from "@/lib/config/enum-values";
 import {
   accountRollup,
@@ -22,7 +23,7 @@ import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/helpers/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
-import { loadBucketLinks, toFactRows } from "@/server/data/fund-facts";
+import { toFactRows } from "@/server/data/fund-facts";
 import { loadAccounts, loadLatestHoldings } from "@/server/data/investments";
 import { SK_CURRENT_GLIDE_PATH } from "@/lib/constants/settings-keys";
 import {
@@ -30,6 +31,23 @@ import {
   unknownAssetClassIds,
 } from "@/lib/pure/simulation/current-glide-path";
 import type { Db } from "@/lib/db";
+
+/**
+ * Which active asset class each composition bucket counts toward. A link to
+ * an inactive class doesn't count (the bucket shows as left out).
+ */
+async function loadBucketLinks(
+  db: Db,
+): Promise<Map<CompositionBucket, number>> {
+  const l = schema.assetClassBuckets;
+  const a = schema.assetClassParams;
+  const rows = await db
+    .select({ bucket: l.bucket, assetClassId: l.assetClassId })
+    .from(l)
+    .innerJoin(a, eq(a.id, l.assetClassId))
+    .where(eq(a.isActive, true));
+  return new Map(rows.map((r) => [r.bucket, r.assetClassId]));
+}
 
 /**
  * Target allocation by asset class for the primary person's age: the
