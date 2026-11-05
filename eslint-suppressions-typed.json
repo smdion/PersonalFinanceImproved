@@ -554,14 +554,14 @@
       "count": 1
     }
   },
-  "src/lib/pure/contributions.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/lib/pure/contributions/contribution.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 5
+    }
+  },
+  "src/lib/pure/contributions/view-metrics.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/lib/pure/engine/balance-utils.ts": {

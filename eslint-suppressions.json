@@ -3850,7 +3850,7 @@
   },
   "src/lib/pure/contributions.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 13
+      "count": 11
     },
     "ratchet/max-comment-lines": {
       "count": 3
@@ -3881,6 +3881,11 @@
   "src/lib/pure/contributions/contribution.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/lib/pure/contributions/view-metrics.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
     }
   },
   "src/lib/pure/controlled-overrides.ts": {
