@@ -3137,11 +3137,6 @@
       "count": 4
     }
   },
-  "src/lib/config/tax-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
   "src/lib/config/withdrawal-routing.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4234,7 +4229,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 45
+      "count": 44
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -4341,7 +4336,7 @@
   },
   "src/lib/pure/engine/tax-estimation.ts": {
     "ratchet/max-comment-lines": {
-      "count": 18
+      "count": 17
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -4408,7 +4403,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 20
+      "count": 18
     },
     "ratchet/no-guarded-division": {
       "count": 1

@@ -121,16 +121,16 @@
     "src/lib/pure/engine/individual-account-tracking.ts": 1473,
     "src/lib/pure/engine/post-withdrawal-optimizer.ts": 727,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 852,
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 1598,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 1596,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/pure/engine/rmd-enforcement.ts": 465,
-    "src/lib/pure/engine/tax-estimation.ts": 516,
+    "src/lib/pure/engine/tax-estimation.ts": 511,
     "src/lib/pure/engine/types/accumulation.ts": 163,
     "src/lib/pure/engine/types/contribution-spec.ts": 96,
     "src/lib/pure/engine/types/decumulation.ts": 396,
     "src/lib/pure/engine/types/projection-result.ts": 721,
     "src/lib/pure/engine/types/routing.ts": 136,
-    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 502,
+    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 492,
     "src/lib/pure/engine/withdrawal-routing.ts": 1436,
     "src/lib/pure/engine/withdrawal-solver.ts": 578,
     "src/lib/pure/holding-periods.ts": 433,
@@ -795,7 +795,7 @@
       "buildProjectionContext": 188
     },
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 1499
+      "runDecumulationYear": 1494
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 438
@@ -805,7 +805,7 @@
       "enforceRmd": 155
     },
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
-      "rankWithdrawalTiers": 274
+      "rankWithdrawalTiers": 265
     },
     "src/lib/pure/engine/withdrawal-routing.ts": {
       "routeWithdrawalsBracketFilling": 465,

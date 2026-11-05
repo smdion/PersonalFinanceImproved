@@ -33,8 +33,11 @@ import {
 import { shortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
-import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
-import { toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
+import {
+  getLtcgRate,
+  computeLtcgTax,
+  toLtcgTaxableIncome,
+} from "@/lib/pure/tax/ltcg";
 import { computeNiit } from "../../../config/niit";
 import {
   growAmount,
@@ -1139,14 +1142,9 @@ export function runDecumulationYear(
     rothConversionIrmaaCapped,
   } = rothResult;
 
-  // Recompute LTCG tax including Roth conversion income (#37).
-  // Roth conversions are taxed as ordinary income and push total taxable income
-  // into potentially higher LTCG brackets (0%/15%/20%).
-  // `revisedOrdinary` is used ONLY for the LTCG calls below (never for an
-  // ordinary-bracket lookup), so it's converted to real taxable income
-  // once, here, rather than at each call site — `actualTaxableIncome` and
-  // `rothConversionAmount` are both gross; LTCG brackets are real
-  // taxable-income thresholds. See `toLtcgTaxableIncome`'s docblock.
+  // Roth conversions are ordinary income and can push the gains into a higher
+  // LTCG bracket: recompute on the revised ordinary income, converted once to
+  // the taxable income the LTCG calls below use (they're its only readers).
   let postConversionLtcgRate: number;
   const revisedOrdinary = toLtcgTaxableIncome(
     actualTaxableIncome + rothConversionAmount,

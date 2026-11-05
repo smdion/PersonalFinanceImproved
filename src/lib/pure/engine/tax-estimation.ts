@@ -22,8 +22,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
 } from "../../config/account-types";
-import { computeLtcgTax } from "../../config/tax-tables";
-import { toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
+import { computeLtcgTax, toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
   ssTaxThresholdsFor,
@@ -337,9 +336,8 @@ interface ComputeTaxFromSlotsInput {
     taxBrackets?: WithholdingBracket[];
     taxMultiplier?: number;
     ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
-    /** See `toLtcgTaxableIncome`'s docblock — converts `actualTaxableIncome`
-     *  (gross) into real taxable income before the LTCG bracket lookup
-     *  below. Omitted ⇒ 0 (the prior behavior). */
+    /** Converts `actualTaxableIncome` (gross) to the taxable income the LTCG
+     *  lookup below uses (`toLtcgTaxableIncome`); omitted subtracts nothing. */
     standardDeduction?: number;
   };
   filingStatus: ReturnFilingStatus | null | undefined;
@@ -463,12 +461,9 @@ export function computeTaxFromSlots(
     brokerageGainsPortion = roundToCents(
       brokerageWithdrawal - brokerageBasisPortion,
     );
-    // Progressive LTCG tax: stack gains on top of ordinary income across
-    // 0%/15%/20% brackets. `actualTaxableIncome` is GROSS (correct for
-    // `actualTraditionalRate` above, against the ordinary W-4 brackets) —
-    // LTCG brackets are real taxable-income thresholds, so this call needs
-    // the standard deduction subtracted first. See
-    // `toLtcgTaxableIncome`'s docblock.
+    // Progressive LTCG tax: gains stack on ordinary income across 0%/15%/20%.
+    // `actualTaxableIncome` is gross (right for the W-4 brackets above), so
+    // it becomes taxable income for the LTCG brackets first.
     brokerageTaxCost = filingStatus
       ? roundToCents(
           computeLtcgTax(

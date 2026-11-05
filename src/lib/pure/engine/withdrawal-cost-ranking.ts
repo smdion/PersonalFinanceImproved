@@ -31,8 +31,8 @@ import type { WithholdingBracket } from "./tax-estimation";
 import {
   ltcgRoomForRate,
   ltcgRateForNextDollar,
-} from "../../config/tax-tables";
-import { toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
+  toLtcgTaxableIncome,
+} from "@/lib/pure/tax/ltcg";
 import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, niitThresholdFor } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
@@ -166,10 +166,9 @@ export interface RankWithdrawalTiersInput {
    *  headroom check on the brokerage/Roth-growth tier. IRMAA is NOT
    *  modeled here (explicitly out of scope — see module docblock). */
   magiBeforeThisDraw: number;
-  /** Household's annual standard deduction — converts `ordinaryIncomeFloor`
-   *  (gross) into real taxable income before it's compared against LTCG
-   *  bracket thresholds. See `toLtcgTaxableIncome`'s docblock. Undefined ⇒
-   *  0, i.e. the pre-fix behavior. */
+  /** Household's annual standard deduction: converts `ordinaryIncomeFloor`
+   *  (gross) to the taxable income LTCG brackets use (`toLtcgTaxableIncome`);
+   *  undefined subtracts nothing. */
   standardDeduction?: number;
   /** Which of Tier 0 (Roth basis) / Tier 1 (brokerage's 0%-LTCG room)
    *  drains first — both are free, so this is a draw-ORDER choice between
@@ -312,11 +311,8 @@ export function rankWithdrawalTiers(
   // Brokerage 0%-LTCG-zone capacity — free, like Roth basis. Convert
   // gains-room to withdrawal-room via the basis ratio (a $1 gain requires
   // drawing more than $1 when part of the withdrawal is basis).
-  // `ordinaryIncomeFloor` is GROSS (correct for `rothGrowthRate` below,
-  // against the ordinary W-4 brackets) — LTCG brackets are real
-  // taxable-income thresholds, so this specific lookup needs the
-  // household's standard deduction subtracted first. See
-  // `toLtcgTaxableIncome`'s docblock.
+  // `ordinaryIncomeFloor` is gross (right for `rothGrowthRate` below), so
+  // it becomes taxable income for this LTCG lookup.
   const zeroGainsRoom = ltcgRoomForRate(
     0,
     toLtcgTaxableIncome(ordinaryIncomeFloor, standardDeduction),
@@ -378,15 +374,9 @@ export function rankWithdrawalTiers(
     ordinaryIncomeFloor,
     standardDeduction,
   );
-  // `brokerageOrdinaryIncome + zeroGainsRoom` always lands exactly on the
-  // 0% bracket's own ceiling by construction (zeroGainsRoom IS that
-  // ceiling minus brokerageOrdinaryIncome) — `getLtcgRate`'s inclusive
-  // `<=` would answer "what's the rate for a real dollar sitting AT the
-  // ceiling" (0%), not "what's the rate for the tier starting past it"
-  // (mispriced brokerage as free/NIIT-only well beyond
-  // its real rate). Use the exclusive next-dollar lookup instead — see
-  // its docblock for why this isn't just `getLtcgRate` with the numbers
-  // shuffled.
+  // `brokerageOrdinaryIncome + zeroGainsRoom` sits exactly on the 0% ceiling,
+  // where `getLtcgRate` (a dollar at the ceiling) says 0%. This tier starts
+  // past it, so it's priced at the next dollar's rate.
   const ltcgRate = ltcgRateForNextDollar(
     brokerageOrdinaryIncome + zeroGainsRoom,
     filingStatus,

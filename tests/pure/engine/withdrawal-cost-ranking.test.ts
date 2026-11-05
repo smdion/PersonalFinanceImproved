@@ -211,7 +211,7 @@ describe("rankWithdrawalTiers", () => {
     // stack ON TOP of ordinary income, so the first dollar of gains when
     // ordinary income is exactly AT a bracket's own ceiling lands in the
     // NEXT bracket, per computeLtcgTax's `floor >= threshold` stacking
-    // logic; see ltcgRateForNextDollar's docblock, tax-tables.ts.)
+    // logic; see ltcgRateForNextDollar in lib/pure/tax/ltcg.ts.)
     const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 600000,

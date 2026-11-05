@@ -114,7 +114,7 @@ export function growWithholdingBrackets(
  * Grows LTCG brackets forward. Unlike `growWithholdingBrackets`, there's no
  * `baseWithholding`-equivalent cumulative shortcut to keep in sync —
  * `computeLtcgTax`/`getLtcgRate`/`ltcgRateForNextDollar`/`ltcgRoomForRate`
- * (`config/tax-tables.ts`) all walk the bracket list fresh from `threshold`
+ * (`tax/ltcg.ts`) all walk the bracket list fresh from `threshold`
  * and `rate` alone every call, so scaling `threshold` (leaving `rate`
  * alone) is sufficient and self-consistent on its own.
  *

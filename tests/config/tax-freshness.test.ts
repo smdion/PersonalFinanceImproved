@@ -25,7 +25,7 @@ import {
 } from "./tax-freshness";
 
 // -- Import actual values to verify they match expectations --
-import { getLtcgRate, computeLtcgTax } from "@/lib/config/tax-tables";
+import { getLtcgRate, computeLtcgTax } from "@/lib/pure/tax/ltcg";
 import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import { SS_TAX_THRESHOLDS } from "@/lib/config/ss-tax";
 import { getIrmaaCost, getNextIrmaaCliff } from "@/lib/config/irmaa-tables";

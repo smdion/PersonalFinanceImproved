@@ -49,7 +49,8 @@ import {
   sumBracketTax,
   toTaxableIncomeBrackets,
 } from "@/lib/pure/tax/tax-brackets";
-import { computeLtcgTax, type LtcgBracketTable } from "@/lib/config/tax-tables";
+import type { LtcgBracketTable } from "@/lib/config/tax-tables";
+import { computeLtcgTax } from "@/lib/pure/tax/ltcg";
 import {
   computeTaxableSS,
   computeTaxFromSlots,
@@ -531,7 +532,7 @@ describe("answer key: long-term gains", () => {
   // 1, 5, 10): T = AGI − deductions, so a deduction larger than ordinary
   // income comes off the gains. Today `toLtcgTaxableIncome` clamps the
   // ordinary part at 0 and `computeTaxFromSlots` taxes every gain dollar
-  // (`tax-tables.ts:61`, `tax-estimation.ts:478`).
+  // (`lib/pure/tax/ltcg.ts`, `lib/pure/engine/tax-estimation.ts`).
   describe("tax/L2 [TAX-16]", () => {
     // 2026 Single: other 5,000, G 60,000, deduction 16,100. T = 65,000 −
     // 16,100 = 48,900; L5 0; L9 = min(48,900, 49,450) = 48,900: all at
@@ -616,7 +617,7 @@ describe("answer key: long-term gains", () => {
   // and line 24 (TAX on all of T). Where the 0% top sits under the 12%
   // band's top, a gain at 15% would cost more than at 12%. 2026 Single:
   // 50,400 − 49,450 = 950 of such room. `computeLtcgTax`
-  // (`tax-tables.ts:169`) never sees the ordinary schedule, so no caller
+  // (`lib/pure/tax/ltcg.ts`) never sees the ordinary schedule, so no caller
   // caps it.
   describe("tax/L6 [TAX-17]", () => {
     // 2026 Single, T 50,400, G 950 (ordinary 65,550 before the 16,100

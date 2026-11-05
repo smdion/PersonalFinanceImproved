@@ -5,7 +5,7 @@
  * Pure: every input is already resolved by the payload builder.
  */
 import { estimateEffectiveTaxRate } from "@/lib/pure/engine";
-import { getLtcgRate } from "@/lib/config/tax-tables";
+import { getLtcgRate } from "@/lib/pure/tax/ltcg";
 import { requireLimit } from "@/server/helpers/settings";
 import { toNumber } from "@/server/helpers/transforms";
 import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
