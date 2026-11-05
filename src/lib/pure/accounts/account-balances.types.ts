@@ -1,5 +1,5 @@
 /** The engine's account inputs and per-year balances (tax buckets,
- *  individual accounts), lump sums and year overrides. */
+ *  individual accounts) and lump sums. */
 
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
@@ -36,13 +36,6 @@ export type LumpSum = {
    *  Retirement-parented accounts first. */
   targetParentCategory?: "Retirement" | "Portfolio";
   label?: string;
-};
-
-/** Override salary or budget at a specific calendar year in the projection. */
-export type RetirementYearOverride = {
-  year: number;
-  value: number;
-  notes?: string;
 };
 
 /** Per-tax-bucket breakdown used throughout retirement projection */

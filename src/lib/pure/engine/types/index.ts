@@ -6,6 +6,7 @@ export type * from "./contribution-spec";
 export type * from "./decumulation";
 export type * from "./routing";
 export type * from "./projection-result";
+export type * from "./year-overrides";
 export {
   decumulationDefaultsInputSchema,
   decumulationOverrideArraySchema,
