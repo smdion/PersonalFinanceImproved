@@ -384,7 +384,7 @@ The Retirement page's projection (`components/cards/projection/`) reads `project
 - **Withdrawal routing** panel: bracket filling / waterfall / percentage, with the order and tax-preference editors shown only where they apply.
 - **Tooltips:** every balance cell breaks down by tax bucket, source and match; In/Out breaks retirement draws into Traditional / Roth / brokerage / HSA / tax.
 
-Shared helpers: `getAccountTypeConfig()`, `aggregateContributionsByCategory()` and `buildContributionDisplaySpecs()` (`server/helpers/`).
+Shared helpers: `getAccountTypeConfig()`, `aggregateContributionsByCategory()` and `buildContributionDisplaySpecs()` (`lib/pure/contributions/`).
 
 ### Tooltip System
 

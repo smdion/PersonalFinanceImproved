@@ -414,7 +414,7 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
  * (paycheck, contribution summary, this year's contribution lines); leave it
  * out for anything that grows forward (projection) — see
  * SalaryEntry.bonusOverride. Contribution amounts are then
- * annualContributionWithBonus (server/helpers/contribution.ts).
+ * annualContributionWithBonus (lib/pure/contributions/contribution-rows.ts).
  */
 export function contributionPay(
   baseSalary: number,

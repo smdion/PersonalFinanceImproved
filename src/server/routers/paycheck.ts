@@ -35,9 +35,9 @@ import {
   buildSandboxContribRow,
   buildPaycheckInputForJob,
   fetchContributionProfile,
-  getIncompleteContribAccountIds,
   contributionPay,
 } from "@/server/helpers";
+import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";

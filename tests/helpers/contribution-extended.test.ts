@@ -8,13 +8,13 @@
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import {
-  aggregateContributionsByCategory,
-  annualContributionWithBonus,
   resolveProfile,
   applyContribActiveFields,
-  buildContributionDisplaySpecs,
-  classifyContribResolution,
 } from "@/server/helpers/contribution";
+import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
+import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
+import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
 

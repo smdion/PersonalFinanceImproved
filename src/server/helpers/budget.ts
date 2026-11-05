@@ -36,10 +36,10 @@ import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
-  resolveJoblessPeriodsPerYear,
-  resolveContribPeriods,
-  classifyContribResolution,
 } from "./contribution";
+import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
+import { resolveJoblessPeriodsPerYear } from "@/lib/pure/contributions/contribution-rows";
+import { resolveContribPeriods } from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 

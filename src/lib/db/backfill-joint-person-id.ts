@@ -5,7 +5,7 @@
  *
  * Rows with no jobId that ANY Contribution Profile sets to "percent_of_salary"
  * are skipped and logged instead of nulled: the salary-resolution fallback in
- * server/helpers/contribution.ts falls back to job-by-personId, which would
+ * lib/pure/contributions/contribution-rows.ts falls back to job-by-personId, which would
  * silently resolve to salary 0 once personId is cleared. contributionMethod
  * is profile-owned (no account-level value), so every profile's active
  * fields for the row have to be checked, not a single column — different

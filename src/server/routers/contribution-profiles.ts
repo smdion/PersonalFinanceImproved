@@ -33,12 +33,9 @@ import { canDeleteContribProfile } from "@/lib/pure/household/profiles";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import {
-  aggregateContributionsByCategory,
-  loadLiveContribData,
-  resolveProfile,
-  getIncompleteContribAccountIds,
-} from "@/server/helpers";
+import { loadLiveContribData, resolveProfile } from "@/server/helpers";
+import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
@@ -59,7 +56,7 @@ const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
 /**
  * A joint account with no jobId has no single person's salary to resolve
  * percent_of_salary against — the salary-resolution fallback in
- * server/helpers/contribution.ts falls back to job-by-personId, which is
+ * lib/pure/contributions/contribution-rows.ts falls back to job-by-personId, which is
  * null for joint accounts, silently computing a $0 salary instead of the
  * intended percentage. contributionMethod is only ever set here now
  * (accounts carry no method of their own), so every write path that can

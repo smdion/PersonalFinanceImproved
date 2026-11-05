@@ -470,6 +470,8 @@
     "src/lib/pure/contributions/irs-limits.ts:irsLimitOrNull",
     "src/lib/pure/contributions/matched-mix.ts:accountValuesByYear",
     "src/lib/pure/contributions/matched-mix.ts:matchedMixDescription",
+    "src/lib/pure/contributions/profile-fields.ts:classifyContribResolution",
+    "src/lib/pure/contributions/profile-fields.ts:getIncompleteContribAccountIds",
     "src/lib/pure/contributions/roth-ira.ts:PENDING_CONVERSION_WINDOW_DAYS",
     "src/lib/pure/contributions/roth-ira.ts:backdoorPlanned",
     "src/lib/pure/contributions/roth-ira.ts:isRothIraContribution",

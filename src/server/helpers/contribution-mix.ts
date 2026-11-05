@@ -35,13 +35,15 @@ import {
   resolveCompensation,
 } from "./salary";
 import {
-  annualContributionWithBonus,
   computeGroupedEmployerMatch,
   loadAndApplyContribProfile,
   matchGroupKey,
   matchPayGroupsWithBonus,
-  resolveContribPeriods,
 } from "./contribution";
+import {
+  annualContributionWithBonus,
+  resolveContribPeriods,
+} from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(

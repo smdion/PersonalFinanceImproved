@@ -111,10 +111,16 @@
     "src/lib/pure/accounts/tax-bucket-projection.ts": 527,
     "src/lib/pure/advice/milestones/input.ts": 677,
     "src/lib/pure/advice/milestones/milestones.ts": 1705,
+    "src/lib/pure/contributions/account-match.ts": 84,
+    "src/lib/pure/contributions/category-totals.ts": 157,
     "src/lib/pure/contributions/contribution-amount.ts": 110,
     "src/lib/pure/contributions/contribution-caps.ts": 674,
     "src/lib/pure/contributions/contribution-order.ts": 93,
+    "src/lib/pure/contributions/contribution-rows.ts": 216,
+    "src/lib/pure/contributions/display-specs.ts": 149,
     "src/lib/pure/contributions/irs-limits.ts": 219,
+    "src/lib/pure/contributions/profile-contrib-data.ts": 332,
+    "src/lib/pure/contributions/profile-fields.ts": 53,
     "src/lib/pure/contributions/roth-ira.ts": 543,
     "src/lib/pure/contributions/savings-rate.ts": 145,
     "src/lib/pure/contributions/view-metrics.ts": 182,
@@ -151,14 +157,14 @@
     "src/server/data/investments.ts": 636,
     "src/server/helpers/budget.ts": 636,
     "src/server/helpers/contribution-caps.ts": 560,
-    "src/server/helpers/contribution.ts": 1828,
+    "src/server/helpers/contribution.ts": 911,
     "src/server/helpers/salary.ts": 497,
     "src/server/helpers/snapshot.ts": 1219,
     "src/server/retirement/build-engine-payload.ts": 1414,
     "src/server/retirement/payload/profile-switches.ts": 506,
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2101,
-    "src/server/routers/contribution-profiles.ts": 909,
+    "src/server/routers/contribution-profiles.ts": 906,
     "src/server/routers/contribution.ts": 1430,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/investments/load-current-balances.ts": 508,
@@ -173,7 +179,7 @@
     "src/server/routers/projection/scenarios.ts": 490,
     "src/server/routers/projection/strategy.ts": 844,
     "src/server/routers/projection/tax-optimization.ts": 536,
-    "src/server/routers/retirement.ts": 1420,
+    "src/server/routers/retirement.ts": 1418,
     "src/server/routers/salary-profiles.ts": 689,
     "src/server/routers/savings.ts": 2852,
     "src/server/routers/settings/admin.ts": 412,
@@ -775,6 +781,9 @@
     "src/lib/pure/contributions/contribution-caps.ts": {
       "capContributionsByLimitGroup": 271
     },
+    "src/lib/pure/contributions/profile-contrib-data.ts": {
+      "buildProfileContribData": 235
+    },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189
     },
@@ -846,9 +855,6 @@
     },
     "src/server/helpers/contribution-mix.ts": {
       "loadContributionMix": 187
-    },
-    "src/server/helpers/contribution.ts": {
-      "buildProfileContribData": 235
     },
     "src/server/helpers/snapshot.ts": {
       "buildYearEndHistory": 870

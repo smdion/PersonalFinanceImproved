@@ -44,10 +44,8 @@ import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { getAllPeople } from "@/server/data/people";
-import {
-  aggregateContributionsByCategory,
-  type ContribRowWithActiveFields,
-} from "@/server/helpers/contribution";
+import { type ContribRowWithActiveFields } from "@/server/helpers/contribution";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import {
   isRetirementParent,
   tracksCostBasis,

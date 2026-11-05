@@ -1,7 +1,7 @@
 /** Small rules decided with the owner for v0.9.7. */
 import "../routers/setup-mocks";
 import { describe, expect, it } from "vitest";
-import { resolveJoblessPeriodsPerYear } from "@/server/helpers/contribution";
+import { resolveJoblessPeriodsPerYear } from "@/lib/pure/contributions/contribution-rows";
 import { retirementProfileIsFallback } from "@/server/helpers/retirement-profile";
 import { isGoalMet } from "@/lib/pure/savings/savings-goal-met";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";

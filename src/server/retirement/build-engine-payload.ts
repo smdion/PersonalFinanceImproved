@@ -34,15 +34,15 @@ import {
   contributionPay,
   getTotalCompensation,
   getLatestSnapshot,
-  aggregateContributionsByCategory,
   applyContribProfileRow,
   loadAndApplyContribProfile,
   applySalaryProfileRow,
   loadEffectiveSalaryProfile,
   resolveCompensation,
-  buildProfileContribData,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";

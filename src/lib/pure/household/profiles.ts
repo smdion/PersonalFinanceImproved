@@ -286,7 +286,7 @@ export function resolveContribFieldDisplayState(
  * Why a linked budget item's contribution account resolved to $0 for a
  * given column, distinguishing genuinely-zero from five different "there's
  * no real value here" causes that used to collapse into an indistinguishable
- * $0 — see classifyContribResolution (src/server/helpers/contribution.ts),
+ * $0 — see classifyContribResolution (src/lib/pure/contributions/profile-fields.ts),
  * which is the only place that computes this.
  */
 export type ContribResolutionStatus =

@@ -21,8 +21,8 @@ import {
   getTotalCompensation,
   resolveCompensation,
   resolveProfile,
-  buildProfileContribData,
 } from "@/server/helpers";
+import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { toNumber } from "@/lib/utils/numbers";
 import type { SalaryEntryMap, SalaryProfileActiveMap } from "@/server/helpers";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";

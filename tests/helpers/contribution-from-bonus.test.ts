@@ -10,13 +10,13 @@ import "./setup-mocks";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { describe, it, expect } from "vitest";
 import {
-  aggregateContributionsByCategory,
   applyContribActiveFields,
-  buildContributionDisplaySpecs,
-  buildProfileContribData,
   buildContribAccounts,
   type ContribRowWithActiveFields,
 } from "@/server/helpers/contribution";
+import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
+import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import type { AccountCategory } from "@/lib/config/account-types";
 
 const SALARY = 100_000;

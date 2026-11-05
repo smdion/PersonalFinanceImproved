@@ -20,7 +20,7 @@ import {
   buildAccumulationOrder,
   computeCurrentStockAllocationPercent,
 } from "../projection-v5-helpers";
-import { buildContributionDisplaySpecs } from "@/server/helpers";
+import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { toNumber } from "@/lib/utils/numbers";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import type {

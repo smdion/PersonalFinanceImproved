@@ -11,7 +11,7 @@ import {
   contribRowAmounts,
   resolveContribPeriods,
   type ContribRow,
-} from "@/server/helpers/contribution";
+} from "@/lib/pure/contributions/contribution-rows";
 
 const hsa = (method: string, value: number): ContribRow => ({
   id: 1,

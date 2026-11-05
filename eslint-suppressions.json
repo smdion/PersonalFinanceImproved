@@ -4076,6 +4076,19 @@
       "count": 1
     }
   },
+  "src/lib/pure/contributions/account-match.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/contributions/category-totals.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/contributions/contrib-profile-diff.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -4114,6 +4127,17 @@
       "count": 1
     }
   },
+  "src/lib/pure/contributions/contribution-rows.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
   "src/lib/pure/contributions/contribution-totals.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4124,6 +4148,14 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/display-specs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -4157,6 +4189,31 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/profile-contrib-data.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 7
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/contributions/profile-fields.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
@@ -5457,25 +5514,19 @@
   },
   "src/server/helpers/contribution.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 26
-    },
-    "max-lines-per-function": {
-      "count": 1
+      "count": 19
     },
     "ratchet/max-comment-lines": {
-      "count": 35
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
+      "count": 23
     },
     "ratchet/no-history-comment": {
-      "count": 8
+      "count": 6
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 11
+      "count": 2
     }
   },
   "src/server/helpers/debts.ts": {

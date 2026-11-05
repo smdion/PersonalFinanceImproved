@@ -26,13 +26,13 @@ import {
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { sumBy } from "@/lib/utils/math";
 import { computeGroupedEmployerMatch } from "@/lib/pure/contributions/employer-match";
+import { applyContribActiveFields } from "./contribution";
 import {
-  applyContribActiveFields,
   contribRowAmounts,
   type ContribRow,
   type JobRef,
   type JobSalaryRef,
-} from "./contribution";
+} from "@/lib/pure/contributions/contribution-rows";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

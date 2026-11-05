@@ -554,6 +554,11 @@
       "count": 5
     }
   },
+  "src/lib/pure/contributions/display-specs.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
   "src/lib/pure/debts/mortgage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -721,7 +726,7 @@
   },
   "src/server/helpers/contribution.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 4
     }
   },
   "src/server/helpers/performance-edit.ts": {

@@ -361,7 +361,7 @@ describe("answer key: Retirement money when one person funds the other's Portfol
   // brokerage. DESIGN § Account Categories, retirement scope: Retirement money is the
   // Retirement-parented accounts, so `retirementBalance` must equal their
   // sum every year (EY-SC-06), and the Portfolio account shows the 2,428.
-  // Today `matchAccountForContribution` (`server/helpers/contribution.ts:1505`)
+  // Today `matchAccountForContribution` (`lib/pure/contributions/account-match.ts:34`)
   // matches a spec to an account by owner name and ignores the row's
   // performance account, so B's money finds no account and lives only in
   // the aggregate, which counts as Retirement. Written as the property;
