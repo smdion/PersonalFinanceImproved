@@ -10,7 +10,7 @@ vi.mock("@/lib/db", () => ({ db: {} }));
 import {
   buildMortgageInputs,
   computeMortgageBalance,
-} from "@/server/helpers/mortgage";
+} from "@/lib/pure/debts/mortgage-balance";
 
 // Minimal DB row factories matching schema.$inferSelect shape
 function makeLoanRow(overrides: Record<string, unknown> = {}) {

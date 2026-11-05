@@ -39,7 +39,7 @@ import {
   resolveProfile,
   getIncompleteContribAccountIds,
 } from "@/server/helpers";
-import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   contributionActiveFieldsSchema,

@@ -39,7 +39,7 @@ import {
 } from "@/server/helpers";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
-import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { serviceEnum } from "./_shared";
 import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
 import { safeDivide, toDecimalColumn } from "@/lib/utils/math";

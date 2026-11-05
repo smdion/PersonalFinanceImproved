@@ -20,7 +20,7 @@ import {
   calendarYear,
 } from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
-import { parseAppSettings } from "./settings";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import {
   getTotalCompensation,
   resolveCompensation,
@@ -35,7 +35,10 @@ import {
   getAnnualExpensesFromBudget,
   type BudgetTargeting,
 } from "./budget";
-import { computeMortgageBalance, getActiveMortgageLoan } from "./mortgage";
+import {
+  computeMortgageBalance,
+  getActiveMortgageLoan,
+} from "@/lib/pure/debts/mortgage-balance";
 import {
   calculateNetWorth,
   wealthFormulaIncome,

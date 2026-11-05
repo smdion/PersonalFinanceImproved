@@ -41,11 +41,6 @@
   },
   {
     "rule": "infra-below-server",
-    "from": "src/lib/db/backfill-local-ids.ts",
-    "to": "src/server/helpers/portfolio-labels.ts"
-  },
-  {
-    "rule": "infra-below-server",
     "from": "src/lib/simplefin/sync.ts",
     "to": "src/server/helpers/loan-feed.ts"
   },

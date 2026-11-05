@@ -3821,6 +3821,14 @@
       "count": 5
     }
   },
+  "src/lib/pure/accounts/portfolio-labels.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/accounts/portfolio.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -4117,6 +4125,20 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/lib/pure/contributions/employer-match.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
     }
   },
   "src/lib/pure/contributions/irs-limits.ts": {
@@ -4767,6 +4789,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/budget-periods.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/paycheck/high-income-line.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4774,6 +4801,14 @@
   },
   "src/lib/pure/paycheck/paycheck-edit-target.ts": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck-input.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
@@ -5379,20 +5414,6 @@
       "count": 2
     }
   },
-  "src/server/helpers/contribution-match.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 4
-    }
-  },
   "src/server/helpers/contribution-mix.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5499,14 +5520,6 @@
       "count": 2
     }
   },
-  "src/server/helpers/paycheck-input.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/helpers/people.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5540,14 +5553,6 @@
   "src/server/helpers/plans.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    }
-  },
-  "src/server/helpers/portfolio-labels.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
     }
   },
   "src/server/helpers/projection-cache.ts": {
@@ -5638,11 +5643,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/transforms.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

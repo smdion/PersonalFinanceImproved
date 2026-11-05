@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseAppSettings } from "@/server/helpers/settings";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 
 describe("parseAppSettings", () => {

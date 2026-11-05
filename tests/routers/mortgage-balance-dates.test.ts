@@ -2,7 +2,7 @@
  *  the live balance (a finalized year stores this figure for good). */
 import "./setup-mocks";
 import { describe, expect, it, vi } from "vitest";
-import { computeMortgageBalance } from "@/server/helpers/mortgage";
+import { computeMortgageBalance } from "@/lib/pure/debts/mortgage-balance";
 
 const loan = {
   id: 1,

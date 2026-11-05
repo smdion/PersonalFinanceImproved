@@ -22,7 +22,7 @@ import {
 } from "../projection-v5-helpers";
 import { buildContributionDisplaySpecs } from "@/server/helpers";
 import { toNumber } from "@/lib/utils/numbers";
-import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import type {
   AccumulationOverride,
   DecumulationOverride,

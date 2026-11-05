@@ -61,10 +61,10 @@ import {
   computeGroupedEmployerMatch,
   matchGroupKey,
   matchPayGroupsWithBonus,
-} from "./contribution-match";
+} from "@/lib/pure/contributions/employer-match";
 import type { Db, DbOrTx } from "@/lib/db";
 
-// Employer match lives in contribution-match.ts; re-exported so callers
+// Employer match lives in employer-match.ts; re-exported so callers
 // keep importing contribution helpers from one place.
 export {
   computeEmployerMatch,
@@ -72,7 +72,7 @@ export {
   matchGroupKey,
   matchPayGroupsWithBonus,
   type GroupableMatchRow,
-} from "./contribution-match";
+} from "@/lib/pure/contributions/employer-match";
 
 /**
  * Fallback periods-per-year for a jobless contribution account: the active

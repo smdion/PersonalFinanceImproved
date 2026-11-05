@@ -55,12 +55,12 @@ import { resolvePersonYearIncome } from "@/server/helpers/salary";
 import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
 import { buildContribAccounts } from "@/server/helpers/contribution";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
-import { buildMortgageInputs } from "@/server/helpers/mortgage";
-import { buildPaycheckInputForJob } from "@/server/helpers/paycheck-input";
+import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
+import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
   JobForPaycheckInput,
   ResolvedPaycheckInputs,
-} from "@/server/helpers/paycheck-input";
+} from "@/lib/pure/paycheck/paycheck-input";
 import { getResolvedGoalAllocations } from "@/server/helpers/savings-allocation";
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
 import {
@@ -202,7 +202,7 @@ describe("contribution.ts — PG string mode", () => {
   });
 });
 
-describe("mortgage.ts — PG string mode", () => {
+describe("mortgage-balance.ts — PG string mode", () => {
   it("buildMortgageInputs normalizes loan + extra-payment decimals", () => {
     // mortgage_loans decimals: original_loan_amount, interest_rate,
     //   principal_and_interest, api_balance (+ more not read here)

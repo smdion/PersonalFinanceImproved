@@ -13,7 +13,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { roundToCents, safeDivide, toDecimalColumn } from "@/lib/utils/math";
-import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import {
   computeMortgageBalance,
   getActiveMortgageLoan,

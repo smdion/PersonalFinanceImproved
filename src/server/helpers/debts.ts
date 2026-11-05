@@ -18,7 +18,7 @@ import * as schema from "@/lib/db/schema";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
 import { localDateStr } from "@/lib/utils/date";
 import { getEffectiveCreditCardDebt } from "./budget";
-import { parseAppSettings } from "./settings";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 
