@@ -4245,7 +4245,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/types/engine-config.ts": {
+  "src/lib/pure/engine/types/decumulation.ts": {
     "ratchet/max-comment-lines": {
       "count": 20
     },

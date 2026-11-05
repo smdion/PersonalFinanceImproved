@@ -8,12 +8,9 @@
  *
  * All modes receive ResolvedAccumulationConfig — never raw overrides.
  */
-import type {
-  ContributionSpec,
-  ResolvedAccumulationConfig,
-  AccumulationSlot,
-  TaxSplitConfig,
-} from "./types/engine-config";
+import type { ContributionSpec } from "./types/contribution-spec";
+import type { ResolvedAccumulationConfig } from "./types/accumulation";
+import type { AccumulationSlot, TaxSplitConfig } from "./types/routing";
 import type { AccountCategory } from "../../config/account-types";
 import { roundToCents, sumBy } from "../../utils/math";
 import {

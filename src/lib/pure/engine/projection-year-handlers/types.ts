@@ -16,10 +16,12 @@ import type {
 import type {
   ContributionSpec,
   ProfileSwitch,
+} from "../types/contribution-spec";
+import type {
   AccumulationDefaults,
   AccumulationOverride,
-  DecumulationOverride,
-} from "../types/engine-config";
+} from "../types/accumulation";
+import type { DecumulationOverride } from "../types/decumulation";
 import type { SpendingCrossYearState } from "../spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-account-tracking";

@@ -5,9 +5,6 @@ import type { z } from "zod/v4";
 import type { decumulationOverrideArraySchema } from "@/lib/pure/engine/types/overrides.schema";
 import type { LtcgBracketTable } from "../../../config/tax-tables";
 import type { IrmaaBracketTable } from "../../../config/irmaa-tables";
-export type * from "./contribution-spec";
-export type * from "./accumulation";
-export type * from "./routing";
 import type { RoutingMode, RoutingTaxType } from "./routing";
 
 /**

@@ -6,7 +6,7 @@
  * no negative balances, tracking per-account depletions, and zeroing out
  * rounding dust when the portfolio is effectively depleted.
  */
-import type { DecumulationSlot } from "./types/engine-config";
+import type { DecumulationSlot } from "./types/routing";
 import type { AccountCategory } from "../../config/account-types";
 import type {
   TaxBuckets,

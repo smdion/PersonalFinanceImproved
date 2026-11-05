@@ -9,10 +9,12 @@ import type {
   AccumulationDefaults,
   AccumulationOverride,
   ResolvedAccumulationConfig,
+} from "./types/accumulation";
+import type {
   DecumulationDefaults,
   DecumulationOverride,
   ResolvedDecumulationConfig,
-} from "./types/engine-config";
+} from "./types/decumulation";
 import type { AccountCategory } from "../../config/account-types";
 import type { LumpSum } from "../types/shared";
 import {

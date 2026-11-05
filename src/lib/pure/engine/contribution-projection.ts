@@ -7,7 +7,7 @@
  * formula was duplicated 3x with already-drifting variable names
  * (`baseSalary` vs `currentSalary` for the same salary-base role).
  */
-import type { ContributionSpec } from "./types/engine-config";
+import type { ContributionSpec } from "./types/contribution-spec";
 import { safeDivide } from "../../utils/math";
 import { getAccountTypeConfig } from "../../config/account-types";
 

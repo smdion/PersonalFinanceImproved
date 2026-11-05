@@ -8,11 +8,8 @@
  * This is an "aspect" module — it doesn't own pipeline state but provides
  * helpers that the orchestrator calls at each relevant pipeline stage.
  */
-import type {
-  ContributionSpec,
-  AccumulationSlot,
-  DecumulationSlot,
-} from "./types/engine-config";
+import type { ContributionSpec } from "./types/contribution-spec";
+import type { AccumulationSlot, DecumulationSlot } from "./types/routing";
 import type { AccountCategory } from "../../config/account-types";
 import type {
   IndividualAccountYearBalance,

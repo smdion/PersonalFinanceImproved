@@ -8,10 +8,8 @@
  *
  * All functions receive ResolvedDecumulationConfig — never raw overrides.
  */
-import type {
-  DecumulationSlot,
-  ResolvedDecumulationConfig,
-} from "./types/engine-config";
+import type { DecumulationSlot } from "./types/routing";
+import type { ResolvedDecumulationConfig } from "./types/decumulation";
 import type { AccountBalances } from "../types/shared";
 import type { AccountCategory } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";

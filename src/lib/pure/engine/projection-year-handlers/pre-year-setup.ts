@@ -13,7 +13,7 @@ import { buildSpecToAccountMapping } from "../individual-account-tracking";
 import { resolveReturnRateForAge } from "../growth-application";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
-import type { ContributionSpec } from "../types/engine-config";
+import type { ContributionSpec } from "../types/contribution-spec";
 import type {
   PreYearSetup,
   ProjectionContext,

@@ -12,15 +12,15 @@ import type {
 import type {
   AccumulationDefaults,
   AccumulationOverride,
-  AccumulationSlot,
-  ContributionSpec,
+  ResolvedAccumulationConfig,
+} from "./accumulation";
+import type { AccumulationSlot, DecumulationSlot } from "./routing";
+import type { ContributionSpec, ProfileSwitch } from "./contribution-spec";
+import type {
   DecumulationDefaults,
   DecumulationOverride,
-  DecumulationSlot,
-  ProfileSwitch,
-  ResolvedAccumulationConfig,
   ResolvedDecumulationConfig,
-} from "./engine-config";
+} from "./decumulation";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 // --- Engine Input ---

@@ -5,7 +5,7 @@
  * Used by the orchestrator and multiple extraction modules.
  */
 import type { TaxBuckets, AccountBalances } from "../types/shared";
-import type { DecumulationSlot } from "./types/engine-config";
+import type { DecumulationSlot } from "./types/routing";
 import {
   getAllCategories,
   getLimitGroup,

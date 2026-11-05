@@ -40,7 +40,7 @@ import type { IrmaaBracketTable } from "../../config/irmaa-tables";
  * The exponent every grow* helper below expects: years between the
  * projection's current calendar `year` and the tax data's own vintage
  * (`taxDataYear` — see `DecumulationDefaults.distributionTaxRates.taxDataYear`'s
- * docblock, engine-config.ts, for why this is NOT the same as the
+ * docblock, decumulation.ts, for why this is NOT the same as the
  * projection's `yearIndex`). Clamped to 0 — this data can't be "grown
  * backward" for a year before its own vintage.
  */

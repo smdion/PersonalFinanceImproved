@@ -16,7 +16,7 @@
  * (bracket-filling needs incomeCapForMarginalRate).
  */
 import type { TaxBuckets } from "../types/shared";
-import type { DecumulationSlot } from "./types/engine-config";
+import type { DecumulationSlot } from "./types/routing";
 import { roundToCents, sumBy } from "../../utils/math";
 import {
   getAccountTypeConfig,

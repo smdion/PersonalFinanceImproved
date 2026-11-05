@@ -33,7 +33,7 @@
  * recompute). That residual gap is accepted, not fixed — RMD amount and
  * Roth-conversion elections are not knowable before routing.
  */
-import type { ResolvedDecumulationConfig } from "./types/engine-config";
+import type { ResolvedDecumulationConfig } from "./types/decumulation";
 import type {
   AccountBalances,
   TaxBuckets,

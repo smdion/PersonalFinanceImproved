@@ -22,7 +22,7 @@
  * Not modelled yet: RMDs before the plan's withdrawal year; a year with one
  * due says so.
  */
-import type { DecumulationSlot } from "./types/engine-config";
+import type { DecumulationSlot } from "./types/routing";
 import { roundToCents, sumBy } from "../../utils/math";
 import { SHORTFALL_MATERIALITY } from "../../constants";
 import {

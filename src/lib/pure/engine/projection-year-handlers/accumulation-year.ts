@@ -10,7 +10,7 @@ import {
   syncAggregateBasis,
 } from "../brokerage-basis";
 import type { AccountCategory } from "../../../config/account-types";
-import type { AccumulationSlot } from "../types/engine-config";
+import type { AccumulationSlot } from "../types/routing";
 import type { EngineAccumulationYear } from "../types/projection-result";
 import type { IndividualAccountYearBalance } from "../../types/shared";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
