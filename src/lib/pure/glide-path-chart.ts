@@ -3,7 +3,7 @@
  * interpolation the targets use) and Vanguard's target-date stock share
  * shifted to the household's retirement age. Pure.
  */
-import { interpolateAllocations } from "@/lib/calculators/random";
+import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { VANGUARD_TDF_STOCK_SHARE } from "@/lib/config/benchmarks";
 
 export type GlidePathPoint = {

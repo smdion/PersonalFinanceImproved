@@ -17,7 +17,7 @@
  * them).
  */
 import { describe, expect, it } from "vitest";
-import { xfail } from "../fixtures/answer-key";
+import { xfail } from "../../fixtures/answer-key";
 import {
   ALL_IN_ONE,
   NO_CLAMP,
@@ -27,14 +27,17 @@ import {
   MIX_60_40,
   retiree,
   type Retiree,
-} from "../fixtures/answer-key-simulation";
+} from "../../fixtures/answer-key-simulation";
 import {
   blendedReturnStats,
   buildCorrelationMatrix,
   choleskyDecomposition,
   createPRNG,
-} from "@/lib/calculators/random";
-import { calculateMonteCarlo, percentile } from "@/lib/calculators/monte-carlo";
+} from "@/lib/pure/simulation/random";
+import {
+  calculateMonteCarlo,
+  percentile,
+} from "@/lib/pure/simulation/monte-carlo";
 import { calculateProjection } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { readSimulationPresetsFile } from "@/lib/db/reference-data";

@@ -28,7 +28,7 @@ import * as schema from "@/lib/db/schema";
 import {
   calculateMonteCarlo,
   simulationNotConfigured,
-} from "@/lib/calculators/monte-carlo";
+} from "@/lib/pure/simulation/monte-carlo";
 import {
   runMonteCarloOffThread,
   getMonteCarloProgress,
@@ -36,7 +36,7 @@ import {
 import {
   interpolateAllocations,
   geometricMean,
-} from "@/lib/calculators/random";
+} from "@/lib/pure/simulation/random";
 import { toNumber } from "@/server/helpers";
 import { sumBy } from "@/lib/utils/math";
 import type {

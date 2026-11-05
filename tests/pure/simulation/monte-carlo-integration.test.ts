@@ -6,14 +6,14 @@
  * After engine refactoring, these must produce byte-identical results.
  */
 import { describe, it, expect } from "vitest";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { calculateProjection } from "@/lib/pure/engine";
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
-import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
-import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
+import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 

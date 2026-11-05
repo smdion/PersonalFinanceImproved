@@ -12,7 +12,7 @@ import {
   type SimulationPresetsFile,
 } from "@/lib/db/reference-reconcile-core";
 import { readSimulationPresetsFile } from "@/lib/db/reference-data";
-import { interpolateAllocations } from "@/lib/calculators/random";
+import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { COMPOSITION_BUCKET_VALUES } from "@/lib/config/enum-values";
 
 type Db = ReturnType<typeof openTestSqlite>;

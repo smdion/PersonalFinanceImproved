@@ -25,7 +25,7 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {

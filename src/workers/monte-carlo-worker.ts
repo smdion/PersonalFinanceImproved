@@ -32,7 +32,7 @@
  * for logging/assertions, not to support real concurrency inside this file.
  */
 import { parentPort } from "node:worker_threads";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 
 export type WorkerRequest = {

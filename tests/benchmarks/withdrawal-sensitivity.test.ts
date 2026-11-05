@@ -5,7 +5,7 @@
  * and time horizon, and documents your real-scenario sensitivity curve.
  */
 import { describe, it, expect } from "vitest";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import {
   makeTrinityInput,
   makeMCInput,

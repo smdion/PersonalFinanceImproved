@@ -13,7 +13,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import { sweepClaimingAges } from "@/lib/calculators/social-security";

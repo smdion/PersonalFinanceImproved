@@ -1,7 +1,7 @@
 import {
   SIMULATION_NOT_CONFIGURED_MESSAGE,
   type SimulationNotConfigured,
-} from "@/lib/calculators/monte-carlo";
+} from "@/lib/pure/simulation/monte-carlo";
 import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
 import { SettingsLink } from "./settings-link";
 

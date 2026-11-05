@@ -16,7 +16,7 @@ import { glidePathFromRows } from "@/lib/pure/stock-share";
 import {
   simulationNotConfigured,
   type SimulationNotConfigured,
-} from "@/lib/calculators/monte-carlo";
+} from "@/lib/pure/simulation/monte-carlo";
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";

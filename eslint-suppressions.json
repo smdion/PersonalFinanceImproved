@@ -2967,17 +2967,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/monte-carlo.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 10
-    }
-  },
   "src/lib/calculators/mortgage.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
@@ -3013,14 +3002,6 @@
   },
   "src/lib/calculators/plan-outcome.ts": {
     "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/random.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
       "count": 3
     }
   },
@@ -3072,11 +3053,6 @@
       "count": 1
     },
     "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/year-return-range.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -4893,9 +4869,33 @@
       "count": 1
     }
   },
+  "src/lib/pure/simulation/monte-carlo.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 10
+    }
+  },
   "src/lib/pure/simulation/monte-carlo.types.ts": {
     "ratchet/max-comment-lines": {
       "count": 5
+    }
+  },
+  "src/lib/pure/simulation/random.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/simulation/year-return-range.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/lib/pure/snapshot-flows.ts": {

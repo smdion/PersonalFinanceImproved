@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { yearReturnRanges } from "@/lib/calculators/year-return-range";
+import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
 
 const assetClasses = [
   { id: 1, name: "Stocks", meanReturn: 0.1, stdDev: 0.18 },

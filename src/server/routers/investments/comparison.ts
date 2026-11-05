@@ -29,7 +29,7 @@ import {
 } from "@/lib/config/enum-values";
 import { localDateStr } from "@/lib/utils/date";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import { yearReturnRanges } from "@/lib/calculators/year-return-range";
+import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
 import { buildMcInputs } from "../projection/_shared";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
 import {

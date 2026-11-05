@@ -412,7 +412,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
   // their real coast age) doesn't accumulate enough penalty-free
   // (brokerage/basis) money to bridge the 55->59.5 gap -- Monte Carlo
   // reports this correctly (see
-  // tests/calculators/monte-carlo-penalty-honesty.test.ts), so the
+  // tests/pure/simulation/monte-carlo-penalty-honesty.test.ts), so the
   // deterministic baseline must not say "already coast" for the same case.
   const AS_OF_2 = new Date("2025-03-07");
 

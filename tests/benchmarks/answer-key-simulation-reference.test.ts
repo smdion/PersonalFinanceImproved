@@ -5,7 +5,7 @@
  * in `reviews/2026-11-01/specs/simulation.md` § 11.6, § 11.7, § 12, cited
  * by SP id). Ids are the verdict's own, prefixed `sim/`; the bracketed
  * part is the docs/CALCULATIONS.md row. The fast cases are in
- * `tests/calculators/answer-key-simulation.test.ts`.
+ * `tests/pure/simulation/answer-key-simulation.test.ts`.
  *
  * These run thousands of engine years, so they live in the benchmark
  * project (`pnpm test:benchmarks`). Every statistical tolerance is
@@ -26,8 +26,11 @@ import {
   p2,
   retiree,
 } from "../fixtures/answer-key-simulation";
-import { createPRNG, sampleCorrelatedReturns } from "@/lib/calculators/random";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import {
+  createPRNG,
+  sampleCorrelatedReturns,
+} from "@/lib/pure/simulation/random";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { REPLAY_RATES, replayGrid } from "./history-replay";
 import { REPLAY_GRID_BASELINE } from "./behavior-baseline-replay-grid";

@@ -1,13 +1,13 @@
 [
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/monte-carlo.ts",
-    "to": "src/lib/pure/engine/inflation-path.ts"
+    "from": "src/lib/calculators/plan-outcome.ts",
+    "to": "src/lib/pure/engine/gap-year-draw.ts"
   },
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/pure/engine/gap-year-draw.ts"
+    "from": "src/lib/pure/simulation/monte-carlo.ts",
+    "to": "src/lib/pure/engine/inflation-path.ts"
   },
   {
     "rule": "engine-through-index",

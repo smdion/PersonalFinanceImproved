@@ -1,6 +1,6 @@
 /**
  * Invented inputs for the Simulation answer key
- * (`tests/calculators/answer-key-simulation.test.ts`,
+ * (`tests/pure/simulation/answer-key-simulation.test.ts`,
  * `tests/benchmarks/answer-key-simulation-reference.test.ts`).
  *
  * The household is the review's reference retiree

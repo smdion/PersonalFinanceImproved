@@ -43,11 +43,11 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/pure/engine";
 import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
-import type { SimulationNotConfigured } from "@/lib/calculators/monte-carlo";
+import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
 import {
   interpolateAllocations,
   geometricMean,
-} from "@/lib/calculators/random";
+} from "@/lib/pure/simulation/random";
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";

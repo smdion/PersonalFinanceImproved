@@ -17,7 +17,7 @@ import {
   portfolioBuckets,
   valueByClass,
 } from "@/lib/pure/fund-facts";
-import { interpolateAllocations } from "@/lib/calculators/random";
+import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { blendedReturnForAge } from "@/lib/pure/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/helpers/market-prices";

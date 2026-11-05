@@ -8,8 +8,11 @@ import {
   calculateMonteCarlo,
   simulationNotConfigured,
   SimulationNotConfiguredError,
-} from "@/lib/calculators/monte-carlo";
-import { makeTrinityInput, makeMCInput } from "../benchmarks/benchmark-helpers";
+} from "@/lib/pure/simulation/monte-carlo";
+import {
+  makeTrinityInput,
+  makeMCInput,
+} from "../../benchmarks/benchmark-helpers";
 
 const input = (over: Parameters<typeof makeMCInput>[1]) =>
   makeMCInput(makeTrinityInput(), { numTrials: 50, ...over });

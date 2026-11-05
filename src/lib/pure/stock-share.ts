@@ -8,7 +8,7 @@
 import {
   interpolateAllocations,
   type GlidePathEntry,
-} from "@/lib/calculators/random";
+} from "@/lib/pure/simulation/random";
 import {
   isStockBucket,
   type CompositionBucket,

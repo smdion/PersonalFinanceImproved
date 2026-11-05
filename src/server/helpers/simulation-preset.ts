@@ -16,7 +16,7 @@
 import { eq } from "drizzle-orm";
 import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
-import type { GlidePathEntry } from "@/lib/calculators/random";
+import type { GlidePathEntry } from "@/lib/pure/simulation/random";
 import {
   MC_RETURN_CLAMP_MAX,
   MC_RETURN_CLAMP_MIN,

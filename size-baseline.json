@@ -92,7 +92,6 @@
     "src/components/validation-content.tsx": 578,
     "src/lib/budget-api/actual-client.ts": 835,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/calculators/monte-carlo.ts": 763,
     "src/lib/calculators/mortgage.ts": 424,
     "src/lib/calculators/paycheck.ts": 1381,
     "src/lib/calculators/relocation.ts": 490,
@@ -132,6 +131,7 @@
     "src/lib/pure/paystub-check.ts": 459,
     "src/lib/pure/performance.ts": 599,
     "src/lib/pure/roth-ira.ts": 543,
+    "src/lib/pure/simulation/monte-carlo.ts": 763,
     "src/lib/pure/tax-bucket-projection.ts": 527,
     "src/lib/pure/withdrawal-eligibility.ts": 484,
     "src/lib/sec/facts-sync.ts": 585,
@@ -737,9 +737,6 @@
     "src/lib/calculators/brokerage-goals.ts": {
       "calculateBrokerageGoals": 206
     },
-    "src/lib/calculators/monte-carlo.ts": {
-      "calculateMonteCarlo": 579
-    },
     "src/lib/calculators/paycheck.ts": {
       "calculatePaycheck": 295
     },
@@ -811,6 +808,9 @@
     },
     "src/lib/pure/paystub-check.ts": {
       "checkPaystub": 162
+    },
+    "src/lib/pure/simulation/monte-carlo.ts": {
+      "calculateMonteCarlo": 579
     },
     "src/lib/pure/tax-bucket-analysis.ts": {
       "computeTaxBucketAnalysis": 244

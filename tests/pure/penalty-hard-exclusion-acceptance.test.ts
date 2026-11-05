@@ -4,7 +4,7 @@
  * Criteria requiring real routing (10 — per-mode unmetNeed/shortfall
  * typing) live in withdrawal-routing.test.ts; the dedicated Monte Carlo
  * honesty test (11) lives in
- * tests/calculators/monte-carlo-penalty-honesty.test.ts; the penalty-cost
+ * tests/pure/simulation/monte-carlo-penalty-honesty.test.ts; the penalty-cost
  * pricing math (6) lives in tests/pure/early-withdrawal-penalty.test.ts.
  * This file covers the criteria provable directly against
  * computeWithdrawalEligibility and getRmdStartAge.

@@ -509,11 +509,6 @@
       "count": 5
     }
   },
-  "src/lib/calculators/monte-carlo.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 8
-    }
-  },
   "src/lib/calculators/mortgage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -662,6 +657,11 @@
   "src/lib/pure/retirement-bridge.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/lib/pure/simulation/monte-carlo.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 8
     }
   },
   "src/lib/pure/snapshot-series.ts": {

@@ -2,7 +2,7 @@
  * Pure business logic for Monte Carlo projection calculations.
  * No DB or I/O dependency.
  */
-import { geometricMean } from "@/lib/calculators/random";
+import { geometricMean } from "@/lib/pure/simulation/random";
 
 /** Minimal asset class shape for blending calculations. */
 type BlendableAssetClass = {

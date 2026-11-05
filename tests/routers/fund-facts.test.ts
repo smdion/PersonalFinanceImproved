@@ -2,7 +2,7 @@
  * Benchmarks holdings overview and fund-facts actions. Tiingo and SEC are
  * mocked; funds, accounts and values are invented.
  */
-import { geometricMean } from "@/lib/calculators/random";
+import { geometricMean } from "@/lib/pure/simulation/random";
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";

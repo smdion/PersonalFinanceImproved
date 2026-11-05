@@ -13,7 +13,8 @@ import { vi } from "vitest";
 const trials = vi.hoisted(() => 10);
 
 vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
-  const { calculateMonteCarlo } = await import("@/lib/calculators/monte-carlo");
+  const { calculateMonteCarlo } =
+    await import("@/lib/pure/simulation/monte-carlo");
   return {
     runMonteCarloOffThread: async (
       input: Parameters<typeof calculateMonteCarlo>[0],

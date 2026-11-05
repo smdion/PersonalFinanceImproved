@@ -4,7 +4,7 @@
  * Pure functions — no DB, no tRPC, no React.
  * Uses a simple but effective mulberry32 PRNG seeded for reproducibility.
  */
-import { safeDivide } from "../utils/math";
+import { safeDivide } from "../../utils/math";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG (mulberry32) — fast, deterministic, 32-bit state

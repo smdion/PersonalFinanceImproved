@@ -1,5 +1,5 @@
 import { describe, it } from "vitest";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import {
   makeTrinityInput,
   makeMCInput,

@@ -11,10 +11,13 @@
  * glide path that shifts allocations over time.
  */
 import { planEndAge, planRetirementAge } from "@/lib/pure/household-timeline";
-import { strategySpending } from "./strategy-spending";
-import { assessPlan, type PlanFailureReason } from "./plan-outcome";
-import { calculateProjection } from "../pure/engine";
-import { buildInflationPath } from "../pure/engine/inflation-path";
+import { strategySpending } from "../../calculators/strategy-spending";
+import {
+  assessPlan,
+  type PlanFailureReason,
+} from "../../calculators/plan-outcome";
+import { calculateProjection } from "../engine";
+import { buildInflationPath } from "../engine/inflation-path";
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import {
   createPRNG,
@@ -30,19 +33,16 @@ import type {
   MonteCarloResult,
   MonteCarloPercentileBand,
   DistributionSummary,
-} from "../pure/simulation/monte-carlo.types";
-import type {
-  ProjectionInput,
-  EngineDecumulationYear,
-} from "../pure/engine/types";
-import { roundToCents, sumBy, safeDivide } from "../utils/math";
+} from "./monte-carlo.types";
+import type { ProjectionInput, EngineDecumulationYear } from "../engine/types";
+import { roundToCents, sumBy, safeDivide } from "../../utils/math";
 import {
   MC_RETURN_CLAMP_MIN,
   MC_RETURN_CLAMP_MAX,
   MC_SPENDING_STABILITY_THRESHOLD,
-} from "../constants";
-import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
-import type { WithdrawalStrategyType } from "../config/withdrawal-strategies";
+} from "../../constants";
+import { WITHDRAWAL_STRATEGY_CONFIG } from "../../config/withdrawal-strategies";
+import type { WithdrawalStrategyType } from "../../config/withdrawal-strategies";
 
 // ---------------------------------------------------------------------------
 // Not configured

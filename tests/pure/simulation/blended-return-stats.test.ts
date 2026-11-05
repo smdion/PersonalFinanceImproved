@@ -7,7 +7,7 @@ import {
   choleskyDecomposition,
   createPRNG,
   sampleBlendedReturn,
-} from "@/lib/calculators/random";
+} from "@/lib/pure/simulation/random";
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 
 const classes = [

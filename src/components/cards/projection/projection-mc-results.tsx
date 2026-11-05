@@ -16,7 +16,7 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
-import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
+import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
 
 /** MC loading, errors, warnings, and compact summary bar. */

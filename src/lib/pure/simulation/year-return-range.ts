@@ -11,7 +11,7 @@ import {
   sampleBlendedReturn,
   type GlidePathEntry,
 } from "./random";
-import { COMPARISON_SEED } from "../constants";
+import { COMPARISON_SEED } from "../../constants";
 
 /** Enough that the range's edges settle to a tenth of a point. */
 const DRAWS = 5_000;
