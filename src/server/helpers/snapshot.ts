@@ -313,15 +313,9 @@ type YearEndRow = {
  */
 type YearEndHistoryTargeting = BudgetTargeting;
 
-// Short-lived (5s) cache keyed by the targeting, so a page that asks for
-// the same targeted history from several procedures in one load (the
-// dashboard: net worth + milestones) builds it once.
-//
-// Scoped per database handle: real requests share the app's `db`, while a
-// demo request runs on its own handle bound to its demo schema
-// (trpc.ts demoSchemaMiddleware) — so demo and real data never share an
-// entry. `generation` drops a build that started before an invalidation, so
-// a read racing a write can't re-cache pre-write data.
+// A 5s cache keyed by the targeting, so one page load builds a targeted
+// history once; scoped per database handle, so a demo schema never shares an
+// entry, and `generation` drops a build that started before an invalidation.
 const YEAR_END_CACHE_TTL_MS = 5_000;
 type YearEndCacheEntry = { data: YearEndRow[]; expiresAt: number };
 let _yearEndCache = new WeakMap<object, Map<string, YearEndCacheEntry>>();
