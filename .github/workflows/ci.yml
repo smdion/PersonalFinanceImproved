@@ -409,6 +409,9 @@ jobs:
           NEXTAUTH_SECRET: e2e-placeholder-secret-at-least-32-chars
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
+          # The standalone server binds to HOSTNAME, which a container sets to
+          # its own id; Playwright waits on localhost.
+          HOSTNAME: 0.0.0.0
           # Fake-but-valid values so the production env invariants in
           # src/lib/env.ts pass. CRON_SECRET must be 32+ chars;
           # ENCRYPTION_KEY must decode to exactly 32 bytes (44-char
