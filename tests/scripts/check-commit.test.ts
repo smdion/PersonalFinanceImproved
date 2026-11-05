@@ -220,8 +220,13 @@ describe("notAMove", () => {
           // Split so the vi.mock target check doesn't read sample text as a mock.
           "-vi." + 'mock("@/lib/calculators/a", () => ({}));',
           "+vi." + 'mock("@/lib/pure/tax/a", () => ({}));',
-          "@@ -20,0 +21 @@",
+          "@@ -20,2 +21,3 @@",
+          " import {",
           "+  shared,",
+          ' } from "./shared";',
+          "diff --git a/sizes.json b/sizes.json",
+          "--- a/sizes.json",
+          "+++ b/sizes.json",
           "@@ -40 +41 @@",
           '-  "src/lib/calculators/a.ts": 500,',
           "@@ -60 +60 @@",
@@ -229,6 +234,12 @@ describe("notAMove", () => {
         ]),
       ),
     ).toBeUndefined();
+  });
+
+  it("reads a lone name as an import only inside an import statement", () => {
+    expect(
+      notAMove(renamed, diff([" total(", "-  taxYear,", "+  year,", " );"])),
+    ).toMatch(/2 changed line\(s\) are neither imports/);
   });
 
   it("fails without a rename, or with a changed line that isn't a path", () => {
@@ -324,6 +335,89 @@ describe("notAMove: a split moves code between files", () => {
         ),
       ),
     ).toMatch(/1 changed line\(s\).*return a \* 2/);
+  });
+
+  it("passes whole declarations moved in another order, the old file exporting what it keeps", () => {
+    const two = ["function half(a: number) {", "  return a / 2;", "}"];
+    const oldFile = [
+      "diff --git a/src/server/helpers/big.ts b/src/server/helpers/big.ts",
+      "--- a/src/server/helpers/big.ts",
+      "+++ b/src/server/helpers/big.ts",
+      "@@ -1,9 +1,3 @@",
+      "-function keep() {",
+      "+export function keep() {",
+      "   return 1;",
+      " }",
+      ...body.map((l) => `-${l}`),
+      ...two.map((l) => `-${l}`),
+    ];
+    const part = [
+      "diff --git a/src/lib/pure/area/part.ts b/src/lib/pure/area/part.ts",
+      "new file mode 100644",
+      "--- /dev/null",
+      "+++ b/src/lib/pure/area/part.ts",
+      "@@ -0,0 +1,7 @@",
+      '+import { keep } from "@/server/helpers/big";',
+      ...two.map((l) => `+${l}`),
+      "+",
+      ...body.map((l) => `+${l}`),
+    ];
+    expect(notAMove(numstat, [...part, ...oldFile].join("\n"))).toBeUndefined();
+  });
+
+  it("fails an edit a moved function's own lines hide: an argument, a cast, a brace", () => {
+    const call = [
+      "function total(row: Row, a: number) {",
+      "  if (a > 0) {",
+      "    return add(",
+      "      row as ContribRow,",
+      "      a,",
+      "    );",
+      "  }",
+      "  return 0;",
+      "}",
+    ];
+    const moved = (edit: (lines: string[]) => string[]) =>
+      notAMove(
+        numstat,
+        split(
+          call.map((l) => `-${l}`),
+          edit(call).map((l) => `+${l}`),
+        ),
+      );
+    expect(moved((l) => l)).toBeUndefined();
+    // A dropped argument on its own line.
+    expect(moved((l) => l.filter((x) => x !== "      a,"))).toMatch(
+      /1 changed line\(s\).*a,/,
+    );
+    // A changed cast on its own line.
+    expect(
+      moved((l) => l.map((x) => x.replace("ContribRow", "CapPassRow"))),
+    ).toMatch(/2 changed line\(s\).*as/);
+    // A removed closing brace.
+    expect(moved((l) => l.filter((x) => x !== "  }"))).toMatch(
+      /1 changed line\(s\).*\}/,
+    );
+  });
+
+  it("fails two statements swapped inside a moved function", () => {
+    const steps = [
+      "function total(a: number) {",
+      "  log(a);",
+      "  save(a);",
+      "  return a;",
+      "}",
+    ];
+    const swapped = [steps[0]!, steps[2]!, steps[1]!, steps[3]!, steps[4]!];
+    expect(
+      notAMove(
+        numstat,
+        split(
+          steps.map((l) => `-${l}`),
+          swapped.map((l) => `+${l}`),
+        ),
+      ),
+    ).toMatch(/not whole top-level statements kept in order/);
   });
 
   it("lets a split take its doc comments and reword the old header", () => {

@@ -10,7 +10,8 @@
  * `src/` lines and at most 8 `src/` files when the engine or tax code is
  * touched (a `Mechanical:` trailer exempts a pure move, rename or split: git
  * sees a rename or code moved between files, and every other changed line is
- * an import or a path rewrite), and the
+ * an import, a path rewrite, or code moved in whole top-level statements kept
+ * in order), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first. A revert says why in its own words: git's "This reverts
@@ -20,6 +21,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 export const SUBJECT_PREFIX =
   /^(feat|fix|refactor|perf|test|docs|build|ci|chore|style|revert|release)(\([^)]+\))?!?: \S/;
@@ -195,8 +197,8 @@ export function spotsFromDiff(diff: string): Spot[] {
   return [...spots];
 }
 
-/** A line a move may change freely: an import, an export-from, a name in
- *  an import list, or punctuation. */
+/** Outside code (docs, data), a line a move may change freely: an import,
+ *  an export-from, a name in an import list, or punctuation. */
 const IMPORT_LINE =
   /^\s*(import\b|export\b.*\bfrom\b|\}\s*from\b|(type\s+)?[\w$]+(\s+as\s+[\w$]+)?,?\s*$|[{}();,\s]*$)/;
 /** A path-like token: anything with a slash in it. */
@@ -263,16 +265,287 @@ const withoutPaths = (line: string, names?: RegExp) =>
     .map((cell) => cell.split("; ").sort().join("; "))
     .join("|");
 
+/** Enough context that each hunk is its whole file. */
+const FULL_CONTEXT = "-U1000000";
+/** Source code: read by statement, and its moved lines kept in order. */
+const CODE_FILE = /\.[cm]?[jt]sx?$/;
+/** A blank line, which a move may add or drop anywhere. */
+const BLANK_LINE = /^\s*$/;
+
+/** One side of a file in a full-context diff: its lines, and which changed. */
+type DiffSide = {
+  lines: string[];
+  /** Each changed line's index in `lines`, with its change group. */
+  changed: { at: number; group: number }[];
+};
+/** A file in a diff; `-U0` hunks give only part of each side. */
+type FileDiff = {
+  file: string;
+  wholeFile: boolean;
+  old: DiffSide;
+  new: DiffSide;
+};
+
+/** Each file of `diff`, both sides rebuilt from its hunks. */
+function readDiff(diff: string): FileDiff[] {
+  const files: FileDiff[] = [];
+  let current: FileDiff | undefined;
+  let header = false;
+  let group = 0;
+  let inChange = false;
+  const change = (side: DiffSide, text: string) => {
+    if (!inChange) group += 1;
+    inChange = true;
+    side.changed.push({ at: side.lines.length, group });
+    side.lines.push(text);
+  };
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("diff --git ")) {
+      current = {
+        file: "",
+        wholeFile: false,
+        old: { lines: [], changed: [] },
+        new: { lines: [], changed: [] },
+      };
+      files.push(current);
+      header = true;
+    } else if (!current) {
+      continue;
+    } else if (header && /^(new|deleted) file mode /.test(line)) {
+      current.wholeFile = true;
+    } else if (line.startsWith("@@")) {
+      header = false;
+      inChange = false;
+    } else if (header) {
+      // A deleted file is named by its old path.
+      if (line.startsWith("--- a/")) current.file = line.slice(6);
+      else if (line.startsWith("+++ b/")) current.file = line.slice(6);
+    } else if (line.startsWith("-")) change(current.old, line.slice(1));
+    else if (line.startsWith("+")) change(current.new, line.slice(1));
+    else if (line.startsWith(" ")) {
+      inChange = false;
+      current.old.lines.push(line.slice(1));
+      current.new.lines.push(line.slice(1));
+    }
+  }
+  return files;
+}
+
+/** A side's code lines (not blank, comment or import), with its statements. */
+type CodeSide = {
+  file: string;
+  /** Code lines in file order; `changed` lines are the ones a move must explain. */
+  seq: {
+    at: number;
+    line: string;
+    key: string;
+    group: number;
+    changed: boolean;
+  }[];
+  /** Line of each top-level statement's first token, and of its last. */
+  startOf: Map<number, number>;
+  endOf: Map<number, number>;
+};
+
+function readCode(
+  file: string,
+  side: DiffSide,
+  key: (line: string) => string,
+): CodeSide {
+  const source = ts.createSourceFile(
+    file,
+    side.lines.join("\n"),
+    ts.ScriptTarget.Latest,
+  );
+  const lineOf = (pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const importLines = new Set<number>();
+  const startOf = new Map<number, number>();
+  const endOf = new Map<number, number>();
+  source.statements.forEach((statement, index) => {
+    const start = lineOf(statement.getStart(source));
+    const end = lineOf(statement.getEnd());
+    if (!startOf.has(start)) startOf.set(start, index);
+    endOf.set(end, index);
+    const isImport =
+      ts.isImportDeclaration(statement) ||
+      ts.isImportEqualsDeclaration(statement) ||
+      (ts.isExportDeclaration(statement) &&
+        statement.moduleSpecifier !== undefined);
+    if (isImport) for (let l = start; l <= end; l++) importLines.add(l);
+  });
+  const groupAt = new Map(side.changed.map((c) => [c.at, c.group]));
+  const seq: CodeSide["seq"] = [];
+  side.lines.forEach((line, at) => {
+    if (BLANK_LINE.test(line) || COMMENT_LINE.test(line)) return;
+    if (importLines.has(at)) return;
+    const group = groupAt.get(at);
+    seq.push({
+      at,
+      line,
+      key: key(line),
+      group: group ?? 0,
+      changed: group !== undefined,
+    });
+  });
+  return { file, seq, startOf, endOf };
+}
+
+/** The longest in-order matching of `a` and `b` by key, as index pairs. */
+function inOrder(a: string[], b: string[]): [number, number][] {
+  const n = a.length;
+  const m = b.length;
+  const table: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array<number>(m + 1).fill(0),
+  );
+  for (let i = n - 1; i >= 0; i--)
+    for (let j = m - 1; j >= 0; j--)
+      table[i]![j] =
+        a[i] === b[j]
+          ? table[i + 1]![j + 1]! + 1
+          : Math.max(table[i + 1]![j]!, table[i]![j + 1]!);
+  const pairs: [number, number][] = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) pairs.push([i++, j++]);
+    else if (table[i + 1]![j]! >= table[i]![j + 1]!) i++;
+    else j++;
+  }
+  return pairs;
+}
+
+/**
+ * The code lines a move doesn't explain, the moved runs that aren't whole
+ * top-level statements in order, and how many lines moved between files.
+ */
+function matchCode(code: { old: CodeSide; new: CodeSide }[]): {
+  unexplained: Line[];
+  broken: Line[];
+  movedAcross: number;
+} {
+  const unexplained: Line[] = [];
+  let movedAcross = 0;
+  // First each change group's lines in place, in order.
+  const matched = code.map(({ old, new: next }) => ({
+    old: new Set<number>(),
+    new: new Set<number>(),
+    oldSide: old,
+    newSide: next,
+  }));
+  for (const m of matched) {
+    const groups = new Map<number, { old: number[]; new: number[] }>();
+    const add = (side: "old" | "new", seq: CodeSide["seq"]) =>
+      seq.forEach((line, i) => {
+        if (!line.changed) return;
+        const g = groups.get(line.group) ?? { old: [], new: [] };
+        g[side].push(i);
+        groups.set(line.group, g);
+      });
+    add("old", m.oldSide.seq);
+    add("new", m.newSide.seq);
+    for (const g of groups.values()) {
+      const pairs = inOrder(
+        g.old.map((i) => m.oldSide.seq[i]!.key),
+        g.new.map((i) => m.newSide.seq[i]!.key),
+      );
+      for (const [i, j] of pairs) {
+        m.old.add(g.old[i]!);
+        m.new.add(g.new[j]!);
+      }
+    }
+  }
+  // Then runs moved elsewhere: each run, read in the destination's order,
+  // must be the same lines in the same order in its source.
+  const open = (f: number, i: number) => {
+    const line = matched[f]!.oldSide.seq[i];
+    return line !== undefined && line.changed && !matched[f]!.old.has(i);
+  };
+  const sources = new Map<string, [number, number][]>();
+  matched.forEach((m, f) =>
+    m.oldSide.seq.forEach((line, i) => {
+      if (!open(f, i)) return;
+      sources.set(line.key, [...(sources.get(line.key) ?? []), [f, i]]);
+    }),
+  );
+  const broken: Line[] = [];
+  const whole = (side: CodeSide, first: number, last: number) => {
+    const start = side.startOf.get(side.seq[first]!.at);
+    const end = side.endOf.get(side.seq[last]!.at);
+    return start !== undefined && end !== undefined && end >= start;
+  };
+  matched.forEach((m, g) => {
+    const seq = m.newSide.seq;
+    let j = 0;
+    while (j < seq.length) {
+      const line = seq[j]!;
+      if (!line.changed || m.new.has(j)) {
+        j += 1;
+        continue;
+      }
+      let best: { f: number; i: number; length: number } | undefined;
+      for (const [f, i] of sources.get(line.key) ?? []) {
+        if (!open(f, i)) continue;
+        let length = 0;
+        while (
+          open(f, i + length) &&
+          j + length < seq.length &&
+          seq[j + length]!.changed &&
+          !m.new.has(j + length) &&
+          matched[f]!.oldSide.seq[i + length]!.key === seq[j + length]!.key
+        )
+          length += 1;
+        if (!best || length > best.length) best = { f, i, length };
+      }
+      if (!best) {
+        unexplained.push({ file: m.newSide.file, line: seq[j]!.line });
+        j += 1;
+        continue;
+      }
+      const from = matched[best.f]!;
+      for (let k = 0; k < best.length; k++) {
+        from.old.add(best.i + k);
+        m.new.add(j + k);
+      }
+      if (best.f !== g) movedAcross += best.length;
+      const last = best.length - 1;
+      if (
+        !whole(from.oldSide, best.i, best.i + last) ||
+        !whole(m.newSide, j, j + last)
+      )
+        broken.push({ file: m.newSide.file, line: seq[j]!.line });
+      j += best.length;
+    }
+  });
+  matched.forEach((m, f) =>
+    m.oldSide.seq.forEach((_, i) => {
+      if (open(f, i))
+        unexplained.push({
+          file: m.oldSide.file,
+          line: m.oldSide.seq[i]!.line,
+        });
+    }),
+  );
+
+  return { unexplained, broken, movedAcross };
+}
+
 /**
  * Why a change isn't a move: `numstat` from `-M --numstat` must show a
- * rename, or code must move between files (a split). In `diff` (`-M -U0`)
- * every removed or added line must be an import line, or match a line on
- * the other side that differs from it only in its paths: first in the same
- * file (a moved entry in a sorted list matches too), then in any other file
- * of the commit, where a leading `export` may be added or dropped (a split
- * exports what its parts share). A renamed file's bare name counts as a
- * path, and the move's own bookkeeping (MOVE_BOOKKEEPING, AUTO-GEN counts)
- * is left to the checks that guard it.
+ * rename, or code must move between files (a split). `diff` is a full-context
+ * diff (`-M -U<large>`), so each file's statements can be read.
+ *
+ * In a code file every changed line must be an import line (inside an
+ * `import` or `export … from` statement), or match a line on the other side
+ * that differs from it only in its paths and a leading `export`: in place
+ * (the same change group, in order), or as part of a run of whole top-level
+ * statements, kept in order, moved within the file or to another one. Other
+ * lines (docs, data, comments) match by path rewrite as a multiset: first in
+ * the same file (a moved entry in a sorted list matches too), then in any
+ * other file of the commit. A prettier re-wrap of a file's changed lines
+ * passes. A renamed file's bare name counts as a path, and the move's own
+ * bookkeeping (MOVE_BOOKKEEPING, AUTO-GEN counts) is left to the checks that
+ * guard it.
  */
 export function notAMove(
   numstat: FileChange[],
@@ -283,17 +556,27 @@ export function notAMove(
   // Lines no same-file line explains, matched across files once all are read.
   const leftAdded: Line[] = [];
   const leftRemoved: Line[] = [];
-  let file = "";
-  let removed: string[] = [];
-  let added: string[] = [];
-  const settle = () => {
-    if (MOVE_BOOKKEEPING.test(file)) {
-      removed = [];
-      added = [];
-      return;
-    }
-    removed = removed.filter((line) => !AUTO_GEN_LINE.test(line));
-    added = added.filter((line) => !AUTO_GEN_LINE.test(line));
+  const movedKey = (line: string) =>
+    withoutPaths(
+      line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1"),
+      names,
+    );
+  const code: { old: CodeSide; new: CodeSide }[] = [];
+  for (const entry of readDiff(diff)) {
+    const { file, wholeFile } = entry;
+    if (MOVE_BOOKKEEPING.test(file)) continue;
+    // A file the move creates or deletes brings or takes its comments.
+    const kept = (side: DiffSide) =>
+      side.changed.filter(({ at }) => {
+        const line = side.lines[at]!;
+        return (
+          !AUTO_GEN_LINE.test(line) && !(wholeFile && COMMENT_LINE.test(line))
+        );
+      });
+    const oldKept = kept(entry.old);
+    const newKept = kept(entry.new);
+    const removedAll = oldKept.map(({ at }) => entry.old.lines[at]!);
+    const addedAll = newKept.map(({ at }) => entry.new.lines[at]!);
     // Prettier re-wraps a line whose path changed length (a long union gains
     // leading pipes, broken call arguments gain trailing commas): the same
     // text once joined.
@@ -304,11 +587,22 @@ export function notAMove(
         .replace(/(^|[=(<,:])\s*\|(?!\|)/g, "$1")
         .replace(/\s*([()[\]{},;:<>=|&?+*/.!-])\s*/g, "$1")
         .replace(/,(?=[)\]}])/g, "");
-    if (removed.length > 0 && joined(removed) === joined(added)) {
-      removed = [];
-      added = [];
-      return;
+    if (removedAll.length > 0 && joined(removedAll) === joined(addedAll))
+      continue;
+    const isCode = CODE_FILE.test(file);
+    if (isCode) {
+      code.push({
+        old: readCode(file, entry.old, movedKey),
+        new: readCode(file, entry.new, movedKey),
+      });
     }
+    // Code lines are matched below; the rest (docs, data, comments) here.
+    const text = (side: DiffSide, keptLines: { at: number }[]) =>
+      keptLines
+        .map(({ at }) => side.lines[at]!)
+        .filter((line) => !isCode || COMMENT_LINE.test(line));
+    const removed = text(entry.old, oldKept);
+    const added = text(entry.new, newKept);
     // The register's code-reference cells change with a move; docs:verify
     // checks each still names a real file and function.
     const keyOf = (line: string) =>
@@ -339,62 +633,44 @@ export function notAMove(
       pool.set(key, left - 1);
       if (!IMPORT_LINE.test(line)) leftRemoved.push({ file, line });
     }
-    removed = [];
-    added = [];
-  };
-  let header = false;
-  let wholeFile = false;
-  for (const line of diff.split("\n")) {
-    if (line.startsWith("diff --git ")) {
-      settle();
-      header = true;
-      wholeFile = false;
-    } else if (header && /^(new|deleted) file mode /.test(line)) {
-      wholeFile = true;
-    } else if (line.startsWith("@@")) {
-      header = false;
-    } else if (header) {
-      if (line.startsWith("+++ ")) file = line.replace(/^\+\+\+ (b\/)?/, "");
-    } else if (wholeFile && COMMENT_LINE.test(line.slice(1))) {
-      // A file the move creates or deletes brings or takes its comments.
-    } else if (line.startsWith("-")) removed.push(line.slice(1));
-    else if (line.startsWith("+")) added.push(line.slice(1));
   }
-  settle();
-  const movedKey = (line: string) =>
-    withoutPaths(
-      line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1"),
-      names,
-    );
+  const matchedCode = matchCode(code);
+  let unexplained = matchedCode.unexplained;
+  const { broken } = matchedCode;
+  let movedAcross = matchedCode.movedAcross;
+
   const moved = new Map<string, Line[]>();
   for (const entry of leftRemoved) {
     const key = movedKey(entry.line);
     moved.set(key, [...(moved.get(key) ?? []), entry]);
   }
-  let unexplained: Line[] = [];
-  let movedAcross = 0;
   for (const entry of leftAdded) {
-    const sources = moved.get(movedKey(entry.line)) ?? [];
-    const i = sources.findIndex((source) => source.file !== entry.file);
+    const sourcesOf = moved.get(movedKey(entry.line)) ?? [];
+    const i = sourcesOf.findIndex((source) => source.file !== entry.file);
     if (i < 0) {
       unexplained.push(entry);
       continue;
     }
-    sources.splice(i, 1);
+    sourcesOf.splice(i, 1);
     movedAcross += 1;
   }
   for (const entries of moved.values()) unexplained.push(...entries);
   if (!renamed && movedAcross === 0)
     return "git sees no rename and no code moved between files";
-  // A split takes its doc comments with the code and rewords the old file's
-  // header: comments carry no behavior, and the reviewer still reads them.
+  // A split takes its doc comments with the code and rewords the old header:
+  // comments carry no behavior, and the reviewer still reads them.
   if (movedAcross > 0)
     unexplained = unexplained.filter(({ line }) => !COMMENT_LINE.test(line));
-  if (unexplained.length === 0) return undefined;
-  const first = unexplained
-    .slice(0, 3)
-    .map(({ file: f, line }) => `${f}: ${line.trim()}`);
-  return `${unexplained.length} changed line(s) are neither imports nor path rewrites (first: ${first.join(" | ")})`;
+  const first = (lines: Line[]) =>
+    lines
+      .slice(0, 3)
+      .map(({ file: f, line }) => `${f}: ${line.trim()}`)
+      .join(" | ");
+  if (unexplained.length > 0)
+    return `${unexplained.length} changed line(s) are neither imports nor path rewrites (first: ${first(unexplained)})`;
+  if (broken.length > 0)
+    return `${broken.length} moved run(s) are not whole top-level statements kept in order (first: ${first(broken)})`;
+  return undefined;
 }
 
 export function checkCommit(facts: CommitFacts): Warning[] {
@@ -545,7 +821,7 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     "Mechanical" in message.trailers
       ? notAMove(
           parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
-          git("show", "-M", "-U0", "--format=", sha),
+          git("show", "-M", FULL_CONTEXT, "--format=", sha),
         )
       : undefined;
   const files = parseNumstat(git("show", "--numstat", "--format=", sha));
@@ -579,7 +855,7 @@ function runMessageFile(file: string): Warning[] {
     "Mechanical" in message.trailers
       ? notAMove(
           parseNumstat(git("diff", "--cached", "-M", "--numstat")),
-          git("diff", "--cached", "-M", "-U0"),
+          git("diff", "--cached", "-M", FULL_CONTEXT),
         )
       : undefined;
   const warnings = checkCommit({
