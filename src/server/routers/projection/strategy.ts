@@ -54,10 +54,8 @@ import {
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { computeAdjustedBenefit } from "@/lib/pure/retirement/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
@@ -83,7 +81,6 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";
 
@@ -109,7 +106,6 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -117,7 +113,7 @@ export const strategyRouter = createTRPCRouter({
         decumulationOverrides: DecumulationOverride[];
       };
       const [
-        data,
+        { payload },
         {
           mcAssetClasses,
           mcCorrelations,
@@ -127,17 +123,12 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+        prepareProjectionRun(ctx.db, {
+          selection: input?.selection,
           snapshotId: input?.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
-
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       if (!payload) return { strategies: [], activeStrategy: null };
       if (payload.notConfigured)
         return {
@@ -403,7 +394,6 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -411,7 +401,7 @@ export const strategyRouter = createTRPCRouter({
         decumulationOverrides: DecumulationOverride[];
       };
       const [
-        data,
+        { profiles, data, payload },
         {
           mcAssetClasses,
           mcCorrelations,
@@ -421,18 +411,13 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+        prepareProjectionRun(ctx.db, {
+          selection: input?.selection,
           snapshotId: input?.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
-      const payloadOpts = {
-        ...profiles,
-      };
-      const payload = await buildEnginePayload(ctx.db, data, payloadOpts);
       if (!payload)
         return {
           baseline: null,
@@ -690,7 +675,7 @@ export const strategyRouter = createTRPCRouter({
             // that follows from the retirement year (profile switches,
             // contribution caps, working years) moves with it.
             const shifted = await buildEnginePayload(ctx.db, data, {
-              ...payloadOpts,
+              ...profiles,
               retirementAgeDelta: rounded - lever.currentValue,
             });
             if (!shifted) continue;

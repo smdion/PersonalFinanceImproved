@@ -47,10 +47,7 @@ import type {
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
 import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
@@ -67,7 +64,6 @@ import {
   generateSeed,
   clearProjectionCache,
 } from "@/server/services/projection/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";
 
@@ -148,10 +144,9 @@ export const monteCarloRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
       // Fetch shared data + MC-specific tables + saved overrides in parallel
       const [
-        data,
+        { profiles, payload },
         {
           mcAssetClasses: baseMcAssetClasses,
           mcCorrelations,
@@ -159,10 +154,9 @@ export const monteCarloRouter = createTRPCRouter({
         },
         savedAssetOverridesRow,
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+        prepareProjectionRun(ctx.db, {
+          selection: input.selection,
           snapshotId: input.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db),
         ctx.db
@@ -179,9 +173,6 @@ export const monteCarloRouter = createTRPCRouter({
         stdDev?: number;
       }[];
 
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       // No return rate: the projection card says so.
       if (!payload || payload.notConfigured)
         return {
