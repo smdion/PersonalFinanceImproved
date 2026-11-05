@@ -261,7 +261,7 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/contributions.ts",
+    "from": "src/lib/pure/contributions/irs-limits.ts",
     "to": "src/server/helpers/settings.ts"
   },
   {

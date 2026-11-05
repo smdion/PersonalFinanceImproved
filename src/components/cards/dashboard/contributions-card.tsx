@@ -37,7 +37,7 @@ import {
   isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/savings-rate";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { PaceStatusText } from "./pace-status";
 import { LoadingCard, ErrorCard } from "./utils";

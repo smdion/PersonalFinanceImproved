@@ -1,6 +1,6 @@
 "use client";
 
-import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
@@ -13,7 +13,7 @@ import {
   EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
-import { formatEmployerMatch } from "@/lib/pure/contributions";
+import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/profile-sidebar";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
-import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,

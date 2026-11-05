@@ -110,7 +110,8 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     // computes it (computeSummary → householdSavings): projected, match
     // included, Portfolio money counted — the glossary's savings rate.
     const { DEMO_PROFILES } = await import("@/lib/demo");
-    const { householdSavings } = await import("@/lib/pure/contributions");
+    const { householdSavings } =
+      await import("@/lib/pure/contributions/savings-rate");
     for (const profile of Object.values(DEMO_PROFILES)) {
       const { schemaName: demo } = await (
         await callerFor(null)

@@ -37,7 +37,10 @@ import {
   MARRIED_FILING_STATUSES,
   SPOUSAL_IRA_FILING_STATUSES,
 } from "@/lib/config/tax-params";
-import { irsLimitBaseKey, resolveIrsLimit } from "@/lib/pure/contributions";
+import {
+  irsLimitBaseKey,
+  resolveIrsLimit,
+} from "@/lib/pure/contributions/irs-limits";
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 

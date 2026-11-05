@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { matchedMixLevels, type MatchedMixInput } from "@/lib/pure/matched-mix";
+import {
+  matchedMixLevels,
+  type MatchedMixInput,
+} from "@/lib/pure/contributions/matched-mix";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import type { EffectiveFacts } from "@/lib/pure/fund-facts";
 

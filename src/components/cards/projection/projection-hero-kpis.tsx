@@ -7,7 +7,7 @@ import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   baselineNestEgg,
   simulatedOrBaseline,
-} from "@/lib/pure/nest-egg-display";
+} from "@/lib/pure/retirement/nest-egg-display";
 import { dominantFailureReason } from "@/lib/pure/retirement/plan-outcome";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { rowTotal } from "./utils";

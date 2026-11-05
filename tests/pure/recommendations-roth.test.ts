@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
-import { buildRothIraView } from "@/lib/pure/roth-ira";
+import { buildRothIraView } from "@/lib/pure/contributions/roth-ira";
 
 // Fictional range (the filing status only names it here).
 const view = (

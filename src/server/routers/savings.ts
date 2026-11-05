@@ -95,7 +95,7 @@ import type {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
-import { ficaCapContext } from "@/lib/pure/contributions";
+import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import type { DbOrTx } from "@/lib/db";
 import {

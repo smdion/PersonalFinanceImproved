@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   diffContribProfileSwap,
   type DiffAccount,
-} from "@/lib/pure/contrib-profile-diff";
+} from "@/lib/pure/contributions/contrib-profile-diff";
 
 const account = (overrides: Partial<DiffAccount> = {}): DiffAccount => ({
   id: 1,

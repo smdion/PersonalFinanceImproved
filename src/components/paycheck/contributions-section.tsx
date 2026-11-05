@@ -1,6 +1,6 @@
 "use client";
 
-import { capMessage } from "@/lib/pure/contribution-caps";
+import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";

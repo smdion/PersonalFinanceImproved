@@ -13,7 +13,7 @@ import {
   isTaxableCategory,
 } from "@/lib/config/account-types";
 import { canSwitchFunds } from "@/lib/pure/fund-findings";
-import { sharesHouseholdLimit } from "@/lib/pure/contribution-caps";
+import { sharesHouseholdLimit } from "@/lib/pure/contributions/contribution-caps";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   FUND_MAIN_BUCKET_SHARE,
@@ -27,7 +27,7 @@ import {
   householdTotalCompensation,
   isHighIncomeHousehold,
   type SavingsRatePerson,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/savings-rate";
 import type {
   CustomGoal,
   MilestoneDebt,

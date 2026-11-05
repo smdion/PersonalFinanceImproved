@@ -6,7 +6,7 @@ import {
 } from "@/server/helpers/contribution-caps";
 import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
 import { returnFilingStatusSchema } from "@/lib/config/filing-status.schema";
-import type { CapPassed } from "@/lib/pure/contribution-caps";
+import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import {
   redundantReturnRateIds,
   returnRateAtAge,

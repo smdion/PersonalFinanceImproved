@@ -8,7 +8,7 @@ import { focusHref } from "@/lib/config/focus-topics";
 import {
   baselineNestEgg,
   simulatedOrBaseline,
-} from "@/lib/pure/nest-egg-display";
+} from "@/lib/pure/retirement/nest-egg-display";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { memo } from "react";
 import Link from "next/link";
@@ -38,7 +38,7 @@ import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies"
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { isHighIncomeHousehold } from "@/lib/pure/contributions";
+import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
 function RetirementCardImpl() {
   const { engineInput, ready, data, isLoading, error } =

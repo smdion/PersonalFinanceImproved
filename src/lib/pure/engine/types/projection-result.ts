@@ -132,7 +132,7 @@ export type ProjectionInput = {
 
   // --- IRS limits ---
   /**
-   * What the IRS-limit caps (lib/pure/contribution-caps.ts) run on each
+   * What the IRS-limit caps (lib/pure/contributions/contribution-caps.ts) run on each
    * year: the base year's whole limit record (base, catch-up, super
    * catch-up, coverage variants — the engine grows every key at
    * limitGrowthRate), the people whose ages at Dec 31 set catch-ups, and

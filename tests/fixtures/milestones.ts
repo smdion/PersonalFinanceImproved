@@ -1,5 +1,5 @@
 /** Synthetic Milestones engine input for tests — made-up figures only. */
-import { householdSavings } from "@/lib/pure/contributions";
+import { householdSavings } from "@/lib/pure/contributions/savings-rate";
 import type {
   MilestoneInput,
   MilestoneProjectionYear,

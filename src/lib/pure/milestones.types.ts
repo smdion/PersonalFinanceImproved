@@ -20,7 +20,7 @@ import {
   type MilestoneDefinition,
   type SavingsTargetSource,
 } from "@/lib/config/milestones";
-import type { HouseholdSavings } from "@/lib/pure/contributions";
+import type { HouseholdSavings } from "@/lib/pure/contributions/savings-rate";
 import type { RaiseYear } from "@/lib/pure/raise-history";
 import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import type { CompositionBucket, DebtKind } from "@/lib/config/enum-values";

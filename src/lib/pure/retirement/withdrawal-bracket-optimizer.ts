@@ -22,7 +22,7 @@
  * answer "what's the earliest coast age" without becoming part of the
  * engine itself.
  */
-import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
+import { withControlledOverrides } from "@/lib/pure/contributions/controlled-overrides";
 import { calculateProjection } from "../engine";
 import type {
   ProjectionInput,

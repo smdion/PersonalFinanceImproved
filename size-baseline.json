@@ -109,10 +109,11 @@
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 484,
     "src/lib/pure/accounts/tax-bucket-projection.ts": 527,
-    "src/lib/pure/contribution-caps.ts": 671,
-    "src/lib/pure/contributions.ts": 223,
     "src/lib/pure/contributions/contribution-amount.ts": 110,
+    "src/lib/pure/contributions/contribution-caps.ts": 674,
     "src/lib/pure/contributions/contribution-order.ts": 93,
+    "src/lib/pure/contributions/irs-limits.ts": 219,
+    "src/lib/pure/contributions/roth-ira.ts": 543,
     "src/lib/pure/contributions/savings-rate.ts": 145,
     "src/lib/pure/contributions/view-metrics.ts": 186,
     "src/lib/pure/debts/mortgage.ts": 422,
@@ -139,7 +140,6 @@
     "src/lib/pure/paystub-check.ts": 459,
     "src/lib/pure/performance.ts": 599,
     "src/lib/pure/retirement/relocation.ts": 490,
-    "src/lib/pure/roth-ira.ts": 543,
     "src/lib/pure/simulation/monte-carlo.ts": 760,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 474,
@@ -151,7 +151,7 @@
     "src/server/helpers/budget-api-push.ts": 434,
     "src/server/helpers/budget.ts": 636,
     "src/server/helpers/contribution-caps.ts": 560,
-    "src/server/helpers/contribution.ts": 1827,
+    "src/server/helpers/contribution.ts": 1830,
     "src/server/helpers/projection-cache.ts": 221,
     "src/server/helpers/salary.ts": 503,
     "src/server/helpers/snapshot.ts": 1215,
@@ -160,13 +160,13 @@
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2098,
     "src/server/routers/contribution-profiles.ts": 909,
-    "src/server/routers/contribution.ts": 1434,
+    "src/server/routers/contribution.ts": 1436,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/investments/_shared.ts": 636,
     "src/server/routers/investments/load-current-balances.ts": 508,
     "src/server/routers/milestones.ts": 414,
     "src/server/routers/networth.ts": 1481,
-    "src/server/routers/paycheck.ts": 945,
+    "src/server/routers/paycheck.ts": 948,
     "src/server/routers/performance.ts": 1890,
     "src/server/routers/projection/_shared.ts": 366,
     "src/server/routers/projection/coast-fire.ts": 469,
@@ -769,7 +769,7 @@
     "src/lib/pure/accounts/tax-buckets.ts": {
       "computeTaxBucketBreakdown": 243
     },
-    "src/lib/pure/contribution-caps.ts": {
+    "src/lib/pure/contributions/contribution-caps.ts": {
       "capContributionsByLimitGroup": 271
     },
     "src/lib/pure/engine/contribution-routing.ts": {

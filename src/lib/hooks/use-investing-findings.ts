@@ -12,7 +12,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
-import { backdoorPlanned } from "@/lib/pure/roth-ira";
+import { backdoorPlanned } from "@/lib/pure/contributions/roth-ira";
 import { SK_HSA_CASH_BUFFER } from "@/lib/constants/settings-keys";
 import {
   currentCashClass,

@@ -59,14 +59,17 @@ import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
-import { rothIraRouteOf, rothIraSummary } from "@/lib/pure/roth-ira";
+import {
+  rothIraRouteOf,
+  rothIraSummary,
+} from "@/lib/pure/contributions/roth-ira";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
 import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
-import { ficaCapContext } from "@/lib/pure/contributions";
+import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 
 /**
  * The standard deduction Pub 15-T's withholding tables were built on, read

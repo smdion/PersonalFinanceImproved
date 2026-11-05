@@ -549,7 +549,7 @@
       "count": 2
     }
   },
-  "src/lib/pure/contributions/contribution.ts": {
+  "src/lib/pure/contributions/contribution-totals.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 5
     }
@@ -644,7 +644,7 @@
       "count": 4
     }
   },
-  "src/lib/pure/retirement-bridge.ts": {
+  "src/lib/pure/retirement/retirement-bridge.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

@@ -13,7 +13,7 @@ import {
   planMatchesActive,
   planProfileIds,
 } from "@/lib/pure/plans";
-import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";
 import { useActiveContribProfile } from "./use-active-contrib-profile";

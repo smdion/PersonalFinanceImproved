@@ -46,13 +46,16 @@ import {
   capContributionsByLimitGroup,
   type CapPerson,
   type CapRow,
-} from "@/lib/pure/contribution-caps";
-import { resolveIrsLimit } from "@/lib/pure/contributions";
-import { judgeRothIra, rothIraAllowed } from "@/lib/pure/roth-ira";
+} from "@/lib/pure/contributions/contribution-caps";
+import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
+import {
+  judgeRothIra,
+  rothIraAllowed,
+} from "@/lib/pure/contributions/roth-ira";
 import { megaBackdoorRoom } from "@/lib/pure/milestone-input";
 import { computeEmployerMatch } from "@/server/helpers/contribution-match";
-import { taxDataLimitMap } from "../helpers/tax-data";
-import { cents, xfail } from "../fixtures/answer-key";
+import { taxDataLimitMap } from "../../helpers/tax-data";
+import { cents, xfail } from "../../fixtures/answer-key";
 
 // ---------------------------------------------------------------------------
 // Inputs: the shipped limits for a year, and invented households

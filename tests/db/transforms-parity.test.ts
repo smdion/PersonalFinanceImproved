@@ -48,7 +48,7 @@
 // hand-built PG-style string rows — no real database is touched.
 import "../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { CapPassed } from "@/lib/pure/contribution-caps";
+import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { getTableName } from "drizzle-orm";
 
 import { resolvePersonYearIncome } from "@/server/helpers/salary";

@@ -1,6 +1,6 @@
 /**
  * Backdoor Roth and pro-rata recommendations — adapters over the Roth IRA
- * view judged once in lib/pure/roth-ira.ts (buildRothIraView). Only maps
+ * view judged once in lib/pure/contributions/roth-ira.ts (buildRothIraView). Only maps
  * fields and picks urgency from the dated windows in config; no rule is
  * judged here.
  */
@@ -11,7 +11,10 @@ import type {
 } from "@/lib/pure/recommendations";
 import { formatCurrency } from "@/lib/utils/format";
 import { filingStatusLabel } from "@/lib/config/display-labels";
-import { rothIraAdvice, type RothIraView } from "@/lib/pure/roth-ira";
+import {
+  rothIraAdvice,
+  type RothIraView,
+} from "@/lib/pure/contributions/roth-ira";
 
 export function recommendationsFromRothIra(
   view: RothIraView | null,

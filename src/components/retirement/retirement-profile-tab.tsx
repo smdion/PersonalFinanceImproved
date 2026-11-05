@@ -49,7 +49,7 @@ import {
   getStrategyMeta,
 } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import { recommendWithdrawalStrategy } from "@/lib/pure/withdrawal-strategy-recommendation";
+import { recommendWithdrawalStrategy } from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { HealthcareSection } from "@/components/retirement/sections/healthcare";

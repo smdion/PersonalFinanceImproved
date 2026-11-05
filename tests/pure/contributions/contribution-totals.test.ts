@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateContributions } from "@/lib/pure/contributions/contribution";
+import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import {
   PERSON_A_CONTRIBUTIONS,
   PERSON_B_CONTRIBUTIONS,

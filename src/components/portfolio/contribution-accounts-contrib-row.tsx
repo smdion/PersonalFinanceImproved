@@ -23,9 +23,9 @@ import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
 } from "@/lib/pure/profiles";
-import { formatEmployerMatch } from "@/lib/pure/contributions";
+import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
-import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 

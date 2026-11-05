@@ -22,7 +22,7 @@ import {
   PENDING_CONVERSION_WINDOW_DAYS,
   pendingConversion,
   preTaxIraByPerson,
-} from "@/lib/pure/roth-ira";
+} from "@/lib/pure/contributions/roth-ira";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import {

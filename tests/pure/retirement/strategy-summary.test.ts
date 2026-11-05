@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { strategySummary } from "@/lib/pure/strategy-summary";
+import { strategySummary } from "@/lib/pure/retirement/strategy-summary";
 
 const years = [
   { year: 2040, withdrawal: 100, spending: 90, retirementBalance: 1000 },

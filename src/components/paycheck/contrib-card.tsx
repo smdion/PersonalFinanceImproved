@@ -1,8 +1,8 @@
 "use client";
 
-import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
-import { capMessage } from "@/lib/pure/contribution-caps";
+import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";

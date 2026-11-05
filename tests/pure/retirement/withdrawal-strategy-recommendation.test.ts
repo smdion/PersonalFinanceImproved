@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   recommendWithdrawalStrategy,
   type PlanCharacteristics,
-} from "@/lib/pure/withdrawal-strategy-recommendation";
+} from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 
 const basePlan: PlanCharacteristics = {
   retirementHorizonYears: 25,

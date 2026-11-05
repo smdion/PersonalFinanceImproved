@@ -32,7 +32,7 @@ import {
   type CapContext,
   type CappedContribution,
   type CapRow,
-} from "../contribution-caps";
+} from "../contributions/contribution-caps";
 import { OVERFLOW_TOLERANCE } from "../../constants";
 import { projectSpecAmount } from "./contribution-projection";
 

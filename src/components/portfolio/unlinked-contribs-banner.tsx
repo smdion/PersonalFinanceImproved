@@ -11,7 +11,7 @@
 import React from "react";
 import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
 import { accountDisplayName } from "@/lib/utils/format";
-import { formatEmployerMatch } from "@/lib/pure/contributions";
+import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 
 type ContribEntry = {
   id: number;

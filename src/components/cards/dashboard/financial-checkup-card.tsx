@@ -19,7 +19,7 @@ import {
   householdSavings,
   householdTotalCompensation,
   isHighIncomeHousehold,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/savings-rate";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";

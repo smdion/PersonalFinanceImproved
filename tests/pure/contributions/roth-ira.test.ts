@@ -7,7 +7,7 @@ import {
   rothIraAllowed,
   rothIraSummary,
   backdoorPlanned,
-} from "@/lib/pure/roth-ira";
+} from "@/lib/pure/contributions/roth-ira";
 import {
   medicareLiabilityKey,
   rothIraPhaseoutKeys,
@@ -311,7 +311,8 @@ describe("pro-rata materiality", () => {
 
 describe("Roth IRA route", () => {
   it("rothIraRouteOf: the Roth IRA contribution's route, absent = direct; null with none", async () => {
-    const { rothIraRouteOf } = await import("@/lib/pure/roth-ira");
+    const { rothIraRouteOf } =
+      await import("@/lib/pure/contributions/roth-ira");
     expect(
       rothIraRouteOf([
         { accountType: "401k", taxTreatment: "tax_free" },

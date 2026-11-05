@@ -32,7 +32,7 @@
 import { Card } from "@/components/ui/card";
 import { Disclaimer } from "@/components/ui/disclaimer";
 import { trpc } from "@/lib/trpc";
-import { validateContributionOrder } from "@/lib/pure/contributions";
+import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
 import { checkGlidePath } from "@/lib/pure/glide-path";
 import {
   detectRosyAssumptions,
@@ -42,7 +42,7 @@ import {
 import {
   recommendWithdrawalStrategy,
   type WithdrawalStrategyRecommendation,
-} from "@/lib/pure/withdrawal-strategy-recommendation";
+} from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 import { deriveProjectionBand } from "@/lib/pure/projection-bands";
 import {
   formatPercent,

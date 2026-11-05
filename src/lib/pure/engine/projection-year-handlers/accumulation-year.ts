@@ -44,7 +44,7 @@ import {
   slotLimits,
   remainingRoom,
 } from "../contribution-routing";
-import { accountGroupLimits } from "@/lib/pure/contribution-caps";
+import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,

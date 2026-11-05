@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planExpectedNow, yearFraction } from "@/lib/pure/plan-pace";
+import { planExpectedNow, yearFraction } from "@/lib/pure/retirement/plan-pace";
 
 describe("planExpectedNow", () => {
   const base = {

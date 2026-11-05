@@ -8,7 +8,7 @@
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
-import { planExpectedNow, yearFraction } from "@/lib/pure/plan-pace";
+import { planExpectedNow, yearFraction } from "@/lib/pure/retirement/plan-pace";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 export function PlanPaceLine({

@@ -8,7 +8,7 @@ import {
   createPRNG,
   sampleBlendedReturn,
 } from "@/lib/pure/simulation/random";
-import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
+import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 
 const classes = [
   { id: 1, name: "Stocks", meanReturn: 0.1, stdDev: 0.18 },

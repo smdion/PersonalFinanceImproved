@@ -1,7 +1,7 @@
 "use client";
 
 /** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
-import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
+import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import {
   taxTypeLabel,
   categoryChartHex,

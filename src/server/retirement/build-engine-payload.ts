@@ -57,7 +57,7 @@ import {
   isRetirementMoney,
 } from "@/lib/config/account-types";
 import type { SimpleTaxModeParts } from "@/lib/pure/tax/simple-tax-mode";
-import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
+import { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 import {
   findMissingCostBasis,
   missingCostBasisWarning,
@@ -72,7 +72,7 @@ import {
 import { log } from "@/lib/logger";
 import { buildSocialSecurityEntries } from "./social-security-entries";
 import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
-import { accountGroupLimits } from "@/lib/pure/contribution-caps";
+import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import {
   capEffectiveContribs,
   type CapPassHousehold,

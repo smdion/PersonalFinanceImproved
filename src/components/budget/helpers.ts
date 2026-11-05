@@ -9,7 +9,7 @@
  * 44-64.
  */
 
-import { computeValue } from "@/lib/pure/contribution-caps";
+import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import type { PayrollBreakdown, SinkingFundLine } from "./types";
 

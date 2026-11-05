@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import {
   baselineNestEgg,
   simulatedOrBaseline,
-} from "@/lib/pure/nest-egg-display";
+} from "@/lib/pure/retirement/nest-egg-display";
 
 const bands = [
   { age: 60, year: 2050, p25: 800_000, p50: 1_000_000, p75: 1_300_000 },

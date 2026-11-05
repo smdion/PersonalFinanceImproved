@@ -5,7 +5,7 @@ import {
   accountGroupLimits,
   type CapPerson,
   type CapRow,
-} from "@/lib/pure/contribution-caps";
+} from "@/lib/pure/contributions/contribution-caps";
 
 const limits = {
   "401k_employee_limit": 20000,

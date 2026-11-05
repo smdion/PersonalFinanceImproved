@@ -1,5 +1,5 @@
 import type { RothIraRoute } from "@/lib/config/enum-values";
-import type { CappedContribution } from "@/lib/pure/contribution-caps";
+import type { CappedContribution } from "@/lib/pure/contributions/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import type { AccountCategory } from "@/lib/config/account-types";

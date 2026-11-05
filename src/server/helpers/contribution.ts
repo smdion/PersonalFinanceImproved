@@ -28,7 +28,10 @@ import {
   type ContributionMethod,
 } from "@/lib/config/enum-values";
 import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
-import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
+import {
+  computeValue,
+  type CapPassed,
+} from "@/lib/pure/contributions/contribution-caps";
 import {
   computeAnnualContribution,
   fractionFromPercent,
@@ -45,7 +48,7 @@ import {
   bonusCheckContribution,
   isPaidThroughPayroll,
 } from "@/lib/pure/paycheck/paycheck";
-import { payrollFicaExemptCap } from "@/lib/pure/contributions";
+import { payrollFicaExemptCap } from "@/lib/pure/contributions/irs-limits";
 import {
   contributionPay,
   getTotalCompensation,

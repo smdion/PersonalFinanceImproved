@@ -18,7 +18,7 @@ import {
   PERF_CATEGORY_RETIREMENT,
   PROJECTED_RETIREMENT_BROKERAGE_LABEL,
 } from "@/lib/config/display-labels";
-import type { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
+import type { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   computeTaxBucketAnalysis,

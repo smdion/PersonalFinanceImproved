@@ -15,7 +15,7 @@ import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import { taxForOnePerson, type OnePersonTaxInput } from "./tax/tax-helpers";
 import { calculateBudget } from "@/lib/pure/budget/budget";
-import { calculateContributions } from "@/lib/pure/contributions/contribution";
+import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 // calculateSavings reserved for future savings logic-gap tests

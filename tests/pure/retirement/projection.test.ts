@@ -3,7 +3,7 @@
  * Covers: blendedReturnForAge.
  */
 import { describe, it, expect } from "vitest";
-import { blendedReturnForAge } from "@/lib/pure/projection";
+import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
 
 const equityClass = { id: 1, meanReturn: 0.1, stdDev: 0.18 };
 const bondClass = { id: 2, meanReturn: 0.04, stdDev: 0.06 };

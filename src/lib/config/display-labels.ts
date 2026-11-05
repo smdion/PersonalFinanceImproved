@@ -305,7 +305,7 @@ export const PROJECTED_RETIREMENT_BROKERAGE_LABEL =
   "Retirement brokerage (projected)";
 
 /** Where penalty-free money sits at the start of the retirement bridge
- *  (lib/pure/retirement-bridge.ts). */
+ *  (lib/pure/retirement/retirement-bridge.ts). */
 export const BRIDGE_SOURCE_LABELS: Record<
   "brokerage" | "roth" | "workplacePlan" | "traditionalIra" | "other",
   string

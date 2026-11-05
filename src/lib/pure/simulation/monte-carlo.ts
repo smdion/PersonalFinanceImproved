@@ -15,7 +15,7 @@ import { strategySpending } from "../retirement/strategy-spending";
 import { assessPlan, type PlanFailureReason } from "../retirement/plan-outcome";
 import { calculateProjection } from "../engine";
 import { buildInflationPath } from "../engine/inflation-path";
-import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
+import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import {
   createPRNG,
   sampleBlendedReturn,

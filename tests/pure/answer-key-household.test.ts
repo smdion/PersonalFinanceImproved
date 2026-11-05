@@ -40,7 +40,10 @@ import {
 } from "@/lib/pure/performance";
 import { totalReturnSeries } from "@/lib/pure/total-return";
 import { blendedCost, type EffectiveFacts } from "@/lib/pure/fund-facts";
-import { matchedMixLevels, type MatchedMixInput } from "@/lib/pure/matched-mix";
+import {
+  matchedMixLevels,
+  type MatchedMixInput,
+} from "@/lib/pure/contributions/matched-mix";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import {
   FIDELITY_CHECKPOINTS,

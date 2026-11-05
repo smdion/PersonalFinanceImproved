@@ -26,7 +26,7 @@
  * below only needs to say WHICH profile / budget / snapshot to read. This
  * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
  */
-import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
+import { withControlledOverrides } from "@/lib/pure/contributions/controlled-overrides";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";

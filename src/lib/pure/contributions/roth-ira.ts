@@ -24,7 +24,7 @@ import {
   isTaxFree,
 } from "@/lib/config/account-types";
 import type { RothIraRoute } from "@/lib/config/enum-values";
-import { irsLimitOrNull } from "@/lib/pure/contributions";
+import { irsLimitOrNull } from "@/lib/pure/contributions/irs-limits";
 import { ageInYear } from "@/lib/utils/date";
 import {
   PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT,

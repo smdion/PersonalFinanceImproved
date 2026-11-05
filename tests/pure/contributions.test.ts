@@ -8,11 +8,11 @@ import {
   resolvePriorYearLimit,
   computeSiblingTotal,
   isEligibleForPriorYear,
-  validateContributionOrder,
-  formatEmployerMatch,
   payrollFicaExemptCap,
   ficaCapContext,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/irs-limits";
+import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
+import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
 // The limits record mirrors real contribution_limits DB rows.
@@ -207,7 +207,7 @@ describe("isEligibleForPriorYear", () => {
 import {
   computeViewAwareAccountMetrics,
   computeViewAwareTotals,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/view-metrics";
 
 describe("computeViewAwareAccountMetrics", () => {
   const base = {
@@ -503,7 +503,7 @@ describe("formatEmployerMatch", () => {
   });
 });
 
-import { householdSavings } from "@/lib/pure/contributions";
+import { householdSavings } from "@/lib/pure/contributions/savings-rate";
 
 describe("householdSavings", () => {
   // Invented household: one person on a $100k plan, plus a joint brokerage.

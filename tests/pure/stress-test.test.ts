@@ -14,7 +14,7 @@ import { deriveProjectionBand } from "@/lib/pure/projection-bands";
 import {
   recommendWithdrawalStrategy,
   type PlanCharacteristics,
-} from "@/lib/pure/withdrawal-strategy-recommendation";
+} from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 
 // ── Stress test parameter sets ──────────────────────────────────────
 

@@ -18,7 +18,7 @@ import {
   valueByClass,
 } from "@/lib/pure/fund-facts";
 import { interpolateAllocations } from "@/lib/pure/simulation/random";
-import { blendedReturnForAge } from "@/lib/pure/projection";
+import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/helpers/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";

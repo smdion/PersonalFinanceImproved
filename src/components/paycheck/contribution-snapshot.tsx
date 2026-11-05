@@ -35,7 +35,7 @@ import {
   isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/savings-rate";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";

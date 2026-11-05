@@ -13,7 +13,7 @@ import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 import type {
   HouseholdSavings,
   SavingsTreatment,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/savings-rate";
 
 const LINE_LABEL: Record<SavingsTreatment | "match", string> = {
   preTax: taxTypeLabel("preTax"),

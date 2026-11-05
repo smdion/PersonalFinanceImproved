@@ -2,7 +2,7 @@
  * Where reinvested RMD money goes (fictional accounts).
  */
 import { describe, it, expect } from "vitest";
-import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
+import { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 
 const perf = (id: number, parentCategory: string, over = {}) => ({
   id,

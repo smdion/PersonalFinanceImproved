@@ -1,7 +1,7 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings and compact summary bar. */
-import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
+import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";

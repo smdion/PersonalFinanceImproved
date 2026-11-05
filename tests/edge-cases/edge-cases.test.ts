@@ -12,7 +12,7 @@ import {
   type OnePersonTaxInput,
 } from "../pure/tax/tax-helpers";
 import { calculateBudget } from "@/lib/pure/budget/budget";
-import { calculateContributions } from "@/lib/pure/contributions/contribution";
+import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateSavings } from "@/lib/pure/savings/savings";

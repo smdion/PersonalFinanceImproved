@@ -5,7 +5,7 @@ import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { useFocusMatch } from "@/lib/hooks/use-focus";
 import { HelpTip } from "@/components/ui/help-tip";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { isHighIncomeHousehold } from "@/lib/pure/contributions";
+import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 import { Toggle } from "@/components/ui/toggle";
 import { PillBtn, LabeledPillGroup } from "./pill-btn";
 import {

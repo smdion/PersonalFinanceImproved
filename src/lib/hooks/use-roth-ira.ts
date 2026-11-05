@@ -2,7 +2,7 @@
 
 /**
  * The household's Roth IRA view — judged once by buildRothIraView
- * (lib/pure/roth-ira.ts) from the Household Income summary and the
+ * (lib/pure/contributions/roth-ira.ts) from the Household Income summary and the
  * investment side (taxable investment income, pre-tax IRA balances). The
  * investment side needs the portfolio permission; without it there's no
  * view (the card shows the wage AGI instead).
@@ -12,7 +12,10 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { SK_ROTH_IRA_DIRECT_MARGIN } from "@/lib/constants/settings-keys";
-import { buildRothIraView, type RothIraView } from "@/lib/pure/roth-ira";
+import {
+  buildRothIraView,
+  type RothIraView,
+} from "@/lib/pure/contributions/roth-ira";
 import type { RouterOutputs } from "@/lib/trpc";
 
 type RothIraInputs = RouterOutputs["investments"]["getRothIraInputs"];

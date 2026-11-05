@@ -5,13 +5,13 @@
  * configured `contributionValue` (editors, saves and diffs read it) and
  * gains `cappedValue` (what every calculation reads, via computeValue) and
  * `cap` (the module's verdict: how much over, the most it can be, why).
- * The rule itself lives in lib/pure/contribution-caps.ts.
+ * The rule itself lives in lib/pure/contributions/contribution-caps.ts.
  */
 import {
   capContributionsByLimitGroup,
   capMessage,
   type CapPassed,
-} from "@/lib/pure/contribution-caps";
+} from "@/lib/pure/contributions/contribution-caps";
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";

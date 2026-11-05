@@ -7,7 +7,7 @@ import {
   userHasPermission,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateContributions } from "@/lib/pure/contributions/contribution";
+import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import {
   loadLiveContributions,
   liveYearToDate,
@@ -54,19 +54,21 @@ import {
   resolvePriorYearLimit,
   computeSiblingTotal,
   isEligibleForPriorYear,
+} from "@/lib/pure/contributions/irs-limits";
+import {
   computeViewAwareAccountMetrics,
   computeViewAwareTotals,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/view-metrics";
 import type {
   AccountViewMetrics,
   ViewAwareTotals,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/view-metrics";
 import { findActiveJob } from "@/lib/pure/profiles";
 import {
   capMessage,
   combinedCoverage,
   computeValue,
-} from "@/lib/pure/contribution-caps";
+} from "@/lib/pure/contributions/contribution-caps";
 import {
   capForRequest,
   loadCapHousehold,

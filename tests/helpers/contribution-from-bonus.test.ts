@@ -7,7 +7,7 @@
  * $20,000 bonus, a 6% 401(k) matched 100% up to 4% of pay.
  */
 import "./setup-mocks";
-import type { CapPassed } from "@/lib/pure/contribution-caps";
+import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { describe, it, expect } from "vitest";
 import {
   aggregateContributionsByCategory,

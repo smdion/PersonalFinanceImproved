@@ -41,7 +41,7 @@ import {
   matchedMixDescription,
   matchedMixLevels,
   matchedMixRun,
-} from "@/lib/pure/matched-mix";
+} from "@/lib/pure/contributions/matched-mix";
 import { toNumber } from "@/server/helpers/transforms";
 import { toFactRows } from "@/server/helpers/fund-facts";
 import {
