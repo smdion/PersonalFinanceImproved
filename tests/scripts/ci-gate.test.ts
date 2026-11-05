@@ -205,7 +205,12 @@ describe("the script and deploy.sh --dry-run, with a stand-in gh", () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
-  function stage(runs: Partial<CiRun>[], jobs: CiJob[] = greenJobs) {
+  // The script reads HEAD's ci.yml, so a green run reports every job it defines.
+  const headJobs: CiJob[] = workflowJobNames(
+    fs.readFileSync(".github/workflows/ci.yml", "utf8"),
+  ).map((name) => ({ name, status: "completed", conclusion: "success" }));
+
+  function stage(runs: Partial<CiRun>[], jobs: CiJob[] = headJobs) {
     fs.writeFileSync(
       path.join(dir, "runs.json"),
       JSON.stringify(runs.map((r) => pushRun({ headSha: head, ...r }))),
