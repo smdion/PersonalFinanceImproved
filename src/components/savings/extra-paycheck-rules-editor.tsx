@@ -376,7 +376,7 @@ function ExtraPaycheckJobPanel({
 
   // Auto-upgrade: if rules exist but baseNetPayPerCheck hasn't been set yet,
   // trigger saveGrowth so the server recomputes net pay and the materializer
-  // has a base to project from.
+  // switches from the stale per-rule netPaySnapshot to the dynamic projection path.
   const autoUpgradeFiredRef = useRef(false);
   useEffect(() => {
     if (

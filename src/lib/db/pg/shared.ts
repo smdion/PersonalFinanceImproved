@@ -10,6 +10,11 @@ export type ExtraPaycheckRule = {
   to: string | null;
   /** How to split the check across goals; pct values must sum to 100. */
   splits: { goalId: number; pct: number }[];
+  /**
+   * @deprecated Use ExtraPaycheckRoutingData.baseNetPayPerCheck + yearlyGrowth instead.
+   * Kept for backward-compat fallback when routing-level base is absent.
+   */
+  netPaySnapshot?: number;
 };
 
 /** A one-time per-month override that takes precedence over the matching rule. */

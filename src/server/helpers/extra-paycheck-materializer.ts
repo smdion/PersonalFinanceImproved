@@ -187,13 +187,13 @@ async function _materialize(db: Db): Promise<void> {
 
       const splits = override?.splits ?? rule.splits;
 
-      // Net pay: the routing-level base + growth projection; none before
-      // the base is set.
+      // Compute net pay: prefer routing-level base + growth projection;
+      // fall back to per-rule netPaySnapshot for legacy records.
       const targetYear = parseInt(monthKey.slice(0, 4));
       const netPay =
         baseNetPay !== undefined
           ? projectedNetPay(baseNetPay, targetYear, baseYear, yearlyGrowth)
-          : 0;
+          : (rule.netPaySnapshot ?? 0);
 
       for (const split of splits) {
         if (!activeGoalIds.has(split.goalId)) continue;

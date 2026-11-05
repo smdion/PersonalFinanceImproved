@@ -99,7 +99,7 @@
     "src/lib/config/withdrawal-strategies.ts": 779,
     "src/lib/constants.ts": 370,
     "src/lib/db/backup-transforms.ts": 1118,
-    "src/lib/db/json-schemas.ts": 457,
+    "src/lib/db/json-schemas.ts": 459,
     "src/lib/db/pg/api-sync.ts": 617,
     "src/lib/db/pg/retirement.ts": 631,
     "src/lib/db/reference-reconcile-core.ts": 797,
