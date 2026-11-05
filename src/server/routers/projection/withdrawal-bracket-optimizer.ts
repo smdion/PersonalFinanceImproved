@@ -22,10 +22,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
@@ -33,7 +30,6 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const withdrawalBracketOptimizerRouter = createTRPCRouter({
@@ -64,14 +60,9 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input.selection,
         snapshotId: input.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)

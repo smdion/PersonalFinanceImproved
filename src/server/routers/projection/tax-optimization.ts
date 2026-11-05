@@ -40,10 +40,7 @@ import type {
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { taxYearFlags } from "@/lib/pure/advice/report/year-table";
 import { accountCategoryEnum } from "@/lib/config/account-types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
@@ -51,7 +48,6 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /**
@@ -126,18 +122,13 @@ type TaxOptimizationBaseInput = z.infer<typeof taxOptimizationBaseInput>;
  * the not-configured reason when no return rate covers its current age.
  */
 async function runProjection(
-  db: Parameters<typeof fetchRetirementData>[0],
+  db: Parameters<typeof prepareProjectionRun>[0],
   input: TaxOptimizationBaseInput,
   extraDecumulationOverrides: DecumulationOverride[] = [],
 ) {
-  const profiles = engineProfileOptions(input.selection);
-  const data = await fetchRetirementData(db, {
+  const { payload } = await prepareProjectionRun(db, {
+    selection: input.selection,
     snapshotId: input.snapshotId,
-    contributionProfileId: profiles.contributionProfileId,
-    salaryProfileId: profiles.salaryProfileId,
-  });
-  const payload = await buildEnginePayload(db, data, {
-    ...profiles,
   });
   if (!payload) return null;
   if (payload.notConfigured) return payload.notConfigured;

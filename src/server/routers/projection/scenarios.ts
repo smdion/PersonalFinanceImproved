@@ -17,7 +17,10 @@ import {
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
 import { buildAccumulationOrder } from "@/lib/pure/contributions/accumulation-order";
-import { computeCurrentStockAllocationPercent } from "@/server/services/projection/projection-run";
+import {
+  computeCurrentStockAllocationPercent,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { toNumber } from "@/lib/utils/numbers";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
@@ -36,10 +39,6 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
-import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
@@ -47,7 +46,6 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /** A settings row's strategy param columns, as stored. */
@@ -103,14 +101,9 @@ export const scenariosRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { data, payload } = await prepareProjectionRun(ctx.db, {
+        selection: input.selection,
         snapshotId: input.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { result: null };
       // No return rate: a state, not an engine throw. Metadata (settings,

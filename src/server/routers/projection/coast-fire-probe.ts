@@ -35,10 +35,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
@@ -53,7 +50,6 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /**
@@ -107,20 +103,14 @@ export const coastFireProbeRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
       // Coast FIRE's Simulation runs on the default preset.
-      const [data, mc] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+      const [{ payload }, mc] = await Promise.all([
+        prepareProjectionRun(ctx.db, {
+          selection: input.selection,
           snapshotId: input.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
-
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };
 

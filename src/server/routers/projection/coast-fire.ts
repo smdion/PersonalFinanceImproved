@@ -33,10 +33,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
@@ -51,7 +48,6 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
@@ -111,14 +107,9 @@ export const coastFireRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input.selection,
         snapshotId: input.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)
@@ -216,24 +207,18 @@ export const coastFireRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
       // Fetch the engine payload + MC-specific tables in parallel. Mirrors
       // computeMonteCarloProjection for the "default" preset only — no
       // user-adjustable preset, no asset class overrides, no inflation
       // overrides. Coast FIRE MC uses defaults for reproducibility.
       // Coast FIRE's Simulation runs on the default preset.
-      const [data, mc] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+      const [{ payload }, mc] = await Promise.all([
+        prepareProjectionRun(ctx.db, {
+          selection: input.selection,
           snapshotId: input.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
-
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       // No return rate: the projection card says so; nothing to search.
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };

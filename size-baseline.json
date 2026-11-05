@@ -180,12 +180,12 @@
     "src/server/routers/paycheck.ts": 875,
     "src/server/routers/performance.ts": 1893,
     "src/server/routers/projection/_shared.ts": 235,
-    "src/server/routers/projection/coast-fire.ts": 472,
+    "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 548,
     "src/server/routers/projection/relocation.ts": 664,
-    "src/server/routers/projection/scenarios.ts": 488,
+    "src/server/routers/projection/scenarios.ts": 481,
     "src/server/routers/projection/strategy.ts": 844,
-    "src/server/routers/projection/tax-optimization.ts": 536,
+    "src/server/routers/projection/tax-optimization.ts": 527,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 689,
     "src/server/routers/savings.ts": 2574,
@@ -914,7 +914,7 @@
       "performanceRouter.finalizeYear.mutation().transaction()": 477
     },
     "src/server/routers/projection/coast-fire.ts": {
-      "coastFireRouter.computeCoastFireMC.query()": 254
+      "coastFireRouter.computeCoastFireMC.query()": 248
     },
     "src/server/routers/projection/monte-carlo.ts": {
       "monteCarloRouter.computeMonteCarloProjection.query()": 318
@@ -923,7 +923,7 @@
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 487
     },
     "src/server/routers/projection/scenarios.ts": {
-      "scenariosRouter.computeProjection.query()": 383
+      "scenariosRouter.computeProjection.query()": 378
     },
     "src/server/routers/projection/strategy.ts": {
       "strategyRouter.analyzeStrategy.query()": 415,

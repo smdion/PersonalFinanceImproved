@@ -8,17 +8,13 @@
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
 import {
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const stressTestRouter = createTRPCRouter({
@@ -44,14 +40,9 @@ export const stressTestRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input?.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input?.selection,
         snapshotId: input?.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { scenarios: [], retirementAge: null };
 
