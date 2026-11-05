@@ -4629,6 +4629,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/paycheck.types.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/paystub-check.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5086,9 +5091,6 @@
     }
   },
   "src/lib/pure/types/calculators.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
