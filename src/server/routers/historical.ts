@@ -15,7 +15,7 @@ import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,
 } from "@/lib/pure/net-worth/historical";
-import { zYearEndTargeting } from "./_shared";
+import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure

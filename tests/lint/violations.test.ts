@@ -2073,7 +2073,7 @@ const BUILT_AT_LOAD = [
   "src/lib/pure/engine/types/overrides.schema.ts storedWithdrawalSplitsSchema",
   "src/lib/utils/colors.ts ACCOUNT_TYPE_COLORS",
   "src/lib/utils/colors.ts CATEGORY_CHART_HEX",
-  "src/server/routers/_shared.ts zSandboxContribAdditions",
+  "src/lib/pure/household/what-if.schema.ts zSandboxContribAdditions",
   "src/server/routers/networth.ts portfolioSnapshotInput",
   "src/server/routers/networth.ts networthRouter",
   "src/server/routers/performance.ts performanceAccountInput",

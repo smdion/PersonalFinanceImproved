@@ -37,7 +37,7 @@ import {
   invalidateYearEndCache,
   buildYearEndHistory,
 } from "@/server/services/net-worth/year-end-history";
-import { zYearEndTargeting } from "./_shared";
+import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import {
   accountCategoryEnum,

@@ -14,7 +14,7 @@ import {
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { toNumber } from "@/lib/utils/numbers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
-import { zYearEndTargeting } from "./_shared";
+import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,

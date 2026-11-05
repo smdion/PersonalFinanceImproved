@@ -629,6 +629,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/household/what-if.schema.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
   "src/lib/pure/net-worth/net-worth.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 6
@@ -732,11 +737,6 @@
   "src/server/retirement/payload/profile-switches.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
-    }
-  },
-  "src/server/routers/_shared.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
     }
   },
   "src/server/routers/assets.ts": {

@@ -43,7 +43,7 @@ import {
   zSandboxSalaryEntries,
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
-} from "./_shared";
+} from "@/lib/pure/household/what-if.schema";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContribWindow } from "@/lib/utils/date";

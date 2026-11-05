@@ -1,56 +1,8 @@
-/**
- * Shared conventions for tRPC routers.
- *
- * ──────────────────────────────────────────────────────────
- * NUMERIC / DECIMAL COLUMN RETURN TYPES
- * ──────────────────────────────────────────────────────────
- *
- * Drizzle returns PostgreSQL NUMERIC(12,2) columns as `string` by default
- * to preserve decimal precision. This is intentional — JavaScript `number`
- * (IEEE 754 float64) can silently lose precision with large currency values
- * (e.g. 9_999_999_999.99 cannot be represented exactly as a float).
- *
- * Convention:
- *  - DB → tRPC response: NUMERIC columns arrive as `string` (e.g. "1234.56").
- *  - Server code uses `toNumber()` from `@/lib/utils/numbers` to parse
- *    strings to numbers when doing arithmetic (see that module for details).
- *  - Client code should use `parseFloat(value)` or `Number(value)` when it
- *    needs a numeric value for calculations, charts, or formatting.
- *  - When writing back to the DB, convert with `.toFixed(2)` to produce a
- *    string that PostgreSQL accepts for NUMERIC columns.
- *
- * This is a deliberate trade-off: we accept minor ergonomic friction on the
- * client in exchange for zero silent precision loss across the full stack.
- * A blanket refactor to coerce everything to `number` in tRPC output schemas
- * would risk introducing rounding bugs in balances and transaction amounts.
- * ──────────────────────────────────────────────────────────
- */
-
-// This file is intentionally declaration-only (documentation + re-exports).
-// Import shared utilities from their canonical locations:
-//   toNumber()           → @/lib/utils/numbers
-//   zDecimal             → @/lib/utils/zod-fields
-//   protectedProcedure   → @/server/trpc
+/** The What-If tab's inputs: hand edits that apply for one request only, never saved. */
 
 import { z } from "zod/v4";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
-
-/**
- * Optional "what-if" targeting for procedures that read through
- * buildYearEndHistory/getAnnualExpensesFromBudget — lets a caller (a
- * page-local profile picker) ask "what would this look like under budget
- * profile X, column Y" instead of always reading the globally-active budget
- * profile.
- * Every field is optional; omitting all of them reproduces the untargeted,
- * cacheable default behavior.
- */
-export const zYearEndTargeting = z
-  .object({
-    budgetProfileId: z.number().nullable().optional(),
-    budgetColumn: z.number().nullable().optional(),
-  })
-  .optional();
 
 /** Guardrail on the sandbox record's size — see zSandboxSalaryEntries. */
 const MAX_SANDBOX_PEOPLE = 10;

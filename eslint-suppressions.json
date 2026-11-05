@@ -4704,6 +4704,11 @@
       "count": 3
     }
   },
+  "src/lib/pure/household/what-if.schema.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 7
+    }
+  },
   "src/lib/pure/investments/account-insights.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4877,6 +4882,11 @@
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/year-end-targeting.schema.ts": {
+    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -5607,11 +5617,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    }
-  },
-  "src/server/routers/_shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
     }
   },
   "src/server/routers/assets.ts": {

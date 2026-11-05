@@ -43,7 +43,7 @@ import { savingsRouter } from "./savings";
 import { mortgageRouter } from "./mortgage";
 import { investmentsRouter } from "./investments";
 import { brokerageRouter } from "./brokerage";
-import { zYearEndTargeting } from "./_shared";
+import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 import type { MilestoneDebt } from "@/lib/pure/advice/milestones/milestones";
 import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
 import { raiseHistory } from "@/lib/pure/household/raise-history";

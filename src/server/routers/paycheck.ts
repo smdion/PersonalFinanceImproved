@@ -49,7 +49,7 @@ import {
   zSandboxDeductionAdditions,
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
-} from "./_shared";
+} from "@/lib/pure/household/what-if.schema";
 import type {
   DeductionLine,
   TaxBracketInput,
