@@ -117,7 +117,7 @@
     "src/lib/pure/contributions/irs-limits.ts": 219,
     "src/lib/pure/contributions/roth-ira.ts": 543,
     "src/lib/pure/contributions/savings-rate.ts": 145,
-    "src/lib/pure/contributions/view-metrics.ts": 186,
+    "src/lib/pure/contributions/view-metrics.ts": 182,
     "src/lib/pure/debts/mortgage.ts": 422,
     "src/lib/pure/engine/contribution-routing.ts": 624,
     "src/lib/pure/engine/individual-account-tracking.ts": 1473,
@@ -160,7 +160,7 @@
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2101,
     "src/server/routers/contribution-profiles.ts": 909,
-    "src/server/routers/contribution.ts": 1436,
+    "src/server/routers/contribution.ts": 1430,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/investments/_shared.ts": 636,
     "src/server/routers/investments/load-current-balances.ts": 508,
@@ -879,8 +879,8 @@
       "contributionProfileRouter.getById.query()": 186
     },
     "src/server/routers/contribution.ts": {
-      "contributionRouter.computeSummary.query()": 1205,
-      "contributionRouter.computeSummary.query().results.map()": 745
+      "contributionRouter.computeSummary.query()": 1199,
+      "contributionRouter.computeSummary.query().results.map()": 739
     },
     "src/server/routers/demo.ts": {
       "seedProfile": 453

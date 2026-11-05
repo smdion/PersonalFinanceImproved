@@ -143,8 +143,6 @@ const totalsViews = {
     portfolioWithMatch: 5750,
     totalWithoutMatch: 15000,
     totalWithMatch: 18750,
-    savingsRateWithMatch: 0.2,
-    savingsRateWithoutMatch: 0.16,
   },
   ytd: {
     retirementWithoutMatch: 10000,
@@ -153,8 +151,6 @@ const totalsViews = {
     portfolioWithMatch: 5750,
     totalWithoutMatch: 15000,
     totalWithMatch: 18750,
-    savingsRateWithMatch: 0.2,
-    savingsRateWithoutMatch: 0.16,
   },
   blended: {
     retirementWithoutMatch: 10000,
@@ -163,8 +159,6 @@ const totalsViews = {
     portfolioWithMatch: 5750,
     totalWithoutMatch: 15000,
     totalWithMatch: 18750,
-    savingsRateWithMatch: 0.2,
-    savingsRateWithoutMatch: 0.16,
   },
 };
 

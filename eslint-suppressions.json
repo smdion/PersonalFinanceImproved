@@ -4157,11 +4157,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/contributions/view-metrics.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    }
-  },
   "src/lib/pure/debts/debt-rules.ts": {
     "ratchet/max-comment-lines": {
       "count": 1

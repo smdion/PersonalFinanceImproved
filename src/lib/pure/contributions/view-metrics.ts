@@ -1,4 +1,4 @@
-import { safeDivide, roundToCents } from "@/lib/utils/math";
+import { roundToCents } from "@/lib/utils/math";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 
 export type AccountViewMetrics = {
@@ -17,9 +17,7 @@ export type ViewAwareTotals = {
   portfolioWithMatch: number;
   totalWithoutMatch: number;
   totalWithMatch: number;
-  savingsRateWithMatch: number;
-  savingsRateWithoutMatch: number;
-  /** The compensation the rates divide by (YTD: earned so far). */
+  /** The compensation a savings rate divides by (YTD: earned so far). */
   compensation: number;
 };
 
@@ -143,8 +141,6 @@ export function computeViewAwareTotals(input: {
       portfolioWithMatch: src.portfolioWithMatch,
       totalWithoutMatch: totalWithout,
       totalWithMatch: totalWith,
-      savingsRateWithMatch: (safeDivide(totalWith, comp) ?? 0) as number,
-      savingsRateWithoutMatch: (safeDivide(totalWithout, comp) ?? 0) as number,
       compensation: comp,
     };
   }

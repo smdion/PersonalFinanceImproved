@@ -554,11 +554,6 @@
       "count": 5
     }
   },
-  "src/lib/pure/contributions/view-metrics.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/lib/pure/debts/mortgage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1

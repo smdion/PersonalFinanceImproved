@@ -300,7 +300,7 @@ describe("computeViewAwareTotals", () => {
     const v = computeViewAwareTotals(base);
     expect(v.projected.retirementWithoutMatch).toBe(20000);
     expect(v.projected.totalWithMatch).toBe(30000);
-    expect(v.projected.savingsRateWithMatch).toBeCloseTo(30000 / 150000, 4);
+    expect(v.projected.compensation).toBe(150000);
   });
 
   it("blended uses pre-computed blended totals", () => {
@@ -317,10 +317,11 @@ describe("computeViewAwareTotals", () => {
     expect(v.ytd.portfolioWithoutMatch).toBeCloseTo(2000, 0);
   });
 
-  it("ytd savings rate uses prorated compensation", () => {
+  it("ytd divides by prorated compensation", () => {
     const v = computeViewAwareTotals(base);
     // ytdRetWith=8000+3000=11000, ytdPortWith=2000, total=13000
-    expect(v.ytd.savingsRateWithMatch).toBeCloseTo(13000 / (150000 * 0.5), 4);
+    expect(v.ytd.totalWithMatch).toBeCloseTo(13000, 0);
+    expect(v.ytd.compensation).toBeCloseTo(150000 * 0.5, 4);
   });
 
   it("all ytdActuals=0 falls back to projected", () => {
@@ -336,9 +337,9 @@ describe("computeViewAwareTotals", () => {
     expect(v.blended).toEqual(v.projected);
   });
 
-  it("totalCompensation=0 returns zero savings rate", () => {
+  it("totalCompensation=0 returns zero compensation", () => {
     const v = computeViewAwareTotals({ ...base, totalCompensation: 0 });
-    expect(v.projected.savingsRateWithMatch).toBe(0);
+    expect(v.projected.compensation).toBe(0);
   });
 });
 
