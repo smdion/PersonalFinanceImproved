@@ -6011,16 +6011,16 @@
   },
   "src/server/routers/savings.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 9
+      "count": 8
     },
     "max-lines-per-function": {
-      "count": 3
+      "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 30
+      "count": 27
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/settings/admin.ts": {
@@ -6318,6 +6318,20 @@
       "count": 3
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/paycheck/job-net-pay.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },

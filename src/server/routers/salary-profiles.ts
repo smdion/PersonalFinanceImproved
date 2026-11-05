@@ -52,7 +52,7 @@ import { resolveCompensation } from "@/lib/pure/household/compensation";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
-import { computeJobNetPayPerCheck } from "./savings";
+import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import { upsertSetting } from "@/server/data/settings";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */

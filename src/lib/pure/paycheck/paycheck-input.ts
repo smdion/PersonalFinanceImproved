@@ -5,7 +5,7 @@
  *
  * Consolidated per audit Batch 9 Finding 3, scoped deliberately narrow:
  * this covers ONLY the object-construction tail, not the upstream
- * resolution logic. paycheck.ts's router and savings.ts's
+ * resolution logic. paycheck.ts's router and job-net-pay.ts's
  * computeJobNetPayPerCheck resolve salary/contributions/deductions through
  * genuinely different pipelines — the router applies What-If sandbox edits, and bonus-term/deduction overrides;
  * computeJobNetPayPerCheck resolves against the active Contribution
@@ -33,7 +33,7 @@ import { requireLimit } from "@/lib/pure/tax/tax-limits";
  * entry, not a raw `jobs` column — `| undefined` reflects "no entry for
  * this job in the active profile at all." Callers only reach this builder
  * after already establishing the job/entry is complete (paycheck.ts's
- * bracketRow gate; savings.ts's computeJobNetPayPerCheck throws first) —
+ * bracketRow gate; job-net-pay.ts's computeJobNetPayPerCheck throws first) —
  * `undefined` here would mean that contract was violated upstream, not a
  * real "field genuinely missing" state (a complete entry always has every
  * field, even when the value itself is `null` — e.g. `anchorPayDate: null`

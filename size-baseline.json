@@ -187,7 +187,7 @@
     "src/server/routers/projection/tax-optimization.ts": 536,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 689,
-    "src/server/routers/savings.ts": 2849,
+    "src/server/routers/savings.ts": 2574,
     "src/server/routers/settings/admin.ts": 412,
     "src/server/routers/settings/paycheck.ts": 729,
     "src/server/routers/settings/tax-limits.ts": 784,
@@ -205,6 +205,7 @@
     "src/server/services/debts/other-liabilities.ts": 67,
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 1093,
+    "src/server/services/paycheck/job-net-pay.ts": 285,
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 98,
@@ -940,7 +941,6 @@
       "retirementRouter.computeRelocationAnalysis.query()": 399
     },
     "src/server/routers/savings.ts": {
-      "computeJobNetPayPerCheck": 224,
       "savingsRouter.computeSummary.query()": 349,
       "savingsRouter.pushContributionsToApi.mutation()": 201
     },
@@ -963,6 +963,9 @@
     },
     "src/server/services/net-worth/year-end-history.ts": {
       "buildYearEndHistory": 870
+    },
+    "src/server/services/paycheck/job-net-pay.ts": {
+      "computeJobNetPayPerCheck": 224
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237
