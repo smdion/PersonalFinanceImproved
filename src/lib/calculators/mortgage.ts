@@ -294,14 +294,9 @@ function amortizeLoan(
   };
 }
 
-/**
- * What-if scenario: "What if I pay an extra $X/month starting now?"
- *
- * Takes the existing extra payments (already made) and injects hypothetical future extra
- * payments of `extraMonthlyPrincipal` every month from next month through end of term.
- * Returns the hypothetical payoff date, total interest, and total months for comparison
- * against the baseline.
- */
+/** What-if: the extra payments already made plus `extraMonthlyPrincipal` every
+ *  month from next month to the end of the term. Returns the payoff date, total
+ *  interest and months, to compare with the baseline. */
 function amortizeWhatIf(
   loan: MortgageLoanInput,
   existingExtras: MortgageExtraPayment[],

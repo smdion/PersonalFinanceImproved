@@ -2958,7 +2958,7 @@
   },
   "src/lib/calculators/mortgage.ts": {
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     }
   },
   "src/lib/calculators/net-worth.ts": {

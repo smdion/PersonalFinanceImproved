@@ -92,7 +92,7 @@
     "src/components/validation-content.tsx": 578,
     "src/lib/budget-api/actual-client.ts": 835,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/calculators/mortgage.ts": 424,
+    "src/lib/calculators/mortgage.ts": 419,
     "src/lib/calculators/paycheck.ts": 1381,
     "src/lib/config/account-types.ts": 862,
     "src/lib/config/milestones.ts": 691,
