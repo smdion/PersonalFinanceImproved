@@ -47,10 +47,59 @@ describe("claimSetupToken", () => {
 
     await expect(claimSetupToken(setupToken)).rejects.toThrow(/400/);
   });
+
+  it("sends the claim once, even on a 503: the token is single-use", async () => {
+    const setupToken = Buffer.from(
+      "https://bridge.simplefin.org/claim/x",
+    ).toString("base64");
+    mockFetch.mockReturnValue(textResponse("busy", 503));
+    await expect(claimSetupToken(setupToken)).rejects.toThrow(/503/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    mockFetch.mockReset();
+  });
+
+  it.each([
+    "https://[::ffff:7f00:1]/claim",
+    "https://[::ffff:127.0.0.1]/claim",
+    "https://169.254.169.254/claim",
+    "https://100.64.0.1/claim",
+    "https://simplefin/claim",
+    "http://bridge.simplefin.org/claim",
+    "https://u:p@bridge.simplefin.org/claim",
+  ])("refuses a token decoding to %s before any request", async (claimUrl) => {
+    const setupToken = Buffer.from(claimUrl).toString("base64");
+    await expect(claimSetupToken(setupToken)).rejects.toThrow(
+      /^Invalid SimpleFIN setup token: /,
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("refuses an access URL on a private host before it's stored", async () => {
+    const setupToken = Buffer.from(
+      "https://bridge.simplefin.org/claim/x",
+    ).toString("base64");
+    mockFetch.mockReturnValueOnce(
+      textResponse("https://u:p@10.0.0.5/simplefin"),
+    );
+    const claimed = claimSetupToken(setupToken);
+    await expect(claimed).rejects.toThrow(
+      /^Invalid SimpleFIN access URL: "10\.0\.0\.5" is a private or local address/,
+    );
+    await expect(claimed).rejects.not.toThrow(/u:p/);
+  });
 });
 
 describe("getAccounts", () => {
   beforeEach(() => mockFetch.mockReset());
+
+  it("refuses a stored access URL on a private host, credentials stripped first", async () => {
+    const result = getAccounts("https://user:secret@[::ffff:a00:5]/simplefin");
+    await expect(result).rejects.toThrow(
+      /^Invalid SimpleFIN access URL: .*private or local address/,
+    );
+    await expect(result).rejects.not.toThrow(/secret/);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 
   it("parses credentials out of the access URL and requests balances-only", async () => {
     mockFetch.mockReturnValueOnce(

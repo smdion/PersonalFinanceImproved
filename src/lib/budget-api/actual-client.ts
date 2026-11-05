@@ -292,7 +292,7 @@ function isBudgetNotOpen(err: unknown): boolean {
   return (
     err instanceof BudgetApiError &&
     err.status === 404 &&
-    /no budget file is open/i.test(err.message)
+    /no budget file is open/i.test(err.responseText ?? "")
   );
 }
 

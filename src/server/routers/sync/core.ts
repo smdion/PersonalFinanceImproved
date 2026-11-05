@@ -41,7 +41,7 @@ import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { serviceEnum } from "./_shared";
-import { nothingChanged } from "@/lib/budget-api/errors";
+import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
 import { safeDivide, toDecimalColumn } from "@/lib/utils/math";
 
 /** The cached category list as the comparison reads it. A list cached
@@ -330,7 +330,7 @@ export const syncCoreRouter = createTRPCRouter({
         log("error", "sync_failed", { service, error: msg });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Sync failed: ${msg.slice(0, 200)}`,
+          message: `Sync failed: ${userMessageFor(e) ?? msg.slice(0, 200)}`,
           // The network phase writes nothing; its transaction rolls back.
           cause: nothingChanged(e),
         });

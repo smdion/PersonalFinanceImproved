@@ -126,7 +126,7 @@ describe("externalRequest names the service on every failure", () => {
       externalRequest({
         service: "tiingo",
         endpoint: "/x",
-        url: "http://t.local/x",
+        url: "https://t.example.com/x",
         schema: z.object({ data: z.number() }),
       }),
     ).rejects.toMatchObject({
@@ -170,7 +170,7 @@ describe("externalRequest reports each request it sends", () => {
     const pending = externalRequest({
       service: "simplefin",
       endpoint: "/accounts",
-      url: "http://sf.local/accounts",
+      url: "https://sf.example.com/accounts",
       schema: z.unknown(),
       onAttempt: async ({ status, error }) => {
         attempts.push([status, error?.code ?? null]);
@@ -199,7 +199,7 @@ describe("externalRequest reports each request it sends", () => {
       externalRequest({
         service: "simplefin",
         endpoint: "/accounts",
-        url: "http://sf.local/accounts",
+        url: "https://sf.example.com/accounts",
         schema: z.unknown(),
         onAttempt: async ({ status, error }) => {
           attempts.push([status, error?.code ?? null]);
@@ -215,7 +215,7 @@ describe("externalRequest reports each request it sends", () => {
     const pending = externalRequest({
       service: "simplefin",
       endpoint: "/accounts",
-      url: "http://sf.local/accounts",
+      url: "https://sf.example.com/accounts",
       schema: z.unknown(),
       timeoutMs: 1_000,
       onAttempt: () => new Promise((r) => setTimeout(r, 5_000)),
@@ -231,7 +231,7 @@ describe("externalRequest reports each request it sends", () => {
       externalRequest({
         service: "simplefin",
         endpoint: "/accounts",
-        url: "http://sf.local/accounts",
+        url: "https://sf.example.com/accounts",
         schema: z.unknown(),
         onAttempt: async () => {
           throw new Error("log write failed");

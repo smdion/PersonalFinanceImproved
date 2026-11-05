@@ -23,6 +23,7 @@ import {
   parseExternal,
   type ExternalSource,
 } from "@/lib/http/external-request";
+import { checkOutboundUrl } from "@/lib/http/url-safety";
 import { log } from "@/lib/logger";
 import { promises as fs } from "fs";
 import path from "path";
@@ -38,47 +39,12 @@ import {
 /** Full responses (holdings + 90 days of transactions) are much larger. */
 const FULL_REQUEST_TIMEOUT_MS = 60_000;
 
-/**
- * Reject decoded claim/access URLs that don't point at a real external
- * HTTPS host — the setup token is base64-decoded straight into a fetch()
- * target, so a malformed or tampered token must not be able to make the
- * server reach internal/private/loopback/link-local/metadata addresses.
- */
-function assertSafeRemoteUrl(rawUrl: string, context: string): URL {
-  let url: URL;
-  try {
-    url = new URL(rawUrl);
-  } catch {
-    throw new Error(`Invalid ${context}: not a URL`);
-  }
-  if (url.protocol !== "https:") {
-    throw new Error(`Invalid ${context}: must be HTTPS`);
-  }
-  // url.hostname keeps brackets for IPv6 literals ("[::1]") — strip them so
-  // the checks below actually match the address.
-  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  const isBlockedHost =
-    hostname === "localhost" ||
-    hostname === "0.0.0.0" ||
-    hostname.endsWith(".localhost") ||
-    hostname.endsWith(".internal") ||
-    /^127\./.test(hostname) ||
-    /^10\./.test(hostname) ||
-    /^169\.254\./.test(hostname) ||
-    /^192\.168\./.test(hostname) ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
-    // IPv6 loopback (::1), link-local (fe80::/10), unique-local (fc00::/7),
-    // and IPv4-mapped private ranges (::ffff:10.x, ::ffff:192.168.x, etc.)
-    hostname === "::1" ||
-    /^fe80:/.test(hostname) ||
-    /^f[cd][0-9a-f]{2}:/.test(hostname) ||
-    /^::ffff:(127\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(
-      hostname,
-    );
-  if (isBlockedHost) {
-    throw new Error(`Invalid ${context}: private/internal host not allowed`);
-  }
-  return url;
+/** A claim or access URL (credentials already removed), checked as every
+ *  outbound URL is: the setup token decodes straight into a request target. */
+function checkedUrl(url: string | URL, context: string): URL {
+  const check = checkOutboundUrl(url, "simplefin");
+  if (!check.ok) throw new Error(`Invalid ${context}: ${check.reason}`);
+  return check.url;
 }
 
 type SimplefinHolding = {
@@ -120,13 +86,19 @@ type ParsedAccessUrl = {
 
 /** Split a SimpleFIN access URL into its base URL and a Basic Auth header. */
 function parseAccessUrl(accessUrl: string): ParsedAccessUrl {
-  const url = assertSafeRemoteUrl(accessUrl, "SimpleFIN access URL");
+  let url: URL;
+  try {
+    url = new URL(accessUrl);
+  } catch {
+    throw new Error("Invalid SimpleFIN access URL: Not a valid URL");
+  }
   const username = decodeURIComponent(url.username);
   const password = decodeURIComponent(url.password);
   url.username = "";
   url.password = "";
+  const checked = checkedUrl(url, "SimpleFIN access URL");
   return {
-    baseUrl: url.toString().replace(/\/$/, ""),
+    baseUrl: checked.toString().replace(/\/$/, ""),
     authHeader: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
   };
 }
@@ -165,6 +137,9 @@ function requestAccessUrl(url: string, init: RequestInit): Promise<string> {
     endpoint: "/claim",
     url,
     init,
+    // The setup token is single-use: once SimpleFIN has spent it, a resend
+    // fails and the access URL it answered with is lost.
+    maxAttempts: 1,
     read: "text",
     schema: simplefinSchemas.accessUrl,
   });
@@ -177,9 +152,13 @@ function requestAccessUrl(url: string, init: RequestInit): Promise<string> {
  */
 export async function claimSetupToken(setupToken: string): Promise<string> {
   const claimUrl = Buffer.from(setupToken, "base64").toString("utf8");
-  assertSafeRemoteUrl(claimUrl, "SimpleFIN setup token");
-  const accessUrl = await requestAccessUrl(claimUrl, { method: "POST" });
-  return accessUrl.trim();
+  checkedUrl(claimUrl, "SimpleFIN setup token");
+  const accessUrl = (
+    await requestAccessUrl(claimUrl, { method: "POST" })
+  ).trim();
+  // Refused before it's stored, not at the first sync.
+  parseAccessUrl(accessUrl);
+  return accessUrl;
 }
 
 type GetAccountsResult = {

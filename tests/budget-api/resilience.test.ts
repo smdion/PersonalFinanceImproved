@@ -33,22 +33,19 @@ describe("classifyResponse", () => {
   }
 
   it("classifies 401 as auth error", () => {
-    const err = classifyResponse(mockResponse(401), "Unauthorized");
+    const err = classifyResponse(mockResponse(401));
     expect(err.code).toBe("auth");
     expect(err.status).toBe(401);
     expect(err.isRetryable).toBe(false);
   });
 
   it("classifies 403 as auth error", () => {
-    const err = classifyResponse(mockResponse(403), "Forbidden");
+    const err = classifyResponse(mockResponse(403));
     expect(err.code).toBe("auth");
   });
 
   it("classifies 429 as rate-limit and parses Retry-After (seconds)", () => {
-    const err = classifyResponse(
-      mockResponse(429, { "retry-after": "60" }),
-      "Too many requests",
-    );
+    const err = classifyResponse(mockResponse(429, { "retry-after": "60" }));
     expect(err.code).toBe("rate-limit");
     expect(err.retryAfterSeconds).toBe(60);
     expect(err.isRetryable).toBe(true);
@@ -56,31 +53,30 @@ describe("classifyResponse", () => {
 
   it("classifies 429 with HTTP-date Retry-After", () => {
     const future = new Date(Date.now() + 30_000).toUTCString();
-    const err = classifyResponse(
-      mockResponse(429, { "retry-after": future }),
-      "Too many requests",
-    );
+    const err = classifyResponse(mockResponse(429, { "retry-after": future }));
     expect(err.code).toBe("rate-limit");
     expect(err.retryAfterSeconds).toBeGreaterThan(20);
     expect(err.retryAfterSeconds).toBeLessThanOrEqual(31);
   });
 
   it("classifies 5xx as server error (retryable)", () => {
-    const err = classifyResponse(mockResponse(503), "Service unavailable");
+    const err = classifyResponse(mockResponse(503));
     expect(err.code).toBe("server");
     expect(err.isRetryable).toBe(true);
   });
 
   it("classifies other 4xx as client error (not retryable)", () => {
-    const err = classifyResponse(mockResponse(400), "Bad request");
+    const err = classifyResponse(mockResponse(400));
     expect(err.code).toBe("client");
     expect(err.isRetryable).toBe(false);
   });
 
-  it("truncates long body text", () => {
-    const longBody = "a".repeat(1000);
-    const err = classifyResponse(mockResponse(500), longBody);
-    expect(err.message.length).toBeLessThan(600);
+  it.each([
+    [401, "Authentication failed (401)"],
+    [400, "Client error (400)"],
+    [502, "Upstream server error (502)"],
+  ])("names %i by status alone, never the body", (status, message) => {
+    expect(classifyResponse(mockResponse(status)).message).toBe(message);
   });
 });
 
@@ -102,6 +98,17 @@ describe("classifyThrown", () => {
 
   it("classifies unknowns", () => {
     expect(classifyThrown("plain string").code).toBe("unknown");
+  });
+
+  it("drops a URL's user name and password from the message", () => {
+    const err = classifyThrown(
+      new TypeError(
+        "Request cannot be constructed from a URL that includes credentials: http://user:hunter2@actual.example.com:5006/v1",
+      ),
+    );
+    expect(err.code).toBe("network");
+    expect(err.message).not.toMatch(/user|hunter2/);
+    expect(err.message).toContain("http://actual.example.com:5006/v1");
   });
 });
 

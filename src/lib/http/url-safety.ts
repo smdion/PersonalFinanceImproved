@@ -2,7 +2,12 @@
  *  or password, and a public host as `new URL` normalises it. A private or
  *  local host opens only for Actual, through ALLOWED_ACTUAL_HOSTS. */
 import "server-only";
-import { BlockList, isIP } from "node:net";
+import {
+  lookup as dnsLookup,
+  type LookupAddress,
+  type LookupAllOptions,
+} from "node:dns";
+import { BlockList, isIP, type LookupFunction } from "node:net";
 import { log } from "@/lib/logger";
 
 export type OutboundService =
@@ -16,7 +21,7 @@ type UrlPolicy = {
 
 const HTTPS_ONLY: UrlPolicy = { schemes: ["https:"], allowlist: false };
 
-// http: stays open for Actual: a LAN server often has no TLS, so its
+// http: is open for Actual: a LAN server often has no TLS, so its
 // x-api-key crosses that network in cleartext.
 const URL_POLICIES: Record<OutboundService, UrlPolicy> = {
   actual: { schemes: ["http:", "https:"], allowlist: true },
@@ -189,8 +194,75 @@ export function checkOutboundUrl(
   if (policy.allowlist && isAllowlisted(url)) return { ok: true, url };
   const why = refusal(host);
   if (!why) return { ok: true, url };
-  const hint = policy.allowlist
+  return { ok: false, reason: `"${host}" is ${why}.${allowHint(service)}` };
+}
+
+/** What a refusal adds for a service that takes the allowlist. */
+export function allowHint(service: OutboundService): string {
+  return URL_POLICIES[service].allowlist
     ? " Add the host to ALLOWED_ACTUAL_HOSTS to allow it."
     : "";
-  return { ok: false, reason: `"${host}" is ${why}.${hint}` };
+}
+
+/** Whether a request to this URL may connect to a private address: an
+ *  allowlisted host may resolve to one (split DNS, a reverse proxy). */
+export function opensPrivateAddress(
+  url: URL,
+  service: OutboundService,
+): boolean {
+  return URL_POLICIES[service].allowlist && isAllowlisted(url);
+}
+
+/** A connection refused because its name resolved to a blocked address. */
+export class BlockedAddressError extends Error {
+  override name = "BlockedAddressError";
+}
+
+type ResolveAll = (
+  hostname: string,
+  options: LookupAllOptions,
+  callback: (
+    err: NodeJS.ErrnoException | null,
+    addresses: LookupAddress[],
+  ) => void,
+) => void;
+
+const resolveAll: ResolveAll = (hostname, options, callback) =>
+  dnsLookup(hostname, options, callback);
+
+/** A `net.connect` lookup through node:dns that answers in both shapes
+ *  `net` asks for (`all` or not), after `check` passes every address. */
+function lookupWith(
+  resolve: ResolveAll,
+  check: (hostname: string, addresses: LookupAddress[]) => Error | null,
+): LookupFunction {
+  return (hostname, options, callback) =>
+    resolve(hostname, { ...options, all: true }, (err, addresses) => {
+      if (err) return callback(err, "");
+      const first = addresses[0];
+      const refused = first ? check(hostname, addresses) : null;
+      if (!first) callback(new Error(`No address for ${hostname}`), "");
+      else if (refused) callback(refused, "");
+      else if (options.all) callback(null, addresses);
+      else callback(null, first.address, first.family);
+    });
+}
+
+/** A lookup for an allowlisted host: any address it resolves to. */
+export function plainLookup(resolve: ResolveAll = resolveAll): LookupFunction {
+  return lookupWith(resolve, () => null);
+}
+
+/** A lookup that refuses a name when any address it resolves to is
+ *  blocked, so the address checked is the one connected (rebinding too). */
+export function guardedLookup(
+  resolve: ResolveAll = resolveAll,
+): LookupFunction {
+  return lookupWith(resolve, (hostname, addresses) =>
+    addresses.some((a) => isBlockedAddress(a.address))
+      ? new BlockedAddressError(
+          `"${bareHost(hostname)}" resolves to a private or local address.`,
+        )
+      : null,
+  );
 }

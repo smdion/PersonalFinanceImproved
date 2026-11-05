@@ -1,9 +1,11 @@
 /**
  * The one way Ledgr asks an outside service for something (YNAB, Actual,
  * SimpleFIN, Tiingo) and the one check every response passes before any
- * code reads it. SEC keeps its own transport in sec/client.ts (paced,
- * streamed, never retried).
+ * code reads it. SEC keeps its own paced, streamed transport (sec/client.ts)
+ * and shares `fetchChecked`.
  *
+ * - `fetchChecked`: the URL is checked before every request, the address
+ *   connected at connect time, and a redirect followed only on its host.
  * - Timeout, typed `BudgetApiError`s and retries with backoff (Retry-After
  *   honoured) for every service, by the rules in SERVICE_RULES.
  * - Then the response is checked against the endpoint's schema
@@ -11,6 +13,7 @@
  *   cast.
  */
 import "server-only";
+import { Agent, type Dispatcher } from "undici";
 import { z } from "zod/v4";
 import { log } from "@/lib/logger";
 import {
@@ -19,9 +22,19 @@ import {
   classifyThrown,
   isResendable,
   retryWithBackoff,
+  serviceError,
 } from "@/lib/budget-api/errors";
+import {
+  allowHint,
+  BlockedAddressError,
+  checkOutboundUrl,
+  guardedLookup,
+  opensPrivateAddress,
+  plainLookup,
+  type OutboundService,
+} from "@/lib/http/url-safety";
 
-export type ExternalService = "ynab" | "actual" | "simplefin" | "tiingo";
+export type ExternalService = Exclude<OutboundService, "sec">;
 
 type ServiceRule = {
   timeoutMs: number;
@@ -64,17 +77,117 @@ const SERVICE_RULES: Record<ExternalService, ServiceRule> = {
 
 /** Where a response came from, for the message when it doesn't check out. */
 export type ExternalSource = {
-  service: ExternalService | "sec";
+  service: OutboundService;
   endpoint: string;
 };
 
-const SERVICE_NAMES: Record<ExternalSource["service"], string> = {
+const SERVICE_NAMES: Record<OutboundService, string> = {
   ynab: "YNAB",
   actual: "Actual",
   simplefin: "SimpleFIN",
   tiingo: "Tiingo",
   sec: "SEC",
 };
+
+/** Connections for every host but an allowlisted one: a name is refused
+ *  when it resolves to a private or local address. */
+const PUBLIC_ONLY = new Agent({ connect: { lookup: guardedLookup() } });
+/** Connections for an allowlisted host, to whatever address it resolves. */
+const ALLOWLISTED = new Agent({ connect: { lookup: plainLookup() } });
+
+const REDIRECTS = new Set([301, 302, 303, 307, 308]);
+const MAX_REDIRECTS = 3;
+
+function refused(service: OutboundService, reason: string): BudgetApiError {
+  const name = SERVICE_NAMES[service];
+  return serviceError(
+    name,
+    `Ledgr won't connect to ${name}: ${reason}`,
+    "refused-url",
+  );
+}
+
+function checked(url: string | URL, service: OutboundService): URL {
+  const check = checkOutboundUrl(url, service);
+  if (!check.ok) throw refused(service, check.reason);
+  return check.url;
+}
+
+function blockedCause(e: unknown): BlockedAddressError | null {
+  for (let c = e, i = 0; c instanceof Error && i < 6; i++, c = c.cause)
+    if (c instanceof BlockedAddressError) return c;
+  return null;
+}
+
+/** One request, no redirect followed. `target` is the URL as given, so a
+ *  caller's spelling reaches fetch unchanged. */
+async function sendOnce(
+  target: string,
+  url: URL,
+  init: RequestInit,
+  service: OutboundService,
+): Promise<Response> {
+  const options: RequestInit & { dispatcher: Dispatcher } = {
+    ...init,
+    redirect: "manual",
+    dispatcher: opensPrivateAddress(url, service) ? ALLOWLISTED : PUBLIC_ONLY,
+  };
+  try {
+    return await fetch(target, options);
+  } catch (e) {
+    const blocked = blockedCause(e);
+    if (blocked) throw refused(service, blocked.message + allowHint(service));
+    throw e;
+  }
+}
+
+/** Where a redirect may go: the same origin, or http to https on the same
+ *  host. Its answer for any other hop is the reason it's refused. */
+function redirectRefusal(from: URL, to: URL, status: number, method: string) {
+  if (from.protocol === "https:" && to.protocol === "http:")
+    return "it redirected from https to http.";
+  const sameHost =
+    from.origin === to.origin ||
+    (from.hostname === to.hostname && to.protocol === "https:");
+  if (!sameHost)
+    return `it redirected to another host ("${to.hostname}"); Ledgr doesn't follow that.`;
+  if (status <= 303 && method !== "GET" && method !== "HEAD")
+    return `it redirected a ${method} with ${status}; Ledgr doesn't resend it as a GET.`;
+  return null;
+}
+
+/** `fetch` for every outside service. The URL is checked before each
+ *  request, the address at connect, and at most 3 redirects are followed,
+ *  each on its own host only, so headers never reach another host. */
+export async function fetchChecked(
+  input: string,
+  init: RequestInit,
+  service: OutboundService,
+): Promise<Response> {
+  let url = checked(input, service);
+  let target = input;
+  const method = (init.method ?? "GET").toUpperCase();
+  for (let hop = 0; ; hop++) {
+    const res = await sendOnce(target, url, init, service);
+    const location = REDIRECTS.has(res.status)
+      ? res.headers.get("location")
+      : null;
+    if (location === null) return res;
+    await res.body?.cancel().catch(() => undefined);
+    let next: URL;
+    try {
+      next = new URL(location, url);
+    } catch {
+      throw refused(service, "it redirected to something that isn't a URL.");
+    }
+    const why = redirectRefusal(url, next, res.status, method);
+    if (why) throw refused(service, why);
+    if (hop === MAX_REDIRECTS)
+      throw refused(service, `it redirected more than ${MAX_REDIRECTS} times.`);
+    url = checked(next, service);
+    target = url.href;
+  }
+}
 
 /** An endpoint as a pattern: ids become `:id`, the query goes. */
 function endpointPattern(endpoint: string): string {
@@ -164,15 +277,20 @@ export async function externalRequest<S extends z.ZodType>(request: {
       let status: number | null = null;
       let answer: unknown;
       try {
-        const res = await fetch(request.url, {
-          ...request.init,
-          headers: { ...request.headers, ...request.init?.headers },
-          signal: controller.signal,
-        });
+        const res = await fetchChecked(
+          request.url,
+          {
+            ...request.init,
+            headers: { ...request.headers, ...request.init?.headers },
+            signal: controller.signal,
+          },
+          request.service,
+        );
         status = res.status;
         if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw classifyResponse(res, text);
+          const error = classifyResponse(res);
+          error.responseText = (await res.text().catch(() => "")).slice(0, 500);
+          throw error;
         }
         const text = await res.text();
         if (request.read === "text") answer = text;

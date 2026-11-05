@@ -2895,7 +2895,7 @@
   },
   "src/lib/budget-api/errors.ts": {
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     }
   },
   "src/lib/budget-api/factory.ts": {

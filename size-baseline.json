@@ -135,7 +135,7 @@
     "src/lib/pure/tax-bucket-projection.ts": 527,
     "src/lib/pure/withdrawal-eligibility.ts": 484,
     "src/lib/sec/facts-sync.ts": 585,
-    "src/lib/simplefin/client.ts": 495,
+    "src/lib/simplefin/client.ts": 474,
     "src/lib/simplefin/ingest.ts": 534,
     "src/lib/simplefin/sync.ts": 616,
     "src/lib/tax-data/validate.ts": 411,

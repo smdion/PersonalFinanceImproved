@@ -26,6 +26,8 @@ export type BudgetApiErrorCode =
   | "bad-response" // the service answered, but not in the shape Ledgr
   // reads (a missing, renamed or mistyped field); the same answer would
   // come back, so it's never retried.
+  | "refused-url" // Ledgr refused the address itself (private, local, or
+  // a redirect to another host); never retried.
   | "unknown";
 
 export class BudgetApiError extends Error {
@@ -37,6 +39,9 @@ export class BudgetApiError extends Error {
    *  that didn't fit; set where the request is made. */
   service?: string;
   field?: string;
+  /** The start of an error answer's body, for code that reads what the
+   *  service said; it can echo the request, so no message or log holds it. */
+  responseText?: string;
 
   constructor(
     message: string,
@@ -79,6 +84,9 @@ export function externalErrorSentence(e: BudgetApiError): string {
       return `${who} refused Ledgr's request.`;
     case "conflict":
       return `${who} has a setting Ledgr won't overwrite.`;
+    case "refused-url":
+      // Names the host at most, never the full URL.
+      return e.message;
     default:
       return `${who} didn't answer properly — try again.`;
   }
@@ -163,22 +171,16 @@ export function isTransientError(err: unknown): boolean {
 }
 
 /**
- * Classify a fetch Response into a BudgetApiError. Returns null if the
- * response is OK and the caller should proceed.
- *
- * Reads Retry-After in seconds when status is 429. Falls back to a default
- * backoff if the header is missing or unparseable.
+ * Classify a failed fetch Response into a BudgetApiError, by status only:
+ * a body can echo what was sent, so none goes into the message.
+ * Reads Retry-After (seconds or an HTTP date) on a 429.
  */
-export function classifyResponse(
-  res: Response,
-  bodyText: string,
-): BudgetApiError {
+export function classifyResponse(res: Response): BudgetApiError {
   const status = res.status;
-  const truncated = bodyText.slice(0, 500);
 
   if (status === 401 || status === 403) {
     return new BudgetApiError(
-      `Authentication failed (${status}): ${truncated}`,
+      `Authentication failed (${status})`,
       "auth",
       status,
     );
@@ -210,17 +212,13 @@ export function classifyResponse(
   }
   if (status >= 500) {
     return new BudgetApiError(
-      `Upstream server error (${status}): ${truncated}`,
+      `Upstream server error (${status})`,
       "server",
       status,
     );
   }
   if (status >= 400) {
-    return new BudgetApiError(
-      `Client error (${status}): ${truncated}`,
-      "client",
-      status,
-    );
+    return new BudgetApiError(`Client error (${status})`, "client", status);
   }
   // Shouldn't be called for 2xx, but handle it defensively.
   return new BudgetApiError(
@@ -235,7 +233,11 @@ export function classifyResponse(
  */
 export function classifyThrown(err: unknown): BudgetApiError {
   if (err instanceof BudgetApiError) return err;
-  const msg = err instanceof Error ? err.message : String(err);
+  // A URL's user name and password never reach a message.
+  const msg = (err instanceof Error ? err.message : String(err)).replace(
+    /\/\/[^\s/@]+@/g,
+    "//",
+  );
   if (err instanceof Error && err.name === "AbortError") {
     return new BudgetApiError(`Request timed out: ${msg}`, "timeout", null);
   }
