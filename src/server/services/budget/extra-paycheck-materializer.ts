@@ -4,7 +4,8 @@
  * Reads each job's `extraPaycheckRouting` field from its entry in the
  * globally-active Salary Profile (rules + optional overrides) and writes
  * the resulting dollar amounts into `savings_planned_transactions` with
- * `source = 'rule'` for the next 24 months.
+ * `source = 'rule'`, over the months `extra-paycheck-months.ts` walks
+ * (120 from the current one).
  *
  * Override priority: if an ExtraPaycheckOverride entry matches the month key,
  * its splits are used instead of the rule's splits.
@@ -14,18 +15,10 @@
 
 import { eq, and, gte, notInArray, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type {
-  ExtraPaycheckRule,
-  ExtraPaycheckRoutingData,
-  YearlyGrowthEntry,
-} from "@/lib/db/schema-pg";
-import { getExtraPaycheckMonthKeys } from "@/lib/pure/paycheck/paycheck";
+import type { ExtraPaycheckRule, YearlyGrowthEntry } from "@/lib/db/schema-pg";
 import { currentMonthKey } from "@/lib/utils/date-keys";
-import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import { localDateStr } from "@/lib/utils/date";
+import { loadExtraPaycheckJobs } from "./extra-paycheck-months";
 import type { Db } from "@/lib/db";
-
-const HORIZON_MONTHS = 120; // covers the max 10-year projection window
 
 /**
  * Project a base net-pay-per-check forward to a target year, applying stored
@@ -71,55 +64,7 @@ export async function materializeExtraPaycheckSavings(db: Db): Promise<void> {
 async function _materialize(db: Db): Promise<void> {
   const now = new Date();
 
-  // Load all jobs; routing/payPeriod/anchorPayDate all now live on the
-  // job's entry in the globally-active Salary Profile, not on `jobs` itself.
-  const allJobs = await db
-    .select({
-      id: schema.jobs.id,
-      personId: schema.jobs.personId,
-      endDate: schema.jobs.endDate,
-      isSpeculative: schema.jobs.isSpeculative,
-    })
-    .from(schema.jobs);
-  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
-
-  const todayStr = localDateStr(now);
-  const jobsWithRules = (
-    allJobs as {
-      id: number;
-      personId: number;
-      endDate: string | null;
-      isSpeculative: boolean;
-    }[]
-  )
-    .map((j) => {
-      const entry = salaryProfileActiveMap.get(j.id);
-      return {
-        ...j,
-        extraPaycheckRouting: (entry?.extraPaycheckRouting ??
-          null) as ExtraPaycheckRoutingData | null,
-        anchorPayDate: entry?.anchorPayDate ?? null,
-        payPeriod: entry?.payPeriod,
-      };
-    })
-    .filter((j) => {
-      if (
-        j.isSpeculative ||
-        !j.extraPaycheckRouting?.rules?.length ||
-        j.extraPaycheckRouting.enabled === false
-      )
-        return false;
-      if (j.endDate && j.endDate < todayStr) return false;
-      // Prefer the snapshot's own anchorPayDate (frozen at save time — see
-      // ExtraPaycheckRoutingData's docblock); fall back to the job's live
-      // Salary Profile entry for routing saved before this field existed.
-      const anchorPayDate =
-        j.extraPaycheckRouting.anchorPayDate !== undefined
-          ? j.extraPaycheckRouting.anchorPayDate
-          : j.anchorPayDate;
-      const payPeriod = j.extraPaycheckRouting.payPeriod ?? j.payPeriod;
-      return !!anchorPayDate && !!payPeriod;
-    });
+  const jobsWithRules = await loadExtraPaycheckJobs(db, now, "savings");
 
   // Load active goal ids
   const activeGoals = await db
@@ -150,7 +95,7 @@ async function _materialize(db: Db): Promise<void> {
   const nowYear = now.getFullYear();
 
   for (const job of jobsWithRules) {
-    const routing = job.extraPaycheckRouting!;
+    const routing = job.routing!;
     const rules = routing.rules;
     const overrides = routing.overrides ?? [];
     const yearlyGrowth = routing.yearlyGrowth ?? {};
@@ -158,26 +103,7 @@ async function _materialize(db: Db): Promise<void> {
     const baseYear = routing.baseYear ?? nowYear;
     const personName = personNameMap.get(job.personId) ?? "Unknown";
 
-    // Same prefer-snapshot-fall-back-to-live-column precedence as the
-    // filter above — the schedule used to generate transaction dates must
-    // match the schedule that decided whether this job was included at all.
-    // Both guaranteed present here — jobsWithRules's filter above already
-    // required both to resolve (from snapshot or live Salary Profile entry)
-    // before a job made it into this loop.
-    const anchorPayDate =
-      routing.anchorPayDate !== undefined
-        ? routing.anchorPayDate
-        : job.anchorPayDate;
-    const payPeriod = routing.payPeriod ?? job.payPeriod!;
-    const anchor = new Date(anchorPayDate! + "T00:00:00Z");
-    const monthDates = getExtraPaycheckMonthKeys(
-      anchor,
-      payPeriod,
-      now,
-      HORIZON_MONTHS,
-    );
-
-    for (const transactionDate of monthDates) {
+    for (const transactionDate of job.monthDates) {
       const monthKey = transactionDate.slice(0, 7); // "YYYY-MM"
 
       // Override takes priority over rule for splits

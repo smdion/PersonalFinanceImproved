@@ -3,8 +3,8 @@
  *
  * Reads each job's `extraPaycheckRouting` field from its entry in the
  * globally-active Salary Profile and writes the resulting dollar amounts
- * into `budget_income_adjustments` with `source = 'rule'` over the same
- * HORIZON_MONTHS window as the Savings-mode materializer (10 years).
+ * into `budget_income_adjustments` with `source = 'rule'`, over the months
+ * `extra-paycheck-months.ts` walks (the same 10 years as Savings mode).
  *
  * Complement of extra-paycheck-materializer.ts: that one covers jobs whose
  * routing is in Savings mode (real `rules`, `enabled` not false); this one
@@ -21,16 +21,9 @@
 import { eq, gte, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { YearlyGrowthEntry } from "@/lib/db/schema-pg";
-import {
-  getExtraPaycheckMonthKeys,
-  isExtraPaycheckBudgetMode,
-} from "@/lib/pure/paycheck/paycheck";
 import { currentMonthKey } from "@/lib/utils/date-keys";
-import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import { localDateStr } from "@/lib/utils/date";
+import { loadExtraPaycheckJobs } from "./extra-paycheck-months";
 import type { Db } from "@/lib/db";
-
-const HORIZON_MONTHS = 120; // covers the max 10-year projection window
 
 /**
  * Project a base net-pay-per-check forward to a target year, applying stored
@@ -80,41 +73,7 @@ export async function materializeBudgetIncomeAdjustments(
 async function _materialize(db: Db): Promise<void> {
   const now = new Date();
 
-  const allJobs = await db
-    .select({
-      id: schema.jobs.id,
-      endDate: schema.jobs.endDate,
-      isSpeculative: schema.jobs.isSpeculative,
-    })
-    .from(schema.jobs);
-  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
-
-  const todayStr = localDateStr(now);
-  const jobsInBudgetMode = (
-    allJobs as { id: number; endDate: string | null; isSpeculative: boolean }[]
-  )
-    .map((j) => {
-      const entry = salaryProfileActiveMap.get(j.id);
-      return {
-        ...j,
-        extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
-        anchorPayDate: entry?.anchorPayDate ?? null,
-        payPeriod: entry?.payPeriod,
-      };
-    })
-    .filter((j) => {
-      if (j.isSpeculative) return false;
-      if (!isExtraPaycheckBudgetMode(j.extraPaycheckRouting)) return false;
-      if (j.endDate && j.endDate < todayStr) return false;
-      // Same prefer-snapshot-fall-back-to-live-column precedence as the
-      // Savings materializer.
-      const anchorPayDate =
-        j.extraPaycheckRouting?.anchorPayDate !== undefined
-          ? j.extraPaycheckRouting.anchorPayDate
-          : j.anchorPayDate;
-      const payPeriod = j.extraPaycheckRouting?.payPeriod ?? j.payPeriod;
-      return !!anchorPayDate && !!payPeriod;
-    });
+  const jobsInBudgetMode = await loadExtraPaycheckJobs(db, now, "budget");
 
   type Row = { jobId: number; monthDate: string; amount: string };
   const desired = new Map<string, Row>(); // key = "jobId:YYYY-MM-01"
@@ -122,7 +81,7 @@ async function _materialize(db: Db): Promise<void> {
   const nowYear = now.getFullYear();
 
   for (const job of jobsInBudgetMode) {
-    const routing = job.extraPaycheckRouting;
+    const routing = job.routing;
     const baseNetPay = routing?.baseNetPayPerCheck;
     // No baseNetPayPerCheck snapshot means nothing to project — matches
     // ExtraPaycheckBudgetNote's own precondition (it only shows an amount
@@ -131,20 +90,7 @@ async function _materialize(db: Db): Promise<void> {
 
     const baseYear = routing?.baseYear ?? nowYear;
     const yearlyGrowth = routing?.yearlyGrowth ?? {};
-    const anchorPayDate =
-      routing?.anchorPayDate !== undefined
-        ? routing.anchorPayDate
-        : job.anchorPayDate;
-    const payPeriod = routing?.payPeriod ?? job.payPeriod!;
-    const anchor = new Date(anchorPayDate! + "T00:00:00Z");
-    const monthDates = getExtraPaycheckMonthKeys(
-      anchor,
-      payPeriod,
-      now,
-      HORIZON_MONTHS,
-    );
-
-    for (const monthDate of monthDates) {
+    for (const monthDate of job.monthDates) {
       const targetYear = parseInt(monthDate.slice(0, 4));
       const amount = projectedNetPay(
         baseNetPay,

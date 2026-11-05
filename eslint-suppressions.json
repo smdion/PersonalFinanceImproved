@@ -6243,25 +6243,16 @@
     }
   },
   "src/server/services/budget/budget-income-materializer.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 4
     }
   },
   "src/server/services/budget/extra-paycheck-materializer.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
+      "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 3
     }
   },
   "src/server/services/budget/linked-items.ts": {

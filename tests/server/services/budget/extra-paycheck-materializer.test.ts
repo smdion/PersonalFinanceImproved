@@ -9,6 +9,7 @@
  *
  * getExtraPaycheckMonthKeys (the biweekly-3-paycheck-month detector) is
  * mocked out here — its own correctness is covered by paycheck.test.ts.
+ * isExtraPaycheckBudgetMode is the real one: it picks the jobs walked.
  * This file is only exercising the materializer's transaction logic.
  */
 import "../../../helpers/setup-mocks";
@@ -21,10 +22,15 @@ import { eq } from "drizzle-orm";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetExtraPaycheckMonthKeys = vi.fn();
-vi.mock("@/lib/pure/paycheck/paycheck", () => ({
-  getExtraPaycheckMonthKeys: (...args: unknown[]) =>
-    mockGetExtraPaycheckMonthKeys(...args),
-}));
+vi.mock("@/lib/pure/paycheck/paycheck", async (importActual) => {
+  const actual =
+    await importActual<typeof import("@/lib/pure/paycheck/paycheck")>();
+  return {
+    ...actual,
+    getExtraPaycheckMonthKeys: (...args: unknown[]) =>
+      mockGetExtraPaycheckMonthKeys(...args),
+  };
+});
 
 describe("materializeExtraPaycheckSavings", () => {
   let ctx: TestDbContext;

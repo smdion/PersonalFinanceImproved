@@ -864,11 +864,6 @@
       "count": 2
     }
   },
-  "src/server/services/budget/extra-paycheck-materializer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/services/contributions/account-edits.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
