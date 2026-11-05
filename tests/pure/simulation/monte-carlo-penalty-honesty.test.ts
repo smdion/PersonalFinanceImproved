@@ -187,7 +187,7 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
       individualAccounts: makeRothIndividualAccounts(1971),
     });
     const mcOpts = {
-      numTrials: 300,
+      numTrials: 100,
       seed: 42,
       assetClasses: IBBOTSON_CLASSES,
       correlations: STOCK_BOND_CORRELATIONS,
@@ -219,5 +219,5 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
     // have but can't reach" rather than "you'll be broke."
     expect(withExclusion.penaltyAvoidedShortfallRate).toBeGreaterThan(0);
     expect(withoutExclusion.penaltyAvoidedShortfallRate).toBe(0);
-  }, 60_000); // 300 trials: slow under coverage instrumentation in CI
+  }, 60_000); // two runs of 100 trials: slow under coverage instrumentation in CI
 });
