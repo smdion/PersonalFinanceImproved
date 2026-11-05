@@ -8,7 +8,7 @@ import type {
   MortgageExtraPayment,
 } from "@/lib/pure/debts/mortgage.types";
 import { MAX_EXTRA_PAYMENTS } from "@/lib/constants";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 
 /**
  * The active mortgage loan — the only place that should resolve `isActive`

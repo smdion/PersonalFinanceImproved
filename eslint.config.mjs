@@ -260,7 +260,7 @@ const config = [
             {
               name: "@/server/helpers",
               message:
-                "Pure modules cannot import the helpers barrel (it pulls in DB code). Use specific submodules like @/server/helpers/transforms.",
+                "Pure modules cannot import the helpers barrel (it pulls in DB code). toNumber is in @/lib/utils/numbers.",
             },
             {
               name: "@/lib/db",

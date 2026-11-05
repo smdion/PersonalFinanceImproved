@@ -29,7 +29,6 @@ import {
 import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import {
-  toNumber,
   computeBudgetAnnualTotal,
   resolveCompensation,
   loadEffectiveSalaryProfile,
@@ -52,6 +51,7 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,

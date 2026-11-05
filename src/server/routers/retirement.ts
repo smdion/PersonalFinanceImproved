@@ -30,7 +30,6 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateRelocation } from "@/lib/pure/retirement/relocation";
 import {
-  toNumber,
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
@@ -42,6 +41,7 @@ import {
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { getAllPeople } from "@/server/helpers/people";
 import {

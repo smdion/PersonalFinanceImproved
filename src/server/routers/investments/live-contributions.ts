@@ -21,7 +21,7 @@ import {
 import type { PaceAccountInput } from "@/lib/pure/savings/savings-pace";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import { loadClassifiedTransactions, loadFeedContext } from "./_shared";
 import { loadPerformanceSuggestions } from "./fills";
 import type { Db } from "@/lib/db";

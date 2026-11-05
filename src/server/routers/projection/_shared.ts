@@ -19,7 +19,7 @@ import {
 } from "@/lib/pure/simulation/monte-carlo";
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
-import { toNumber } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
 import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";

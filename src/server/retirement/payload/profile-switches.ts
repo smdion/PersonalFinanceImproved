@@ -17,13 +17,13 @@ import {
 import { inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
-  toNumber,
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
   resolveProfile,
   buildProfileContribData,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import type { SalaryEntryMap, SalaryProfileActiveMap } from "@/server/helpers";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import type { AccountCategory } from "@/lib/config/account-types";

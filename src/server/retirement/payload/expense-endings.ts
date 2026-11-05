@@ -12,7 +12,7 @@ import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type { ExpenseEnding } from "@/lib/pure/engine/types";
 import { computeBudgetAnnualTotal } from "@/server/helpers";
 import { buildMortgageInputs } from "@/server/helpers/mortgage";
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
 
 type Loan = typeof schema.mortgageLoans.$inferSelect;

@@ -26,7 +26,7 @@ import {
   type RothBasisMeta,
 } from "@/lib/pure/accounts/tax-bucket-analysis";
 import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
-import { toNumber } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import type { fetchRetirementData } from "../build-engine-payload";
 
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;

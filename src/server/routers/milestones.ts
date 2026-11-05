@@ -51,7 +51,7 @@ import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
-import { toNumber } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import {
   debtBalance,
   getEffectiveOtherLiabilities,

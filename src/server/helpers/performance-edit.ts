@@ -21,7 +21,7 @@ import {
   syncYearRollups,
 } from "@/server/helpers/performance-rollups";
 import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 
 type AccountPerfRow = typeof schema.accountPerformance.$inferSelect;

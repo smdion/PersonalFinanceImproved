@@ -15,7 +15,7 @@ import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import type { W4FilingStatus } from "@/lib/config/filing-status";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
 

@@ -31,7 +31,6 @@ import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
-  toNumber,
   contributionPay,
   getTotalCompensation,
   getLatestSnapshot,
@@ -45,6 +44,7 @@ import {
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,

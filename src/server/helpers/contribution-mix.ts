@@ -20,7 +20,7 @@ import type {
 } from "@/lib/pure/investments/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   contribRemainingFraction,

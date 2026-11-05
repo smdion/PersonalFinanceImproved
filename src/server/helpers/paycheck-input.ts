@@ -25,7 +25,7 @@ import type {
   ContributionAccountInput,
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { BonusTerms } from "./salary";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import { requireLimit } from "./settings";
 
 /**

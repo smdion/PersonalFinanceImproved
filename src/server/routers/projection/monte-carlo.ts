@@ -40,7 +40,7 @@ import {
   interpolateAllocations,
   geometricMean,
 } from "@/lib/pure/simulation/random";
-import { toNumber } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { sumBy } from "@/lib/utils/math";
 import type {
   AccumulationOverride,

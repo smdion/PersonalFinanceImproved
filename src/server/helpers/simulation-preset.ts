@@ -23,7 +23,7 @@ import {
   type SimulationPresetKey,
 } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 

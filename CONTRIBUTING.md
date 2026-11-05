@@ -42,14 +42,14 @@ Read the relevant parts of [`docs/RULES.md`](docs/RULES.md) (the rules), [`docs/
 
 ### Import discipline for pure modules
 
-Pure modules must not import barrel files that pull in database code — import the submodule directly:
+Pure modules import nothing from `src/server/` or the database (`pnpm check:layers` fails it); a small helper they share with the server lives in `src/lib/utils/`:
 
 ```typescript
-// WRONG — the barrel pulls in DB schema
+// WRONG — server code; the barrel pulls in DB schema
 import { toNumber } from "@/server/helpers";
 
-// RIGHT — the pure submodule
-import { toNumber } from "@/server/helpers/transforms";
+// RIGHT — the shared utility
+import { toNumber } from "@/lib/utils/numbers";
 ```
 
 `src/lib/pure/` has one folder per area (`accounts`, `advice`, `budget`, `contributions`, `debts`, `household`, `investments`, `net-worth`, `paycheck`, `retirement`, `savings`, `simulation`, `sync`, `tax`; the projection engine in `engine/`). Check the area's folder before adding a module, and add a new one there, with its I/O types in a `*.types.ts` beside it, never flat in `lib/pure/`. Small helpers with no domain (dates, formatting, math) live in `src/lib/utils/`.

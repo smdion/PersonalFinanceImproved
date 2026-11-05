@@ -8,7 +8,7 @@
  * driver returns `decimal`/`numeric` columns as JS **strings** (`"1234.56"`);
  * `better-sqlite3` returns the same columns as **numbers** (`1234.56`). Every
  * helper that reads a decimal column has to normalize it — `toNumber()` in
- * `src/server/helpers/transforms.ts` — or the value crosses into financial
+ * `src/lib/utils/numbers.ts` — or the value crosses into financial
  * math as a string. That fails only in production, and never in CI (SQLite).
  *
  * This suite feeds each boundary-crossing helper **PG-style string inputs**

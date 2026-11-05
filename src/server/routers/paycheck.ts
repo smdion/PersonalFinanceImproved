@@ -23,7 +23,6 @@ import type { SalarySegment } from "@/lib/pure/paycheck/paycheck";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import {
-  toNumber,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
   resolveCompensation,
@@ -40,6 +39,7 @@ import {
   getIncompleteContribAccountIds,
   contributionPay,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";

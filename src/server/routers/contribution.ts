@@ -23,7 +23,6 @@ import {
 } from "@/lib/pure/paycheck/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
-  toNumber,
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
@@ -36,6 +35,7 @@ import {
   applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";

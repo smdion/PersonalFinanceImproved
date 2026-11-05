@@ -14,7 +14,6 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
-  toNumber,
   getLatestSnapshot,
   computeMortgageBalance,
   getActiveMortgageLoan,
@@ -24,6 +23,7 @@ import {
   loadEffectiveSalaryProfile,
   resolvePersonYearIncome,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/helpers/people";
 import {
   findActiveJob,

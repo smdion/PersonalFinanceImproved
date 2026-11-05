@@ -14,7 +14,7 @@
  */
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 
 interface ResolvedGoalAllocation {

@@ -24,7 +24,7 @@ import {
   type YearEndSnapshot,
 } from "@/lib/pure/investments/performance-checks";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import {
   captureYearRollups,
   syncYearRollups,

@@ -5,7 +5,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber, buildYearEndHistory } from "@/server/helpers";
+import { buildYearEndHistory } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/helpers/people";
 import {
   loadEffectiveSalaryProfile,

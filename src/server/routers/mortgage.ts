@@ -4,11 +4,8 @@ import { asc, eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
-import {
-  toNumber,
-  buildMortgageInputs,
-  getActiveMortgageLoan,
-} from "@/server/helpers";
+import { buildMortgageInputs, getActiveMortgageLoan } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import type {
   MortgageInput,
   MortgageWhatIf,

@@ -37,7 +37,7 @@ import {
   fractionFromPercent,
 } from "@/lib/pure/contributions/contribution-amount";
 import type { ContribSaveChecker } from "./contribution-caps";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   filterActiveJobs,

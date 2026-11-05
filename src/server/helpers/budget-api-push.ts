@@ -27,7 +27,7 @@ import { BudgetApiError } from "@/lib/budget-api";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { formatCurrency } from "@/lib/utils/format";
 import { log } from "@/lib/logger";
-import { toNumber } from "./transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
 
 export type PushSnapshotMode = "create" | "resync";

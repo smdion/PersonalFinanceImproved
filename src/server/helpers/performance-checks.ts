@@ -14,7 +14,7 @@ import {
   parseAcceptedChecks,
 } from "@/lib/pure/investments/performance-annotations";
 import { loadYearEndSnapshots } from "@/server/helpers/snapshot-derivatives";
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 
 type AccountPerfRow = typeof schema.accountPerformance.$inferSelect;

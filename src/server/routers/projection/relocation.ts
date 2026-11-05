@@ -19,7 +19,7 @@ import {
   adminProcedure,
 } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
-import { toNumber } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import {
   computeBudgetAnnualTotal,
   resolveLinkedBudgetItemAmounts,

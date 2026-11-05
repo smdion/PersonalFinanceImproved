@@ -15,7 +15,6 @@ import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { roundToCents, safeDivide, toDecimalColumn } from "@/lib/utils/math";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import {
-  toNumber,
   computeMortgageBalance,
   getActiveMortgageLoan,
   getLatestSnapshot,
@@ -27,6 +26,7 @@ import {
   groupSnapshotAccounts,
   buildYearEndHistory,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/helpers/people";
 import {
   refreshSnapshotYearDerivatives,

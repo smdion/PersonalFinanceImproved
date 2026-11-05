@@ -7,12 +7,12 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
-  toNumber,
   buildYearEndHistory,
   getEffectiveCash,
   computeMortgageBalance,
   getActiveMortgageLoan,
 } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { zYearEndTargeting } from "./_shared";
 import {

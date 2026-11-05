@@ -2,7 +2,7 @@
  * Pure business logic extracted from the performance router's finalizeYear transaction.
  * These functions compute values without any DB or I/O dependency.
  */
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber } from "@/lib/utils/numbers";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { HALF_CENT } from "@/lib/constants";
 

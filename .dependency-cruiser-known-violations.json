@@ -246,16 +246,6 @@
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/accounts/portfolio.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/accounts/tax-buckets.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
     "from": "src/lib/pure/budget/utility-cost-feed.ts",
     "to": "src/lib/budget-api/types.ts"
   },
@@ -263,16 +253,6 @@
     "rule": "pure-has-no-io",
     "from": "src/lib/pure/contributions/irs-limits.ts",
     "to": "src/server/helpers/settings.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/investments/returns.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/net-worth/historical.ts",
-    "to": "src/server/helpers/transforms.ts"
   },
   {
     "rule": "pure-has-no-io",
