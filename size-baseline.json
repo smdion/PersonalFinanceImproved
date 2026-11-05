@@ -170,7 +170,7 @@
     "src/server/routers/projection/tax-optimization.ts": 536,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 689,
-    "src/server/routers/savings.ts": 2852,
+    "src/server/routers/savings.ts": 2848,
     "src/server/routers/settings/admin.ts": 413,
     "src/server/routers/settings/paycheck.ts": 733,
     "src/server/routers/settings/tax-limits.ts": 784,
@@ -924,7 +924,7 @@
     "src/server/routers/savings.ts": {
       "computeJobNetPayPerCheck": 224,
       "savingsRouter.computeSummary.query()": 349,
-      "savingsRouter.pushContributionsToApi.mutation()": 205
+      "savingsRouter.pushContributionsToApi.mutation()": 201
     },
     "src/server/routers/simplefin.ts": {
       "simplefinRouter.listAccounts.query()": 155

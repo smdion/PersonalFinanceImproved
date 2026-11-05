@@ -1832,11 +1832,7 @@ export const savingsRouter = createTRPCRouter({
   pushContributionsToApi: savingsProcedure
     .input(z.object({ goalId: z.number().int().optional() }).optional())
     .mutation(async ({ ctx, input }) => {
-      // Resolve the active service once (not via getBudgetAPIClient, which
-      // wraps this same lookup but doesn't hand back which service it
-      // resolved) — mirrors budget.syncBudgetToApi, and avoids querying
-      // active_budget_api twice in one request (once here, again at the
-      // end to know which cache to refresh).
+      // The service is resolved once: the end of this call refreshes its cache.
       const { service: active, client } = await requireBudgetClient(
         ctx.db,
         "No budget API active",
