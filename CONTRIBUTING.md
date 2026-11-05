@@ -56,11 +56,11 @@ See `ls src/lib/pure/` for the existing modules — check there before adding on
 
 ## Commit rules
 
-One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over a pull request's commits check these with `scripts/check-commit.ts --strict`, and a breach blocks (since v0.10.1).
+One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over every commit since the merge base with `main` (on pushes and pull requests) check these with `scripts/check-commit.ts --strict`, and a breach blocks (since v0.10.1).
 
 - **Subject:** a type prefix, `fix:`, `feat:`, `refactor:`, `perf:`, `test:`, `docs:`, `build:`, `ci:`, `chore:`, `style:`, `revert:` or `release:`, with an optional `(scope)`.
 - **Body:** why the change is made, not only what changed.
-- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/calculators/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt.
+- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/calculators/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt; the line is accepted only when git sees a rename (`git show -M`) and every other changed line is an import or a path rewrite.
 - **Second fix:** a fix to a function that already had a fix in the last 30 days names the missing concept in a `Concept: <concept>` line, or `Concept: none, <reason>`. A third fix there goes to the advisor first.
 - **Ratchets:** CI compares every ratchet (`size-baseline.json`, both suppressions files, the calculation-register baseline and its risk labels, page budgets, coverage thresholds, the known lists in `tests/lint/violations.test.ts`) and the behavior baseline (`tests/baseline/__baseline__/`, `__sync__/`) with the merge base: `pnpm check:ratchets --base "$(git merge-base origin/main HEAD)"`. A move or split hands the old counts to its parts and passes; a raise is its own commit, made only with the owner's OK, and carries a `Ratchet-raise: <file> — <reason>` line per file (CI checks the line, not the OK), and a re-recorded baseline file needs `Baseline-rerecord: <glob> — <reason>`. Deleting a baseline file passes.
 

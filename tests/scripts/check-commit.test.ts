@@ -3,8 +3,10 @@ import {
   checkCommit,
   countPriorFixes,
   looksLikeFix,
+  notAMove,
   parseMessage,
   parseNumstat,
+  trailerValues,
   spotsFromDiff,
   srcLinesChanged,
   type CommitFacts,
@@ -143,6 +145,75 @@ describe("checkCommit", () => {
     expect(
       rules(facts({ priorFixes, raw: "feat: add a card\n\nWhy." })),
     ).toEqual([]);
+  });
+});
+
+describe("trailerValues", () => {
+  it("returns every value of a repeated trailer, which parseMessage keeps once", () => {
+    const raw =
+      "chore: x\n\nWhy.\n\nRatchet-raise: a.json — one\nRatchet-raise: b.json — two\n# Ratchet-raise: c.json — comment\n";
+    expect(trailerValues(raw, "Ratchet-raise")).toEqual([
+      "a.json — one",
+      "b.json — two",
+    ]);
+    expect(parseMessage(raw).trailers["Ratchet-raise"]).toBe("b.json — two");
+  });
+});
+
+describe("notAMove", () => {
+  const renamed = parseNumstat(
+    "2\t2\tsrc/lib/{calculators => pure/tax}/a.ts\n1\t1\tsrc/b.ts",
+  );
+  const diff = (body: string[]) =>
+    [
+      "diff --git a/src/b.ts b/src/b.ts",
+      "--- a/src/b.ts",
+      "+++ b/src/b.ts",
+      "@@ -1 +1 @@",
+      ...body,
+    ].join("\n");
+
+  it("passes a rename whose other lines are import and path rewrites", () => {
+    expect(
+      notAMove(
+        renamed,
+        diff([
+          '-import { a } from "@/lib/calculators/a";',
+          '+import { a } from "@/lib/pure/tax/a";',
+          "@@ -9 +9 @@",
+          '-vi.mock("@/lib/calculators/a", () => ({}));',
+          '+vi.mock("@/lib/pure/tax/a", () => ({}));',
+          "@@ -20,0 +21 @@",
+          "+  shared,",
+          "@@ -40 +41 @@",
+          '-  "src/lib/calculators/a.ts": 500,',
+          "@@ -60 +60 @@",
+          '+  "src/lib/pure/tax/a.ts": 500',
+        ]),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("fails without a rename, or with a changed line that isn't a path", () => {
+    expect(notAMove(parseNumstat("1\t1\tsrc/b.ts"), diff([]))).toBe(
+      "git sees no rename",
+    );
+    expect(
+      notAMove(renamed, diff(["-  return total * 2;", "+  return total * 3;"])),
+    ).toMatch(/2 changed line\(s\) are neither imports nor path rewrites/);
+  });
+
+  it("makes checkCommit refuse the exemption for a commit that isn't a move", () => {
+    const files = [{ file: "src/a.ts", added: 300, deleted: 200 }];
+    expect(
+      rules(
+        facts({
+          files,
+          raw: "refactor: rename\n\nWhy.\n\nMechanical: move only",
+          notMechanical: "git sees no rename",
+        }),
+      ),
+    ).toEqual(["mechanical", "size"]);
   });
 });
 

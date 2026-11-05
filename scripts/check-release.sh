@@ -23,7 +23,7 @@ base=$(git merge-base origin/main HEAD 2>/dev/null || echo origin/main)
 
 step "commit rules ($base..HEAD)" pnpm -s tsx scripts/check-commit.ts --strict --range "$base..HEAD"
 step "migrations" pnpm -s check:migrations
-step "tax parameters" pnpm -s check:tax-params
+step "tax parameters (blocking when tax data changed since $base)" pnpm -s check:tax-params --base "$base"
 step "tax-data dataVersion raised where tax data changed" pnpm -s tsx scripts/check-tax-data-version.ts "$base"
 if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
   step "migrations from empty (PostgreSQL)" env DATABASE_URL="$TEST_DATABASE_URL" pnpm -s db:migrate

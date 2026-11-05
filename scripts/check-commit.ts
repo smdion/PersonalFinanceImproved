@@ -8,7 +8,8 @@
  *
  * Checks: a `type:` subject prefix, a body that says why, at most 400 changed
  * `src/` lines and at most 8 `src/` files when the engine or tax code is
- * touched (a `Mechanical:` trailer exempts a pure move or rename), and the
+ * touched (a `Mechanical:` trailer exempts a pure move or rename: git sees
+ * a rename, and every other changed line is an import or a path rewrite), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first.
@@ -58,6 +59,8 @@ export type CommitFacts = {
   spots: Spot[];
   /** For each spot, how many earlier fix commits touched it in the window. */
   priorFixes: Map<Spot, number>;
+  /** Why a `Mechanical:` commit isn't a move (undefined: it is, or no trailer). */
+  notMechanical?: string;
 };
 
 export type Warning = { rule: string; text: string };
@@ -173,10 +176,89 @@ export function spotsFromDiff(diff: string): Spot[] {
   return [...spots];
 }
 
+/** A line a move may change freely: an import, an export-from, a name in
+ *  an import list, or punctuation. */
+const IMPORT_LINE =
+  /^\s*(import\b|export\b.*\bfrom\b|\}\s*from\b|(type\s+)?[\w$]+(\s+as\s+[\w$]+)?,?\s*$|[{}();,\s]*$)/;
+/** A path-like token: anything with a slash in it. */
+const PATH_TOKEN = /[\w@.~$[\]()-]*\/[\w@.~$[\]()/-]*/g;
+/** A line with its paths, spacing, table padding and trailing comma gone. */
+const withoutPaths = (line: string) =>
+  line
+    .replace(PATH_TOKEN, "<path>")
+    .replace(/\s+/g, " ")
+    .replace(/ ?\| ?/g, "|")
+    .replace(/-{3,}/g, "---")
+    .trim()
+    .replace(/,$/, "");
+
+/**
+ * Why a change isn't a move: `numstat` from `-M --numstat` must show a
+ * rename, and in `diff` (`-M -U0`) every removed or added line of a file
+ * must be an import line, or match a line on the other side of the same
+ * file that differs from it only in its paths (a moved entry in a sorted
+ * list matches too).
+ */
+export function notAMove(
+  numstat: FileChange[],
+  diff: string,
+): string | undefined {
+  if (!numstat.some((change) => change.file.includes(" => ")))
+    return "git sees no rename";
+  const bad: string[] = [];
+  let file = "";
+  let removed: string[] = [];
+  let added: string[] = [];
+  const settle = () => {
+    const pool = new Map<string, number>();
+    for (const line of removed) {
+      const key = withoutPaths(line);
+      pool.set(key, (pool.get(key) ?? 0) + 1);
+    }
+    for (const line of added) {
+      const key = withoutPaths(line);
+      const left = pool.get(key) ?? 0;
+      if (left > 0) pool.set(key, left - 1);
+      else if (!IMPORT_LINE.test(line)) bad.push(`${file}: ${line.trim()}`);
+    }
+    for (const line of removed) {
+      const key = withoutPaths(line);
+      const left = pool.get(key) ?? 0;
+      if (left === 0) continue;
+      pool.set(key, left - 1);
+      if (!IMPORT_LINE.test(line)) bad.push(`${file}: ${line.trim()}`);
+    }
+    removed = [];
+    added = [];
+  };
+  let header = false;
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("diff --git ")) {
+      settle();
+      header = true;
+    } else if (line.startsWith("@@")) {
+      header = false;
+    } else if (header) {
+      if (line.startsWith("+++ ")) file = line.replace(/^\+\+\+ (b\/)?/, "");
+    } else if (line.startsWith("-")) removed.push(line.slice(1));
+    else if (line.startsWith("+")) added.push(line.slice(1));
+  }
+  settle();
+  if (bad.length === 0) return undefined;
+  return `${bad.length} changed line(s) are neither imports nor path rewrites (first: ${bad.slice(0, 3).join(" | ")})`;
+}
+
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
-  const mechanical = "Mechanical" in message.trailers;
+  const claimed = "Mechanical" in message.trailers;
+  const mechanical = claimed && facts.notMechanical === undefined;
+  if (claimed && facts.notMechanical !== undefined) {
+    warnings.push({
+      rule: "mechanical",
+      text: `Mechanical: is for a move or rename only: ${facts.notMechanical}`,
+    });
+  }
 
   if (!SUBJECT_PREFIX.test(message.subject)) {
     warnings.push({
@@ -300,6 +382,13 @@ export function countPriorFixes(
 
 function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
   const message = parseMessage(git("log", "-1", "--format=%B", sha));
+  const notMechanical =
+    "Mechanical" in message.trailers
+      ? notAMove(
+          parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+          git("show", "-M", "-U0", "--format=", sha),
+        )
+      : undefined;
   const files = parseNumstat(git("show", "--numstat", "--format=", sha));
   const spots = spotsFromDiff(
     git("show", "-U0", "--format=", sha, "--", "src/"),
@@ -310,6 +399,7 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     files,
     spots,
     priorFixes: countPriorFixes(spots, time, history, sha),
+    notMechanical,
   };
 }
 
@@ -326,11 +416,19 @@ function runMessageFile(file: string): Warning[] {
   const spots = spotsFromDiff(git("diff", "--cached", "-U0", "--", "src/"));
   const now = Math.floor(Date.now() / 1000);
   const history = readHistory(now - FIX_WINDOW_DAYS * DAY_SECONDS);
+  const notMechanical =
+    "Mechanical" in message.trailers
+      ? notAMove(
+          parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+          git("diff", "--cached", "-M", "-U0"),
+        )
+      : undefined;
   const warnings = checkCommit({
     message,
     files,
     spots,
     priorFixes: countPriorFixes(spots, now + 1, history),
+    notMechanical,
   });
   report("commit", warnings);
   return warnings;

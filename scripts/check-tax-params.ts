@@ -12,10 +12,17 @@
  *       tables haven't been seeded for — catches "bumped tax_params to 2027
  *       but forgot to add the 2027 brackets."
  *
+ * Check 1 reads the clock. With `--base <ref>` (CI on a push or pull
+ * request) a missing year blocks only when the change touches the tax data
+ * or the tables and rules that read it (TAX_PATHS); otherwise it warns, and
+ * the weekly tax-data workflow (no --base) is what fails while it is stale.
+ * Check 1b always blocks.
+ *
  * See TAX-PARAMETER-RUNBOOK.md for the full annual update procedure.
  *
- * Usage: pnpm check:tax-params
+ * Usage: pnpm check:tax-params [--base <ref>]
  */
+import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -124,8 +131,37 @@ function checkTaxParamsVintage(sql: string): VintageCheck[] {
 // Main
 // ---------------------------------------------------------------------------
 
+/** The tax data and the code that says which year is due. */
+const TAX_PATHS = [
+  "tax-data/",
+  "src/lib/config/tax-tables.ts",
+  "src/lib/config/tax-params.ts",
+  "src/lib/config/tax-data-publication.ts",
+  "src/lib/pure/tax-data-status.ts",
+];
+
+/** Files under TAX_PATHS that differ between `base` and the working tree. */
+function taxFilesChanged(base: string): string[] {
+  return execFileSync(
+    "git",
+    ["diff", "--name-only", base, "--", ...TAX_PATHS],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+    },
+  )
+    .split("\n")
+    .filter(Boolean);
+}
+
 function run() {
   const now = new Date();
+  const baseIdx = process.argv.indexOf("--base");
+  const base = baseIdx === -1 ? undefined : process.argv[baseIdx + 1];
+  if (baseIdx !== -1 && !base) {
+    console.error("Usage: check-tax-params.ts [--base <ref>]");
+    process.exit(2);
+  }
   // The tax data, assembled into the one file every install reads.
   const sql = JSON.stringify(readTaxDataDir(fs, path.join(ROOT, TAX_DATA_DIR)));
 
@@ -175,10 +211,18 @@ function run() {
   }
 
   // --- Summary ---
-  const totalErrors = seedErrors + vintageChecks.length;
+  const changed = base && seedErrors > 0 ? taxFilesChanged(base) : [];
+  const seedBlocks = seedErrors > 0 && (!base || changed.length > 0);
+  const totalErrors = (seedBlocks ? seedErrors : 0) + vintageChecks.length;
   console.log(`\n--- Summary ---`);
   console.log(`Seed:      ${seedErrors} error(s), ${seedWarnings} not-yet-due`);
   console.log(`Vintage:   ${vintageChecks.length} error(s)`);
+  if (seedErrors > 0 && !seedBlocks)
+    console.log(
+      `\nWARNING: the tax data is behind, but nothing under ${TAX_PATHS.join(", ")} changed since ${base}, so this run doesn't block. The weekly tax-data workflow fails until it is updated.`,
+    );
+  else if (seedErrors > 0 && base)
+    console.log(`\nBlocking: this change touches ${changed.join(", ")}.`);
 
   if (totalErrors > 0) {
     console.log(
@@ -187,7 +231,11 @@ function run() {
     process.exit(1);
   }
 
-  console.log("\nAll tax parameters current. ✓");
+  console.log(
+    seedErrors > 0
+      ? "\nNo blocking tax-data issue."
+      : "\nAll tax parameters current. ✓",
+  );
 }
 
 run();

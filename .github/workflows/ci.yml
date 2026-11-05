@@ -46,14 +46,9 @@ jobs:
       - name: Ratchets and the behavior baseline against the merge base
         run: pnpm check:ratchets --base "$(git merge-base origin/main HEAD)"
 
-      - name: Commit rules over the pull request's commits
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          git fetch --no-tags --unshallow origin || true
-          git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
-          pnpm tsx scripts/check-commit.ts --strict --range "origin/$BASE_REF..HEAD"
+      # Pushes too: a release deploys from its v* push before the PR exists.
+      - name: Commit rules over the commits since the merge base
+        run: pnpm tsx scripts/check-commit.ts --strict --range "$(git merge-base origin/main HEAD)..HEAD"
 
       - name: Type-check
         run: npx tsc --noEmit
@@ -81,9 +76,7 @@ jobs:
       # Layer rules: no new violation, and the known list only shrinks
       # (checked against main's copy).
       - name: Layer rules (dependency-cruiser)
-        run: |
-          git fetch --no-tags --depth=1 origin main
-          pnpm check:layers --base FETCH_HEAD
+        run: pnpm check:layers --base origin/main
 
       - name: Size baseline (no file or recorded function grows)
         run: pnpm check:file-size
@@ -142,7 +135,7 @@ jobs:
       - name: E2E tests (SQLite + demo mode)
         run: |
           cp -r .next/static .next/standalone/.next/static
-          [ -d public ] && cp -r public .next/standalone/public || true
+          if [ -d public ]; then cp -r public .next/standalone/public; fi
           # The app reads tax-data/ and reference-data/ from its working
           # directory (server.js chdirs to .next/standalone), as the image does.
           cp -r tax-data reference-data .next/standalone/
@@ -188,18 +181,13 @@ jobs:
       - name: Check migrations
         run: pnpm check:migrations
 
+      # A missing tax year blocks only a change to the tax data or its
+      # tables; the weekly tax-data-freshness workflow fails while it lasts.
       - name: Check tax parameter freshness
-        run: pnpm check:tax-params
+        run: pnpm check:tax-params --base "$(git merge-base origin/main HEAD)"
 
       - name: Tax-data file raises its dataVersion when it changes
-        env:
-          BASE: ${{ github.event_name == 'pull_request' && github.base_ref || github.event.before }}
-        run: |
-          base="$BASE"
-          # A branch's first push has no "before" commit: compare with main.
-          case "$base" in ""|0000000000000000000000000000000000000000) base=main ;; esac
-          git fetch --depth=1 origin "$base" 2>/dev/null || true
-          pnpm tsx scripts/check-tax-data-version.ts FETCH_HEAD
+        run: pnpm tsx scripts/check-tax-data-version.ts "$(git merge-base origin/main HEAD)"
 
       - name: Verify docs freshness
         run: pnpm docs:verify

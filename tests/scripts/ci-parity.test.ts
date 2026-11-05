@@ -8,8 +8,6 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 
 const CI_ONLY: Record<string, string> = {
-  "Commit rules over the pull request's commits":
-    "covered by check:release's commit-rules step over the same range",
   "Cache Next.js build": "CI cache, not a check",
   "Cache Playwright browsers": "CI cache, not a check",
   "Install Playwright system deps": "CI runner setup",
