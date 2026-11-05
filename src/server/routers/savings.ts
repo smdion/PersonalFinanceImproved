@@ -17,15 +17,15 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { safeDivide } from "@/lib/utils/math";
-import { calculateSavings } from "@/lib/calculators/savings";
-import { calculateEFund } from "@/lib/calculators/efund";
+import { calculateSavings } from "@/lib/pure/savings/savings";
+import { calculateEFund } from "@/lib/pure/savings/efund";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import {
   computeMaxMonthlyFunding,
   deriveBudgetMonthlyTotal,
   resolveEffectiveMonthlyContribution,
   type CapacityPerson,
-} from "@/lib/calculators/savings-capacity";
+} from "@/lib/pure/savings/savings-capacity";
 import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import {

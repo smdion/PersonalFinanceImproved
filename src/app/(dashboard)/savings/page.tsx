@@ -64,7 +64,7 @@ import {
   computeMaxMonthlyFunding,
   deriveBudgetMonthlyTotal,
   type CapacityPerson,
-} from "@/lib/calculators/savings-capacity";
+} from "@/lib/pure/savings/savings-capacity";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import {

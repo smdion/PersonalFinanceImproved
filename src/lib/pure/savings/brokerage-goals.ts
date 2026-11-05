@@ -15,7 +15,7 @@ import type {
   EngineAccumulationYear,
   EngineDecumulationYear,
   EngineYearProjection,
-} from "../pure/engine/types";
+} from "../engine/types";
 
 // --- Input ---
 

@@ -22,7 +22,7 @@ import { calculateContributions } from "@/lib/pure/contributions/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 // calculateSavings reserved for future savings logic-gap tests
-import { calculateEFund } from "@/lib/calculators/efund";
+import { calculateEFund } from "@/lib/pure/savings/efund";
 import {
   MFJ_TAXABLE_INCOME_BRACKETS,
   PERSON_A_PAYCHECK_INPUT,

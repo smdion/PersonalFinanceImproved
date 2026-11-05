@@ -2924,29 +2924,7 @@
       "count": 1
     }
   },
-  "src/lib/calculators/brokerage-goals.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/efund.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -2973,22 +2951,6 @@
       "count": 2
     },
     "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/savings-capacity.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/savings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
       "count": 1
     }
   },
@@ -4818,6 +4780,44 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
+    }
+  },
+  "src/lib/pure/savings/brokerage-goals.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/efund.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings-capacity.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/savings/savings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
     }
   },
   "src/lib/pure/sec-composition.ts": {

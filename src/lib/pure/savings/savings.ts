@@ -20,10 +20,10 @@
  * All values are user-editable at any time — goals, targets, allocations, and the savings pool
  * can all be changed and the calculator re-runs with the new values.
  */
-import type { SavingsInput, SavingsResult } from "../pure/types/calculators";
-import { formatPercent } from "../utils/format";
-import { safeDivide, sumBy, roundToCents } from "../utils/math";
-import { ALLOCATION_TOLERANCE } from "../constants";
+import type { SavingsInput, SavingsResult } from "../types/calculators";
+import { formatPercent } from "../../utils/format";
+import { safeDivide, sumBy, roundToCents } from "../../utils/math";
+import { ALLOCATION_TOLERANCE } from "../../constants";
 
 export function calculateSavings(input: SavingsInput): SavingsResult {
   const warnings: string[] = [];

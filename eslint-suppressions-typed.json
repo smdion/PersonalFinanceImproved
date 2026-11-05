@@ -499,11 +499,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/brokerage-goals.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/calculators/mortgage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -512,16 +507,6 @@
   "src/lib/calculators/paycheck.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 4
-    }
-  },
-  "src/lib/calculators/savings-capacity.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/savings.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
     }
   },
   "src/lib/config/account-types.ts": {
@@ -657,6 +642,21 @@
   "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 4
+    }
+  },
+  "src/lib/pure/savings/brokerage-goals.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings-capacity.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/lib/pure/simulation/monte-carlo.ts": {

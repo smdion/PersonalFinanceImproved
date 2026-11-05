@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateEFund } from "@/lib/calculators/efund";
+import { calculateEFund } from "@/lib/pure/savings/efund";
 import type { EFundInput } from "@/lib/pure/types/calculators";
 
 describe("calculateEFund", () => {

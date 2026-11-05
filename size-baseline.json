@@ -734,9 +734,6 @@
     "src/components/validation-content.tsx": {
       "ValidationContent": 574
     },
-    "src/lib/calculators/brokerage-goals.ts": {
-      "calculateBrokerageGoals": 206
-    },
     "src/lib/calculators/paycheck.ts": {
       "calculatePaycheck": 295
     },
@@ -808,6 +805,9 @@
     },
     "src/lib/pure/retirement/relocation.ts": {
       "calculateRelocation": 321
+    },
+    "src/lib/pure/savings/brokerage-goals.ts": {
+      "calculateBrokerageGoals": 206
     },
     "src/lib/pure/simulation/monte-carlo.ts": {
       "calculateMonteCarlo": 579

@@ -3,7 +3,7 @@ import {
   computeMaxMonthlyFunding,
   resolveEffectiveMonthlyContribution,
   type CapacityPerson,
-} from "@/lib/calculators/savings-capacity";
+} from "@/lib/pure/savings/savings-capacity";
 
 describe("computeMaxMonthlyFunding", () => {
   it("returns null when no active people", () => {

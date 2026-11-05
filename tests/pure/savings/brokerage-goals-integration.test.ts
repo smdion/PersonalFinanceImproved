@@ -6,12 +6,12 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
-import { calculateBrokerageGoals } from "@/lib/calculators/brokerage-goals";
+import { calculateBrokerageGoals } from "@/lib/pure/savings/brokerage-goals";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import type { BrokerageGoalInput } from "@/lib/calculators/brokerage-goals";
-import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
-import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
+import type { BrokerageGoalInput } from "@/lib/pure/savings/brokerage-goals";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
+import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 
 const AS_OF = new Date("2025-03-07");
 

@@ -28,7 +28,7 @@ import {
   calculateBrokerageGoals,
   type BrokerageGoalYear,
   type BrokerageGoalStatus,
-} from "@/lib/calculators/brokerage-goals";
+} from "@/lib/pure/savings/brokerage-goals";
 import type {
   AccumOverride,
   TooltipData,
