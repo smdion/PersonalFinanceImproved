@@ -1,6 +1,6 @@
 // Engine projection output types — year rows, phase results, and the full projection result.
 
-import type { GapYearDraw } from "../gap-year-draw";
+import type { GapYearDraw } from "./gap-year-draw";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   TaxBuckets,

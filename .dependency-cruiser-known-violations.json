@@ -81,33 +81,8 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/accounts/early-withdrawal-penalty.ts",
-    "to": "src/lib/pure/accounts/eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/accounts/eligibility.ts",
-    "to": "src/lib/pure/accounts/tax-bucket-projection.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/pure/accounts/tax-bucket-analysis.ts",
     "to": "src/lib/pure/accounts/tax-buckets.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/accounts/tax-bucket-projection.ts",
-    "to": "src/lib/pure/engine/types/index.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/balance-deduction.ts",
-    "to": "src/lib/pure/engine/types/projection-result.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/balance-utils.ts",
-    "to": "src/lib/pure/accounts/eligibility.ts"
   },
   {
     "rule": "no-circular",
@@ -126,28 +101,8 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/engine/projection-year-handlers/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/engine/social-security-income.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/pure/engine/guyton-klinger.ts",
     "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/accounts/eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/engine/types/projection-result.ts"
   },
   {
     "rule": "no-circular",
@@ -168,11 +123,6 @@
     "rule": "no-circular",
     "from": "src/lib/pure/engine/spending-strategy.ts",
     "to": "src/lib/pure/engine/vpw.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/withdrawal-routing.ts",
-    "to": "src/lib/pure/accounts/eligibility.ts"
   },
   {
     "rule": "no-circular",
