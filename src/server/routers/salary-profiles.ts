@@ -51,7 +51,7 @@ import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { resolveActiveSalaryProfileId } from "@/server/helpers/salary";
+import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
 import { computeJobNetPayPerCheck } from "./savings";
 import { upsertSetting } from "@/server/data/settings";
 

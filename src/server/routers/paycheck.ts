@@ -3,7 +3,7 @@ import { localDateStr } from "@/lib/utils/date";
 import {
   capForRequest,
   loadCapHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
@@ -28,10 +28,10 @@ import {
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
-  loadEffectiveSalaryProfile,
   buildPaycheckInputForJob,
   contributionPay,
 } from "@/server/helpers";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";

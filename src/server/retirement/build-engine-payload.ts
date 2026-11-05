@@ -35,10 +35,10 @@ import {
   getTotalCompensation,
   getLatestSnapshot,
   applySalaryProfileRow,
-  loadEffectiveSalaryProfile,
   resolveCompensation,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { applyContribProfileRow } from "@/server/services/contributions/profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
@@ -79,7 +79,7 @@ import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import {
   capEffectiveContribs,
   type CapPassHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/lib/pure/contributions/cap-pass";
 import { resolvePhaseExpenses } from "./payload/budget-expenses";
 import {
   buildProfileSwitches,

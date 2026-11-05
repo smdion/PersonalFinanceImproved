@@ -9,7 +9,7 @@
  * deleted wholesale. Deductions still resolve via Contribution Profile.
  */
 import "./setup-mocks";
-import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
+import { assertWithinIrsLimits } from "@/server/services/contributions/caps";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({

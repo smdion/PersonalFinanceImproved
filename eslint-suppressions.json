@@ -4084,6 +4084,17 @@
       "count": 3
     }
   },
+  "src/lib/pure/contributions/cap-pass.ts": {
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    },
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    }
+  },
   "src/lib/pure/contributions/category-totals.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5451,6 +5462,11 @@
       "count": 1
     }
   },
+  "src/server/data/salaries.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/data/settings.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -5481,20 +5497,6 @@
       "count": 10
     },
     "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/contribution-caps.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
       "count": 2
     }
   },
@@ -5570,10 +5572,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 15
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 11
     }
   },
   "src/server/helpers/savings-allocation.ts": {
@@ -6279,6 +6278,14 @@
       "count": 1
     }
   },
+  "src/server/services/contributions/caps.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
   "src/server/services/contributions/live-data.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -6312,6 +6319,14 @@
       "count": 12
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/profiles/salary-profile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },

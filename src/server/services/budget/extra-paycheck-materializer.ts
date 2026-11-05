@@ -21,7 +21,7 @@ import type {
 } from "@/lib/db/schema-pg";
 import { getExtraPaycheckMonthKeys } from "@/lib/pure/paycheck/paycheck";
 import { currentMonthKey } from "@/lib/utils/date-keys";
-import { loadEffectiveSalaryProfile } from "@/server/helpers/salary";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { localDateStr } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";
 

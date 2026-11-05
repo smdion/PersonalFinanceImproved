@@ -28,9 +28,9 @@ import {
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
-  loadEffectiveSalaryProfile,
   applySandboxSalaryEntries,
 } from "@/server/helpers";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
@@ -72,7 +72,7 @@ import {
 import {
   capForRequest,
   loadCapHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import type { ContributionInput } from "@/lib/pure/contributions/contribution.types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";

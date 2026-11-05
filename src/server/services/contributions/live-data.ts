@@ -5,12 +5,12 @@ import {
 } from "@/lib/config/account-types";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import {
-  loadEffectiveSalaryProfile,
   mergeSalaryProfileJobFields,
   resolveCompensation,
   contributionPay,
   getTotalCompensation,
 } from "@/server/helpers/salary";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------

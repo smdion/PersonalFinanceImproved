@@ -2,7 +2,7 @@
 import {
   capForRequest,
   loadCapHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
 import { eq, asc, sql, lt, isNull, and, ne, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -31,8 +31,6 @@ import { budgetRouter } from "./budget";
 import {
   computeBudgetAnnualTotal,
   resolveCompensation,
-  loadEffectiveSalaryProfile,
-  resolveActiveSalaryProfileId,
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
@@ -47,6 +45,8 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { applyDeductionActiveFields } from "@/server/services/contributions/profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";

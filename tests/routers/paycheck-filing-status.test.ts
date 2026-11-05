@@ -8,11 +8,9 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
-import { loadCapHousehold } from "@/server/helpers/contribution-caps";
-import {
-  w4FilingStatusOf,
-  type SalaryProfileActiveMap,
-} from "@/server/helpers/salary";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { type SalaryProfileActiveMap } from "@/server/helpers/salary";
+import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
 import {
   buildEnginePayload,
   fetchRetirementData,

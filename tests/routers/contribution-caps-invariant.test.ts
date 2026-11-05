@@ -26,7 +26,7 @@ import {
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
-import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
+import { assertWithinIrsLimits } from "@/server/services/contributions/caps";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";

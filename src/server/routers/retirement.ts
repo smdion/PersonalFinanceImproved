@@ -3,7 +3,7 @@ import { householdRetirementYear } from "@/server/helpers/retirement-profile";
 import {
   capResolvedProfile,
   loadCapHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
 import { returnFilingStatusSchema } from "@/lib/config/filing-status.schema";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
@@ -33,11 +33,11 @@ import {
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
-  loadEffectiveSalaryProfile,
   mergeSalaryProfileJobFields,
   getLatestSnapshot,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";

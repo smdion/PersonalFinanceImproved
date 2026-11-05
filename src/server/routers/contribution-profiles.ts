@@ -21,7 +21,7 @@ import {
   capResolvedProfile,
   loadCapHousehold,
   touchedContribAccounts,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { assertNoPlanUses } from "@/server/helpers/plans";

@@ -13,7 +13,7 @@ import {
   type CapPassContext,
   type CapPassHousehold,
   type CapPassRow,
-} from "@/server/helpers/contribution-caps";
+} from "@/lib/pure/contributions/cap-pass";
 import { inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {

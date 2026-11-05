@@ -20,9 +20,9 @@ import {
   getEffectiveCash,
   getEffectiveOtherAssets,
   invalidateYearEndCache,
-  loadEffectiveSalaryProfile,
   resolvePersonYearIncome,
 } from "@/server/helpers";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";
 import {

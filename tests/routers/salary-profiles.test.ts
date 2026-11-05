@@ -29,10 +29,10 @@ import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq, and } from "drizzle-orm";
 import {
   applySalaryProfileRow,
-  loadAndApplySalaryProfile,
-  fetchSalaryProfile,
   resolveCompensation,
 } from "@/server/helpers/salary";
+import { fetchSalaryProfile } from "@/server/data/salaries";
+import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
 import { canDeleteSalaryProfile } from "@/lib/pure/household/profiles";
 
 /** A complete entry — every field required, matching the stored shape. */

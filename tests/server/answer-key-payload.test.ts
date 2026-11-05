@@ -302,7 +302,7 @@ describe("answer key: over-limit money overflows (verdict E8, decision C4)", () 
   // 2025-67). Decided (C4, DESIGN § Account Categories, retirement scope: "contribution
   // overflow … go to Retirement brokerages"): 24,500 to the 401(k) and
   // 36,000 − 24,500 = 11,500 to a Retirement brokerage, every year. Today
-  // the server's cap pass (`contribution-caps.ts:206`) sends the spec as
+  // the server's cap pass (`cap-pass.ts:173`) sends the spec as
   // 24,500, so 2026 overflow is 0 and the 11,500 is neither saved nor
   // overflowed (verdict E8; key § Re-run).
   describe("engine/E8", () => {

@@ -24,9 +24,9 @@ import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import {
   getTotalCompensation,
   resolveCompensation,
-  loadAndApplySalaryProfile,
   mergeSalaryProfileJobFields,
 } from "./salary";
+import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { SalaryProfileActiveMap } from "./salary";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {

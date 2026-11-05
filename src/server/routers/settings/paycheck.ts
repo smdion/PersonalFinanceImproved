@@ -1,7 +1,7 @@
 import {
   assertWithinIrsLimits,
   type ContribRowPatch,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, and } from "drizzle-orm";

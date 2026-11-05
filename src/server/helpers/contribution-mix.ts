@@ -9,7 +9,7 @@
 import {
   capForRequest,
   loadCapHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -29,11 +29,8 @@ import {
   periodsElapsedYtd,
 } from "@/lib/pure/paycheck/paycheck";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import {
-  contributionPay,
-  loadEffectiveSalaryProfile,
-  resolveCompensation,
-} from "./salary";
+import { contributionPay, resolveCompensation } from "./salary";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
   computeGroupedEmployerMatch,
   matchGroupKey,

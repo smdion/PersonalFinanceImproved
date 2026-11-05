@@ -8,7 +8,7 @@ import {
 import {
   capForRequest,
   loadCapHousehold,
-} from "@/server/helpers/contribution-caps";
+} from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { eq } from "drizzle-orm";
@@ -27,11 +27,11 @@ import {
   type ContribResolutionStatus,
 } from "@/lib/pure/household/profiles";
 import {
-  loadEffectiveSalaryProfile,
   resolveCompensation,
   applyActiveSalary,
   applySandboxSalaryEntries,
 } from "./salary";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
