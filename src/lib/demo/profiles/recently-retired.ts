@@ -30,6 +30,13 @@ const PERF_ACCOUNTS = {
     label: "James Rollover IRA",
     owner: "James",
   },
+  jRoth: { institution: "Fidelity", label: "James Roth IRA", owner: "James" },
+  p403b: { institution: "Vanguard", label: "Patricia 403b", owner: "Patricia" },
+  pRollover: {
+    institution: "Vanguard",
+    label: "Patricia Rollover IRA",
+    owner: "Patricia",
+  },
 } as const;
 
 type PerfRow = [
@@ -67,6 +74,36 @@ const PERF_HISTORY: PerfRow[] = [
   ["jRollover", 2023, 983000, 0, 247000, 1230000, 0.251, 0, 1000],
   ["jRollover", 2024, 1230000, 0, 97000, 1327000, 0.079, 0, 700],
   ["jRollover", 2025, 1327000, 0, -50000, 1277000, -0.038, 0, 600],
+  ["jRoth", 2016, 120000, 7000, 15000, 142000, 0.118, 0, 0],
+  ["jRoth", 2017, 142000, 7000, 30000, 179000, 0.201, 0, 0],
+  ["jRoth", 2018, 179000, 8000, -8000, 179000, -0.043, 0, 0],
+  ["jRoth", 2019, 179000, 8000, 53000, 240000, 0.283, 0, 0],
+  ["jRoth", 2020, 240000, 8500, 43000, 291500, 0.173, 0, 0],
+  ["jRoth", 2021, 291500, 8500, 76000, 376000, 0.253, 0, 0],
+  ["jRoth", 2022, 376000, 9000, -72000, 313000, -0.187, 0, 0],
+  ["jRoth", 2023, 313000, 9000, 81000, 403000, 0.252, 0, 0],
+  ["jRoth", 2024, 403000, 5000, 32000, 440000, 0.078, 0, 0],
+  ["jRoth", 2025, 440000, 0, -17000, 423000, -0.039, 0, 0],
+  ["p403b", 2016, 230000, 9000, 28000, 267000, 0.117, 0, 650],
+  ["p403b", 2017, 267000, 9500, 56000, 332500, 0.203, 0, 650],
+  ["p403b", 2018, 332500, 9500, -15000, 327000, -0.044, 0, 650],
+  ["p403b", 2019, 327000, 10000, 95000, 432000, 0.282, 0, 650],
+  ["p403b", 2020, 432000, 10000, 76000, 518000, 0.172, 0, 650],
+  ["p403b", 2021, 518000, 10000, 134000, 662000, 0.254, 0, 650],
+  ["p403b", 2022, 662000, 10500, -125000, 547500, -0.186, 0, 650],
+  ["p403b", 2023, 547500, 11000, 140000, 698500, 0.251, 0, 650],
+  ["p403b", 2024, 698500, 15000, 56000, 769500, 0.079, 0, 500],
+  ["p403b", 2025, 769500, 0, -29000, 740500, -0.038, 0, 400],
+  ["pRollover", 2016, 90000, 0, 10000, 100000, 0.111, 0, 250],
+  ["pRollover", 2017, 100000, 0, 20000, 120000, 0.2, 0, 250],
+  ["pRollover", 2018, 120000, 0, -5000, 115000, -0.042, 0, 250],
+  ["pRollover", 2019, 115000, 0, 33000, 148000, 0.287, 0, 250],
+  ["pRollover", 2020, 148000, 0, 25000, 173000, 0.169, 0, 250],
+  ["pRollover", 2021, 173000, 0, 44000, 217000, 0.254, 0, 250],
+  ["pRollover", 2022, 217000, 0, -40000, 177000, -0.184, 0, 250],
+  ["pRollover", 2023, 177000, 0, 44000, 221000, 0.249, 0, 250],
+  ["pRollover", 2024, 221000, 0, 18000, 239000, 0.081, 0, 200],
+  ["pRollover", 2025, 239000, 0, -9000, 230000, -0.038, 0, 100],
 ];
 
 /** The history rows as the profile stores them (amounts as strings). */
@@ -712,304 +749,6 @@ export const recentlyRetiredProfile: DemoProfile = {
   accountPerformance: [
     // PERF_HISTORY's rows, then the accounts still written out below.
     ...accountPerformanceRows(),
-    // --- James Roth IRA (smaller allocation) ---
-    ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
-      (year) => {
-        const data: Record<
-          number,
-          {
-            begin: string;
-            contrib: string;
-            gain: string;
-            end: string;
-            ret: string;
-          }
-        > = {
-          2016: {
-            begin: "120000",
-            contrib: "7000",
-            gain: "15000",
-            end: "142000",
-            ret: "0.118",
-          },
-          2017: {
-            begin: "142000",
-            contrib: "7000",
-            gain: "30000",
-            end: "179000",
-            ret: "0.201",
-          },
-          2018: {
-            begin: "179000",
-            contrib: "8000",
-            gain: "-8000",
-            end: "179000",
-            ret: "-0.043",
-          },
-          2019: {
-            begin: "179000",
-            contrib: "8000",
-            gain: "53000",
-            end: "240000",
-            ret: "0.283",
-          },
-          2020: {
-            begin: "240000",
-            contrib: "8500",
-            gain: "43000",
-            end: "291500",
-            ret: "0.173",
-          },
-          2021: {
-            begin: "291500",
-            contrib: "8500",
-            gain: "76000",
-            end: "376000",
-            ret: "0.253",
-          },
-          2022: {
-            begin: "376000",
-            contrib: "9000",
-            gain: "-72000",
-            end: "313000",
-            ret: "-0.187",
-          },
-          2023: {
-            begin: "313000",
-            contrib: "9000",
-            gain: "81000",
-            end: "403000",
-            ret: "0.252",
-          },
-          2024: {
-            begin: "403000",
-            contrib: "5000",
-            gain: "32000",
-            end: "440000",
-            ret: "0.078",
-          },
-          2025: {
-            begin: "440000",
-            contrib: "0",
-            gain: "-17000",
-            end: "423000",
-            ret: "-0.039",
-          },
-        };
-        const d = data[year]!;
-        return {
-          year,
-          institution: "Fidelity",
-          accountLabel: "James Roth IRA",
-          ownerPersonName: "James",
-          beginningBalance: d.begin,
-          totalContributions: d.contrib,
-          yearlyGainLoss: d.gain,
-          endingBalance: d.end,
-          annualReturnPct: d.ret,
-          employerContributions: "0",
-          fees: "0",
-          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
-          perfAccountLabel: "James Roth IRA",
-        };
-      },
-    ),
-
-    // --- Patricia 403b (teacher retirement, contributions stopped at retirement) ---
-    ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
-      (year) => {
-        const data: Record<
-          number,
-          {
-            begin: string;
-            contrib: string;
-            gain: string;
-            end: string;
-            ret: string;
-          }
-        > = {
-          2016: {
-            begin: "230000",
-            contrib: "9000",
-            gain: "28000",
-            end: "267000",
-            ret: "0.117",
-          },
-          2017: {
-            begin: "267000",
-            contrib: "9500",
-            gain: "56000",
-            end: "332500",
-            ret: "0.203",
-          },
-          2018: {
-            begin: "332500",
-            contrib: "9500",
-            gain: "-15000",
-            end: "327000",
-            ret: "-0.044",
-          },
-          2019: {
-            begin: "327000",
-            contrib: "10000",
-            gain: "95000",
-            end: "432000",
-            ret: "0.282",
-          },
-          2020: {
-            begin: "432000",
-            contrib: "10000",
-            gain: "76000",
-            end: "518000",
-            ret: "0.172",
-          },
-          2021: {
-            begin: "518000",
-            contrib: "10000",
-            gain: "134000",
-            end: "662000",
-            ret: "0.254",
-          },
-          2022: {
-            begin: "662000",
-            contrib: "10500",
-            gain: "-125000",
-            end: "547500",
-            ret: "-0.186",
-          },
-          2023: {
-            begin: "547500",
-            contrib: "11000",
-            gain: "140000",
-            end: "698500",
-            ret: "0.251",
-          },
-          2024: {
-            begin: "698500",
-            contrib: "15000",
-            gain: "56000",
-            end: "769500",
-            ret: "0.079",
-          },
-          2025: {
-            begin: "769500",
-            contrib: "0",
-            gain: "-29000",
-            end: "740500",
-            ret: "-0.038",
-          },
-        };
-        const d = data[year]!;
-        return {
-          year,
-          institution: "Vanguard",
-          accountLabel: "Patricia 403b",
-          ownerPersonName: "Patricia",
-          beginningBalance: d.begin,
-          totalContributions: d.contrib,
-          yearlyGainLoss: d.gain,
-          endingBalance: d.end,
-          annualReturnPct: d.ret,
-          employerContributions: "0",
-          fees: year <= 2023 ? "650" : year === 2024 ? "500" : "400",
-          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
-          perfAccountLabel: "Patricia 403b",
-        };
-      },
-    ),
-
-    // --- Patricia Rollover IRA (smaller, from prior position) ---
-    ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
-      (year) => {
-        const data: Record<
-          number,
-          {
-            begin: string;
-            gain: string;
-            end: string;
-            ret: string;
-          }
-        > = {
-          2016: {
-            begin: "90000",
-            gain: "10000",
-            end: "100000",
-            ret: "0.111",
-          },
-          2017: {
-            begin: "100000",
-            gain: "20000",
-            end: "120000",
-            ret: "0.2",
-          },
-          2018: {
-            begin: "120000",
-            gain: "-5000",
-            end: "115000",
-            ret: "-0.042",
-          },
-          2019: {
-            begin: "115000",
-            gain: "33000",
-            end: "148000",
-            ret: "0.287",
-          },
-          2020: {
-            begin: "148000",
-            gain: "25000",
-            end: "173000",
-            ret: "0.169",
-          },
-          2021: {
-            begin: "173000",
-            gain: "44000",
-            end: "217000",
-            ret: "0.254",
-          },
-          2022: {
-            begin: "217000",
-            gain: "-40000",
-            end: "177000",
-            ret: "-0.184",
-          },
-          2023: {
-            begin: "177000",
-            gain: "44000",
-            end: "221000",
-            ret: "0.249",
-          },
-          2024: {
-            begin: "221000",
-            gain: "18000",
-            end: "239000",
-            ret: "0.081",
-          },
-          2025: {
-            begin: "239000",
-            gain: "-9000",
-            end: "230000",
-            ret: "-0.038",
-          },
-        };
-        const d = data[year]!;
-        return {
-          year,
-          institution: "Vanguard",
-          accountLabel: "Patricia Rollover IRA",
-          ownerPersonName: "Patricia",
-          beginningBalance: d.begin,
-          totalContributions: "0",
-          yearlyGainLoss: d.gain,
-          endingBalance: d.end,
-          annualReturnPct: d.ret,
-          employerContributions: "0",
-          fees: year <= 2023 ? "250" : year === 2024 ? "200" : "100",
-          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
-          perfAccountLabel: "Patricia Rollover IRA",
-        };
-      },
-    ),
-
     // --- Patricia Roth IRA (smaller allocation) ---
     ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
       (year) => {
