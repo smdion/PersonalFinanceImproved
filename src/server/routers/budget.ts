@@ -53,12 +53,16 @@ import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
 import {
   getActiveBudgetApi,
-  getClientForService,
   cacheGet,
   refreshCategoryCache,
   BudgetApiError,
   YNAB_INTERNAL_GROUPS,
 } from "@/lib/budget-api";
+import {
+  requireActiveBudgetApi,
+  requireBudgetClient,
+  requireBudgetProfile,
+} from "@/server/services/budget/budget-client";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import type {
   BudgetCategoryGroup,
@@ -1083,12 +1087,7 @@ export const budgetRouter = createTRPCRouter({
       z.object({ label: z.string().min(1), profileId: z.number().optional() }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
 
       const newLabels = columnLabelsSchema.parse([
         ...profile.columnLabels,
@@ -1136,12 +1135,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
       const colCheck = canRemoveColumn(
         profile.columnLabels.length,
         input.colIndex,
@@ -1203,12 +1197,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
 
       const numCols = profile.columnLabels.length;
       const amounts = new Array(numCols).fill(0) as number[];
@@ -1278,12 +1267,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
 
       const items = await ctx.db
         .select()
@@ -1373,12 +1357,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
 
       const allItems = await ctx.db
         .select()
@@ -1406,12 +1385,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
       if (input.colIndex >= profile.columnLabels.length)
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -1436,12 +1410,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
+      const profile = await requireBudgetProfile(ctx.db, input.profileId);
 
       if (input.columnMonths) {
         if (input.columnMonths.length !== profile.columnLabels.length) {
@@ -1777,13 +1746,7 @@ export const budgetRouter = createTRPCRouter({
   syncBudgetFromApi: budgetProcedure
     .input(z.object({}).optional())
     .mutation(async ({ ctx }) => {
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No budget API active",
-        });
-      }
+      const active = await requireActiveBudgetApi(ctx.db);
 
       // Get current month detail from cache
       const now = ctx.scope.asOf;
@@ -1889,21 +1852,7 @@ export const budgetRouter = createTRPCRouter({
   syncBudgetToApi: budgetProcedure
     .input(z.object({}).optional())
     .mutation(async ({ ctx }) => {
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No budget API active",
-        });
-      }
-
-      const client = await getClientForService(ctx.db, active);
-      if (!client) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Budget API client not available",
-        });
-      }
+      const { service: active, client } = await requireBudgetClient(ctx.db);
 
       // Use linked profile from apiConnections (consistent with sync.ts orchestrator)
       const [conn] = await ctx.db

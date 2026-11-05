@@ -5719,7 +5719,7 @@
       "count": 21
     },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 31

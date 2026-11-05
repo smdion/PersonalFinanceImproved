@@ -75,12 +75,12 @@ import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/pure/types/calculators";
 import {
   getActiveBudgetApi,
-  getClientForService,
   cacheGet,
   refreshCategoryCache,
   BudgetApiError,
   isTransientError,
 } from "@/lib/budget-api";
+import { requireBudgetClient } from "@/server/services/budget/budget-client";
 import {
   WriteStopped,
   nothingChanged,
@@ -1837,20 +1837,10 @@ export const savingsRouter = createTRPCRouter({
       // resolved) — mirrors budget.syncBudgetToApi, and avoids querying
       // active_budget_api twice in one request (once here, again at the
       // end to know which cache to refresh).
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No budget API active",
-        });
-      }
-      const client = await getClientForService(ctx.db, active);
-      if (!client) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No budget API active",
-        });
-      }
+      const { service: active, client } = await requireBudgetClient(
+        ctx.db,
+        "No budget API active",
+      );
 
       const [goals, activeProfile, budgetItems, appSettings] =
         await Promise.all([

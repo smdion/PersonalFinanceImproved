@@ -6,11 +6,8 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
-import {
-  getClientForService,
-  getActiveBudgetApi,
-  getApiConnection,
-} from "@/lib/budget-api";
+import { getApiConnection } from "@/lib/budget-api";
+import { requireBudgetClient } from "@/server/services/budget/budget-client";
 import {
   allowedDirectionsForMapping,
   isPullMapping,
@@ -190,21 +187,7 @@ export const syncMappingsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const asOfDate = ctx.scope.asOf;
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No budget API active",
-        });
-      }
-
-      const client = await getClientForService(ctx.db, active);
-      if (!client) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Budget API client not available",
-        });
-      }
+      const { service: active, client } = await requireBudgetClient(ctx.db);
 
       const conn = await getApiConnection(ctx.db, active);
       const mappings = conn?.accountMappings ?? [];
