@@ -151,6 +151,20 @@ describe("Layers-renamed trailers", () => {
     expect(errors).toHaveLength(1);
   });
 
+  it("accepts a trailer the renames since the ref already applied", () => {
+    // From one base git pairs the rename itself; from an older one it can't.
+    const moves = parseEntryMoves(message);
+    const known = [entry(FROM, INDEX)];
+    expect(applyEntryMoves([entry(FROM, INDEX)], known, moves)).toEqual({
+      entries: [entry(FROM, INDEX)],
+      errors: [],
+    });
+    expect(applyEntryMoves([entry(FROM, BARREL)], known, moves).errors).toEqual(
+      [],
+    );
+    expect(applyEntryMoves([], known, moves).errors).toHaveLength(1);
+  });
+
   it("keeps the rule: a trailer can't turn one rule's entry into another's", () => {
     const base: LayerBase = {
       entries: [entry(FROM, BARREL)],

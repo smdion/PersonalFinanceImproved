@@ -104,8 +104,9 @@ function entryMovesSince(baseRef: string): EntryMove[] {
 /**
  * Base entries re-pointed by the trailers: each move needs its old entry in
  * the base list and gone from the current one, with the rule kept, so the
- * list can't grow. Returns the re-pointed base list and an error per move
- * that doesn't qualify.
+ * list can't grow. A move whose new edge is already a base entry (the
+ * renames since the ref found the same pairing) is met as it stands.
+ * Returns the re-pointed base list and an error per move that doesn't qualify.
  */
 export function applyEntryMoves(
   entries: LayerViolation[],
@@ -121,6 +122,8 @@ export function applyEntryMoves(
         v.from === m.from.from && v.to === m.from.to && !knownKeys.has(key(v)),
     );
     if (i < 0) {
+      // The ref's renames already re-pointed it: a base entry is on the new edge.
+      if (out.some((v) => v.from === m.to.from && v.to === m.to.to)) continue;
       errors.push(
         `Layers-renamed: ${m.from.from} -> ${m.from.to} names no base entry that is gone from ${KNOWN_FILE}`,
       );
