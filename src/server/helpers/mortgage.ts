@@ -2,7 +2,7 @@
  * Mortgage balance computation helpers.
  */
 import * as schema from "@/lib/db/schema";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type {
   MortgageLoanInput,
   MortgageExtraPayment,

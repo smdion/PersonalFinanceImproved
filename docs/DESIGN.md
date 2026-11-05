@@ -17,7 +17,7 @@
 ## What's Built
 
 - **<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages** — Dashboard, Paycheck, Budget, Savings, Portfolio, Performance, Brokerage, Benchmarks, Net Worth, Historical, Mortgage, Liabilities, Assets, Retirement (+ methodology pages), Tax Buckets, Taxes, Milestones, Recommendations, Profiles, Tools (ESPP, Relocation), Settings, Versions and more.
-- **Calculators** in `lib/pure/<area>/` (<!-- AUTO-GEN:calculators -->1<!-- /AUTO-GEN --> still in `lib/calculators/`) — paycheck, tax, budget, contribution, mortgage, net worth, savings, emergency fund, brokerage goals, Monte Carlo simulation, relocation, Coast FIRE, Social Security, Simple tax mode, the plan judge (`assessPlan`) and more.
+- **Calculators** in `lib/pure/<area>/` (<!-- AUTO-GEN:calculators -->0<!-- /AUTO-GEN --> still in `lib/calculators/`) — paycheck, tax, budget, contribution, mortgage, net worth, savings, emergency fund, brokerage goals, Monte Carlo simulation, relocation, Coast FIRE, Social Security, Simple tax mode, the plan judge (`assessPlan`) and more.
 - **The projection engine** — `lib/pure/engine/`, <!-- AUTO-GEN:engineModules -->33<!-- /AUTO-GEN --> modules; map in `engine/ARCHITECTURE.md`.
 - **<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->5<!-- /AUTO-GEN --> settings sub-routers**, <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables, <!-- AUTO-GEN:migrations -->14<!-- /AUTO-GEN --> migrations (PG + SQLite).
 - **Integrations** — YNAB and Actual Budget (two-way budget sync, cash, assets, savings categories), SimpleFIN (balances, holdings, transactions), Tiingo prices, SEC fund facts.

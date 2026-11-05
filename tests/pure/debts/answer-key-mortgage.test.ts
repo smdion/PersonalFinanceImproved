@@ -26,13 +26,13 @@
  * behind" is about that dating; no figure here depends on it): with a
  * start of 2020-01-01, row 12 is January 2021 and row 61 February 2025.
  *
- * `tests/calculators/mortgage.test.ts:15`'s fixture P&I (1,770.09) is
+ * `tests/pure/debts/mortgage.test.ts:15`'s fixture P&I (1,770.09) is
  * G3's pin and stays as it is (labelled there); C6 below has the true
  * payment.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
+import { cents, xfail } from "../../fixtures/answer-key";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type {
   MortgageExtraPayment,
   MortgageInput,

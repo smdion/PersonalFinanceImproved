@@ -2924,11 +2924,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/mortgage.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/lib/client-address.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -4022,6 +4017,11 @@
   "src/lib/pure/debts/debts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
+    }
+  },
+  "src/lib/pure/debts/mortgage.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     }
   },
   "src/lib/pure/deposit-check.ts": {

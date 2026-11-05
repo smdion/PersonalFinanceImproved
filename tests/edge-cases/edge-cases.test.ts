@@ -13,7 +13,7 @@ import {
 } from "../pure/tax/tax-helpers";
 import { calculateBudget } from "@/lib/pure/budget/budget";
 import { calculateContributions } from "@/lib/pure/contributions/contribution";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateSavings } from "@/lib/pure/savings/savings";
 import { MFJ_2C_BRACKETS, MFJ_TAXABLE_INCOME_BRACKETS } from "../pure/fixtures";

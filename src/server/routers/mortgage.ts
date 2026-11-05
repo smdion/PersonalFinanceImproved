@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { asc, eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import {
   toNumber,
   buildMortgageInputs,

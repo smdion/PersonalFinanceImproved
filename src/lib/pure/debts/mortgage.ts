@@ -22,7 +22,7 @@
  *               new_balance = balance - principal - extra
  *   Loop terminates when balance reaches $0 or term expires.
  */
-import { localDateStr, utcDayOf } from "../utils/date";
+import { localDateStr, utcDayOf } from "../../utils/date";
 import type {
   MortgageInput,
   MortgageResult,
@@ -31,10 +31,13 @@ import type {
   MortgageWhatIfResult,
   AmortizationEntry,
   MortgageExtraPayment,
-} from "../pure/types/calculators";
-import { formatPercent } from "../utils/format";
-import { roundToCents, safeDivide, sumBy } from "../utils/math";
-import { MONTHS_PER_YEAR, AMORTIZATION_BALANCE_TOLERANCE } from "../constants";
+} from "../types/calculators";
+import { formatPercent } from "../../utils/format";
+import { roundToCents, safeDivide, sumBy } from "../../utils/math";
+import {
+  MONTHS_PER_YEAR,
+  AMORTIZATION_BALANCE_TOLERANCE,
+} from "../../constants";
 
 export function calculateMortgage(input: MortgageInput): MortgageResult {
   const warnings: string[] = [];

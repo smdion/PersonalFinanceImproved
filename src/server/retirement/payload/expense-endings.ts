@@ -8,7 +8,7 @@
  * Spending typed in for a phase has no lines, so nothing ends in it.
  */
 import * as schema from "@/lib/db/schema";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import type { ExpenseEnding } from "@/lib/pure/engine/types";
 import { computeBudgetAnnualTotal } from "@/server/helpers";
 import { buildMortgageInputs } from "@/server/helpers/mortgage";

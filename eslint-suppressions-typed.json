@@ -499,11 +499,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/mortgage.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 9
@@ -562,6 +557,11 @@
   "src/lib/pure/contributions/view-metrics.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/lib/pure/debts/mortgage.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/lib/pure/engine/balance-utils.ts": {

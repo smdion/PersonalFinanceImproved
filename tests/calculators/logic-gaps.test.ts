@@ -19,7 +19,7 @@ import {
 } from "../pure/tax/tax-helpers";
 import { calculateBudget } from "@/lib/pure/budget/budget";
 import { calculateContributions } from "@/lib/pure/contributions/contribution";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 // calculateSavings reserved for future savings logic-gap tests
 import { calculateEFund } from "@/lib/pure/savings/efund";
