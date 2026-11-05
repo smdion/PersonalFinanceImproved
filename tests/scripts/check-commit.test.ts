@@ -4,6 +4,7 @@ import {
   countPriorFixes,
   looksLikeFix,
   notAMove,
+  renamePair,
   parseMessage,
   parseNumstat,
   trailerValues,
@@ -215,6 +216,93 @@ describe("notAMove", () => {
         }),
       ),
     ).toEqual(["mechanical", "size"]);
+  });
+});
+describe("notAMove: a move's bookkeeping and bare names", () => {
+  const renamed = parseNumstat(
+    "1\t1\tsrc/lib/{calculators/engine/tax-gross-up.ts => pure/engine/withdrawal-solver.ts}\n1\t1\tdocs/DESIGN.md\n2\t2\tsize-baseline.json\n1\t1\tsrc/lib/generated/engine-hash.ts",
+  );
+  const file = (name: string, body: string[]) => [
+    `diff --git a/${name} b/${name}`,
+    `--- a/${name}`,
+    `+++ b/${name}`,
+    "@@ -1 +1 @@",
+    ...body,
+  ];
+
+  it("reads a renamed file's bare name as a path", () => {
+    expect(
+      renamePair(
+        "src/lib/{calculators/engine/tax-gross-up.ts => pure/engine/withdrawal-solver.ts}",
+      ),
+    ).toEqual([
+      "src/lib/calculators/engine/tax-gross-up.ts",
+      "src/lib/pure/engine/withdrawal-solver.ts",
+    ]);
+    const diff = file("docs/DESIGN.md", [
+      "-The solver lives in tax-gross-up.ts.",
+      "+The solver lives in withdrawal-solver.ts.",
+    ]).join("\n");
+    expect(notAMove(renamed, diff)).toBeUndefined();
+  });
+
+  it("leaves size entries, the generated hash and AUTO-GEN counts to their own checks", () => {
+    const diff = [
+      ...file("size-baseline.json", [
+        '-    "a": 500,',
+        '+    "a": 498,',
+        '-    "b": 410',
+        '+    "b": 412',
+      ]),
+      ...file("src/lib/generated/engine-hash.ts", [
+        "-export const ENGINE_HASH = 1;",
+        "+export const ENGINE_HASH = 2;",
+      ]),
+      ...file("docs/DESIGN.md", [
+        "-**<!-- AUTO-GEN:engineModules -->33<!-- /AUTO-GEN --> modules**",
+        "+**<!-- AUTO-GEN:engineModules -->34<!-- /AUTO-GEN --> modules**",
+      ]),
+    ].join("\n");
+    expect(notAMove(renamed, diff)).toBeUndefined();
+  });
+
+  it("passes a line prettier re-wrapped because its path changed length", () => {
+    const diff = file("docs/DESIGN.md", [
+      '-  const x: import("@/lib/calculators/types/calculators").T | undefined;',
+      "+  const x:",
+      '+    | import("@/lib/pure/types/calculators").T',
+      "+    | undefined;",
+    ]).join("\n");
+    expect(notAMove(renamed, diff)).toBeUndefined();
+  });
+
+  it("lets a file the move creates or deletes bring or take its comments", () => {
+    const diff = [
+      "diff --git a/src/lib/old-barrel.ts b/src/lib/old-barrel.ts",
+      "deleted file mode 100644",
+      "--- a/src/lib/old-barrel.ts",
+      "+++ /dev/null",
+      "@@ -1,2 +0,0 @@",
+      "-// Barrel re-export.",
+      '-export * from "./types/a";',
+    ].join("\n");
+    expect(notAMove(renamed, diff)).toBeUndefined();
+    const edited = file("docs/DESIGN.md", [
+      "+// a new comment in a kept file",
+    ]).join("\n");
+    expect(notAMove(renamed, edited)).toMatch(
+      /neither imports nor path rewrites/,
+    );
+  });
+
+  it("still refuses an identifier rename or a logic change", () => {
+    const diff = file("docs/DESIGN.md", [
+      "-call computeGrossUp() first",
+      "+call solveWithdrawal() first",
+    ]).join("\n");
+    expect(notAMove(renamed, diff)).toMatch(
+      /neither imports nor path rewrites/,
+    );
   });
 });
 

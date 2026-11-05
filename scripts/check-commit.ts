@@ -182,22 +182,70 @@ const IMPORT_LINE =
   /^\s*(import\b|export\b.*\bfrom\b|\}\s*from\b|(type\s+)?[\w$]+(\s+as\s+[\w$]+)?,?\s*$|[{}();,\s]*$)/;
 /** A path-like token: anything with a slash in it. */
 const PATH_TOKEN = /[\w@.~$[\]()-]*\/[\w@.~$[\]()/-]*/g;
+/**
+ * Files a move rewrites as its own record, each guarded by its own check
+ * (check:ratchets, check:layers and its trailers, check:calculation-register,
+ * check:engine-hash), so the move check doesn't read them line by line.
+ */
+const MOVE_BOOKKEEPING =
+  /^(size-baseline\.json|eslint-suppressions(-typed)?\.json|\.dependency-cruiser-known-violations\.json|scripts\/calculation-register-baseline\.json|src\/lib\/generated\/.*)$/;
+/** A comment line: a line comment, or a line of a block comment. */
+const COMMENT_LINE = /^\s*(\/\/|\/\*|\*\/|\*(\s|$))/;
+/** A generated count in the docs (docs:verify checks it). */
+const AUTO_GEN_LINE = /<!-- AUTO-GEN:\w+ -->/;
+
+/** Old and new path of each rename in a `--numstat` name (`a/{b => c}/d`). */
+export function renamePair(name: string): [string, string] | undefined {
+  const brace = /^(.*)\{(.*) => (.*)\}(.*)$/.exec(name);
+  if (brace) {
+    const [, pre, from, to, post] = brace;
+    const clean = (p: string) => p.replace(/\/\//g, "/");
+    return [clean(`${pre}${from}${post}`), clean(`${pre}${to}${post}`)];
+  }
+  const plain = /^(.*) => (.*)$/.exec(name);
+  return plain ? [plain[1]!, plain[2]!] : undefined;
+}
+
+/** The bare names of renamed files, as they appear in prose and docs. */
+function renamedNames(numstat: FileChange[]): RegExp | undefined {
+  const names = new Set<string>();
+  for (const change of numstat) {
+    const pair = renamePair(change.file);
+    if (!pair) continue;
+    for (const p of pair) {
+      const base = p.split("/").pop()!;
+      if (base) names.add(base);
+    }
+  }
+  if (names.size === 0) return undefined;
+  const escaped = [...names].map((n) =>
+    n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  );
+  return new RegExp(`(?<![\\w-])(${escaped.join("|")})(?![\\w-])`, "g");
+}
+
 /** A line with its paths, spacing, table padding and trailing comma gone. */
-const withoutPaths = (line: string) =>
-  line
+const withoutPaths = (line: string, names?: RegExp) =>
+  (names ? line.replace(names, "<path>") : line)
     .replace(PATH_TOKEN, "<path>")
     .replace(/\s+/g, " ")
     .replace(/ ?\| ?/g, "|")
     .replace(/-{3,}/g, "---")
     .trim()
-    .replace(/,$/, "");
+    .replace(/,$/, "")
+    // A generated cell lists its entries sorted by path; a move reorders them.
+    .split("|")
+    .map((cell) => cell.split("; ").sort().join("; "))
+    .join("|");
 
 /**
  * Why a change isn't a move: `numstat` from `-M --numstat` must show a
  * rename, and in `diff` (`-M -U0`) every removed or added line of a file
  * must be an import line, or match a line on the other side of the same
  * file that differs from it only in its paths (a moved entry in a sorted
- * list matches too).
+ * list matches too). A renamed file's bare name counts as a path, and the
+ * move's own bookkeeping (MOVE_BOOKKEEPING, AUTO-GEN counts) is left to the
+ * checks that guard it.
  */
 export function notAMove(
   numstat: FileChange[],
@@ -205,24 +253,41 @@ export function notAMove(
 ): string | undefined {
   if (!numstat.some((change) => change.file.includes(" => ")))
     return "git sees no rename";
+  const names = renamedNames(numstat);
   const bad: string[] = [];
   let file = "";
   let removed: string[] = [];
   let added: string[] = [];
   const settle = () => {
+    if (MOVE_BOOKKEEPING.test(file)) {
+      removed = [];
+      added = [];
+      return;
+    }
+    removed = removed.filter((line) => !AUTO_GEN_LINE.test(line));
+    added = added.filter((line) => !AUTO_GEN_LINE.test(line));
+    // Prettier re-wraps a line whose path changed length (a long union gains
+    // leading pipes): the same text once joined.
+    const joined = (lines: string[]) =>
+      withoutPaths(lines.join(" "), names).replace(/[\s|]+/g, "");
+    if (removed.length > 0 && joined(removed) === joined(added)) {
+      removed = [];
+      added = [];
+      return;
+    }
     const pool = new Map<string, number>();
     for (const line of removed) {
-      const key = withoutPaths(line);
+      const key = withoutPaths(line, names);
       pool.set(key, (pool.get(key) ?? 0) + 1);
     }
     for (const line of added) {
-      const key = withoutPaths(line);
+      const key = withoutPaths(line, names);
       const left = pool.get(key) ?? 0;
       if (left > 0) pool.set(key, left - 1);
       else if (!IMPORT_LINE.test(line)) bad.push(`${file}: ${line.trim()}`);
     }
     for (const line of removed) {
-      const key = withoutPaths(line);
+      const key = withoutPaths(line, names);
       const left = pool.get(key) ?? 0;
       if (left === 0) continue;
       pool.set(key, left - 1);
@@ -232,14 +297,20 @@ export function notAMove(
     added = [];
   };
   let header = false;
+  let wholeFile = false;
   for (const line of diff.split("\n")) {
     if (line.startsWith("diff --git ")) {
       settle();
       header = true;
+      wholeFile = false;
+    } else if (header && /^(new|deleted) file mode /.test(line)) {
+      wholeFile = true;
     } else if (line.startsWith("@@")) {
       header = false;
     } else if (header) {
       if (line.startsWith("+++ ")) file = line.replace(/^\+\+\+ (b\/)?/, "");
+    } else if (wholeFile && COMMENT_LINE.test(line.slice(1))) {
+      // A file the move creates or deletes brings or takes its comments.
     } else if (line.startsWith("-")) removed.push(line.slice(1));
     else if (line.startsWith("+")) added.push(line.slice(1));
   }
