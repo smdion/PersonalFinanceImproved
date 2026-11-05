@@ -1,7 +1,8 @@
 /**
- * Account-mapping utilities. Single source for deriving the typed ID fields
- * (`performanceAccountId` / `assetId` / `debtId` / `loanId` + `loanMapType`) from the
- * legacy `localId` prefix string.
+ * Sync rules for budget-API account mappings: the typed ID fields
+ * (`performanceAccountId` / `assetId` / `debtId` / `loanId` + `loanMapType`) derived
+ * from the legacy `localId` prefix string, the directions a mapping may sync,
+ * and which remotes or local targets are pulled twice.
  *
  * The schema's typed fields are canonical. The UI carries `localId` strings
  * for backwards compatibility with select-option values, so every write path
