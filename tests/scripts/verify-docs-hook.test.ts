@@ -17,6 +17,7 @@ describe("verify-docs hook scope", () => {
     const docs = scope("DOCS_SCOPE");
     for (const file of [
       "src/lib/calculators/engine/tax-gross-up.ts",
+      "src/lib/pure/engine/projection.ts",
       "src/lib/calculators/monte-carlo.ts",
       "src/server/routers/settings/paycheck.ts",
       "src/app/(dashboard)/contributions/page.tsx",

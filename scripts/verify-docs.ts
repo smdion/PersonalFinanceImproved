@@ -57,8 +57,11 @@ function countInFile(filePath: string, pattern: RegExp): number {
 
 // ── Count Functions ──────────────────────────────────────────────────────────
 
-/** The engine's modules in either home (it moves from lib/calculators to lib/pure). */
-const ENGINE_DIRS = ["src/lib/calculators/engine", "src/lib/pure/engine"];
+/** The engine's modules in either home (it moves from lib/calculators to lib/pure).
+ *  Built from the home names, so the move's path rewrite leaves this alone. */
+const ENGINE_DIRS = ["calculators", "pure"].map(
+  (home) => `src/lib/${home}/engine`,
+);
 
 function countEngineModules(): number {
   const files = ENGINE_DIRS.flatMap((dir) =>
