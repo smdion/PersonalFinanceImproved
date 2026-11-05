@@ -109,8 +109,9 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "budget_item_category_links", tier: 4 }, // FK into budget_items (tier 3)
 ];
 
-// Validate tier ordering: entries must be grouped by ascending tier.
-// This catches accidental mis-ordering when adding new tables.
+// Validate tier ordering: entries must be grouped by ascending tier. The
+// migrator (db-migrate.ts) imports this too, so a mis-tiered entry stops it
+// at load, before it touches the database.
 (() => {
   let maxTier = -1;
   for (const entry of VERSION_TABLES) {

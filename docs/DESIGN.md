@@ -892,12 +892,11 @@ A migration that rewrites data runs **one converter** both on a live
 database (`db-migrate.ts`, inside the migration's transaction, just before
 its SQL drops what the converter reads) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
-`transformV0810ProfileSets`). `db-migrate.ts` is bundled on its own and
-doesn't import from `src/`, so while the migration is in the journal it keeps
-an **identical copy** of the converter between `// BEGIN …` / `// END …`
-markers, with a test that the copies match; edit both together. (The
-v0.8.10 converter's live copy went with the v0.9.0 squash — only the
-restore path in `src/lib/db/v0810-profile-sets.ts` remains.) Converters work
+`transformV0810ProfileSets`). `db-migrate.ts` imports the converter from
+`src/` (esbuild bundles it into `db-migrate.js`, so the image needs neither
+`src/` nor the Next build): **one copy** serves both paths, as the
+reference-data reconcile, the demo-schema stamp and the versioned table list
+already do. Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
 also drops the columns the migration drops. A new migration's tag reaches
@@ -1058,14 +1057,14 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 Live in production (self-hosted Docker). Procedures — deploy, release, rollback, backups — are in [OPS.md](OPS.md).
 
-| Concern          | Implementation                                                                                                                                                                                                                                                                       |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                                                                                                               |
-| Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                                                                                                       |
-| Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                                                                                                       |
-| Security headers | CSP without `unsafe-eval` (`script-src` allows `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                                                                                                   |
-| Migrations       | `db-migrate.ts`, bundled on its own by esbuild (`pnpm build:migrator`; better-sqlite3 stays external), runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: § Data Model Principles |
-| Monitoring       | Structured JSON logs                                                                                                                                                                                                                                                                 |
+| Concern          | Implementation                                                                                                                                                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                                                                                                                                       |
+| Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                                                                                                                               |
+| Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                                                                                                                               |
+| Security headers | CSP without `unsafe-eval` (`script-src` allows `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                                                                                                                           |
+| Migrations       | `db-migrate.ts`, bundled with the `src/` modules it imports by esbuild (`pnpm build:migrator`; better-sqlite3 stays external), runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: § Data Model Principles |
+| Monitoring       | Structured JSON logs                                                                                                                                                                                                                                                                                         |
 
 ---
 

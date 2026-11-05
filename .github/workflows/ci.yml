@@ -561,11 +561,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
         if: env.RUN == 'true'
 
-      # The service database starts empty. db-migrate.ts reads no .env:
-      # the URL comes from the step's environment.
+      # The service database starts empty. The migrator reads no .env: the
+      # URL comes from the step's environment. It runs as the image does: the
+      # esbuild bundle, not tsx.
       - name: Migrations from empty on PostgreSQL
         if: env.RUN == 'true' && (matrix.part == 'install')
-        run: pnpm db:migrate
+        run: |
+          pnpm build:migrator
+          node db-migrate.js
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
           LEDGR_BACKUP_DIR: ${{ runner.temp }}/ledgr-backups

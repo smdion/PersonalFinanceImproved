@@ -6,8 +6,7 @@
  * migration squash resets the count: a schema stamped "13" before a squash
  * could otherwise match a later release with 13 entries. The migrator drops
  * stale ones on every start, and requests refuse to use one (see
- * demoSchemaMiddleware). db-migrate.ts keeps its own copy of the prefix and
- * the stamp query (it's built standalone) — a test keeps them equal.
+ * demoSchemaMiddleware). db-migrate.ts imports both from here.
  */
 export const DEMO_SCHEMA_MARKER_PREFIX = "ledgr-migrations:";
 

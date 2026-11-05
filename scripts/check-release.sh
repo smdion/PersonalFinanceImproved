@@ -26,7 +26,7 @@ step "migrations" pnpm -s check:migrations
 step "tax parameters (blocking when tax data changed since $base)" pnpm -s check:tax-params --base "$base"
 step "tax-data dataVersion raised where tax data changed" pnpm -s tsx scripts/check-tax-data-version.ts "$base"
 if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
-  step "migrations from empty (PostgreSQL)" env DATABASE_URL="$TEST_DATABASE_URL" pnpm -s db:migrate
+  step "migrations from empty (PostgreSQL)" env DATABASE_URL="$TEST_DATABASE_URL" bash -c 'pnpm -s build:migrator && node db-migrate.js'
   step "constraint snapshot" pnpm -s check:constraints
   for t in tests/routers/demo-postgres.test.ts tests/routers/fresh-install-postgres.test.ts \
     tests/routers/seeded-postgres.test.ts tests/baseline/router-baseline-postgres.test.ts; do

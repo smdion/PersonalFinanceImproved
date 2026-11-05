@@ -1,10 +1,9 @@
 /**
- * Reference data comes from the tax-data file through one reconcile — the
- * migrator's copy is identical, it never touches a figure the household
- * changed, and it corrects installs still holding an older shipped value.
+ * Reference data comes from the tax-data file through one reconcile (the
+ * migrator imports it): it never touches a figure the household changed,
+ * and it corrects installs still holding an older shipped value.
  */
 import fs from "node:fs";
-import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { openTestSqlite } from "../helpers/db-harness";
 import { readTaxData } from "../helpers/tax-data";
@@ -18,7 +17,7 @@ import {
 import { REFERENCE_TABLES, toSql } from "@/lib/db/reference-data";
 import { createHash } from "node:crypto";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { REFERENCE_SEED_TABLES, V08_MIGRATION_HASHES } from "../../db-migrate";
+import { V08_MIGRATION_HASHES } from "../../db-migrate";
 
 type Db = ReturnType<typeof openTestSqlite>;
 
@@ -56,24 +55,8 @@ const setLimit = (
     )
     .run(String(value), origin, confirmedAt, year, type);
 
-describe("the migrator's reconcile", () => {
-  it("is a verbatim copy of reference-reconcile-core.ts", () => {
-    const block = (file: string) => {
-      const s = fs.readFileSync(path.join(process.cwd(), file), "utf8");
-      return s.slice(
-        s.indexOf("// BEGIN reference-reconcile-core"),
-        s.indexOf("// END reference-reconcile-core"),
-      );
-    };
-    const src = block("src/lib/db/reference-reconcile-core.ts");
-    expect(src.length).toBeGreaterThan(2000);
-    expect(block("db-migrate.ts")).toBe(src);
-  });
-
-  it("writes the same tables as the app", () => {
-    expect([...REFERENCE_SEED_TABLES].sort()).toEqual(
-      [...REFERENCE_TABLES].sort(),
-    );
+describe("the reconcile's tables", () => {
+  it("writes only the app's reference tables", () => {
     const written = new Set(
       shippedReferenceRows(readTaxData()).map((r) => r.table),
     );

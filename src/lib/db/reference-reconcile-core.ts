@@ -4,20 +4,18 @@
  * tax-data file (`tax-data/us-federal/`) — without ever touching a
  * figure the household changed.
  *
- * Runs on every migrate (db-migrate.ts — which can't import src/, so the
- * block below is copied there verbatim; a test keeps the two identical), in
+ * Runs on every migrate (db-migrate.ts imports it; esbuild bundles it), in
  * each live demo schema, and in the app after a restore / import / reset
  * (reference-data.ts). One code path for both databases: SQL goes through a
  * tiny adapter (`?` placeholders, `dialect`), and every decision is made
  * here in TypeScript, comparing numbers as numbers and JSON as parsed
  * values (stored text differs by dialect).
  *
- * The same block seeds the Simulation presets from
+ * The same file seeds the Simulation presets from
  * `reference-data/simulation-presets.json` — only into a database whose
  * preset tables are all empty, never over rows already there.
  */
 
-// BEGIN reference-reconcile-core (keep identical in db-migrate.ts)
 export type RefDialect = "pg" | "sqlite";
 type Rows = Record<string, unknown>[];
 /** One statement with `?` placeholders; the driver sends back its rows. */
@@ -797,4 +795,3 @@ export function seedSimulationPresetsSync(
   while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
   return next.value;
 }
-// END reference-reconcile-core
