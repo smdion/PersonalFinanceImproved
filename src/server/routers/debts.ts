@@ -8,11 +8,8 @@ import { zDecimal } from "@/lib/utils/zod-fields";
 import { debtKindSchema } from "@/lib/config/enum-values.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
-import {
-  debtBalance,
-  getEffectiveOtherLiabilities,
-  isOpenDebt,
-} from "@/server/helpers/debts";
+import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 import { dropMappingsTo } from "@/server/data/delete-references";
 
 const zDate = z.string().refine(isCalendarDate, "Not a date (YYYY-MM-DD)");

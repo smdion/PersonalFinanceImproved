@@ -52,11 +52,8 @@ import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { toNumber } from "@/lib/utils/numbers";
-import {
-  debtBalance,
-  getEffectiveOtherLiabilities,
-  isOpenDebt,
-} from "@/server/helpers/debts";
+import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 /** Each past year whose Performance rows are all finalized: the
  *  household's own contributions (every account, employer money out), its

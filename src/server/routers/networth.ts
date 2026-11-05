@@ -48,7 +48,7 @@ import {
   resolveSnapshotParentCategory,
   resolveSnapshotAccountAmounts,
 } from "@/lib/pure/accounts/portfolio";
-import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 const portfolioSnapshotInput = z.object({
   snapshotDate: zCalendarDate,
@@ -195,7 +195,7 @@ export const networthRouter = createTRPCRouter({
         activeBudgetApi !== "none" ? activeBudgetApi : null;
 
       // Typed figure + the debts list + mapped credit cards
-      // (server/helpers/debts.ts).
+      // (server/services/debts/other-liabilities.ts).
       const otherLiabilitiesParts = await getEffectiveOtherLiabilities(ctx.db, {
         activeBudgetApi,
       });

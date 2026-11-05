@@ -482,6 +482,8 @@
     "src/lib/pure/contributions/savings-rate.ts:householdTotalCompensation",
     "src/lib/pure/contributions/savings-rate.ts:isHighIncomeHousehold",
     "src/lib/pure/contributions/view-metrics.ts:computeViewAwareAccountMetrics",
+    "src/lib/pure/debts/debt-balance.ts:debtBalance",
+    "src/lib/pure/debts/debt-balance.ts:isOpenDebt",
     "src/lib/pure/debts/debt-rules.ts:carPaymentShare",
     "src/lib/pure/debts/debt-rules.ts:firstFullSalary",
     "src/lib/pure/debts/mortgage-balance.ts:addMonthsClamped",

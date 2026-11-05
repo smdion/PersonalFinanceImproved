@@ -4,7 +4,7 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller, adminSession, viewerSession } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
-import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 const loan = {
   name: "Student loans",

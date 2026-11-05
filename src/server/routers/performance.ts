@@ -92,7 +92,7 @@ import {
   parseLocalDateOnly,
   calendarYear,
 } from "@/lib/utils/date";
-import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),

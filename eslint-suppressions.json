@@ -5520,14 +5520,6 @@
       "count": 1
     }
   },
-  "src/server/helpers/debts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/helpers/retirement-profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -6273,6 +6265,14 @@
       "count": 5
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/debts/other-liabilities.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

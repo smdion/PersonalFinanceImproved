@@ -54,7 +54,7 @@ import {
 import { sumAccounts, computeReturn } from "@/lib/pure/investments/returns";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
-import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 import type { Db } from "@/lib/db";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 
@@ -676,7 +676,7 @@ export async function buildYearEndHistory(
     const { cash } = await getEffectiveCash(db, settings);
     const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
     // Typed figure + the debts list + mapped credit cards
-    // (server/helpers/debts.ts). Only computed for the CURRENT (isCurrent: true) row; a
+    // (server/services/debts/other-liabilities.ts). Only computed for the CURRENT (isCurrent: true) row; a
     // finalized past year always reads otherLiabilities from the stored
     // net_worth_annual row instead (below), which finalizeYear (performance.ts)
     // writes with this same addition baked in at finalize time.

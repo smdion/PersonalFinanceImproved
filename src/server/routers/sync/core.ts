@@ -11,7 +11,7 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { debtBalance, isOpenDebt } from "@/server/helpers/debts";
+import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
 import { log } from "@/lib/logger";
 import {
   getClientForService,
