@@ -63,8 +63,11 @@ new release's own migrations stay incremental after the baseline. Rules:
 - The squash replay is one transaction ending in a check that every table
   and column of the latest snapshot exists; a failure stops startup with
   nothing changed.
-- Keep every old tag in `V08_SCHEMA_TAGS` (backups name them) and every
-  hash in `V08_MIGRATION_HASHES`.
+- Keep every old tag and hash (backups name them). The current line's tags
+  and file hashes are read from the journal, which the squash replaces, so
+  first freeze the outgoing line's tags into `V08_SCHEMA_TAGS`
+  (`backup-transforms.ts`) and its hashes into `PRE_V09_MIGRATION_HASHES`
+  (`db-migrate.ts`); the two journal-pin tests fail otherwise.
 - Verify on a restored prod dump, a fresh install from the new chain and one
   from the old chain (`pg_dump -s`, by name), both dialects, plus a refused
   older install.

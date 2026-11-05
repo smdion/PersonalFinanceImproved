@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as nodeCrypto from "crypto";
 import * as path from "path";
 // esbuild bundles these into db-migrate.js (build:migrator), so the image's
 // migrator runs the app's own code without src/ or the Next build.
@@ -87,11 +88,10 @@ const BASELINE_HASHES: Record<string, string> = {
 };
 
 // sha256 of every PostgreSQL migration file of the v0.8 line, including the
-// pre-release 0004–0011 that v0.8.5 squashed into one, and of the v0.9 line
-// (its baseline first). Add each new migration here when it ships. The LATEST applied row names exactly where an install was, so a
-// backup taken before the squash is labelled with its real schema tag
-// (all are in backup-transforms' V08_SCHEMA_TAGS).
-export const V08_MIGRATION_HASHES: Record<string, string> = {
+// pre-release 0004–0011 that v0.8.5 squashed into one. Those files are in no
+// journal since the v0.9.0 squash, so their hashes are frozen here. A squash
+// freezes the outgoing line's hashes here first (its journal goes).
+const PRE_V09_MIGRATION_HASHES: Record<string, string> = {
   a626ffc04645cdc4d3a28b0793d380796c27be18d954ba22b62514018d595d5f:
     "0000_v8_initial_schema",
   fcdc386e4feec343e36bf406408b945085d25e3ab894400c35380eae6f089db1:
@@ -141,50 +141,26 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.14: Performance notes, estimated fields, accepted checks.
   "887f50d59ffe2a1e15e321d1116a106d652e8ac4ad96ec0c3d7a5db112690651":
     "0012_v0814_perf_annotations",
-  // v0.9.0 squash: the v0.8 line (0000_v8 + 0001–0012) as one baseline.
-  "4ed68e830f616dd677dddd9e0dd48a0b84a3b758a5766acffea2da1090cca153":
-    "0000_v9_initial_schema",
-  // v0.9.0: where each reference figure came from (origin, source_version, confirmed_at).
-  d210c1418b4e930b2244c6bd723b5a9672f33621c753fa59fcb8cde5a467adf6:
-    "0001_v090_tax_data_origin",
-  // v0.9.0: community tax-data updates fetched and decided.
-  "8031a00f15f435979edae028edd12267db92c427f7cd333b5949a343fffcbaf4":
-    "0002_v090_tax_data_updates",
-  // v0.9.0: utilities cost feed (category + billing lag per service, cost source per reading).
-  "5dbf28830857afa5c706a3186d2038f849575e81732b8362de57d7cbd62fb34d":
-    "0003_v090_utility_feed",
-  // v0.9.0: debts list (Liabilities).
-  d835e0d55fdd16f70497e222b3f5113f2f73365a24063a3d0430001b37d75534:
-    "0004_v090_debts",
-  // v0.9.2: a Retirement Profile's filing status may be empty (= Auto).
-  fc5a04adc960cfb5f6b2aca6c670a1a7574dc29d22bfeb275698de2d92d6f0c6:
-    "0005_v092_filing_status_auto",
-  // v0.9.5: debts purchase/term/pulled balance; VPW params and the
-  // per-strategy Social Security switches.
-  "34805b1b06399bee36372f4a957f544c6bc9a8f2e001a290c75201e6d40c2471":
-    "0006_v095_milestones",
-  // v0.9.5: credentials scrubbed from the change log (data only).
-  "343a1cdb129eb7364a0c952f416452e670fe62dbcf051751b8b98283a0804e87":
-    "0007_v095_redact_change_log",
-  // v0.9.5: IRMAA surcharges inside the budget or on top of it.
-  f9d735d3807b08de4b79ae9ee0ef0484fffde20b88824342ef2aef65a467a9e6:
-    "0008_v095_irmaa_budget",
-  // v0.9.5: holdings kept per report, not per assumed day (index only).
-  "3191a9cd884c7a1ea667d17481dae32ee2478373fd74ba53e3b392bd5ed18e49":
-    "0009_v095_holding_reports",
-  // v0.9.5: Tiingo daily closes kept (market_closes).
-  "57558a9b1f60616f4d97ba5e72c3c19871d6b86abd19b9bfdf9b75402a28c1cb":
-    "0010_v095_market_closes",
-  // v0.9.6: a budget line can name the loan it pays.
-  "2c7456d55beddc75a64cfb14264d1dbc709449840ea1a26b74719abe9f8037cf":
-    "0011_v096_budget_mortgage_link",
-  // v0.9.6: how a year with a paycheck gone saves and draws.
-  bad45447de248cb8792bc68c9381b58f20bff7da4ad1468a79f86ccd63d715f8:
-    "0012_v096_gap_year_settings",
-  // v0.9.7: a SimpleFIN feed as a mortgage's balance.
-  "739d0889a3cfcfc773f0779a5a11d498375217f225b62b59674463cac297ca45":
-    "0013_v097_loan_feed",
 };
+
+/**
+ * Every known PostgreSQL migration's tag by its file's sha256: the frozen v0.8
+ * line, then the journal's, hashed as drizzle records them. It names the
+ * schema an older install was at, in the refusal message
+ * (assertSupportedUpgradePathPg) and in the backup label when the migration
+ * table is missing. A journal it can't read throws; an entry with no file
+ * gets no hash.
+ */
+export function migrationTagsByHash(
+  migrationsFolder: string,
+): Record<string, string> {
+  const hashes = { ...PRE_V09_MIGRATION_HASHES };
+  for (const entry of readJournal(migrationsFolder).entries) {
+    const hash = fileHash(nodeCrypto, `${migrationsFolder}/${entry.tag}.sql`);
+    if (hash) hashes[hash] = entry.tag;
+  }
+  return hashes;
+}
 
 /**
  * Detect the pre-squash schema era. Hash of the earliest applied migration
@@ -193,15 +169,19 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
  */
 async function detectSchemaEra(
   client: import("pg").PoolClient,
+  migrationsFolder: string,
 ): Promise<string> {
-  // Exact, v0.8 line: the latest migration applied.
+  // Exact, v0.8 line on: the latest migration applied. Outside the try: a
+  // journal or file error throws rather than falling through to the probes.
+  const tags = migrationTagsByHash(migrationsFolder);
   try {
     const { rows: lastRow } = await client.query(
       "SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 1",
     );
     const lastHash = lastRow[0]?.hash as string | undefined;
-    if (lastHash && V08_MIGRATION_HASHES[lastHash]) {
-      return V08_MIGRATION_HASHES[lastHash];
+    const tag = lastHash ? tags[lastHash] : undefined;
+    if (tag) {
+      return tag;
     }
   } catch {
     // __drizzle_migrations absent or unreadable — fall through.
@@ -713,7 +693,7 @@ async function assertSupportedUpgradePathPg(
     const crypto = await import("crypto");
     const actual = await pgColumns(client);
     if (!actual.has("people")) return;
-    const era = await detectSchemaEra(client);
+    const era = await detectSchemaEra(client, migrationsFolder);
     assertSupportedUpgradePath(
       readJournal(migrationsFolder),
       migrationsFolder,
@@ -1043,7 +1023,8 @@ async function runPostgres() {
             preClient,
             // The label restore transforms key on — never "unknown", which
             // the import path rejects.
-            pending.lastAppliedTag ?? (await detectSchemaEra(preClient)),
+            pending.lastAppliedTag ??
+              (await detectSchemaEra(preClient, "./drizzle")),
           );
           requireBackupOrAbort(backupPath);
         }

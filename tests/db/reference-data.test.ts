@@ -3,7 +3,6 @@
  * migrator imports it): it never touches a figure the household changed,
  * and it corrects installs still holding an older shipped value.
  */
-import fs from "node:fs";
 import { describe, it, expect } from "vitest";
 import { openTestSqlite } from "../helpers/db-harness";
 import { readTaxData } from "../helpers/tax-data";
@@ -15,9 +14,7 @@ import {
   type TaxDataFile,
 } from "@/lib/db/reference-reconcile-core";
 import { REFERENCE_TABLES, toSql } from "@/lib/db/reference-data";
-import { createHash } from "node:crypto";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { V08_MIGRATION_HASHES } from "../../db-migrate";
 
 type Db = ReturnType<typeof openTestSqlite>;
 
@@ -253,23 +250,6 @@ describe("reconcile", () => {
     expect(() =>
       reconcile(db, { ...readTaxData(), formatVersion: 99 }),
     ).toThrow(/format 99/);
-  });
-});
-
-describe("migration bookkeeping", () => {
-  it("every PostgreSQL migration's file hash is registered (backups are labelled by it)", () => {
-    const journal = JSON.parse(
-      fs.readFileSync("drizzle/meta/_journal.json", "utf8"),
-    ) as { entries: { tag: string }[] };
-    const missing = journal.entries
-      .map((e) => {
-        const hash = createHash("sha256")
-          .update(fs.readFileSync(`drizzle/${e.tag}.sql`))
-          .digest("hex");
-        return V08_MIGRATION_HASHES[hash] === e.tag ? null : e.tag;
-      })
-      .filter(Boolean);
-    expect(missing).toEqual([]);
   });
 });
 
