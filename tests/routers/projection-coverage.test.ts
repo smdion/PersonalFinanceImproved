@@ -7,7 +7,15 @@
  * Supplements projection.test.ts without duplicating its tests.
  */
 import "./setup-mocks";
-import { vi, describe, it, expect, assert } from "vitest";
+import {
+  vi,
+  describe,
+  it,
+  expect,
+  assert,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -37,6 +45,9 @@ vi.mock("@/lib/budget-api", () => ({
 // run here cost minutes. The real engine still runs, so results are real;
 // `mcRuns` counts runs so cache tests can prove a hit doesn't recompute.
 const mcRuns = vi.hoisted(() => ({ count: 0 }));
+// The cache blocks count runs and compare results, never a rate, so they
+// run 5 trials (`fewTrialsForCacheTests`); every other case runs 25.
+const mcTrialCap = vi.hoisted(() => ({ value: 25 }));
 vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
   const { calculateMonteCarlo } =
     await import("@/lib/pure/simulation/monte-carlo");
@@ -47,7 +58,7 @@ vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
       mcRuns.count++;
       return calculateMonteCarlo({
         ...input,
-        numTrials: Math.min(input.numTrials, 25),
+        numTrials: Math.min(input.numTrials, mcTrialCap.value),
       });
     },
     getMonteCarloProgress: () => null,
@@ -57,6 +68,16 @@ vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** For a cache describe block: its cases run 5 trials, then back to 25. */
+function fewTrialsForCacheTests() {
+  beforeEach(() => {
+    mcTrialCap.value = 5;
+  });
+  afterEach(() => {
+    mcTrialCap.value = 25;
+  });
+}
 
 /** Two asset class rows (in place of the shipped ones) so glide path FK
  *  references work. */
@@ -994,6 +1015,8 @@ describe("projection router — peekMonteCarloSummary", () => {
 // ---------------------------------------------------------------------------
 
 describe("projection router — computeMonteCarloProjection cache", () => {
+  fewTrialsForCacheTests();
+
   it("a second identical unseeded call reuses the same minted seed and result", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1239,6 +1262,9 @@ describe("projection router — computeStrategyComparison", () => {
           strat.maxAnnualWithdrawal,
         );
         expect(strat.yearByYear.length).toBeGreaterThan(0);
+        expect(strat.yearByYear[0]).toHaveProperty("age");
+        expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
+        expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
         // Without MC data, successRate should be null
         expect(strat.successRate).toBeNull();
       }
@@ -1274,6 +1300,9 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
+      // year1Withdrawal comes from the deterministic projection: no
+      // simulation needs to run.
+      clearSimulationPresets(db);
 
       const base = await caller.projection.computeStrategyComparison();
       const response = await caller.projection.computeStrategyComparison({
@@ -1295,6 +1324,9 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const { perfAcctId, snapId } = seedFullProjectionData(db);
+      // endRetirementBalance comes from the deterministic projection: no
+      // simulation needs to run.
+      clearSimulationPresets(db);
 
       // A newer $300k snapshot is the default; snapshotId picks the $100k one.
       seedSnapshot(db, "2025-06-01", [
@@ -1322,6 +1354,9 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
+      // endRetirementBalance comes from the deterministic projection: no
+      // simulation needs to run.
+      clearSimulationPresets(db);
       const fixedEnd = async () =>
         (await caller.projection.computeStrategyComparison()).strategies.find(
           (st) => st.strategy === "fixed",
@@ -1338,26 +1373,6 @@ describe("projection router — computeStrategyComparison", () => {
       cleanup();
     }
   });
-
-  it("year-by-year data is populated for decumulation years", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedFullProjectionData(db);
-
-      const response = await caller.projection.computeStrategyComparison();
-
-      for (const strat of response.strategies) {
-        // If there are yearByYear entries, they should have age, withdrawal, retirementBalance
-        if (strat.yearByYear.length > 0) {
-          expect(strat.yearByYear[0]).toHaveProperty("age");
-          expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
-          expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
-        }
-      }
-    } finally {
-      cleanup();
-    }
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1365,6 +1380,8 @@ describe("projection router — computeStrategyComparison", () => {
 // ---------------------------------------------------------------------------
 
 describe("projection router — computeStrategyComparison cache", () => {
+  fewTrialsForCacheTests();
+
   it("a second identical call is served from cache (same result, one cache row)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -2399,6 +2416,8 @@ function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
 }
 
 describe("projection router — computeCoastFireMC cache", () => {
+  fewTrialsForCacheTests();
+
   it("a second identical call is served from cache (same result, one cache row)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
