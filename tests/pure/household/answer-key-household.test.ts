@@ -32,7 +32,7 @@
  * Inputs: invented households.
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../fixtures/answer-key";
+import { cents, xfail } from "../../fixtures/answer-key";
 import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
 import { calculateEFund } from "@/lib/pure/savings/efund";
 import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
@@ -43,9 +43,9 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {
   withConsistentStart,
   makeAccumulationDefaults,
-} from "../pure/fixtures/engine-fixtures";
-import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
-import { shippedTaxTables } from "../helpers/tax-data";
+} from "../fixtures/engine-fixtures";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
 
 const AS_OF = new Date("2026-06-01T12:00:00Z");
 

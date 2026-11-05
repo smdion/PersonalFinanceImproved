@@ -31,7 +31,7 @@ Also read the existing test file for that module if one exists. Match its style:
 | A figure worked by hand from published rules  | Answer key              | `tests/**/answer-key-<area>.test.ts`          |
 | React component (`components/`)               | Component test          | `tests/components/<name>.test.tsx`            |
 | Config table (`lib/config/`)                  | Config test             | `tests/config/<name>.test.ts`                 |
-| Cross-calculator consistency                  | Logic gaps              | `tests/calculators/logic-gaps.test.ts`        |
+| Cross-calculator consistency                  | Logic gaps              | `tests/pure/logic-gaps.test.ts`               |
 | Extreme/boundary inputs                       | Edge case               | `tests/edge-cases/edge-cases.test.ts`         |
 | Engine invariant (holds for any input)        | Property-based          | `tests/pure/engine/engine-invariants.test.ts` |
 | Engine output unchanged after refactor        | Snapshot                | `tests/pure/engine/engine-snapshot.test.ts`   |
