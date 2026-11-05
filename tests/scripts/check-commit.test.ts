@@ -139,6 +139,37 @@ describe("checkCommit", () => {
     expect(rules(withConcept)).toEqual(["third-fix"]);
   });
 
+  it("asks a revert for its own reason, beyond git's boilerplate line", () => {
+    const boilerplate =
+      "This reverts commit 0bad0a56cadb4750ae191f7117d30bb9f25be6eb.";
+    expect(
+      rules(facts({ raw: `Revert "perf: memoize rows"\n\n${boilerplate}` })),
+    ).toEqual(["prefix", "revert-reason"]);
+    expect(
+      rules(facts({ raw: `revert(paycheck): undo X\n\n${boilerplate}` })),
+    ).toEqual(["revert-reason"]);
+    expect(
+      rules(
+        facts({
+          raw: `revert(paycheck): undo X\n\n${boilerplate}\n\nIt dropped a stored value.`,
+        }),
+      ),
+    ).toEqual([]);
+    expect(
+      rules(
+        facts({
+          raw: `revert: undo X\n\n${boilerplate}\n\nWhy: it dropped a stored value.`,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("leaves a commit that only mentions a revert alone", () => {
+    expect(
+      rules(facts({ raw: "fix: restore X\n\nThis reverts commit abc1234." })),
+    ).toEqual([]);
+  });
+
   it("ignores prior fixes on a commit that isn't a fix", () => {
     const priorFixes = new Map([["src/lib/pure/a.ts::draw", 3]]);
     expect(

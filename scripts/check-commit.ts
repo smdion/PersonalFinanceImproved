@@ -13,7 +13,8 @@
  * an import or a path rewrite), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
- * advisor first.
+ * advisor first. A revert says why in its own words: git's "This reverts
+ * commit …" line alone isn't a reason.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -101,6 +102,26 @@ export function parseMessage(raw: string): ParsedMessage {
     else bodyLines.push(line);
   }
   return { subject, body: bodyLines.join("\n").trim(), trailers };
+}
+
+/** git revert's own body line: it says what was reverted, not why. */
+const REVERT_BOILERPLATE = /^This reverts commit [0-9a-f]{7,40}\b.*$/;
+
+/** A `revert:` subject, or git's default `Revert "…"` one. */
+export function isRevertSubject(subject: string): boolean {
+  return (
+    /^revert(\([^)]+\))?!?: /.test(subject) || subject.startsWith('Revert "')
+  );
+}
+
+/** A revert's reason: its body without git's boilerplate line, or a `Why:`/`Reason:` line. */
+export function revertReason(message: ParsedMessage): string {
+  const own = message.body
+    .split("\n")
+    .filter((line) => !REVERT_BOILERPLATE.test(line.trim()))
+    .join("\n")
+    .trim();
+  return own || message.trailers.Why || message.trailers.Reason || "";
 }
 
 export function isFixSubject(subject: string): boolean {
@@ -389,6 +410,16 @@ export function checkCommit(facts: CommitFacts): Warning[] {
   }
   if (message.body.length === 0 && !mechanical) {
     warnings.push({ rule: "why", text: "no body: say why the change is made" });
+  }
+  if (
+    isRevertSubject(message.subject) &&
+    message.body.length > 0 &&
+    revertReason(message) === ""
+  ) {
+    warnings.push({
+      rule: "revert-reason",
+      text: 'a revert says why: "This reverts commit …" alone gives no reason',
+    });
   }
   const srcLines = srcLinesChanged(files);
   if (srcLines > MAX_SRC_LINES && !mechanical) {
