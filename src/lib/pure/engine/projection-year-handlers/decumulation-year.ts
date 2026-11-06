@@ -202,20 +202,6 @@ export function runDecumulationYear(
     age,
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
-  // The year's after-tax need: spending less Social Security — or, when
-  // the strategy sized the gross withdrawal (Social Security on top), what
-  // that withdrawal delivers after tax (set from the estimate below).
-  let afterTaxNeed = roundToCents(
-    Math.max(0, state.projectedExpenses - ssIncome),
-  );
-  // Social Security beyond spending pays the year's tax first — only the
-  // rest needs a withdrawal (withdrawal-solver.ts solves with the same credit).
-  // A withdrawal-sized year has Social Security on top by definition.
-  let ssSurplus =
-    state.portfolioWithdrawal === null
-      ? Math.max(0, ssIncome - state.projectedExpenses)
-      : 0;
-
   // --- Per-person RMD (moved ahead of routing/tax gross-up) ---
   // Compute each person's RMD from their own Traditional balance and age.
   // Previously computed AFTER routing (only needed for enforceRmd's
@@ -274,6 +260,20 @@ export function runDecumulationYear(
     }
     if (total > 0) perPersonRmdTotal = roundToCents(total);
   }
+
+  // The year's after-tax need: spending less Social Security — or, when
+  // the strategy sized the gross withdrawal (Social Security on top), what
+  // that withdrawal delivers after tax (set from the estimate below).
+  let afterTaxNeed = roundToCents(
+    Math.max(0, state.projectedExpenses - ssIncome),
+  );
+  // Social Security beyond spending pays the year's tax first — only the
+  // rest needs a withdrawal (withdrawal-solver.ts solves with the same credit).
+  // A withdrawal-sized year has Social Security on top by definition.
+  let ssSurplus =
+    state.portfolioWithdrawal === null
+      ? Math.max(0, ssIncome - state.projectedExpenses)
+      : 0;
 
   // --- Qualified Charitable Distribution ---
   // A QCD is a direct IRA-to-charity transfer that satisfies part of the
@@ -777,10 +777,10 @@ export function runDecumulationYear(
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
   if (ownerRmd && rmdByPerson) {
-    rmdByPerson = rmdByPerson.map((p) => {
+    for (const p of rmdByPerson) {
       const shortfall = ownerRmd.shortfallByPerson.get(p.personId);
-      return shortfall ? { ...p, shortfall } : p;
-    });
+      if (shortfall) p.shortfall = shortfall;
+    }
     if (
       !state.rmdNoOwnerWarned &&
       rmdByPerson.some((p) => p.personId === ctx.primaryPersonId) &&
