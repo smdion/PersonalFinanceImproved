@@ -7,7 +7,8 @@
  *   whose journal records all of this one and more is refused first;
  * - every legitimate replay is unchanged: each recreate in the journal,
  *   replayed from the entry before it and from every later entry, keeps
- *   every value of every column it keeps, and drops only its own columns.
+ *   every value of every column it keeps, drops only its own columns and,
+ *   from before its entry, is never skipped.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
@@ -62,7 +63,7 @@ function atEntry(idx: number, recorded: string[]): Database.Database {
   return db;
 }
 
-type Column = { name: string; type: string; pk: number };
+type Column = { name: string; type: string; pk: number; notnull: number };
 const columnsOf = (db: Database.Database, table: string) =>
   db.prepare(`PRAGMA table_info("${table}")`).all() as Column[];
 const keysOf = (db: Database.Database, table: string) =>
@@ -228,7 +229,12 @@ describe("every legitimate recreate replay is unchanged", () => {
         unknown
       >;
       db.close();
-      runSQLite();
+      const events = logged(() => runSQLite());
+      // From before its entry the recreate itself runs, never skipped.
+      if (at < recreate.idx)
+        expect(events).not.toContainEqual(
+          expect.objectContaining({ event: "squash_recreate_skipped", table }),
+        );
       const after = rowOf(table);
       expect(after.hashes).toEqual(allHashes);
       expect(after.row).toHaveLength(1);
@@ -243,6 +249,11 @@ describe("every legitimate recreate replay is unchanged", () => {
       expect(row).toMatchObject(kept);
       const db2 = new Database(dbPath, { readonly: true });
       expect(db2.pragma("foreign_key_check")).toEqual([]);
+      // 0005's own change: filing_status takes null (the Auto status).
+      if (table === "retirement_settings")
+        expect(columnsOf(db2, table)).toContainEqual(
+          expect.objectContaining({ name: "filing_status", notnull: 0 }),
+        );
       db2.close();
     },
   );

@@ -313,9 +313,19 @@ describe("assertSupportedUpgradePath on each dialect's journal", () => {
       at.get("holding_observations")!.delete("performance_account_id");
       return at;
     };
-    it("a database at no entry that drops a baseline column it lacks is older", () => {
+    const matchesNoRelease =
+      "This database's schema matches no release this Ledgr knows. Restore the pre-upgrade backup, or run the image that last used this database. Nothing has been changed. Missing: holding_observations.performance_account_id.";
+    it("a database at no entry that drops a baseline column it lacks matches no release", () => {
       expect(() => check(new Set(), withoutPerfAccount(0))).toThrow(
-        /older Ledgr \(schema an invented era\).*Missing: holding_observations\.performance_account_id\.$/,
+        new UpgradePathError(matchesNoRelease),
+      );
+    });
+    it("a newer release's database with a cleared journal matches no release", () => {
+      // Past 0015, then a later release dropped one of snapshot 15's columns.
+      const at = asDatabase(snapshotColumns(folder, own.entries.at(-1)!.idx));
+      at.get("retirement_settings")!.delete("vpw_cap");
+      expect(() => check(new Set(), at)).toThrow(
+        new UpgradePathError(matchesNoRelease),
       );
     });
     it("a database holding every column of the entry that drops it passes", () => {

@@ -634,14 +634,20 @@ export function assertSupportedUpgradePath(
   );
   const dropped = droppedAfterBaseline(journal, migrationsFolder);
   const excused = droppedAfterBaseline(journal, migrationsFolder, actual);
-  // Named in the message: what no entry drops, else what this database
-  // holds no dropping entry's shape for.
-  let missing = lacking.filter((m) => !dropped.has(m));
-  if (missing.length === 0) missing = lacking.filter((m) => !excused.has(m));
-  if (missing.length === 0) return;
-  throw new UpgradePathError(
-    `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ` and ${missing.length - 8} more` : ""}.`,
-  );
+  const list = (m: string[]) =>
+    `${m.slice(0, 8).join(", ")}${m.length > 8 ? ` and ${m.length - 8} more` : ""}`;
+  const older = lacking.filter((m) => !dropped.has(m));
+  if (older.length > 0)
+    throw new UpgradePathError(
+      `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${list(older)}.`,
+    );
+  // Lacks a dropped column without holding any dropping entry's shape: a
+  // newer release's database with a cleared journal, or a hand edit.
+  const unknown = lacking.filter((m) => !excused.has(m));
+  if (unknown.length > 0)
+    throw new UpgradePathError(
+      `This database's schema matches no release this Ledgr knows. Restore the pre-upgrade backup, or run the image that last used this database. Nothing has been changed. Missing: ${list(unknown)}.`,
+    );
 }
 
 /** Index names of a journal entry's drizzle snapshot. */
