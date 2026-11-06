@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 81 routers.**
+**369 procedures across 80 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -433,36 +433,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure                           | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | ----------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeWithdrawalBracketOptimizer` | query | `protectedProcedure` | Searches the household's own real marginal bracket rates for the `rothBracketTarget` that minimizes lifetime tax cost (plus a terminal-value penalty for Traditional money left unconverted), subject to |
-
-## `retirement`
-
-| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clear`                     | mutation | `brokerageProcedure` | (no description)                                                                                                                                                                                         |
-| `computeRelocationAnalysis` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `create`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `create`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `duplicate`                 | mutation | `adminProcedure`     | Clone a profile's per-person rows into a new profile (profile-lifecycle.ts).                                                                                                                             |
-| `get`                       | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | adminProcedure throughout, matching retirementSettings.upsert's existing gate — CONTRIBUTING.md Composed Router Convention: an inconsistent procedure type within one group is a bug, not a design choic |
-| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `save`                      | mutation | `brokerageProcedure` | (no description)                                                                                                                                                                                         |
-| `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `update`                    | mutation | `adminProcedure`     | per-person assumptions themselves are edited through retirementSettings.upsert, scoped to whichever profile is active — not here. taxParamsYear lives on retirement_profiles itself: null (default) trac |
-| `upsert`                    | mutation | `adminProcedure`     | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
-| `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `upsertHouseholdFields`     | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
-| `upsertPerson`              | mutation | `adminProcedure`     | from once those reads were switched to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as the pre-0b5d5fe |
-| `upsertPersonRaiseRate`     | mutation | `adminProcedure`     | `upsert` (which requires a full anchor payload the per-person UI doesn't have, runs the endAge fan-out, and resolves+writes a default filing status — all wrong for a one-field raise-rate edit). UPDATE |
 
 ## `salary-profiles`
 

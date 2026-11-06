@@ -19,7 +19,7 @@ import {
   adminProcedure,
   brokerageProcedure,
   getSessionUserLabel,
-} from "../trpc";
+} from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   isRetirementParent,
