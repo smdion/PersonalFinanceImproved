@@ -378,7 +378,7 @@ export function BrokerageContent() {
             onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
             allowWithdrawals
             investedAtStartOf={(year) =>
-              investedAtStartOf(data?.result?.projectionByYear ?? [], year)
+              investedAtStartOf(data.result.projectionByYear, year)
             }
           />
         </Card>

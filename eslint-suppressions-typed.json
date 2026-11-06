@@ -6,7 +6,7 @@
   },
   "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 12
+      "count": 11
     }
   },
   "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
