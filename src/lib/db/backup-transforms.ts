@@ -13,8 +13,7 @@ import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "./v0810-profile-sets";
 import { renameDisplayNameActive } from "./v0102-display-name-custom";
 import { dropDeadHoldingLinkAndSettings } from "./v0102-dead-data";
-import { convertBackup, MIGRATION_CONVERTERS } from "./migration-converters";
-import { MATCH_RATE_TAG } from "./v0102-match-rate";
+import { convertBackupInOrder } from "./migration-converters";
 import pgJournal from "../../../drizzle/meta/_journal.json";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
@@ -1099,9 +1098,8 @@ export function transformBackupToCurrentSchema(
   transformV095SsInAmount(cloned);
   renameDisplayNameActive(cloned);
   dropDeadHoldingLinkAndSettings(cloned);
-  const matchRate = convertBackup(cloned, MIGRATION_CONVERTERS, MATCH_RATE_TAG);
-  if (matchRate)
-    log("info", "backup_conversion", { tag: MATCH_RATE_TAG, ...matchRate });
+  for (const { tag, run } of convertBackupInOrder(cloned))
+    log("info", "backup_conversion", { tag, ...run });
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

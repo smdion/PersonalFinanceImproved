@@ -43,11 +43,16 @@ describe("migration 0016 through the real migrator (SQLite)", () => {
   /** An install at 0015 holding every shared case; the journal is then
    *  back to the shipped one, so 0016 is pending. */
   function installAt0015(): number {
-    const shipped = fs.readFileSync(journalPath(), "utf8");
-    const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
-    const shippedCount = journal.entries.length;
-    const at = journal.entries.findIndex((e) => e.tag === MATCH_RATE_TAG);
+    // The journal through 0016 (migration-0017.test.ts runs what follows).
+    const full = JSON.parse(fs.readFileSync(journalPath(), "utf8")) as {
+      entries: { tag: string }[];
+    };
+    const at = full.entries.findIndex((e) => e.tag === MATCH_RATE_TAG);
     expect(at).toBeGreaterThan(0);
+    full.entries.splice(at + 1);
+    const shipped = JSON.stringify(full, null, 2);
+    const shippedCount = full.entries.length;
+    const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
     journal.entries.splice(at);
     fs.writeFileSync(journalPath(), JSON.stringify(journal, null, 2));
     runSQLite();

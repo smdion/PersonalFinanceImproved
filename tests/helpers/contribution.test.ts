@@ -189,6 +189,7 @@ describe("computeGroupedEmployerMatch", () => {
       salary: 120000,
       employerMatchType: null,
       employerMatchValue: 0,
+      employerMatchRate: null,
       employerMaxMatchPct: 0,
       employerMatchTaxTreatment: "pre_tax",
       ...overrides,

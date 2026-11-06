@@ -104,9 +104,9 @@ export type GroupableMatchRow = {
   employerMatchType: string | null;
   employerMatchValue: number;
   /** A percent match per contributed dollar, as stored (storedMatchRate);
-   *  null or absent: none stored. Not employerMatchRateByCategory (match
-   *  dollars as a share of total pay). */
-  employerMatchRate?: Fraction | null;
+   *  null: none stored (the value is read). Not employerMatchRateByCategory
+   *  (match dollars as a share of total pay). */
+  employerMatchRate: Fraction | null;
   /** Fraction (e.g. 0.06 for 6%), not a whole-number percent — matches how
    *  computeEmployerMatch already reads it. */
   employerMaxMatchPct: number;
@@ -261,7 +261,7 @@ export function computeGroupedEmployerMatch(
       "combined", // not "percent_of_salary" — see comment above
       0,
       winner.salary,
-      winner.employerMatchRate ?? null,
+      winner.employerMatchRate,
     );
 
     // The full match: the same formula with the group contributing at
@@ -278,7 +278,7 @@ export function computeGroupedEmployerMatch(
       "combined",
       0,
       winner.salary,
-      winner.employerMatchRate ?? null,
+      winner.employerMatchRate,
     );
 
     for (const m of members) {

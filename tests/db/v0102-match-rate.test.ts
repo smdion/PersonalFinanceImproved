@@ -9,6 +9,7 @@ import {
   MATCH_RATE_CONVERTER,
   MATCH_RATE_TAG,
 } from "@/lib/db/v0102-match-rate";
+import { MATCH_VALUE_TAG } from "@/lib/db/v0102-match-value";
 import { effectiveMatchType, rateFromPercent } from "@/lib/utils/match-rate";
 import { entryWithMatchRate } from "@/lib/pure/contributions/match-writes";
 import {
@@ -153,7 +154,12 @@ describe("migration 0016's converter on the restore ladder", () => {
     const { tables } = transformBackupToCurrentSchema(input, from, CURRENT);
     const t = tables as Tables;
     expect(rates(t)).toEqual(ACCOUNT_CASES.map((c) => c.after));
-    expect(fields(t)).toEqual(PROFILE_CASES.map((c) => c.after));
+    // 0017 runs after it in the same loop (v0102-match-value.test.ts).
+    const expected: Tables = backup();
+    convertBackup(expected, MIGRATION_CONVERTERS, MATCH_RATE_TAG);
+    expect(fields(expected)).toEqual(PROFILE_CASES.map((c) => c.after));
+    convertBackup(expected, MIGRATION_CONVERTERS, MATCH_VALUE_TAG);
+    expect(fields(t)).toEqual(fields(expected));
     expect(input).toEqual(before);
   });
 

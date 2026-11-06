@@ -115,6 +115,7 @@ describe("computeGroupedEmployerMatch", () => {
     salary: 100000,
     employerMatchType: PERCENT,
     employerMatchValue: 50,
+    employerMatchRate: null,
     employerMaxMatchPct: 0.06,
     employerMatchTaxTreatment: "pre_tax",
     ...over,

@@ -356,7 +356,7 @@ export const contribAccountActiveFieldsPatchSchema = z
     contributionMethod: z.string().optional(),
     employerMatchType: z.string().optional(),
     employerMatchValue: z.union([z.string(), z.number()]).optional(),
-    /** Migration 0016's fraction beside a percent's value; not read yet. */
+    /** A percent match's rate, a fraction: what is read (0017 drops the value). */
     employerMatchRate: z.union([z.string(), z.number()]).optional(),
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),

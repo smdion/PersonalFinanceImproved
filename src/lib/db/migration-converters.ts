@@ -3,6 +3,7 @@
  *  replays, in the migration's transaction) and the restore step. */
 
 import { MATCH_RATE_CONVERTER, MATCH_RATE_TAG } from "./v0102-match-rate";
+import { MATCH_VALUE_CONVERTER, MATCH_VALUE_TAG } from "./v0102-match-value";
 
 /** A table's rows as read: snake_case keys, JSON as object or text. */
 export type ConverterTables = Record<string, readonly unknown[] | undefined>;
@@ -31,9 +32,12 @@ export type DataConverter = {
   readonly convert: (tables: ConverterTables) => ConverterResult;
 };
 
-/** Migration tag → its converter. */
+/** Migration tag → its converter, in journal order: the restore step runs
+ *  every one in this order. A tag stays after a squash drops it from the
+ *  journal, so a backup from before the squash still converts. */
 export const MIGRATION_CONVERTERS: Readonly<Record<string, DataConverter>> = {
   [MATCH_RATE_TAG]: MATCH_RATE_CONVERTER,
+  [MATCH_VALUE_TAG]: MATCH_VALUE_CONVERTER,
 };
 
 type Phase = DataConverter["runs"];
@@ -227,4 +231,18 @@ export function convertBackup(
       rows[0]![column] = checked(u, column);
   }
   return { updates: result.updates.length, notes: result.notes };
+}
+
+/** The restore step, whatever the backup's version: every converter in
+ *  registry (journal) order, each a no-op where its work is done. */
+export function convertBackupInOrder(
+  tables: Record<string, unknown[]>,
+  converters: Readonly<Record<string, DataConverter>> = MIGRATION_CONVERTERS,
+): { tag: string; run: ConversionRun }[] {
+  const runs: { tag: string; run: ConversionRun }[] = [];
+  for (const tag of Object.keys(converters)) {
+    const run = convertBackup(tables, converters, tag);
+    if (run) runs.push({ tag, run });
+  }
+  return runs;
 }

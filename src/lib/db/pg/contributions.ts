@@ -54,8 +54,8 @@ export const contributionAccounts = pgTable(
       precision: 14,
       scale: 2,
     }),
-    /** A percent match's rate as a fraction (0.5 = 50%), filled by
-     *  migration 0016 beside the whole-percent value; not read yet. */
+    /** A percent match's rate as a fraction (0.5 = 50%): what is read;
+     *  migration 0017 clears the whole-percent value where this is set. */
     employerMatchRate: decimal("employer_match_rate", {
       precision: 12,
       scale: 6,

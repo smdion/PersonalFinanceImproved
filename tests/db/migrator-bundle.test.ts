@@ -30,10 +30,12 @@ describe("the migrator bundle", () => {
     const inputs = Object.keys(metafile.inputs);
     expect(inputs.filter((f) => !f.includes("node_modules/")).sort()).toEqual([
       "db-migrate.ts",
+      "src/lib/db/converter-rows.ts",
       "src/lib/db/demo-schema-marker.ts",
       "src/lib/db/migration-converters.ts",
       "src/lib/db/reference-reconcile-core.ts",
       "src/lib/db/v0102-match-rate.ts",
+      "src/lib/db/v0102-match-value.ts",
       "src/lib/db/version-tables.ts",
       "src/lib/utils/match-rate.ts",
     ]);

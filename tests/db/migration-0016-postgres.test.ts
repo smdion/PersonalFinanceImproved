@@ -82,14 +82,18 @@ describe.skipIf(skipWithoutPostgres)(
     /** An empty database migrated to 0015, holding every case. */
     async function installAt0015(): Promise<void> {
       await dropAllSchemas(client);
-      const shipped = fs.readFileSync(
-        path.join(REPO, "drizzle", "meta", "_journal.json"),
-        "utf8",
-      );
+      // The journal through 0016 (migration-0017-postgres runs what follows).
+      const full = JSON.parse(
+        fs.readFileSync(
+          path.join(REPO, "drizzle", "meta", "_journal.json"),
+          "utf8",
+        ),
+      ) as { entries: { tag: string }[] };
+      const at = full.entries.findIndex((e) => e.tag === MATCH_RATE_TAG);
+      full.entries.splice(at + 1);
+      const shipped = JSON.stringify(full, null, 2);
       const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
-      journal.entries.splice(
-        journal.entries.findIndex((e) => e.tag === MATCH_RATE_TAG),
-      );
+      journal.entries.splice(at);
       fs.writeFileSync(journalPath(), JSON.stringify(journal, null, 2));
       migrate();
       for (const c of CASES)

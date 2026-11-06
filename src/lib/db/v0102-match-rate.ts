@@ -1,34 +1,22 @@
 /** Migration 0016 and its restore step: a percent match's rate, as a
- *  fraction, beside the whole-percent value, which stays (DESIGN § Data-
- *  converting migrations). Rules: MATCH_RATE_CONVERTER. */
+ *  fraction, beside the whole-percent value (0017 then clears that; DESIGN
+ *  § Data-converting migrations). Rules: MATCH_RATE_CONVERTER. */
 // No import from migration-converters.ts, which registers this one.
 import {
   PERCENT_MATCH as PERCENT,
   effectiveMatchType,
   rateFromPercent,
 } from "../utils/match-rate";
+import {
+  isEmpty,
+  isRow,
+  jsonObject,
+  type Row,
+  type Update,
+} from "./converter-rows";
 
 export const MATCH_RATE_TAG = "0016_v0102_match_rate";
 
-type Row = Record<string, unknown>;
-const isRow = (v: unknown): v is Row =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
-const isEmpty = (v: unknown) => v === null || v === undefined;
-
-/** A JSON column in either dialect's form (PostgreSQL: an object, SQLite:
- *  text) as an object; null for anything else, text that isn't JSON too. */
-function jsonObject(value: unknown): Row | null {
-  let v: unknown = value;
-  if (typeof v === "string")
-    try {
-      v = JSON.parse(v);
-    } catch {
-      return null;
-    }
-  return isRow(v) ? v : null;
-}
-
-type Update = { table: string; id: number; set: Row };
 type Converted = { updates: Update[]; skipped: string[] };
 
 /** Rows typed `percent_of_contribution` with a value and no rate yet. */

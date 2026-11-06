@@ -48,8 +48,8 @@ export const contributionAccounts = sqliteTable(
       .$type<EmployerMatchType>()
       .notNull(),
     employerMatchValue: text("employer_match_value"),
-    /** A percent match's rate as a fraction (0.5 = 50%), filled by
-     *  migration 0016 beside the whole-percent value; not read yet. */
+    /** A percent match's rate as a fraction (0.5 = 50%): what is read;
+     *  migration 0017 clears the whole-percent value where this is set. */
     employerMatchRate: text("employer_match_rate"),
     employerMaxMatchPct: text("employer_max_match_pct"),
     employerMatchTaxTreatment: text("employer_match_tax_treatment")
