@@ -15,6 +15,9 @@ import {
   formatEmployerMatch,
   matchFigureForForm,
 } from "@/lib/pure/contributions/match-display";
+import { accountMatchColumns } from "@/lib/pure/contributions/match-writes";
+import { rateFromPercent } from "@/lib/utils/match-rate";
+import { roundToCents } from "@/lib/utils/math";
 
 const PERCENT = "percent_of_contribution";
 
@@ -61,6 +64,41 @@ describe("computeEmployerMatch", () => {
     expect(computeEmployerMatch(...args, storedMatchRate(rate))).toBe(
       computeEmployerMatch(...args),
     );
+  });
+});
+
+// M13: a whole percent a double can't hold exactly. Its rate's own double
+// (0.6667) differs from 66.67 / 100 in the last bit, which moves these
+// figures by a cent; the stored rate reads as the value did.
+describe("a non-dyadic percent reads as its value did, to the cent", () => {
+  it.each([
+    [66.67, 42500, 1700.09],
+    [14.3, 41250, 353.93],
+    [4.1, 40250, 99.01],
+  ])("%s%% to a 6%% cap on $%s: $%s", (percent, salary, figure) => {
+    const args = [
+      PERCENT,
+      percent,
+      0.06,
+      salary * 0.06,
+      "combined",
+      0,
+      salary,
+    ] as const;
+    const { employerMatchRate } = accountMatchColumns(
+      PERCENT,
+      { employerMatchValue: String(percent) },
+      null,
+    );
+    expect(employerMatchRate).toBe(rateFromPercent(percent));
+    const fromRate = computeEmployerMatch(
+      ...args,
+      storedMatchRate(employerMatchRate),
+    );
+    expect(fromRate).toBe(computeEmployerMatch(...args));
+    expect(roundToCents(fromRate)).toBe(figure);
+    // PostgreSQL gives the rate at scale 6 ("0.666700"): the same read.
+    expect(storedMatchRate(`${employerMatchRate}00`)).toBe(percent / 100);
   });
 });
 

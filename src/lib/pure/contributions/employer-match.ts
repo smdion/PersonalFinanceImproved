@@ -9,6 +9,7 @@ import type {
 } from "@/lib/config/enum-values";
 import { rowTakesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
 import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
+import { percentFromRate } from "@/lib/utils/match-rate";
 import {
   fractionFromPercent,
   parseEmployerMatch,
@@ -47,12 +48,13 @@ export function computeEmployerMatch(
   return salary * applyCeiling(empPct, match.capOfPay) * match.rate;
 }
 
-/** A stored rate as a Fraction; null where none is stored. */
+/** A stored rate as a Fraction; null where none is stored. Read as its
+ *  whole percent over 100, the double the value read gave before the rate
+ *  (66.67 / 100, not 0.6667), so no figure moves by a cent. */
 export function storedMatchRate(stored: unknown): Fraction | null {
   if (stored == null || stored === "") return null;
-  const rate = Number(stored);
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a stored rate is a fraction
-  return Number.isFinite(rate) ? (rate as Fraction) : null;
+  const percent = percentFromRate(stored);
+  return percent === null ? null : fractionFromPercent(parseFloat(percent));
 }
 
 /** The rate a row carries once a profile entry merges onto it: the entry's
