@@ -1,8 +1,5 @@
-/**
- * The year's RMD step: the QCD that satisfies part of each owner's RMD
- * before routing, and the RMD enforced on the routed draw after it.
- */
-import { roundToCents } from "../../../utils/math";
+/** The year's RMD step: each owner's QCD, then the RMD on the routed draw. */
+import { roundToCents, sumBy } from "../../../utils/math";
 import {
   isPreTaxType,
   isQcdEligible,
@@ -11,9 +8,16 @@ import {
 import { addTraditional } from "../../../config/account-balance";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { reachesAgeRule } from "@/lib/pure/household/age";
-import { rmdOwnerOf } from "../rmd-enforcement";
+import { enforceOwnerRmds, enforceRmd, rmdOwnerOf } from "../rmd-enforcement";
+import { getRmdFactor } from "../../../config/rmd-tables";
+import type { routeForMode } from "../withdrawal-routing";
+import type { rmdIncomeByOwner } from "./decumulation-income";
 import type { resolveDecumulationConfig } from "../override-resolution";
-import type { ProjectionContext, ProjectionLoopState } from "./types";
+import type {
+  PreYearSetup,
+  ProjectionContext,
+  ProjectionLoopState,
+} from "./types";
 
 /** Each owner's QCD this year, debited from that owner's own
  *  Retirement-parented IRAs and from the aggregate trackers. */
@@ -116,4 +120,126 @@ export function qcdStep(
   }
 
   return { totalQcd, qcdByPerson };
+}
+
+/** The routed draw's totals with each RMD enforced on them. UD-04 (pending
+ *  decision D1), today's behaviour: a short RMD adds Traditional on top of
+ *  the routed draw, and any excess past the need is reinvested later. */
+export function enforceYearRmd(
+  slots: ReturnType<typeof routeForMode>["slots"],
+  perOwnerRmd: boolean,
+  rmdStartAge: ProjectionContext["rmdStartAge"],
+  age: number,
+  priorYearEndTradBalance: number,
+  rmdByPerson: ReturnType<typeof rmdIncomeByOwner>["rmdByPerson"],
+  qcdByPerson: ReturnType<typeof qcdStep>["qcdByPerson"],
+  ctx: ProjectionContext,
+  acctBal: ProjectionLoopState["acctBal"],
+  indAccts: ProjectionContext["indAccts"],
+  indKey: ProjectionContext["indKey"],
+  indBal: ProjectionLoopState["indBal"],
+  nonRetirement: PreYearSetup["nonRetirement"],
+  routeWarnings: string[],
+  state: ProjectionLoopState,
+  perPersonRmdTotal: number | undefined,
+) {
+  let totalWithdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
+  const totalRothWithdrawal = roundToCents(
+    sumBy(slots, (s) => s.rothWithdrawal),
+  );
+  let totalTraditionalWithdrawal = roundToCents(
+    sumBy(slots, (s) => s.traditionalWithdrawal),
+  );
+
+  // Each owner's requirement is reduced by their own QCD only: the QCD'd
+  // part already left the account tax-free, so only the rest is enforced.
+
+  // The household path's divisor, shown as its RMD's working (the
+  // per-owner rows carry their own).
+  const rmdDivisor =
+    !perOwnerRmd &&
+    rmdStartAge != null &&
+    age >= rmdStartAge &&
+    priorYearEndTradBalance > 0
+      ? (getRmdFactor(age) ?? undefined)
+      : undefined;
+
+  // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
+  const ownerRmd = perOwnerRmd
+    ? enforceOwnerRmds({
+        owners: (rmdByPerson ?? []).map(({ personId, personName, amount }) => ({
+          personId,
+          personName,
+          required: roundToCents(
+            Math.max(
+              0,
+              amount -
+                (qcdByPerson.find((q) => q.personId === personId)?.qcdAmount ??
+                  0),
+            ),
+          ),
+        })),
+        primaryPersonId: ctx.primaryPersonId,
+        slots,
+        totalTraditionalWithdrawal,
+        totalWithdrawal,
+        acctBal,
+        indAccts,
+        indKey,
+        indBal,
+        nonRetirement,
+      })
+    : null;
+  const rmdResult =
+    ownerRmd ??
+    enforceRmd({
+      age,
+      rmdStartAge,
+      priorYearEndTradBalance,
+      slots,
+      totalTraditionalWithdrawal,
+      totalWithdrawal,
+      acctBal,
+      nonRetirement,
+    });
+  const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
+  totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
+  totalWithdrawal = rmdResult.totalWithdrawal;
+  routeWarnings.push(...rmdResult.warnings);
+  if (ownerRmd && rmdByPerson) {
+    for (const p of rmdByPerson) {
+      const shortfall = ownerRmd.shortfallByPerson.get(p.personId);
+      if (shortfall) p.shortfall = shortfall;
+    }
+    if (
+      !state.rmdNoOwnerWarned &&
+      rmdByPerson.some((p) => p.personId === ctx.primaryPersonId) &&
+      indAccts.some(
+        (ia) => ia.ownerPersonId == null && isPreTaxType(ia.taxType),
+      )
+    ) {
+      state.rmdNoOwnerWarned = true;
+      routeWarnings.push(
+        "A Traditional account has no owner — its RMD is counted with the primary person's. Give it an owner so the RMD falls on the right person.",
+      );
+    }
+  }
+  // The row's rmdAmount is the full requirement, not the QCD-reduced one
+  // enforced: the QCD still satisfies it, without a taxable draw.
+  const rmdAmount = ownerRmd
+    ? (perPersonRmdTotal ?? 0)
+    : "rmdAmount" in rmdResult
+      ? rmdResult.rmdAmount
+      : 0;
+
+  return {
+    totalWithdrawal,
+    totalRothWithdrawal,
+    totalTraditionalWithdrawal,
+    rmdDivisor,
+    ownerRmd,
+    rmdOverrodeRouting,
+    rmdShortfallAmount,
+    rmdAmount,
+  };
 }
