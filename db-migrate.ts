@@ -551,15 +551,39 @@ export function schemaLabel(
   return SQUASHED_LINE_TIP;
 }
 
+/** Baseline tables and columns ("table" or "table.column") that a later
+ *  journal entry drops: a database past that entry lacks them without being
+ *  older than the baseline. */
+function droppedAfterBaseline(
+  journal: Journal,
+  migrationsFolder: string,
+): Set<string> {
+  const [baseline, ...later] = journal.entries;
+  const dropped = new Set<string>();
+  if (!baseline) return dropped;
+  const base = snapshotColumns(migrationsFolder, baseline.idx);
+  for (const entry of later) {
+    const at = snapshotColumns(migrationsFolder, entry.idx);
+    for (const [table, cols] of base) {
+      const kept = at.get(table);
+      if (!kept) dropped.add(table);
+      else
+        for (const c of cols)
+          if (!kept.includes(c)) dropped.add(`${table}.${c}`);
+    }
+  }
+  return dropped;
+}
+
 /**
  * Refuse a database older than the baseline. Squashing replays the
  * baseline's CREATE TABLEs, which an existing table silently skips — so an
  * install that predates the baseline would never get the columns its
  * release line added later. Allowed: a fresh install (no `people`), one
  * that has recorded the baseline, and one with every table and column of
- * the baseline's snapshot (v0.8.14/v0.8.15, a dev database on any v0.9
- * migration, a journal cleared by a failed run). Anything else stops here,
- * before any backup or change.
+ * the baseline's snapshot that no later entry drops (v0.8.14/v0.8.15, a
+ * dev database on any v0.9 migration, a journal cleared by a failed run at
+ * any entry). Anything else stops here, before any backup or change.
  */
 export function assertSupportedUpgradePath(
   journal: Journal,
@@ -577,10 +601,11 @@ export function assertSupportedUpgradePath(
     `${migrationsFolder}/${baseline.tag}.sql`,
   );
   if (baselineHash && recordedHashes.has(baselineHash)) return;
+  const dropped = droppedAfterBaseline(journal, migrationsFolder);
   const missing = missingFromSnapshot(
     snapshotColumns(migrationsFolder, baseline.idx),
     actual,
-  );
+  ).filter((m) => !dropped.has(m));
   if (missing.length === 0) return;
   throw new UpgradePathError(
     `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ` and ${missing.length - 8} more` : ""}.`,

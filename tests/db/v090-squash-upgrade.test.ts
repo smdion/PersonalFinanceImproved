@@ -1,8 +1,9 @@
 /**
  * The v0.9.0 squash on SQLite, end to end through the real migrator
  * (runSQLite): a fresh install, a v0.8.15 install (13 v0.8 journal rows),
- * a journal cleared by a failed run, and an install older than v0.8.14 —
- * which must be refused before any backup or change.
+ * a journal cleared by a failed run (at any journal entry) or dropped, and
+ * an install older than v0.8.14 (each era the refusal names) — refused
+ * before any backup or change.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
@@ -11,8 +12,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import {
+  assertSupportedUpgradePath,
   runSQLite,
   schemaLabel,
+  snapshotColumns,
   SQUASHED_LINE_TIP,
   UpgradePathError,
 } from "../../db-migrate";
@@ -137,6 +140,174 @@ describe("v0.9.0 squash (SQLite, real migrator)", () => {
     expect(after.hasDebts).toBe(false);
     expect(after.people).toBe(1);
     expect(backups()).toEqual([]);
+  });
+});
+
+/** A database at journal entry `idx` (every file up to it run), one
+ *  household row, and a migration table that is empty or absent. */
+function atEntry(idx: number, journalTable: "cleared" | "dropped") {
+  const db = new Database(dbPath);
+  for (const e of journal.entries) if (e.idx <= idx) exec(db, e.tag);
+  if (journalTable === "cleared")
+    db.exec(
+      "CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)",
+    );
+  db.exec(
+    "INSERT INTO people (id, name, date_of_birth) VALUES (1, 'Alex', '1990-01-01')",
+  );
+  db.close();
+}
+const tables = () => {
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    return (
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .all() as { name: string }[]
+    ).map((r) => r.name);
+  } finally {
+    db.close();
+  }
+};
+const latestIdx = journal.entries.at(-1)!.idx;
+
+describe("a cleared or dropped migration table (SQLite, real migrator)", () => {
+  // 0015 drops holding_observations.performance_account_id, a baseline
+  // column: a database past it must not read as older than the baseline.
+  it.each(journal.entries.map((e) => [e.tag, e.idx] as const))(
+    "a journal cleared at %s recovers through the replay, with a backup",
+    (_tag, idx) => {
+      atEntry(idx, "cleared");
+      runSQLite();
+      const after = read();
+      expect(after.hashes).toEqual(allHashes);
+      expect(after.people).toBe(1);
+      expect(backups()).toHaveLength(1);
+    },
+  );
+
+  it.each([
+    ["the baseline", 0],
+    ["the latest entry", latestIdx],
+  ] as const)(
+    "a migration table dropped at %s is no older era: the strict apply stops with nothing changed, the next start replays",
+    (_at, idx) => {
+      atEntry(idx, "dropped");
+      let message = "";
+      try {
+        runSQLite();
+      } catch (err) {
+        expect(err).not.toBeInstanceOf(UpgradePathError);
+        message = (err as Error).message;
+      }
+      expect(message).toMatch(/already exists/);
+      // The strict apply created the empty migration table before it ran,
+      // so the next start is a cleared journal.
+      expect(read()).toMatchObject({ hashes: [], people: 1 });
+      runSQLite();
+      expect(read()).toMatchObject({ hashes: allHashes, people: 1 });
+    },
+  );
+
+  // Each era the refusal names (detectSchemaEraSqlite), from a database
+  // short of the baseline. The older-era refusal comes first, with or
+  // without a migration table.
+  it.each([
+    [
+      "0004_v085_investments",
+      (db: Database.Database) => {
+        exec(db, "0000_v9_initial_schema");
+        db.exec("ALTER TABLE account_performance DROP COLUMN note");
+      },
+    ],
+    [
+      "v0.7_final",
+      (db: Database.Database) => {
+        db.exec(
+          "CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)",
+        );
+        db.exec(
+          "INSERT INTO __drizzle_migrations (hash, created_at) VALUES ('dc91abbd28dd17fc654c9712fb27ce8f922708ccaaad7a4d68acbc19d8a7c685', '0')",
+        );
+      },
+    ],
+    [
+      "v0.6_final",
+      (db: Database.Database) =>
+        db.exec("CREATE TABLE account_holdings (id INTEGER PRIMARY KEY)"),
+    ],
+    [
+      "v0.5_final",
+      (db: Database.Database) =>
+        db.exec(
+          "CREATE TABLE annual_performance (id INTEGER PRIMARY KEY, is_immutable INTEGER)",
+        ),
+    ],
+    [
+      "v0.3_final",
+      (db: Database.Database) =>
+        db.exec("CREATE TABLE projection_overrides (id INTEGER PRIMARY KEY)"),
+    ],
+    ["v0.2_final", () => {}],
+  ] as const)(
+    "a database older than the baseline names its era (%s) and is refused",
+    (era, build) => {
+      const db = new Database(dbPath);
+      build(db);
+      if (
+        !db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'people'").get()
+      )
+        db.exec(
+          "CREATE TABLE people (id INTEGER PRIMARY KEY, name TEXT NOT NULL, date_of_birth TEXT NOT NULL)",
+        );
+      db.close();
+      const before = tables();
+      expect(() => runSQLite()).toThrow(
+        `This database is from an older Ledgr (schema ${era}).`,
+      );
+      expect(tables()).toEqual(before);
+      expect(backups()).toEqual([]);
+    },
+  );
+});
+
+describe("assertSupportedUpgradePath on each dialect's journal", () => {
+  const asDatabase = (cols: Map<string, string[]>) =>
+    new Map([...cols].map(([t, c]) => [t, new Set(c)]));
+  describe.each(["drizzle", "drizzle-sqlite"])("%s", (folder) => {
+    const own = JSON.parse(
+      fs.readFileSync(path.join(folder, "meta", "_journal.json"), "utf8"),
+    ) as { entries: { idx: number; tag: string }[] };
+    const check = (recorded: Set<string>, actual: Map<string, Set<string>>) =>
+      assertSupportedUpgradePath(
+        own,
+        folder,
+        recorded,
+        actual,
+        crypto,
+        () => "an invented era",
+      );
+
+    it.each(own.entries.map((e) => [e.tag, e.idx] as const))(
+      "a database at %s with nothing recorded passes",
+      (_tag, idx) => {
+        expect(() =>
+          check(new Set(), asDatabase(snapshotColumns(folder, idx))),
+        ).not.toThrow();
+      },
+    );
+
+    it("a database short of a baseline column no entry drops is older", () => {
+      const at = asDatabase(snapshotColumns(folder, own.entries.at(-1)!.idx));
+      at.get("account_performance")!.delete("note");
+      expect(() => check(new Set(), at)).toThrow(
+        /older Ledgr \(schema an invented era\).*Missing: account_performance\.note\.$/,
+      );
+    });
+
+    it("a fresh database passes", () => {
+      expect(() => check(new Set(), new Map())).not.toThrow();
+    });
   });
 });
 
