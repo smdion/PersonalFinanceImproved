@@ -46,6 +46,27 @@ export function rowMatchValue(row: {
   return figure === "" ? null : figure;
 }
 
+/** An account write from a form or full update: a cleared value (null)
+ *  clears the match, so its rate goes too (a resent null keeps it). */
+export function withMatchClear<T extends { employerMatchValue?: Stored }>(
+  terms: T,
+): T & { employerMatchRate?: null } {
+  return terms.employerMatchValue === null
+    ? { ...terms, employerMatchRate: null }
+    : terms;
+}
+
+/** A full update's match value: the edited one (cleared: the match goes,
+ *  withMatchClear), else the row's (rowMatchValue). */
+export function resentMatchTerms(
+  edited: string | null | undefined,
+  row: Parameters<typeof rowMatchValue>[0],
+): { employerMatchValue: string | null; employerMatchRate?: null } {
+  return withMatchClear({
+    employerMatchValue: edited === undefined ? rowMatchValue(row) : edited,
+  });
+}
+
 export function matchValueToStore(_type: MatchType, typed: string): string {
   return typed;
 }

@@ -16,9 +16,7 @@
  * of their own, no fallback).
  *
  * Used by What-If's "Make real", the Contribution Profiles tab's
- * "+ Add Account", and the Paycheck page's create flow — the three
- * surfaces that previously either sent a hardcoded field subset or had no
- * creation path at all.
+ * "+ Add Account", and the Paycheck page's create flow.
  */
 
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
@@ -45,6 +43,7 @@ import {
   matchFigureForForm,
   matchValueToStore,
   rowMatchValue,
+  withMatchClear,
 } from "@/lib/pure/contributions/match-display";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
@@ -234,7 +233,7 @@ export function ContribAccountForm({
   const handleSubmit = () => {
     if (!canSubmit) return;
     onSave({
-      ...v,
+      ...withMatchClear(v),
       id: linkedExistingId ?? undefined,
       personId: v.ownership === "joint" ? null : effectivePersonId,
       employerMaxMatchPct:

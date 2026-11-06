@@ -98,12 +98,13 @@ export async function entriesWithMatchRates(
 }
 
 /** A patch's unset keys: the value and its rate are one match, so
- *  unsetting the value unsets its rate too. */
+ *  unsetting either clears both (the entry then reads its account's). */
 export function withMatchRateUnset(
   unset: string[] | undefined,
 ): string[] | undefined {
-  return unset?.includes("employerMatchValue")
-    ? [...unset, "employerMatchRate"]
+  const match = ["employerMatchValue", "employerMatchRate"];
+  return unset?.some((k) => match.includes(k))
+    ? [...new Set([...unset, ...match])]
     : unset;
 }
 

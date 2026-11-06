@@ -15,6 +15,7 @@ import {
   entryMatchFigure,
   formatEmployerMatch,
   matchFigureForForm,
+  resentMatchTerms,
   rowMatchValue,
 } from "@/lib/pure/contributions/match-display";
 import { accountMatchColumns } from "@/lib/pure/contributions/match-writes";
@@ -245,5 +246,25 @@ describe("a match held as a rate alone (0017's percent rows) still shows", () =>
           null,
         ).employerMatchRate,
       ).toBe(rate);
+  });
+});
+
+describe("resentMatchTerms: one meaning for clearing", () => {
+  const row = {
+    employerMatchType: PERCENT,
+    employerMatchValue: null,
+    employerMatchRate: "0.5",
+  };
+  it("an unedited value resends the row's, an edited one itself", () => {
+    expect(resentMatchTerms(undefined, row)).toEqual({
+      employerMatchValue: "50",
+    });
+    expect(resentMatchTerms("60", row)).toEqual({ employerMatchValue: "60" });
+  });
+  it("a cleared value clears the rate too", () => {
+    expect(resentMatchTerms(null, row)).toEqual({
+      employerMatchValue: null,
+      employerMatchRate: null,
+    });
   });
 });

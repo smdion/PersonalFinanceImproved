@@ -1540,9 +1540,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-jsx-iife": {
       "count": 1
     },

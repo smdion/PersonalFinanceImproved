@@ -59,7 +59,7 @@
     "src/components/mortgage/mortgage-settings.tsx": 728,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
     "src/components/onboarding/onboarding-wizard.tsx": 1020,
-    "src/components/paycheck/contrib-account-form.tsx": 625,
+    "src/components/paycheck/contrib-account-form.tsx": 624,
     "src/components/paycheck/contrib-card.tsx": 539,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
@@ -623,7 +623,7 @@
       "PortfolioQuickLook": 287
     },
     "src/components/portfolio/use-contribution-accounts-mutations.ts": {
-      "useContributionAccountsMutations": 283
+      "useContributionAccountsMutations": 280
     },
     "src/components/retirement/assumptions-band.tsx": {
       "AssumptionsBand": 344

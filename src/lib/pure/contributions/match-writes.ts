@@ -1,6 +1,6 @@
 /** The match terms every write stores (migration 0017's end state): a
- *  percent type, a rate and no value (column null, entry key gone); another
- *  type, no rate. A sent rate wins over a sent value. */
+ *  percent type, a rate and no value; another type, no rate. Clearing a
+ *  match clears both: a null rate (accounts), an unset key (entries). */
 import {
   PERCENT_MATCH as PERCENT,
   effectiveMatchType,

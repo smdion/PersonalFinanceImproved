@@ -356,6 +356,18 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
       });
     });
 
+    // One meaning for clearing: the entry's own match goes, both
+    // keys, and it reads its account's.
+    it("unsetting the rate alone clears the value too", async () => {
+      const a = await percentAccount("50");
+      const p = await profileWith(a, {
+        employerMatchType: "dollar_match",
+        employerMatchValue: "300",
+      });
+      await patch(p, a, {}, ["employerMatchRate"]);
+      expect((await entries(p))[a]).not.toHaveProperty("employerMatchValue");
+    });
+
     it("unsetting the value of an entry held as a rate alone unsets the rate", async () => {
       const a = await percentAccount("50");
       const p = await profileWith(a, { employerMatchValue: "40" });
@@ -412,6 +424,17 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         contributionValue: "7",
         employerMatchRate: "3",
       });
+    });
+  });
+
+  // One meaning for clearing: an account's match clears with a null rate;
+  // a null value resent unchanged keeps it (the case below).
+  it("a null rate clears an account's match", async () => {
+    const id = await percentAccount("50");
+    await update(id, { employerMatchValue: null, employerMatchRate: null });
+    expect(await row(id)).toMatchObject({
+      employerMatchValue: null,
+      employerMatchRate: null,
     });
   });
 
