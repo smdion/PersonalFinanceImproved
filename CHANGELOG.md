@@ -8,18 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
-## [0.10.2] - unreleased
+## [0.10.2] - 2026-11-06
 
-v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. No figure in the app changes; the test that records every figure the app shows stays identical through every change in this release. Two things do change for self-hosters: every outside request is now checked when it is sent, and three data migrations run at start-up.
+v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. No figure in the app changes; the test that records every figure the app shows stays identical through every change in this release. Two things do change for self-hosters: every outside request is now checked when it is sent, and four data migrations run at start-up.
 
 ### Upgrading
 
 - **If your Actual server URL is a Docker service name, a single-label name or a LAN address, add it to `ALLOWED_ACTUAL_HOSTS` (`host` or `host:port`) before upgrading.** Every request is now checked when it is sent, not only when the URL is saved, so a URL that v0.10.1 accepted (such as the README's `http://actual-http-api:5007`) stops budget sync, snapshot pushes and category links on the first request until it is allowed. The refusal names the host and the setting, is never retried, and changes no data. SimpleFIN and Tiingo now refuse `http` URLs.
 - **Take a database dump before upgrading.** The start still writes its own pre-upgrade backup; the dump is what a rollback restores.
-- **To roll back, restore the pre-upgrade database dump; never swap the image back.** Migration 0015 is the first one the v0.10.1 image can't start past, and an older image started on a newer database rewrites the migration journal shorter, after which the newer image fails on every start. v0.10.2 refuses a database a newer Ledgr upgraded, and says so, instead of rewriting it.
+- **To roll back, restore the pre-upgrade database dump; never swap the image back.** The v0.10.1 image can't run on a database v0.10.2 has migrated, and it can't restore a backup taken on v0.10.2, so anything changed after the upgrade is lost on rollback. From v0.10.2 on, a database a newer Ledgr upgraded is refused with a message instead of rewritten.
 - **The first Simulation load after upgrading is slow, once.** The engine's code changed, so cached projections and Simulation runs are rebuilt the first time they're opened. This is not a regression; later loads are as fast as before.
-- **Three migrations run at start-up:** 0014 moves a contribution account's custom name from its old stored key (`displayNameActive`) to `displayNameCustom`, 0015 drops the holding history's never-written performance link and ten settings no version of Ledgr used, and 0016 adds the employer match rate as a fraction beside the whole percent it is stored as today. Each runs again cleanly, and restoring an older backup applies the same changes to it.
-- **TODO(57b): the employer-match-rate reader switch and migration 0017 — fill in before release.**
+- **Four migrations run at start-up:** 0014 moves a contribution account's custom name from its old stored key (`displayNameActive`) to `displayNameCustom`; 0015 drops the holding history's never-written performance link and ten settings no version of Ledgr used; 0016 adds the employer match rate as a fraction (50% is stored as 0.5); and 0017 finishes that move: where 0016 stored a rate, the old whole-percent value is cleared, so the rate is the only copy. A dollar or fixed-annual profile override that had no amount of its own first gets the amount it was using, and a value 0016 couldn't convert is kept and read as before. Each runs again cleanly, and restoring an older backup runs them in order.
+- **A profile's own percent match no longer follows a dollar account.** If a Contribution Profile sets its own percent match on an account whose match is in dollars, the profile now keeps the percent it read when you upgraded (or when you last edited that profile): a later change to the account's dollar amount no longer changes the profile's percent, so set the profile's match again if you want it to follow.
+- **API:** contribution accounts and profile entries now return `employerMatchRate`, and `employerMatchValue` is empty on percent matches. A percent match above 200% is refused when it is set.
 
 ### Safer outside requests
 
@@ -42,6 +43,8 @@ v0.10.2 gives every piece of code one home by what it does: pure calculations in
 - **Demo:** the demo schema build accepts only a known demo profile, and every demo profile fills what its pages read.
 - **Guards and CI:** every `src/server/` file belongs to a declared layer; ratchets and the behaviour baseline are checked against the merge base; commit rules run on push; the gate runs the type-aware lint; CI runs in parallel jobs with sharded tests, and a docs-only push skips the heavy steps.
 - **The calculation register** covers `lib/pure` only, and names seven more of its functions, with a new row for other liabilities.
+
+Counts: functions over 150 lines 304 → 299; lint suppressions 4,550 → 4,441; type-aware lint suppressions 698 → 688; `src/` 862 lines larger.
 
 ## [0.10.1] - 2026-11-04
 
