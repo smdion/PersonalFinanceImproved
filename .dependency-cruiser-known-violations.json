@@ -130,31 +130,6 @@
     "to": "src/server/services/projection/engine-payload/profile-switches.ts"
   },
   {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/brokerage.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/contribution.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/investments/index.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/mortgage.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/savings.ts"
-  },
-  {
     "rule": "pure-has-no-io",
     "from": "src/lib/pure/budget/utility-cost-feed.ts",
     "to": "src/lib/budget-api/types.ts"

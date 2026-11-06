@@ -1,16 +1,33 @@
 import { eq, inArray } from "drizzle-orm";
 import type { z } from "zod/v4";
 import * as schema from "@/lib/db/schema";
+import type { Db } from "@/lib/db";
+import type { RequestScope } from "@/server/data/request-scope";
+import { log } from "@/lib/logger";
+import { effectiveHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
+import { householdHighIncomeLine } from "@/server/services/paycheck/high-income-line";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
+import { computeContributionSummary } from "@/server/services/contributions/summary";
+import { computeSavingsSummary } from "@/server/services/savings/summary";
+import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
+import { loadHoldingsOverview } from "@/server/services/investments/holdings-overview";
+import { loadBuyingMonths } from "@/server/services/investments/buying-months";
+import { listBrokerageGoals } from "@/server/data/brokerage-goals";
 import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
 import { wealthFormulaIncome } from "@/lib/pure/net-worth/net-worth";
 import {
+  SK_EFUND_BUDGET_COLUMN,
+  SK_HIGH_INCOME_THRESHOLD,
   SK_MILESTONE_CHECKLIST,
   SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
 } from "@/lib/constants/settings-keys";
 import { parseMilestoneSettings } from "@/lib/pure/advice/milestones/milestones";
-import { milestoneYearFromHistory } from "@/lib/pure/advice/milestones/input";
+import {
+  buildMilestoneInput,
+  milestoneYearFromHistory,
+} from "@/lib/pure/advice/milestones/input";
 import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 import type { MilestoneDebt } from "@/lib/pure/advice/milestones/milestones";
 import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
@@ -142,7 +159,7 @@ function salaryByYear(
 /** Year-end history mapped for the Milestones engine, plus the household's
  *  own goals and checklist. */
 export async function loadMilestoneInputs(
-  db: import("@/lib/db").Db,
+  db: Db,
   input: z.infer<typeof zYearEndTargeting>,
 ) {
   const asOfDate = new Date();
@@ -264,4 +281,91 @@ export async function loadMilestoneInputs(
       savingsTargetSource: setting(SK_MILESTONE_SAVINGS_TARGET_SOURCE),
     }),
   };
+}
+
+/** A read the milestone input can go without: null on error, with a warning. */
+function orNull<T>(read: string, p: Promise<T>): Promise<T | null> {
+  return p.catch((err: unknown) => {
+    log("warn", "milestones.active_input_read_failed", {
+      read,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  });
+}
+
+/** The milestone input on the active profiles, as the server sees it — no
+ *  projection (reached never depends on it). Holdings and buying months
+ *  need the portfolio permission; brokerage goals are read for every viewer. */
+export async function activeMilestoneInput(ctx: {
+  db: Db;
+  scope: RequestScope;
+}) {
+  const settingRows = await ctx.db
+    .select()
+    .from(schema.appSettings)
+    .where(
+      inArray(schema.appSettings.key, [
+        SK_EFUND_BUDGET_COLUMN,
+        SK_HIGH_INCOME_THRESHOLD,
+      ]),
+    );
+  const setting = (key: string) =>
+    settingRows.find((r) => r.key === key)?.value ?? null;
+  const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
+  const portfolio = ctx.scope.can("portfolio");
+  // Contributions need the profile ids the page sends; with none they're $0.
+  const { contribProfileId, salaryProfileId } =
+    await resolveProfileSelection(ctx);
+  const [
+    inputs,
+    contributions,
+    savings,
+    mortgage,
+    holdings,
+    buyingMonths,
+    goals,
+    line,
+  ] = await Promise.all([
+    loadMilestoneInputs(ctx.db, undefined),
+    computeContributionSummary(ctx, {
+      ...(contribProfileId != null
+        ? { contributionProfileId: contribProfileId }
+        : {}),
+      ...(salaryProfileId != null ? { salaryProfileId } : {}),
+    }),
+    computeSavingsSummary(
+      ctx,
+      typeof efundColumn === "number" && efundColumn >= 0
+        ? { budgetTierOverride: efundColumn }
+        : undefined,
+    ),
+    computeMortgageActiveSummary(ctx),
+    portfolio ? orNull("holdings", loadHoldingsOverview(ctx.db)) : null,
+    portfolio ? orNull("buyingMonths", loadBuyingMonths(ctx)) : null,
+    orNull("brokerageGoals", listBrokerageGoals(ctx)),
+    householdHighIncomeLine(ctx.db),
+  ]);
+  const efund = savings.efund;
+  return buildMilestoneInput({
+    inputs,
+    contributions,
+    highIncomeThreshold: effectiveHighIncomeLine(
+      setting(SK_HIGH_INCOME_THRESHOLD),
+      line.threshold,
+    ),
+    efundMonths: efund
+      ? (efund.monthsCoveredWithRepay ?? efund.monthsCovered)
+      : null,
+    efundEssentialMonthly:
+      efund && efund.targetMonths > 0
+        ? efund.targetAmount / efund.targetMonths
+        : null,
+    mortgage,
+    projection: null,
+    holdings,
+    buyingMonths,
+    brokerageGoals:
+      goals?.map((g) => ({ name: g.name, targetYear: g.targetYear })) ?? null,
+  });
 }

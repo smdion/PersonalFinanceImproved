@@ -5688,9 +5688,6 @@
     }
   },
   "src/server/routers/milestones.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 1
     }
