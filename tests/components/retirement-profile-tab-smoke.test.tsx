@@ -97,8 +97,8 @@ describe("RetirementProfileTab smoke", () => {
     setQuery("salaryProfile.list", []);
     // The fixture is a partial projection with the stored-row field types.
     setQuery(
-      "projection.computeProjection",
-      mockProjectionData as MockOutput<"projection.computeProjection">,
+      "projection.getProjectionMetadata",
+      mockProjectionData as MockOutput<"projection.getProjectionMetadata">,
     );
     // retirement-profile-tab.tsx queries this directly (TaxesSection is a pure
     // presentational leaf, see retirement-sections-smoke.test.tsx) and

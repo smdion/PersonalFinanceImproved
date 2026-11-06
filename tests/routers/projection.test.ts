@@ -396,13 +396,9 @@ describe("projection router — computeProjection", () => {
     return { personId, jobId, perfAcctId };
   }
 
-  it("returns result: null when metadataOnly is true (no engine run)", async () => {
+  it("the metadata query returns result: null (no engine run)", async () => {
     seedProjectionData();
-    const response = await caller.projection.computeProjection({
-      metadataOnly: true,
-      accumulationOverrides: [],
-      decumulationOverrides: [],
-    });
+    const response = await caller.projection.getProjectionMetadata({});
     expect(response.result).toBeNull();
   });
 

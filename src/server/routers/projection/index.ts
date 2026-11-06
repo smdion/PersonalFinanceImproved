@@ -5,6 +5,7 @@
  * in the sibling sub-router files, one per endpoint family:
  *
  * - `scenarios.ts`    — `computeProjection`
+ * - `metadata.ts`     — `getProjectionMetadata` (the same response, no engine run)
  * - `coast-fire.ts`   — `computeCoastFire`, `computeCoastFireMC`
  * - `monte-carlo.ts`  — `computeMonteCarloProjection`,
  *                       `updateGlidePathAllocations`, `updateClampBounds`
@@ -36,6 +37,7 @@ import { coastFireProbeRouter } from "./coast-fire-probe";
 import { monteCarloRouter } from "./monte-carlo";
 import { monteCarloPeekRouter } from "./monte-carlo-peek";
 import { presetsRouter } from "./presets";
+import { projectionMetadataRouter } from "./metadata";
 import { relocationProjectionRouter } from "./relocation";
 import { scenariosRouter } from "./scenarios";
 import { socialSecurityRouter } from "./social-security";
@@ -46,6 +48,7 @@ import { withdrawalBracketOptimizerRouter } from "./withdrawal-bracket-optimizer
 
 export const projectionRouter = mergeRouters(
   scenariosRouter,
+  projectionMetadataRouter,
   coastFireRouter,
   coastFireProbeRouter,
   monteCarloRouter,

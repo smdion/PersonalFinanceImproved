@@ -57,8 +57,6 @@ export const scenariosRouter = createTRPCRouter({
         decumulationOverrides: decumulationOverrideSchema,
 
         selection: profileSelectionSchema.optional(),
-        /** When true, skip the heavy projection calculation and return only metadata (settings, expenses, budget profiles). */
-        metadataOnly: z.boolean().default(false),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
         snapshotId: z.number().int().optional(),
         /** When set, apply a Coast FIRE scenario override: zero all contributions
@@ -77,9 +75,8 @@ export const scenariosRouter = createTRPCRouter({
         snapshotId: input.snapshotId,
       });
       if (!payload) return { result: null };
-      // No return rate: a state, not an engine throw. Metadata (settings,
-      // budgets) needs no rate, so a metadataOnly read still gets it.
-      if (payload.notConfigured && !input.metadataOnly)
+      // No return rate: a state, not an engine throw.
+      if (payload.notConfigured)
         return { result: null, notConfigured: payload.notConfigured };
 
       const {
@@ -120,44 +117,40 @@ export const scenariosRouter = createTRPCRouter({
             )
           : baseEngineInput.profileSwitches;
 
-      // When metadataOnly is true, skip the heavy projection calculation (used by the
-      // retirement page which only needs settings/expenses/budget metadata).
-      let result: ReturnType<typeof calculateProjection> | null = null;
-      if (!input.metadataOnly) {
-        const engineInput = {
-          ...baseEngineInput,
-          profileSwitches: profileSwitchesForEngine,
-          decumulationDefaults: buildDecumulationDefaults(
-            settings,
-            input.decumulationDefaults,
-            distributionTaxRates,
-          ),
-          // Omitted "Changes by year" = the household's saved rows.
-          ...((await resolveProjectionOverrides(ctx.db, input)) as {
-            accumulationOverrides: AccumulationOverride[];
-            decumulationOverrides: DecumulationOverride[];
-          }),
-        };
-        const inputHash = hashEngineInput("deterministic", engineInput);
+      const engineInput = {
+        ...baseEngineInput,
+        profileSwitches: profileSwitchesForEngine,
+        decumulationDefaults: buildDecumulationDefaults(
+          settings,
+          input.decumulationDefaults,
+          distributionTaxRates,
+        ),
+        // Omitted "Changes by year" = the household's saved rows.
+        ...((await resolveProjectionOverrides(ctx.db, input)) as {
+          accumulationOverrides: AccumulationOverride[];
+          decumulationOverrides: DecumulationOverride[];
+        }),
+      };
+      const inputHash = hashEngineInput("deterministic", engineInput);
 
-        const cached = input.forceRefresh
-          ? null
-          : await readProjectionCache<ReturnType<typeof calculateProjection>>(
-              ctx.db,
-              inputHash,
-            );
-        if (cached) {
-          result = cached.result;
-        } else {
-          result = calculateProjection(engineInput);
-          await writeProjectionCache(ctx.db, inputHash, result, null);
-        }
+      const cached = input.forceRefresh
+        ? null
+        : await readProjectionCache<ReturnType<typeof calculateProjection>>(
+            ctx.db,
+            inputHash,
+          );
+      let result: ReturnType<typeof calculateProjection>;
+      if (cached) {
+        result = cached.result;
+      } else {
+        result = calculateProjection(engineInput);
+        await writeProjectionCache(ctx.db, inputHash, result, null);
       }
 
-      if (result && routerWarnings.length > 0) {
+      if (routerWarnings.length > 0) {
         result.warnings.unshift(...routerWarnings);
       }
-      if (result && noContribData) {
+      if (noContribData) {
         result.warnings.push(
           "No contribution accounts found — projections may be inaccurate. Add contribution accounts on the Paycheck page.",
         );

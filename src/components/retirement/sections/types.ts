@@ -1,17 +1,17 @@
 /**
  * Prop types for the retirement-content section components, read from the
  * routers' own types. The parent renders sections only once
- * computeProjection's `settings` is loaded, so they never see it missing.
+ * getProjectionMetadata's `settings` is loaded, so they never see it missing.
  */
 import type { RouterInputs, RouterOutputs } from "@/lib/trpc";
 
 type ProjectionData = Extract<
-  RouterOutputs["projection"]["computeProjection"],
+  RouterOutputs["projection"]["getProjectionMetadata"],
   { settings: unknown }
 >;
 type ProfilePeople = RouterInputs["retirement"]["retirementProfilePeople"];
 
-/** The retirement settings computeProjection returns. */
+/** The retirement settings getProjectionMetadata returns. */
 export type Settings = ProjectionData["settings"];
 /** Per-person retirement settings; sections also take null (none loaded). */
 export type PerPersonSettings = ProjectionData["perPersonSettings"] | null;

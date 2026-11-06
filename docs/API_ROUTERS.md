@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**393 procedures across 55 routers.**
+**394 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -281,6 +281,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure               | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | ----------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeCoastFireProbe` | query | `protectedProcedure` | the binary search's earliest-passing-age or "today." Reuses the same `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s binary search already uses; no new simulation logic. Returns |
+
+## `projection/metadata`
+
+| Procedure               | Kind  | Auth                 | Description                                                      |
+| ----------------------- | ----- | -------------------- | ---------------------------------------------------------------- |
+| `getProjectionMetadata` | query | `protectedProcedure` | settings, budgets and the rest. Not configured still returns it. |
 
 ## `projection/monte-carlo`
 

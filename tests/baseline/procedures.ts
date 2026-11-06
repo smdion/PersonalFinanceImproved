@@ -325,6 +325,8 @@ export const SKIPPED: Record<string, string> = {
     "external: fetches the published tax-data index",
   "sync.getPreview":
     "external: calls YNAB or Actual Budget (part d replays recorded responses through the sync instead)",
+  "projection.getProjectionMetadata":
+    "computeProjection's response with result null, from the same function (projection-coverage pins the two equal)",
   "projection.getMonteCarloProgress":
     "progress of a run in flight, keyed by a random run id; no household figure",
   "version.getById": "needs a saved version; the baseline seeds none",

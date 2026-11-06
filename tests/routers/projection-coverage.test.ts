@@ -256,20 +256,29 @@ describe("projection router — computeProjection cache", () => {
     }
   });
 
-  it("metadataOnly does not read or write the cache", async () => {
+  it("the metadata query does not read or write the cache", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
 
-      const response = await caller.projection.computeProjection({
-        metadataOnly: true,
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
+      const response = await caller.projection.getProjectionMetadata({});
 
       expect(response.result).toBeNull();
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("the metadata query is computeProjection's response with no result", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const full = await caller.projection.computeProjection({});
+      const meta = await caller.projection.getProjectionMetadata({});
+      expect(full.result).not.toBeNull();
+      expect(meta).toEqual({ ...full, result: null });
     } finally {
       cleanup();
     }
@@ -329,9 +338,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
     try {
       seedFullProjectionData(db);
       db.delete(schema.returnRateTable).run();
-      const meta = await caller.projection.computeProjection({
-        metadataOnly: true,
-      });
+      const meta = await caller.projection.getProjectionMetadata({});
       expect(meta).not.toHaveProperty("notConfigured");
       expect(meta).toHaveProperty("settings");
     } finally {

@@ -83,13 +83,9 @@ export function RetirementContent() {
     const { decumulationDefaults: _decumulationDefaults, ...rest } = plan.input;
     return rest;
   }, [plan.input]);
-  const engineInput = useMemo(
-    () => ({ metadataOnly: true as const, ...baseInput }),
-    [baseInput],
-  );
-  const debouncedEngineInput = useDebouncedValue(engineInput, 600);
-  const queryEnabled = plan.ready && debouncedEngineInput === engineInput;
-  const projectionQuery = trpc.projection.computeProjection.useQuery(
+  const debouncedEngineInput = useDebouncedValue(baseInput, 600);
+  const queryEnabled = plan.ready && debouncedEngineInput === baseInput;
+  const projectionQuery = trpc.projection.getProjectionMetadata.useQuery(
     debouncedEngineInput,
     // Ready, and the debounce has caught up with it — the debounced value
     // can still be the input from before settings loaded.
@@ -263,11 +259,6 @@ export function RetirementContent() {
           retirementHorizonYears={settings.endAge - settings.retirementAge}
           hasBudgetLink={!!data.accumulationBudgetProfileId}
           hasSocialSecurity={Number(settings.socialSecurityMonthly) > 0}
-          deterministicNestEgg={
-            data.result?.projectionByYear.find(
-              (p: { age: number }) => p.age === settings.retirementAge,
-            )?.retirementBalance
-          }
           accumulationOrder={data.planHealth?.accumulationOrder}
           currentAge={data.planHealth?.currentAge}
           stockAllocationPercent={

@@ -175,8 +175,8 @@ describe("RetirementContent smoke", () => {
     // which the procedure's (serialized) output type doesn't have.
     const projection: unknown = mockProjectionData;
     setQuery(
-      "projection.computeProjection",
-      projection as MockOutput<"projection.computeProjection">,
+      "projection.getProjectionMetadata",
+      projection as MockOutput<"projection.getProjectionMetadata">,
     );
     setQuery(COMPARISON, null);
     setQuery("retirement.retirementProfiles.list", []);

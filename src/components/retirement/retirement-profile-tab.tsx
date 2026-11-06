@@ -6,9 +6,9 @@
  * singleton settings editor, not a new profile type: `retirement_settings`
  * still has no name/multi-row shape,
  * still reads/writes through `retirementSettings.upsert` and
- * `computeProjection`'s `metadataOnly` response exactly as it did on the
+ * `projection.getProjectionMetadata` exactly as it did on the
  * Retirement page. This component owns that data-fetching independently
- * (its own `computeProjection` query, its own persisted-setting state)
+ * (its own `getProjectionMetadata` query, its own persisted-setting state)
  * rather than threading it through `budget-content.tsx`'s existing
  * `budget.computeActiveSummary` query, which is a different shape entirely.
  *
@@ -157,15 +157,11 @@ export function RetirementProfileTab({
       profileId,
     ],
   );
-  const engineInput = useMemo(
-    () => ({ metadataOnly: true as const, ...baseInput }),
-    [baseInput],
-  );
-  const debouncedEngineInput = useDebouncedValue(engineInput, 600);
-  const { data, isLoading, error } = trpc.projection.computeProjection.useQuery(
-    debouncedEngineInput,
-    { placeholderData: (prev) => prev },
-  );
+  const debouncedEngineInput = useDebouncedValue(baseInput, 600);
+  const { data, isLoading, error } =
+    trpc.projection.getProjectionMetadata.useQuery(debouncedEngineInput, {
+      placeholderData: (prev) => prev,
+    });
   // Multi-year withdrawal-policy optimizer — queried
   // here (not inside TaxesSection, a documented pure-presentational leaf)
   // so it can be passed down as a plain prop, same pattern as CoastFireCard
@@ -177,7 +173,7 @@ export function RetirementProfileTab({
   // against, and dropping them meant this always ran against the active
   // profile/global pins even when viewing a different one. `baseInput`
   // already carries all three (see its own comments above) and is the
-  // same object `computeProjection` builds its query from, so this can't
+  // same object `getProjectionMetadata` builds its query from, so this can't
   // drift from what the rest of the tab is showing. staleTime of a few
   // minutes (not `staleTime: 0` + refetchOnMount: "always"): a household's
   // balances don't meaningfully change mid-session, matching
@@ -246,11 +242,11 @@ export function RetirementProfileTab({
 
   const upsertSettings = trpc.retirement.retirementSettings.upsert.useMutation({
     onMutate: async (newSettings) => {
-      await utils.projection.computeProjection.cancel();
+      await utils.projection.getProjectionMetadata.cancel();
       const defined = Object.fromEntries(
         Object.entries(newSettings).filter(([, v]) => v !== undefined),
       );
-      utils.projection.computeProjection.setData(
+      utils.projection.getProjectionMetadata.setData(
         debouncedEngineInput,
         (old) => {
           if (!old || !("settings" in old) || !old.settings) return old;
