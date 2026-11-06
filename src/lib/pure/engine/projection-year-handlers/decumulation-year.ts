@@ -19,11 +19,8 @@ import {
   isOverflowTarget,
   isRetirementMoney,
   isPreTaxType,
-  isQcdEligible,
   nonMedicalPenaltyRate,
 } from "../../../config/account-types";
-import { addTraditional } from "../../../config/account-balance";
-import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
 import {
@@ -31,7 +28,7 @@ import {
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
 } from "../../../constants";
 import { shortfallFloor } from "../gap-year-draw";
-import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
+import { countReachingAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
   getLtcgRate,
@@ -89,6 +86,7 @@ import type {
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
 import { rmdIncomeByOwner } from "./decumulation-income";
+import { qcdStep } from "./rmd-step";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
@@ -226,113 +224,19 @@ export function runDecumulationYear(
       ? Math.max(0, ssIncome - state.projectedExpenses)
       : 0;
 
-  // --- Qualified Charitable Distribution ---
-  // A QCD is a direct IRA-to-charity transfer that satisfies part of the
-  // RMD without counting as taxable income -- a proactive election on the
-  // RMD itself, not a rule for leftover money (see reinvestRmdExcess for
-  // that, unchanged, later in this function). Must run here, BEFORE tax
-  // gross-up, so the reduced taxable Traditional withdrawal is what
-  // estimateWithdrawalTaxCost/routing/computeTaxFromSlots all see -- see
-  // qcd.ts's docblock for the IRA-only-pooling approximation this uses.
-  // Only meaningful with individual accounts tracked (same limitation
-  // per-person RMD itself already has).
-  //
-  // Eligibility is AGE_RULES.qcd (70), NOT rmdByPerson's
-  // RMD-start-age gate -- QCD eligibility
-  // predates SECURE 2.0's RMD-age delay, so someone with startAge 75 is
-  // still QCD-eligible for years before any RMD is even required. Built
-  // straight from rmdStartAgeByPerson (has every tracked person's
-  // birthYear) rather than reusing rmdByPerson, which only contains
-  // people who've already reached their RMD start age.
-  let totalQcd = 0;
-  let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
-  const qcdEligiblePersonIds =
-    hasIndividualAccounts && rmdStartAgeByPerson.size > 0
-      ? Array.from(rmdStartAgeByPerson.entries())
-          .filter(([, { birthYear }]) => reachesAgeRule(birthYear, "qcd", year))
-          .map(([personId]) => personId)
-      : [];
-  if (qcdEligiblePersonIds.length > 0) {
-    const iraTradByPerson = new Map<number, number>();
-    for (const ia of indAccts) {
-      if (
-        isQcdEligible(ia.category) &&
-        rmdOwnerOf(ia, ctx.primaryPersonId) != null &&
-        isPreTaxType(ia.taxType) &&
-        // A Portfolio-parented IRA (nothing prevents one existing)
-        // isn't retirement money -- must not inflate QCD-eligible capacity.
-        isRetirementMoney(ia.parentCategory)
-      ) {
-        const bal = indBal.get(indKey(ia)) ?? 0;
-        const owner = rmdOwnerOf(ia, ctx.primaryPersonId)!;
-        iraTradByPerson.set(owner, (iraTradByPerson.get(owner) ?? 0) + bal);
-      }
-    }
-    // The per-person QCD limit is CPI-indexed (IRC 408(d)(8)(G)): grown
-    // from the limits year like the standard deduction.
-    const { qcdAnnualLimit, taxDataYear } =
-      decumulationDefaults.distributionTaxRates;
-    qcdByPerson = computeQcdAmounts(
-      config.qcdMaximize,
-      qcdEligiblePersonIds.map((personId) => ({
-        personId,
-        iraTraditionalBalance: iraTradByPerson.get(personId) ?? 0,
-      })),
-      qcdAnnualLimit * ctx.inflation.growthSinceVintage(year, taxDataYear),
-    );
-    totalQcd = totalQcdAmount(qcdByPerson);
-    if (totalQcd > 0) {
-      // Aggregate tracks (matches reinvestRmdExcess's own pattern -- both
-      // trackers must still move together regardless of the per-account
-      // debit below).
-      balances.preTax = roundToCents(balances.preTax - totalQcd);
-      addTraditional(acctBal.ira, -totalQcd);
-      // The aggregate deduction above is correctly SIZED (totalQcd
-      // only ever reflects Retirement-parented IRA capacity, per the
-      // filter above), but leaving the individual side to
-      // reconcileIndividualToAggregate would spread it proportionally
-      // across every IRA in the category -- a hypothetical
-      // Portfolio-parented IRA included -- undoing the point of that
-      // filter one step later. Debit each person's OWN qcdAmount from
-      // only THAT person's own Retirement-parented IRA indBal entries
-      // (proportional to each account's own balance): a QCD is legally a
-      // transfer from one specific owner's IRA, so this must be per-person,
-      // never pooled across the household.
-      for (const { personId, qcdAmount } of qcdByPerson) {
-        if (qcdAmount <= 0) continue;
-        const personIraAccts = indAccts.filter(
-          (ia) =>
-            isQcdEligible(ia.category) &&
-            rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
-            isPreTaxType(ia.taxType) &&
-            isRetirementMoney(ia.parentCategory),
-        );
-        const personIraTotal = personIraAccts.reduce(
-          (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
-          0,
-        );
-        if (personIraTotal <= 0) continue;
-        let distributed = 0;
-        for (const ia of personIraAccts) {
-          const k = indKey(ia);
-          const bal = Math.max(0, indBal.get(k) ?? 0);
-          const share = roundToCents(qcdAmount * (bal / personIraTotal));
-          const capped = Math.min(share, bal);
-          indBal.set(k, roundToCents(bal - capped));
-          distributed += capped;
-        }
-        // Rounding remainder mop-up, same convention as elsewhere in this
-        // file (e.g. Roth conversion's tradAccounts loop).
-        const remainder = roundToCents(qcdAmount - distributed);
-        if (remainder > 0.005 && personIraAccts.length > 0) {
-          const first = personIraAccts[0]!;
-          const k = indKey(first);
-          const bal = Math.max(0, indBal.get(k) ?? 0);
-          indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
-        }
-      }
-    }
-  }
+  const { totalQcd, qcdByPerson } = qcdStep(
+    hasIndividualAccounts,
+    rmdStartAgeByPerson,
+    year,
+    indAccts,
+    ctx,
+    indBal,
+    indKey,
+    decumulationDefaults,
+    config,
+    balances,
+    acctBal,
+  );
 
   // The brokerage basis ratio of this year's retirement withdrawals: the
   // Retirement brokerages' own (start of year). One ratio for the
