@@ -150,6 +150,17 @@ describe("checkCommit", () => {
     expect(rules(withConcept)).toEqual(["third-fix"]);
   });
 
+  it("passes a third fix the advisor passed, recorded in an Advisor: trailer", () => {
+    const priorFixes = new Map([["src/lib/pure/a.ts::draw", 2]]);
+    const message = (advisor: string) =>
+      facts({
+        priorFixes,
+        raw: `fix: keep the gap year\n\nWhy.\n\nConcept: gap-year draw\nAdvisor: ${advisor}`,
+      });
+    expect(rules(message("PASS (round 3)"))).toEqual([]);
+    expect(rules(message("BLOCK (round 2)"))).toEqual(["third-fix"]);
+  });
+
   it("asks a revert for its own reason, beyond git's boilerplate line", () => {
     const boilerplate =
       "This reverts commit 0bad0a56cadb4750ae191f7117d30bb9f25be6eb.";

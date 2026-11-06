@@ -16,8 +16,9 @@
  * part mounted where they were), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
- * advisor first. A revert says why in its own words: git's "This reverts
- * commit …" line alone isn't a reason.
+ * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
+ * revert says why in its own words: git's "This reverts commit …" line
+ * alone isn't a reason.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -1526,10 +1527,10 @@ export function checkCommit(facts: CommitFacts): Warning[] {
         text: `second fix within ${FIX_WINDOW_DAYS} days in ${repeated.map(([spot]) => spot).join(", ")}: add "Concept: <the missing concept>" or "Concept: none, <reason>"`,
       });
     }
-    if (third.length > 0) {
+    if (third.length > 0 && !/^PASS\b/.test(message.trailers.Advisor ?? "")) {
       warnings.push({
         rule: "third-fix",
-        text: `third fix within ${FIX_WINDOW_DAYS} days in ${third.map(([spot]) => spot).join(", ")}: take it to the advisor first`,
+        text: `third fix within ${FIX_WINDOW_DAYS} days in ${third.map(([spot]) => spot).join(", ")}: take it to the advisor first, and record its pass in "Advisor: PASS (round <n>)"`,
       });
     }
   }
