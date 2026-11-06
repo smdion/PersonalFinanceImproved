@@ -27,7 +27,12 @@ import {
   execRaw,
 } from "./compat";
 import { reconcileReferenceData } from "./reference-data";
-import { VERSION_TABLE_NAMES, restoredTables } from "./version-tables";
+import {
+  VERSION_TABLE_NAMES,
+  VERSION_TABLES,
+  restoredTables,
+} from "./version-tables";
+import { withInstallationRows } from "./installation-rows";
 import { log } from "@/lib/logger";
 import {
   REBUILT_ON_RESTORE,
@@ -314,21 +319,20 @@ export async function restoreVersion(
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
-  for (const [tableName, data] of Object.entries(transformedMap))
+  const fenced = await withInstallationRows(database, transformedMap, by);
+  for (const [tableName, data] of Object.entries(fenced))
     tableDataMap.set(tableName, { data });
 
   // Wrap in a transaction so truncate + inserts are atomic.
   // If anything fails, the database rolls back to its pre-restore state.
   let restoredRows = 0;
-  const tables = restoredTables(by);
-  const tableNames = tables.map((t) => t.name);
 
   await database.transaction(async (tx) => {
     // Truncate all user tables
-    await truncateTables(tx, tableNames);
+    await truncateTables(tx, VERSION_TABLE_NAMES);
 
     // Insert rows per table in tier order (0 → 1 → 2)
-    const sortedTables = [...tables].sort((a, b) => a.tier - b.tier);
+    const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
     for (const tableEntry of sortedTables) {
       const tableData = tableDataMap.get(tableEntry.name);
@@ -345,7 +349,7 @@ export async function restoreVersion(
     }
 
     // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
-    await resetSequences(tx, tableNames);
+    await resetSequences(tx, VERSION_TABLE_NAMES);
 
     // Log restore action
     try {
@@ -429,7 +433,7 @@ export async function importBackup(
   const transformedBackup: BackupData = {
     ...backup,
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    tables: transformedTables,
+    tables: await withInstallationRows(database, transformedTables, by),
   };
 
   // Validate structure — tables present in backup must be arrays
@@ -443,8 +447,8 @@ export async function importBackup(
   }
 
   const result = isPostgres()
-    ? await importBackupPg(database, transformedBackup, restoredTables(by))
-    : await importBackupSqlite(database, transformedBackup, restoredTables(by));
+    ? await importBackupPg(database, transformedBackup)
+    : await importBackupSqlite(database, transformedBackup);
   // The backup's reference rows replaced today's (see restoreVersion).
   await reconcileReferenceData(database);
   return result;
@@ -453,7 +457,6 @@ export async function importBackup(
 async function importBackupPg(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
-  tables: ReturnType<typeof restoredTables>,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
@@ -468,12 +471,11 @@ async function importBackupPg(
     await client.query("SET session_replication_role = 'replica'");
 
     // Truncate all tables
-    const tableNames = tables.map((t) => t.name);
-    const allTableNames = tableNames.map((n) => `"${n}"`).join(", ");
+    const allTableNames = VERSION_TABLE_NAMES.map((n) => `"${n}"`).join(", ");
     await client.query(`TRUNCATE ${allTableNames} CASCADE`);
 
     let restoredRows = 0;
-    const sortedTables = [...tables].sort((a, b) => a.tier - b.tier);
+    const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
     // Cache jsonb column sets per table
     const jsonbCols = new Map<string, Set<string>>();
@@ -524,7 +526,7 @@ async function importBackupPg(
     }
 
     // Reset serial sequences
-    for (const tableName of tablesWithIdColumn(tableNames)) {
+    for (const tableName of tablesWithIdColumn(VERSION_TABLE_NAMES)) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
       );
@@ -566,16 +568,12 @@ async function importBackupPg(
 async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
-  tables: ReturnType<typeof restoredTables>,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   let restoredRows = 0;
-  const sortedTables = [...tables].sort((a, b) => a.tier - b.tier);
+  const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
   await database.transaction(async (tx) => {
-    await truncateTables(
-      tx,
-      sortedTables.map((t) => t.name),
-    );
+    await truncateTables(tx, VERSION_TABLE_NAMES);
 
     for (const tableEntry of sortedTables) {
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];

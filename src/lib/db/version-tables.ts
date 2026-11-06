@@ -14,7 +14,7 @@ type VersionTableEntry = {
   tier: number;
   /** "household": restored and previewed for the backup permission. "logins":
    *  never previewed. "installation": never previewed, and a non-admin's
-   *  restore or import keeps today's (see restoredTables). */
+   *  restore or import keeps today's credentials (installation-rows.ts). */
   scope: "household" | "logins" | "installation";
 };
 
@@ -141,11 +141,11 @@ export const VERSION_PREVIEW_WITHHELD_TABLES = namesIn([
   "installation",
 ]);
 
-/** Versioned, but a non-admin's import or restore keeps today's rows. */
+/** Versioned, but a non-admin's import or restore keeps today's credentials. */
 export const ADMIN_ONLY_RESTORE_TABLES = namesIn(["installation"]);
 
-/** The tables a restore or import writes: every versioned one for an admin,
- *  all but ADMIN_ONLY_RESTORE_TABLES for anyone else. In insert order. */
+/** The tables a restore or import takes from the backup whole: every one for
+ *  an admin, all but ADMIN_ONLY_RESTORE_TABLES for anyone else. */
 export function restoredTables(by: { asAdmin: boolean }): VersionTableEntry[] {
   return by.asAdmin
     ? VERSION_TABLES

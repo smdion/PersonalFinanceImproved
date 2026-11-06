@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - **Permission change: only an admin manages a YNAB or Actual connection.** Saving, testing, deleting and editing a connection, and listing a YNAB token's budgets, now need an admin; in 0.10.2 anyone with the sync permission could, though the Integrations page was already shown to admins only. Actual's Server URL is used as saved, LAN addresses included, so this keeps who can point Ledgr's requests at a host on its network to admins. Running a sync, account and category mappings, and names stay with the sync permission.
-- **Permission change: a backup import or restore by someone who isn't an admin leaves the connections alone.** A user with the backup (version) permission still brings back the household's data, but the YNAB, Actual, SimpleFIN, Tiingo and SEC connections stay as they are, mappings included, so a backup file can't bring in a connection or a Server URL. An admin's import and restore carry the connections as before.
+- **Permission change: a backup import or restore by someone who isn't an admin keeps the installation's connection settings.** A user with the backup (version) permission still brings back the household's data, but each YNAB, Actual, SimpleFIN, Tiingo and SEC connection keeps today's credentials, Server URL and sync state, so a backup file can't bring in a connection or a Server URL. Its account mappings, skipped categories and linked budget profile come from the backup, with the rows they point at; a connection the backup doesn't have keeps its credentials but loses those links, and one only the backup has isn't added. An admin's import and restore carry the connections whole, as before.
 
 ## [0.10.2] - 2026-11-06
 

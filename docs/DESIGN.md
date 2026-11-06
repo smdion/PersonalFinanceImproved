@@ -113,7 +113,7 @@ Auth.js with Authentik OIDC or a local admin (`local_admins`). Dev Login (any na
 | `ledgr-admin`                | (admin role)          | Full access to everything                                                                                                                      |
 | `ledgr-scenario`             | `scenario`            | Create/edit/delete Plans (sets of profiles)                                                                                                    |
 | `ledgr-contribution-profile` | `contributionProfile` | Contribution and Salary Profiles — every Salary Profile entry field (incl. W-4, pay schedule, where the bonus goes) — and making either active |
-| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups); a non-admin's restore or import leaves the integration connections as they are    |
+| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups); a non-admin's restore or import keeps today's integration credentials             |
 | `ledgr-portfolio`            | `portfolio`           | Create/delete portfolio snapshots                                                                                                              |
 | `ledgr-performance`          | `performance`         | Manage performance accounts + account performance                                                                                              |
 | `ledgr-budget`               | `budget`              | Edit budget items, columns, profiles                                                                                                           |

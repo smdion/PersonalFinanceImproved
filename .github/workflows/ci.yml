@@ -598,6 +598,10 @@ jobs:
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts tests/routers/match-rate-writes-postgres.test.ts
 
+      - name: Backup connections fence on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/integration/backup-fence-postgres.test.ts
+
       - name: Seeded routers and backup round trip on PostgreSQL
         if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))
         run: pnpm test tests/routers/seeded-postgres.test.ts

@@ -229,7 +229,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
 
 // The installation's own connections: someone who isn't an admin (a holder
 // of the backup permission) imports or restores the household's data and
-// leaves them as they are; an admin's import and restore carry them.
+// keeps today's credentials (links and an admin's: ./backup-fence-cases).
 describe("Backup connections fence", () => {
   let a: TestCtx;
   let b: TestCtx;
@@ -265,7 +265,7 @@ describe("Backup connections fence", () => {
     b.cleanup();
   });
 
-  it("an import by someone who isn't an admin keeps the connections and brings the household", async () => {
+  it("an import by someone who isn't an admin keeps today's credentials and brings the household", async () => {
     const kept = await connections(b.rawDb);
     const backup = JSON.parse(
       JSON.stringify(await exportBackup(a.rawDb)),
@@ -277,7 +277,7 @@ describe("Backup connections fence", () => {
     expect(await names(b.rawDb)).toEqual(["Second Person", "Test Person"]);
   });
 
-  it("an import by someone who isn't an admin keeps the connections when the backup has none", async () => {
+  it("an import by someone who isn't an admin keeps today's credentials when the backup has none", async () => {
     const kept = await connections(b.rawDb);
     const backup = await exportBackup(a.rawDb);
     backup.tables.api_connections = [];
@@ -285,13 +285,7 @@ describe("Backup connections fence", () => {
     expect(await connections(b.rawDb)).toEqual(kept);
   });
 
-  it("an admin's import replaces the connections with the backup's", async () => {
-    const backup = await exportBackup(a.rawDb);
-    await importBackup(b.rawDb, backup, asAdmin);
-    expect(await connections(b.rawDb)).toEqual(await connections(a.rawDb));
-  });
-
-  it("a restore by someone who isn't an admin keeps today's connections and brings the household back", async () => {
+  it("a restore by someone who isn't an admin keeps today's credentials and brings the household back", async () => {
     const version = await createVersion(a.rawDb, {
       name: "before edit",
       type: "manual",
@@ -305,20 +299,6 @@ describe("Backup connections fence", () => {
     await restoreVersion(a.rawDb, version.id, notAdmin);
     expect(await connections(a.rawDb)).toEqual(kept);
     expect(await names(a.rawDb)).toEqual(["Second Person", "Test Person"]);
-  });
-
-  it("an admin's restore brings the version's connections back", async () => {
-    const before = await snapshotTables(a.rawDb);
-    const version = await createVersion(a.rawDb, {
-      name: "before edit",
-      type: "manual",
-      createdBy: "test",
-    });
-    a.db.run(sql`DELETE FROM api_connections`);
-    connect(a.db, "actual", "https://actual.changed.example");
-
-    await restoreVersion(a.rawDb, version.id, asAdmin);
-    expect(await snapshotTables(a.rawDb)).toEqual(before);
   });
 
   it("the data-loss warning names the connections only for an admin", async () => {

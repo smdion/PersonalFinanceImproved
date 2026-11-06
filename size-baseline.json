@@ -101,7 +101,7 @@
     "src/lib/db/pg/api-sync.ts": 600,
     "src/lib/db/pg/retirement.ts": 631,
     "src/lib/db/reference-reconcile-core.ts": 797,
-    "src/lib/db/version-logic.ts": 607,
+    "src/lib/db/version-logic.ts": 605,
     "src/lib/demo/profiles/debt-payoff.ts": 446,
     "src/lib/demo/profiles/dual-income-family.ts": 866,
     "src/lib/demo/profiles/early-retirement.ts": 666,
