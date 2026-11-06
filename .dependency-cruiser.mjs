@@ -40,6 +40,8 @@ const LAYERS = {
   routers: "^src/server/routers/",
   serverCore:
     "^src/server/(trpc|auth|auth\\.config|trpc-server|mutation-events)\\.ts$",
+  // Sign-in helpers below the server core: the environment and local admins.
+  serverAuth: "^src/server/(auth-mode|local-admin-login)\\.ts$",
   apiRoutes: "^src/app/api/",
   serverPages: serverPageFiles().map((f) => `^${escape(f)}$`),
   // Client components under app/ (every app file that isn't a server page
@@ -173,6 +175,23 @@ const config = {
       severity: "error",
       from: { path: L.services },
       to: { path: `${L.routers}|${L.serverCore}` },
+    },
+    {
+      name: "server-files-in-a-layer",
+      severity: "error",
+      comment:
+        "A src/server/ file outside every layer is checked by no direction rule (it could import routers): add its folder to LAYERS.",
+      from: {
+        path: "^src/server/",
+        pathNot: [L.data, L.services, L.routers, L.serverCore, L.serverAuth],
+      },
+      to: {},
+    },
+    {
+      name: "server-auth-below-server",
+      severity: "error",
+      from: { path: L.serverAuth },
+      to: { path: "^src/server/", pathNot: L.serverAuth },
     },
     {
       name: "no-router-to-router",
