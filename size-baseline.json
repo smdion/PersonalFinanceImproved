@@ -199,7 +199,8 @@
     "src/server/routers/settings/paycheck.ts": 710,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin.ts": 872,
-    "src/server/routers/sync/core.ts": 862,
+    "src/server/routers/sync/core.ts": 12,
+    "src/server/routers/sync/preview.ts": 734,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
     "src/server/services/budget/active-summary.ts": 330,
@@ -930,11 +931,11 @@
     "src/server/routers/simplefin.ts": {
       "simplefinRouter.listAccounts.query()": 155
     },
-    "src/server/routers/sync/core.ts": {
-      "syncCoreRouter.getPreview.query()": 699
-    },
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159
+    },
+    "src/server/routers/sync/preview.ts": {
+      "previewProcedures.getPreview.query()": 699
     },
     "src/server/services/budget/active-summary.ts": {
       "computeBudgetActiveSummary": 247

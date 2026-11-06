@@ -1,7 +1,7 @@
 /**
  * Shared label resolution for a portfolio snapshot account row. Extracted
  * after the identical block drifted three independent ways across
- * sync/core.ts, sync/mappings.ts, and lib/db/backfill-local-ids.ts — one
+ * sync/preview.ts, sync/mappings.ts, and lib/db/backfill-local-ids.ts — one
  * of the three didn't even pass ownershipType, so a jointly-tracked
  * account's per-owner rows rendered inconsistently between them (see
  * RULES.md Single Computation Path).

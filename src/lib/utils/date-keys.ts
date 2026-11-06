@@ -8,7 +8,8 @@
  * This exact `YYYY-MM-01` computation had drifted into eleven independent
  * hand-rolled copies before being unified here — RULES.md's Single
  * Computation Path rule:
- *   - "current month" (today's date): `budget.ts` x2, `sync/core.ts` x2,
+ *   - "current month" (today's date): `budget.ts` x2, `sync/preview.ts`,
+ *     `services/sync/sync-all.ts`,
  *     `budget-api/cache.ts`'s own `refreshCategoryCache`,
  *     `extra-paycheck-materializer.ts`.
  *   - arbitrary date (a specific month being labeled/looked up, not

@@ -194,8 +194,8 @@ function mapTransaction(
 
 /**
  * `BudgetAPIClient.getMonthDetail`'s `month` param has no format documented
- * on the shared interface (interface.ts) -- every caller (sync/core.ts,
- * budget-api/cache.ts) has always passed YNAB's own native month format,
+ * on the shared interface (interface.ts) -- every caller (sync/preview.ts,
+ * services/sync/sync-all.ts, budget-api/cache.ts) has always passed YNAB's own native month format,
  * `YYYY-MM-01` (a full ISO date, first of the month -- YNAB's real API
  * requires exactly this). Actual's `actual-http-api` wrapper's `/months/:id`
  * route wants the SHORTER `YYYY-MM` (no day) -- confirmed via a real

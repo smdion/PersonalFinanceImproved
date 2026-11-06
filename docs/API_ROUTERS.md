@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 86 routers.**
+**394 procedures across 88 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -750,13 +750,11 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `testConnection`          | mutation | `syncProcedure`      | Test a specific service connection (works before activation)                                                                                                                                            |
 | `updateActualExternalUrl` | mutation | `syncProcedure`      | address for the nav link (see ActualConfig's docblock). Deliberately separate from saveConnection: that mutation requires retyping every credential field (apiKey isn't ever sent back to the client to |
 
-## `sync/core`
+## `sync/expense-comparison`
 
-| Procedure                  | Kind     | Auth                 | Description                                                                                                                                                    |
-| -------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeExpenseComparison` | query    | `protectedProcedure` | Compare expenses between two periods using cached transaction data.                                                                                            |
-| `getPreview`               | query    | `protectedProcedure` | Preview: read cached data for a service and compare against current manual values. Works before activation — shows what will change when the API is activated. |
-| `syncAll`                  | mutation | `syncProcedure`      | Full sync for a specific service — works independently of active_budget_api. Pulls accounts, categories, current month, and transactions into cache.           |
+| Procedure                  | Kind  | Auth                 | Description                                                         |
+| -------------------------- | ----- | -------------------- | ------------------------------------------------------------------- |
+| `computeExpenseComparison` | query | `protectedProcedure` | Compare expenses between two periods using cached transaction data. |
 
 ## `sync/mappings`
 
@@ -776,6 +774,18 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `renameSavingsGoalApiName` | mutation | `syncProcedure` | Update a savings goal's stored API name to match its current Ledgr name.                      |
 | `renameSavingsGoalToApi`   | mutation | `syncProcedure` | Rename a savings goal to match the API category name.                                         |
 | `syncAllNames`             | mutation | `syncProcedure` | Batch rename all drifted items in one direction.                                              |
+
+## `sync/preview`
+
+| Procedure    | Kind  | Auth                 | Description                                                                                                                                                    |
+| ------------ | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getPreview` | query | `protectedProcedure` | Preview: read cached data for a service and compare against current manual values. Works before activation — shows what will change when the API is activated. |
+
+## `sync/sync-all`
+
+| Procedure | Kind     | Auth            | Description                                                                                                                                          |
+| --------- | -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `syncAll` | mutation | `syncProcedure` | Full sync for a specific service — works independently of active_budget_api. Pulls accounts, categories, current month, and transactions into cache. |
 
 ## `tax-buckets`
 

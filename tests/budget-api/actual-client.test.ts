@@ -903,7 +903,7 @@ describe("ActualClient", () => {
     });
 
     // Live-user bug, 2026-08-30: every caller in this codebase
-    // (sync/core.ts, budget-api/cache.ts) computes `month` as YNAB's own
+    // (sync/preview.ts, services/sync/sync-all.ts, budget-api/cache.ts) computes `month` as YNAB's own
     // native format, `YYYY-MM-01` (a full ISO date) -- correct for YNAB's
     // real API, but Actual's actual-http-api wrapper's `/months/:id` route
     // rejects anything but the shorter `YYYY-MM` with a real 400 error

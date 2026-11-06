@@ -844,7 +844,7 @@
       "count": 3
     }
   },
-  "src/server/routers/sync/core.ts": {
+  "src/server/routers/sync/preview.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 12
     }

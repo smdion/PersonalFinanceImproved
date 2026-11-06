@@ -43,7 +43,7 @@ export const apiConnections = sqliteTable(
     >(),
     // References budgetProfiles.id — no DB-level FK constraint. Always
     // resolved via allProfiles.find(p => p.id === conn.linkedProfileId) in
-    // server code (budget.ts, sync/core.ts); despite the generic name it
+    // server code (budget.ts, sync/preview.ts); despite the generic name it
     // is never polymorphic across other tables.
     linkedProfileId: integer("linked_profile_id"),
     linkedColumnIndex: integer("linked_column_index"),

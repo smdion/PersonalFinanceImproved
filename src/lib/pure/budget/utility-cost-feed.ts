@@ -15,7 +15,7 @@
  *   recorded cost from anyone else is returned as a conflict to review.
  *
  * Every month is whole only because the sync fetches from 1 January of
- * the previous year (sync/core.ts) — a rolling start date would make the
+ * the previous year (services/sync/sync-all.ts) — a rolling start date would make the
  * first payment month partial.
  */
 import type { BudgetTransaction } from "@/lib/budget-api/types";

@@ -6,7 +6,7 @@ import type { PortfolioMutations } from "@/components/settings/integrations/hook
 
 // Regression test for a live bug: two people sharing the same
 // performanceAccountId (e.g. both have an IRA at the same institution) —
-// the server (sync/core.ts's portfolioLocalAccounts aggregation) correctly
+// the server (sync/preview.ts's portfolioLocalAccounts aggregation) correctly
 // surfaces them as separate line items with distinct labels, but the
 // client rendered/selected them using performanceAccountId alone, which
 // collided. Caused a React duplicate-key warning AND a silent-wrong-mapping

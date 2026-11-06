@@ -68,7 +68,7 @@ export const apiSyncProcedures = {
           code: "NOT_FOUND",
           message: "No linked or active budget profile",
         });
-      // Same connection-configured column the preview (sync/core.ts) and
+      // Same connection-configured column the preview (sync/preview.ts) and
       // syncBudgetToApi use — a client-sent column would write a number into
       // a column the user never saw in the preview.
       const colIdx = conn?.linkedColumnIndex ?? 0;
@@ -155,7 +155,7 @@ export const apiSyncProcedures = {
           message: "No linked or active budget profile",
         });
       // Same connection-configured column getPreview derives its
-      // `ledgrAmount` from (src/server/routers/sync/core.ts) — pushing a
+      // `ledgrAmount` from (src/server/routers/sync/preview.ts) — pushing a
       // different, client-supplied column would push a number the preview
       // never showed the user.
       const colIdx = conn?.linkedColumnIndex ?? 0;
