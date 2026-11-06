@@ -6061,15 +6061,15 @@
       "count": 1
     }
   },
-  "src/server/routers/simplefin.ts": {
+  "src/server/routers/simplefin/index.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 8
+      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -6637,6 +6637,14 @@
   "src/server/services/sync/loan-feed.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/server/services/sync/simplefin.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   },
   "src/server/services/sync/sync-all.ts": {

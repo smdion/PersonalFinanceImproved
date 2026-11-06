@@ -198,7 +198,7 @@
     "src/server/routers/settings/admin.ts": 412,
     "src/server/routers/settings/paycheck.ts": 710,
     "src/server/routers/settings/tax-limits.ts": 784,
-    "src/server/routers/simplefin.ts": 872,
+    "src/server/routers/simplefin/index.ts": 742,
     "src/server/routers/sync/core.ts": 12,
     "src/server/routers/sync/preview.ts": 734,
     "src/server/routers/utilities.ts": 581,
@@ -928,7 +928,7 @@
     "src/server/routers/savings/api-sync.ts": {
       "apiSyncProcedures.pushContributionsToApi.mutation()": 201
     },
-    "src/server/routers/simplefin.ts": {
+    "src/server/routers/simplefin/index.ts": {
       "simplefinRouter.listAccounts.query()": 155
     },
     "src/server/routers/sync/names.ts": {
