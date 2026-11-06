@@ -20,7 +20,8 @@ export const MATCH_VALUE_TAG = "0017_v0102_match_value";
 /** A rate the readers read (storedMatchRate): only then may the value go. */
 const readable = (rate: unknown) =>
   !isEmpty(rate) && percentFromRate(rate) !== null;
-/** Types whose value is dollars (parseEmployerMatch: "flat"). */
+/** Types whose value is dollars (parseEmployerMatch: "flat"), as 0017
+ *  found them. */
 const DOLLARS = new Set<unknown>(["dollar_match", "fixed_annual"]);
 
 /** A percent row holding a value: cleared where its rate reads, else kept. */

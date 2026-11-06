@@ -2,10 +2,11 @@
  * Migration 0017's converter (a percent match keeps its rate alone) as the
  * restore step runs it: every case of match-value-cases.ts, JSON text too,
  * a second pass changes nothing, and the restore ladder runs 0016 then 0017
- * in one loop. M12 (advisor E8/E9): on every 0016 case, the match today's
- * reader reads before 0016 is the one it reads after both.
+ * in one loop, a no-op run again over its own output. M12 (advisor E8/E9):
+ * on every 0016 case, the match today's reader reads before 0016 is the one
+ * it reads after both.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   MATCH_VALUE_CONVERTER,
   MATCH_VALUE_TAG,
@@ -19,14 +20,16 @@ import {
 import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
 import { contribAccountActiveFieldsSchema } from "@/lib/db/json-schemas";
 import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
-import {
-  mergedMatchRate,
-  storedMatchRate,
-} from "@/lib/pure/contributions/employer-match";
+import { storedMatchRate } from "@/lib/pure/contributions/employer-match";
+import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { toNumber } from "@/lib/utils/numbers";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { VALUE_ACCOUNTS, VALUE_PROFILES } from "./match-value-cases";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
+
+// applyContribActiveFields' module loads the app's schema with a runtime
+// require only the app's bundler resolves; the merge itself never reads it.
+vi.mock("@/lib/db/schema", () => ({}));
 
 type Row = Record<string, unknown>;
 type Tables = Record<string, Row[]>;
@@ -149,6 +152,43 @@ describe("the restore step runs every converter in journal order", () => {
     const runs = convertBackupInOrder(tables);
     expect(runs.map((r) => r.tag)).toEqual([MATCH_RATE_TAG, MATCH_VALUE_TAG]);
   });
+
+  /** A restore's output, restored again on a later release: the loop runs
+   *  twice more over it and changes nothing. */
+  function rerunTwice(restored: Tables) {
+    const first = structuredClone(restored);
+    for (let pass = 0; pass < 2; pass++) {
+      const runs = convertBackupInOrder(restored);
+      expect(runs.map((r) => r.tag)).toEqual([MATCH_RATE_TAG, MATCH_VALUE_TAG]);
+      for (const { run } of runs) expect(run.updates).toBe(0);
+      expect(restored).toEqual(first);
+    }
+  }
+
+  it("run again over its own output changes nothing: the 0017 cases", () => {
+    const { tables } = transformBackupToCurrentSchema(
+      at0016(),
+      MATCH_RATE_TAG,
+      CURRENT,
+    );
+    rerunTwice(tables as Tables);
+  });
+
+  it.each([
+    "0015_v0102_dead_data",
+    "0013_v097_loan_feed",
+    "0008_v088_paycheck_earnings",
+  ])(
+    "run again over its own output changes nothing: the 0016 cases from %s",
+    (from) => {
+      const { tables } = transformBackupToCurrentSchema(
+        before0016(),
+        from,
+        CURRENT,
+      );
+      rerunTwice(tables as Tables);
+    },
+  );
 });
 
 /** An 0016 case backup from before 0016 (v0.10.1's shape). */
@@ -168,33 +208,64 @@ function before0016(): Tables {
   };
 }
 
+type AccountRow = Parameters<typeof applyContribActiveFields>[0][number];
+/** An account row with no match; readMatch sets its match columns. */
+const BLANK_ROW: AccountRow = {
+  id: 1,
+  jobId: null,
+  personId: null,
+  accountType: "401k",
+  subType: null,
+  label: null,
+  parentCategory: "Retirement",
+  taxTreatment: "pre_tax",
+  employerMatchType: "none",
+  employerMatchValue: null,
+  employerMatchRate: null,
+  employerMaxMatchPct: null,
+  employerMatchTaxTreatment: "pre_tax",
+  hsaCoverageType: null,
+  autoMaximize: false,
+  isActive: true,
+  ownership: "individual",
+  performanceAccountId: null,
+  targetAnnual: null,
+  allocationPriority: 0,
+  notes: null,
+  isPayrollDeducted: null,
+  priorYearContribAmount: "0",
+  priorYearContribYear: null,
+};
+
 /** The match today's reader reads for one account, alone or through one
- *  entry merged onto it (applyContribActiveFields + entryWithMergedRate). */
+ *  entry merged by applyContribActiveFields (as an overlay, so an entry
+ *  with no contribution value still merges); null when the merge drops it. */
 function readMatch(account: Row | undefined, entry: Row | undefined) {
-  const row = {
-    employerMatchType: account?.["employer_match_type"] ?? null,
-    employerMatchValue: account?.["employer_match_value"] ?? null,
-    employerMatchRate: account?.["employer_match_rate"] ?? null,
+  const row: AccountRow = {
+    ...BLANK_ROW,
+    // A backup's stored type is any text, as the reader meets it.
+    employerMatchType: (account?.["employer_match_type"] ??
+      null) as AccountRow["employerMatchType"],
+    employerMatchValue: stored(account?.["employer_match_value"]),
+    employerMatchRate: stored(account?.["employer_match_rate"]),
   };
-  const e = entry ?? {};
-  const merged: Row = {
-    ...row,
-    ...e,
-    employerMatchRate: mergedMatchRate(row, e),
-  };
+  const [merged] = entry
+    ? applyContribActiveFields([row], { [row.id]: entry }, true)
+    : [row];
+  if (!merged) return null;
   return parseEmployerMatch(
-    merged["employerMatchType"] == null
-      ? null
-      : String(merged["employerMatchType"]),
+    merged.employerMatchType == null ? null : String(merged.employerMatchType),
     toNumber(
-      merged["employerMatchValue"] == null
+      merged.employerMatchValue == null
         ? null
-        : String(merged["employerMatchValue"]),
+        : String(merged.employerMatchValue),
     ),
     0.06,
-    storedMatchRate(merged["employerMatchRate"]),
+    storedMatchRate(merged.employerMatchRate),
   );
 }
+/** A stored decimal column as the row type holds it. */
+const stored = (v: unknown) => (v == null ? null : String(v));
 
 /** Every account alone and every entry on its account, read. */
 function reads(t: Tables) {
