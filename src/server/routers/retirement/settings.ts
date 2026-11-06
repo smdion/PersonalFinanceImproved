@@ -25,6 +25,7 @@ import {
   adoptFirstRetirementProfile,
   lockFirstRetirementProfile,
 } from "@/server/services/profiles/first-retirement-profile";
+import { firstRow } from "@/lib/utils/first-row";
 
 // --- CRUD Zod schemas ---
 
@@ -196,12 +197,12 @@ export const settingsProcedures = {
                     ),
                   )
                   .returning()
-                  .then((r) => r[0])
+                  .then(firstRow)
               : await tx
                   .insert(schema.retirementSettings)
                   .values(resolvedInput)
                   .returning()
-                  .then((r) => r[0]);
+                  .then(firstRow);
 
           // Propagate household-grain fields to every other person's row —
           // WITHIN THE SAME PROFILE ONLY (the `profileScope` filter below).

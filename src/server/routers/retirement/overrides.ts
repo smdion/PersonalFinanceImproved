@@ -9,6 +9,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { zDecimal } from "@/lib/utils/zod-fields";
+import { firstRow } from "@/lib/utils/first-row";
 
 export const overrideProcedures = {
   retirementSalaryOverrides: createTRPCRouter({
@@ -34,7 +35,7 @@ export const overrideProcedures = {
           .insert(schema.retirementSalaryOverrides)
           .values({ ...input, createdBy: getSessionUserLabel(ctx.session) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -54,7 +55,7 @@ export const overrideProcedures = {
           .set({ ...data, updatedBy: getSessionUserLabel(ctx.session) })
           .where(eq(schema.retirementSalaryOverrides.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -86,7 +87,7 @@ export const overrideProcedures = {
           .insert(schema.retirementBudgetOverrides)
           .values({ ...input, createdBy: getSessionUserLabel(ctx.session) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -104,7 +105,7 @@ export const overrideProcedures = {
           .set({ ...data, updatedBy: getSessionUserLabel(ctx.session) })
           .where(eq(schema.retirementBudgetOverrides.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -154,7 +155,7 @@ export const overrideProcedures = {
             },
           })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     clear: brokerageProcedure
       .input(

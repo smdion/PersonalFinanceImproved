@@ -10,6 +10,7 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { firstRow } from "@/lib/utils/first-row";
 
 export const profileProcedures = {
   // retirementScenarios CRUD removed.
@@ -82,7 +83,7 @@ export const profileProcedures = {
           .set(data)
           .where(eq(schema.retirementProfiles.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
 
     delete: adminProcedure

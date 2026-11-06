@@ -8,6 +8,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { zDecimal } from "@/lib/utils/zod-fields";
+import { firstRow } from "@/lib/utils/first-row";
 
 export const profilePeopleProcedures = {
   // getProjection and getMonteCarloProjection moved to projection.ts
@@ -101,12 +102,12 @@ export const profilePeopleProcedures = {
               .set(values)
               .where(eq(schema.retirementProfilePeople.id, existing.id))
               .returning()
-              .then((r) => r[0])
+              .then(firstRow)
           : ctx.db
               .insert(schema.retirementProfilePeople)
               .values(values)
               .returning()
-              .then((r) => r[0]);
+              .then(firstRow);
       }),
 
     // "Plan Through" (end age) and Social Security "Start Age" both render

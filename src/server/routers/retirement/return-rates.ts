@@ -9,6 +9,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import type { Db } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 // retirementScenarioInput removed with the retirementScenarios router
 // (Retirement Profiles step B) — nothing writes that table any more.
@@ -51,12 +52,12 @@ export const returnRateProcedures = {
                 .set(input)
                 .where(eq(schema.returnRateTable.age, input.age))
                 .returning()
-                .then((r) => r[0])
+                .then(firstRow)
             : await tx
                 .insert(schema.returnRateTable)
                 .values(input)
                 .returning()
-                .then((r) => r[0]);
+                .then(firstRow);
         await collapseReturnRates(tx);
         return row;
       }),
