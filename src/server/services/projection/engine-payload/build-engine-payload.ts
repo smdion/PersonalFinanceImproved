@@ -80,7 +80,7 @@ import {
 import { retirementContributions } from "./retirement-contributions";
 import { buildIndividualAccounts } from "./individual-accounts";
 import { applyProfiles, type fetchRetirementData } from "./load";
-import { settingsFor, type ActiveProfileRows } from "./settings-for";
+import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
@@ -273,23 +273,11 @@ export async function buildEnginePayload(
     settings,
     primaryRaiseRate,
   };
-  const perPersonSettings = people.map((p) => {
-    const own = settingsFor(p.id, activeProfileRows);
-    return {
-      personId: p.id,
-      name: p.name,
-      birthYear: calendarYear(p.dateOfBirth),
-      retirementAge: own.retirementAge + (opts.retirementAgeDelta ?? 0),
-      endAge: own.endAge,
-      // The effective raise rate: the per-person control edits it directly.
-      salaryAnnualIncrease: String(own.salaryAnnualIncrease),
-      withdrawalRate: own.withdrawalRate,
-      socialSecurityMonthly: own.socialSecurityMonthly,
-      socialSecurityPia: own.socialSecurityPia,
-      ssStartAge: own.ssStartAge,
-      ruleOf55Override: own.ruleOf55Override,
-    };
-  });
+  const { perPersonSettings } = perPersonSettingsFor(
+    people,
+    activeProfileRows,
+    opts,
+  );
 
   // The plan's "as of" date: a selected historical snapshot's date, else today.
   const asOfDate = data.snapshotData?.snapshot.snapshotDate
