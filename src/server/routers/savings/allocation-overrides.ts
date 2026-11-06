@@ -5,6 +5,7 @@ import { createTRPCRouter, savingsProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
 import type { DbOrTx } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 /**
  * Replaces every goal's allocation override in `months` with `allocations`
@@ -62,7 +63,7 @@ export const allocationOverrideProcedures = {
             .set({ amount: String(input.amount) })
             .where(eq(schema.savingsAllocationOverrides.id, existing.id))
             .returning()
-            .then((r) => r[0]);
+            .then(firstRow);
         }
         return ctx.db
           .insert(schema.savingsAllocationOverrides)
@@ -72,7 +73,7 @@ export const allocationOverrideProcedures = {
             amount: String(input.amount),
           })
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: savingsProcedure
       .input(z.object({ goalId: z.number().int(), monthDate: z.string() }))

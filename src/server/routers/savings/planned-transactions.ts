@@ -12,6 +12,7 @@ import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
 import type { BudgetTransaction } from "@/lib/budget-api";
 import type { DbOrTx } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 /** A transfer's two legs must settle/unsettle together — otherwise money
  *  silently vanishes from (or reappears in) the combined projection. */
@@ -87,7 +88,7 @@ export const plannedTransactionProcedures = {
           .insert(schema.savingsPlannedTransactions)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: savingsProcedure
       .input(
@@ -121,7 +122,7 @@ export const plannedTransactionProcedures = {
               ),
             )
             .returning()
-            .then((r) => r[0]);
+            .then(firstRow);
           // A transfer's two legs move together: the other leg takes the
           // same date, description and recurrence, and the mirrored amount.
           if (row?.transferPairId) {

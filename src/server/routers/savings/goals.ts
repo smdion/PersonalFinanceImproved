@@ -22,6 +22,7 @@ import {
 } from "@/lib/config/enum-values.schema";
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { getActiveBudgetApi } from "@/lib/budget-api";
+import { firstRow } from "@/lib/utils/first-row";
 
 /**
  * Delete a savings goal, detaching its sub-goals first (they become
@@ -328,7 +329,7 @@ export const goalProcedures = {
           .set(data)
           .where(eq(schema.savingsGoals.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
