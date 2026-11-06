@@ -2,7 +2,7 @@
 /**
  * Additional savings router coverage tests.
  *
- * Targets uncovered lines in src/server/routers/savings.ts and
+ * Targets uncovered lines in src/server/routers/savings/ and
  * src/server/services/savings/summary.ts:
  *   - computeSummary (db.execute for SQLite, budget API integration)
  *   - listApiBalances (with/without budget API)

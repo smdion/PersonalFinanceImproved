@@ -5869,18 +5869,47 @@
       "count": 2
     }
   },
-  "src/server/routers/savings/index.ts": {
+  "src/server/routers/savings/api-sync.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 21
+      "count": 2
+    }
+  },
+  "src/server/routers/savings/extra-paycheck-routing.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/server/routers/savings/goals.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/server/routers/savings/planned-transactions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/routers/savings/profile-allocations.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 8
     }
   },
   "src/server/routers/settings/admin.ts": {

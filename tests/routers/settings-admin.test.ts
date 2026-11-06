@@ -410,7 +410,7 @@ describe("settings.apiConnections", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // savings.savingsGoals CRUD tests moved to savings-goals-crud.test.ts
-// (procedures moved to routers/savings.ts).
+// (procedures moved to routers/savings/goals.ts).
 
 // relocationScenarios CRUD tests moved to projection-relocation.test.ts
 // (procedures moved to routers/projection/relocation.ts).

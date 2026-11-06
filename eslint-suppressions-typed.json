@@ -804,9 +804,19 @@
       "count": 4
     }
   },
-  "src/server/routers/savings/index.ts": {
+  "src/server/routers/savings/api-sync.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 1
+    }
+  },
+  "src/server/routers/savings/extra-paycheck-routing.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/routers/savings/profile-allocations.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/routers/settings/admin.ts": {
