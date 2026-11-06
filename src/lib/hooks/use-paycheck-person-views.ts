@@ -71,7 +71,7 @@ export type PaycheckPersonView = {
   salary: number;
   /** The bonus terms actually in effect (Salary Profile pin, if any, else
    *  unset) — a job carries no bonus terms of its own, so this is the only
-   *  source to pre-fill from. See paycheck.ts's identical field. */
+   *  source to pre-fill from. See computePaycheckSummary's identical field. */
   resolvedBonusTerms: {
     bonusPercent: number;
     bonusMultiplier: number;

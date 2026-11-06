@@ -8,7 +8,7 @@
  *
  * A job pays only the checks inside the year (`checks` — fewer for one
  * started or ended this year); every job a person had this year is summed
- * (the paycheck router). Built from the paycheck calculator's own result: the RESOLVED bonus
+ * (the paycheck summary). Built from the paycheck calculator's own result: the RESOLVED bonus
  * (`bonusEstimate` — the set bonus if there is one, else the formula), the
  * per-check FICA wages, and each contribution account's yearly amount
  * including what the bonus check takes (bonusCheckContribution — the same

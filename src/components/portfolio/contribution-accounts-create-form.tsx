@@ -55,7 +55,7 @@ export function CreateAccountForm({
   // re-derives whenever the type changes, until the user manually overrides
   // it — otherwise accounts silently get mistagged (e.g. a taxable brokerage
   // account left under "Retirement"), which corrupts the savings-rate
-  // breakdown downstream in contribution.ts's computeSummary.
+  // breakdown downstream in computeContributionSummary.
   const [parentCategory, setParentCategory] = useState<
     "Retirement" | "Portfolio"
   >(getParentCategory(accountType));

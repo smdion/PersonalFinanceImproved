@@ -319,9 +319,9 @@ function LivingCostsCardImpl() {
   // neither ever reaches net take-home pay. Only non-payroll contributions
   // (IRA, manually-funded brokerage/HSA) are genuinely money that WAS net
   // income before you moved it — see nonPayrollContrib/payrollDeductedContrib
-  // on AccountTypeSnapshot (contribution.ts), which resolve this the same
-  // way paycheck.ts's calculator input does. Net mode counts only the
-  // non-payroll portion; Gross mode counts the full total (both), since
+  // on AccountTypeSnapshot (services/contributions/summary.ts), which resolve
+  // this the same way the paycheck summary's calculator input does. Net
+  // mode counts only the non-payroll portion; Gross mode counts the full total (both), since
   // both ultimately draw from gross. Employer match is excluded from both —
   // it isn't part of YOUR income, so including it would push either
   // allocation past 100%.

@@ -744,11 +744,6 @@
       "count": 3
     }
   },
-  "src/server/routers/contribution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
   "src/server/routers/debts.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -811,7 +806,7 @@
   },
   "src/server/routers/savings.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 3
     }
   },
   "src/server/routers/settings/admin.ts": {
@@ -849,6 +844,11 @@
       "count": 1
     }
   },
+  "src/server/services/contributions/summary.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
   "src/server/services/investments/current-balances.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
@@ -877,6 +877,11 @@
   "src/server/services/projection/projection-metadata.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/server/services/savings/summary.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {

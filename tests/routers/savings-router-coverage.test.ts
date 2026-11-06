@@ -2,7 +2,8 @@
 /**
  * Additional savings router coverage tests.
  *
- * Targets uncovered lines in src/server/routers/savings.ts:
+ * Targets uncovered lines in src/server/routers/savings.ts and
+ * src/server/services/savings/summary.ts:
  *   - computeSummary (db.execute for SQLite, budget API integration)
  *   - listApiBalances (with/without budget API)
  *   - pushContributionsToApi (with/without client)
@@ -194,7 +195,7 @@ describe("savings.computeSummary", () => {
       // BudgetMonthDetail shape (months/${currentMonthKey} cache entry) —
       // NOT the generic "categories" cache's nested-groups shape. Both
       // balance AND currentMonthBudgeted for an API-linked goal are
-      // sourced from this same entry (savings.ts's computeSummary).
+      // sourced from this same entry (computeSavingsSummary).
       mockCacheGet.mockResolvedValueOnce({
         data: {
           month: "2026-09-01",
@@ -1791,7 +1792,7 @@ describe("savings.extraPaycheckRouting", () => {
 
   it("save always recomputes baseNetPayPerCheck server-side, ignoring the client-supplied value (pinned)", async () => {
     // Pinned ahead of consolidating computeJobNetPayPerCheck's per-job
-    // paycheck-input construction with paycheck.ts router's equivalent.
+    // paycheck-input construction with computePaycheckSummary's equivalent.
     // seedJob's defaults: $120,000 salary, biweekly, MFJ, no
     // deductions/contributions, bonusPercent 0.
     // A client sending its own figure (not in the input type any more) —

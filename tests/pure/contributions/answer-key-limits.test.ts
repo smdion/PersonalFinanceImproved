@@ -594,7 +594,7 @@ describe("limits: IRA", () => {
   // MAGI under the range. One limit across both kinds (408A(c)(2); Pub
   // 590-A Worksheet 2-2 lines 9–11): 8,600 − 5,000 = 3,600. Today the
   // "Allowed" figure stops at line 8 and shows the whole 8,600 (verdict
-  // D5). Fed as the Paycheck router does (`routers/paycheck.ts:904`): the
+  // D5). Fed as the paycheck summary does (`computePaycheckSummary`): the
   // cap pass's room goes in as `iraRoom`.
   xfail({
     id: "limits/C55 [LIM-13]",
