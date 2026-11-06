@@ -199,7 +199,7 @@
     "src/server/routers/settings/paycheck.ts": 710,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin.ts": 872,
-    "src/server/routers/sync/core.ts": 1117,
+    "src/server/routers/sync/core.ts": 862,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
     "src/server/services/budget/active-summary.ts": 330,
@@ -228,6 +228,7 @@
     "src/server/services/savings/summary.ts": 429,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
+    "src/server/services/sync/sync-all.ts": 268,
     "src/server/trpc.ts": 581
   },
   "functions": {
@@ -930,9 +931,7 @@
       "simplefinRouter.listAccounts.query()": 155
     },
     "src/server/routers/sync/core.ts": {
-      "syncCoreRouter.getPreview.query()": 699,
-      "syncCoreRouter.syncAll.mutation()": 252,
-      "syncCoreRouter.syncAll.mutation().assetsPulled.transaction()": 158
+      "syncCoreRouter.getPreview.query()": 699
     },
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159
@@ -987,6 +986,10 @@
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237
+    },
+    "src/server/services/sync/sync-all.ts": {
+      "syncAll": 245,
+      "syncAll.assetsPulled.transaction()": 155
     }
   }
 }

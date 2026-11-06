@@ -846,7 +846,7 @@
   },
   "src/server/routers/sync/core.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 15
+      "count": 12
     }
   },
   "src/server/routers/utilities.ts": {
@@ -922,6 +922,11 @@
   "src/server/services/sync/fill-ledger.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/server/services/sync/sync-all.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
     }
   },
   "src/server/trpc.ts": {
