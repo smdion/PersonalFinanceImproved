@@ -14,7 +14,7 @@
 import { getTableName } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestCaller } from "../routers/setup";
-import { seedProfile } from "@/server/routers/demo";
+import { seedProfile } from "@/server/services/demo/demo-seed";
 import { applyReferenceData } from "@/lib/db/reference-data";
 import { DEMO_PROFILES } from "@/lib/demo";
 import * as pgSchema from "@/lib/db/schema-pg";

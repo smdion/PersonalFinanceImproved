@@ -173,7 +173,7 @@
     "src/server/routers/assets.ts": 454,
     "src/server/routers/budget/index.ts": 21,
     "src/server/routers/contribution-profiles.ts": 827,
-    "src/server/routers/demo.ts": 663,
+    "src/server/routers/demo.ts": 198,
     "src/server/routers/milestones.ts": 53,
     "src/server/routers/networth/comparison.ts": 246,
     "src/server/routers/networth/index.ts": 19,
@@ -212,6 +212,7 @@
     "src/server/services/contributions/profile.ts": 387,
     "src/server/services/contributions/summary.ts": 1393,
     "src/server/services/debts/other-liabilities.ts": 67,
+    "src/server/services/demo/demo-seed.ts": 468,
     "src/server/services/investments/current-balances.ts": 508,
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 1093,
@@ -890,9 +891,6 @@
     "src/server/routers/contribution-profiles.ts": {
       "contributionProfileRouter.getById.query()": 186
     },
-    "src/server/routers/demo.ts": {
-      "seedProfile": 453
-    },
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 216
     },
@@ -951,6 +949,9 @@
     "src/server/services/contributions/summary.ts": {
       "computeContributionSummary": 1180,
       "computeContributionSummary.results.map()": 726
+    },
+    "src/server/services/demo/demo-seed.ts": {
+      "seedProfile": 453
     },
     "src/server/services/investments/current-balances.ts": {
       "computeCurrentBalances": 382

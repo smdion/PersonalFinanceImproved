@@ -1,5 +1,5 @@
 /**
- * Demo profiles are seeded straight into the database (routers/demo.ts),
+ * Demo profiles are seeded straight into the database (services/demo/demo-seed.ts),
  * past every input check a real household's entries go through. So each
  * profile's rows are held to the same entry schemas here: a demo that seeds
  * a value no one could enter shows visitors figures no household could get

@@ -7,7 +7,7 @@
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createTestCaller } from "../routers/setup";
-import { seedProfile } from "@/server/routers/demo";
+import { seedProfile } from "@/server/services/demo/demo-seed";
 import { DEMO_PROFILES } from "@/lib/demo";
 
 /** Columns the database fills from the clock: never pinned. */
