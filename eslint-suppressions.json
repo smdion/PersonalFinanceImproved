@@ -6509,19 +6509,24 @@
   },
   "src/server/services/projection/engine-payload/build-engine-payload.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 9
+      "count": 6
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 20
+      "count": 17
     },
     "ratchet/no-guarded-division": {
       "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/server/services/projection/engine-payload/display.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
     }
   },
   "src/server/services/projection/engine-payload/expense-endings.ts": {
@@ -6564,6 +6569,11 @@
   },
   "src/server/services/projection/engine-payload/retirement-contributions.ts": {
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/engine-payload/tax-year.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },

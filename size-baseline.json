@@ -227,7 +227,7 @@
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 98,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 1136,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 1056,
     "src/server/services/projection/engine-payload/load.ts": 159,
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
@@ -976,7 +976,7 @@
       "computePaycheckSummary.results.map()": 306
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 1037
+      "buildEnginePayload": 957
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
       "buildIndividualAccounts": 238

@@ -32,7 +32,6 @@ import {
   getTotalCompensation,
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
-import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
@@ -56,7 +55,7 @@ import {
   findMissingCostBasis,
   missingCostBasisWarning,
 } from "@/lib/pure/accounts/basis-consistency";
-import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
   IRS_LIMIT_GROWTH_RATE_MAX,
@@ -81,7 +80,8 @@ import { retirementContributions } from "./retirement-contributions";
 import { buildIndividualAccounts } from "./individual-accounts";
 import { applyProfiles, type fetchRetirementData } from "./load";
 import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
-import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
+import { budgetSummaries } from "./display";
+import { resolveTaxYear } from "./tax-year";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
@@ -195,68 +195,24 @@ export async function buildEnginePayload(
     thisYearFiling.status,
   );
 
-  // Every per-year tax slice (withholding brackets, contribution
-  // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
-  // FPL) is resolved through ONE call, anchored on ONE year.
-  //
-  // requestedYear: the active retirement profile's pin (`tax_params_year`,
-  // null ⇒ newest enacted). Historical portfolio snapshots price tax off
-  // current data too, not the snapshot's year.
-  // `onMissing: "nearest"` — a projection uses this as a base year then
-  // grows it forward, so an unseeded pin year falls back to the newest
-  // earlier year rather than throwing.
-  const activeProfile = retProfiles.find((p) => p.id === activeProfileId);
-  const requestedTaxYear = activeProfile?.taxParamsYear ?? undefined;
-  const resolvedTax = resolveTaxParams(
-    {
-      vintage: allTaxParams,
-      contributionLimits: allLimits,
-      withholdingBrackets: allTaxBrackets,
-      ltcgBrackets: allLtcgBrackets,
-      irmaaBrackets: allIrmaaBrackets,
-      fpl: allFplByHousehold,
-    },
-    requestedTaxYear,
-    // Each table from its own newest complete year (a new year's limits
-    // can land before its withholding/IRMAA/FPL tables) — the engine grows
-    // each from that year.
-    { onMissing: "nearest", sectionFallback: true },
+  const {
+    resolvedTax,
+    latestTaxYear,
+    ltcgBracketData,
+    irmaaBracketData,
+    fplByHouseholdData,
+    bracketData,
+  } = resolveTaxYear(
+    filingStatus,
+    retProfiles,
+    activeProfileId,
+    allTaxParams,
+    allLimits,
+    allTaxBrackets,
+    allLtcgBrackets,
+    allIrmaaBrackets,
+    allFplByHousehold,
   );
-  const latestTaxYear = resolvedTax.resolvedYear;
-  // No complete year of a table at all means an emptied table — the
-  // tax-data file is applied on every start and after any restore, and
-  // shipped rows can't be deleted. Nothing stands in for a missing table:
-  // a projection without one would quietly price that tax at a guess.
-  const sectionNames: Record<TaxSection, string> = {
-    withholding: "withholding tables (Tax Brackets)",
-    ltcg: "capital-gains brackets (LTCG Brackets)",
-    irmaa: "Medicare brackets (IRMAA Tables)",
-    fpl: "poverty levels (ACA/FPL)",
-  };
-  const missingSections = resolvedTax.missing ?? [];
-  const ltcgBracketData = resolvedTax.ltcgByStatus;
-  const irmaaBracketData = resolvedTax.irmaaByStatus;
-  const fplByHouseholdData = resolvedTax.fplByHousehold;
-  if (
-    missingSections.length > 0 ||
-    !ltcgBracketData ||
-    !irmaaBracketData ||
-    !fplByHouseholdData
-  )
-    throw new Error(
-      `Tax data is missing: no complete year of ${
-        missingSections.map((s) => sectionNames[s]).join(", ") || "a tax table"
-      } (Settings → Reference Data).`,
-    );
-
-  // A complete year has every status's table: never a guessed empty one.
-  const withholding = resolvedTax.withholdingBrackets?.[filingStatus]?.false;
-  if (!withholding) throw new Error(`No ${filingStatus} withholding table.`);
-  const bracketData = withholding as {
-    threshold: number;
-    baseWithholding: number;
-    rate: number;
-  }[];
 
   // Per-person retirement settings (for per-person age display + editing),
   // from the active profile's own rows: settingsFor.
@@ -285,47 +241,11 @@ export async function buildEnginePayload(
     : new Date();
   const currentYear = asOfDate.getFullYear();
 
-  // Budget profile summaries (for budget override "from profile" UI) — each
-  // linked item's dollar amount resolved through the same contribution-
-  // account chain computeActiveSummary uses (see resolveLinkedBudgetItemAmounts),
-  // not the raw `amounts` column, which is intentionally left stale for
-  // linked items and would silently undercount them here.
-  const budgetProfileSummaries = await Promise.all(
-    allBudgetProfiles.map(async (p) => {
-      const items = allBudgetItems.filter((i) => i.profileId === p.id);
-      const labels = p.columnLabels as string[];
-      const months = (p.columnMonths as number[] | null) ?? null;
-      const numColumns = labels.length;
-      const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        db,
-        items,
-        numColumns,
-        {
-          contribProfileId: opts.contributionProfileId ?? null,
-          salaryProfileId: opts.salaryProfileId ?? null,
-        },
-      );
-      const totals = labels.map((_: string, colIdx: number) =>
-        sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
-      );
-      const weightedAnnualTotal = months
-        ? roundToCents(
-            sumBy(
-              totals.map((t, i) => t * (months[i] ?? 0)),
-              (v) => v,
-            ),
-          )
-        : null;
-      return {
-        id: p.id,
-        name: p.name,
-        isActive: p.isActive,
-        columnLabels: labels,
-        columnMonths: months,
-        columnTotals: totals,
-        weightedAnnualTotal,
-      };
-    }),
+  const { budgetProfileSummaries } = await budgetSummaries(
+    allBudgetProfiles,
+    allBudgetItems,
+    db,
+    opts,
   );
 
   // Salary comes from the Salary Profile (salaryProfileActiveMap, resolved
