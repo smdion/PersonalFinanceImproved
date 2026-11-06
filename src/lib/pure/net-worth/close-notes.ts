@@ -3,6 +3,7 @@
  *  and each account's move over closes it sent no report for. */
 import { formatCurrency } from "@/lib/utils/format";
 import { previousTradingDay } from "../investments/market-calendar";
+import { shortDay } from "./short-day";
 import type { CloseReport } from "./daily-movement";
 import type { UnpricedMove } from "../accounts/current-balance-groups";
 
@@ -15,14 +16,6 @@ const unpricedAt = (c: Close, unpriced: Unpriced) =>
   unpriced
     .filter((u) => u.changed.some((m) => m.day === c.day))
     .map((u) => u.label);
-
-/** "Oct 30" from YYYY-MM-DD. */
-export const shortDay = (day: string) =>
-  new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
 
 /** "Nov 4", "Nov 2–4", "Oct 30–Nov 2", from days oldest first. */
 function dayRun(days: readonly string[]): string {

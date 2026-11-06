@@ -2,6 +2,7 @@
 
 /** Settings card for the SimpleFIN Bridge connection (Phase 1: daily linked-balance pulse only — no budget/category sync, so this doesn't reuse ServiceCard's YNAB/Actual-specific fields). */
 import React, { useState } from "react";
+import { InstitutionHeading } from "./simplefin-stale-feeds";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
@@ -435,9 +436,7 @@ export function SimplefinCard() {
             )}
             {groupAccountsByOrg(accounts).map(([orgName, orgAccounts]) => (
               <div key={orgName}>
-                <p className="text-muted mb-1 text-xs font-medium">
-                  {orgName || "Unknown institution"}
-                </p>
+                <InstitutionHeading orgName={orgName} />
                 <div className="space-y-2">
                   {orgAccounts.map((account) => (
                     <AccountRow

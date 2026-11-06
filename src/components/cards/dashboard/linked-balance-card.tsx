@@ -23,8 +23,9 @@ import {
   gapLines,
   missingNote,
   missingReason,
-  shortDay,
 } from "@/lib/pure/net-worth/close-notes";
+import { shortDay } from "@/lib/pure/net-worth/short-day";
+import { StaleFeedNotes } from "@/components/settings/simplefin-stale-feeds";
 import { LoadingCard } from "./utils";
 
 /** How the breakdown groups balances; the button steps through them in order. */
@@ -212,13 +213,12 @@ function DailyChanges({
           </div>
         ))}
       </div>
-      {gapLines(reports).length > 0 && (
-        <div className="text-caption text-faint mb-2">
-          {gapLines(reports).map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
-      )}
+      <div className="text-caption text-faint mb-2 empty:hidden">
+        <StaleFeedNotes />
+        {gapLines(reports).map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
     </>
   );
 }

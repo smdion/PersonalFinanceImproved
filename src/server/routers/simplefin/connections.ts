@@ -7,6 +7,7 @@ import {
   userMessageFor,
 } from "@/lib/budget-api/errors";
 import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
+import { staleFeeds } from "@/lib/pure/sync/stale-feeds";
 import * as schema from "@/lib/db/schema";
 import {
   getSimplefinConnection,
@@ -132,12 +133,32 @@ export const connectionsProcedures = {
   getStatus: protectedProcedure.query(async ({ ctx }) => {
     const conn = await getSimplefinConnection(ctx.db);
     if (!conn) {
-      return { connected: false as const, lastSyncedAt: null, lastError: null };
+      return {
+        connected: false as const,
+        lastSyncedAt: null,
+        lastError: null,
+        staleFeeds: [],
+      };
     }
+    const [lastError, feeds] = await Promise.all([
+      getSimplefinLastError(ctx.db),
+      ctx.db
+        .select({
+          id: schema.simplefinAccounts.id,
+          orgName: schema.simplefinAccounts.orgName,
+          isIncluded: schema.simplefinAccounts.isIncluded,
+          linkedLoanId: schema.simplefinAccounts.linkedLoanId,
+          lastBalanceDate: schema.simplefinAccounts.lastBalanceDate,
+          lastSeenAt: schema.simplefinAccounts.lastSeenAt,
+        })
+        .from(schema.simplefinAccounts),
+    ]);
     return {
       connected: true as const,
       lastSyncedAt: conn.lastSyncedAt,
-      lastError: await getSimplefinLastError(ctx.db),
+      lastError,
+      /** Feeds still listed whose balance stopped moving. */
+      staleFeeds: staleFeeds(feeds),
     };
   }),
 

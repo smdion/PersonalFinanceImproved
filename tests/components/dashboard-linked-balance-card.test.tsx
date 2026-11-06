@@ -187,4 +187,33 @@ describe("LinkedBalanceCard daily change notes", () => {
       screen.getByText("excludes Voya HSA (no holdings)"),
     ).toBeInTheDocument();
   });
+
+  it("names a feed SimpleFIN still lists whose balance stopped", () => {
+    setQuery("simplefin.getStatus", {
+      connected: true,
+      staleFeeds: [
+        { id: 2, institution: "Voya Financial", balanceDay: "2026-11-01" },
+      ],
+    });
+    setQuery("investments.getCurrentBalances", {
+      target: "2026-11-05",
+      snapshotDate: null,
+      summary: { total: 1000 },
+      feeds: [],
+      balances: [],
+      movement: [close("2026-11-05", ["Voya Financial"])],
+      closeReports: [],
+      unpricedMoves: [],
+    });
+    render(
+      <TooltipProvider>
+        <LinkedBalanceCard />
+      </TooltipProvider>,
+    );
+    expect(
+      screen.getByText(
+        "Voya hasn't updated since Nov 1: reconnect it in SimpleFIN Bridge",
+      ),
+    ).toBeInTheDocument();
+  });
 });
