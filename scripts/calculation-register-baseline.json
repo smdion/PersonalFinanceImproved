@@ -274,7 +274,8 @@
     "HH-61": "M",
     "HH-62": "L",
     "HH-63": "L",
-    "HH-64": "M"
+    "HH-64": "M",
+    "HH-65": "M"
   },
   "highRiskWithoutIndependentTest": [
     "ENG-01",
