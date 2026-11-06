@@ -4,6 +4,7 @@
 import { describe, it, expect } from "vitest";
 import {
   accountMatchColumns,
+  entryWithMatchRate,
   matchRefused,
 } from "@/lib/pure/contributions/match-writes";
 import { percentFromRate } from "@/lib/utils/match-rate";
@@ -56,6 +57,129 @@ describe("accountMatchColumns", () => {
       employerMatchValue: null,
       employerMatchRate: null,
     });
+  });
+});
+
+describe("entryWithMatchRate", () => {
+  it("an entry's own percent value gets its rate", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchValue: "60" },
+        { type: PERCENT, value: null },
+        false,
+      ),
+    ).toEqual({
+      employerMatchValue: "60",
+      employerMatchRate: "0.6",
+    });
+  });
+  it("a stale rate follows the value", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchValue: "60", employerMatchRate: "0.5" },
+        { type: PERCENT, value: null },
+        false,
+      ),
+    ).toEqual({ employerMatchValue: "60", employerMatchRate: "0.6" });
+  });
+  it("a sent rate sets the value", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchValue: "50", employerMatchRate: "0.6" },
+        { type: PERCENT, value: null },
+        true,
+      ),
+    ).toEqual({ employerMatchValue: "60", employerMatchRate: "0.6" });
+  });
+  it("leaving the percent type drops the rate", () => {
+    expect(
+      entryWithMatchRate(
+        {
+          employerMatchType: "dollar_match",
+          employerMatchValue: "500",
+          employerMatchRate: "0.5",
+        },
+        { type: PERCENT, value: null },
+        false,
+      ),
+    ).toEqual({ employerMatchType: "dollar_match", employerMatchValue: "500" });
+    expect(
+      entryWithMatchRate(
+        { employerMatchValue: "500", employerMatchRate: "5" },
+        { type: "fixed_annual", value: null },
+        false,
+      ),
+    ).toEqual({ employerMatchValue: "500" });
+  });
+  it("an entry with no value of its own, and nothing to borrow, holds no rate", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchType: PERCENT, employerMatchRate: "0.5" },
+        { type: "fixed_annual", value: null },
+        false,
+      ),
+    ).toEqual({ employerMatchType: PERCENT });
+    expect(
+      entryWithMatchRate(
+        { isActive: false },
+        { type: PERCENT, value: null },
+        false,
+      ),
+    ).toEqual({
+      isActive: false,
+    });
+  });
+  it("its own type decides, an unknown or null one included", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchType: PERCENT, employerMatchValue: "40" },
+        undefined,
+        false,
+      ),
+    ).toEqual({
+      employerMatchType: PERCENT,
+      employerMatchValue: "40",
+      employerMatchRate: "0.4",
+    });
+    expect(
+      entryWithMatchRate(
+        { employerMatchType: null, employerMatchValue: "40" },
+        { type: PERCENT, value: null },
+        false,
+      ),
+    ).toEqual({ employerMatchType: null, employerMatchValue: "40" });
+  });
+  it("a value with no number keeps no rate", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchValue: "" },
+        { type: PERCENT, value: null },
+        false,
+      ),
+    ).toEqual({
+      employerMatchValue: "",
+    });
+  });
+});
+
+describe("entryWithMatchRate borrowing", () => {
+  it("a percent type with no value of its own on a non-percent account takes the account's value, as 0016 fills it", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchType: PERCENT },
+        { type: "fixed_annual", value: "40" },
+        false,
+      ),
+    ).toEqual({ employerMatchType: PERCENT, employerMatchRate: "0.4" });
+  });
+  it("on a percent account it holds no rate: it reads the account's", () => {
+    expect(
+      entryWithMatchRate(
+        { employerMatchType: PERCENT, employerMatchRate: "0.4" },
+        { type: PERCENT, value: "50" },
+        false,
+      ),
+    ).toEqual({ employerMatchType: PERCENT });
   });
 });
 

@@ -26,7 +26,10 @@ import {
 } from "@/lib/config/enum-values";
 import { zDecimal, zFraction } from "@/lib/utils/zod-fields";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
-import { accountMatchWrite } from "@/server/services/contributions/match-writes";
+import {
+  accountMatchWrite,
+  refreshEntryRates,
+} from "@/server/services/contributions/match-writes";
 
 // contributionMethod/contributionValue are deliberately NOT here — an
 // account is purely structural; the actual contribution amount/method is
@@ -209,6 +212,7 @@ export const contributionAccountsProcedures = {
               schema.contributionAccounts.performanceAccountId,
             employerMatchValue: schema.contributionAccounts.employerMatchValue,
             employerMatchRate: schema.contributionAccounts.employerMatchRate,
+            employerMatchType: schema.contributionAccounts.employerMatchType,
           })
           .from(schema.contributionAccounts)
           .where(eq(schema.contributionAccounts.id, id))
@@ -244,12 +248,16 @@ export const contributionAccountsProcedures = {
           rowsAfter: new Map([[id, resolvedData as ContribRowPatch]]),
           touched: [id],
         });
-        return ctx.db
-          .update(schema.contributionAccounts)
-          .set(resolvedData)
-          .where(eq(schema.contributionAccounts.id, id))
-          .returning()
-          .then((r) => r[0]);
+        return ctx.db.transaction(async (tx) => {
+          const updated = await tx
+            .update(schema.contributionAccounts)
+            .set(resolvedData)
+            .where(eq(schema.contributionAccounts.id, id))
+            .returning()
+            .then((r) => r[0]);
+          if (updated) await refreshEntryRates(tx, id, stored, updated);
+          return updated;
+        });
       }),
     /**
      * Toggle isActive alone, without the full contributionAccountInput

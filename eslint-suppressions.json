@@ -5648,10 +5648,10 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 10
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/demo.ts": {

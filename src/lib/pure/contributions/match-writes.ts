@@ -3,6 +3,7 @@
  *  rate. A sent rate wins over a sent value. */
 import {
   PERCENT_MATCH as PERCENT,
+  effectiveMatchType,
   percentFromRate,
   rateFromPercent,
 } from "@/lib/utils/match-rate";
@@ -49,6 +50,33 @@ export function accountMatchColumns(
     incoming.employerMatchRate,
   );
   return { employerMatchValue: terms.value, employerMatchRate: terms.rate };
+}
+
+/** A profile entry after a write: a rate where it resolves to a percent,
+ *  from its own value, else from the value it borrows from a non-percent
+ *  account (as migration 0016 fills it). `rateSent`: its rate sets its value. */
+export function entryWithMatchRate(
+  entry: Readonly<Record<string, unknown>>,
+  account: { type: unknown; value: unknown } | undefined,
+  rateSent: boolean,
+): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...entry };
+  delete next["employerMatchRate"];
+  if (effectiveMatchType(entry, account?.type) !== PERCENT) return next;
+  if (rateSent && Object.hasOwn(entry, "employerMatchRate")) {
+    const terms = percentTerms(undefined, entry["employerMatchRate"]);
+    if (terms.value === null) delete next["employerMatchValue"];
+    else next["employerMatchValue"] = terms.value;
+    if (terms.rate !== null) next["employerMatchRate"] = terms.rate;
+    return next;
+  }
+  const own = Object.hasOwn(entry, "employerMatchValue");
+  if (!own && account?.type === PERCENT) return next;
+  const rate = rateFromPercent(
+    own ? entry["employerMatchValue"] : account?.value,
+  );
+  if (rate !== null) next["employerMatchRate"] = rate;
+  return next;
 }
 
 /** A percent match a write may store: a rate 0 to MAX_MATCH_RATE at two

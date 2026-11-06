@@ -10,6 +10,7 @@ import {
   MATCH_RATE_TAG,
 } from "@/lib/db/v0102-match-rate";
 import { effectiveMatchType, rateFromPercent } from "@/lib/utils/match-rate";
+import { entryWithMatchRate } from "@/lib/pure/contributions/match-writes";
 import {
   MIGRATION_CONVERTERS,
   convertBackup,
@@ -182,5 +183,26 @@ describe("migration 0016's converter on the restore ladder", () => {
       }
     }
     expect(checked).toBeGreaterThan(5);
+  });
+});
+
+describe("the writer agrees with the converter", () => {
+  const byId = new Map(
+    ACCOUNT_CASES.map((c) => [String(c.id), { type: c.type, value: c.value }]),
+  );
+  const entriesOf = (v: unknown) =>
+    (v as { contributionAccounts?: Record<string, unknown> } | null)
+      ?.contributionAccounts;
+  it.each(PROFILE_CASES)("$name", ({ before, after }) => {
+    const b = entriesOf(before);
+    const a = entriesOf(after);
+    if (!b || typeof b !== "object" || Array.isArray(b)) return;
+    for (const [id, entry] of Object.entries(b)) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const e = entry as Record<string, unknown>;
+      // The converter keeps a rate already stored; the writer recomputes it.
+      if (e["employerMatchRate"] != null) continue;
+      expect(entryWithMatchRate(e, byId.get(id), false)).toEqual(a?.[id]);
+    }
   });
 });

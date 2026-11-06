@@ -16,6 +16,7 @@ type ContribFieldSet = {
   contributionMethod?: string | null;
   employerMatchType?: string | null;
   employerMatchValue?: string | number | null;
+  employerMatchRate?: string | number | null;
   employerMaxMatchPct?: string | number | null;
   autoMaximize?: boolean | null;
   isActive?: boolean | null;
@@ -44,6 +45,7 @@ const COMPARED_FIELDS = [
   "contributionMethod",
   "employerMatchType",
   "employerMatchValue",
+  "employerMatchRate",
   "employerMaxMatchPct",
   "autoMaximize",
   "isActive",
