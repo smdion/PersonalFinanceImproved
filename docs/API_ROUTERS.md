@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 56 routers.**
+**394 procedures across 66 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -403,48 +403,98 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `setActive`   | mutation | `contributionProfileProcedure` | is split out from settings.appSettings.upsert instead of writing through it (same admin-only-write-vs-contributionProfile-permission gap) and for why null is accepted (the hook's own `(id: number \| n |
 | `update`      | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
-## `savings`
+## `savings/allocation-overrides`
 
-| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeSummary`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `convertBudgetItemToGoal`   | mutation | `savingsProcedure`   | Convert a budget item into a savings goal, transferring the API category link.                                                                                                                           |
-| `convertGoalToBudgetItem`   | mutation | `savingsProcedure`   | Convert a savings goal into a budget item, transferring the API category link.                                                                                                                           |
-| `create`                    | mutation | `savingsProcedure`   | ══ PLANNED TRANSACTIONS ══                                                                                                                                                                               |
-| `create`                    | mutation | `savingsProcedure`   | ══ TRANSFERS (paired planned transactions) ══                                                                                                                                                            |
-| `create`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `deleteMonth`               | mutation | `savingsProcedure`   | Delete all overrides for ALL goals in one or more months.                                                                                                                                                |
-| `getMonthlyHistory`         | query    | `protectedProcedure` | All recorded monthly balances for active savings goals (for history view).                                                                                                                               |
-| `getSettlementSuggestions`  | query    | `protectedProcedure` | this deliberately doesn't try to match dollar amounts: once ANY real transaction posts in the goal's linked category on/after the planned date, in the same month, the live balance already reflects it  |
-| `linkGoalToApi`             | mutation | `savingsProcedure`   | Link a savings goal to a budget API category.                                                                                                                                                            |
-| `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                                                                                                                                               |
-| `list`                      | query    | `protectedProcedure` | Every active goal's funding for a given profile.                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | Load routing rules for all jobs.                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | No live UI consumer reads this today (the Savings page uses computeSummary's goalsForClient instead — see budget-content.tsx's comment), but it's a general-purpose CRUD list endpoint, so its apiCatego |
-| `listApiBalances`           | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display).                                                                                                                                        |
-| `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field.                                                                                                                               |
-| `listSummaries`             | query    | `protectedProcedure` | nonzero allocation) for every budget profile at once — for the profile-picker sidebar. Routes through the same resolver as `list` above (one call per profile) rather than re-deriving totals independen |
-| `lockInAllocationPercent`   | mutation | `savingsProcedure`   | an accurate description of "what % of current income this is" rather than a stale figure computed against a smaller pool. allocation_percent is decimal(6,3) — rounded to 3 decimals, which at typical p |
-| `pushContributionsToApi`    | mutation | `savingsProcedure`   | as a "target-balance" goal write — amount only, never touches the goal's type/cadence (that has to be configured once, manually, in YNAB; see YnabClient's writeTargetBalance for why). Every target is  |
-| `recalculateAllocation`     | mutation | `savingsProcedure`   | explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal (for the target profile) from one shared live-pool snapshot (a single fetch applied to all rows, so a batch |
-| `resetAllToZero`            | mutation | `savingsProcedure`   | Set every active goal's funding to $0/no-percent for one profile.                                                                                                                                        |
-| `save`                      | mutation | `savingsProcedure`   | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
-| `saveGrowth`                | mutation | `savingsProcedure`   | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
-| `saveOverride`              | mutation | `savingsProcedure`   | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
-| `setEnabled`                | mutation | `savingsProcedure`   | "Budget" mode (enabled: false) means the extra paycheck isn't diverted to any goal and stays as regular income, same as a job with no routing at all; switching back to "Savings" (enabled: true) restor |
-| `settle`                    | mutation | `savingsProcedure`   | Settlement is per-occurrence (plannedTxId + occurrenceMonth), never per-row — a recurring row has many future occurrences, and settling one must not hide the others from the projection. Never invoked  |
-| `settleMany`                | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `unlinkGoalFromApi`         | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                                                                                                                                                        |
-| `update`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `update`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `upsert`                    | mutation | `savingsProcedure`   | ══ ALLOCATION OVERRIDES ══                                                                                                                                                                               |
-| `upsert`                    | mutation | `savingsProcedure`   | of the live pool (contrast with recalculateAllocation/ lockInAllocationPercent, which also write here but derive the value from the live pool instead of taking it directly from the caller).            |
-| `upsertMonth`               | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                          |
-| `upsertMonthRange`          | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                           |
+| Procedure          | Kind     | Auth               | Description                                                                     |
+| ------------------ | -------- | ------------------ | ------------------------------------------------------------------------------- |
+| `delete`           | mutation | `savingsProcedure` | (no description)                                                                |
+| `deleteMonth`      | mutation | `savingsProcedure` | Delete all overrides for ALL goals in one or more months.                       |
+| `upsert`           | mutation | `savingsProcedure` | ══ ALLOCATION OVERRIDES ══                                                      |
+| `upsertMonth`      | mutation | `savingsProcedure` | Atomically upsert overrides for ALL goals in a single month (pool-constrained). |
+| `upsertMonthRange` | mutation | `savingsProcedure` | Atomically upsert overrides for ALL goals across a month range (fill-forward).  |
+
+## `savings/api-links`
+
+| Procedure           | Kind     | Auth                 | Description                                                       |
+| ------------------- | -------- | -------------------- | ----------------------------------------------------------------- |
+| `linkGoalToApi`     | mutation | `savingsProcedure`   | Link a savings goal to a budget API category.                     |
+| `listApiBalances`   | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display). |
+| `unlinkGoalFromApi` | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                 |
+
+## `savings/api-sync`
+
+| Procedure                | Kind     | Auth               | Description                                                                                                                                                                                             |
+| ------------------------ | -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pushContributionsToApi` | mutation | `savingsProcedure` | as a "target-balance" goal write — amount only, never touches the goal's type/cadence (that has to be configured once, manually, in YNAB; see YnabClient's writeTargetBalance for why). Every target is |
+
+## `savings/extra-paycheck-routing`
+
+| Procedure      | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| -------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list`         | query    | `protectedProcedure` | Load routing rules for all jobs.                                                                                                                                                                         |
+| `save`         | mutation | `savingsProcedure`   | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
+| `saveGrowth`   | mutation | `savingsProcedure`   | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
+| `saveOverride` | mutation | `savingsProcedure`   | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
+| `setEnabled`   | mutation | `savingsProcedure`   | "Budget" mode (enabled: false) means the extra paycheck isn't diverted to any goal and stays as regular income, same as a job with no routing at all; switching back to "Savings" (enabled: true) restor |
+
+## `savings/goals`
+
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `convertBudgetItemToGoal` | mutation | `savingsProcedure`   | Convert a budget item into a savings goal, transferring the API category link.                                                                                                                           |
+| `convertGoalToBudgetItem` | mutation | `savingsProcedure`   | Convert a savings goal into a budget item, transferring the API category link.                                                                                                                           |
+| `create`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+| `delete`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+| `list`                    | query    | `protectedProcedure` | No live UI consumer reads this today (the Savings page uses computeSummary's goalsForClient instead — see budget-content.tsx's comment), but it's a general-purpose CRUD list endpoint, so its apiCatego |
+| `update`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+
+## `savings/history`
+
+| Procedure           | Kind  | Auth                 | Description                                                                |
+| ------------------- | ----- | -------------------- | -------------------------------------------------------------------------- |
+| `getMonthlyHistory` | query | `protectedProcedure` | All recorded monthly balances for active savings goals (for history view). |
+
+## `savings/planned-transactions`
+
+| Procedure                  | Kind     | Auth                 | Description                                                                                                                                                                                             |
+| -------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`                   | mutation | `savingsProcedure`   | ══ PLANNED TRANSACTIONS ══                                                                                                                                                                              |
+| `delete`                   | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                        |
+| `getSettlementSuggestions` | query    | `protectedProcedure` | this deliberately doesn't try to match dollar amounts: once ANY real transaction posts in the goal's linked category on/after the planned date, in the same month, the live balance already reflects it |
+| `settle`                   | mutation | `savingsProcedure`   | Settlement is per-occurrence (plannedTxId + occurrenceMonth), never per-row — a recurring row has many future occurrences, and settling one must not hide the others from the projection. Never invoked |
+| `settleMany`               | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                        |
+| `update`                   | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                        |
+
+## `savings/profile-allocations`
+
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list`                    | query    | `protectedProcedure` | Every active goal's funding for a given profile.                                                                                                                                                         |
+| `listSummaries`           | query    | `protectedProcedure` | nonzero allocation) for every budget profile at once — for the profile-picker sidebar. Routes through the same resolver as `list` above (one call per profile) rather than re-deriving totals independen |
+| `lockInAllocationPercent` | mutation | `savingsProcedure`   | an accurate description of "what % of current income this is" rather than a stale figure computed against a smaller pool. allocation_percent is decimal(6,3) — rounded to 3 decimals, which at typical p |
+| `recalculateAllocation`   | mutation | `savingsProcedure`   | explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal (for the target profile) from one shared live-pool snapshot (a single fetch applied to all rows, so a batch |
+| `resetAllToZero`          | mutation | `savingsProcedure`   | Set every active goal's funding to $0/no-percent for one profile.                                                                                                                                        |
+| `upsert`                  | mutation | `savingsProcedure`   | of the live pool (contrast with recalculateAllocation/ lockInAllocationPercent, which also write here but derive the value from the live pool instead of taking it directly from the caller).            |
+
+## `savings/reimbursements`
+
+| Procedure                   | Kind     | Auth                 | Description                                                                |
+| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------- |
+| `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                 |
+| `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field. |
+
+## `savings/summary`
+
+| Procedure        | Kind  | Auth                 | Description      |
+| ---------------- | ----- | -------------------- | ---------------- |
+| `computeSummary` | query | `protectedProcedure` | (no description) |
+
+## `savings/transfers`
+
+| Procedure | Kind     | Auth               | Description                                   |
+| --------- | -------- | ------------------ | --------------------------------------------- |
+| `create`  | mutation | `savingsProcedure` | ══ TRANSFERS (paired planned transactions) ══ |
+| `delete`  | mutation | `savingsProcedure` | (no description)                              |
 
 ## `sec`
 
