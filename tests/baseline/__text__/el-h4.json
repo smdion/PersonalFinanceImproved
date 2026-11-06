@@ -1,0 +1,3249 @@
+{
+ "accountDepletions": [
+  {
+   "category": "401k",
+   "subType": "traditional"
+  },
+  {
+   "category": "401k",
+   "subType": "roth"
+  },
+  {
+   "category": "403b",
+   "subType": "traditional"
+  },
+  {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
+   "category": "hsa"
+  },
+  {
+   "category": "ira",
+   "subType": "traditional"
+  }
+ ],
+ "projectionByYear": [
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "ira",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation"
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 49)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 50)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 51)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 52)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 53)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 54)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 55)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 56)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 57)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 58)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ (currently 59)",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": true,
+     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "ira",
+     "401k",
+     "403b",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Rowan Brokerage (Index Funds Brokerage)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Rowan IRA (Index Funds IRA)",
+     "ownerName": "Rowan",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  }
+ ],
+ "warnings": [
+  "Retirement year (2026) is this year or earlier — entire projection will be in decumulation.",
+  "No contribution accounts found — projections may be inaccurate. Add contribution accounts on the Paycheck page."
+ ]
+}

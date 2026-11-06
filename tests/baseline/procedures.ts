@@ -324,7 +324,7 @@ export const SKIPPED: Record<string, string> = {
   "settings.taxDataSync.preview":
     "external: fetches the published tax-data index",
   "sync.getPreview":
-    "external: calls YNAB or Actual Budget (part d replays recorded responses through the sync instead)",
+    "reads a budget connection's cached feed, which no household here has; part d pins it for both services after the recorded syncs (sync-writes.test.ts)",
   "projection.getProjectionMetadata":
     "computeProjection's response with result null, from the same function (projection-coverage pins the two equal)",
   "projection.getMonteCarloProgress":

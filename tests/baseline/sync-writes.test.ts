@@ -15,7 +15,10 @@
  *
  * What's pinned, per table: the rows the two syncs wrote (new or changed,
  * every column but timestamps and the encrypted connection config), and
- * how many rows they removed. These pin today's behavior, bugs included.
+ * how many rows they removed; then `sync.getPreview` after them (v0.10.3
+ * plan commit 3, owner Q4: an added pin), which reads the feed the syncs
+ * cached, in `__sync__/<service>.preview.json` without its timestamps.
+ * These pin today's behavior, bugs included.
  * The baseline rule in router-baseline.test.ts governs these files too;
  * `LEDGR_BASELINE_WRITE=1` rewrites them for the deletion case only.
  */
@@ -23,14 +26,12 @@ import "../routers/setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { is } from "drizzle-orm";
-import { SQLiteTable, getTableConfig } from "drizzle-orm/sqlite-core";
-import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { resetActualWrapperGates } from "@/lib/budget-api/actual-client";
 import { createTestCaller } from "../routers/setup";
 import { seedHousehold } from "./seed";
 import { HOUSEHOLDS } from "./households";
 import { REGENERATE } from "./router-suite";
+import { NOT_PINNED, tableRows, writtenRows } from "./table-rows";
 
 type Service = "ynab" | "actual";
 
@@ -41,13 +42,6 @@ interface Recording {
 const SYNC_DIR = path.join(__dirname, "__sync__");
 const SYNC_DATES = ["2026-02-15T18:00:00.000Z", "2026-03-07T18:00:00.000Z"];
 const ACTUAL_SERVER = "https://actual.baseline.example";
-/** Not written: timestamps, and the connection config (encrypted with a
- *  fresh random IV every save). */
-const NOT_PINNED = /At$|^config$/;
-/** Not a sync write: the change log's audit row for the syncAll call itself
- *  (logMutation, trpc.ts), which reaches the test db since setup-mocks
- *  forwards the top-level db to it. Pinned before that, so left out. */
-const NOT_PINNED_TABLES = new Set(["change_log"]);
 
 function recording(service: Service): Recording {
   return JSON.parse(
@@ -79,51 +73,15 @@ function replay(service: Service) {
   });
 }
 
-type Db = Awaited<ReturnType<typeof createTestCaller>>["db"];
-
-/** Every table's rows, as JSON strings, without the unpinned columns. */
-function tableRows(db: Db): Map<string, string[]> {
-  const out = new Map<string, string[]>();
-  for (const table of Object.values(sqliteSchema)) {
-    if (!is(table, SQLiteTable)) continue;
-    if (NOT_PINNED_TABLES.has(getTableConfig(table).name)) continue;
-    const rows = db.select().from(table).all() as Record<string, unknown>[];
-    out.set(
-      getTableConfig(table).name,
-      rows
-        .map((row) =>
-          JSON.stringify(
-            Object.fromEntries(
-              Object.entries(row).filter(([k]) => !NOT_PINNED.test(k)),
-            ),
-          ),
-        )
-        .sort(),
-    );
-  }
-  return out;
-}
-
-/** Per table: the rows `after` has that `before` didn't (written or
- *  changed), and how many of `before`'s rows are gone or changed. */
-function writtenRows(
-  before: Map<string, string[]>,
-  after: Map<string, string[]>,
-) {
-  const out: Record<string, { written: unknown[]; replacedOrRemoved: number }> =
-    {};
-  for (const [table, rows] of after) {
-    const old = new Set(before.get(table) ?? []);
-    const now = new Set(rows);
-    const written = rows.filter((r) => !old.has(r));
-    const gone = [...old].filter((r) => !now.has(r)).length;
-    if (written.length || gone)
-      out[table] = {
-        written: written.map((r): unknown => JSON.parse(r)),
-        replacedOrRemoved: gone,
-      };
-  }
-  return out;
+/** A value without its timestamps (the columns tableRows leaves out). */
+function withoutTimestamps(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutTimestamps);
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([k]) => !NOT_PINNED.test(k))
+      .map(([k, v]) => [k, withoutTimestamps(v)]),
+  );
 }
 
 const household = HOUSEHOLDS.find((h) => h.key === "e2e-b")!;
@@ -131,6 +89,7 @@ const household = HOUSEHOLDS.find((h) => h.key === "e2e-b")!;
 describe.each<Service>(["ynab", "actual"])("sync writes: %s", (service) => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
   let written: ReturnType<typeof writtenRows>;
+  let preview: unknown;
 
   beforeAll(async () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date(SYNC_DATES[0]!) });
@@ -246,6 +205,7 @@ describe.each<Service>(["ynab", "actual"])("sync writes: %s", (service) => {
       await caller.sync.syncAll({ service });
     }
     written = writtenRows(before, tableRows(ctx.db));
+    preview = withoutTimestamps(await caller.sync.getPreview({ service }));
   }, 60_000);
 
   afterAll(() => {
@@ -262,5 +222,14 @@ describe.each<Service>(["ynab", "actual"])("sync writes: %s", (service) => {
       return;
     }
     expect(written).toEqual(JSON.parse(fs.readFileSync(file, "utf8")));
+  });
+
+  it("previews the pinned figures from the cached feed", () => {
+    const file = path.join(SYNC_DIR, `${service}.preview.json`);
+    if (REGENERATE) {
+      fs.writeFileSync(file, `${JSON.stringify(preview, null, 1)}\n`);
+      return;
+    }
+    expect(preview).toEqual(JSON.parse(fs.readFileSync(file, "utf8")));
   });
 });

@@ -10,3 +10,4 @@ eslint-suppressions*.json
 # Written by the behavior baseline (tests/baseline/router-baseline.test.ts).
 tests/baseline/__baseline__/
 tests/baseline/__sync__/
+tests/baseline/__text__/

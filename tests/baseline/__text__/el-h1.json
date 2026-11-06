@@ -1,0 +1,2632 @@
+{
+ "accountDepletions": [
+  {
+   "category": "401k",
+   "subType": "roth"
+  },
+  {
+   "category": "403b",
+   "subType": "traditional"
+  },
+  {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
+   "category": "ira",
+   "subType": "traditional"
+  }
+ ],
+ "projectionByYear": [
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "category": "hsa",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "brokerage",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "name": "Retirement brokerage (projected)",
+     "parentCategory": "Retirement",
+     "projectedOnly": true,
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Dana"
+    }
+   ],
+   "rmdOverrodeRouting": true,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "name": "Retirement brokerage (projected)",
+     "parentCategory": "Retirement",
+     "projectedOnly": true,
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Dana"
+    }
+   ],
+   "rmdOverrodeRouting": true,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "ira",
+     "hsa",
+     "403b",
+     "brokerage"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "name": "Dana 401k (Plan Co 401(k))",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Dana IRA (Index Funds IRA)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "rothBasisUncertain": false,
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Dana HSA (Health Savings Co)",
+     "ownerName": "Dana",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "name": "Dana Brokerage (Index Funds Brokerage)",
+     "ownerName": "Dana",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "name": "Retirement brokerage (projected)",
+     "parentCategory": "Retirement",
+     "projectedOnly": true,
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Dana"
+    }
+   ],
+   "rmdOverrodeRouting": true,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Dana"
+    },
+    {
+     "personName": "Lee"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  }
+ ]
+}

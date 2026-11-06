@@ -8,7 +8,8 @@
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
  *   tests/lint/violations.test.ts and tests/baseline/router-baseline-postgres.test.ts,
- *   and tests/baseline/__baseline__/** and __sync__/** (only deletions pass).
+ *   and tests/baseline/__baseline__/**, __sync__/** and __text__/** (only
+ *   deletions pass).
  *
  * A move or split is a redistribution, not a rise: each added file is matched
  * to the file its lines came from, and the counts of the files so joined are
@@ -74,6 +75,7 @@ export { RAISE };
 export const BASELINE_DIRS = [
   "tests/baseline/__baseline__",
   "tests/baseline/__sync__",
+  "tests/baseline/__text__",
 ];
 
 // ---------------------------------------------------------------------------
