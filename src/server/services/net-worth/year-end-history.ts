@@ -678,7 +678,7 @@ export async function buildYearEndHistory(
     // Typed figure + the debts list + mapped credit cards
     // (server/services/debts/other-liabilities.ts). Only computed for the CURRENT (isCurrent: true) row; a
     // finalized past year always reads otherLiabilities from the stored
-    // net_worth_annual row instead (below), which finalizeYear (performance.ts)
+    // net_worth_annual row instead (below), which finalizeYear (routers/performance/finalize-year.ts)
     // writes with this same addition baked in at finalize time.
     const otherLiabilities = (
       await getEffectiveOtherLiabilities(db, { asOf: asOfDate })

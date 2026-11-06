@@ -18,7 +18,7 @@
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. (Engine imports past the barrel: now the dependency-cruiser rule
  *       engine-through-index, `pnpm check:layers`, which sees relative imports too.)
- *   12. Hand-rolled Modified-Dietz denominators outside performance.ts
+ *   12. Hand-rolled Modified-Dietz denominators outside lib/pure/investments/returns.ts
  *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
  *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
  *   15. `import { z } from "zod"` instead of "zod/v4"
