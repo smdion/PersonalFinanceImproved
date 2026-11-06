@@ -1085,9 +1085,706 @@ function cutMovedProcedures(
 }
 
 /**
+ * A stage cut from a long function (owner v0.10.3 Q1): contiguous top-level
+ * statements of one function's body, moved in order into a new top-level
+ * function. `start` is where the function they left starts in the old file;
+ * `wrapper.new` the lines the stage adds around them (its signature through
+ * `{`, the blank line and `return { … }` after them, its `}`), `wrapper.old`
+ * the lines of the call left in their place.
+ */
+export type StageMove = BodyMove & { statements: number; returned: string[] };
+
+/** A function node with a block body. */
+type BlockFunction = ts.FunctionLikeDeclaration & { body: ts.Block };
+
+/** A node that starts a new function scope (its `return` is its own). */
+const opensScope = (node: ts.Node) =>
+  ts.isFunctionDeclaration(node) ||
+  ts.isFunctionExpression(node) ||
+  ts.isArrowFunction(node) ||
+  ts.isMethodDeclaration(node) ||
+  ts.isConstructorDeclaration(node) ||
+  ts.isGetAccessorDeclaration(node) ||
+  ts.isSetAccessorDeclaration(node) ||
+  ts.isClassStaticBlockDeclaration(node);
+
+/** Every identifier a binding name binds (defaults allowed). */
+function bindingIdentifiers(name: ts.BindingName): string[] {
+  if (ts.isIdentifier(name)) return [name.text];
+  return name.elements.flatMap((el) =>
+    ts.isOmittedExpression(el) ? [] : bindingIdentifiers(el.name),
+  );
+}
+
+/** The names a top-level statement declares, and whether they hoist. */
+function declaredBy(statement: ts.Statement): {
+  names: string[];
+  hoists: boolean;
+  mutable: boolean;
+} {
+  if (ts.isVariableStatement(statement)) {
+    const flags = statement.declarationList.flags;
+    const block = (flags & ts.NodeFlags.BlockScoped) !== 0;
+    return {
+      names: statement.declarationList.declarations.flatMap((d) =>
+        bindingIdentifiers(d.name),
+      ),
+      hoists: !block,
+      mutable: (flags & ts.NodeFlags.Const) === 0,
+    };
+  }
+  if (
+    (ts.isFunctionDeclaration(statement) ||
+      ts.isClassDeclaration(statement) ||
+      ts.isEnumDeclaration(statement)) &&
+    statement.name
+  )
+    return {
+      names: [statement.name.text],
+      hoists: ts.isFunctionDeclaration(statement),
+      mutable: false,
+    };
+  return { names: [], hoists: false, mutable: false };
+}
+
+/** Whether an identifier reads or writes a binding (not a property, label or declared name). */
+function isReference(id: ts.Identifier): boolean {
+  const p = id.parent;
+  if (ts.isPropertyAccessExpression(p) || ts.isQualifiedName(p))
+    return ts.isPropertyAccessExpression(p) ? p.name !== id : p.right !== id;
+  if (ts.isBindingElement(p)) return false;
+  if (
+    (ts.isLabeledStatement(p) || ts.isBreakOrContinueStatement(p)) &&
+    p.label === id
+  )
+    return false;
+  if (
+    (ts.isPropertyAssignment(p) ||
+      ts.isPropertyDeclaration(p) ||
+      ts.isPropertySignature(p) ||
+      ts.isMethodDeclaration(p) ||
+      ts.isMethodSignature(p) ||
+      ts.isGetAccessorDeclaration(p) ||
+      ts.isSetAccessorDeclaration(p) ||
+      ts.isEnumMember(p) ||
+      ts.isVariableDeclaration(p) ||
+      ts.isParameter(p) ||
+      ts.isFunctionDeclaration(p) ||
+      ts.isFunctionExpression(p) ||
+      ts.isClassDeclaration(p) ||
+      ts.isClassExpression(p) ||
+      ts.isInterfaceDeclaration(p) ||
+      ts.isTypeAliasDeclaration(p) ||
+      ts.isEnumDeclaration(p) ||
+      ts.isTypeParameterDeclaration(p) ||
+      ts.isNamedTupleMember(p) ||
+      ts.isJsxAttribute(p)) &&
+    p.name === id
+  )
+    return false;
+  return true;
+}
+
+/** The identifiers an assignment target writes. */
+function targetNames(node: ts.Node): string[] {
+  if (ts.isIdentifier(node)) return [node.text];
+  if (
+    ts.isParenthesizedExpression(node) ||
+    ts.isNonNullExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isTypeAssertionExpression(node)
+  )
+    return targetNames(node.expression);
+  if (ts.isObjectLiteralExpression(node))
+    return node.properties.flatMap((p) =>
+      ts.isShorthandPropertyAssignment(p)
+        ? [p.name.text]
+        : ts.isPropertyAssignment(p)
+          ? targetNames(p.initializer)
+          : ts.isSpreadAssignment(p)
+            ? targetNames(p.expression)
+            : [],
+    );
+  if (ts.isArrayLiteralExpression(node))
+    return node.elements.flatMap((e) =>
+      ts.isSpreadElement(e) ? targetNames(e.expression) : targetNames(e),
+    );
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+  )
+    return targetNames(node.left);
+  return [];
+}
+
+const isAssignment = (kind: ts.SyntaxKind) =>
+  kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
+
+/** The `var` names a function body (or a run of it) declares, nested functions aside. */
+function varNames(nodes: readonly ts.Node[]): string[] {
+  const out: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclarationList(node) &&
+      !(node.flags & ts.NodeFlags.BlockScoped)
+    )
+      node.declarations.forEach((d) => out.push(...bindingIdentifiers(d.name)));
+    if (!opensScope(node)) ts.forEachChild(node, visit);
+  };
+  nodes.forEach(visit);
+  return out;
+}
+
+/** The names a block's statements declare for the whole block. */
+function blockNames(statements: readonly ts.Statement[]): string[] {
+  return statements.flatMap((s) => {
+    const d = declaredBy(s);
+    return d.hoists && !ts.isFunctionDeclaration(s) ? [] : d.names;
+  });
+}
+
+/**
+ * What a run of statements reads and writes from outside itself: the names
+ * it reads and assigns that no scope inside it declares (its own top-level
+ * declarations count as outside), the ones of those read inside a function
+ * it creates, and whether it returns, yields, awaits or reads its own
+ * `this`/`arguments`/`super` (or `new.target`) at its own level.
+ */
+function scopeFacts(nodes: readonly ts.Statement[]) {
+  const refs = new Set<string>();
+  const assigned = new Set<string>();
+  const inClosure = new Set<string>();
+  let returns = false;
+  let yields = false;
+  let awaits = false;
+  let own = false;
+  const scopes: Set<string>[] = [];
+  const free = (name: string) => !scopes.some((scope) => scope.has(name));
+  const write = (target: ts.Node) =>
+    targetNames(target)
+      .filter(free)
+      .forEach((n) => assigned.add(n));
+  const within = (names: string[], go: () => void) => {
+    scopes.push(new Set(names));
+    go();
+    scopes.pop();
+  };
+  const visit = (node: ts.Node, nested: boolean) => {
+    if (ts.isIdentifier(node)) {
+      if (!isReference(node)) return;
+      if (OWN_BINDING.has(node.text)) own = true;
+      else if (free(node.text)) {
+        refs.add(node.text);
+        if (nested) inClosure.add(node.text);
+      }
+      return;
+    }
+    if (
+      node.kind === ts.SyntaxKind.ThisKeyword ||
+      node.kind === ts.SyntaxKind.SuperKeyword ||
+      ts.isMetaProperty(node)
+    )
+      own = true;
+    if (!nested) {
+      if (ts.isReturnStatement(node)) returns = true;
+      if (ts.isYieldExpression(node)) yields = true;
+      if (
+        ts.isAwaitExpression(node) ||
+        (ts.isForOfStatement(node) && node.awaitModifier)
+      )
+        awaits = true;
+    }
+    if (ts.isBinaryExpression(node) && isAssignment(node.operatorToken.kind))
+      write(node.left);
+    if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      (node.operator === ts.SyntaxKind.PlusPlusToken ||
+        node.operator === ts.SyntaxKind.MinusMinusToken)
+    )
+      write(node.operand);
+    if (
+      (ts.isForInStatement(node) || ts.isForOfStatement(node)) &&
+      !ts.isVariableDeclarationList(node.initializer)
+    )
+      write(node.initializer);
+    const children = () =>
+      ts.forEachChild(node, (child) =>
+        visit(child, nested || opensScope(node)),
+      );
+    if (opensScope(node)) {
+      const fn = node as ts.SignatureDeclaration & { body?: ts.Node };
+      const names = (fn.parameters ?? []).flatMap((p) =>
+        bindingIdentifiers(p.name),
+      );
+      if (ts.isFunctionExpression(node) && node.name)
+        names.push(node.name.text);
+      if (fn.body && ts.isBlock(fn.body))
+        names.push(
+          ...varNames(fn.body.statements),
+          ...blockNames(fn.body.statements),
+        );
+      if (ts.isClassStaticBlockDeclaration(node))
+        names.push(
+          ...varNames(node.body.statements),
+          ...blockNames(node.body.statements),
+        );
+      within(names, children);
+    } else if (ts.isBlock(node)) within(blockNames(node.statements), children);
+    else if (ts.isCaseBlock(node))
+      within(
+        node.clauses.flatMap((c) => blockNames(c.statements)),
+        children,
+      );
+    else if (
+      (ts.isForStatement(node) ||
+        ts.isForInStatement(node) ||
+        ts.isForOfStatement(node)) &&
+      node.initializer &&
+      ts.isVariableDeclarationList(node.initializer) &&
+      node.initializer.flags & ts.NodeFlags.BlockScoped
+    )
+      within(
+        node.initializer.declarations.flatMap((d) =>
+          bindingIdentifiers(d.name),
+        ),
+        children,
+      );
+    else if (ts.isCatchClause(node) && node.variableDeclaration)
+      within(bindingIdentifiers(node.variableDeclaration.name), children);
+    else children();
+  };
+  for (const node of nodes) visit(node, false);
+  return { refs, assigned, inClosure, returns, yields, awaits, own };
+}
+
+/**
+ * A function the stage may be cut from: a function with a block body and
+ * no function around it (its scope is its own and the module's).
+ */
+function stageSource(node: ts.Node): node is BlockFunction {
+  if (
+    !ts.isFunctionDeclaration(node) &&
+    !ts.isFunctionExpression(node) &&
+    !ts.isArrowFunction(node)
+  )
+    return false;
+  if (!node.body || !ts.isBlock(node.body) || node.asteriskToken) return false;
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+    if (opensScope(up) || ts.isClassLike(up)) return false;
+  return true;
+}
+
+/** A source function's name: its own, or its variable's. */
+function functionName(node: BlockFunction): string | undefined {
+  if (node.name && ts.isIdentifier(node.name)) return node.name.text;
+  const up = node.parent;
+  if (ts.isVariableDeclaration(up) && ts.isIdentifier(up.name))
+    return up.name.text;
+  return undefined;
+}
+
+/**
+ * The call a stage leaves: `fn(a, b);` when it returns nothing, else
+ * `const { x, y } = fn(a, b);` (or `let`), awaited when the stage is
+ * async; the arguments are the stage's parameters by name, and the names
+ * bound are the ones it returns.
+ */
+function callsStage(
+  statement: ts.Statement,
+  stage: ts.FunctionDeclaration,
+  params: string[],
+  returned: string[],
+): boolean {
+  let call: ts.Expression | undefined;
+  if (ts.isExpressionStatement(statement)) {
+    if (returned.length > 0) return false;
+    call = statement.expression;
+  } else if (ts.isVariableStatement(statement)) {
+    if (returned.length === 0) return false;
+    if ((ts.getModifiers(statement) ?? []).length > 0) return false;
+    const list = statement.declarationList;
+    if (!(list.flags & ts.NodeFlags.BlockScoped)) return false;
+    if (list.declarations.length !== 1) return false;
+    const decl = list.declarations[0]!;
+    if (decl.type || decl.exclamationToken) return false;
+    if (!ts.isObjectBindingPattern(decl.name)) return false;
+    const bound: string[] = [];
+    for (const el of decl.name.elements) {
+      if (el.dotDotDotToken || el.propertyName || el.initializer) return false;
+      if (!ts.isIdentifier(el.name)) return false;
+      bound.push(el.name.text);
+    }
+    if (new Set(bound).size !== bound.length) return false;
+    if ([...bound].sort().join() !== [...returned].sort().join()) return false;
+    call = decl.initializer;
+  }
+  if (!call) return false;
+  if (isAsync(stage)) {
+    if (!ts.isAwaitExpression(call)) return false;
+    call = call.expression;
+  }
+  if (!ts.isCallExpression(call)) return false;
+  if (call.typeArguments || call.questionDotToken) return false;
+  if (!ts.isIdentifier(call.expression)) return false;
+  if (call.expression.text !== stage.name?.text) return false;
+  if (call.arguments.length !== params.length) return false;
+  return call.arguments.every(
+    (a, i) => ts.isIdentifier(a) && a.text === params[i],
+  );
+}
+
+/**
+ * A new top-level function that may hold a stage: a plain or exported,
+ * plain or async function declaration, alone on its lines, every line
+ * added, with plain named parameters (types allowed, no defaults or rest)
+ * and no type parameters. Its statements are the moved ones, then at most
+ * a `return { … }` of shorthand names, with only blank lines after them.
+ */
+function stageDestination(
+  statement: ts.Statement,
+  side: DiffSide,
+  source: ts.SourceFile,
+):
+  | {
+      node: ts.FunctionDeclaration & { body: ts.Block };
+      params: string[];
+      moved: ts.Statement[];
+      returned: string[];
+      ret?: ts.ReturnStatement;
+    }
+  | undefined {
+  if (!ts.isFunctionDeclaration(statement)) return undefined;
+  if (!statement.name || !statement.body || statement.asteriskToken)
+    return undefined;
+  if (statement.typeParameters) return undefined;
+  const modifiers = ts.getModifiers(statement) ?? [];
+  const allowed = [ts.SyntaxKind.ExportKeyword, ts.SyntaxKind.AsyncKeyword];
+  if (modifiers.some((m) => !allowed.includes(m.kind))) return undefined;
+  const start = statement.getStart(source);
+  const end = statement.getEnd();
+  const at = (pos: number) => source.getLineAndCharacterOfPosition(pos);
+  if (at(start).character !== 0) return undefined;
+  if (!BLANK_LINE.test(side.lines[at(end).line]!.slice(at(end).character)))
+    return undefined;
+  if (!allChanged(side, source, start, end)) return undefined;
+  const params: string[] = [];
+  for (const p of statement.parameters) {
+    if (p.initializer || p.dotDotDotToken || p.questionToken) return undefined;
+    if (!ts.isIdentifier(p.name) || p.name.text === "this") return undefined;
+    params.push(p.name.text);
+  }
+  if (new Set(params).size !== params.length) return undefined;
+  const statements = [...statement.body.statements];
+  const last = statements[statements.length - 1];
+  let returned: string[] = [];
+  let ret: ts.ReturnStatement | undefined;
+  if (last && ts.isReturnStatement(last)) {
+    const value = last.expression;
+    if (!value || !ts.isObjectLiteralExpression(value)) return undefined;
+    if (value.properties.length === 0) return undefined;
+    for (const p of value.properties) {
+      if (!ts.isShorthandPropertyAssignment(p) || p.objectAssignmentInitializer)
+        return undefined;
+      returned.push(p.name.text);
+    }
+    if (new Set(returned).size !== returned.length) return undefined;
+    ret = last;
+    statements.pop();
+  } else returned = [];
+  if (statements.length === 0) return undefined;
+  // Nothing but blank lines after the moved statements, besides the return.
+  const lastEnd = at(statements[statements.length - 1]!.getEnd());
+  const close = at(statement.body.getEnd()).line;
+  const [retFirst, retLast] = ret
+    ? [at(ret.getStart(source)).line, at(ret.getEnd()).line]
+    : [close, close];
+  if (!BLANK_LINE.test(side.lines[lastEnd.line]!.slice(lastEnd.character)))
+    return undefined;
+  for (let l = lastEnd.line + 1; l < close; l++)
+    if ((l < retFirst || l > retLast) && !BLANK_LINE.test(side.lines[l]!))
+      return undefined;
+  return {
+    node: statement as ts.FunctionDeclaration & { body: ts.Block },
+    params,
+    moved: statements,
+    returned,
+    ret,
+  };
+}
+
+/**
+ * Why a run of a function's statements can't be read as a stage taking
+ * `params` and returning `returned`, or undefined when it can. The run may
+ * read the function's own names (its parameters and what its body
+ * declares) only through the stage's parameters, and never assign one; a
+ * function it creates may not read one that is assigned elsewhere in the
+ * function (it would see a copy). Every name it declares that the rest of
+ * the function reads comes back in the return (a `var` or a function
+ * declaration not at all: they hoist), and a `let` that comes back is
+ * read by no function the run creates. It doesn't return, yield or read
+ * its own `this`, and awaits exactly when the stage is async.
+ */
+function stageProblem(
+  fn: BlockFunction,
+  start: number,
+  count: number,
+  params: string[],
+  returned: string[],
+  async: boolean,
+): string | undefined {
+  const body = fn.body.statements;
+  const run = body.slice(start, start + count);
+  const rest = [...body.slice(0, start), ...body.slice(start + count)];
+  const moved = scopeFacts(run);
+  if (moved.returns) return "returns";
+  if (moved.yields) return "yields";
+  if (moved.own) return "reads its own this, arguments or super";
+  if (moved.awaits !== async) return "awaits only on one side";
+  // The function's own names at the cut.
+  const visible = new Set<string>();
+  for (const p of fn.parameters)
+    bindingIdentifiers(p.name).forEach((n) => visible.add(n));
+  if (ts.isFunctionExpression(fn) && fn.name) visible.add(fn.name.text);
+  for (const s of rest) declaredBy(s).names.forEach((n) => visible.add(n));
+  varNames(rest).forEach((n) => visible.add(n));
+  const declared = new Map<string, { hoists: boolean; mutable: boolean }>();
+  for (const n of varNames(run))
+    declared.set(n, { hoists: true, mutable: true });
+  for (const s of run) {
+    const d = declaredBy(s);
+    for (const n of d.names) declared.set(n, d);
+  }
+  const passed = new Set(params);
+  for (const n of moved.refs)
+    if (visible.has(n) && !declared.has(n) && !passed.has(n))
+      return `reads ${n} without it as a parameter`;
+  for (const n of moved.assigned)
+    if (passed.has(n)) return `assigns its parameter ${n}`;
+  const outside = scopeFacts(rest);
+  for (const n of moved.inClosure)
+    if (passed.has(n) && outside.assigned.has(n))
+      return `a function it creates reads ${n}, which is assigned elsewhere`;
+  for (const n of returned)
+    if (!declared.has(n)) return `returns ${n}, which it doesn't declare`;
+  const back = new Set(returned);
+  for (const [n, d] of declared) {
+    if (!outside.refs.has(n)) continue;
+    if (d.hoists) return `${n} hoists, and the rest of the function reads it`;
+    if (!back.has(n)) return `the rest of the function reads ${n}`;
+  }
+  for (const n of returned)
+    if (declared.get(n)!.mutable && moved.inClosure.has(n))
+      return `returns ${n}, which a function it creates reads`;
+  return undefined;
+}
+
+/**
+ * Finds each stage cut from a long function (owner v0.10.3 Q1) and cuts it
+ * out of both sides: the moved statements and the call left in their place
+ * become one marker, and the stage goes (its doc comment stays a comment).
+ * The statements are contiguous top-level statements of one function's
+ * body, every line of them removed, in the stage in the same order, token
+ * for token (stageDestination, stageProblem); the call is a top-level
+ * statement of the same-named function, in the same change. What is left
+ * is read as before. Returns how many statements moved between files, and
+ * each stage.
+ */
+function cutMovedStages(
+  files: FileDiff[],
+  names?: RegExp,
+): { movedAcross: number; moves: StageMove[] } {
+  const code = files
+    .map((entry) => ({
+      entry,
+      oldSource: parseSide(entry.file, entry.old),
+      newSource: parseSide(entry.file, entry.new),
+    }))
+    .filter(
+      ({ entry }) =>
+        CODE_FILE.test(entry.file) && !MOVE_BOOKKEEPING.test(entry.file),
+    );
+  const keyOf = (s: ts.Statement, source: ts.SourceFile) =>
+    tokensOf(s, source, names).join(" ");
+  const sources: { f: number; node: BlockFunction; keys: string[] }[] = [];
+  const dests: {
+    f: number;
+    dest: NonNullable<ReturnType<typeof stageDestination>>;
+    keys: string[];
+  }[] = [];
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    const visit = (node: ts.Node) => {
+      if (stageSource(node)) {
+        sources.push({
+          f,
+          node,
+          keys: node.body.statements.map((s) => keyOf(s, oldSource)),
+        });
+        return;
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(oldSource);
+    for (const statement of newSource.statements) {
+      const dest = stageDestination(statement, entry.new, newSource);
+      if (dest)
+        dests.push({
+          f,
+          dest,
+          keys: dest.moved.map((s) => keyOf(s, newSource)),
+        });
+    }
+  });
+
+  const spans = code.map(() => ({ old: [] as Span[], new: [] as Span[] }));
+  const lineOf = (source: ts.SourceFile, pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const free = (taken: Span[], source: ts.SourceFile, s: number, e: number) =>
+    taken.every(
+      (t) =>
+        lineOf(source, e) < lineOf(source, t.start) ||
+        lineOf(source, s) > lineOf(source, t.end),
+    );
+  const groupOf = (side: DiffSide, line: number) =>
+    side.changed.find((c) => c.at === line)?.group;
+  const moves: StageMove[] = [];
+  let movedAcross = 0;
+  let marker = 0;
+  for (const { f: d, dest, keys } of dests) {
+    const to = code[d]!;
+    let found = false;
+    for (const source of sources) {
+      if (found) break;
+      const at = code[source.f]!;
+      const name = functionName(source.node);
+      if (name === undefined) continue;
+      const body = source.node.body.statements;
+      for (let i = 0; i + keys.length <= body.length && !found; i++) {
+        if (keys.some((k, j) => source.keys[i + j] !== k)) continue;
+        const first = body[i]!;
+        const last = body[i + keys.length - 1]!;
+        const e = { start: first.getStart(at.oldSource), end: last.getEnd() };
+        if (!allChanged(at.entry.old, at.oldSource, e.start, e.end)) continue;
+        if (
+          stageProblem(
+            source.node,
+            i,
+            keys.length,
+            dest.params,
+            dest.returned,
+            isAsync(dest.node),
+          ) !== undefined
+        )
+          continue;
+        const group = groupOf(at.entry.old, lineOf(at.oldSource, e.start));
+        if (group === undefined) continue;
+        // The call, in the same change, inside the function of that name.
+        let call: ts.Statement | undefined;
+        const look = (node: ts.Node) => {
+          if (call) return;
+          if (stageSource(node) && functionName(node) === name) {
+            call = node.body.statements.find(
+              (s) =>
+                groupOf(
+                  at.entry.new,
+                  lineOf(at.newSource, s.getStart(at.newSource)),
+                ) === group &&
+                callsStage(s, dest.node, dest.params, dest.returned) &&
+                allChanged(
+                  at.entry.new,
+                  at.newSource,
+                  s.getStart(at.newSource),
+                  s.getEnd(),
+                ),
+            );
+            return;
+          }
+          ts.forEachChild(node, look);
+        };
+        look(at.newSource);
+        if (!call) continue;
+        const r = { start: call.getStart(at.newSource), end: call.getEnd() };
+        const ds = {
+          start: dest.node.getStart(to.newSource),
+          end: dest.node.getEnd(),
+        };
+        if (
+          !free(spans[source.f]!.old, at.oldSource, e.start, e.end) ||
+          !free(spans[source.f]!.new, at.newSource, r.start, r.end) ||
+          !free(spans[d]!.new, to.newSource, ds.start, ds.end) ||
+          (source.f === d &&
+            !(
+              lineOf(to.newSource, r.end) < lineOf(to.newSource, ds.start) ||
+              lineOf(to.newSource, r.start) > lineOf(to.newSource, ds.end)
+            ))
+        )
+          continue;
+        marker += 1;
+        const text = `__movedStage${marker}__`;
+        spans[source.f]!.old.push({ ...e, text });
+        spans[source.f]!.new.push({ ...r, text });
+        spans[d]!.new.push({ ...ds, text: "" });
+        if (source.f !== d) movedAcross += keys.length;
+        // The moved lines at each side: in the old file with the comment
+        // lines removed just above them, in the stage from its `{`.
+        const oldLines = at.entry.old.lines;
+        const removed = new Set(at.entry.old.changed.map((c) => c.at));
+        let top = lineOf(at.oldSource, e.start);
+        while (
+          top > 0 &&
+          removed.has(top - 1) &&
+          COMMENT_LINE.test(oldLines[top - 1]!)
+        )
+          top -= 1;
+        const oldRun = oldLines.slice(top, lineOf(at.oldSource, e.end) + 1);
+        const open = lineOf(
+          to.newSource,
+          dest.node.body.getStart(to.newSource),
+        );
+        const movedEnd = lineOf(
+          to.newSource,
+          dest.moved[dest.moved.length - 1]!.getEnd(),
+        );
+        const newRun = to.entry.new.lines.slice(open + 1, movedEnd + 1);
+        const all =
+          lineOf(to.newSource, ds.end) - lineOf(to.newSource, ds.start) + 1;
+        const codeIn = (lines: string[]) =>
+          lines.filter((l) => !BLANK_LINE.test(l)).length;
+        moves.push({
+          from: at.entry.file,
+          to: to.entry.file,
+          start: at.oldSource.getLineAndCharacterOfPosition(
+            source.node.getStart(at.oldSource),
+          ),
+          name: dest.node.name!.text,
+          wrapper: {
+            old:
+              lineOf(at.newSource, r.end) - lineOf(at.newSource, r.start) + 1,
+            new: all - newRun.length,
+          },
+          body: { old: oldRun.length, new: newRun.length },
+          bodyCode: { old: codeIn(oldRun), new: codeIn(newRun) },
+          statements: keys.length,
+          returned: dest.returned,
+        });
+        found = true;
+      }
+    }
+  }
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    if (spans[f]!.old.length > 0)
+      entry.old = collapse(entry.old, oldSource, spans[f]!.old);
+    if (spans[f]!.new.length > 0)
+      entry.new = collapse(entry.new, newSource, spans[f]!.new);
+  });
+  return { movedAcross, moves };
+}
+
+/**
  * The moves a `Mechanical:` commit makes that aren't whole statements: each
- * body moved whole into a new function (cutMovedBodies) and each router
- * split (cutMovedProcedures), and every file's lines at both sides before
+ * body moved whole into a new function (cutMovedBodies), each router split
+ * (cutMovedProcedures) and each stage cut from a function (cutMovedStages),
+ * and every file's lines at both sides before
  * and after they are cut out. The size ratchet reads these: what is left
  * once they are cut may rise only by its import lines.
  */
@@ -1097,6 +1794,7 @@ export function structuralMoves(
 ): {
   bodies: BodyMove[];
   routers: RouterMove[];
+  stages: StageMove[];
   files: {
     file: string;
     old: string[];
@@ -1110,9 +1808,11 @@ export function structuralMoves(
   const before = files.map((e) => ({ old: e.old.lines, new: e.new.lines }));
   const bodies = cutMovedBodies(files, names).moves;
   const routers = cutMovedProcedures(files, names).moves;
+  const stages = cutMovedStages(files, names).moves;
   return {
     bodies,
     routers,
+    stages,
     files: files.map((e, i) => ({
       file: e.file,
       old: before[i]!.old,
@@ -1333,9 +2033,11 @@ function matchCode(code: { old: CodeSide; new: CodeSide }[]): {
  * (the same change group, in order), or as part of a run of whole top-level
  * statements, kept in order, moved within the file or to another one. An
  * arrow or function expression's whole body may move into a new top-level
- * function, its statements compared token by token (cutMovedBodies), and
+ * function, its statements compared token by token (cutMovedBodies),
  * whole router procedures into a new part mounted where they were
- * (cutMovedProcedures). Other
+ * (cutMovedProcedures), and a run of a function's top-level statements
+ * into a new top-level function, called where they were (cutMovedStages).
+ * Other
  * lines (docs, data, comments) match by path rewrite as a multiset: first in
  * the same file (a moved entry in a sorted list matches too), then in any
  * other file of the commit. A prettier re-wrap of a file's changed lines
@@ -1361,7 +2063,8 @@ export function notAMove(
   const files = readDiff(diff);
   const bodiesAcross =
     cutMovedBodies(files, names).movedAcross +
-    cutMovedProcedures(files, names).movedAcross;
+    cutMovedProcedures(files, names).movedAcross +
+    cutMovedStages(files, names).movedAcross;
   for (const entry of files) {
     const { file, wholeFile } = entry;
     if (MOVE_BOOKKEEPING.test(file)) continue;

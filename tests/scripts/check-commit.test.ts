@@ -915,6 +915,332 @@ describe("notAMove: a router split moves whole procedures to a new part", () => 
   });
 });
 
+describe("notAMove: a stage cut from a long function (owner v0.10.3 Q1)", () => {
+  let dir: string;
+  let cases = 0;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+  const write = (files: Record<string, string[]>) => {
+    for (const [file, lines] of Object.entries(files)) {
+      const full = path.join(dir, file);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, `${lines.join("\n")}\n`);
+    }
+  };
+  /** The staged change from `base` (committed alone) to `after`. */
+  const change = (
+    base: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ) => {
+    cases += 1;
+    git("checkout", "-q", "-f", "--orphan", `case-${cases}`);
+    git("read-tree", "--empty");
+    git("clean", "-qfdx");
+    write(base);
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    write(after);
+    git("add", "-A");
+    return [
+      parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+      git("diff", "--cached", "-M", "-U1000000"),
+    ] as const;
+  };
+  const cut = (
+    base: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ) => notAMove(...change(base, after));
+  const REFUSED = /changed line\(s\)|not whole top-level statements/;
+
+  const YEAR = "src/lib/pure/engine/year.ts";
+  const STAGE = "src/lib/pure/engine/stages/rmd.ts";
+  /** The statements the stage takes, as they read in the year function. */
+  const rmdRun = [
+    "let total = 0;",
+    "const byPerson: number[] = [];",
+    "for (const person of people) {",
+    "  const amount = computeRmd(balances.of(person), ageInYear(person, year));",
+    "  if (amount > 0) {",
+    "    byPerson.push(amount);",
+    "    total += amount;",
+    "  }",
+    "}",
+    "const rmd = roundToCents(total);",
+  ];
+  const indent = (lines: string[], by = "  ") => lines.map((l) => by + l);
+  const yearFile = (body: string[], imports: string[]) => [
+    ...imports,
+    'import type { Context, Result } from "./types";',
+    "",
+    "export function runYear(ctx: Context, year: number): Result {",
+    "  const { people, balances } = ctx;",
+    "  const start = balances.total;",
+    "  // The year's RMD, per person.",
+    ...indent(body),
+    "  // What is left.",
+    "  const left = start - rmd;",
+    // The stage's own `amount` (in its loop) is another binding.
+    "  const amount = left / 2;",
+    "  return { rmd, byPerson, left, amount };",
+    "}",
+  ];
+  const RULES =
+    'import { ageInYear, computeRmd, roundToCents } from "./rules";';
+  const base = { [YEAR]: yearFile(rmdRun, [RULES]) };
+  const stageFile = ({
+    run = rmdRun,
+    params = [
+      'people: Context["people"],',
+      'balances: Context["balances"],',
+      "year: number,",
+    ],
+    ret = ["", "return { rmd, byPerson };"],
+  }: { run?: string[]; params?: string[]; ret?: string[] } = {}) => [
+    'import { ageInYear, computeRmd, roundToCents } from "../rules";',
+    'import type { Context } from "../types";',
+    "",
+    "/** The year's RMD, per person. */",
+    "export function rmdStage(",
+    ...indent(params),
+    ") {",
+    ...indent(run),
+    ...indent(ret).map((l) => (l.trim() === "" ? "" : l)),
+    "}",
+  ];
+  const STAGE_IMPORT = 'import { rmdStage } from "./stages/rmd";';
+  const after = (
+    call = "const { rmd, byPerson } = rmdStage(people, balances, year);",
+    stage = stageFile(),
+  ) => ({
+    [YEAR]: yearFile([call], [STAGE_IMPORT]),
+    [STAGE]: stage,
+  });
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-stage-cut-"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "Test");
+  });
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it("passes statements moved in order into a stage, called with a destructure of what it returns", () => {
+    expect(cut(base, after())).toBeUndefined();
+    const moves = structuralMoves(...change(base, after()));
+    expect(moves.stages).toEqual([
+      {
+        from: YEAR,
+        to: STAGE,
+        start: { line: 3, character: 0 },
+        name: "rmdStage",
+        // The call; the signature (5 lines), the blank line, return and `}`.
+        wrapper: { old: 1, new: 8 },
+        body: { old: rmdRun.length, new: rmdRun.length },
+        bodyCode: { old: rmdRun.length, new: rmdRun.length },
+        statements: 4,
+        returned: ["rmd", "byPerson"],
+      },
+    ]);
+    expect(moves.bodies).toEqual([]);
+  });
+
+  it("passes a stage that returns nothing, called as a statement", () => {
+    const logged = [
+      'import { record } from "./log";',
+      "",
+      "export function runYear(ctx: Context, year: number): number {",
+      "  const total = ctx.total * 2;",
+      ...indent(["record(ctx.log, year, total);", "ctx.seen.add(year);"]),
+      "  return total;",
+      "}",
+    ];
+    const stage = [
+      'import { record } from "../log";',
+      "",
+      "export function logStage(ctx: Context, year: number, total: number) {",
+      "  record(ctx.log, year, total);",
+      "  ctx.seen.add(year);",
+      "}",
+    ];
+    expect(
+      cut(
+        { [YEAR]: logged },
+        {
+          [YEAR]: [
+            'import { logStage } from "./stages/log";',
+            ...logged.slice(1, 4),
+            "  logStage(ctx, year, total);",
+            ...logged.slice(6),
+          ],
+          "src/lib/pure/engine/stages/log.ts": stage,
+        },
+      ),
+    ).toBeUndefined();
+  });
+
+  it("fails a statement reordered on the way", () => {
+    const run = [rmdRun[1]!, rmdRun[0]!, ...rmdRun.slice(2)];
+    expect(cut(base, after(undefined, stageFile({ run })))).toMatch(REFUSED);
+  });
+
+  it("fails a line edited on the way, or a variable renamed", () => {
+    const edited = rmdRun.map((l) => l.replace("+= amount", "+= amount * 2"));
+    expect(cut(base, after(undefined, stageFile({ run: edited })))).toMatch(
+      REFUSED,
+    );
+    const renamed = rmdRun.map((l) => l.replace(/\btotal\b/g, "sum"));
+    expect(cut(base, after(undefined, stageFile({ run: renamed })))).toMatch(
+      REFUSED,
+    );
+  });
+
+  it("fails a new branch in the stage", () => {
+    const branched = [
+      "if (people.length === 0) total = -1;",
+      ...rmdRun.slice(1),
+    ];
+    expect(
+      cut(
+        base,
+        after(undefined, stageFile({ run: [rmdRun[0]!, ...branched] })),
+      ),
+    ).toMatch(REFUSED);
+    // A new branch at the call.
+    expect(
+      cut(base, {
+        ...after(),
+        [YEAR]: yearFile(
+          [
+            "if (year < 0) throw new Error();",
+            "const { rmd, byPerson } = rmdStage(people, balances, year);",
+          ],
+          [STAGE_IMPORT],
+        ),
+      }),
+    ).toMatch(REFUSED);
+  });
+
+  it("fails a stage that leaves out a name the rest reads, or reads one it isn't passed", () => {
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd } = rmdStage(people, balances, year);",
+          stageFile({ ret: ["", "return { rmd };"] }),
+        ),
+      ),
+    ).toMatch(REFUSED);
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson } = rmdStage(people, balances);",
+          stageFile({
+            params: [
+              'people: Context["people"],',
+              'balances: Context["balances"],',
+            ],
+          }),
+        ),
+      ),
+    ).toMatch(REFUSED);
+  });
+
+  it("fails a call that does more than call, or passes another name", () => {
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson } = rmdStage(people, balances, year + 1);",
+        ),
+      ),
+    ).toMatch(REFUSED);
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson } = rmdStage(people, ctx.balances, year);",
+        ),
+      ),
+    ).toMatch(REFUSED);
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson: rmdByPerson } = rmdStage(people, balances, year);",
+        ),
+      ),
+    ).toMatch(REFUSED);
+  });
+
+  it("fails a stage that would write or capture a copy of the function's own variable", () => {
+    const fn = (body: string[]) => [
+      "export function runYear(ctx: Context, year: number): number {",
+      "  let spent = ctx.spent;",
+      ...indent(body),
+      "  return spent;",
+      "}",
+    ];
+    const stage = (params: string, body: string[], ret: string) => ({
+      "src/lib/pure/engine/stages/spend.ts": [
+        `export function spendStage(${params}) {`,
+        ...indent(body),
+        ...(ret ? [`  ${ret}`] : []),
+        "}",
+      ],
+    });
+    // It assigns `spent`, which the function reads after it.
+    const assigns = ["spent += year;"];
+    expect(
+      cut(
+        { [YEAR]: fn([...assigns, "ctx.log(spent);"]) },
+        {
+          [YEAR]: [
+            'import { spendStage } from "./stages/spend";',
+            "",
+            ...fn(["spendStage(spent, year);", "ctx.log(spent);"]),
+          ],
+          ...stage("spent: number, year: number", assigns, ""),
+        },
+      ),
+    ).toMatch(REFUSED);
+    // A function it creates reads `spent`, which the function changes later.
+    const captures = ["const read = () => spent;"];
+    expect(
+      cut(
+        { [YEAR]: fn([...captures, "spent += year;", "ctx.log(read());"]) },
+        {
+          [YEAR]: [
+            'import { spendStage } from "./stages/spend";',
+            "",
+            ...fn([
+              "const { read } = spendStage(spent);",
+              "spent += year;",
+              "ctx.log(read());",
+            ]),
+          ],
+          ...stage("spent: number", captures, "return { read };"),
+        },
+      ),
+    ).toMatch(REFUSED);
+    // It returns from the function.
+    const returns = ["if (year < 0) return 0;"];
+    expect(
+      cut(
+        { [YEAR]: fn([...returns, "ctx.log(spent);"]) },
+        {
+          [YEAR]: [
+            'import { spendStage } from "./stages/spend";',
+            "",
+            ...fn(["spendStage(year);", "ctx.log(spent);"]),
+          ],
+          ...stage("year: number", returns, ""),
+        },
+      ),
+    ).toMatch(REFUSED);
+  });
+});
+
 describe("notAMove: a move's bookkeeping and bare names", () => {
   const renamed = parseNumstat(
     "1\t1\tsrc/lib/{calculators/engine/tax-gross-up.ts => pure/engine/withdrawal-solver.ts}\n1\t1\tdocs/DESIGN.md\n2\t2\tsize-baseline.json\n1\t1\tsrc/lib/generated/engine-hash.ts",
