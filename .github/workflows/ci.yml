@@ -589,6 +589,12 @@ jobs:
         env:
           DEMO_ONLY: "true"
 
+      # The same file with DEMO_ONLY off: a household install with a demo
+      # active, through the writes DEMO_ONLY refuses.
+      - name: Demo profile on a household install, PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/routers/demo-postgres.test.ts -t "with a demo active"
+
       - name: Fresh install on PostgreSQL
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/routers/fresh-install-postgres.test.ts

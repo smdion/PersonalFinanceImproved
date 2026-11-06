@@ -7,7 +7,8 @@
  * Runs only when TEST_DATABASE_URL names a throwaway database (its name
  * must end in `_test`): the test drops and rebuilds its public schema. CI
  * runs it against a PostgreSQL service with DEMO_ONLY on, as the public
- * demo runs.
+ * demo runs, and its "with a demo active" case again with DEMO_ONLY off,
+ * as a household install runs a demo.
  */
 // First: its mocks must be in place before any app module loads.
 import {
@@ -173,6 +174,61 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
         .toEqual(expectedEmptyTables(profile.slug, DEMO_DATA_TABLES));
     }
   }, 300_000);
+
+  // A household install with a demo active (DEMO_ONLY off): the live pool's
+  // reads and the write go to the demo schema. The public schema has no
+  // budget profile or pay, so a public read would fail the call.
+  it.skipIf(process.env.DEMO_ONLY === "true")(
+    "savings.recalculateAllocation with a demo active reads and writes the demo schema",
+    async () => {
+      // A profile with pay, so its live pool is positive.
+      const { schemaName: demo } = await (
+        await callerFor(null)
+      ).demo.activateProfile({ slug: "single-income" });
+      const { rows: target } = await admin.query<{
+        goal: number;
+        profile: number;
+      }>(
+        `SELECT (SELECT min(id) FROM "${demo}".savings_goals WHERE is_active) AS goal,
+                (SELECT min(id) FROM "${demo}".budget_profiles WHERE is_active) AS profile`,
+      );
+      const { goal, profile } = target[0]!;
+      expect(goal).not.toBeNull();
+      expect(profile).not.toBeNull();
+      await admin.query(
+        `DELETE FROM "${demo}".savings_goal_profile_allocations WHERE goal_id = $1 AND budget_profile_id = $2`,
+        [goal, profile],
+      );
+      await admin.query(
+        `INSERT INTO "${demo}".savings_goal_profile_allocations (goal_id, budget_profile_id, allocation_percent, monthly_contribution) VALUES ($1, $2, '10.000', '0.00')`,
+        [goal, profile],
+      );
+
+      const result = await (
+        await callerFor(demo)
+      ).savings.recalculateAllocation({ goalId: goal });
+
+      expect(result).toEqual({ updated: 1 });
+      const { rows: written } = await admin.query<{ amount: string }>(
+        `SELECT monthly_contribution AS amount FROM "${demo}".savings_goal_profile_allocations WHERE goal_id = $1 AND budget_profile_id = $2`,
+        [goal, profile],
+      );
+      expect(Number(written[0]!.amount)).toBeGreaterThan(0);
+      const { rows: publicRows } = await admin.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM public.savings_goal_profile_allocations",
+      );
+      expect(publicRows[0]!.n).toBe(0);
+    },
+  );
+
+  it.runIf(process.env.DEMO_ONLY === "true")(
+    "savings.recalculateAllocation is refused on the public demo",
+    async () => {
+      await expect(
+        (await callerFor(schemaName)).savings.recalculateAllocation(),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    },
+  );
 
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
