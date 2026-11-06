@@ -51,6 +51,7 @@ const response = (accountIdsWithErrors: string[] = []) => ({
   ],
   providerErrors: [],
   accountIdsWithErrors,
+  errorScope: [],
 });
 
 const requestedStart = () =>

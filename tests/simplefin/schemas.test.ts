@@ -366,6 +366,34 @@ describe("one broken account among good ones", () => {
   });
 });
 
+describe("which institutions an error may have left accounts out of", () => {
+  it("none for a clean answer or an error naming an account", async () => {
+    expect((await read(sfAccountSet())).errorScope).toEqual([]);
+    const named = await read(
+      sfAccountSet({ errlist: [{ msg: "stale", account_id: "ACT-1" }] }),
+    );
+    expect(named.errorScope).toEqual([]);
+  });
+
+  it("a connection's institution for an error naming the connection", async () => {
+    const r = await read(
+      sfAccountSet({ errlist: [{ msg: "Sign in again", conn_id: "CON-1" }] }),
+    );
+    expect(r.errorScope).toEqual(["My Bank"]);
+  });
+
+  it("every institution for a v1 error or an account without a readable id", async () => {
+    expect(
+      (await read({ ...sfV1AccountSet(), errors: ["Try again later"] }))
+        .errorScope,
+    ).toBe("any");
+    const unreadable = await read(
+      sfAccountSet({ accounts: [sfAccount(), { balance: "1.00" }] }),
+    );
+    expect(unreadable.errorScope).toBe("any");
+  });
+});
+
 describe("a broken envelope fails the whole call", () => {
   it.each([
     [

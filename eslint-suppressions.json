@@ -5303,7 +5303,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/simplefin/ingest.ts": {
@@ -5330,12 +5330,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 9
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },

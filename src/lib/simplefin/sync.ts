@@ -33,6 +33,7 @@ import {
   stopAtSimplefinQuota,
 } from "./request-log";
 import { ingestInvestmentData, type IngestSummary } from "./ingest";
+import { reidentifySimplefinAccounts } from "./reidentify";
 import { utcDayOf } from "@/lib/utils/date";
 import { toDecimalColumn } from "@/lib/utils/math";
 import { localDateStr } from "@/lib/utils/date";
@@ -56,7 +57,6 @@ type SimplefinSyncResult = {
 
 /** Re-request this many days before the last successful sync so late-posting rows are caught. */
 const WINDOW_OVERLAP_DAYS = 5;
-/** SimpleFIN keeps about 90 days of transactions. */
 /**
  * SimpleFIN keeps 90 days of transactions and answers a request for more
  * than that with a "capped" notice — and an exact 90 can already exceed it
@@ -402,15 +402,12 @@ export async function runSimplefinSync(
   try {
     const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
 
-    // Snapshot which included accounts we expect BEFORE fetching, so a
-    // silent partial response (an account missing from SimpleFIN's
-    // `accounts` array with no explicit error — the provider doesn't have
-    // to signal a degraded response) can be detected instead of looking
-    // identical to a full success. upsertSimplefinAccounts only touches
-    // rows present in the fetch, so a missing account's row is silently
-    // never updated unless we check for it here.
+    // The included accounts expected, read BEFORE fetching: one missing
+    // from the answer with no error (the provider needn't signal a degraded
+    // response) is a partial sync, not a full success.
     const expectedIncluded = await db
       .select({
+        id: schema.simplefinAccounts.id,
         externalAccountId: schema.simplefinAccounts.externalAccountId,
         orgName: schema.simplefinAccounts.orgName,
         accountName: schema.simplefinAccounts.accountName,
@@ -457,20 +454,17 @@ export async function runSimplefinSync(
     // next request stays inside it (and this isn't reported as an error).
     if (windowLimitDays) await learnWindowLimit(db, windowLimitDays);
     const fetchedIds = new Set(fetched.map((a) => a.id));
-    const missingAccounts = expectedIncluded.filter(
-      (a) => !fetchedIds.has(a.externalAccountId),
-    );
-
     const snapshotDate = localDateStr(asOfDate);
-    const missingWarning =
-      missingAccounts.length > 0
-        ? `${missingAccounts.length} of ${expectedIncluded.length} linked account${expectedIncluded.length === 1 ? "" : "s"} didn't respond this sync (will retry): ${missingAccounts.map((a) => `${a.orgName} ${a.accountName}`).join(", ")}`
-        : null;
 
     // Every balance write together: a failure partway leaves the accounts,
     // loans and today's snapshot as they were, never half updated.
-    const { totalBalance, accountCount } = await db.transaction(async (tx) => {
+    const synced = await db.transaction(async (tx) => {
+      // An account reported under a new SimpleFIN id keeps its row first.
+      const renewed = await reidentifySimplefinAccounts(tx, response, asOfDate);
       await upsertSimplefinAccounts(tx, fetched);
+      const missingAccounts = expectedIncluded.filter(
+        (a) => !fetchedIds.has(a.externalAccountId) && !renewed.has(a.id),
+      );
       const errored = new Set(accountIdsWithErrors ?? []);
       await applyLoanFeedBalances(
         tx,
@@ -516,8 +510,13 @@ export async function runSimplefinSync(
         // hasSyncedToday() will then return false, so the next hourly cron
         // tick retries instead of treating a partial sync as done for the day.
       }
-      return { totalBalance, accountCount };
+      return { totalBalance, accountCount, missingAccounts };
     });
+    const { totalBalance, accountCount, missingAccounts } = synced;
+    const missingWarning =
+      missingAccounts.length > 0
+        ? `${missingAccounts.length} of ${expectedIncluded.length} linked account${expectedIncluded.length === 1 ? "" : "s"} didn't respond this sync (will retry): ${missingAccounts.map((a) => `${a.orgName} ${a.accountName}`).join(", ")}`
+        : null;
 
     // Investment detail (holdings, transactions). A failure here must not
     // lose the balance snapshot already written — it becomes a warning.

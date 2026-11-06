@@ -35,6 +35,7 @@ import {
   type SimplefinAccountsBody,
   type SimplefinRawAccount,
 } from "./schemas";
+import { errorScope } from "@/lib/pure/sync/simplefin-reidentify";
 
 /** Full responses (holdings + 90 days of transactions) are much larger. */
 const FULL_REQUEST_TIMEOUT_MS = 60_000;
@@ -164,25 +165,21 @@ export async function claimSetupToken(setupToken: string): Promise<string> {
 type GetAccountsResult = {
   accounts: SimplefinAccount[];
   /**
-   * Non-fatal provider errors (e.g. one linked institution needs re-auth)
-   * that arrived alongside a usable accounts list — per the SimpleFIN
-   * protocol, `errors` and `accounts` can both be populated in the same
-   * response. Callers should surface these to the user (SimpleFIN's own
-   * developer docs ask API consumers to display `errlist`/`errors`, not
-   * just log them), not silently drop them.
+   * Non-fatal provider errors (e.g. one institution needs re-auth) sent
+   * with a usable accounts list, as the protocol allows. Shown to the user,
+   * as SimpleFIN's developer docs ask, never only logged.
    */
   providerErrors: string[];
-  /**
-   * Informational messages that aren't failures (e.g. "Requested date range
-   * exceeds limit of 90 days and was capped") — the data is complete for
-   * what the provider keeps.
-   */
+  /** Messages that aren't failures (e.g. "Requested date range exceeds
+   *  limit of 90 days and was capped"): the data is complete. */
   notices?: string[];
   /** A transaction-history limit (days) the provider reported, if any. */
   windowLimitDays?: number | null;
   /** Account ids named by a v2 `errlist` entry, or sent in a shape Ledgr
    *  can't read: their data this run is not trustworthy. */
   accountIdsWithErrors: string[];
+  /** Institutions an error may have left accounts out of (see errorScope). */
+  errorScope: ReturnType<typeof errorScope>;
 };
 
 type GetAccountsOptions = {
@@ -280,6 +277,7 @@ function checkAccounts(raw: readonly unknown[]) {
   const accounts: ReturnType<typeof withItems>[] = [];
   const problems: string[] = [];
   const erroredIds: string[] = [];
+  let unreadable = 0;
   raw.forEach((item, i) => {
     try {
       const checked = withItems(
@@ -292,12 +290,13 @@ function checkAccounts(raw: readonly unknown[]) {
       if (!(e instanceof BudgetApiError)) throw e;
       const { id, name } = (item ?? {}) as { id?: unknown; name?: unknown };
       if (typeof id === "string") erroredIds.push(id);
+      else unreadable++;
       const label =
         typeof name === "string" ? `"${name}"` : `#${i + 1} of ${raw.length}`;
       problems.push(`${e.message} (account ${label}, not updated this sync)`);
     }
   });
-  return { accounts, problems, erroredIds };
+  return { accounts, problems, erroredIds, unreadable };
 }
 
 function mapResponse(
@@ -335,9 +334,7 @@ function mapResponse(
   if (providerErrors.length > 0 && checked.accounts.length === 0) {
     throw new Error(`SimpleFIN provider error: ${providerErrors.join("; ")}`);
   }
-  // Per the SimpleFIN protocol, errors can arrive alongside a populated
-  // `accounts` array — one linked institution failing (e.g. needs re-auth)
-  // doesn't invalidate data successfully fetched for others.
+  // One institution failing doesn't invalidate the others' accounts.
   if (providerErrors.length > 0) {
     log("warn", "simplefin_partial_provider_error", {
       errorCount: providerErrors.length,
@@ -378,6 +375,7 @@ function mapResponse(
     providerErrors,
     notices,
     windowLimitDays,
+    errorScope: errorScope(json, checked, connectionNames, CAPPED_NOTICE),
     // A notice isn't an account failure, even if the provider scoped it to
     // one. A connection-level error (e.g. "sign in again") covers every
     // account on that connection.
