@@ -734,7 +734,7 @@
       "count": 1
     }
   },
-  "src/server/routers/budget.ts": {
+  "src/server/routers/budget/index.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

@@ -5576,7 +5576,7 @@
       "count": 1
     }
   },
-  "src/server/routers/budget.ts": {
+  "src/server/routers/budget/index.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 17
     },
