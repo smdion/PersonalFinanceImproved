@@ -66,11 +66,11 @@ import {
   type PayProfileSelection,
 } from "@/lib/pure/household/profile-selection.schema";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
-import { zBudgetActiveSummaryInput } from "@/server/services/budget/active-summary";
 import { computePaycheckSummary } from "@/server/services/paycheck/summary";
 import {
   computeBudgetActiveSummary,
   netMonthlyTakeHome,
+  zBudgetActiveSummaryInput,
 } from "@/server/services/budget/active-summary";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;

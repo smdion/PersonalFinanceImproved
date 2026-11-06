@@ -155,16 +155,6 @@
     "to": "src/server/routers/savings.ts"
   },
   {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/savings.ts",
-    "to": "src/server/routers/budget.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/savings.ts",
-    "to": "src/server/routers/paycheck.ts"
-  },
-  {
     "rule": "pure-has-no-io",
     "from": "src/lib/pure/budget/utility-cost-feed.ts",
     "to": "src/lib/budget-api/types.ts"

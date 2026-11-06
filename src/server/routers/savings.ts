@@ -5,8 +5,6 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
-  createCallerFactory,
-  internalCtx,
   protectedProcedure,
   savingsProcedure,
   type Context,
@@ -18,8 +16,8 @@ import {
   resolveEffectiveMonthlyContribution,
   type CapacityPerson,
 } from "@/lib/pure/savings/savings-capacity";
-import { paycheckRouter } from "./paycheck";
-import { budgetRouter } from "./budget";
+import { computePaycheckSummary } from "@/server/services/paycheck/summary";
+import { computeBudgetActiveSummary } from "@/server/services/budget/active-summary";
 import {
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
@@ -67,7 +65,8 @@ import type {
   BudgetCategoryGroup,
   BudgetTransaction,
 } from "@/lib/budget-api";
-import type { DbOrTx } from "@/lib/db";
+import type { Db, DbOrTx } from "@/lib/db";
+import type { RequestScope } from "@/server/data/request-scope";
 import {
   payProfileSelectionSchema,
   type PayProfileSelection,
@@ -137,7 +136,7 @@ async function writeJobExtraPaycheckRouting(
 
 /**
  * Live savings-capacity pool ((take-home - budgeted) across earners), via
- * the actual paycheck/budget routers — not a re-derived shortcut. Shared by
+ * the paycheck and budget summaries — not a re-derived shortcut. Shared by
  * recalculateAllocation and lockInAllocationPercent, the only two mutations
  * allowed to move a percentage-based goal's dollar/percent (see
  * recalculateAllocation's doc comment for why display/push never do this
@@ -146,7 +145,7 @@ async function writeJobExtraPaycheckRouting(
  * `profileId` lets a caller target a specific budget profile instead of
  * whichever one is currently active; omitting it preserves the
  * active-profile default. This is deliberately a *separate* computation
- * from computeSummary's totalMonthlyPool (which sums each goal's stored
+ * from computeSavingsSummary's totalMonthlyPool (which sums each goal's stored
  * monthlyContribution snapshot, not a live paycheck/budget derivation) —
  * they aren't two paths to the same number today. The budget-monthly-total
  * derivation itself goes through deriveBudgetMonthlyTotal — the single
@@ -154,7 +153,7 @@ async function writeJobExtraPaycheckRouting(
  * capacity computations.
  */
 async function computeLiveMaxMonthlyFunding(
-  ctx: Context,
+  ctx: { db: Db; scope: RequestScope },
   profileId?: number,
   /** The page's Contribution/Salary Profile ids for the paycheck side, and
    *  its budget summary's selection for the budget side, so the pool
@@ -165,8 +164,6 @@ async function computeLiveMaxMonthlyFunding(
     selection?: PayProfileSelection;
   },
 ): Promise<number | null> {
-  const paycheckCaller = createCallerFactory(paycheckRouter)(internalCtx(ctx));
-  const budgetCaller = createCallerFactory(budgetRouter)(internalCtx(ctx));
   const paycheckInput = {
     ...(income?.contributionProfileId != null
       ? { contributionProfileId: income.contributionProfileId }
@@ -176,10 +173,11 @@ async function computeLiveMaxMonthlyFunding(
       : {}),
   };
   const [paycheckData, budgetSummary] = await Promise.all([
-    paycheckCaller.computeSummary(
+    computePaycheckSummary(
+      ctx,
       Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
     ),
-    budgetCaller.computeActiveSummary({
+    computeBudgetActiveSummary(ctx, {
       ...(profileId ? { profileId } : {}),
       ...(income?.selection ? { selection: income.selection } : {}),
     }),
