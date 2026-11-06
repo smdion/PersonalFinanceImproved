@@ -111,7 +111,7 @@ export const MAJOR_COMPOSITION_BUCKETS: readonly CompositionBucket[] =
 
 // ── Holding observation source ──
 
-export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;
+export const HOLDING_SOURCE_VALUES = ["simplefin"] as const;
 export type HoldingSource = (typeof HOLDING_SOURCE_VALUES)[number];
 
 // ── Holding period basis ──

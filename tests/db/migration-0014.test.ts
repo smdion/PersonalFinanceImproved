@@ -130,11 +130,13 @@ describe("migration 0014 through the real migrator (SQLite)", () => {
   });
 
   it("converts a v0.10.1 install's profiles as a pending migration", () => {
-    // Install at 0013 (v0.10.1): the journal without 0014.
+    // Install at 0013 (v0.10.1): the journal up to 0014.
     const shipped = fs.readFileSync(journalPath(), "utf8");
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
-    expect(journal.entries.at(-1)!.tag).toBe(TAG);
-    journal.entries.pop();
+    const shippedCount = journal.entries.length;
+    const at = journal.entries.findIndex((e) => e.tag === TAG);
+    expect(at).toBeGreaterThan(0);
+    journal.entries.splice(at);
     fs.writeFileSync(journalPath(), JSON.stringify(journal, null, 2));
     runSQLite();
 
@@ -164,6 +166,6 @@ describe("migration 0014 through the real migrator (SQLite)", () => {
     ).n;
     db.close();
     expect(rows).toEqual(RENAME_CASES.map((c) => c.after));
-    expect(recorded).toBe(journal.entries.length + 1);
+    expect(recorded).toBe(shippedCount);
   });
 });

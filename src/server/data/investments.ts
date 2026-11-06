@@ -467,7 +467,6 @@ export async function loadLatestHoldings(db: Db) {
     .then(newestReportPerDay);
   const accountLatestDay = new Map<number, string>();
   for (const r of rows) {
-    if (r.simplefinAccountId === null) continue; // manual rows come later
     const day = accountLatestDay.get(r.simplefinAccountId);
     if (!day || r.asOf > day)
       accountLatestDay.set(r.simplefinAccountId, r.asOf);
@@ -475,7 +474,6 @@ export async function loadLatestHoldings(db: Db) {
   return rows
     .filter(
       (r) =>
-        r.simplefinAccountId !== null &&
         r.asOf === accountLatestDay.get(r.simplefinAccountId) &&
         Number(r.shares) !== 0,
     )

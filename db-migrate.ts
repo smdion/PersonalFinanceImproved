@@ -512,11 +512,11 @@ function columnMap(
 /**
  * Where an existing database's schema is, by the journal: the last entry
  * whose file hash is recorded, else the last entry whose snapshot's tables
- * and columns are all present (a journal cleared by a failed run), else —
- * the baseline's schema — the squashed line's tip. The label restore
- * transforms key on. The shape fallback only sees additions: once a
- * migration after the baseline drops or renames something, an emptied
- * journal could be labelled one entry early.
+ * and columns are all present and none of the columns it drops is (a
+ * journal cleared by a failed run), else — the baseline's schema — the
+ * squashed line's tip. The label restore transforms key on: a database not
+ * yet past a drop must never be labelled at or after it, or its backup
+ * would skip the restore step that removes the dropped column.
  */
 export function schemaLabel(
   journal: Journal,
@@ -534,11 +534,14 @@ export function schemaLabel(
   if (lastAppliedTag) return lastAppliedTag;
   for (const entry of [...journal.entries].reverse()) {
     if (entry.idx === 0) break;
-    if (
-      missingFromSnapshot(snapshotColumns(migrationsFolder, entry.idx), actual)
-        .length === 0
-    )
-      return entry.tag;
+    const at = snapshotColumns(migrationsFolder, entry.idx);
+    if (missingFromSnapshot(at, actual).length > 0) continue;
+    const before = snapshotColumns(migrationsFolder, entry.idx - 1);
+    const dropped = [...before].some(([table, cols]) => {
+      const kept = at.get(table);
+      return cols.some((c) => !kept?.includes(c) && actual.get(table)?.has(c));
+    });
+    if (!dropped) return entry.tag;
   }
   return SQUASHED_LINE_TIP;
 }

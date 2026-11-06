@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/pure/engine   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->648<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->652<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 

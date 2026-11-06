@@ -595,7 +595,7 @@ jobs:
 
       - name: Data migrations on PostgreSQL
         if: env.RUN == 'true' && (matrix.part == 'install')
-        run: pnpm test tests/db/migration-0014-postgres.test.ts
+        run: pnpm test tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts
 
       - name: Seeded routers and backup round trip on PostgreSQL
         if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))

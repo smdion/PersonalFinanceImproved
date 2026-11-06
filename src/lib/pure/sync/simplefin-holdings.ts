@@ -141,33 +141,13 @@ export function planHoldingObservations(
 }
 
 /**
- * A holding observation belongs to exactly one account: a SimpleFIN account
- * (synced) or a tracked account (manual entry). Postgres enforces this with
- * `holding_observations_one_account_check`; SQLite drops CHECK constraints,
- * so every writer calls this before inserting.
- */
-export function assertHoldingHasOneAccount(row: {
-  simplefinAccountId: number | null;
-  performanceAccountId: number | null;
-}): void {
-  if (
-    (row.simplefinAccountId === null) ===
-    (row.performanceAccountId === null)
-  ) {
-    throw new Error(
-      "A holding observation must belong to exactly one account (SimpleFIN or tracked).",
-    );
-  }
-}
-
-/**
  * A feed's holdings rows keep every report (several can share a day), so
  * readers that want one report per day take the day's newest: what the
- * one-row-per-day storage used to keep. Manual rows pass through.
+ * one-row-per-day storage used to keep.
  */
 export function newestReportPerDay<
   T extends {
-    simplefinAccountId: number | null;
+    simplefinAccountId: number;
     asOf: string;
     balanceDate: Date | null;
   },
@@ -175,13 +155,10 @@ export function newestReportPerDay<
   const at = (r: T) => r.balanceDate?.getTime() ?? -Infinity;
   const newest = new Map<string, number>();
   for (const r of rows) {
-    if (r.simplefinAccountId === null) continue;
     const key = `${r.simplefinAccountId}:${r.asOf}`;
     if (!newest.has(key) || at(r) > newest.get(key)!) newest.set(key, at(r));
   }
   return rows.filter(
-    (r) =>
-      r.simplefinAccountId === null ||
-      at(r) === newest.get(`${r.simplefinAccountId}:${r.asOf}`),
+    (r) => at(r) === newest.get(`${r.simplefinAccountId}:${r.asOf}`),
   );
 }

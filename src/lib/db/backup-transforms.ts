@@ -12,6 +12,7 @@
 import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "./v0810-profile-sets";
 import { renameDisplayNameActive } from "./v0102-display-name-custom";
+import { dropDeadHoldingLinkAndSettings } from "./v0102-dead-data";
 import pgJournal from "../../../drizzle/meta/_journal.json";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
@@ -1058,7 +1059,7 @@ export function transformBackupToCurrentSchema(
     to: currentVersion,
   });
 
-  // Deep-clone tables so we don't mutate the original
+  // Rows copied one level deep, so the input is never changed
   const cloned: TableData = {};
   for (const [key, rows] of Object.entries(tables)) {
     cloned[key] = rows.map((row) => ({ ...(row as Record<string, unknown>) }));
@@ -1071,9 +1072,7 @@ export function transformBackupToCurrentSchema(
   // its own era. Each transform is idempotent (fills only missing
   // tables/columns, guards backfills on empty), so an over-conservative
   // era guess degrades to extra no-op passes rather than a truncated
-  // restore. The previous `if / else if` ran exactly one transform, which
-  // left, e.g., a v0.6 backup missing every v0.7-line table
-  // (retirement_profiles, fpl_by_household, …) on restore.
+  // restore (one transform alone would leave a v0.6 backup without v0.7 tables).
   const ERA_ORDER = ["v0.1", "v0.2", "v0.3", "v0.5", "v0.6", "v0.7"] as const;
   const rank = (e: string) =>
     ERA_ORDER.indexOf(e as (typeof ERA_ORDER)[number]);
@@ -1103,6 +1102,7 @@ export function transformBackupToCurrentSchema(
   transformV0810ProfileSets(cloned);
   transformV095SsInAmount(cloned);
   renameDisplayNameActive(cloned);
+  dropDeadHoldingLinkAndSettings(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

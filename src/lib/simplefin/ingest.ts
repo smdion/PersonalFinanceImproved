@@ -14,7 +14,6 @@ import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { SimplefinAccount } from "./client";
 import {
-  assertHoldingHasOneAccount,
   hasInvestedHoldings,
   planHoldingObservations,
   securityIdentity,
@@ -184,7 +183,6 @@ async function ingestHoldings(
     );
     const values = {
       simplefinAccountId,
-      performanceAccountId: null,
       securityId,
       balanceDate: account.balanceDate,
       asOf,
@@ -199,7 +197,6 @@ async function ingestHoldings(
           : toDecimalColumn(row.costBasisPerShare, "a holding's cost", 8),
       source: "simplefin" as const,
     };
-    assertHoldingHasOneAccount(values);
     // One row per report; a feed that sends no report time, one per day.
     const h = schema.holdingObservations;
     await db

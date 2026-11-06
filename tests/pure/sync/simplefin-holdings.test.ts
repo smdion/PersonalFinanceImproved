@@ -1,9 +1,6 @@
 /** SimpleFIN holdings → securities and observations. Invented examples only. */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import {
-  assertHoldingHasOneAccount,
   inferSecurityKind,
   securityIdentity,
   hasInvestedHoldings,
@@ -153,70 +150,21 @@ describe("planHoldingObservations", () => {
   });
 });
 
-describe("assertHoldingHasOneAccount (the exactly-one rule SQLite can't enforce)", () => {
-  it("accepts a synced row", () => {
-    expect(() =>
-      assertHoldingHasOneAccount({
-        simplefinAccountId: 1,
-        performanceAccountId: null,
-      }),
-    ).not.toThrow();
-  });
-  it("accepts a manual row", () => {
-    expect(() =>
-      assertHoldingHasOneAccount({
-        simplefinAccountId: null,
-        performanceAccountId: 1,
-      }),
-    ).not.toThrow();
-  });
-  it("rejects a row with both accounts", () => {
-    expect(() =>
-      assertHoldingHasOneAccount({
-        simplefinAccountId: 1,
-        performanceAccountId: 2,
-      }),
-    ).toThrow(/exactly one account/);
-  });
-  it("rejects a row with neither account", () => {
-    expect(() =>
-      assertHoldingHasOneAccount({
-        simplefinAccountId: null,
-        performanceAccountId: null,
-      }),
-    ).toThrow(/exactly one account/);
-  });
-  it("is backed by a CHECK constraint in the Postgres migrations", () => {
-    const dir = join(process.cwd(), "drizzle");
-    const sqlText = readdirSync(dir)
-      .filter((f) => f.endsWith(".sql"))
-      .map((f) => readFileSync(join(dir, f), "utf-8"))
-      .join("\n");
-    expect(sqlText).toContain("holding_observations_one_account_check");
-  });
-});
-
 describe("newestReportPerDay", () => {
-  const row = (
-    feed: number | null,
-    asOf: string,
-    at: string | null,
-    id: number,
-  ) => ({
+  const row = (feed: number, asOf: string, at: string | null, id: number) => ({
     simplefinAccountId: feed,
     asOf,
     balanceDate: at ? new Date(at) : null,
     id,
   });
 
-  it("keeps each feed's newest report per day, every fund in it; manual rows pass", () => {
+  it("keeps each feed's newest report per day, every fund in it", () => {
     const rows = [
       row(1, "2026-10-30", "2026-10-30T22:00:00Z", 1), // Fri evening
       row(1, "2026-10-30", "2026-10-31T15:00:00Z", 2), // Sat, same as_of
       row(1, "2026-10-30", "2026-10-31T15:00:00Z", 3), // another fund, Sat
       row(2, "2026-10-30", "2026-10-30T22:00:00Z", 4), // another feed
-      row(null, "2026-10-30", null, 5),
     ];
-    expect(newestReportPerDay(rows).map((r) => r.id)).toEqual([2, 3, 4, 5]);
+    expect(newestReportPerDay(rows).map((r) => r.id)).toEqual([2, 3, 4]);
   });
 });

@@ -720,7 +720,6 @@
     "src/lib/pure/sync/simplefin-feeds.ts:isUnclaimedDebt",
     "src/lib/pure/sync/simplefin-feeds.ts:liveCoversAccount",
     "src/lib/pure/sync/simplefin-feeds.ts:sentTransactions",
-    "src/lib/pure/sync/simplefin-holdings.ts:assertHoldingHasOneAccount",
     "src/lib/pure/sync/simplefin-holdings.ts:hasInvestedHoldings",
     "src/lib/pure/sync/simplefin-holdings.ts:inferSecurityKind",
     "src/lib/pure/sync/simplefin-holdings.ts:newestReportPerDay",

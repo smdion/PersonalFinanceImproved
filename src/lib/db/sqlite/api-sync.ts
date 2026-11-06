@@ -339,30 +339,23 @@ export const simplefinAccountBalances = sqliteTable(
 );
 
 /**
- * Shares held per account and security, one row per report (per
- * `balanceDate`; per day for a feed that sends no report time, and for
- * manual rows). Every report is kept: a feed a market day behind sends two
- * reports a day apart that `asOf` would put on the same day. For funds with
- * no public ticker, the reported value ÷ shares is the only price history
- * there is. Exactly one of simplefinAccountId / performanceAccountId
- * is set (enforced in the app layer too — SQLite drops CHECK constraints).
+ * Shares held per SimpleFIN account and security, one row per report (per
+ * `balanceDate`; per day for a feed that sends no report time). Every report
+ * is kept: a feed a market day behind sends two reports a day apart that
+ * `asOf` would put on the same day. For funds with no public ticker, the
+ * reported value ÷ shares is the only price history there is.
  */
 export const holdingObservations = sqliteTable(
   "holding_observations",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    simplefinAccountId: integer("simplefin_account_id").references(
-      () => simplefinAccounts.id,
-      { onDelete: "restrict" },
-    ),
-    performanceAccountId: integer("performance_account_id").references(
-      () => performanceAccounts.id,
-      { onDelete: "restrict" },
-    ),
+    simplefinAccountId: integer("simplefin_account_id")
+      .notNull()
+      .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
     securityId: integer("security_id")
       .notNull()
       .references(() => securities.id, { onDelete: "restrict" }),
-    /** SimpleFIN `balance-date` as sent (UTC); null for manual rows. */
+    /** SimpleFIN `balance-date` as sent (UTC); null when the feed sent none. */
     balanceDate: integer("balance_date", { mode: "timestamp" }),
     /** The close assumed from balanceDate's time alone — no feed lag. The
      *  close the data really reflects is worked out on read
@@ -388,13 +381,7 @@ export const holdingObservations = sqliteTable(
       .where(
         sql`${table.simplefinAccountId} IS NOT NULL AND ${table.balanceDate} IS NULL`,
       ),
-    uniqueIndex("holding_observations_manual_idx")
-      .on(table.performanceAccountId, table.securityId, table.asOf)
-      .where(sql`${table.performanceAccountId} IS NOT NULL`),
     index("holding_observations_security_idx").on(table.securityId),
-    index("holding_observations_perf_account_idx").on(
-      table.performanceAccountId,
-    ),
   ],
 );
 

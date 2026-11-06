@@ -3173,9 +3173,6 @@
     }
   },
   "src/lib/db/backfill-perf-ids.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     }
@@ -5218,7 +5215,7 @@
   },
   "src/lib/pure/sync/simplefin-holdings.ts": {
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 3
