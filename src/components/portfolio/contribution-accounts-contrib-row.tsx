@@ -27,7 +27,7 @@ import {
   formatEmployerMatch,
   matchFigureForForm,
   matchValueToStore,
-} from "@/lib/pure/contributions/contribution-amount";
+} from "@/lib/pure/contributions/match-display";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";

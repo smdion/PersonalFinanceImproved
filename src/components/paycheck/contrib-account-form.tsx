@@ -44,7 +44,7 @@ import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
 import {
   matchFigureForForm,
   matchValueToStore,
-} from "@/lib/pure/contributions/contribution-amount";
+} from "@/lib/pure/contributions/match-display";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =

@@ -6,7 +6,7 @@ import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import {
   matchFigureForForm,
   matchValueToStore,
-} from "@/lib/pure/contributions/contribution-amount";
+} from "@/lib/pure/contributions/match-display";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";

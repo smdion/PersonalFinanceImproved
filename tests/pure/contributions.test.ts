@@ -12,7 +12,7 @@ import {
   ficaCapContext,
 } from "@/lib/pure/contributions/irs-limits";
 import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
-import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
+import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
 // The limits record mirrors real contribution_limits DB rows.

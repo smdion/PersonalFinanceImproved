@@ -17,7 +17,7 @@ import {
   formatEmployerMatch,
   matchFigureForForm,
   matchValueToStore,
-} from "@/lib/pure/contributions/contribution-amount";
+} from "@/lib/pure/contributions/match-display";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";

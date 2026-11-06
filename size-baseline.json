@@ -117,7 +117,7 @@
     "src/lib/pure/contributions/accumulation-order.ts": 30,
     "src/lib/pure/contributions/cap-pass.ts": 225,
     "src/lib/pure/contributions/category-totals.ts": 154,
-    "src/lib/pure/contributions/contribution-amount.ts": 109,
+    "src/lib/pure/contributions/contribution-amount.ts": 80,
     "src/lib/pure/contributions/contribution-caps.ts": 674,
     "src/lib/pure/contributions/contribution-order.ts": 93,
     "src/lib/pure/contributions/contribution-rows.ts": 216,

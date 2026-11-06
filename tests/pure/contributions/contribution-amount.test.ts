@@ -1,12 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   computeAnnualContribution,
-  formatEmployerMatch,
   fractionFromPercent,
-  matchFigureForForm,
-  matchValueToStore,
   parseEmployerMatch,
 } from "@/lib/pure/contributions/contribution-amount";
+import {
+  formatEmployerMatch,
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/match-display";
 
 describe("computeAnnualContribution", () => {
   it("computes percent_of_salary correctly", () => {

@@ -461,7 +461,7 @@
     "src/lib/pure/budget/utility-cost-feed.ts:sameCost",
     "src/lib/pure/budget/utility-cost-feed.ts:serviceMonth",
     "src/lib/pure/contributions/contrib-profile-diff.ts:diffContribProfileSwap",
-    "src/lib/pure/contributions/contribution-amount.ts:formatEmployerMatch",
+    "src/lib/pure/contributions/match-display.ts:formatEmployerMatch",
     "src/lib/pure/contributions/contribution-caps.ts:capMessage",
     "src/lib/pure/contributions/contribution-caps.ts:computeValue",
     "src/lib/pure/contributions/controlled-overrides.ts:withControlledOverrides",
