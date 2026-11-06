@@ -5655,9 +5655,6 @@
     }
   },
   "src/server/routers/demo.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     }
@@ -6309,6 +6306,11 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/server/services/demo/demo-schema.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
     }
   },
   "src/server/services/demo/demo-seed.ts": {
