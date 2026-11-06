@@ -12,7 +12,8 @@
  * number written as text is read as its number (PostgreSQL's numeric
  * keeps its scale, "0.00" where SQLite keeps "0"), a call that threw must
  * still throw (the database's own error text differs), and a finalize's
- * written rows are compared as a set. Everything else must match exactly.
+ * written rows are compared as a set, without their database-assigned
+ * `id` (withoutSurrogateId). Everything else must match exactly.
  *
  * Runs only when TEST_DATABASE_URL names a throwaway database (ending in
  * `_test`), holding the test database's lock (setup-postgres.ts). CI runs
@@ -49,6 +50,18 @@ import {
 
 const NUMBER_TEXT = /^-?\d+(\.\d+)?$/;
 
+/**
+ * A written row without its `id`, the surrogate key the database assigns:
+ * a refused insert (el-h5's second same-named account, a unique
+ * violation) still advances a PostgreSQL sequence, where SQLite's
+ * autoincrement doesn't, so every later row's id is one higher. Every
+ * other column, references to other rows included, is still compared.
+ */
+function withoutSurrogateId(row: unknown): unknown {
+  if (row === null || typeof row !== "object" || Array.isArray(row)) return row;
+  return Object.fromEntries(Object.entries(row).filter(([k]) => k !== "id"));
+}
+
 /** A pin as figures: number text read as numbers, a throw as thrown, and
  *  (`rowSets`) each `written` list in one fixed order. */
 function figures(value: unknown, rowSets = false): unknown {
@@ -61,6 +74,7 @@ function figures(value: unknown, rowSets = false): unknown {
     out[k] = k === "$threw" ? "threw" : figures(v, rowSets);
   if (rowSets && Array.isArray(out.written))
     out.written = out.written
+      .map(withoutSurrogateId)
       .map(
         (row) =>
           [

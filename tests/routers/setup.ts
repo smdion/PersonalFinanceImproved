@@ -7,15 +7,10 @@
  *   const result = await caller.budget.listProfiles();
  *   cleanup();
  */
+// First: a per-process ENCRYPTION_KEY, before any module that imports
+// src/lib/crypto.ts (sync-connections tests encrypt API credentials).
+import "./test-encryption-key";
 import { withAsyncTransactions } from "@/lib/db/sqlite-transactions";
-import { randomBytes } from "node:crypto";
-
-// Set a deterministic-per-process ENCRYPTION_KEY before any module that
-// imports src/lib/crypto.ts. Required for sync-connections tests that
-// encrypt API credentials at rest. Production reads this from container env.
-if (!process.env.ENCRYPTION_KEY) {
-  process.env.ENCRYPTION_KEY = randomBytes(32).toString("base64");
-}
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
