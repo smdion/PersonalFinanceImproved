@@ -157,10 +157,9 @@ export const createTRPCRouter = t.router;
 export const mergeRouters = t.mergeRouters;
 export const createCallerFactory = t.createCallerFactory;
 
-/** The context for a nested call into another router on behalf of a
- *  signed-in request (`createCallerFactory(router)(internalCtx(ctx))`):
- *  it skips that request's authenticated rate limit; every other
- *  middleware runs. A plain spread, so tRPC's caller types stay intact. */
+/** Context for a signed-in request's nested call into another router
+ *  (`createCallerFactory(router)(internalCtx(ctx))`): skips only the
+ *  authenticated rate limit. A plain spread keeps tRPC's caller types. */
 export function internalCtx(ctx: Context): Context {
   return { ...ctx, internal: true };
 }
