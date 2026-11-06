@@ -764,7 +764,11 @@ describe("settings.contributionAccounts CRUD", () => {
       employerMatchValue: "1.0",
       employerMaxMatchPct: "0.06",
     });
-    expect(updated!.employerMatchValue).toBe("1.0");
+    // A percent match is stored as its rate (decision 13), with no value.
+    expect(updated).toMatchObject({
+      employerMatchValue: null,
+      employerMatchRate: "0.01",
+    });
   });
 
   it("create a joint brokerage contribution account", async () => {

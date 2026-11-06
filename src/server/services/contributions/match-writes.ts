@@ -10,7 +10,11 @@ import {
   entryWithMatchRate,
   matchRefused,
 } from "@/lib/pure/contributions/match-writes";
-import { PERCENT_MATCH, effectiveMatchType } from "@/lib/utils/match-rate";
+import {
+  PERCENT_MATCH,
+  effectiveMatchType,
+  percentFromRate,
+} from "@/lib/utils/match-rate";
 
 type Entry = Record<string, unknown>;
 const isObject = (v: unknown): v is Entry =>
@@ -74,11 +78,13 @@ export async function entriesWithMatchRates(
   for (const [id, entry] of Object.entries(entries)) {
     const account = byId.get(id);
     const sent = rateSent(id, entry);
-    const next = entryWithMatchRate(entry, account, sent);
+    const next = entryWithMatchRate(entry, account, sent, before[id]);
     assertMatchFits(
-      // A borrowed value isn't the write's: only an own one is bounded.
+      // A borrowed value isn't the write's: only the entry's own terms are bounded.
       effectiveMatchType(next, account?.type) === PERCENT_MATCH &&
-        (sent || Object.hasOwn(next, "employerMatchValue")),
+        (sent ||
+          entry["employerMatchValue"] != null ||
+          entry["employerMatchRate"] != null),
       { rate: next["employerMatchRate"], value: next["employerMatchValue"] },
       {
         type: effectiveMatchType(before[id] ?? {}, account?.type),
@@ -91,9 +97,19 @@ export async function entriesWithMatchRates(
   return out;
 }
 
+/** A patch's unset keys: the value and its rate are one match, so
+ *  unsetting the value unsets its rate too. */
+export function withMatchRateUnset(
+  unset: string[] | undefined,
+): string[] | undefined {
+  return unset?.includes("employerMatchValue")
+    ? [...unset, "employerMatchRate"]
+    : unset;
+}
+
 /** A whole contributionActiveFields write (create, update): each entry's
- *  rate set by the one writer from its value; a rate it carries is not
- *  read (it may be one 0016 filled from a borrowed value). */
+ *  terms set by the one writer; a rate it carries with no value is kept,
+ *  bounded when it differs from the stored one. */
 export async function activeFieldsWithMatchRates<
   T extends { contributionAccounts?: Record<string, Entry> },
 >(
@@ -111,8 +127,9 @@ export async function activeFieldsWithMatchRates<
   return { ...fields, contributionAccounts };
 }
 
-/** After an account's match type or value changes, every profile's entry
- *  for it resolves again, so each entry's rate follows. */
+/** After an account's type changes, entries taking their type from it
+ *  follow (entryWithMatchRate under percent; else a lone rate gains its
+ *  percent as the value). Nothing re-bakes; no own rate is removed. */
 export async function refreshEntryRates(
   db: DbOrTx,
   accountId: number,
@@ -121,11 +138,7 @@ export async function refreshEntryRates(
     | undefined,
   after: { employerMatchType: string; employerMatchValue: string | null },
 ): Promise<void> {
-  if (
-    before?.employerMatchType === after.employerMatchType &&
-    before.employerMatchValue === after.employerMatchValue
-  )
-    return;
+  if (before?.employerMatchType === after.employerMatchType) return;
   const account = {
     type: after.employerMatchType,
     value: after.employerMatchValue,
@@ -143,9 +156,13 @@ export async function refreshEntryRates(
     if (!isObject(fields) || !isObject(fields["contributionAccounts"]))
       continue;
     const entry = p.fields.contributionAccounts?.[key];
-    if (!isObject(entry)) continue;
-    const next = entryWithMatchRate(entry, account, false);
-    if (next["employerMatchRate"] === entry["employerMatchRate"]) continue;
+    if (!isObject(entry) || Object.hasOwn(entry, "employerMatchType")) continue;
+    const next = followAccountType(entry, account);
+    if (
+      next["employerMatchRate"] === entry["employerMatchRate"] &&
+      next["employerMatchValue"] === entry["employerMatchValue"]
+    )
+      continue;
     await db
       .update(schema.contributionProfiles)
       .set({
@@ -159,4 +176,16 @@ export async function refreshEntryRates(
       })
       .where(eq(schema.contributionProfiles.id, p.id));
   }
+}
+
+function followAccountType(
+  entry: Entry,
+  account: { type: string; value: string | null },
+): Entry {
+  if (account.type === PERCENT_MATCH)
+    return entryWithMatchRate(entry, account, false, entry);
+  const rate = entry["employerMatchRate"];
+  return entry["employerMatchValue"] == null && rate != null
+    ? { ...entry, employerMatchValue: percentFromRate(rate) }
+    : entry;
 }

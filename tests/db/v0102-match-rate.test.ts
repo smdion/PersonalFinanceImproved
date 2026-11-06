@@ -186,6 +186,14 @@ describe("migration 0016's converter on the restore ladder", () => {
   });
 });
 
+function withoutRatedValue(entry: unknown): unknown {
+  if (!entry || typeof entry !== "object") return entry;
+  const e = entry as Record<string, unknown>;
+  if (e["employerMatchRate"] == null) return entry;
+  const { employerMatchValue: _value, ...rest } = e;
+  return rest;
+}
+
 describe("the writer agrees with the converter", () => {
   const byId = new Map(
     ACCOUNT_CASES.map((c) => [String(c.id), { type: c.type, value: c.value }]),
@@ -202,7 +210,10 @@ describe("the writer agrees with the converter", () => {
       const e = entry as Record<string, unknown>;
       // The converter keeps a rate already stored; the writer recomputes it.
       if (e["employerMatchRate"] != null) continue;
-      expect(entryWithMatchRate(e, byId.get(id), false)).toEqual(a?.[id]);
+      // The writer stores 0017's end state: a set rate's value goes.
+      expect(entryWithMatchRate(e, byId.get(id), false)).toEqual(
+        withoutRatedValue(a?.[id]),
+      );
     }
   });
 });

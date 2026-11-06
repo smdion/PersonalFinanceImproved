@@ -71,12 +71,12 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
     it("a percent create writes the rate; an edited value moves it", async () => {
       const id = await percentAccount("50");
       expect(await row(id)).toMatchObject({
-        employerMatchValue: "50",
+        employerMatchValue: null,
         employerMatchRate: "0.5",
       });
       await update(id, { employerMatchValue: "60" });
       expect(await row(id)).toMatchObject({
-        employerMatchValue: "60",
+        employerMatchValue: null,
         employerMatchRate: "0.6",
       });
     });
@@ -88,7 +88,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         employerMatchRate: "0.035",
       });
       expect(await row(id)).toMatchObject({
-        employerMatchValue: "3.5",
+        employerMatchValue: null,
         employerMatchRate: "0.035",
       });
     });
@@ -126,7 +126,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
   });
 
   describe("an account's type change", () => {
-    it("moves the rate of every entry that resolves its type from the account", async () => {
+    it("an entry that takes its type from the account follows it, and keeps its rate", async () => {
       const a = (await h().caller.settings.contributionAccounts.create({
         ...account,
         personId: h().personId,
@@ -150,17 +150,23 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
       expect((await entries(p.id))[a]).not.toHaveProperty("employerMatchRate");
       await update(a, { employerMatchValue: "50" });
       expect((await entries(p.id))[a]).toMatchObject({
-        employerMatchValue: "40",
         employerMatchRate: "0.4",
       });
+      // Under dollars the entry reads its whole percent as dollars, as
+      // before 0017; its rate stays for a switch back (never removed).
       await update(a, {
         employerMatchType: "fixed_annual",
         employerMatchValue: "1000",
       });
-      expect((await entries(p.id))[a]).not.toHaveProperty("employerMatchRate");
+      expect((await entries(p.id))[a]).toMatchObject({
+        employerMatchValue: "40",
+        employerMatchRate: "0.4",
+      });
     });
 
-    it("moves a borrowed rate when the account's value changes", async () => {
+    // Q22 (advisor E9 list item 3): a rate 0016 or a write baked from a
+    // non-percent account is the entry's own; nothing bakes it again.
+    it("keeps a borrowed rate when the account's value changes", async () => {
       const a = (await h().caller.settings.contributionAccounts.create({
         ...account,
         personId: h().personId,
@@ -189,7 +195,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         employerMatchValue: "60",
       });
       expect((await entries(p.id))[a]).toMatchObject({
-        employerMatchRate: "0.6",
+        employerMatchRate: "0.4",
       });
       await h().caller.contributionProfile.setAccountActiveFields({
         profileId: p.id,
@@ -197,7 +203,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         fields: { isActive: true },
       });
       expect((await entries(p.id))[a]).toMatchObject({
-        employerMatchRate: "0.6",
+        employerMatchRate: "0.4",
       });
     });
 
@@ -206,7 +212,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
       for (const rate of ["1e11", "-1e11", "abc"])
         await expect(update(id, { employerMatchRate: rate })).rejects.toThrow();
       expect(await row(id)).toMatchObject({
-        employerMatchValue: "50",
+        employerMatchValue: null,
         employerMatchRate: "0.5",
       });
       const p = await h().caller.contributionProfile.create({
@@ -230,7 +236,6 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         }),
       ).rejects.toThrow(/200%/);
       expect((await entries(p.id))[id]).toMatchObject({
-        employerMatchValue: "40",
         employerMatchRate: "0.4",
       });
     });
@@ -334,7 +339,6 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         employerMatchRate: "0.9",
       });
       expect((await entries(p))[a]).toMatchObject({
-        employerMatchValue: "40",
         employerMatchRate: "0.4",
       });
     });
@@ -344,14 +348,20 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
       const p = await profileWith(a, { employerMatchValue: "40" });
       await patch(p, a, { employerMatchValue: "45" });
       expect((await entries(p))[a]).toMatchObject({
-        employerMatchValue: "45",
         employerMatchRate: "0.45",
       });
       await patch(p, a, { employerMatchRate: "0.3" });
       expect((await entries(p))[a]).toMatchObject({
-        employerMatchValue: "30",
         employerMatchRate: "0.3",
       });
+    });
+
+    it("unsetting the value of an entry held as a rate alone unsets the rate", async () => {
+      const a = await percentAccount("50");
+      const p = await profileWith(a, { employerMatchValue: "40" });
+      expect((await entries(p))[a]).not.toHaveProperty("employerMatchValue");
+      await patch(p, a, {}, ["employerMatchValue"]);
+      expect((await entries(p))[a]).not.toHaveProperty("employerMatchRate");
     });
 
     it("unsetting the value, or a dollar type, drops the rate", async () => {
@@ -435,7 +445,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
       });
       await update(id, { employerMatchValue: "60" });
       expect(await row(id)).toMatchObject({
-        employerMatchValue: "60",
+        employerMatchValue: null,
         employerMatchRate: "0.6",
       });
     });

@@ -47,6 +47,7 @@ import type { Db } from "@/lib/db";
 import {
   activeFieldsWithMatchRates,
   entriesWithMatchRates,
+  withMatchRateUnset,
 } from "@/server/services/contributions/match-writes";
 import {
   createProfile,
@@ -718,11 +719,10 @@ export const contributionProfileRouter = createTRPCRouter({
           "contributionAccounts",
           input.accountId,
           input.fields,
-          input.unset,
+          withMatchRateUnset(input.unset),
           contribAccountActiveFieldsSchema,
           "contribution account fields",
-          // A value that leaves this account over its IRS limit is refused
-          // on the active profile, and warned on one used as a future switch.
+          // Over the IRS limit: refused on the active profile, else warned.
           async (before, after) => {
             const check = {
               profileId: input.profileId,

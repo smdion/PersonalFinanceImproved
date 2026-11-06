@@ -82,15 +82,16 @@ describe("readers take the rate, and the whole percent when none is stored", () 
     const match = async () =>
       (await t.caller.contributionProfile.list()).find((x) => x.id === p.id)!
         .summary.annualEmployerMatch;
-    const setRate = (rate: string | null) =>
+    const setRate = (rate: string | null, value: string | null = null) =>
       t.db
         .update(sqliteSchema.contributionAccounts)
-        .set({ employerMatchRate: rate })
+        .set({ employerMatchRate: rate, employerMatchValue: value })
         .where(eq(sqliteSchema.contributionAccounts.id, a))
         .run();
     const withRate = await match();
     expect(withRate).toBeGreaterThan(0);
-    setRate(null);
+    // A row 0016 left without a rate keeps its value (item 9): read as before.
+    setRate(null, "50");
     expect(await match()).toBe(withRate);
     setRate("0.25");
     expect(await match()).toBeCloseTo(withRate / 2, 6);
