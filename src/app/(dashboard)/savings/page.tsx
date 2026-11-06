@@ -23,7 +23,7 @@ import {
   buildSettledOccurrencesSet,
   computeDerivedPoolByYear,
   type PoolGrowthEarner,
-} from "@/lib/pure/savings-projection";
+} from "@/lib/pure/savings/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
 
@@ -64,7 +64,7 @@ import {
   computeMaxMonthlyFunding,
   deriveBudgetMonthlyTotal,
   type CapacityPerson,
-} from "@/lib/calculators/savings-capacity";
+} from "@/lib/pure/savings/savings-capacity";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import {

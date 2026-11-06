@@ -37,8 +37,9 @@ vi.mock("@/lib/budget-api", () => ({
 import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
-import { loadLiveContribData, resolveProfile } from "@/server/helpers";
-import type { SalaryEntryMap } from "@/server/helpers";
+import { loadLiveContribData } from "@/server/services/contributions/live-data";
+import { resolveProfile } from "@/server/services/contributions/profile";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const ENTRY_SALARY = 150000;

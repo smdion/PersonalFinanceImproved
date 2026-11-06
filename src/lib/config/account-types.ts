@@ -45,6 +45,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "employer_plan",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -100,6 +101,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "employer_plan",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -155,6 +157,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "ira_59_half",
     qcdEligible: true,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -207,6 +210,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "hsa_non_medical",
     qcdEligible: false,
     nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
+    tripleTaxAdvantaged: true,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -267,6 +271,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     earlyAccessRule: "none",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
+    tripleTaxAdvantaged: false,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -341,10 +346,8 @@ const KEYWORD_ALIASES: Record<string, string> = {
   "457(b)": "457b",
 };
 
-/**
- * Normalize an account type or budget subcategory to a canonical contribution
- * category key. Returns null if the string doesn't match any known category.
- */
+/** An account type or budget subcategory's canonical contribution category
+ *  key, or null if it matches none. */
 export function normalizeContribKey(name: string): string | null {
   const lower = name.toLowerCase();
   // Check extra aliases first (these don't have full config entries)
@@ -398,11 +401,9 @@ export function getDisplayConfig(
   return sub ?? cfg;
 }
 
-/** True if this account (type+subtype)'s employer_contributions represents
- *  a purchase-price discount (e.g. ESPP) rather than real cash — i.e. the
- *  cash-basis figure (gainLoss + employerContributions) is meaningful for it.
- *  Always resolve per-account, never assume by category (Brokerage mixes
- *  discount-type ESPP with cash-type sub-types like mega-backdoor/after-tax). */
+/** True if this account's (type + subtype) employer_contributions are an ESPP
+ *  purchase-price discount, not cash, so its cash-basis figure means something.
+ *  Per account, never by category: Brokerage also has cash sub-types. */
 export function isDiscountBasisEmployerContrib(
   accountType: string,
   subType?: string | null,
@@ -480,9 +481,7 @@ export function getAccountTypeConfig(
 // Engine helpers — replace hardcoded if-chains
 // ---------------------------------------------------------------------------
 
-/**
- * Get the Roth fraction for a category from tax splits.
- */
+/** The Roth fraction for a category from tax splits. */
 export function getRothFraction(
   category: AccountCategory,
   taxSplits: Partial<Record<AccountCategory, number>>,
@@ -496,9 +495,7 @@ export function getRothFraction(
   return taxSplits[lookupKey] ?? 0;
 }
 
-/**
- * Get the effective contribution limit for a category.
- */
+/** The effective contribution limit for a category. */
 export function getEffectiveLimit(
   category: AccountCategory,
   irsLimit: number,
@@ -508,9 +505,7 @@ export function getEffectiveLimit(
   return Math.min(irsLimit, accountCap ?? Infinity);
 }
 
-/**
- * Whether this category absorbs overflow from other accounts.
- */
+/** Whether this category absorbs overflow from other accounts. */
 export function isOverflowTarget(category: AccountCategory): boolean {
   return ACCOUNT_TYPE_CONFIG[category].isOverflowTarget;
 }
@@ -569,6 +564,11 @@ export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
 /** A QCD can come from this category (`qcdEligible`). */
 export function isQcdEligible(category: AccountCategory): boolean {
   return ACCOUNT_TYPE_CONFIG[category].qcdEligible;
+}
+
+/** Funded before every other tax-advantaged type (`tripleTaxAdvantaged`). */
+export function isTripleTaxAdvantaged(category: AccountCategory): boolean {
+  return ACCOUNT_TYPE_CONFIG[category].tripleTaxAdvantaged;
 }
 
 /** The non-medical withdrawal penalty rate, or null where there is none. */
@@ -783,9 +783,7 @@ export function getAccountSegments(): AccountSegment<AccountCategory>[] {
   return segments;
 }
 
-/**
- * Parse a column key back to category + sub-key.
- */
+/** Parse a column key back to category + sub-key. */
 export function parseColumnKey(
   key: string,
 ): { category: AccountCategory; subKey: string | null } | null {

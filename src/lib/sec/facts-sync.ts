@@ -20,12 +20,12 @@ import {
   normalizeSeriesName,
   type Composition,
   type HoldingResolution,
-} from "@/lib/pure/sec-composition";
+} from "@/lib/pure/investments/sec-composition";
 import {
   buildRegistryIndex,
   suggestStandIn,
   type RegistryIndex,
-} from "@/lib/pure/sec-identity";
+} from "@/lib/pure/investments/sec-identity";
 import { getSecContact } from "./connection";
 import {
   SecRateLimitError,

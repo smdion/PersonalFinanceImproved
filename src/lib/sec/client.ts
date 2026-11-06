@@ -10,7 +10,7 @@
 import "server-only";
 import type { z } from "zod/v4";
 import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
-import { parseExternal } from "@/lib/http/external-request";
+import { fetchChecked, parseExternal } from "@/lib/http/external-request";
 import {
   createNportParser,
   createNcsrExpenseParser,
@@ -55,13 +55,17 @@ async function secStream(
   options: { maxBytes?: number; timeoutMs?: number } = {},
 ): Promise<void> {
   await pace();
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": `Ledgr self-hosted personal finance ${contact}`,
-      "Accept-Encoding": "gzip, deflate",
+  const res = await fetchChecked(
+    url,
+    {
+      headers: {
+        "User-Agent": `Ledgr self-hosted personal finance ${contact}`,
+        "Accept-Encoding": "gzip, deflate",
+      },
+      signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     },
-    signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
-  });
+    "sec",
+  );
   const path = new URL(url).pathname;
   if (res.status === 403 || res.status === 429)
     throw new SecRateLimitError(

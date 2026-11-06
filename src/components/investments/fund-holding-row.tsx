@@ -9,7 +9,7 @@
  */
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { TickerLink } from "./ticker-link";
-import { adviseStandIn } from "@/lib/pure/standin-advice";
+import { adviseStandIn } from "@/lib/pure/advice/standin-advice";
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";

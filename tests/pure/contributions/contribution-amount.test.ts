@@ -4,6 +4,11 @@ import {
   fractionFromPercent,
   parseEmployerMatch,
 } from "@/lib/pure/contributions/contribution-amount";
+import {
+  formatEmployerMatch,
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/match-display";
 
 describe("computeAnnualContribution", () => {
   it("computes percent_of_salary correctly", () => {
@@ -82,5 +87,45 @@ describe("parseEmployerMatch", () => {
     expect(parseEmployerMatch(null, 50, 0.06)).toEqual({ kind: "none" });
     expect(parseEmployerMatch("none", 50, 0.06)).toEqual({ kind: "none" });
     expect(parseEmployerMatch("bonus", 50, 0.06)).toEqual({ kind: "none" });
+  });
+});
+
+describe("the match figure a form shows and stores", () => {
+  it("shows a stored percent match as the whole percent it is stored as", () => {
+    expect(matchFigureForForm("percent_of_contribution", "50.00")).toBe(
+      "50.00",
+    );
+    expect(matchFigureForForm("percent_of_contribution", 3.5)).toBe("3.5");
+    expect(matchFigureForForm("dollar_match", "1500")).toBe("1500");
+    expect(matchFigureForForm("fixed_annual", null)).toBe("");
+    expect(matchFigureForForm(undefined, undefined)).toBe("");
+  });
+
+  it("stores what was typed, for every type, blank included", () => {
+    for (const type of ["percent_of_contribution", "dollar_match", null])
+      for (const typed of ["50", "3.5", "1500", ""])
+        expect(matchValueToStore(type, typed)).toBe(typed);
+  });
+
+  it("round-trips: the figure shown stores the value it came from", () => {
+    for (const stored of ["50.00", "3.5", "100", "0.5"])
+      expect(
+        matchValueToStore(
+          "percent_of_contribution",
+          matchFigureForForm("percent_of_contribution", stored),
+        ),
+      ).toBe(stored);
+  });
+
+  it("formatEmployerMatch reads the same figure", () => {
+    expect(formatEmployerMatch("percent_of_contribution", "50", "0.06")).toBe(
+      "50% of 6.00%",
+    );
+    expect(formatEmployerMatch("percent_of_contribution", null, null)).toBe(
+      "0%",
+    );
+    expect(formatEmployerMatch("dollar_match", "1500", null)).toBe(
+      "$1,500.00/yr",
+    );
   });
 });

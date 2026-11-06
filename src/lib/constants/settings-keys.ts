@@ -47,7 +47,7 @@ export const SK_RETIREMENT_COMPARISON_EXPANDED =
   "retirement_comparison_expanded";
 /** Rate the projection engine grows IRS contribution limits by each future
  *  year (fraction, e.g. 0.02). Read at
- *  server/retirement/build-engine-payload.ts; unset → IRS_LIMIT_GROWTH_RATE
+ *  server/services/projection/engine-payload/build-engine-payload.ts; unset → IRS_LIMIT_GROWTH_RATE
  *  constant. Editable in Settings → Reference Data → Return Rates. */
 export const SK_IRS_LIMIT_GROWTH_RATE = "irs_limit_growth_rate";
 
@@ -81,7 +81,7 @@ export const SK_SAVINGS_RATE_INCLUDE_PORTFOLIO =
 export const SK_MILESTONE_CUSTOM_GOALS = "milestone_custom_goals";
 /** Ticked milestone checklist items (validated: milestoneChecklistSchema). */
 export const SK_MILESTONE_CHECKLIST = "milestone_checklist";
-/** When each milestone was first reached (lib/pure/milestone-first-reached.ts). */
+/** When each milestone was first reached (lib/pure/advice/milestone-first-reached.ts). */
 export const SK_MILESTONE_FIRST_REACHED = "milestone_first_reached";
 /** "moneyGuy" | "fidelity" — which income-multiple checkpoints to follow. */
 export const SK_MILESTONE_CHECKPOINT_SOURCE = "milestone_checkpoint_source";

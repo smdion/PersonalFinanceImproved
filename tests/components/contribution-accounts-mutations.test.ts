@@ -89,6 +89,7 @@ const baseContrib: Contrib = {
   taxTreatment: "pre_tax",
   employerMatchType: "none",
   employerMatchValue: null,
+  employerMatchRate: null,
   employerMaxMatchPct: null,
   employerMatchTaxTreatment: "pre_tax",
   hsaCoverageType: null,

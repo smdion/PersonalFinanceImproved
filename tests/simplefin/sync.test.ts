@@ -16,9 +16,9 @@ vi.mock("@/lib/simplefin/client", () => ({
   isSimplefinReplayMode: () => false,
 }));
 // The real loan write, wrapped so a test can make it fail once.
-vi.mock("@/server/helpers/loan-feed", async (importOriginal) => {
+vi.mock("@/server/services/sync/loan-feed", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@/server/helpers/loan-feed")>();
+    await importOriginal<typeof import("@/server/services/sync/loan-feed")>();
   return {
     ...actual,
     applyLoanFeedBalances: vi.fn(actual.applyLoanFeedBalances),
@@ -39,7 +39,7 @@ afterAll(() => {
 });
 
 import { getAccounts, type SimplefinAccount } from "@/lib/simplefin/client";
-import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
+import { applyLoanFeedBalances } from "@/server/services/sync/loan-feed";
 import { eq } from "drizzle-orm";
 import {
   getSimplefinConnection,
@@ -154,12 +154,18 @@ describe("simplefin/sync", () => {
             id: "a1",
             name: "Checking",
             balance: 1200.5,
-            orgName: "Bank",
+            orgName: "Sum Bank",
           }),
-          bare({ id: "a2", name: "Savings", balance: 340.25, orgName: "Bank" }),
+          bare({
+            id: "a2",
+            name: "Savings",
+            balance: 340.25,
+            orgName: "Sum Bank",
+          }),
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
 
       const asOfDate = new Date(2026, 0, 15); // local Jan 15, 2026
@@ -192,11 +198,12 @@ describe("simplefin/sync", () => {
             id: "sync2-1",
             name: "Checking",
             balance: 100,
-            orgName: "Bank",
+            orgName: "Upsert Bank",
           }),
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       await runSimplefinSync(ctx.rawDb, asOfDate);
 
@@ -206,11 +213,12 @@ describe("simplefin/sync", () => {
             id: "sync2-1",
             name: "Checking",
             balance: 250,
-            orgName: "Bank",
+            orgName: "Upsert Bank",
           }),
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       const second = await runSimplefinSync(ctx.rawDb, asOfDate);
 
@@ -233,10 +241,16 @@ describe("simplefin/sync", () => {
       const fetchOnce = (balance: number) =>
         mockGetAccounts.mockResolvedValueOnce({
           accounts: [
-            bare({ id: "tx-1", name: "Checking", balance, orgName: "Bank" }),
+            bare({
+              id: "tx-1",
+              name: "Checking",
+              balance,
+              orgName: "Rollback Bank",
+            }),
           ],
           providerErrors: [],
           accountIdsWithErrors: [],
+          errorScope: [],
         });
       fetchOnce(100);
       await runSimplefinSync(ctx.rawDb, new Date(2026, 1, 10));
@@ -277,6 +291,7 @@ describe("simplefin/sync", () => {
         accounts: [],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
 
       await runSimplefinSync(ctx.rawDb, new Date(2026, 2, 1));
@@ -322,6 +337,7 @@ describe("simplefin/sync", () => {
         accounts: [],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       await runSimplefinSync(ctx.rawDb, new Date(2026, 3, 3));
       expect(await getSimplefinLastError(ctx.rawDb)).toBeNull();
@@ -339,11 +355,12 @@ describe("simplefin/sync", () => {
             id: "provErr-1",
             name: "Checking",
             balance: 10,
-            orgName: "Bank",
+            orgName: "Warning Bank",
           }),
         ],
         providerErrors: ["Institution X needs re-authentication"],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
 
       const result = await runSimplefinSync(ctx.rawDb, new Date(2026, 3, 4));
@@ -374,7 +391,7 @@ describe("simplefin/sync", () => {
           id: "excluded-1",
           name: "Old Credit Card",
           balance: 999.99,
-          orgName: "Bank",
+          orgName: "Included Bank",
         }),
       ]);
       await ctx.rawDb
@@ -390,23 +407,24 @@ describe("simplefin/sync", () => {
             id: "excluded-1",
             name: "Old Credit Card",
             balance: 999.99,
-            orgName: "Bank",
+            orgName: "Included Bank",
           }),
           bare({
             id: "included-1",
             name: "Checking",
             balance: 100.5,
-            orgName: "Bank",
+            orgName: "Included Bank",
           }),
           bare({
             id: "included-2",
             name: "Savings",
             balance: 25.25,
-            orgName: "Bank",
+            orgName: "Included Bank",
           }),
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
 
       const result = await runSimplefinSync(ctx.rawDb, asOfDate);
@@ -441,6 +459,7 @@ describe("simplefin/sync", () => {
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       const firstDate = new Date(2026, 6, 1);
       await runSimplefinSync(ctx.rawDb, firstDate);
@@ -459,6 +478,7 @@ describe("simplefin/sync", () => {
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       const secondDate = new Date(2026, 6, 2);
       const result = await runSimplefinSync(ctx.rawDb, secondDate);
@@ -493,12 +513,18 @@ describe("simplefin/sync", () => {
             id: "cap-1",
             name: "Checking",
             balance: 100,
-            orgName: "Bank",
+            orgName: "Retry Bank",
           }),
-          bare({ id: "cap-2", name: "Savings", balance: 50, orgName: "Bank" }),
+          bare({
+            id: "cap-2",
+            name: "Savings",
+            balance: 50,
+            orgName: "Retry Bank",
+          }),
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       const day0 = new Date(2026, 6, 10);
       await runSimplefinSync(ctx.rawDb, day0);
@@ -513,11 +539,12 @@ describe("simplefin/sync", () => {
               id: "cap-1",
               name: "Checking",
               balance: 100,
-              orgName: "Bank",
+              orgName: "Retry Bank",
             }),
           ],
           providerErrors: [],
           accountIdsWithErrors: [],
+          errorScope: [],
         });
         await runSimplefinSync(ctx.rawDb, day1);
         const stillPending = await getSimplefinConnection(ctx.rawDb);
@@ -531,11 +558,12 @@ describe("simplefin/sync", () => {
             id: "cap-1",
             name: "Checking",
             balance: 100,
-            orgName: "Bank",
+            orgName: "Retry Bank",
           }),
         ],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       await runSimplefinSync(ctx.rawDb, day1);
       const after = await getSimplefinConnection(ctx.rawDb);
@@ -575,6 +603,7 @@ describe("simplefin/sync", () => {
         accounts: [],
         providerErrors: [],
         accountIdsWithErrors: [],
+        errorScope: [],
       });
       const asOfDate = new Date(2026, 5, 10);
       await runSimplefinSync(ctx.rawDb, asOfDate);

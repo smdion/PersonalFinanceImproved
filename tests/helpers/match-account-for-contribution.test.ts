@@ -32,7 +32,7 @@ vi.mock("@/lib/db", () => ({ db: {} }));
 import {
   matchAccountForContribution,
   type BreakdownAccount,
-} from "@/server/helpers/contribution";
+} from "@/lib/pure/contributions/account-match";
 
 const CRIT = {
   contribOwner: "Alex" as string | undefined,

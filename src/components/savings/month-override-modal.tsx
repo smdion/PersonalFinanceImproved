@@ -8,8 +8,8 @@ import {
 import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { type GoalProjection } from "./types";
-import { monthKey } from "@/lib/pure/savings-projection";
-import { monthKey as fullMonthKey } from "@/lib/pure/date-keys";
+import { monthKey } from "@/lib/pure/savings/savings-projection";
+import { monthKey as fullMonthKey } from "@/lib/utils/date-keys";
 
 const MONTH_NAMES = [
   "January",

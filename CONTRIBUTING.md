@@ -36,38 +36,40 @@ Thanks for your interest in contributing! Here's how to get started.
 Read the relevant parts of [`docs/RULES.md`](docs/RULES.md) (the rules), [`docs/DESIGN.md`](docs/DESIGN.md) (how things are built) and [`docs/TESTING.md`](docs/TESTING.md). The ones that matter most:
 
 - **Config declares, code executes.** Account-type behavior comes from `ACCOUNT_TYPE_CONFIG` (`src/lib/config/account-types.ts`) through its helpers — never `if (category === "401k")` or a hardcoded list of categories.
-- **Business logic lives in `src/lib/pure/`** (or `src/lib/calculators/` for calculators) — never inside a DB transaction, router procedure or API handler. Routers fetch, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/` with no database.
+- **Business logic lives in `src/lib/pure/`** — never inside a DB transaction, router procedure or API handler. Routers read through `src/server/data/`, compose in `src/server/services/<area>/` when the work needs I/O or is shared, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/<area>/` with no database.
 - **One computation per figure.** Before writing a formula, label map or display rule, look for the existing one and reuse it.
 - **Format through the helpers** (`formatCurrency`, `formatPercent`, …) so privacy mode can hide amounts.
 
 ### Import discipline for pure modules
 
-Pure modules must not import barrel files that pull in database code — import the submodule directly:
+Pure modules import nothing from `src/server/` or the database (`pnpm check:layers` fails it); a small helper they share with the server lives in `src/lib/utils/`:
 
 ```typescript
-// WRONG — the barrel pulls in DB schema
-import { toNumber } from "@/server/helpers";
+// WRONG — server code; it pulls in DB schema
+import { getAllPeople } from "@/server/data/people";
 
-// RIGHT — the pure submodule
-import { toNumber } from "@/server/helpers/transforms";
+// RIGHT — the shared utility
+import { toNumber } from "@/lib/utils/numbers";
 ```
 
-See `ls src/lib/pure/` for the existing modules — check there before adding one.
+`src/lib/pure/` has one folder per area (`accounts`, `advice`, `budget`, `contributions`, `debts`, `household`, `investments`, `net-worth`, `paycheck`, `retirement`, `savings`, `simulation`, `sync`, `tax`; the projection engine in `engine/`). Check the area's folder before adding a module, and add a new one there, with its I/O types in a `*.types.ts` beside it, never flat in `lib/pure/`. Small helpers with no domain (dates, formatting, math) live in `src/lib/utils/`.
 
 ## Commit rules
 
-One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over a pull request's commits check these with `scripts/check-commit.ts --strict`, and a breach blocks (since v0.10.1).
+One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over every commit since the merge base with `main` (on pushes and pull requests) check these with `scripts/check-commit.ts --strict`, and a breach blocks (since v0.10.1).
 
 - **Subject:** a type prefix, `fix:`, `feat:`, `refactor:`, `perf:`, `test:`, `docs:`, `build:`, `ci:`, `chore:`, `style:`, `revert:` or `release:`, with an optional `(scope)`.
 - **Body:** why the change is made, not only what changed.
-- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/calculators/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt.
-- **Second fix:** a fix to a function that already had a fix in the last 30 days names the missing concept in a `Concept: <concept>` line, or `Concept: none, <reason>`. A third fix there goes to the advisor first.
+- **Revert:** a `revert:` (or git's `Revert "…"`) commit says why in its own words; git's "This reverts commit …" line alone fails.
+- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/pure/engine/`, `src/lib/pure/tax/`, `src/lib/pure/paycheck/`, `src/lib/pure/contributions/irs-limits.ts`, `src/lib/tax-data/`, tax config). A pure move, rename or split carries a `Mechanical: <what>` line and is exempt; the line is accepted only when git sees a rename (`git show -M`) or code moved between files, and every other changed line is an import (a line inside an `import` or `export … from` statement), a path rewrite, or a line moved unchanged in the same commit; moved code goes in whole top-level statements, each run in its old order (a leading `export` may be added; a split's comments may move or be reworded), or as an arrow or function expression's whole body moved unchanged into a new top-level function, the expression replaced by an arrow that only calls it with its own parameters, or as whole router procedures, in their old order, into a new part (`export const x = createTRPCRouter({…})` mounted as `key: x`, or `export const x = {…}` spread as `...x`, in the literal they left). A split's parts are recorded under the split size rule (RULES § Refactoring).
+- **Second fix:** a fix to a function that already had a fix in the last 30 days names the missing concept in a `Concept: <concept>` line, or `Concept: none, <reason>`. A third fix there goes to the advisor first, and its pass is recorded in an `Advisor: PASS (round <n>)` line.
+- **Ratchets:** CI compares every ratchet (`size-baseline.json`, both suppressions files, the calculation-register baseline and its risk labels, page budgets, coverage thresholds, the known lists in `tests/lint/violations.test.ts`) and the behavior baseline (`tests/baseline/__baseline__/`, `__sync__/`) with the merge base: `pnpm check:ratchets --base "$(git merge-base origin/main HEAD)"`. A move or split hands the old counts to its parts and passes. It may raise size entries by exactly the import lines it adds; when code moves into a file that already has an entry, the files the move joins rise together by exactly the import lines added, net across them (in a `Mechanical:` commit CI counts the import lines); a body moved whole into a service function adds its signature, closing brace and one-line call, a router split its part's wrapper lines and mount (owner Q14: CI cuts the moves `check-commit` finds and counts what is left, in code lines). Every other raise is its own commit, made only with the owner's OK (CI checks the line, not the OK). Each commit that raises an entry names it, with the rise, in its own `Ratchet-raise: <ratchet file> — <entry> +<N>[; <entry> +<N>…], <reason>` line, one line per ratchet file; CI checks every commit against its parent, so a line in another commit excuses nothing. The entry is the `src/` path for a size entry (the path then the function's name for a function's entry), the path and rule for a lint count, `<path>:<export>` for the register, the route for a page budget, the key for a coverage threshold or a known list; `+N` is at least the rise (`<a> → <b>` also reads as the rise), and text in parentheses is reason. For example `Ratchet-raise: size-baseline.json — src/server/routers/performance.ts +2, a second import source`. A known-list entry whose key changes and nothing else (the declaration it names is renamed or its file moves) is not a raise: that commit names it in `Known-renamed: <ratchet file> — <path> <oldName> => <path> <newName>`, which CI accepts only when the old key goes and the new one comes in that commit, on the same path or that path's rename in it, with the same count, and nothing else in that list rises. A revert may put an entry back to its value before the commit it reverts. CI prints every excused rise. A re-recorded baseline file needs `Baseline-rerecord: <glob> — <reason>`. Deleting a baseline file passes.
 
 `pnpm tsx scripts/check-commit.ts --history 50` reports how the last 50 commits measure against these, repeat fixes in one spot included.
 
 ## Coding Conventions
 
-- **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) — see DESIGN.md § Engine Modularity.
+- **Pure calculators.** `lib/pure/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/pure/engine/`) — see DESIGN.md § Engine Modularity.
 - **tRPC routers are the bridge.** They fetch from Drizzle, convert decimal strings to numbers via `toNumber()`, call calculators, return results.
 - **tRPC verb prefixes:** `get*` — single stored item or current state; `list*` — collection/array result; `compute*` — derived calculation or aggregation. Never use `get*` for procedures that aggregate or compute.
 - **Variable naming — no abbreviations.** Use full names: `percent` not `pct`, `amount` not `amt`, `account` not `acct`, `year` not `yr`, `index` not `idx`, `month` not `mo`. Existing abbreviations are migrated incrementally when files are touched for other reasons.
@@ -115,7 +117,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 1. **`_shared.ts` owns intra-group duplication.** Schemas, enums, and helpers used by ≥2 files in a router group (e.g. `sync/`, `projection/`) are extracted to `<group>/_shared.ts` and imported from there. No `serviceEnum` defined in `config.ts` AND `connections.ts` — one source only.
 2. **Procedure types within a group must be consistent unless deliberately scoped.** If 4 of 5 mutations in a group use `adminProcedure` and the fifth uses a different type, document why inline — inconsistency is likely a bug, not a design choice.
-3. **`_shared.ts` is internal to the group.** It is never imported by files outside `<group>/`. Cross-group sharing goes through `src/server/helpers/` or a new shared module.
+3. **`_shared.ts` is internal to the group.** It is never imported by files outside `<group>/`. Cross-group sharing goes through `src/server/data/` (a shared read) or `src/server/services/` (shared composition).
 
 ## Validation Consistency
 
@@ -123,7 +125,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 ### Rules
 
-1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/config/enum-values` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
+1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/utils/zod-fields` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
 2. **Account type uses config enum.** Every mutation that accepts `accountType` must use `z.enum(accountCategoryEnum())`. No `z.string().min(1)` on account type fields.
 3. **Shared schemas for shared tables.** When multiple mutations write to the same table, extract the field validators into a shared schema or compose from shared field definitions. Don't define independent schemas with different constraints.
 4. **Year fields are bounded.** All year inputs should use `z.number().int().min(1900).max(2100)` or similar reasonable bounds — not bare `z.number()`.

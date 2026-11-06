@@ -16,12 +16,10 @@
  * of their own, no fallback).
  *
  * Used by What-If's "Make real", the Contribution Profiles tab's
- * "+ Add Account", and the Paycheck page's create flow — the three
- * surfaces that previously either sent a hardcoded field subset or had no
- * creation path at all.
+ * "+ Add Account", and the Paycheck page's create flow.
  */
 
-import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
@@ -40,7 +38,13 @@ import {
   HSA_COVERAGE_LABELS,
 } from "@/lib/config/display-labels";
 import { InstitutionPicker } from "./institution-picker";
-import { resolveContribFieldDisplayState } from "@/lib/pure/profiles";
+import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
+import {
+  matchFigureForForm,
+  matchValueToStore,
+  rowMatchValue,
+  withMatchClear,
+} from "@/lib/pure/contributions/match-display";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =
@@ -124,17 +128,14 @@ export function ContribAccountForm({
   const [linkedExistingId, setLinkedExistingId] = useState<number | null>(
     initialValues?.id ?? null,
   );
-  // Match cap is stored server-side as a decimal fraction (0.07) but edited
-  // as a percentage (7) — same convention as ContributionRow's edit panel.
+  // The match cap is stored as a fraction (0.07), edited as a percent (7).
   const [matchCapPercent, setMatchCapPercent] = useState(
     v.employerMaxMatchPct
       ? String(parseFloat(v.employerMaxMatchPct) * 100)
       : "",
   );
 
-  // Owner falls back to the first loaded person until the caller pins one
-  // or the user picks explicitly — resolved at render/submit time instead
-  // of an effect, since `people` arrives async from its own query.
+  // The first loaded person until one is picked (`people` loads async).
   const effectivePersonId =
     v.ownership === "individual"
       ? (v.personId ?? people?.[0]?.id ?? null)
@@ -150,10 +151,7 @@ export function ContribAccountForm({
     cfg.irsLimitKeys != null && "coverageVariant" in cfg.irsLimitKeys;
   const subTypeOptions = cfg.subTypeOptions;
 
-  // An institution can already have a contribution row for this account
-  // type — often an inactive stub auto-created alongside a sibling tax
-  // treatment (see settings.contributionAccounts.create), or a real
-  // account. Surface it instead of silently creating a duplicate row.
+  // A row of this type already at this institution: offered, not duplicated.
   const matchingExisting = (existingAccounts ?? []).filter(
     (a) =>
       v.performanceAccountId != null &&
@@ -162,10 +160,7 @@ export function ContribAccountForm({
       a.id !== linkedExistingId,
   );
 
-  // Which Contribution Profiles have set an active value for a given
-  // existing account — surfaced as context, not a blocker: reusing an
-  // account another profile already values is fine, it just shouldn't be a
-  // surprise.
+  // Profiles already valuing an existing account: context, not a blocker.
   const profileNamesFor = (accountId: number): string[] =>
     (compareData?.profiles ?? [])
       .filter(
@@ -191,7 +186,7 @@ export function ContribAccountForm({
       subType: match.subType,
       taxTreatment: match.taxTreatment as TaxTreatment,
       employerMatchType: match.employerMatchType as EmployerMatchType,
-      employerMatchValue: match.employerMatchValue,
+      employerMatchValue: rowMatchValue(match),
       employerMaxMatchPct: match.employerMaxMatchPct,
       employerMatchTaxTreatment: match.employerMatchTaxTreatment as
         "pre_tax" | "tax_free",
@@ -229,9 +224,7 @@ export function ContribAccountForm({
         "coverageVariant" in nextCfg.irsLimitKeys
           ? prev.hsaCoverageType
           : null,
-      // The linked institution is scoped to the previous account type —
-      // clear it rather than leave a mismatched id the picker can no
-      // longer display an option for.
+      // Scoped to the previous account type.
       performanceAccountId: null,
     }));
     setLinkedExistingId(null);
@@ -240,7 +233,7 @@ export function ContribAccountForm({
   const handleSubmit = () => {
     if (!canSubmit) return;
     onSave({
-      ...v,
+      ...withMatchClear(v),
       id: linkedExistingId ?? undefined,
       personId: v.ownership === "joint" ? null : effectivePersonId,
       employerMaxMatchPct:
@@ -252,10 +245,7 @@ export function ContribAccountForm({
 
   return (
     <div className="space-y-3">
-      {/* Always-visible mode indicator — the amber "existing accounts"
-          banner and the submit button's label both signal this too, but
-          only when scrolled into view; this stays pinned at the top so the
-          create-vs-reuse distinction can't be missed. */}
+      {/* Pinned, so create vs reuse can't be missed. */}
       <div
         className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
           linkedExistingId != null
@@ -423,9 +413,16 @@ export function ContribAccountForm({
               <FormInput
                 type="number"
                 step="any"
-                value={v.employerMatchValue ?? ""}
+                value={matchFigureForForm(
+                  v.employerMatchType,
+                  v.employerMatchValue,
+                )}
                 onChange={(e) =>
-                  set("employerMatchValue", e.target.value || null)
+                  set(
+                    "employerMatchValue",
+                    matchValueToStore(v.employerMatchType, e.target.value) ||
+                      null,
+                  )
                 }
                 placeholder={
                   EMPLOYER_MATCH_VALUE_UNIT[v.employerMatchType] === "$"

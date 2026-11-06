@@ -2,7 +2,7 @@
 
 /** Client content for the Brokerage page — prefetched by page.tsx. */
 
-import { investedAtStartOf } from "@/lib/pure/goldilocks";
+import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import React, { useState } from "react";
@@ -28,7 +28,7 @@ import {
   calculateBrokerageGoals,
   type BrokerageGoalYear,
   type BrokerageGoalStatus,
-} from "@/lib/calculators/brokerage-goals";
+} from "@/lib/pure/savings/brokerage-goals";
 import type {
   AccumOverride,
   TooltipData,
@@ -230,7 +230,7 @@ export function BrokerageContent() {
     (yr) => yr.phase === "accumulation",
   );
   const firstAccYear = accYears[0] as
-    import("@/lib/calculators/types").EngineAccumulationYear | undefined;
+    import("@/lib/pure/engine/types").EngineAccumulationYear | undefined;
   const brokerageRamp = firstAccYear?.brokerageRampContribution ?? 0;
 
   const activeProfileName =
@@ -378,7 +378,7 @@ export function BrokerageContent() {
             onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
             allowWithdrawals
             investedAtStartOf={(year) =>
-              investedAtStartOf(data?.result?.projectionByYear ?? [], year)
+              investedAtStartOf(data.result.projectionByYear, year)
             }
           />
         </Card>

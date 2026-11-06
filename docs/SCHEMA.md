@@ -300,6 +300,7 @@ erDiagram
   retirement_budget_overrides }o--|| people : references
   security_facts }o--|| securities : references
   simplefin_account_balances }o--|| simplefin_accounts : references
+  holding_observations }o--|| simplefin_accounts : references
   holding_observations }o--|| securities : references
   holding_periods }o--|| performance_accounts : references
   holding_period_weights }o--|| holding_periods : references
@@ -344,7 +345,7 @@ erDiagram
 - **glide_path_allocations** → asset_class_params
 - **historical_notes**
 - **historical_salaries** → people
-- **holding_observations** → securities
+- **holding_observations** → simplefin_accounts, securities
 - **holding_period_weights** → holding_periods, securities
 - **holding_periods** → performance_accounts
 - **home_improvement_items**

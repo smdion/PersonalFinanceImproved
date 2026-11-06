@@ -2,8 +2,8 @@
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { describeCheck, PERF_FIELD_HELP } from "@/lib/config/performance-help";
-import type { PerfCheck } from "@/lib/pure/performance-checks";
-import type { PerfField } from "@/lib/pure/performance-annotations";
+import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
+import type { PerfField } from "@/lib/pure/investments/performance-annotations";
 
 /**
  * A Performance account row's reconciliation checks, note and estimated

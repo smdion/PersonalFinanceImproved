@@ -21,25 +21,21 @@ import {
   capResolvedProfile,
   loadCapHousehold,
   touchedContribAccounts,
-} from "@/server/helpers/contribution-caps";
-import { getAllPeople } from "@/server/helpers/people";
-import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
-import { assertNoPlanUses } from "@/server/helpers/plans";
+} from "@/server/services/contributions/caps";
+import { getAllPeople } from "@/server/data/people";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
-import { canDeleteContribProfile } from "@/lib/pure/profiles";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import {
-  aggregateContributionsByCategory,
-  loadLiveContribData,
-  resolveProfile,
-  getIncompleteContribAccountIds,
-} from "@/server/helpers";
-import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { loadLiveContribData } from "@/server/services/contributions/live-data";
+import { resolveProfile } from "@/server/services/contributions/profile";
+import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
+import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   contributionActiveFieldsSchema,
@@ -47,18 +43,29 @@ import {
   contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
 } from "@/lib/db/json-schemas";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
+import {
+  activeFieldsWithMatchRates,
+  entriesWithMatchRates,
+  withMatchRateUnset,
+} from "@/server/services/contributions/match-writes";
+import {
+  createProfile,
+  deleteProfile,
+  duplicateProfile,
+  setActiveProfile,
+} from "@/server/services/profiles/profile-lifecycle";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
 
 const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
+type Entry = Record<string, unknown>;
 
 /**
  * A joint account with no jobId has no single person's salary to resolve
  * percent_of_salary against — the salary-resolution fallback in
- * server/helpers/contribution.ts falls back to job-by-personId, which is
+ * lib/pure/contributions/contribution-rows.ts falls back to job-by-personId, which is
  * null for joint accounts, silently computing a $0 salary instead of the
  * intended percentage. contributionMethod is only ever set here now
  * (accounts carry no method of their own), so every write path that can
@@ -95,15 +102,8 @@ async function assertNoJointPercentOfSalaryWithoutJob(
   }
 }
 
-/**
- * Shared transactional read-merge-write for one active-fields sub-entry
- * (an account or a deduction) inside a profile's `contributionActiveFields`
- * blob — setAccountActiveFields and setDeductionActiveFields were
- * near-identical copies of this same four-step sequence (merge → validate
- * → delete-if-empty → write back), differing only in which sub-key/schema
- * they touch. See setAccountActiveFields's doc comment for why this needs
- * to be transactional at all.
- */
+/** The transactional read-merge-write of one active-fields sub-entry (an
+ *  account or a deduction): merge, validate, delete-if-empty, write back. */
 async function patchProfileSubEntry<T extends Record<string, unknown>>(
   tx: Db,
   profileId: number,
@@ -119,6 +119,8 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
     before: Record<string, Record<string, unknown>>,
     after: Record<string, Record<string, unknown>>,
   ) => Promise<void>,
+  /** Completes the merged entry before it's validated (the match rate). */
+  prepare?: (entry: Entry, before: Entry | undefined) => Promise<Entry>,
 ): Promise<typeof schema.contributionProfiles.$inferSelect> {
   const existing = await tx
     .select()
@@ -132,11 +134,11 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
     string,
     Record<string, Record<string, unknown>> | undefined
   >;
-  const mergedEntry: Record<string, unknown> = {
-    ...root[subKey]?.[String(entryId)],
-  };
-  for (const key of unset ?? []) delete mergedEntry[key];
-  Object.assign(mergedEntry, fields);
+  const old = root[subKey]?.[String(entryId)];
+  const patched: Entry = { ...old };
+  for (const key of unset ?? []) delete patched[key];
+  Object.assign(patched, fields);
+  const mergedEntry = prepare ? await prepare(patched, old) : patched;
 
   const parsed = entrySchema.safeParse(mergedEntry);
   if (!parsed.success) {
@@ -344,11 +346,10 @@ export const contributionProfileRouter = createTRPCRouter({
         /** Only a payroll account can be taken from bonus checks. */
         isPayroll: isPaidThroughPayroll(row),
         live: {
-          // No contributionValue/contributionMethod here — accounts carry
-          // no value of their own anymore (see applyContribActiveFields);
-          // every profile's own active field is the only source.
+          // No contribution value or method: only a profile's entry has one.
           employerMatchType: row.employerMatchType,
           employerMatchValue: row.employerMatchValue,
+          employerMatchRate: row.employerMatchRate,
           employerMaxMatchPct: row.employerMaxMatchPct,
           autoMaximize: row.autoMaximize,
           isActive: row.isActive,
@@ -502,8 +503,8 @@ export const contributionProfileRouter = createTRPCRouter({
         const disambiguatedName =
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName;
 
-        const displayNameCustom = (activeFields?.displayNameCustom ??
-          activeFields?.displayNameActive) as string | undefined;
+        const displayNameCustom = activeFields?.displayNameCustom as
+          string | undefined;
 
         return {
           id: row.id,
@@ -515,11 +516,11 @@ export const contributionProfileRouter = createTRPCRouter({
           personId: row.personId,
           taxTreatment: row.taxTreatment,
           parentCategory: row.parentCategory,
-          // Live values — no liveMethod/liveValue: accounts carry no
-          // contribution value/method of their own anymore, only this
-          // profile's activeFields does (see applyContribActiveFields).
+          // Live values: no method or value (only a profile's entry has
+          // them; see applyContribActiveFields).
           liveMatchType: row.employerMatchType,
           liveMatchValue: row.employerMatchValue,
+          liveMatchRate: row.employerMatchRate,
           liveMaxMatchPct: row.employerMaxMatchPct,
           liveIsActive: row.isActive,
           /** Paid through payroll — only these can be taken from bonus checks. */
@@ -580,29 +581,19 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-
-      const rows = await ctx.db
-        .insert(schema.contributionProfiles)
-        .values({
-          name: input.name,
-          description: input.description ?? null,
-          contributionActiveFields: input.contributionActiveFields,
-        })
-        .returning();
-      return rows[0]!;
+      const contributionActiveFields = await activeFieldsWithMatchRates(
+        ctx.db,
+        input.contributionActiveFields,
+        {},
+      );
+      return createProfile(ctx.db, "contribution", {
+        ...input,
+        contributionActiveFields,
+      });
     }),
 
-  /**
-   * Clone an existing profile's contributionActiveFields into a new
-   * profile, verbatim. Safe as a straight copy (unlike Salary Profile's
-   * extraPaycheckRouting, or Budget Profile's contributionAccountId):
-   * contributionActiveFields is a pure value-override map keyed by
-   * contributionAccountId (contributionValue/method/match fields/
-   * autoMaximize/isActive) with no FK to owned rows and no external
-   * write-through path — multiple profiles already reference the same
-   * account ids as normal steady state (that's what the compare view
-   * renders), so there's no double-counting or sync-conflict hazard here.
-   */
+  /** Copy a profile's contributionActiveFields into a new profile, verbatim:
+   *  a value map keyed by account id, with no owned rows to duplicate. */
   duplicate: contributionProfileProcedure
     .input(
       z.object({
@@ -610,34 +601,11 @@ export const contributionProfileRouter = createTRPCRouter({
         name: z.string().min(1).max(100),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const source = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
-        .then((r) => r[0]);
-      if (!source)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Source profile not found",
-        });
-
-      const contributionActiveFields = source.contributionActiveFields ?? {};
-      await assertNoJointPercentOfSalaryWithoutJob(
-        ctx.db,
-        contributionActiveFields,
-      );
-
-      const rows = await ctx.db
-        .insert(schema.contributionProfiles)
-        .values({
-          name: input.name,
-          description: source.description,
-          contributionActiveFields,
-        })
-        .returning();
-      return rows[0]!;
-    }),
+    .mutation(({ ctx, input }) =>
+      duplicateProfile(ctx.db, "contribution", input, (fields) =>
+        assertNoJointPercentOfSalaryWithoutJob(ctx.db, fields),
+      ),
+    ),
 
   /**
    * Update an existing contribution profile.
@@ -673,14 +641,21 @@ export const contributionProfileRouter = createTRPCRouter({
       // Over the limits on a profile used as a future switch: saved, with
       // a warning (switchProfileLimitWarning).
       let limitWarning: string | null = null;
-      if (input.contributionActiveFields) {
-        const before =
-          (
-            existing[0].contributionActiveFields as {
-              contributionAccounts?: Record<string, Record<string, unknown>>;
-            }
-          ).contributionAccounts ?? {};
-        const after = input.contributionActiveFields.contributionAccounts ?? {};
+      const before =
+        (
+          existing[0].contributionActiveFields as {
+            contributionAccounts?: Record<string, Record<string, unknown>>;
+          }
+        ).contributionAccounts ?? {};
+      const incoming =
+        input.contributionActiveFields &&
+        (await activeFieldsWithMatchRates(
+          ctx.db,
+          input.contributionActiveFields,
+          before,
+        ));
+      if (incoming) {
+        const after = incoming.contributionAccounts ?? {};
         const check = {
           profileId: input.id,
           before,
@@ -696,8 +671,7 @@ export const contributionProfileRouter = createTRPCRouter({
       if (input.name !== undefined) updates.name = input.name;
       if (input.description !== undefined)
         updates.description = input.description ?? null;
-      if (input.contributionActiveFields !== undefined)
-        updates.contributionActiveFields = input.contributionActiveFields;
+      if (incoming !== undefined) updates.contributionActiveFields = incoming;
 
       const rows = await ctx.db
         .update(schema.contributionProfiles)
@@ -707,27 +681,9 @@ export const contributionProfileRouter = createTRPCRouter({
       return { ...rows[0]!, limitWarning };
     }),
 
-  /**
-   * Patch (merge) one account's active fields within a profile — a true
-   * field-level patch, not a client-side-merged full-blob replace. `fields`
-   * only needs to carry the keys actually changing; `unset` explicitly
-   * names keys to remove (a JSON body can't transmit `undefined` as a
-   * distinguishable value from "key omitted", so field-level deletion
-   * needs its own signal). Keys not mentioned in either are left untouched.
-   *
-   * The read-merge-write happens inside a transaction so two overlapping
-   * patches to the same profile (two fields committed in quick succession,
-   * a second tab/device) can't silently clobber each other the way the
-   * previous design — read a snapshot client-side, merge client-side, PUT
-   * the whole blob back — could.
-   *
-   * `fields` is validated against the loose per-field patch schema (every
-   * field optional, no cross-field constraint); the paired-or-neither
-   * contributionValue/contributionMethod invariant is checked on the
-   * MERGED result below, not on the patch itself, since a legitimate
-   * single-field patch (e.g. just `{ isActive: false }`) must not be
-   * rejected for not also carrying an unrelated pair.
-   */
+  /** Patch one account's active fields in a profile, in one transaction:
+   *  `fields` sets keys, `unset` removes them; the merged entry is validated
+   *  (contributionValue and contributionMethod together, or neither). */
   setAccountActiveFields: contributionProfileProcedure
     .input(
       z.object({
@@ -763,11 +719,10 @@ export const contributionProfileRouter = createTRPCRouter({
           "contributionAccounts",
           input.accountId,
           input.fields,
-          input.unset,
+          withMatchRateUnset(input.unset),
           contribAccountActiveFieldsSchema,
           "contribution account fields",
-          // A value that leaves this account over its IRS limit is refused
-          // on the active profile, and warned on one used as a future switch.
+          // Over the IRS limit: refused on the active profile, else warned.
           async (before, after) => {
             const check = {
               profileId: input.profileId,
@@ -778,6 +733,13 @@ export const contributionProfileRouter = createTRPCRouter({
             await assertWithinIrsLimits(tx, check);
             limitWarning = await switchProfileLimitWarning(tx, check);
           },
+          (entry, before) =>
+            entriesWithMatchRates(
+              tx,
+              { [input.accountId]: entry },
+              { [input.accountId]: before },
+              () => "employerMatchRate" in input.fields,
+            ).then((e) => e[input.accountId]!),
         ),
       );
       // Set inside the check callback, which TypeScript doesn't follow.
@@ -824,91 +786,15 @@ export const contributionProfileRouter = createTRPCRouter({
    */
   delete: contributionProfileProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const activeSettingRows = await ctx.db
-        .select()
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
-      const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
+    .mutation(({ ctx, input }) =>
+      deleteProfile(ctx.db, "contribution", input.id),
+    ),
 
-      const allProfiles = await ctx.db
-        .select({ id: schema.contributionProfiles.id })
-        .from(schema.contributionProfiles);
-
-      const deleteCheck = canDeleteContribProfile(
-        activeId,
-        input.id,
-        allProfiles.length,
-      );
-      if (!deleteCheck.allowed)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: deleteCheck.reason ?? "This profile can't be deleted.",
-        });
-
-      if (!allProfiles.some((p) => p.id === input.id))
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
-      await assertNoPlanUses(ctx.db, "contribution", input.id);
-
-      await ctx.db
-        .delete(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.id));
-      return { success: true };
-    }),
-
-  /**
-   * Mark a profile as the globally-active one (or clear the setting with
-   * id: null). Split out from settings.appSettings.upsert (which the
-   * client-side hooks used to write this through) because that endpoint is
-   * adminProcedure-gated to protect RBAC config that lives in the same
-   * app_settings table — a household member holding only the
-   * contributionProfile permission (not full admin) could see and click
-   * Activate, but the write silently 403'd with no error surfaced, leaving
-   * the UI showing a false "activated" state until the next remount
-   * snapped it back. Mirrors budget.setActiveProfile's pattern of a
-   * narrowly-scoped, correctly-permissioned write.
-   *
-   * `id: null` is accepted: the client-side
-   * hook's writeVia originally special-cased null into a silent no-op
-   * (this endpoint's input used to require a real id, which can't express
-   * "clear the selection") — the hook's own return type
-   * (`(id: number | null) => void`) documents null as a valid call, so a
-   * caller that reaches it silently loses the write. Deleting the
-   * app_settings row mirrors settings.appSettings.upsert's own existing
-   * null-handling convention (value is NOT NULL — null means "delete the
-   * row so the default applies").
-   */
+  /** Make a profile the globally-active one, or clear the setting (null),
+   *  under the contributionProfile permission, not admin. */
   setActive: contributionProfileProcedure
     .input(z.object({ id: z.number().nullable() }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.id === null) {
-        await ctx.db
-          .delete(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
-        return { success: true };
-      }
-
-      const [profile] = await ctx.db
-        .select({ id: schema.contributionProfiles.id })
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.id));
-      if (!profile)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: SK_ACTIVE_CONTRIB_PROFILE_ID, value: input.id })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.id },
-        });
-      return { success: true };
-    }),
+    .mutation(({ ctx, input }) =>
+      setActiveProfile(ctx.db, "contribution", input.id),
+    ),
 });

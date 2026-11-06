@@ -8,9 +8,9 @@
  * comparison table, and (when moveYear is provided) a blended projection
  * that switches from the current path to the relocation path at moveYear.
  */
-import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household-timeline";
-import { ageStepAt } from "@/server/retirement/payload/profile-switches";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household/household-timeline";
+import { ageStepAt } from "@/server/services/projection/engine-payload/profile-switches";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { z } from "zod/v4";
 import { eq, desc } from "drizzle-orm";
 import {
@@ -18,16 +18,14 @@ import {
   protectedProcedure,
   adminProcedure,
 } from "../../trpc";
-import { calculateProjection } from "@/lib/calculators/engine";
-import { toNumber } from "@/server/helpers";
-import {
-  computeBudgetAnnualTotal,
-  resolveLinkedBudgetItemAmounts,
-} from "@/server/helpers/budget";
+import { calculateProjection } from "@/lib/pure/engine";
+import { toNumber } from "@/lib/utils/numbers";
+import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
+import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import {
   fetchRetirementData,
   buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import { buildDecumulationDefaults } from "./_shared";
 import { safeDivide } from "@/lib/utils/math";
 import {
@@ -35,19 +33,19 @@ import {
   purchaseMonthlyForYear,
   steadyStateMonthly,
   type RelocationPurchaseInput,
-} from "@/lib/calculators/relocation";
+} from "@/lib/pure/retirement/relocation";
 import * as schema from "@/lib/db/schema";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 
 /** Router's large-purchase input is zod-nullable, not optional-undefined like
  *  `RelocationPurchaseInput` — convert once so every call site shares the
  *  same precomputed data (Finding 12: previously reimplemented this math
- *  independently of lib/calculators/relocation.ts, with a `roundToCents`
+ *  independently of lib/pure/retirement/relocation.ts, with a `roundToCents`
  *  drift between the two copies). */
 function toRelocationPurchaseInput(
   purchases: {
@@ -437,10 +435,10 @@ export const relocationProjectionRouter = createTRPCRouter({
       const relocationBalanceAtRetirement =
         relocAccRows[relocAccRows.length - 1]?.retirementBalance ?? 0;
 
-      // Delegates to lib/calculators/relocation.ts's real formula (Single
+      // Delegates to lib/pure/retirement/relocation.ts's real formula (Single
       // Computation Path — this endpoint used to reimplement it and drop
       // the steady-state purchase-cost term, drifting from
-      // lib/calculators/relocation.ts's calculateRelocation()). Reuses the
+      // lib/pure/retirement/relocation.ts's calculateRelocation()). Reuses the
       // same purchasePrecomp computed above for the budget-override loop —
       // one precomputation, not two independently-rounded copies.
       const withdrawalRate = toNumber(relocPayload.settings.withdrawalRate);

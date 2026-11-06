@@ -11,7 +11,7 @@ import {
   BUCKET_INDEX_PROXIES,
   resolveBenchmark,
 } from "@/lib/config/benchmarks";
-import { householdRetirementYear } from "@/server/helpers/retirement-profile";
+import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
   firstRealYear,
   runBenchmark,
@@ -21,34 +21,34 @@ import {
   yourWindowMonths,
   type MonthlyPrices,
   type YearlyResult,
-} from "@/lib/pure/benchmark-yearly";
-import { getBenchmarkMonthlyPrices } from "@/server/helpers/market-prices";
+} from "@/lib/pure/investments/benchmark-yearly";
+import { getBenchmarkMonthlyPrices } from "@/server/services/investments/market-prices";
 import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
 import { localDateStr } from "@/lib/utils/date";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import { yearReturnRanges } from "@/lib/calculators/year-return-range";
-import { buildMcInputs } from "../projection/_shared";
-import { effectiveFacts } from "@/lib/pure/fund-facts";
+import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   dailyWeightsByAccount,
   dailyWeightsByHolder,
-} from "@/lib/pure/holding-periods";
+} from "@/lib/pure/investments/holding-periods";
 import {
   accountValuesByYear,
   matchedMixDescription,
   matchedMixLevels,
   matchedMixRun,
-} from "@/lib/pure/matched-mix";
-import { toNumber } from "@/server/helpers/transforms";
-import { toFactRows } from "@/server/helpers/fund-facts";
+} from "@/lib/pure/contributions/matched-mix";
+import { toNumber } from "@/lib/utils/numbers";
+import { toFactRows } from "@/server/data/fund-facts";
 import {
   loadDailyPositions,
   loadEnteredPeriods,
   loadHoldingSplits,
-} from "./_shared";
+} from "@/server/data/investments";
 import type { Db } from "@/lib/db";
 
 /** Label of the matched-mix entry (key "matched_mix"). */

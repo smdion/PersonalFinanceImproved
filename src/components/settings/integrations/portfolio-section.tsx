@@ -16,7 +16,7 @@ import {
   allowedDirectionsForMapping,
   isPullOnlyLocalId,
   mappingsWithTypedIds,
-} from "@/lib/utils/account-mapping";
+} from "@/lib/pure/sync/account-mapping";
 import type { PreviewData, Service } from "../integrations-types";
 import type { PortfolioMutations } from "./hooks/use-portfolio-mutations";
 import { Badge } from "@/components/ui/badge";

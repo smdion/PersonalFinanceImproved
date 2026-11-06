@@ -13,7 +13,7 @@ import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
 import { splitLineLabel } from "./deduction-row";
-import { isPreTax } from "@/lib/calculators/paycheck";
+import { isPreTax } from "@/lib/pure/paycheck/paycheck";
 import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
@@ -35,12 +35,12 @@ import type {
 } from "./types";
 import type { ContribAccountFormValues } from "./contrib-account-form";
 import { PaystubCheck } from "./paystub-check";
-import type { FicaRates } from "@/lib/pure/paystub-check";
+import type { FicaRates } from "@/lib/pure/paycheck/paystub-check";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 import type {
   BlendedAnnualTotals,
   BonusEstimate,
-} from "@/lib/calculators/types/calculators";
+} from "@/lib/pure/paycheck/paycheck.types";
 
 /**
  * Everything in this card that writes. Expressed as ONE discriminated prop
@@ -83,7 +83,7 @@ function bonusAccountName(
   raw: RawContrib,
   lines: Parameters<typeof splitLineLabel>[2],
 ): string {
-  const custom = raw.displayNameCustom ?? raw.displayNameActive;
+  const custom = raw.displayNameCustom;
   if (custom) return custom;
   // The account's line on the pay stub is named this (buildContribAccounts).
   const lineName = raw.subType || raw.label || raw.accountType;
@@ -134,8 +134,8 @@ export function PersonPaycheck({
     title: string | null;
     /** These 7 fields no longer live on the raw job row — they resolve
      *  through the active Salary Profile's entry for this job (see
-     *  SalaryEntry in lib/db/salary-entry-defaults.ts). paycheck.ts's
-     *  computeSummary still merges them flat onto `job` for the client
+     *  SalaryEntry in lib/db/salary-entry-defaults.ts). computePaycheckSummary
+     *  still merges them flat onto `job` for the client
      *  (the same pattern use-paycheck-person-views.ts's `job: any` and
      *  household-income-card.tsx already rely on), so they're read the
      *  same way here as before the migration — only their write path

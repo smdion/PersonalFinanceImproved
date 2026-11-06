@@ -2,7 +2,7 @@
  *  v2, https://www.simplefin.org/protocol.html). Only the fields Ledgr reads
  *  are required; money is a decimal string, times are Unix seconds. */
 import { z } from "zod/v4";
-import { zDecimal } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 
 const unixSeconds = z.number().int();
 

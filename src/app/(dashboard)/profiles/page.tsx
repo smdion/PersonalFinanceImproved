@@ -4,7 +4,7 @@
  * page). Shares BudgetContent's queries; same prefetch as the Budget page.
  */
 import { HydrationBoundary } from "@tanstack/react-query";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { BudgetContent } from "../budget/budget-content";
 
 export default async function ProfilesPage() {

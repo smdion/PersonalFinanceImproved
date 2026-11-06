@@ -22,11 +22,11 @@ import {
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { applyContributionAccountEdit } from "@/server/helpers/contribution";
-import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
+import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
+import { assertWithinIrsLimits } from "@/server/services/contributions/caps";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";

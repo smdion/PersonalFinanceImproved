@@ -17,7 +17,7 @@ export function registerNodeHandlers() {
   // Server date math runs in the household's zone from the first request.
   void Promise.all([
     import("@/lib/db"),
-    import("@/server/helpers/household-timezone"),
+    import("@/server/data/household-timezone"),
   ]).then(([{ db }, tz]) => tz.loadHouseholdTimeZone(db));
 
   process.on("unhandledRejection", (reason) => {

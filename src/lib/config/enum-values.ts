@@ -1,31 +1,16 @@
 /**
- * App-level enum value definitions and Zod validators.
+ * App-level enum value definitions.
  *
  * These replace the former pgEnum declarations in the schema. All constrained-value
- * columns are now `text` in the database, validated here at the app layer via Zod.
+ * columns are now `text` in the database, validated at the app layer via Zod.
  * This follows RULES.md principle 9: "Account type validation is app-level, not DB-level."
  *
- * Pattern: const array → derived Zod enum → exported for use in tRPC input validators.
+ * Pattern: const array here → derived Zod enum in enum-values.schema.ts → used
+ * in tRPC input validators. Values only: client components import this file,
+ * and Zod stays out of their bundle.
  */
 
-import { z } from "zod";
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
-
-// ── Decimal string (shared across routers and JSONB active-field schemas) ──
-
-/** A string holding a finite number: never "", "NaN" or "Infinity". */
-export const zDecimal = z
-  .string()
-  .refine((v) => v.trim() !== "" && Number.isFinite(Number(v)), {
-    message: "Must be a valid number",
-  });
-
-/** A decimal string between 0 and 1: a share stored as a fraction (0.06 is
- *  6%), never a whole-number percent. */
-export const zFraction = zDecimal.refine(
-  (v) => Number(v) >= 0 && Number(v) <= 1,
-  { message: "Must be a fraction between 0 and 1 (0.06 for 6%)" },
-);
 
 // ── Pay Period ──
 
@@ -36,7 +21,6 @@ export const PAY_PERIOD_VALUES = [
   "monthly",
 ] as const;
 export type PayPeriod = (typeof PAY_PERIOD_VALUES)[number];
-export const payPeriodSchema = z.enum(PAY_PERIOD_VALUES);
 
 // ── Investment transaction kind (SimpleFIN ingest) ──
 // What a brokerage/401k/HSA transaction row means for performance math.
@@ -57,9 +41,6 @@ export const INVESTMENT_TRANSACTION_KIND_VALUES = [
 ] as const;
 export type InvestmentTransactionKind =
   (typeof INVESTMENT_TRANSACTION_KIND_VALUES)[number];
-export const investmentTransactionKindSchema = z.enum(
-  INVESTMENT_TRANSACTION_KIND_VALUES,
-);
 /** Kinds that are income in the year they're paid (taxable in a taxable
  *  account): dividends incl. capital-gain distributions, and interest. */
 export const INVESTMENT_INCOME_KINDS: ReadonlySet<InvestmentTransactionKind> =
@@ -82,7 +63,6 @@ export const CASH_LIKE_SECURITY_KINDS: ReadonlySet<SecurityKind> = new Set([
   "money_market",
   "cash",
 ]);
-export const securityKindSchema = z.enum(SECURITY_KIND_VALUES);
 
 // ── Fund facts (SEC filings / user) ──
 
@@ -93,7 +73,6 @@ export const SECURITY_FACT_SOURCE_VALUES = [
   "user", // entered or confirmed by the household
 ] as const;
 export type SecurityFactSource = (typeof SECURITY_FACT_SOURCE_VALUES)[number];
-export const securityFactSourceSchema = z.enum(SECURITY_FACT_SOURCE_VALUES);
 
 /**
  * Whose SEC filings supply a fund's facts: its own, a registered stand-in,
@@ -101,7 +80,6 @@ export const securityFactSourceSchema = z.enum(SECURITY_FACT_SOURCE_VALUES);
  */
 export const FACTS_BASIS_VALUES = ["exact", "standin", "none"] as const;
 export type FactsBasis = (typeof FACTS_BASIS_VALUES)[number];
-export const factsBasisSchema = z.enum(FACTS_BASIS_VALUES);
 
 /**
  * Composition buckets a fund's holdings are summed into. Fixed set; each
@@ -118,7 +96,6 @@ export const COMPOSITION_BUCKET_VALUES = [
   "other",
 ] as const;
 export type CompositionBucket = (typeof COMPOSITION_BUCKET_VALUES)[number];
-export const compositionBucketSchema = z.enum(COMPOSITION_BUCKET_VALUES);
 /** The stock buckets — what "stock share" means wherever a mix is compared
  *  with a stock/bond split (e.g. Vanguard's target-date glide path). */
 const STOCK_COMPOSITION_BUCKETS: ReadonlySet<CompositionBucket> = new Set([
@@ -134,9 +111,8 @@ export const MAJOR_COMPOSITION_BUCKETS: readonly CompositionBucket[] =
 
 // ── Holding observation source ──
 
-export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;
+export const HOLDING_SOURCE_VALUES = ["simplefin"] as const;
 export type HoldingSource = (typeof HOLDING_SOURCE_VALUES)[number];
-export const holdingSourceSchema = z.enum(HOLDING_SOURCE_VALUES);
 
 // ── Holding period basis ──
 
@@ -144,13 +120,11 @@ export const holdingSourceSchema = z.enum(HOLDING_SOURCE_VALUES);
  *  SimpleFIN holdings) aren't stored — they're derived on read. */
 export const HOLDING_PERIOD_BASIS_VALUES = ["user", "inferred"] as const;
 export type HoldingPeriodBasis = (typeof HOLDING_PERIOD_BASIS_VALUES)[number];
-export const holdingPeriodBasisSchema = z.enum(HOLDING_PERIOD_BASIS_VALUES);
 
 // ── Pay Week ──
 
 export const PAY_WEEK_VALUES = ["even", "odd", "na"] as const;
 export type PayWeek = (typeof PAY_WEEK_VALUES)[number];
-export const payWeekSchema = z.enum(PAY_WEEK_VALUES);
 
 // ── Tax Treatment ──
 
@@ -161,13 +135,11 @@ export const TAX_TREATMENT_VALUES = [
   "hsa",
 ] as const;
 export type TaxTreatment = (typeof TAX_TREATMENT_VALUES)[number];
-export const taxTreatmentSchema = z.enum(TAX_TREATMENT_VALUES);
 
 // ── Match Tax Treatment ──
 
 export const MATCH_TAX_TREATMENT_VALUES = ["pre_tax", "tax_free"] as const;
 export type MatchTaxTreatment = (typeof MATCH_TAX_TREATMENT_VALUES)[number];
-export const matchTaxTreatmentSchema = z.enum(MATCH_TAX_TREATMENT_VALUES);
 
 // ── Contribution Method ──
 
@@ -178,7 +150,6 @@ export const CONTRIBUTION_METHOD_VALUES = [
   "fixed_annual",
 ] as const;
 export type ContributionMethod = (typeof CONTRIBUTION_METHOD_VALUES)[number];
-export const contributionMethodSchema = z.enum(CONTRIBUTION_METHOD_VALUES);
 
 // ── Employer Match Type ──
 
@@ -189,13 +160,11 @@ export const EMPLOYER_MATCH_TYPE_VALUES = [
   "fixed_annual",
 ] as const;
 export type EmployerMatchType = (typeof EMPLOYER_MATCH_TYPE_VALUES)[number];
-export const employerMatchTypeSchema = z.enum(EMPLOYER_MATCH_TYPE_VALUES);
 
 // ── HSA Coverage Type ──
 
 export const HSA_COVERAGE_TYPE_VALUES = ["self_only", "family"] as const;
 export type HsaCoverageType = (typeof HSA_COVERAGE_TYPE_VALUES)[number];
-export const hsaCoverageTypeSchema = z.enum(HSA_COVERAGE_TYPE_VALUES);
 /** The coverage type whose limit is the family variant (IRS Pub 969). */
 export const HSA_FAMILY_COVERAGE: HsaCoverageType = "family";
 
@@ -203,7 +172,6 @@ export const HSA_FAMILY_COVERAGE: HsaCoverageType = "family";
 
 export const ACCOUNT_OWNERSHIP_VALUES = ["individual", "joint"] as const;
 export type AccountOwnership = (typeof ACCOUNT_OWNERSHIP_VALUES)[number];
-export const accountOwnershipSchema = z.enum(ACCOUNT_OWNERSHIP_VALUES);
 
 // ── Bonus Destination ──
 
@@ -211,19 +179,13 @@ export const accountOwnershipSchema = z.enum(ACCOUNT_OWNERSHIP_VALUES);
  *  (Living Costs shows its take-home as its own bar). Absent = budget. */
 export const BONUS_DESTINATION_VALUES = ["budget", "spending"] as const;
 export type BonusDestination = (typeof BONUS_DESTINATION_VALUES)[number];
-export const bonusDestinationSchema = z.enum(BONUS_DESTINATION_VALUES);
 /** A Salary Profile entry with no `bonusDestination` sends it here. */
 export const DEFAULT_BONUS_DESTINATION: BonusDestination = "budget";
-
-// ── Budget API Service ──
-
-export const budgetApiServiceSchema = z.enum(BUDGET_API_SERVICE_VALUES);
 
 // ── API Sync Direction ──
 
 export const API_SYNC_DIRECTION_VALUES = ["pull", "push", "both"] as const;
 export type ApiSyncDirection = (typeof API_SYNC_DIRECTION_VALUES)[number];
-export const apiSyncDirectionSchema = z.enum(API_SYNC_DIRECTION_VALUES);
 
 // ── Portfolio Tax Type ──
 
@@ -235,7 +197,6 @@ export const RETIREMENT_BEHAVIOR_VALUES = [
   "continues_after_retirement",
 ] as const;
 export type RetirementBehavior = (typeof RETIREMENT_BEHAVIOR_VALUES)[number];
-export const retirementBehaviorSchema = z.enum(RETIREMENT_BEHAVIOR_VALUES);
 
 // ── Contribution Scaling ──
 
@@ -244,13 +205,11 @@ export const CONTRIBUTION_SCALING_VALUES = [
   "fixed_amount",
 ] as const;
 export type ContributionScaling = (typeof CONTRIBUTION_SCALING_VALUES)[number];
-export const contributionScalingSchema = z.enum(CONTRIBUTION_SCALING_VALUES);
 
 // ── Savings Goal Target Mode ──
 
 export const TARGET_MODE_VALUES = ["fixed", "ongoing", "bucket"] as const;
 export type TargetMode = (typeof TARGET_MODE_VALUES)[number];
-export const targetModeSchema = z.enum(TARGET_MODE_VALUES);
 
 // ── Portfolio Tax Type ──
 
@@ -261,19 +220,16 @@ export const PORTFOLIO_TAX_TYPE_VALUES = [
   "afterTax",
 ] as const;
 export type PortfolioTaxType = (typeof PORTFOLIO_TAX_TYPE_VALUES)[number];
-export const portfolioTaxTypeSchema = z.enum(PORTFOLIO_TAX_TYPE_VALUES);
 
 // ── Utility Kind ──
 
 export const UTILITY_KIND_VALUES = ["gas", "water", "electric"] as const;
 export type UtilityKind = (typeof UTILITY_KIND_VALUES)[number];
-export const utilityKindSchema = z.enum(UTILITY_KIND_VALUES);
 
 // ── Utility Usage Unit ──
 
 export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
 export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
-export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);
 /** The unit each kind is usually billed in — the add form's starting choice. */
 export const UTILITY_USUAL_UNIT: Record<UtilityKind, UtilityUnit> = {
   gas: "ccf",
@@ -289,7 +245,6 @@ export const UTILITY_SOURCE_VALUES = [
   ...BUDGET_API_SERVICE_VALUES,
 ] as const;
 export type UtilitySource = (typeof UTILITY_SOURCE_VALUES)[number];
-export const utilitySourceSchema = z.enum(UTILITY_SOURCE_VALUES);
 
 /** A community tax-data update's state (`tax_data_updates.status`). */
 export const TAX_DATA_UPDATE_STATUS_VALUES = [
@@ -335,7 +290,6 @@ export const DEBT_KIND_VALUES = [
   "other",
 ] as const;
 export type DebtKind = (typeof DEBT_KIND_VALUES)[number];
-export const debtKindSchema = z.enum(DEBT_KIND_VALUES);
 
 /** A view's dollars: as projected, or today's ("real"). */
 export const DOLLAR_BASIS_VALUES = ["nominal", "real"] as const;

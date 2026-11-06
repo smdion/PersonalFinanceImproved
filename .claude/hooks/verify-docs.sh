@@ -16,7 +16,7 @@ FILE_PATH=$(jq -r '.tool_input.file_path // empty' 2>/dev/null)
 # calculators, routers, pages, components, DB tables in src/lib/db/pg/,
 # migrations, test files) plus account-types; tests/scripts/verify-docs-
 # hook.test.ts keeps the two in step.
-DOCS_SCOPE='src/lib/calculators/|src/server/routers/|src/app/|src/components/|src/lib/db/|src/lib/config/account-types|drizzle/|tests/'
+DOCS_SCOPE='src/lib/pure/|src/server/routers/|src/app/|src/components/|src/lib/db/|src/lib/config/account-types|drizzle/|tests/'
 if [[ "$FILE_PATH" =~ $DOCS_SCOPE ]]; then
   cd "$CLAUDE_PROJECT_DIR" || exit 0
   if ! VERIFY_OUT=$(pnpm docs:verify 2>&1); then

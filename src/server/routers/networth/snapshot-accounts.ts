@@ -1,0 +1,228 @@
+import { eq, desc } from "drizzle-orm";
+import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
+import { portfolioProcedure } from "../../trpc";
+import * as schema from "@/lib/db/schema";
+import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
+import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import {
+  accountCategoryEnum,
+  parentCategoryEnum,
+} from "@/lib/config/account-types";
+import { PORTFOLIO_TAX_TYPE_VALUES } from "@/lib/config/enum-values";
+
+const snapshotAccountInput = z.object({
+  snapshotId: z.number().int(),
+  institution: z.string().trim().min(1),
+  taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
+  amount: zDecimal,
+  accountType: z.enum(accountCategoryEnum()),
+  subType: z.string().nullable().optional(),
+  label: z.string().trim().nullable().optional(),
+  parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),
+  ownerPersonId: z.number().int().nullable().optional(),
+  performanceAccountId: z.number().int().nullable().optional(),
+});
+
+export const snapshotAccountProcedures = {
+  /**
+   * Update a single portfolio account row. Metadata edits (owner /
+   * active / label / taxType) apply to any snapshot. An `amount` edit is
+   * only allowed on the **most recent** snapshot — it re-derives that
+   * year's performance ending balances + annual rollups and re-pushes
+   * ("resync") the corrected balances to the budget API. Older snapshots
+   * feed cumulative history + finalized years; their balances are fixed
+   * by delete-and-recreate, not edited here.
+   */
+  updateAccount: portfolioProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        ownerPersonId: z.number().int().nullable().optional(),
+        isActive: z.boolean().optional(),
+        label: z.string().trim().nullable().optional(),
+        taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES).optional(),
+        /** Corrected balance. Latest snapshot only. Triggers the
+         *  performance recompute + budget-API resync. */
+        amount: zDecimal.optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const metaUpdates: Record<string, unknown> = {};
+      if (input.ownerPersonId !== undefined)
+        metaUpdates.ownerPersonId = input.ownerPersonId;
+      if (input.isActive !== undefined) metaUpdates.isActive = input.isActive;
+      if (input.label !== undefined) metaUpdates.label = input.label || null;
+      if (input.taxType !== undefined) metaUpdates.taxType = input.taxType;
+
+      // ── Metadata-only edit: unchanged fast path ──────────────────────
+      if (input.amount === undefined) {
+        if (Object.keys(metaUpdates).length > 0) {
+          await ctx.db
+            .update(schema.portfolioAccounts)
+            .set(metaUpdates)
+            .where(eq(schema.portfolioAccounts.id, input.id));
+        }
+        return { amountEdited: false as const };
+      }
+
+      // ── Balance edit ───────────────────────────────────────────────
+      const [row] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.id, input.id));
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "That account row no longer exists.",
+        });
+      }
+      const [snap] = await ctx.db
+        .select()
+        .from(schema.portfolioSnapshots)
+        .where(eq(schema.portfolioSnapshots.id, row.snapshotId));
+      if (!snap) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "That snapshot no longer exists.",
+        });
+      }
+
+      const [latest] = await ctx.db
+        .select({ id: schema.portfolioSnapshots.id })
+        .from(schema.portfolioSnapshots)
+        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+        .limit(1);
+      if (latest?.id !== snap.id) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Balances can only be edited on the most recent snapshot. " +
+            "For an older one, delete it and create a new snapshot.",
+        });
+      }
+
+      // Write the balance (+ any metadata in the same call), then
+      // re-derive ending balances + annual rollups from the snapshot's
+      // full, post-edit row set — one shared code path with `create`.
+      // A finalized year's Performance figures don't follow (they're
+      // settled there); the snapshot itself can still be corrected.
+      const performance = await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(schema.portfolioAccounts)
+          .set({ ...metaUpdates, amount: input.amount })
+          .where(eq(schema.portfolioAccounts.id, input.id));
+
+        const allRows = await tx
+          .select({
+            performanceAccountId: schema.portfolioAccounts.performanceAccountId,
+            amount: schema.portfolioAccounts.amount,
+          })
+          .from(schema.portfolioAccounts)
+          .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+
+        return refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
+      });
+      invalidateYearEndCache();
+
+      // NOTE: the budget-API resync is NOT run here. A single balance
+      // fix is rarely alone — running a full resync (list + delete +
+      // re-post per mapped account) on every edit would be slow, rate-
+      // limited, and non-atomic mid-sequence. The client batches: it
+      // marks the snapshot dirty and fires ONE `sync.resyncPortfolioPush`
+      // when the user finishes (collapses the row / navigates away), with
+      // a persistent "not synced" banner as the backstop.
+      return { amountEdited: true as const, performance };
+    }),
+
+  /** Create a new sub-account row in the latest snapshot. */
+  createAccount: portfolioProcedure
+    .input(snapshotAccountInput)
+    .mutation(async ({ ctx, input }) => {
+      // Defensive invariant, not a reachable UI path today: the only
+      // shipped caller (AddSubAccountForm) never sends a
+      // performanceAccountId. Kept so a closed account can't get a new
+      // balance row added out-of-band with no explanation, matching the
+      // "zero, don't silently omit" rule create() enforces for carried-
+      // forward rows — an explicit add should fail loudly instead.
+      const [snap] = await ctx.db
+        .select()
+        .from(schema.portfolioSnapshots)
+        .where(eq(schema.portfolioSnapshots.id, input.snapshotId));
+      if (!snap)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "That snapshot no longer exists.",
+        });
+      // Same rule as updateAccount: an older snapshot is history.
+      const [latest] = await ctx.db
+        .select({ id: schema.portfolioSnapshots.id })
+        .from(schema.portfolioSnapshots)
+        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+        .limit(1);
+      if (latest?.id !== snap.id)
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Accounts can only be added to the most recent snapshot.",
+        });
+
+      // A row linked to a master takes the master's parent category, as
+      // every other write does, so Net Worth and Performance group it
+      // the same way.
+      let parentCategory: string = input.parentCategory;
+      if (input.performanceAccountId != null) {
+        const [master] = await ctx.db
+          .select({
+            isActive: schema.performanceAccounts.isActive,
+            parentCategory: schema.performanceAccounts.parentCategory,
+          })
+          .from(schema.performanceAccounts)
+          .where(eq(schema.performanceAccounts.id, input.performanceAccountId))
+          .limit(1);
+        // Defensive invariant, not a reachable UI path today: the only
+        // shipped caller (AddSubAccountForm) never sends a
+        // performanceAccountId. A closed account can't get a new balance
+        // row added out-of-band — an explicit add fails loudly instead.
+        if (master && !master.isActive) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Cannot add a balance row for a closed account. Reopen the account first.",
+          });
+        }
+        if (master) parentCategory = master.parentCategory;
+      }
+      const row = await ctx.db.transaction(async (tx) => {
+        const [inserted] = await tx
+          .insert(schema.portfolioAccounts)
+          .values({
+            snapshotId: input.snapshotId,
+            institution: input.institution,
+            taxType: input.taxType,
+            amount: input.amount,
+            accountType: input.accountType,
+            subType: input.subType ?? null,
+            label: input.label ?? null,
+            parentCategory,
+            ownerPersonId: input.ownerPersonId ?? null,
+            performanceAccountId: input.performanceAccountId ?? null,
+            isActive: true,
+          })
+          .returning();
+        // The year's ending balances follow the snapshot, same shared
+        // path as create/updateAccount.
+        const allRows = await tx
+          .select({
+            performanceAccountId: schema.portfolioAccounts.performanceAccountId,
+            amount: schema.portfolioAccounts.amount,
+          })
+          .from(schema.portfolioAccounts)
+          .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+        await refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
+        return inserted!;
+      });
+      invalidateYearEndCache();
+      return row;
+    }),
+};

@@ -201,11 +201,7 @@ const config = [
     },
   },
   {
-    files: [
-      "src/server/**/*.ts",
-      "src/lib/pure/**/*.ts",
-      "src/lib/calculators/**/*.ts",
-    ],
+    files: ["src/server/**/*.ts", "src/lib/pure/**/*.ts"],
     rules: {
       "no-restricted-syntax": [
         "warn",
@@ -238,12 +234,11 @@ const config = [
     // FI milestones (liquid net worth, D1) and the Money Guy benchmark.
     files: ["src/**/*.{ts,tsx}"],
     ignores: [
-      "src/lib/calculators/engine/**",
-      "src/lib/calculators/types/**",
-      "src/lib/pure/milestone-input.ts",
+      "src/lib/pure/engine/**",
+      "src/lib/pure/advice/milestones/input.ts",
       "src/components/cards/dashboard/retirement-benchmarks.tsx",
       // Money Guy's Goldilocks rule sizes a lump sum against all invested money.
-      "src/lib/pure/goldilocks.ts",
+      "src/lib/pure/advice/goldilocks.ts",
     ],
     plugins: { local: localRules },
     rules: { "local/no-all-accounts-balance": "error" },
@@ -252,7 +247,7 @@ const config = [
     // date.ts documents the anti-pattern (it's the helper's reason to
     // exist); paycheck.ts builds payday strings with Date.UTC(...) and
     // reads them back the same way — internally UTC-consistent, reviewed.
-    files: ["src/lib/utils/date.ts", "src/lib/calculators/paycheck.ts"],
+    files: ["src/lib/utils/date.ts", "src/lib/pure/paycheck/paycheck.ts"],
     rules: { "local/no-tz-unsafe-date-string": "off" },
   },
   {
@@ -263,18 +258,23 @@ const config = [
         {
           paths: [
             {
-              name: "@/server/helpers",
-              message:
-                "Pure modules cannot import the helpers barrel (it pulls in DB code). Use specific submodules like @/server/helpers/transforms.",
-            },
-            {
               name: "@/lib/db",
               message: "Pure modules cannot import database code directly.",
             },
           ],
           patterns: [
             {
-              group: ["@/lib/db/*", "drizzle-orm", "drizzle-orm/*"],
+              // The shape files (types and zod schemas, no I/O) are the
+              // layer manifest's `shapes`, which pure code may read.
+              group: [
+                "@/lib/db/*",
+                "!@/lib/db/json-schemas",
+                "!@/lib/db/salary-entry-defaults",
+                "!@/lib/db/salary-entry-edit",
+                "!@/lib/db/profile-fields",
+                "drizzle-orm",
+                "drizzle-orm/*",
+              ],
               message: "Pure modules cannot import DB or ORM code.",
             },
           ],

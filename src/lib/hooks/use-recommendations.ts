@@ -11,27 +11,27 @@ import {
   useMilestones,
 } from "@/lib/hooks/use-milestones";
 import { trpc } from "@/lib/trpc";
-import { recommendationsFromCaps } from "@/lib/pure/recommendations-caps";
+import { recommendationsFromCaps } from "@/lib/pure/advice/recommendations-caps";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";
-import { applyDismissals } from "@/lib/pure/recommendation-dismissals";
+import { applyDismissals } from "@/lib/pure/advice/recommendation-dismissals";
 import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
 import {
   recommendationsFromDataSources,
   recommendationsFromFilingStatus,
-} from "@/lib/pure/recommendations-data";
+} from "@/lib/pure/advice/recommendations-data";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
-import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
+import { recommendationsFromRothIra } from "@/lib/pure/advice/recommendations-roth";
 import { useInvestingFindings } from "@/lib/hooks/use-investing-findings";
-import { recommendationsFromCash } from "@/lib/pure/recommendations-cash";
-import { classesUnderTarget } from "@/lib/pure/milestones";
-import { recommendationsFromFunds } from "@/lib/pure/recommendations-funds";
+import { recommendationsFromCash } from "@/lib/pure/advice/recommendations-cash";
+import { classesUnderTarget } from "@/lib/pure/advice/milestones/milestones";
+import { recommendationsFromFunds } from "@/lib/pure/advice/recommendations-funds";
 import {
   rankRecommendations,
   recommendationsFromMilestones,
   type Recommendation,
-} from "@/lib/pure/recommendations";
+} from "@/lib/pure/advice/recommendations";
 
 export function useRecommendations(): ReturnType<typeof useMilestones> & {
   recommendations: Recommendation[];

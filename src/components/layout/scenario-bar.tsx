@@ -5,7 +5,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
-import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -23,7 +23,7 @@ import { FormError } from "@/components/ui/form-error";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { profilesHref } from "@/lib/config/profile-tabs";
 import type { PlanProfileKind } from "@/lib/config/plans";
-import { planSaveBlockedReason } from "@/lib/pure/plans";
+import { planSaveBlockedReason } from "@/lib/pure/household/plans";
 
 const VIEW_MODES = [
   {

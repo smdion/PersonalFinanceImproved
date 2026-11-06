@@ -17,7 +17,7 @@ Read `docs/RULES.md` in full: it is the rulebook, and this prompt holds no
 rules of its own. Run `git diff --cached --stat` and `git diff --cached`. If
 the gate output is missing, run `pnpm gate`; if it failed, answer
 `BLOCK: gate failed` and stop. Open `docs/DESIGN.md`, `CONTRIBUTING.md` or
-`src/lib/calculators/engine/ARCHITECTURE.md` only for the subject in the
+`src/lib/pure/engine/ARCHITECTURE.md` only for the subject in the
 diff; `docs/TESTING.md` § Violations to Watch For lists common slips. Don't
 edit files, commit, or run commands that change state, and never fix
 anything yourself. The gate checked everything mechanical; don't repeat it.

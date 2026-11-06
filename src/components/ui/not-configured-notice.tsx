@@ -1,8 +1,8 @@
 import {
   SIMULATION_NOT_CONFIGURED_MESSAGE,
   type SimulationNotConfigured,
-} from "@/lib/calculators/monte-carlo";
-import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
+} from "@/lib/pure/simulation/monte-carlo";
+import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/simulation/return-rate-breakpoints";
 import { SettingsLink } from "./settings-link";
 
 /** Why a projection or Simulation can't run, as a procedure's

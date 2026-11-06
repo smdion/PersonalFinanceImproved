@@ -1,7 +1,7 @@
 /**
  * savings.savingsGoals router CRUD integration tests.
  *
- * Moved from routers/settings/admin.ts to routers/savings.ts
+ * Moved from routers/settings/admin.ts to routers/savings/goals.ts
  * (page-ownership rule, DESIGN.md's "Settings Belong on Their Pages") —
  * these describe blocks moved out of settings-admin.test.ts alongside it.
  */

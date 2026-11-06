@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { z } from "zod/v4";
-import { zDecimal } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import { strategyParamInputShape } from "@/lib/config/withdrawal-strategy-inputs";
 
 const HAND_WRITTEN = {

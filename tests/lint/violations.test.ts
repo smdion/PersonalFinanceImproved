@@ -18,7 +18,7 @@
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. (Engine imports past the barrel: now the dependency-cruiser rule
  *       engine-through-index, `pnpm check:layers`, which sees relative imports too.)
- *   12. Hand-rolled Modified-Dietz denominators outside performance.ts
+ *   12. Hand-rolled Modified-Dietz denominators outside lib/pure/investments/returns.ts
  *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
  *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
  *   15. `import { z } from "zod"` instead of "zod/v4"
@@ -73,7 +73,7 @@
  * reason, add the file to the EXEMPT set with a comment OR add the inline
  * escape hatch comment.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -86,10 +86,10 @@ import {
   getAllCategories,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
-import { calculateProjection } from "@/lib/calculators/engine";
-import type { ProjectionInput } from "@/lib/calculators/types";
-import { decumulationOverrideArraySchema } from "@/lib/pure/engine";
-import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import { calculateProjection } from "@/lib/pure/engine";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
+import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
 import { engineHousehold } from "../fixtures/answer-key-household";
@@ -104,11 +104,12 @@ import {
   W4_FILING_STATUS_VALUES,
 } from "@/lib/config/filing-status";
 import { PERMISSIONS } from "@/lib/config/permissions";
-import { routePercentage } from "@/lib/calculators/engine/contribution-routing";
-import { resolveAccumulationConfig } from "@/lib/calculators/engine/override-resolution";
-import { routeWithdrawalsPercentage } from "@/lib/calculators/engine/withdrawal-routing";
-import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
+import { routePercentage } from "@/lib/pure/engine/contribution-routing";
+import { resolveAccumulationConfig } from "@/lib/pure/engine/override-resolution";
+import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing";
+import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
+import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
 import {
   makeAccountBalances,
   makeAccumulationConfig,
@@ -116,7 +117,7 @@ import {
   makeDecumulationConfig,
   makeEmployerMatch,
   makeYearLimits,
-} from "../calculators/fixtures/engine-fixtures";
+} from "../pure/fixtures/engine-fixtures";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).
@@ -551,7 +552,7 @@ function findDisplayNameAccountLabelFallbackViolations(): Violation[] {
 // Rule 6: direct `.accountLabel` read in .tsx (JSX) files — use accountDisplayName().
 // The helper itself (`src/lib/utils/format.ts`) legitimately reads this field,
 // but format.ts is a .ts file so the .tsx filter naturally excludes it.
-// `performance.ts` router writes the column — also excluded by extension filter.
+// `routers/performance/` router writes the column — also excluded by extension filter.
 function findDirectAccountLabelReadViolations(): Violation[] {
   return findPatternViolations(
     /\.accountLabel\b/,
@@ -630,16 +631,16 @@ function findStringEnumFieldViolations(): Violation[] {
 
 // Rule 12: hand-rolled Modified-Dietz denominators outside computeReturn().
 // The shape `beginBal + (... - distributions - fees) / 2` must live in
-// exactly one place — src/lib/pure/performance.ts — so a formula fix (e.g.
+// exactly one place — src/lib/pure/investments/returns.ts — so a formula fix (e.g.
 // adding a missing term like rollovers) doesn't need to be applied in N
 // places again. This regex is name-dependent (keyed on `beginBal`), not
 // structural — it catches the exact shape previously duplicated in
-// snapshot.ts, not a differently-named future reimplementation.
+// year-end-history.ts, not a differently-named future reimplementation.
 function findHandRolledDietzDenominatorViolations(): Violation[] {
   return findPatternViolations(
     /\bbeginBal\s*\+\s*\([^)]*distributions[^)]*fees[^)]*\)\s*\/\s*2/,
     "no-hand-rolled-dietz-denominator",
-    { additionalExempt: new Set(["src/lib/pure/performance.ts"]) },
+    { additionalExempt: new Set(["src/lib/pure/investments/returns.ts"]) },
   );
 }
 
@@ -752,7 +753,7 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // files or are identifiers, not this literal two-word phrase).
 //
 // Restricted to .tsx (where JSX text and display strings actually live) —
-// PLUS src/lib/pure/report/**/*.ts (the retirement advisor report's
+// PLUS src/lib/pure/advice/report/**/*.ts (the retirement advisor report's
 // narrative-generation module): that directory's whole purpose is
 // generating user-facing prose as plain strings, not JSX, so it's exactly
 // the kind of file this rule exists for even though it isn't a .tsx —
@@ -768,7 +769,7 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // lines whose trimmed content starts with "/*" or "/**".
 const MONTE_CARLO_PATTERN = /\bMonte Carlo\b/;
 function isMonteCarloTerminologyScanned(rel: string): boolean {
-  return rel.endsWith(".tsx") || rel.startsWith("src/lib/pure/report/");
+  return rel.endsWith(".tsx") || rel.startsWith("src/lib/pure/advice/report/");
 }
 function findMonteCarloUserFacingTextViolations(): Violation[] {
   const violations: Violation[] = [];
@@ -896,7 +897,7 @@ const FILING_STATUS_LITERAL_EXEMPT = new Set([
   // defensively since they're the canonical definition site for the
   // enum itself, not a figure.
   "src/lib/config/enum-values.ts",
-  "src/lib/calculators/types/shared.ts",
+  "src/lib/pure/accounts/account-balances.types.ts",
   // Schema files reference the column's runtime type, not a literal.
   "src/lib/db/schema-pg.ts",
   "src/lib/db/schema-sqlite.ts",
@@ -1138,7 +1139,7 @@ function findBroadCitationViolations(): Violation[] {
 // UTC-consistent, reviewed.
 const TZ_UNSAFE_DATE_EXEMPT = new Set<string>([
   "src/lib/utils/date.ts",
-  "src/lib/calculators/paycheck.ts",
+  "src/lib/pure/paycheck/paycheck.ts",
 ]);
 const TZ_UNSAFE_DATE_PATTERN =
   /\.toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*(?:10|7)\s*\)|\.toISOString\(\)\s*\.\s*split\(\s*["']T["']\s*\)\s*\[\s*0\s*\]|new Date\(\s*["']\d{4}-\d{2}-\d{2}["']\s*\)/;
@@ -1299,12 +1300,12 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/performance.ts)", () => {
+  it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/investments/returns.ts)", () => {
     const violations = findHandRolledDietzDenominatorViolations();
     if (violations.length > 0) {
       expect.fail(
         `Found ${violations.length} hand-rolled-dietz-denominator violations. ` +
-          `Use computeReturn()/sumAccounts() from src/lib/pure/performance.ts ` +
+          `Use computeReturn()/sumAccounts() from src/lib/pure/investments/returns.ts ` +
           `instead of reimplementing the return formula.\n` +
           formatViolations("Violations", violations),
       );
@@ -1875,6 +1876,44 @@ describe("one config entry adds an account type", () => {
     });
   });
 
+  it("the contribution order flags a triple tax-advantaged entry by its field, not its name", () => {
+    withSyntheticCategory(() => {
+      Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+        ...ACCOUNT_TYPE_CONFIG.hsa,
+        displayLabel: "Synthetic Plan",
+      });
+      const [warning] = validateContributionOrder(["401k", SYNTHETIC_CATEGORY]);
+      expect(warning).toMatchObject({
+        category: SYNTHETIC_CATEGORY,
+        position: 1,
+      });
+      expect(warning?.message).toContain("Synthetic Plan appears after");
+    });
+  });
+
+  it("two triple tax-advantaged types don't flag each other", () => {
+    withSyntheticCategory(() => {
+      Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+        ...ACCOUNT_TYPE_CONFIG.hsa,
+        displayLabel: "Synthetic Plan",
+      });
+      const infos = (order: string[]) =>
+        validateContributionOrder(order).filter((w) => w.severity === "info");
+      expect(infos([SYNTHETIC_CATEGORY, "hsa"])).toEqual([]);
+      expect(infos(["hsa", SYNTHETIC_CATEGORY])).toEqual([]);
+      // Config order: hsa, then the synthetic entry added at the end.
+      expect(
+        infos(["401k", SYNTHETIC_CATEGORY, "hsa"]).map((w) => [
+          w.category,
+          w.position,
+        ]),
+      ).toEqual([
+        ["hsa", 2],
+        [SYNTHETIC_CATEGORY, 1],
+      ]);
+    });
+  });
+
   it("percentage withdrawal routing draws from it", () => {
     withSyntheticCategory(() => {
       const config = makeDecumulationConfig({
@@ -1996,6 +2035,13 @@ describe("one config entry adds an account type", () => {
     });
   });
 
+  // The scan below parses all of src/ (seconds, more under coverage). It
+  // runs here, once, so no case pays for it: an `it.fails` case that timed
+  // out on the parse would pass.
+  beforeAll(() => {
+    moduleLoadLists();
+  }, 60_000);
+
   it("no other category list or schema is built when its module loads", () => {
     expect(moduleLoadLists()).toEqual([...BUILT_AT_LOAD].sort());
   });
@@ -2027,13 +2073,13 @@ const BUILT_AT_LOAD = [
   "src/lib/pure/engine/types/overrides.schema.ts storedWithdrawalSplitsSchema",
   "src/lib/utils/colors.ts ACCOUNT_TYPE_COLORS",
   "src/lib/utils/colors.ts CATEGORY_CHART_HEX",
-  "src/server/routers/_shared.ts zSandboxContribAdditions",
-  "src/server/routers/networth.ts portfolioSnapshotInput",
-  "src/server/routers/networth.ts networthRouter",
-  "src/server/routers/performance.ts performanceAccountInput",
+  "src/lib/pure/household/what-if.schema.ts zSandboxContribAdditions",
+  "src/server/routers/networth/portfolio-snapshots.ts portfolioSnapshotInput",
+  "src/server/routers/networth/snapshot-accounts.ts snapshotAccountInput",
+  "src/server/routers/performance/accounts.ts performanceAccountInput",
   "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
-  "src/server/routers/settings/paycheck.ts contributionAccountInput",
+  "src/server/routers/settings/contribution-accounts.ts contributionAccountInput",
 ];
 
 const CATEGORY_LIST_CALLS = new Set([
@@ -2050,8 +2096,15 @@ const CATEGORY_LIST_CALLS = new Set([
 
 /** Every top-level `const` under src/ whose value calls a category-list
  *  function or iterates ACCOUNT_TYPE_CONFIG outside a function body, as
- *  "<file> <name>". */
+ *  "<file> <name>". The scan parses all of src/, so it runs once per file
+ *  and every case reads the same result (src/ doesn't change mid-run). */
+let moduleLoadListsFound: readonly string[] | undefined;
 function moduleLoadLists(): string[] {
+  moduleLoadListsFound ??= scanModuleLoadLists();
+  return [...moduleLoadListsFound];
+}
+
+function scanModuleLoadLists(): string[] {
   const root = path.resolve(__dirname, "../..");
   const readsAtLoad = (node: ts.Node): boolean => {
     if (ts.isFunctionLike(node)) return false;

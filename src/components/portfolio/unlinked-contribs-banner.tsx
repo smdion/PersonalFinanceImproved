@@ -11,7 +11,7 @@
 import React from "react";
 import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
 import { accountDisplayName } from "@/lib/utils/format";
-import { formatEmployerMatch } from "@/lib/pure/contributions";
+import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
 
 type ContribEntry = {
   id: number;
@@ -22,6 +22,7 @@ type ContribEntry = {
   taxTreatment: string;
   employerMatchType: string;
   employerMatchValue: string | null;
+  employerMatchRate: string | null;
   employerMaxMatchPct: string | null;
   ownership: string;
 };
@@ -80,6 +81,7 @@ export function UnlinkedContribsBanner({
             c.employerMatchType,
             c.employerMatchValue,
             c.employerMaxMatchPct,
+            c.employerMatchRate,
           );
           const matchDetail = matchText ? `, ${matchText} match` : "";
           const employer = jobLabel(c.jobId);

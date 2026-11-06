@@ -7,7 +7,7 @@ import {
   formatSyncResultToast,
   budgetApiServiceLabel,
 } from "@/lib/utils/format";
-import { resolveEffectiveMonthlyContribution } from "@/lib/calculators/savings-capacity";
+import { resolveEffectiveMonthlyContribution } from "@/lib/pure/savings/savings-capacity";
 import {
   PushPreviewModal,
   type PushPreviewItem,

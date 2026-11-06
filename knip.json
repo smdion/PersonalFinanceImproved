@@ -8,9 +8,11 @@
     "src/lib/db/schema.ts!",
     "src/server/auth.ts!",
     "src/lib/config/enum-values.ts!",
+    "src/lib/config/enum-values.schema.ts!",
     "src/lib/db/json-schemas.ts!",
     "src/lib/db/reference-reconcile-core.ts!",
-    "src/workers/monte-carlo-worker.ts!"
+    "src/workers/monte-carlo-worker.ts!",
+    "db-migrate.ts!"
   ],
   "project": ["src/**/*.{ts,tsx}!", "scripts/**/*.ts!", "tests/**/*.{ts,tsx}"],
   "ignore": ["src/lib/db/sqlite/**", "src/lib/db/schema-sqlite.ts"],

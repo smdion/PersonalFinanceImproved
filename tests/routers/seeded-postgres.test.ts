@@ -126,6 +126,22 @@ function backupTables(file: string): Record<string, string[]> {
   );
 }
 
+/**
+ * The households this run seeds: all of them, or with SEEDED_SHARD="k/n"
+ * (CI's PostgreSQL parts) every n-th one starting at the k-th.
+ */
+function seededSlugs(): string[] {
+  const slugs = Object.keys(DEMO_PROFILES);
+  const shard = process.env.SEEDED_SHARD;
+  if (!shard) return slugs;
+  const [part, parts] = shard.split("/").map(Number);
+  if (!part || !parts || part > parts)
+    throw new Error(
+      `SEEDED_SHARD must be "k/n" with 1 ≤ k ≤ n, not "${shard}"`,
+    );
+  return slugs.filter((_, index) => index % parts === part - 1);
+}
+
 describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
   let restoreEnv: () => void = () => {};
   let backupDir: string;
@@ -157,7 +173,7 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
     });
   }
 
-  describe.each(Object.keys(DEMO_PROFILES))("%s", (slug) => {
+  describe.each(seededSlugs())("%s", (slug) => {
     const profile = DEMO_PROFILES[slug]!;
 
     beforeAll(async () => {
@@ -179,7 +195,7 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
       );
       const { db } = await import("@/lib/db");
       const { applyReferenceData } = await import("@/lib/db/reference-data");
-      const { seedProfile } = await import("@/server/routers/demo");
+      const { seedProfile } = await import("@/server/services/demo/demo-seed");
       await applyReferenceData(db);
       await seedProfile(db, profile);
     }, timeout);

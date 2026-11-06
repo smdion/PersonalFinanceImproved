@@ -17,32 +17,27 @@ import {
   performanceProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { getLatestSnapshot } from "@/server/helpers/snapshot";
-import { toNumber } from "@/server/helpers/transforms";
-import { zDecimal } from "@/server/routers/settings/_shared";
-import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
-import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
-import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";
+import { getLatestSnapshot } from "@/server/data/snapshots";
+import { toNumber } from "@/lib/utils/numbers";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
+import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
 import {
   buildCurrentRothBasisMap,
   selectCurrentRothBasisRow,
-} from "@/lib/pure/roth-basis-rollover";
-import type { AccountCategory } from "@/lib/calculators/types";
+} from "@/lib/pure/accounts/roth-basis-rollover";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { DbOrTx } from "@/lib/db";
+import { upsertSetting } from "@/server/data/settings";
 
-/** Stamp basis_last_updated in app_settings — mirrors performance.ts's
- *  stampPerformanceUpdated. Called on every real basis write (single or
- *  batch) so the sidebar Data Freshness display and the Performance page
- *  subtitle stay current automatically. */
+/** Stamp basis_last_updated in app_settings — mirrors stampPerformanceUpdated
+ *  (services/performance/last-updated.ts). Called on every real basis write
+ *  (single or batch) so the sidebar Data Freshness display and the
+ *  Performance page subtitle stay current automatically. */
 async function stampBasisUpdated(db: DbOrTx) {
   const now = new Date().toISOString();
-  await db
-    .insert(schema.appSettings)
-    .values({ key: "basis_last_updated", value: now })
-    .onConflictDoUpdate({
-      target: schema.appSettings.key,
-      set: { value: now },
-    });
+  await upsertSetting(db, "basis_last_updated", now);
 }
 
 export const taxBucketsRouter = createTRPCRouter({

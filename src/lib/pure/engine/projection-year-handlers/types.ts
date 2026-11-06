@@ -1,0 +1,234 @@
+/**
+ * Shared types for the projection year-handler functions.
+ */
+import type { InflationPath } from "../inflation-path";
+import type {
+  ProjectionInput,
+  ProjectionResult,
+  EngineYearProjection,
+} from "../types/projection-result";
+import type { AccountCategory } from "../../../config/account-types";
+import type {
+  TaxBuckets,
+  AccountBalances,
+  IndividualAccountInput,
+} from "../../accounts/account-balances.types";
+import type {
+  ContributionSpec,
+  ProfileSwitch,
+} from "../types/contribution-spec";
+import type {
+  AccumulationDefaults,
+  AccumulationOverride,
+} from "../types/accumulation";
+import type { DecumulationOverride } from "../types/decumulation";
+import type { SpendingCrossYearState } from "../spending-strategy";
+import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import type { makeIndKey } from "../individual-account-tracking";
+import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
+import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
+import type { BrokerageBasis } from "../brokerage-basis";
+import type { YearIncome } from "@/lib/pure/tax/year-income";
+
+// ---------------------------------------------------------------------------
+// Local type used by brokerage goals (defined locally in projection.ts)
+// ---------------------------------------------------------------------------
+
+export type BrokerageGoal = {
+  id: number;
+  name: string;
+  targetAmount: number;
+  targetYear: number;
+  priority: number;
+};
+
+// ---------------------------------------------------------------------------
+// Structured types
+// ---------------------------------------------------------------------------
+
+export type ProjectionLoopState = {
+  // Balance tracking
+  balances: TaxBuckets;
+  acctBal: AccountBalances;
+  priorYearEndTradBalance: number;
+  /** Per-person prior-year Traditional balance for per-person RMD. */
+  priorYearEndTradByPerson: Map<number, number>;
+
+  // Salary/expense tracking
+  projectedSalary: number;
+  projectedExpenses: number;
+  /** The TRUE, unmutated budget trajectory (inflation/raise growth + manual
+   *  per-year overrides only) -- tracked in parallel with `projectedExpenses`
+   *  because a reactive strategy (Guyton-Klinger, Forgo Inflation After
+   *  Loss, Spending Decline) overwrites `projectedExpenses` in place every
+   *  year with its own guardrail-adjusted target, which for a budget-seeded
+   *  strategy makes `projectedExpenses` identical to that year's own
+   *  `targetWithdrawal` -- collapsing "vs budget" and "vs strategy" into
+   *  the same comparison (both KPI rings showing the identical
+   *  percentage). This field is the strategy-blind
+   *  budget line those two comparisons need to actually differ. */
+  budgetOnlyExpenses: number;
+  /** This year's amount as the gross portfolio withdrawal (Social Security
+   *  on top) — set when the strategy sized it that way and the household's
+   *  `ssInAmount` switch is off; null = the amount is spending. */
+  portfolioWithdrawal: number | null;
+  projectedSalaryByPerson: Map<number, number>;
+
+  // Individual account tracking
+  indBal: Map<string, number>;
+  /** Tracked Roth basis per taxFree-bucket account (see
+   *  `@/lib/pure/accounts/roth-basis-tracking`). Present only for accounts
+   *  where `isTaxFreeBucket(ia.taxType)`; absent for everything else. */
+  indBasis: Map<string, RothBasisState>;
+  /** Brokerage cost basis per basis-tracking account (brokerage-basis.ts). */
+  brokBasis: BrokerageBasis;
+  specToAccount: Map<string, string>;
+  accountsWithSpecs: Set<string>;
+
+  // Contribution/profile tracking (mutable due to profile switches)
+  contributionSpecs: ContributionSpec[] | undefined;
+  activeEmployerMatchRateByCategory: Record<AccountCategory, number>;
+  activeBaseYearContributions: Record<AccountCategory, number> | undefined;
+  activeBaseYearEmployerMatch: Record<AccountCategory, number> | undefined;
+  activeEmployerMatchByParentCat:
+    Map<AccountCategory, Map<string, number>> | undefined;
+  accumulationDefaults: AccumulationDefaults;
+
+  // Spending strategy
+  spendingState: SpendingCrossYearState;
+
+  // Tax/IRMAA history
+  incomeHistory: YearIncome[];
+  /** The no-owner Traditional account warning is said once a projection. */
+  rmdNoOwnerWarned: boolean;
+
+  // Phase tracking
+  /** Set to true on the first year isAccumulation is false. Prevents the
+   *  decumulation expense reset from firing more than once, and handles the
+   *  case of retiring mid-way through the first year, where the year never
+   *  equals retirementYear on the first decumulation year. */
+  decumulationExpensesSet: boolean;
+
+  // Milestone tracking
+  firstOverflowYear: number | null;
+  firstOverflowAge: number | null;
+  firstOverflowAmount: number | null;
+  retirementDepletionYear: number | null;
+  retirementDepletionAge: number | null;
+
+  // Depletion tracking
+  accountDepletions: ProjectionResult["accountDepletions"];
+  depletionTracked: Set<string>;
+
+  // Output accumulator
+  projectionByYear: EngineYearProjection[];
+};
+
+export type ProjectionContext = {
+  // Input references
+  input: ProjectionInput;
+
+  // Validated rates
+  salaryGrowthRate: number;
+  /** The plan's rate, for what must not follow a trial's realized path:
+   *  forecasts. Everything else reads `inflation`. */
+  planInflationRate: number;
+  validatedPostRetirementInflation: number;
+  inflation: InflationPath;
+
+  // Pre-built maps
+  salaryOverrideMap: Map<number, number>;
+  perPersonSalaryOverrides: Map<number, Map<number, number>>;
+  /** personId → year-0-only bonus adjustment (see ProjectionInput's
+   *  currentYearBonusAdjustment docblock). */
+  currentYearBonusAdjustment: Map<number, number>;
+  budgetOverrideMap: Map<number, number>;
+  returnRateMap: Map<number, number>;
+  brokerageGoalsByYear: Map<number, BrokerageGoal[]>;
+  sortedAccOverrides: AccumulationOverride[];
+  sortedDecOverrides: DecumulationOverride[];
+  sortedProfileSwitches: ProfileSwitch[];
+
+  // Individual account setup
+  hasIndividualAccounts: boolean;
+  indAccts: IndividualAccountInput[];
+  indKey: ReturnType<typeof makeIndKey>;
+  indParentCat: Map<string, string>;
+  hasPerPersonSalary: boolean;
+  /** Each person's working years: their job's, ending by their own
+   *  retirement (context.ts). Empty = everyone works throughout. */
+  workingYearsByPerson: Record<
+    number,
+    { start: number | null; end: number | null }
+  >;
+
+  // Spending strategy config
+  activeStrategy: WithdrawalStrategyType;
+  activeStrategyParams: Record<string, number | boolean>;
+
+  // Engine config
+  firstYearFraction: number;
+  rmdStartAge: number | null;
+  rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
+  /** Whose RMD an account with no owner counts toward (rmdOwnerOf): the
+   *  household's primary person. */
+  primaryPersonId: number | null;
+  yearsToProject: number;
+
+  // Constants
+  ACCOUNT_CATEGORIES: AccountCategory[];
+  OVERFLOW_CATEGORY: AccountCategory;
+  TAX_ADVANTAGED: Set<AccountCategory>;
+};
+
+export type PreYearSetup = {
+  age: number;
+  year: number;
+  isAccumulation: boolean;
+  returnRate: number;
+  strategyAction: string | null;
+  /** Start-of-year balance retirement can spend: every account less the
+   *  Portfolio-parented ones (`nonRetirement`), which never fund retirement
+   *  spending. Spending strategies and the Rate-Seeded seed size spending
+   *  from this, never from the all-accounts total. Equals `totalBalance` in
+   *  accumulation years (nothing reads it there). */
+  retirementBalance: number;
+  /** Start-of-year balance of every account, Portfolio-parented ones
+   *  included — the physical pool the tax gross-up caps its target at.
+   *  Routing then excludes Portfolio money and records what that leaves
+   *  unmet (`nonRetirementShortfall`), the same way penalty-locked money is
+   *  attributed; capping at the retirement balance would hide that cause. */
+  totalBalance: number;
+  /** This decumulation year's Portfolio-parented balances
+   *  (computeNonRetirementExclusion), computed once in pre-year setup and
+   *  threaded to every consumer. Undefined in accumulation years and
+   *  without individual accounts. */
+  nonRetirement: NonRetirementExclusion | undefined;
+  /** state.projectedSalary plus this year's bonus adjustment, if any —
+   *  non-persisting (state.projectedSalary itself is never mutated by the
+   *  adjustment, so next year's growth compounds from the true baseline).
+   *  Use this instead of state.projectedSalary for this year's
+   *  contribution/tax/cashflow math. */
+  effectiveSalary: number;
+  /** Per-person equivalent of effectiveSalary, only populated when
+   *  hasPerPersonSalary is true. */
+  effectiveSalaryByPerson: Map<number, number>;
+  /** True when this year's effectiveSalary differs from state.projectedSalary
+   *  because of a current-year bonus pin — distinct from hasSalaryOverride,
+   *  which the UI ties to salary overrides specifically. */
+  hasBonusAdjustment: boolean;
+  /** This year's contribution specs when someone isn't at work this year
+   *  (input.workingYearsByPerson): theirs zeroed, in spec order. Undefined
+   *  = state.contributionSpecs as they are. */
+  yearSpecs?: ContributionSpec[];
+  /** A job starts or ends this year: its whole-year approximation applies
+   *  (year 0 then runs on the specs, not this year's paycheck amounts). */
+  jobEdgeThisYear: boolean;
+  /** Someone with a job has stopped working (a partial retirement, or a job
+   *  over before its holder retires), so pay may not cover the budget. A
+   *  job that hasn't started yet doesn't count: nothing changed. */
+  gapYear: boolean;
+  /** Nobody saves this year: nobody's at work, or the household chose to
+   *  stop in gap years. */
+  savingStopped: boolean;
+};

@@ -3,7 +3,7 @@
  * strategy config's param fields.
  */
 import { z } from "zod/v4";
-import { zDecimal } from "./enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   strategyParamFields,
   type StrategyParamColumn,

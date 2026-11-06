@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, scenarioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { upsertSetting } from "@/server/data/settings";
 
 export const presetsRouter = createTRPCRouter({
   /** Persist MC stochastic inflation overrides to appSettings. */
@@ -30,13 +31,7 @@ export const presetsRouter = createTRPCRouter({
           .where(eq(schema.appSettings.key, key));
         return { updated: true };
       }
-      await db
-        .insert(schema.appSettings)
-        .values({ key, value: input })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input },
-        });
+      await upsertSetting(db, key, input);
       return { updated: true };
     }),
 });

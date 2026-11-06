@@ -1,7 +1,7 @@
 /**
  * When each yearly tax table is published, and by when a release should
  * carry it. One list for the CI check (scripts/check-tax-params.ts) and the
- * app's "tax data is behind" notice (lib/pure/tax-data-status.ts).
+ * app's "tax data is behind" notice (lib/pure/tax/data-status.ts).
  *
  * `due` is after the usual release window, so a late year never fails CI
  * before the source exists. A month from July on falls in the year BEFORE

@@ -6,7 +6,7 @@
   },
   "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 12
+      "count": 11
     }
   },
   "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
@@ -27,11 +27,6 @@
   "src/app/(dashboard)/house/page.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
-    }
-  },
-  "src/app/(dashboard)/layout.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
     }
   },
   "src/app/(dashboard)/networth/page.tsx": {
@@ -504,116 +499,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/brokerage-goals.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/contribution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/engine/balance-utils.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/engine/constant-percentage.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/contribution-routing.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/engine/endowment.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/guyton-klinger.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/engine/override-resolution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/post-withdrawal-optimizer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 7
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/projection.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/tax-estimation.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/withdrawal-routing.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
-  "src/lib/calculators/monte-carlo.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 8
-    }
-  },
-  "src/lib/calculators/mortgage.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/net-worth.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
-  "src/lib/calculators/paycheck.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/savings-capacity.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/savings.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/tax.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 9
@@ -659,29 +544,144 @@
       "count": 1
     }
   },
-  "src/lib/pure/contributions.ts": {
+  "src/lib/pure/accounts/tax-bucket-projection.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
   },
-  "src/lib/pure/household-income.ts": {
+  "src/lib/pure/contributions/contribution-totals.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/contributions/display-specs.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/lib/pure/retirement-bridge.ts": {
+  "src/lib/pure/debts/mortgage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/lib/pure/snapshot-series.ts": {
+  "src/lib/pure/engine/balance-utils.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
+      "count": 4
     }
   },
-  "src/lib/pure/tax-bucket-projection.ts": {
+  "src/lib/pure/engine/constant-percentage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/lib/pure/engine/contribution-routing.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/engine/endowment.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/guyton-klinger.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/override-resolution.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/post-withdrawal-optimizer.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/tax-estimation.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
+    }
+  },
+  "src/lib/pure/household/household-income.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/what-if.schema.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/net-worth/net-worth.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-series.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/retirement/retirement-bridge.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/savings/brokerage-goals.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings-capacity.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/simulation/monte-carlo.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 8
+    }
+  },
+  "src/lib/pure/tax/tax.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/lib/sec/connection.ts": {
@@ -724,49 +724,9 @@
       "count": 2
     }
   },
-  "src/server/helpers/contribution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
-  "src/server/helpers/extra-paycheck-materializer.ts": {
+  "src/server/data/investments.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
-    }
-  },
-  "src/server/helpers/fill-ledger.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/monte-carlo-worker-client.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/performance-edit.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/snapshot.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/server/retirement/build-engine-payload.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/server/retirement/payload/profile-switches.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/server/routers/_shared.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
     }
   },
   "src/server/routers/assets.ts": {
@@ -774,19 +734,14 @@
       "count": 1
     }
   },
-  "src/server/routers/budget.ts": {
+  "src/server/routers/budget/summary.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
   "src/server/routers/contribution-profiles.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/server/routers/contribution.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 3
     }
   },
   "src/server/routers/debts.ts": {
@@ -799,24 +754,19 @@
       "count": 1
     }
   },
-  "src/server/routers/investments/_shared.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/routers/investments/comparison.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }
   },
-  "src/server/routers/investments/load-current-balances.ts": {
+  "src/server/routers/performance/summary.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 1
     }
   },
-  "src/server/routers/performance.ts": {
+  "src/server/routers/performance/year-records.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/projection/_shared.ts": {
@@ -836,7 +786,7 @@
   },
   "src/server/routers/projection/scenarios.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/projection/strategy.ts": {
@@ -849,19 +799,39 @@
       "count": 4
     }
   },
-  "src/server/routers/retirement.ts": {
+  "src/server/routers/retirement/overrides.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
+      "count": 1
+    }
+  },
+  "src/server/routers/retirement/profile-people.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/routers/retirement/settings.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/routers/salary-profiles.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 4
     }
   },
-  "src/server/routers/savings.ts": {
+  "src/server/routers/savings/api-sync.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 1
+    }
+  },
+  "src/server/routers/savings/extra-paycheck-routing.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/routers/savings/profile-allocations.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/routers/settings/admin.ts": {
@@ -869,14 +839,19 @@
       "count": 5
     }
   },
-  "src/server/routers/settings/paycheck.ts": {
+  "src/server/routers/settings/contribution-accounts.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
     }
   },
-  "src/server/routers/sync/core.ts": {
+  "src/server/routers/settings/earnings.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 15
+      "count": 1
+    }
+  },
+  "src/server/routers/sync/preview.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 12
     }
   },
   "src/server/routers/utilities.ts": {
@@ -887,6 +862,76 @@
   "src/server/routers/version.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/server/services/contributions/account-edits.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/server/services/contributions/live-data.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/summary.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/server/services/investments/current-balances.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "src/server/services/net-worth/year-end-history.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/server/services/performance/performance-edit.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "src/server/services/projection/engine-payload/build-engine-payload.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/server/services/projection/engine-payload/profile-switches.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/server/services/projection/projection-metadata.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/relocation-analysis.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/savings/summary.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "src/server/services/simulation/monte-carlo-worker-client.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/fill-ledger.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/sync-all.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
     }
   },
   "src/server/trpc.ts": {

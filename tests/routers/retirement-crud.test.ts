@@ -12,7 +12,7 @@
  * this file moved alongside it.
  */
 import "./setup-mocks";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";

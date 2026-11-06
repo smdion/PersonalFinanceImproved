@@ -11,7 +11,7 @@
  * When `data` is null/undefined, outputs default to safe empty values.
  */
 
-import { computeValue } from "@/lib/pure/contribution-caps";
+import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {

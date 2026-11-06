@@ -2,7 +2,7 @@
  * Client code figures contribution money from `computeValue()` (the
  * IRS-capped value when the cap pass set one), never from the configured
  * `contributionValue` — that's for editors, saves and diffs
- * (lib/pure/contribution-caps.ts). A total built from the configured value
+ * (lib/pure/contributions/contribution-caps.ts). A total built from the configured value
  * shows money the cap already cut.
  *
  * Binding an input to `contributionValue` is fine; turning it into a

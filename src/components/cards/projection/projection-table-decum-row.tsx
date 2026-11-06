@@ -14,18 +14,18 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type {
-  AccountCategory,
   EngineDecumulationYear,
   DecumulationSlot,
-  IndividualAccountYearBalance,
-} from "@/lib/calculators/types";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
-} from "@/lib/pure/report/bracket-target-narrative";
-import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
+} from "@/lib/pure/advice/report/bracket-target-narrative";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 import {
   getAccountSegments,
   getAllCategories,
@@ -202,7 +202,7 @@ function buildRoutingReasonClause(
     const targetPct = yr.config.rothBracketTarget;
     // "Why THIS bracket" — shares
     // describeBracketTargetChoice with the advisor report
-    // (lib/pure/report/bracket-target-narrative.ts) so the two can never
+    // (lib/pure/advice/report/bracket-target-narrative.ts) so the two can never
     // disagree; folds in the real numeric comparison from the bracket
     // optimizer when available, falls back to the qualitative-only
     // version otherwise.

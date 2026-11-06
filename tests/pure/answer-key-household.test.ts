@@ -37,10 +37,16 @@ import {
   aggregateAccountsByYear,
   chainReturns,
   computeReturn,
-} from "@/lib/pure/performance";
-import { totalReturnSeries } from "@/lib/pure/total-return";
-import { blendedCost, type EffectiveFacts } from "@/lib/pure/fund-facts";
-import { matchedMixLevels, type MatchedMixInput } from "@/lib/pure/matched-mix";
+} from "@/lib/pure/investments/returns";
+import { totalReturnSeries } from "@/lib/pure/investments/total-return";
+import {
+  blendedCost,
+  type EffectiveFacts,
+} from "@/lib/pure/investments/fund-facts";
+import {
+  matchedMixLevels,
+  type MatchedMixInput,
+} from "@/lib/pure/contributions/matched-mix";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import {
   FIDELITY_CHECKPOINTS,
@@ -50,7 +56,7 @@ import { isHighInterestDebt } from "@/lib/config/debts";
 import {
   incomeMultipleTarget,
   meetsRateTarget,
-} from "@/lib/pure/milestones.shared";
+} from "@/lib/pure/advice/milestones/milestones.shared";
 
 /** Half of 0.01%: a percent figure shown to two places. */
 const PCT = 0.00005;
@@ -442,7 +448,7 @@ describe("household: income-multiple checkpoints", () => {
     todo: `${MONEY_GUY_ITEM} (verdict G6)`,
     // Multiples × 100,000: 100,000; 300,000; 650,000; 1,370,000;
     // 2,000,000. Today the config has 6.4× at 50 (640,000), pinned by
-    // tests/pure/milestones.test.ts:60.
+    // tests/pure/advice/milestones/milestones.test.ts:60.
     run: () => targets(MONEY_GUY_CHECKPOINTS, AGES_MONEY_GUY),
     expected: {
       age30: 100_000,

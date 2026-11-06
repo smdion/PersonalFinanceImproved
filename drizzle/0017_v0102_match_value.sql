@@ -1,0 +1,6 @@
+-- A percent match keeps its rate alone: where migration 0016 set a rate,
+-- the whole-percent employer_match_value (and a profile entry's
+-- employerMatchValue) is cleared, and a dollar entry that borrowed it gets
+-- it as its own first. The converter (src/lib/db/v0102-match-value.ts) does
+-- it after this SQL, as restore does to an older backup. No schema change.
+-- A replay clears nothing twice: a cleared value is gone.

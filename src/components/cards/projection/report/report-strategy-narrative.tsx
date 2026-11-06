@@ -1,7 +1,7 @@
 /** Withdrawal-strategy narrative section of the advisor report — renders
- *  what lib/pure/report/withdrawal-strategy-narrative.ts already built.
+ *  what lib/pure/advice/report/withdrawal-strategy-narrative.ts already built.
  *  Presentational only. */
-import type { ReportWithdrawalStrategySection } from "@/lib/pure/report/types";
+import type { ReportWithdrawalStrategySection } from "@/lib/pure/advice/report/types";
 import { maskAmountsInText } from "@/lib/utils/format";
 
 export function ReportStrategyNarrativeSection({

@@ -6,9 +6,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PaystubCheck } from "@/components/paycheck/paystub-check";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
-import { ledgrCheckFor, type FicaRates } from "@/lib/pure/paystub-check";
-import { PERSON_A_PAYCHECK_INPUT } from "../calculators/fixtures";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
+import {
+  ledgrCheckFor,
+  type FicaRates,
+} from "@/lib/pure/paycheck/paystub-check";
+import { PERSON_A_PAYCHECK_INPUT } from "../pure/fixtures";
 
 // HelpTip's Radix Tooltip needs a TooltipProvider ancestor the page supplies.
 vi.mock("@/components/ui/help-tip", () => ({

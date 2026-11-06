@@ -43,7 +43,7 @@ export const apiConnections = sqliteTable(
     >(),
     // References budgetProfiles.id — no DB-level FK constraint. Always
     // resolved via allProfiles.find(p => p.id === conn.linkedProfileId) in
-    // server code (budget.ts, sync/core.ts); despite the generic name it
+    // server code (budget.ts, sync/preview.ts); despite the generic name it
     // is never polymorphic across other tables.
     linkedProfileId: integer("linked_profile_id"),
     linkedColumnIndex: integer("linked_column_index"),
@@ -101,7 +101,7 @@ export const projectionCache = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     /** sha256 of the canonicalized engine input this row was computed
-     *  from — see hashEngineInput in server/helpers/projection-cache.ts.
+     *  from — see hashEngineInput in server/services/projection/projection-cache.ts.
      *  Different per procedure (deterministic vs MC vs Coast-FIRE MC
      *  inputs differ), so the kind is folded into the hash input itself
      *  rather than a separate column. */
@@ -149,7 +149,7 @@ export const simplefinBalanceSnapshots = sqliteTable(
 // ── Investments data foundation (v0.8.5) ─────────────────────────────────
 // What SimpleFIN only keeps for 90 days (holdings, transactions) is stored
 // here as sent. Transaction classification is NOT stored — it is computed on
-// read by lib/pure/simplefin-transactions.ts from these inputs plus the
+// read by lib/pure/sync/simplefin-transactions.ts from these inputs plus the
 // built-in and user rules, so a rule change re-classifies history (RULES:
 // computed values are not stored). Only explicit overrides are stored.
 
@@ -157,7 +157,7 @@ export const simplefinBalanceSnapshots = sqliteTable(
  * Daily closes from Tiingo, kept so a restart or a rate limit doesn't lose
  * them and each close is fetched once. Raw close plus that day's
  * distribution and split — total return is built from these
- * (lib/pure/total-return.ts), never from Tiingo's adjusted close, which is
+ * (lib/pure/investments/total-return.ts), never from Tiingo's adjusted close, which is
  * re-based on each new distribution. Re-fetchable; not household data.
  */
 export const marketCloses = sqliteTable(
@@ -339,34 +339,27 @@ export const simplefinAccountBalances = sqliteTable(
 );
 
 /**
- * Shares held per account and security, one row per report (per
- * `balanceDate`; per day for a feed that sends no report time, and for
- * manual rows). Every report is kept: a feed a market day behind sends two
- * reports a day apart that `asOf` would put on the same day. For funds with
- * no public ticker, the reported value ÷ shares is the only price history
- * there is. Exactly one of simplefinAccountId / performanceAccountId
- * is set (enforced in the app layer too — SQLite drops CHECK constraints).
+ * Shares held per SimpleFIN account and security, one row per report (per
+ * `balanceDate`; per day for a feed that sends no report time). Every report
+ * is kept: a feed a market day behind sends two reports a day apart that
+ * `asOf` would put on the same day. For funds with no public ticker, the
+ * reported value ÷ shares is the only price history there is.
  */
 export const holdingObservations = sqliteTable(
   "holding_observations",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    simplefinAccountId: integer("simplefin_account_id").references(
-      () => simplefinAccounts.id,
-      { onDelete: "restrict" },
-    ),
-    performanceAccountId: integer("performance_account_id").references(
-      () => performanceAccounts.id,
-      { onDelete: "restrict" },
-    ),
+    simplefinAccountId: integer("simplefin_account_id")
+      .notNull()
+      .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
     securityId: integer("security_id")
       .notNull()
       .references(() => securities.id, { onDelete: "restrict" }),
-    /** SimpleFIN `balance-date` as sent (UTC); null for manual rows. */
+    /** SimpleFIN `balance-date` as sent (UTC); null when the feed sent none. */
     balanceDate: integer("balance_date", { mode: "timestamp" }),
     /** The close assumed from balanceDate's time alone — no feed lag. The
      *  close the data really reflects is worked out on read
-     *  (lib/pure/feed-data-date.ts), since a feed's lag is learned. */
+     *  (lib/pure/sync/feed-data-date.ts), since a feed's lag is learned. */
     asOf: text("as_of").notNull(),
     shares: text("shares").notNull(),
     /** As reported — evidence only, never summed as a balance. */
@@ -388,13 +381,7 @@ export const holdingObservations = sqliteTable(
       .where(
         sql`${table.simplefinAccountId} IS NOT NULL AND ${table.balanceDate} IS NULL`,
       ),
-    uniqueIndex("holding_observations_manual_idx")
-      .on(table.performanceAccountId, table.securityId, table.asOf)
-      .where(sql`${table.performanceAccountId} IS NOT NULL`),
     index("holding_observations_security_idx").on(table.securityId),
-    index("holding_observations_perf_account_idx").on(
-      table.performanceAccountId,
-    ),
   ],
 );
 

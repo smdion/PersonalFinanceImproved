@@ -1,6 +1,6 @@
 /**
  * Invented inputs for the Simulation answer key
- * (`tests/calculators/answer-key-simulation.test.ts`,
+ * (`tests/pure/simulation/answer-key-simulation.test.ts`,
  * `tests/benchmarks/answer-key-simulation-reference.test.ts`).
  *
  * The household is the review's reference retiree
@@ -16,8 +16,9 @@
  * padded by one and the run has exactly `years` rows. After D10 the pad
  * goes.
  */
-import type { MonteCarloInput, ProjectionInput } from "@/lib/calculators/types";
-import { acct, household } from "../calculators/fixtures/two-person-household";
+import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 /** As of noon, January 1 2026: year 0 is a whole year. */
 export const SIM_AS_OF = new Date(Date.UTC(2026, 0, 1, 12));

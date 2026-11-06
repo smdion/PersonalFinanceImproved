@@ -1,7 +1,5 @@
-/**
- * A contribution row's yearly dollars and its employer match terms. Stored
- * percents are whole numbers (6 means 6%); they become a Fraction once, here.
- */
+/** A contribution row's yearly dollars and its employer match terms. A
+ *  stored whole percent (6 means 6%) becomes a Fraction once, here. */
 import {
   CONTRIBUTION_METHOD_VALUES,
   EMPLOYER_MATCH_TYPE_VALUES,
@@ -20,8 +18,7 @@ export function fractionFromPercent(percent: number): Fraction {
   return (percent / 100) as Fraction;
 }
 
-/** A contribution row's yearly dollars. An unknown stored method reads as
- *  a fixed annual amount. */
+/** A row's yearly dollars; an unknown stored method reads as fixed annual. */
 export function computeAnnualContribution(
   storedMethod: string,
   value: number,
@@ -55,12 +52,13 @@ export type EmployerMatch =
     }
   | { readonly kind: "flat"; readonly perYear: number };
 
-/** A row's stored match terms: the rate a whole percent, the cap of pay a
- *  fraction (0 means no cap). An unknown or unset type reads as no match. */
+/** A row's stored match terms: its rate (else its whole percent value), the
+ *  cap of pay a fraction (0: no cap). An unknown or unset type is no match. */
 export function parseEmployerMatch(
   storedType: string | null,
   value: number,
   maxMatchPct: number,
+  rate: Fraction | null = null,
 ): EmployerMatch {
   const type: EmployerMatchType =
     EMPLOYER_MATCH_TYPE_VALUES.find((t) => t === storedType) ?? "none";
@@ -70,7 +68,7 @@ export function parseEmployerMatch(
     case "percent_of_contribution":
       return {
         kind: "percent_of_contribution",
-        rate: fractionFromPercent(value),
+        rate: rate ?? fractionFromPercent(value),
         capOfPay: storedCeiling(maxMatchPct),
       };
     case "dollar_match":

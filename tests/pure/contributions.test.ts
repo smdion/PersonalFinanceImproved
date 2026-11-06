@@ -8,11 +8,11 @@ import {
   resolvePriorYearLimit,
   computeSiblingTotal,
   isEligibleForPriorYear,
-  validateContributionOrder,
-  formatEmployerMatch,
   payrollFicaExemptCap,
   ficaCapContext,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/irs-limits";
+import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
+import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
 // The limits record mirrors real contribution_limits DB rows.
@@ -207,7 +207,7 @@ describe("isEligibleForPriorYear", () => {
 import {
   computeViewAwareAccountMetrics,
   computeViewAwareTotals,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/view-metrics";
 
 describe("computeViewAwareAccountMetrics", () => {
   const base = {
@@ -300,7 +300,7 @@ describe("computeViewAwareTotals", () => {
     const v = computeViewAwareTotals(base);
     expect(v.projected.retirementWithoutMatch).toBe(20000);
     expect(v.projected.totalWithMatch).toBe(30000);
-    expect(v.projected.savingsRateWithMatch).toBeCloseTo(30000 / 150000, 4);
+    expect(v.projected.compensation).toBe(150000);
   });
 
   it("blended uses pre-computed blended totals", () => {
@@ -317,10 +317,11 @@ describe("computeViewAwareTotals", () => {
     expect(v.ytd.portfolioWithoutMatch).toBeCloseTo(2000, 0);
   });
 
-  it("ytd savings rate uses prorated compensation", () => {
+  it("ytd divides by prorated compensation", () => {
     const v = computeViewAwareTotals(base);
     // ytdRetWith=8000+3000=11000, ytdPortWith=2000, total=13000
-    expect(v.ytd.savingsRateWithMatch).toBeCloseTo(13000 / (150000 * 0.5), 4);
+    expect(v.ytd.totalWithMatch).toBeCloseTo(13000, 0);
+    expect(v.ytd.compensation).toBeCloseTo(150000 * 0.5, 4);
   });
 
   it("all ytdActuals=0 falls back to projected", () => {
@@ -336,13 +337,70 @@ describe("computeViewAwareTotals", () => {
     expect(v.blended).toEqual(v.projected);
   });
 
-  it("totalCompensation=0 returns zero savings rate", () => {
+  it("totalCompensation=0 returns zero compensation", () => {
     const v = computeViewAwareTotals({ ...base, totalCompensation: 0 });
-    expect(v.projected.savingsRateWithMatch).toBe(0);
+    expect(v.projected.compensation).toBe(0);
   });
 });
 
 describe("validateContributionOrder (M1 — CFP heuristic)", () => {
+  const overflowWarn = (cat: string, position: number) => ({
+    severity: "warn",
+    category: cat,
+    position,
+    message:
+      `${cat} (tax-advantaged) appears after brokerage in your contribution ` +
+      "order. Most CFP guidance recommends filling tax-advantaged accounts " +
+      "before taxable / brokerage to maximize tax savings. Move " +
+      `${cat} earlier in the list, or document why your situation differs.`,
+  });
+
+  it("returns every warning in order, the HSA one word for word", () => {
+    expect(validateContributionOrder(["brokerage", "401k", "hsa"])).toEqual([
+      overflowWarn("401k", 1),
+      overflowWarn("hsa", 2),
+      {
+        severity: "info",
+        category: "hsa",
+        position: 2,
+        message:
+          "HSA appears after another tax-advantaged account in your order. " +
+          "HSAs have the best tax treatment of any account type (triple " +
+          "tax-advantaged: pre-tax in, tax-free growth, tax-free out for " +
+          "qualified medical expenses). Consider moving HSA earlier.",
+      },
+    ]);
+  });
+
+  it("without HSA, only the overflow warning", () => {
+    expect(validateContributionOrder(["401k", "brokerage", "ira"])).toEqual([
+      expect.objectContaining({ severity: "warn", category: "ira" }),
+    ]);
+  });
+
+  it("HSA alone or first draws no HSA warning", () => {
+    expect(validateContributionOrder(["hsa"])).toEqual([]);
+    expect(validateContributionOrder(["hsa", "brokerage", "401k"])).toEqual([
+      overflowWarn("401k", 2),
+    ]);
+  });
+
+  it("an unknown category before HSA is not a tax-advantaged one", () => {
+    expect(validateContributionOrder(["crypto", "hsa"])).toEqual([
+      expect.objectContaining({ severity: "warn", category: "hsa" }),
+    ]);
+  });
+
+  it("a repeated HSA is judged at its first place", () => {
+    expect(validateContributionOrder(["401k", "hsa", "hsa"])).toEqual([
+      expect.objectContaining({
+        severity: "info",
+        category: "hsa",
+        position: 1,
+      }),
+    ]);
+  });
+
   it("returns no warnings for an empty order", () => {
     expect(validateContributionOrder([])).toEqual([]);
   });
@@ -446,7 +504,7 @@ describe("formatEmployerMatch", () => {
   });
 });
 
-import { householdSavings } from "@/lib/pure/contributions";
+import { householdSavings } from "@/lib/pure/contributions/savings-rate";
 
 describe("householdSavings", () => {
   // Invented household: one person on a $100k plan, plus a joint brokerage.

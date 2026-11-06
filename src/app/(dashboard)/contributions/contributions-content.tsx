@@ -23,14 +23,14 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
-import { contributionsSummaryLine } from "@/lib/pure/plain-summary";
+import { contributionsSummaryLine } from "@/lib/pure/advice/plain-summary";
 import { PlainSummary } from "@/components/ui/plain-summary";
 import {
   householdSavings,
   isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
-} from "@/lib/pure/contributions";
+} from "@/lib/pure/contributions/savings-rate";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 

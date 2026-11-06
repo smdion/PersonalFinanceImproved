@@ -12,7 +12,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type { Settings } from "@/components/retirement/sections/types";
 import { makeSettings } from "./fixtures/retirement-settings";
 

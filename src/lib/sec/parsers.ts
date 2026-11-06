@@ -6,7 +6,7 @@
  * unchecked: a field not found stays undefined for schemas.ts to refuse.
  */
 import { SaxesParser } from "saxes";
-import type { NportHolding } from "@/lib/pure/sec-composition";
+import type { NportHolding } from "@/lib/pure/investments/sec-composition";
 import type { EdgarFiling, RegistryClass } from "./schemas";
 
 type Chunked<T> = { write(chunk: string): void; close(): T };

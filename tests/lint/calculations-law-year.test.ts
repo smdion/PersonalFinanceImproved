@@ -11,7 +11,7 @@
  *      a pass over that year's law.
  *   3. Every shipped tax year has a passing, hand-worked whole-return case
  *      for each filing status its tables ship, in
- *      `tests/calculators/answer-key-tax*.test.ts`, titled with a
+ *      `tests/pure/tax/answer-key-tax*.test.ts`, titled with a
  *      `{return <year> <status>}` tag.
  *
  * The rules are plain functions, each also checked against planted
@@ -157,14 +157,14 @@ const shipped = shippedYears();
 const newest = Math.max(...Object.keys(shipped).map(Number));
 
 function taxAnswerKeyCases(): AnswerKeyCase[] {
-  const dir = path.join(ROOT, "tests/calculators");
+  const dir = path.join(ROOT, "tests/pure/tax");
   return fs
     .readdirSync(dir)
     .filter((f) => /^answer-key-tax.*\.test\.tsx?$/.test(f))
     .flatMap((f) =>
       answerKeyCasesIn(
         fs.readFileSync(path.join(dir, f), "utf8"),
-        `calculators/${f}`,
+        `pure/tax/${f}`,
       ),
     );
 }
@@ -200,7 +200,7 @@ describe("tax law is kept current", () => {
     expect(
       missing,
       `No passing hand-worked whole return for: ${missing.join(", ")}. ` +
-        `Add one per year and status to tests/calculators/answer-key-tax.test.ts § whole returns: ` +
+        `Add one per year and status to tests/pure/tax/answer-key-tax.test.ts § whole returns: ` +
         `work it by hand from that year's published tables (rate schedule, standard deduction and add-ons, gains thresholds, Pub 915 for Social Security), ` +
         `write the working and citations beside the figure, and title it "tax/<id> [TAX-nn] {return <year> <status>} …". ` +
         `If the code gets it wrong, keep the worked figure as an xfail and add a passing case it does get right.`,
@@ -275,7 +275,7 @@ describe("the rules catch planted violations", () => {
       it("tax/X1 [TAX-16] {return 2026 MFJ} both 67", () => {});
       it("tax/X2 [TAX-16] 2026 Single, untagged", () => {});
       xfail({ id: "tax/X3 [TAX-16] {return 2026 HOH}", todo: "v0.11 Tax", run, expected: 0 });`,
-      "calculators/answer-key-tax.test.ts",
+      "pure/tax/answer-key-tax.test.ts",
     );
     expect(
       missingWholeReturns(cases, { 2026: ["MFJ", "Single", "HOH"] }),

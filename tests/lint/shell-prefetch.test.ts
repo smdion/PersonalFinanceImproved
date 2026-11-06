@@ -1,7 +1,7 @@
 /**
  * Every no-input query the dashboard shell loads (sidebar, header, the
  * hooks they use) is prefetched with each page — prefetchShellQueries in
- * server/helpers/server-trpc.ts — and nothing else is. A shell query the
+ * server/trpc-server.ts — and nothing else is. A shell query the
  * server doesn't load is cached in the browser before a page's section
  * hydrates, so a page reading it renders differently on the server
  * (a hydration mismatch).
@@ -15,7 +15,7 @@ const SHELL_ROOTS = [
   "app/(dashboard)/layout.tsx",
   "app/(dashboard)/dashboard-shell.tsx",
 ];
-const HELPER = path.join(SRC, "server/helpers/server-trpc.ts");
+const HELPER = path.join(SRC, "server/trpc-server.ts");
 
 function resolve(from: string, spec: string): string | null {
   const base = spec.startsWith("@/")

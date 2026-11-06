@@ -2,7 +2,8 @@
 
 /** Settings card for the SimpleFIN Bridge connection (Phase 1: daily linked-balance pulse only — no budget/category sync, so this doesn't reuse ServiceCard's YNAB/Actual-specific fields). */
 import React, { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { InstitutionHeading } from "./simplefin-stale-feeds";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,29 +13,10 @@ import {
   ConnectionResultMessage,
 } from "./integrations/connection-card";
 import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
+import { ReaddedMergePrompt } from "./simplefin-readded-prompt";
 
-type SimplefinAccountListItem = {
-  id: number;
-  orgName: string;
-  accountName: string;
-  lastBalance: number;
-  isIncluded: boolean;
-  linkedPerformanceAccountId: number | null;
-  linkedLoanId: number | null;
-  unclaimedDebt: boolean;
-  linkedSubKey: string | null;
-  linkedSubLabel: string | null;
-  subLinkMissing: boolean;
-  suggestion: {
-    performanceAccountId: number;
-    subKey: string | null;
-    label: string;
-  } | null;
-  /** Tax treatment of a part this account needs but the tracked account lacks. */
-  missingPart?: string | null;
-  snapshotBalance: number | null;
-  change: number | null;
-};
+type SimplefinAccountListItem =
+  RouterOutputs["simplefin"]["listAccounts"][number];
 
 type MatchableAccount = {
   id: number;
@@ -74,7 +56,6 @@ function AccountRow({
   onMatch: (performanceAccountId: number | null, subKey: string | null) => void;
   onLinkLoan: (loanId: number | null) => void;
 }) {
-  const change = account.change;
   return (
     <div className="text-sm">
       <label className="flex cursor-pointer items-center justify-between gap-2">
@@ -157,13 +138,13 @@ function AccountRow({
             ),
           )}
         </select>
-        {change !== null && (
+        {account.change !== null && (
           <span
-            className={`text-caption ${change === 0 ? "text-faint" : change > 0 ? "text-green-600" : "text-red-600"}`}
+            className={`text-caption ${account.change === 0 ? "text-faint" : account.change > 0 ? "text-green-600" : "text-red-600"}`}
           >
-            {change === 0
+            {account.change === 0
               ? "matches last snapshot"
-              : `${change > 0 ? "↑" : "↓"} ${formatCurrency(Math.abs(change))} vs. last snapshot`}
+              : `${account.change > 0 ? "↑" : "↓"} ${formatCurrency(Math.abs(account.change))} vs. last snapshot`}
           </span>
         )}
       </div>
@@ -195,6 +176,7 @@ function AccountRow({
           Sets this loan&apos;s balance. Not counted in Current Balances.
         </p>
       )}
+      <ReaddedMergePrompt account={account} />
       {account.suggestion && (
         <p className="text-caption text-muted mt-0.5 pl-6">
           {account.linkedPerformanceAccountId === null
@@ -454,9 +436,7 @@ export function SimplefinCard() {
             )}
             {groupAccountsByOrg(accounts).map(([orgName, orgAccounts]) => (
               <div key={orgName}>
-                <p className="text-muted mb-1 text-xs font-medium">
-                  {orgName || "Unknown institution"}
-                </p>
+                <InstitutionHeading orgName={orgName} />
                 <div className="space-y-2">
                   {orgAccounts.map((account) => (
                     <AccountRow

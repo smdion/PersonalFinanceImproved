@@ -8,17 +8,15 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
-import { loadCapHousehold } from "@/server/helpers/contribution-caps";
-import {
-  w4FilingStatusOf,
-  type SalaryProfileActiveMap,
-} from "@/server/helpers/salary";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { type SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
+import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
-import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/filing-status";
-import { recommendationsFromFilingStatus } from "@/lib/pure/recommendations-data";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/tax/filing-status";
+import { recommendationsFromFilingStatus } from "@/lib/pure/advice/recommendations-data";
 
 describe("paycheck: the household's filing status", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;

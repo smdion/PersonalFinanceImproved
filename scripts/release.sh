@@ -5,17 +5,18 @@
 #   e.g.: pnpm release 0.2.0
 #         pnpm release 0.2.0 --dry-run
 #
+# Runs on main after the release PR is merged (OPS.md § Release Process).
+# The version bump is a commit in that PR: this script never commits and
+# never pushes a branch, only the tag (main is protected).
+#
 # Steps:
-#   1. Validate version format
-#   2. Bump version in package.json
+#   1. Validate version format; package.json must already be at it
+#   2. HEAD must be origin/main's tip (the merged release)
 #   3. Verify CHANGELOG.md has entry for this version
 #   4. Verify lockfile is up to date
-#   5. Run full test suite
-#   6. Run docs verification
-#   7. Commit with "release: vX.Y.Z"
-#   8. Tag vX.Y.Z
-#   9. Push branch + tag
-#  10. Create GitHub release from CHANGELOG section
+#   5. Run full test suite, lint and docs verification
+#   6. Tag vX.Y.Z on HEAD and push the tag only
+#   7. Create GitHub release from CHANGELOG section
 #
 # For container build, see OPS.md (requires SSH to host).
 
@@ -69,12 +70,18 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
-# Check we're on main
+# Check we're on main, at origin/main's tip
 BRANCH=$(git branch --show-current)
 if [[ "$BRANCH" != "main" ]]; then
   echo -e "${YELLOW}Warning: releasing from '$BRANCH', not 'main'. Continue? (y/N)${NC}"
   read -r confirm
   [[ "$confirm" =~ ^[Yy]$ ]] || exit 1
+else
+  git fetch --no-tags origin main
+  if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+    echo -e "${RED}HEAD isn't origin/main's tip: pull the merged release first.${NC}"
+    exit 1
+  fi
 fi
 
 # Check tag doesn't already exist
@@ -86,50 +93,48 @@ if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
   exit 1
 fi
 
-# Step 1: Bump version in package.json
-echo -e "\n${BOLD}[1/9] Bumping version to $VERSION...${NC}"
-# Use node to update package.json to preserve formatting
-node -e "
-  const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-  pkg.version = '$VERSION';
-  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-"
-echo -e "${GREEN}  package.json updated${NC}"
+HEAD_SHA=$(git rev-parse HEAD)
+
+# Step 1: package.json is already at the version (bumped in the release PR)
+echo -e "\n${BOLD}[1/7] Checking package.json's version...${NC}"
+PKG_VERSION=$(node -p "require('./package.json').version")
+if [[ "$PKG_VERSION" != "$VERSION" ]]; then
+  echo -e "${RED}  package.json is at $PKG_VERSION, not $VERSION.${NC}"
+  echo "  Bump it in the release PR (OPS.md § Release Process), merge, then release."
+  exit 1
+fi
+echo -e "${GREEN}  package.json is at $VERSION${NC}"
 
 # Step 2: Verify CHANGELOG has entry
-echo -e "\n${BOLD}[2/9] Checking CHANGELOG.md...${NC}"
+echo -e "\n${BOLD}[2/7] Checking CHANGELOG.md...${NC}"
 if ! grep -q "^## .*$VERSION" CHANGELOG.md; then
   echo -e "${RED}  CHANGELOG.md has no entry for $VERSION${NC}"
   echo "  Add a section for $VERSION before releasing."
-  # Revert package.json
-  git checkout package.json
   exit 1
 fi
 echo -e "${GREEN}  CHANGELOG.md has entry for $VERSION${NC}"
 
 # Step 3: Verify lockfile is up to date
-echo -e "\n${BOLD}[3/9] Checking lockfile...${NC}"
+echo -e "\n${BOLD}[3/7] Checking lockfile...${NC}"
 if ! pnpm install --frozen-lockfile --silent 2>/dev/null; then
   echo -e "${RED}  pnpm-lock.yaml is out of sync with package.json${NC}"
   echo "  Run 'pnpm install' and commit the updated lockfile."
-  git checkout package.json
   exit 1
 fi
 echo -e "${GREEN}  Lockfile is up to date${NC}"
 
 # Step 4: Run tests
-echo -e "\n${BOLD}[4/9] Running test suite...${NC}"
+echo -e "\n${BOLD}[4/7] Running test suite...${NC}"
 pnpm test
 echo -e "${GREEN}  All tests passed${NC}"
 
 # Step 5: Run lint
-echo -e "\n${BOLD}[5/9] Running lint...${NC}"
+echo -e "\n${BOLD}[5/7] Running lint...${NC}"
 pnpm lint
 echo -e "${GREEN}  Lint passed${NC}"
 
 # Step 6: Run docs verification
-echo -e "\n${BOLD}[6/9] Verifying docs freshness...${NC}"
+echo -e "\n${BOLD}[6/7] Verifying docs freshness...${NC}"
 if [[ -f "scripts/verify-docs.ts" ]]; then
   pnpm docs:verify || echo -e "${YELLOW}  Docs verification found drift (non-blocking)${NC}"
 else
@@ -140,34 +145,17 @@ fi
 if $DRY_RUN; then
   echo -e "\n${YELLOW}${BOLD}DRY RUN COMPLETE${NC}"
   echo "All validations passed. Would have:"
-  echo "  - Committed release: $TAG"
-  echo "  - Tagged $TAG"
-  echo "  - Pushed with --follow-tags"
+  echo "  - Tagged $TAG on ${HEAD_SHA:0:8}"
+  echo "  - Pushed the tag (no branch)"
   echo "  - Created GitHub release"
-  # Revert package.json bump
-  git checkout package.json
   exit 0
 fi
 
-# Step 7: Commit (skip if version was already bumped in a prior commit)
-echo -e "\n${BOLD}[7/9] Committing...${NC}"
-git add package.json
-if git diff --cached --quiet; then
-  echo -e "${YELLOW}  package.json already at $VERSION — skipping release commit${NC}"
-else
-  git commit -m "release: $TAG"
-  echo -e "${GREEN}  Committed${NC}"
-fi
-
-# Step 8: Tag
-echo -e "\n${BOLD}[8/9] Tagging $TAG...${NC}"
+# Step 7: Tag and push the tag alone
+echo -e "\n${BOLD}[7/7] Tagging $TAG and pushing the tag...${NC}"
 git tag -a "$TAG" -m "$TAG"
-echo -e "${GREEN}  Tagged${NC}"
-
-# Step 9: Push
-echo -e "\n${BOLD}[9/9] Pushing...${NC}"
-git push --follow-tags
-echo -e "${GREEN}  Pushed${NC}"
+git push origin "refs/tags/$TAG"
+echo -e "${GREEN}  Tagged and pushed${NC}"
 
 # GitHub release (if gh is available)
 echo ""

@@ -3,13 +3,13 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/server/helpers";
-import { zDecimal } from "./settings/_shared";
+import { toNumber } from "@/lib/utils/numbers";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   utilityKindSchema,
   utilityUnitSchema,
-  type UtilitySource,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/enum-values.schema";
+import type { UtilitySource } from "@/lib/config/enum-values";
 import { cacheGet } from "@/lib/budget-api/cache";
 import { getActiveBudgetApi } from "@/lib/budget-api/factory";
 import type {
@@ -21,7 +21,7 @@ import {
   reconcileFeed,
   sameCost,
   type FeedService,
-} from "@/lib/pure/utility-cost-feed";
+} from "@/lib/pure/budget/utility-cost-feed";
 import { createHash } from "crypto";
 import { TRPCError } from "@trpc/server";
 import { safeDivide } from "@/lib/utils/math";

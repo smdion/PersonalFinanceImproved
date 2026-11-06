@@ -3,7 +3,7 @@
  * Unit tests for the pure data-driven helpers in
  * src/components/cards/projection/utils.ts. Uses the real
  * @/lib/config/account-types module (as other pure-function tests in this
- * repo do, e.g. tests/calculators/balance-utils.test.ts) rather than mocking
+ * repo do, e.g. tests/pure/engine/balance-utils.test.ts) rather than mocking
  * it — these helpers are config-driven and their correctness depends on
  * real category/bucket wiring.
  */
@@ -38,10 +38,10 @@ import {
   bucketSlotMap,
   formatDiscretionaryTierBreakdown,
 } from "@/components/cards/projection/utils";
-import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";
-import type { EngineYearProjection } from "@/lib/calculators/types";
-import type { LumpSum } from "@/lib/calculators/types/shared";
+import type { EngineYearProjection } from "@/lib/pure/engine/types";
+import type { LumpSum } from "@/lib/pure/engine/types";
 
 // ---------------------------------------------------------------------------
 // Constants

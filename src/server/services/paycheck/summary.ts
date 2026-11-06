@@ -1,0 +1,862 @@
+/** The paycheck summary (paycheck.computeSummary). Its input: the profile
+ *  pair and tax year it prices under, and the What-If tab's edits. */
+import { z } from "zod/v4";
+import {
+  zSandboxSalaryEntries,
+  zSandboxDeductionEdits,
+  zSandboxDeductionAdditions,
+  zSandboxContribActiveFields,
+  zSandboxContribAdditions,
+} from "@/lib/pure/household/what-if.schema";
+import type { Db } from "@/lib/db";
+import type { RequestScope } from "@/server/data/request-scope";
+import { localDateStr } from "@/lib/utils/date";
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
+import { eq } from "drizzle-orm";
+import { roundToCents, sumBy } from "@/lib/utils/math";
+import { TRPCError } from "@trpc/server";
+import * as schema from "@/lib/db/schema";
+import {
+  bonusCheckContribution,
+  calculatePaycheck,
+  checksPaidYtd,
+  countPeriodsElapsed,
+  calculateBlendedAnnual,
+  withheldThroughPeriod,
+} from "@/lib/pure/paycheck/paycheck";
+import type { SalarySegment } from "@/lib/pure/paycheck/paycheck";
+import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
+import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
+import {
+  getRegularPeriodsPerMonth,
+  getBudgetFrequencyNote,
+} from "@/lib/pure/paycheck/budget-periods";
+import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
+import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
+import { applyContribActiveFields } from "@/server/services/contributions/profile";
+import { buildSandboxContribRow } from "@/server/services/contributions/profile";
+import { fetchContributionProfile } from "@/server/services/contributions/profile";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
+import { toNumber } from "@/lib/utils/numbers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
+import { getAllPeople } from "@/server/data/people";
+import {
+  applySandboxSalaryEntries,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
+  contributionPay,
+} from "@/lib/pure/household/compensation";
+import type {
+  DeductionLine,
+  TaxBracketInput,
+} from "@/lib/pure/paycheck/paycheck.types";
+import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
+import {
+  computeAnnualEarnings,
+  sumHouseholdIncome,
+} from "@/lib/pure/household/household-income";
+import {
+  rothIraRouteOf,
+  rothIraSummary,
+} from "@/lib/pure/contributions/roth-ira";
+import {
+  deductionLine,
+  earningLines,
+} from "@/lib/pure/paycheck/paycheck-lines";
+import { medicareLiabilityKey } from "@/lib/config/tax-params";
+import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
+import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
+import { findActiveJob } from "@/lib/pure/household/profiles";
+import { resolveTaxParams } from "@/lib/config/tax-params";
+import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
+import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
+
+export const zPaycheckSummaryInput = z
+  .object({
+    taxYearOverride: z.number().int().min(2000).max(2100).optional(),
+    contributionProfileId: z.number().int().optional(),
+    salaryProfileId: z.number().int().optional(),
+    /** The What-If tab's hand-edited salary/bonus entries — highest
+     *  precedence tier, above the Salary Profile. See applySandboxSalaryEntries. */
+    sandboxSalaryEntries: zSandboxSalaryEntries,
+    /** The What-If tab's hand-edited amount for an existing deduction. */
+    sandboxDeductionEdits: zSandboxDeductionEdits,
+    /** The What-If tab's hand-added hypothetical deductions. */
+    sandboxDeductionAdditions: zSandboxDeductionAdditions,
+    /** The What-If tab's hand-edited contribution account values —
+     *  one more layer on top of the picked Contribution Profile's own
+     *  overrides, via the SAME applyContribActiveFields merge. */
+    sandboxContribActiveFields: zSandboxContribActiveFields,
+    /** The What-If tab's hand-added hypothetical contribution
+     *  accounts — no DB row, personId-keyed. */
+    sandboxContribAdditions: zSandboxContribAdditions,
+  })
+  .optional();
+
+/**
+ * Annual-liability variant of buildBracketInput: same limits, but brackets
+ * reshaped into real Form 1040 taxable-income space via
+ * toTaxableIncomeBrackets (calculateHouseholdTax's own standardDeduction
+ * subtraction was double-counting against the un-reshaped Pub 15-T
+ * withholding brackets). Requires the standard (non-2c) row — the 2(c)
+ * half-tables have no 1040 analogue.
+ */
+export function buildLiabilityBracketInput(
+  bracketRow: typeof schema.taxBrackets.$inferSelect,
+  limits: Map<string, number>,
+): TaxBracketInput {
+  if (bracketRow.w4Checkbox) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
+    });
+  }
+  // No yearBrackets: the liability path never reads w4Adjustment.
+  const base = buildBracketInput(bracketRow, limits, []);
+  return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
+}
+
+export async function computePaycheckSummary(
+  ctx: { db: Db; scope: RequestScope },
+  input: z.output<typeof zPaycheckSummaryInput>,
+) {
+  const deductionEditMap = new Map(
+    (input?.sandboxDeductionEdits ?? []).map((e) => [e.id, e.amountPerPeriod]),
+  );
+  const [
+    people,
+    allJobs,
+    allDeductions,
+    allContribs,
+    allLimitRows,
+    allBracketRows,
+    allTaxParams,
+    allEarnings,
+  ] = await Promise.all([
+    ctx.scope.load(getAllPeople),
+    ctx.db.select().from(schema.jobs),
+    ctx.db.select().from(schema.paycheckDeductions),
+    ctx.db
+      .select()
+      .from(schema.contributionAccounts)
+      .where(eq(schema.contributionAccounts.isActive, true)),
+    ctx.db.select().from(schema.contributionLimits),
+    ctx.db.select().from(schema.taxBrackets),
+    ctx.db.select().from(schema.taxParams),
+    ctx.db.select().from(schema.paycheckEarnings),
+  ]);
+
+  // One resolver, same as the retirement engine — but "null" on a
+  // missing year (not "throw"/"nearest"): the paycheck year selector
+  // lets a user pick a year with no seeded tables, and the contract is
+  // "show empty, never another year's figures" (a person entry still
+  // renders, with paycheck/tax null). `taxYearOverride` undefined =>
+  // newest enacted year.
+  const resolvedTax = resolveTaxParams(
+    {
+      vintage: allTaxParams,
+      contributionLimits: allLimitRows,
+      withholdingBrackets: allBracketRows,
+      ltcgBrackets: [],
+      irmaaBrackets: [],
+      fpl: [],
+    },
+    input?.taxYearOverride,
+    { onMissing: "null" },
+  );
+  const taxYear =
+    resolvedTax?.resolvedYear ??
+    input?.taxYearOverride ??
+    ctx.scope.asOf.getFullYear();
+  const allBrackets = resolvedTax
+    ? allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear)
+    : [];
+
+  const limitsRecord: Record<string, number> = resolvedTax?.limits ?? {};
+  const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
+
+  // Salary and contribution overrides are two independent axes.
+  // Precedence for salary: the What-If sandbox (highest) > Salary
+  // Profile. The Contribution Profile contributes no
+  // salary at all — only account/job field overrides. No explicit
+  // salaryProfileId falls back to the globally-active profile.
+  const effectiveSalaryMap = applySandboxSalaryEntries(
+    input?.sandboxSalaryEntries,
+    new Map(),
+  );
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+    ctx.db,
+    input?.salaryProfileId,
+  );
+  const profileResult = await loadAndApplyContribProfile(
+    ctx.db,
+    input?.contributionProfileId,
+    allContribs,
+    allJobs,
+    salaryProfileActiveMap,
+    allDeductions,
+  );
+  // getIncompleteContribAccountIds's signal (a real account with no
+  // active value under this profile — see applyContribActiveFields,
+  // which silently excludes it above) had no UI home anywhere before
+  // this — surfaced per-person below so a card never just shows a
+  // quietly-shrunk total.
+  const contribProfileRow = await fetchContributionProfile(
+    ctx.db,
+    input?.contributionProfileId,
+  );
+  const accountActiveFields =
+    (
+      contribProfileRow?.contributionActiveFields as
+        | { contributionAccounts?: Record<string, Record<string, unknown>> }
+        | undefined
+    )?.contributionAccounts ?? {};
+  // The What-If tab's sandbox edits are the highest-precedence tier,
+  // applied AFTER the picked profile's own overrides — same merge
+  // function, one more layer, never a second resolution path.
+  const sandboxed = applyContribActiveFields(
+    profileResult.contribs,
+    input?.sandboxContribActiveFields ?? {},
+    true,
+  );
+  // Hypothetical additions have no DB row — appended for the duration
+  // of this request only, never written anywhere. Negative ids can
+  // never collide with a real autoincrement id.
+  for (const [i, addition] of (
+    input?.sandboxContribAdditions ?? []
+  ).entries()) {
+    sandboxed.push(buildSandboxContribRow(addition, -(i + 1)));
+  }
+  const effectiveJobs = profileResult.jobs;
+
+  const asOfDate = ctx.scope.asOf;
+  // The IRS-limit cap pass: every figure below reads the capped value.
+  const capHousehold = await loadCapHousehold(
+    ctx.db,
+    people,
+    limitsRecord,
+    taxYear,
+    salaryProfileActiveMap,
+  );
+  const effectiveContribs = capForRequest(
+    sandboxed,
+    capHousehold,
+    effectiveJobs,
+    salaryProfileActiveMap,
+    effectiveSalaryMap,
+  );
+
+  /**
+   * One job's paycheck inputs, the same for the job a person has now
+   * and one that ended this year: its W-4 brackets, salary and bonus
+   * terms from the Salary Profile, its deductions, other pay and
+   * contributions. `sandbox`: apply the What-If (the current job only).
+   * Null when the job's Salary Profile entry is incomplete.
+   */
+  const jobPaycheckSetup = (
+    job: (typeof effectiveJobs)[number],
+    person: (typeof people)[number],
+    opts: { sandbox: boolean; asOf?: Date },
+  ) => {
+    // job.w4FilingStatus is undefined when this job has no entry in
+    // the active Salary Profile (an entry is always complete — see
+    // mergeSalaryProfileJobFields): no bracket row = incomplete.
+    const bracketRow = allBrackets.find(
+      (b) =>
+        b.filingStatus === job.w4FilingStatus &&
+        b.w4Checkbox === job.w4Box2cChecked,
+    );
+    if (!bracketRow) return null;
+    // A job has no salary/bonus of its own — the Salary Profile, then
+    // (current job only) the What-If sandbox.
+    const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+    const salary = opts.sandbox
+      ? applyActiveSalary(person.id, comp.salary, effectiveSalaryMap)
+      : comp.salary;
+    const periodsPerYear = getPeriodsPerYear(job.payPeriod!);
+    const taxBracketInput = buildBracketInput(
+      bracketRow,
+      limitsMap,
+      allBrackets,
+    );
+    // Profile-resolved deductions, then (current job) the What-If's
+    // edits — the same arithmetic every deduction goes through.
+    const jobDeductions = profileResult.deductions.filter(
+      (d) => d.jobId === job.id,
+    );
+    const deductions: DeductionLine[] = jobDeductions.map((d) =>
+      deductionLine(
+        d,
+        (opts.sandbox ? deductionEditMap.get(d.id) : undefined) ??
+          toNumber(String(d.amountPerPeriod)),
+      ),
+    );
+    // Other pay: rows for this job, amounts from its Salary Profile entry.
+    const earningLinesForJob = earningLines(
+      allEarnings.filter((e) => e.jobId === job.id),
+      salaryProfileActiveMap.get(job.id)?.otherEarnings,
+    );
+    if (opts.sandbox)
+      for (const addition of input?.sandboxDeductionAdditions ?? []) {
+        if (addition.personId !== person.id) continue;
+        deductions.push(
+          deductionLine(
+            {
+              deductionName: addition.name,
+              isPretax: addition.isPretax,
+              ficaExempt: addition.ficaExempt,
+            },
+            addition.amountPerPeriod,
+          ),
+        );
+      }
+    // The current job: its active contributions plus the person's own.
+    // An ended job: every contribution it carried (it can't tell when
+    // one was switched off), never the person's own — those belong to
+    // the current job's year.
+    const jobContribs = effectiveContribs.filter(
+      (c) => c.jobId === job.id && (opts.sandbox ? c.isActive : true),
+    );
+    const personalContribs = opts.sandbox
+      ? effectiveContribs.filter(
+          (c) =>
+            c.jobId === null &&
+            c.personId === person.id &&
+            c.isActive &&
+            c.ownership !== "joint",
+        )
+      : [];
+    const bonusTerms = opts.sandbox
+      ? applyActiveBonusTerms(effectiveSalaryMap.get(person.id), comp.terms)
+      : comp.terms;
+    const contribAccounts = buildContribAccounts(
+      jobContribs,
+      personalContribs,
+      salary,
+      periodsPerYear,
+      ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
+      contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
+    );
+    // This year's actual paid-out bonus, if pinned on the Salary
+    // Profile entry (SalaryEntry.bonusOverride).
+    const paycheckInput = buildPaycheckInputForJob(job, {
+      salary,
+      bonusTerms,
+      bonusOverride: comp.bonusOverride,
+      contributionAccounts: contribAccounts,
+      deductions,
+      earnings: earningLinesForJob,
+      taxBrackets: taxBracketInput,
+      limitsMap,
+      limitsRecord,
+      asOfDate: opts.asOf ?? asOfDate,
+    });
+    return {
+      comp,
+      salary,
+      periodsPerYear,
+      taxBracketInput,
+      jobDeductions,
+      deductions,
+      earningLinesForJob,
+      jobContribs,
+      personalContribs,
+      bonusTerms,
+      contribAccounts,
+      paycheckInput,
+    };
+  };
+
+  /**
+   * A person's jobs that ended this tax year, each for the checks it
+   * paid up to its end (its own Salary Profile entry; none of the
+   * What-If). Counted whether or not they have a job now — someone laid
+   * off or retired mid-year still earned this year. `endedWithheld` is
+   * what those checks withheld (federal + FICA, regular checks only, as
+   * withheldThroughPeriod). A current job whose last day is later this
+   * year isn't one of them (`currentJobId`): it's counted as the
+   * current job, up to its last day.
+   */
+  const endedJobYears = (
+    person: (typeof people)[number],
+    currentJobId?: number,
+  ) => {
+    const endedJobs = effectiveJobs.filter(
+      (j) =>
+        j.personId === person.id &&
+        j.id !== currentJobId &&
+        !j.isSpeculative &&
+        j.endDate != null &&
+        Number(String(j.endDate).slice(0, 4)) === taxYear,
+    );
+    const endedYears = endedJobs.flatMap((job) => {
+      const end = new Date(`${String(job.endDate).slice(0, 10)}T12:00:00Z`);
+      const ended = jobPaycheckSetup(job, person, {
+        sandbox: false,
+        asOf: end,
+      });
+      if (!ended) return [];
+      const endedPaycheck = calculatePaycheck(ended.paycheckInput);
+      const anchor = job.anchorPayDate ?? job.startDate;
+      // Its paydays from the year's start (or its own) to its end.
+      const checks = checksPaidYtd(
+        end,
+        job.payPeriod!,
+        anchor,
+        ended.periodsPerYear,
+        job.startDate,
+      );
+      const paydaysToEnd = countPeriodsElapsed(
+        end,
+        job.payPeriod!,
+        new Date(anchor),
+      );
+      return [
+        {
+          employerName: job.employerName,
+          bonusUndated: endedPaycheck.bonusUndated,
+          // Withheld so far: its checks to today, or to its end when
+          // that's passed (the earnings count to the end either way).
+          withheld: withheldThroughPeriod(
+            endedPaycheck.yearSchedule,
+            Math.min(
+              countPeriodsElapsed(
+                end < asOfDate ? end : asOfDate,
+                job.payPeriod!,
+                new Date(anchor),
+              ),
+              ended.periodsPerYear,
+            ),
+          ),
+          year: computeAnnualEarnings({
+            salary: ended.salary,
+            periodsPerYear: ended.periodsPerYear,
+            paycheck: endedPaycheck,
+            contributionAccounts: ended.contribAccounts,
+            deductions: ended.deductions,
+            checks,
+            // Only a bonus dated on or before its last day.
+            bonusPaid:
+              endedPaycheck.bonusPeriod !== null &&
+              endedPaycheck.bonusPeriod <= paydaysToEnd,
+          }),
+        },
+      ];
+    });
+    return {
+      endedJobs,
+      endedYears: endedYears.map((e) => e.year),
+      undatedBonusEmployers: endedYears
+        .filter((e) => e.bonusUndated)
+        .map((e) => e.employerName),
+      endedWithheld: {
+        federal: roundToCents(sumBy(endedYears, (e) => e.withheld.federal)),
+        fica: roundToCents(sumBy(endedYears, (e) => e.withheld.fica)),
+      },
+    };
+  };
+
+  const results = await Promise.all(
+    people.map(async (person) => {
+      // Personal (jobless) contributions belong on this person's card
+      // whether or not they currently have an active job — computed
+      // before the early returns below so neither branch loses the
+      // signal.
+      const incompleteAccountIds = getIncompleteContribAccountIds(
+        allContribs.filter(
+          (c) =>
+            c.personId === person.id &&
+            (c.jobId === null || allJobs.some((j) => j.id === c.jobId)),
+        ),
+        accountActiveFields,
+      );
+
+      // No current job (or an incomplete one): the year's pay is
+      // what jobs that ended this year paid — null when none did.
+      const endedOnly = () => {
+        const { endedYears, endedWithheld, undatedBonusEmployers } =
+          endedJobYears(person);
+        return {
+          earnings:
+            endedYears.length > 0 ? sumHouseholdIncome(endedYears) : null,
+          endedWithheld,
+          bonusNotCounted: undatedBonusEmployers,
+        };
+      };
+      const activeJob = findActiveJob(effectiveJobs, person.id, asOfDate);
+      if (!activeJob) {
+        // A job that hasn't started: no paycheck yet, and its pay isn't
+        // counted until it starts.
+        const upcoming = effectiveJobs
+          .filter(
+            (j) =>
+              j.personId === person.id &&
+              !j.isSpeculative &&
+              String(j.startDate).slice(0, 10) > localDateStr(asOfDate),
+          )
+          .sort((a, b) =>
+            String(a.startDate).localeCompare(String(b.startDate)),
+          )[0];
+        return {
+          person,
+          job: null,
+          salary: 0,
+          paycheck: null,
+          upcomingJob: upcoming
+            ? {
+                employerName: upcoming.employerName,
+                startDate: String(upcoming.startDate).slice(0, 10),
+              }
+            : null,
+          ...endedOnly(),
+          rawDeductions: [],
+          rawContribs: [],
+          incompleteAccountIds,
+        };
+      }
+      const jobForClient = activeJob;
+
+      const setup = jobPaycheckSetup(activeJob, person, {
+        sandbox: true,
+      });
+      if (!setup) {
+        return {
+          person,
+          job: jobForClient,
+          salary: 0,
+          paycheck: null,
+          ...endedOnly(),
+          rawDeductions: [],
+          rawContribs: [],
+          incompleteAccountIds,
+        };
+      }
+      const {
+        comp,
+        salary,
+        periodsPerYear,
+        taxBracketInput,
+        jobDeductions,
+        deductions,
+        jobContribs,
+        personalContribs,
+        bonusTerms,
+        contribAccounts,
+        paycheckInput,
+      } = setup;
+      const paycheck = calculatePaycheck(paycheckInput);
+      // The pay-stub check compares one real check — what payroll
+      // actually deducts, the configured amounts — so a person over an
+      // IRS limit gets that check figured on the configured rows.
+      const configured = <T extends { cappedValue?: number }>(rows: T[]) =>
+        rows.map(({ cappedValue: _capped, ...r }) => r);
+      const paystubPaycheck = [...jobContribs, ...personalContribs].some(
+        (c) => (c.cap?.overBy ?? 0) > 0,
+      )
+        ? calculatePaycheck({
+            ...paycheckInput,
+            contributionAccounts: buildContribAccounts(
+              configured(jobContribs),
+              configured(personalContribs),
+              salary,
+              periodsPerYear,
+              ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
+              contributionPay(salary, bonusTerms, comp.bonusOverride)
+                .bonusGross,
+            ),
+          })
+        : null;
+      // The nominal formula figure, ignoring any current-year pin — lets
+      // the UI show "target" (formula) alongside "actual" (resolved)
+      // instead of only ever showing the resolved value.
+      const fullFormulaBonusEstimate =
+        paycheckInput.bonusOverride !== null
+          ? calculatePaycheck({ ...paycheckInput, bonusOverride: null })
+              .bonusEstimate
+          : paycheck.bonusEstimate;
+
+      // Blended annual computation. Salary is a flat number under the
+      // active Salary Profile — no mid-year timeline to blend across
+      // any more (see resolveCompensation's docblock), so this is
+      // always a single segment spanning the whole year; what's left of
+      // "blended" is folding in actual YTD performance data below.
+      // A last day later this year (the job is still current): its
+      // checks inside the year stop there.
+      const lastDay =
+        activeJob.endDate != null &&
+        Number(String(activeJob.endDate).slice(0, 4)) === taxYear
+          ? new Date(`${String(activeJob.endDate).slice(0, 10)}T12:00:00Z`)
+          : null;
+      const anchor = activeJob.anchorPayDate ?? activeJob.startDate;
+      let blendedAnnual: BlendedAnnualTotals | null = null;
+      {
+        // The checks it pays this year: from its start, to its last day.
+        const salarySegments: SalarySegment[] = [
+          {
+            salary,
+            effectiveDate: null,
+            startPeriod: 1 + paycheck.periodsBeforeStart,
+            endPeriod: lastDay
+              ? Math.min(
+                  periodsPerYear,
+                  countPeriodsElapsed(
+                    lastDay,
+                    activeJob.payPeriod!,
+                    new Date(anchor),
+                  ),
+                )
+              : periodsPerYear,
+            paycheck,
+          },
+        ];
+
+        blendedAnnual = calculateBlendedAnnual(salarySegments, taxBracketInput);
+      }
+
+      // This person's year: salary + the resolved bonus, pre-tax money
+      // and FICA wages — what the household tax and every income
+      // figure read (household annual income, DESIGN.md).
+      // This person's year: every job they had in it, each for the
+      // checks it pays inside the year — the current job from its
+      // start (to its last day when that's later this year), plus any
+      // job that ended this year (household-income.ts).
+      const currentJobYear = computeAnnualEarnings({
+        salary,
+        periodsPerYear,
+        paycheck,
+        contributionAccounts: contribAccounts,
+        deductions,
+        checks: lastDay
+          ? checksPaidYtd(
+              lastDay,
+              activeJob.payPeriod!,
+              anchor,
+              periodsPerYear,
+              activeJob.startDate,
+            )
+          : periodsPerYear - paycheck.periodsBeforeStart,
+        bonusPaid:
+          !paycheck.bonusBeforeStart &&
+          (lastDay === null ||
+            (paycheck.bonusPeriod !== null &&
+              paycheck.bonusPeriod <=
+                countPeriodsElapsed(
+                  lastDay,
+                  activeJob.payPeriod!,
+                  new Date(anchor),
+                ))),
+      });
+      const { endedJobs, endedYears, endedWithheld, undatedBonusEmployers } =
+        endedJobYears(person, activeJob.id);
+      // A job leaving this year whose bonus has no date: whether it's
+      // paid before the last day isn't known, so it isn't counted.
+      const bonusNotCounted = [
+        ...(lastDay && paycheck.bonusUndated ? [activeJob.employerName] : []),
+        ...undatedBonusEmployers,
+      ];
+      const earnings =
+        endedYears.length > 0
+          ? sumHouseholdIncome([currentJobYear, ...endedYears])
+          : currentJobYear;
+      // A job started this year with no earlier job counted: its pay
+      // before the start isn't in Ledgr.
+      const start = String(activeJob.startDate).slice(0, 10);
+      const yearPayNote =
+        paycheck.periodsBeforeStart > 0 && endedYears.length === 0
+          ? {
+              startDate: start,
+              missingEndedJob: endedJobs.length > 0,
+            }
+          : null;
+
+      const rawContribs = [...jobContribs, ...personalContribs];
+      const budgetOverride = activeJob.budgetPeriodsPerMonth ?? null;
+
+      return {
+        person,
+        job: jobForClient,
+        salary,
+        /** Set when this person's year starts with the current job:
+         *  pay before `startDate` isn't counted (no earlier job in
+         *  Ledgr, or — missingEndedJob — one whose Salary Profile entry
+         *  is incomplete). */
+        yearPayNote,
+        /** Employers of jobs ending this tax year whose bonus has no
+         *  date — left out of this year's income (it may be paid
+         *  after the last day). */
+        bonusNotCounted,
+        /** The bonus terms actually in effect (the active Salary
+         *  Profile's resolved terms, with the What-If sandbox's own
+         *  edits layered on top — never a job fallback, jobs carry no
+         *  bonus terms of their own any more) — as numbers, for clients
+         *  (e.g. the What-If tab's editor) that need to pre-fill from
+         *  the resolved value rather than `job`'s raw, profile-unaware
+         *  fields. Mirrors what `salary` already does for the salary
+         *  axis. */
+        resolvedBonusTerms: {
+          bonusPercent: toNumber(bonusTerms.bonusPercent),
+          bonusMultiplier:
+            bonusTerms.bonusMultiplier === null
+              ? 1
+              : toNumber(bonusTerms.bonusMultiplier),
+          monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
+          bonusOverride: comp.bonusOverride,
+        },
+        paycheck,
+        /** The paycheck on the configured contributions, for the
+         *  pay-stub check — null when nothing is capped (same as
+         *  `paycheck`). */
+        paystubPaycheck,
+        fullFormulaBonusEstimate,
+        blendedAnnual,
+        earnings,
+        /** What jobs that ended this year withheld (federal + FICA) —
+         *  added to the current job's withholding so far. */
+        endedWithheld,
+        rawDeductions: jobDeductions,
+        /** This job's other-pay lines with their per-check amount from
+         *  the Salary Profile entry (0 when it sets none). */
+        earningRows: allEarnings
+          .filter((e) => e.jobId === activeJob.id)
+          .map((e) => ({
+            ...e,
+            amount:
+              salaryProfileActiveMap.get(activeJob.id)?.otherEarnings?.[
+                String(e.id)
+              ] ?? 0,
+          })),
+        rawContribs,
+        /** The year's Social Security / Medicare rates, wage base and
+         *  Additional Medicare withholding threshold — what
+         *  "Check against your pay stub" works back from (tax data,
+         *  never hard-coded). */
+        ficaRates: {
+          socialSecurity: taxBracketInput.socialSecurityRate,
+          medicare: taxBracketInput.medicareRate,
+          socialSecurityWageBase: taxBracketInput.socialSecurityWageBase,
+          medicareWithholdingThreshold:
+            taxBracketInput.medicareAdditionalThreshold,
+          additionalMedicare: taxBracketInput.medicareAdditionalRate,
+        },
+        /** Where this job's bonus goes (its Salary Profile entry;
+         *  absent = the budget). */
+        bonusDestination:
+          salaryProfileActiveMap.get(activeJob.id)?.bonusDestination ??
+          DEFAULT_BONUS_DESTINATION,
+        /** The accounts the bonus check takes, and how much — the
+         *  accounts set to be taken from bonus checks (fromBonus). */
+        bonusCheckAccounts: contribAccounts.flatMap((a) => {
+          const amount = bonusCheckContribution(
+            a,
+            paycheck.bonusEstimate.bonusGross,
+          );
+          return a.id !== undefined && amount > 0 ? [{ id: a.id, amount }] : [];
+        }),
+        budgetPerMonth: getRegularPeriodsPerMonth(
+          periodsPerYear,
+          budgetOverride,
+        ),
+        budgetNote: getBudgetFrequencyNote(
+          activeJob.payPeriod!,
+          budgetOverride,
+        ),
+        incompleteAccountIds,
+      };
+    }),
+  );
+
+  // Joint accounts — returned separately for household-level display
+  const jointContribs = effectiveContribs.filter(
+    (c) => c.isActive && c.ownership === "joint",
+  );
+
+  // Household annual income and tax. Federal on the combined income
+  // with ONE standard deduction; FICA per person on FICA wages;
+  // Additional Medicare on the household's combined Medicare wages
+  // above the filing status's liability threshold.
+  // Everyone with pay this year — a current job, or one that ended.
+  const earners = results.filter((r) => r.earnings);
+  const householdIncome =
+    earners.length > 0
+      ? sumHouseholdIncome(earners.map((r) => r.earnings!))
+      : null;
+  // The household's tax-return filing status — the one the caps use
+  // (loadCapHousehold), never a W-4 on its own: a W-4 status is a
+  // withholding choice (married couples often pick Single).
+  const householdFilingStatus = capHousehold.filingStatus || null;
+  let householdTax = null;
+  if (earners.length > 0 && householdFilingStatus) {
+    const filingStatus = householdFilingStatus;
+    const bracketRow = allBrackets.find(
+      (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
+    );
+    if (bracketRow) {
+      householdTax = calculateHouseholdTax({
+        people: earners.map((r) => r.earnings!),
+        taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
+        medicareLiabilityThreshold:
+          limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
+      });
+    }
+  }
+
+  const rothIra = rothIraSummary({
+    // No one with a job → no Roth IRA view, as before.
+    filingStatus: earners.length > 0 ? householdFilingStatus : null,
+    taxYear,
+    limits: limitsRecord,
+    people: results.map((r) => ({
+      personId: r.person.id,
+      name: r.person.name,
+      birthYear: Number(r.person.dateOfBirth.slice(0, 4)),
+      earnings: r.earnings,
+      jobAccountTypes: r.rawContribs
+        .filter((c) => c.jobId !== null)
+        .map((c) => c.accountType),
+      iraRoom:
+        r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)?.cap
+          ?.maxEmployee ?? null,
+      rothRoute: rothIraRouteOf(r.rawContribs),
+    })),
+  });
+
+  // Default cash to keep in each person's HSA: the year's HDHP minimum
+  // deductible for their coverage (from their HSA contribution account).
+  const hsaBuffers = hsaCashBuffers({
+    limits: limitsRecord,
+    people: results.map((r) => ({
+      personId: r.person.id,
+      hsaCoverageType:
+        r.rawContribs.find(
+          (c) => isHsaCategory(c.accountType) && c.hsaCoverageType,
+        )?.hsaCoverageType ?? null,
+    })),
+  });
+
+  return {
+    people: results,
+    jointContribs,
+    householdIncome,
+    householdTax,
+    /** The tax-return filing status the household tax was figured for
+     *  (null: none set and no W-4 to stand in). */
+    filingStatus: householdFilingStatus,
+    /** Where it came from: the household setting, the active
+     *  Retirement Profile, or a W-4 standing in. */
+    filingStatusSource: householdFilingStatus
+      ? capHousehold.filingStatusSource
+      : null,
+    rothIra,
+    hsaBuffers,
+    // The tax-data vintage this summary was priced under — for a
+    // "Tax data: YYYY" indicator, matching the retirement projection side.
+    taxYear,
+    taxParamsVersion: resolvedTax?.version ?? 0,
+  };
+}

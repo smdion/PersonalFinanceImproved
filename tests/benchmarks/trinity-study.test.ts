@@ -12,7 +12,7 @@
  * Performance note: These tests run 5,000 MC trials each. Expect ~5-15s per test.
  */
 import { describe, it, expect } from "vitest";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import {
   makeTrinityInput,
   makeMCInput,

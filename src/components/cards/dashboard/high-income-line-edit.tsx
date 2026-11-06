@@ -4,7 +4,7 @@
  * The household's high-income line, beside the employer-match switch it
  * drives: at or above it the match is left out of the savings rate by
  * default. Admins set it here; cleared, it goes back to the default by
- * filing status (lib/pure/high-income-line.ts).
+ * filing status (lib/pure/paycheck/high-income-line.ts).
  */
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { filingStatusLabel } from "@/lib/config/display-labels";
-import type { HighIncomeLineBasis } from "@/lib/pure/high-income-line";
+import type { HighIncomeLineBasis } from "@/lib/pure/paycheck/high-income-line";
 import { HIGH_INCOME_LINE } from "@/lib/config/milestones";
 
 function basisText(basis: HighIncomeLineBasis | null): string {

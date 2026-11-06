@@ -36,15 +36,15 @@ import * as schema from "@/lib/db/schema-sqlite";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
-import { sweepClaimingAges } from "@/lib/calculators/social-security";
-import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
+import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 
 /** Same shape as withdrawal-bracket-optimizer.test.ts's
  *  seedFullProjectionData — duplicated locally rather than imported (not

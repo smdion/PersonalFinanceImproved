@@ -15,78 +15,350 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job runs on every event and skips only its own steps, never the job:
+# scripts/ci-gate.ts requires each job here to succeed on the deployed
+# commit's push run, and main requires `ci` and `PostgreSQL`. `ci` and
+# `postgres` (PostgreSQL) are the aggregators; a job added here goes in
+# `ci`'s needs.
 jobs:
-  ci:
+  # What this run must test (scripts/ci-changes.sh): `code` false for a
+  # docs-only push, when the other jobs skip their heavy steps (docs:verify
+  # and the register still run); `image` for the image job.
+  changes:
     runs-on: ubuntu-latest
-    # Pushes also build the image, boot both compose files and run the
-    # first-run sign-in against each (18 of 20 minutes used before that).
-    timeout-minutes: 25
-
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+      image: ${{ steps.changes.outputs.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: What this run tests
+        id: changes
+        run: bash scripts/ci-changes.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # The checks that compare with the merge base on origin/main, and the
+  # other quick ones.
+  static:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 15
+    steps:
+      # Full history: the ratchets, commit rules, layer rules and tax-data
+      # check compare with the merge base on origin/main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      # --- Blocking steps (fail the pipeline) ---
+      # No ratchet rises and no behavior-baseline file changes against the
+      # merge base, unless a commit carries Ratchet-raise: or
+      # Baseline-rerecord: for that file.
+      - name: Ratchets and the behavior baseline against the merge base
+        run: pnpm check:ratchets --base "$(git merge-base origin/main HEAD)"
 
-      - name: Commit rules over the pull request's commits
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          git fetch --no-tags --unshallow origin || true
-          git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
-          pnpm tsx scripts/check-commit.ts --strict --range "origin/$BASE_REF..HEAD"
+      # Pushes too: a release deploys from its v* push before the PR exists.
+      - name: Commit rules over the commits since the merge base
+        run: pnpm tsx scripts/check-commit.ts --strict --range "$(git merge-base origin/main HEAD)..HEAD"
 
-      - name: Type-check
-        run: npx tsc --noEmit
+      # Layer rules: no new violation, and the known list only shrinks
+      # (checked against main's copy).
+      - name: Layer rules (dependency-cruiser)
+        if: env.RUN == 'true'
+        run: pnpm check:layers --base origin/main
 
-      - name: Type-check tests
-        run: pnpm check:types-tests
-
-      - name: Type-check scripts
-        run: pnpm check:types-scripts
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Lint, type-aware ratchet
-        run: pnpm lint:typed
+      - name: Size baseline (no file or recorded function grows)
+        if: env.RUN == 'true'
+        run: pnpm check:file-size
 
       - name: Dead code (unused files, exports, dependencies)
+        if: env.RUN == 'true'
         run: pnpm check:dead-code
 
       # Production mode: an export only tests import is dead code too
       # (tag a deliberate test seam @internal).
       - name: Dead code, production (test imports don't count)
+        if: env.RUN == 'true'
         run: pnpm check:dead-code:production
 
-      # Layer rules: no new violation, and the known list only shrinks
-      # (checked against main's copy).
-      - name: Layer rules (dependency-cruiser)
-        run: |
-          git fetch --no-tags --depth=1 origin main
-          pnpm check:layers --base FETCH_HEAD
+      - name: Verify docs freshness
+        run: pnpm docs:verify
 
-      - name: Size baseline (no file or recorded function grows)
-        run: pnpm check:file-size
+      # The projection cache's engine version is a hash of the engine code.
+      - name: Verify the engine hash is current
+        if: env.RUN == 'true'
+        run: pnpm check:engine-hash
+
+      # Every calculator, engine and lib/pure export has a row in
+      # docs/CALCULATIONS.md; the exports without one and the high-risk
+      # rows with no independent test may only shrink
+      # (scripts/calculation-register-baseline.json).
+      - name: Calculation register check
+        run: pnpm check:calculation-register
+
+      - name: Check migrations
+        if: env.RUN == 'true'
+        run: pnpm check:migrations
+
+      # A missing tax year blocks only a change to the tax data or its
+      # tables; the weekly tax-data-freshness workflow fails while it lasts.
+      - name: Check tax parameter freshness
+        run: pnpm check:tax-params --base "$(git merge-base origin/main HEAD)"
+
+      - name: Tax-data file raises its dataVersion when it changes
+        run: pnpm tsx scripts/check-tax-data-version.ts "$(git merge-base origin/main HEAD)"
+
+  types:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
+
+      - name: Type-check
+        if: env.RUN == 'true'
+        run: npx tsc --noEmit
+
+      - name: Type-check tests
+        if: env.RUN == 'true'
+        run: pnpm check:types-tests
+
+      - name: Type-check scripts
+        if: env.RUN == 'true'
+        run: pnpm check:types-scripts
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
+
+      - name: Lint
+        if: env.RUN == 'true'
+        run: pnpm run lint
+
+      - name: Lint, type-aware ratchet
+        if: env.RUN == 'true'
+        run: pnpm lint:typed
+
+  # The unit suite in six shards. Each writes a blob report with its
+  # coverage; `coverage` merges them and checks the thresholds once
+  # (LEDGR_COVERAGE_SHARD keeps a shard from checking its part alone).
+  unit:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
+
+      - name: Unit tests, one shard, with coverage
+        if: env.RUN == 'true'
+        run: pnpm test:coverage --shard=${{ matrix.shard }}/6 --reporter=blob --reporter=default
+        env:
+          LEDGR_COVERAGE_SHARD: "true"
+
+      - name: Upload the shard's blob report
+        if: env.RUN == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: .vitest-reports/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [changes, unit]
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        if: env.RUN == 'true'
+        with:
+          pattern: blob-report-*
+          path: .vitest-reports
+          merge-multiple: true
+
+      # The thresholds cover the engine and lib/pure (vitest.config.ts).
+      - name: Coverage thresholds over the merged shards
+        if: env.RUN == 'true'
+        run: pnpm test:coverage --merge-reports
+
+  # By file, from the times measured on the test VM; the slowest file's
+  # 30-year case (sim/K14) has a shard of its own. A new benchmark file
+  # goes in a group (tests/scripts/ci-test-files.test.ts checks).
+  benchmarks:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: sim-k14
+            files: tests/benchmarks/answer-key-simulation-reference.test.ts
+            filter: "sim/K14 "
+          - group: sim-rest
+            files: tests/benchmarks/answer-key-simulation-reference.test.ts
+            filter: "^(?!.*sim/K14 )"
+          - group: cfiresim
+            files: tests/benchmarks/cfiresim-comparison.test.ts tests/benchmarks/monte-carlo-properties.test.ts tests/benchmarks/accumulation-sanity.test.ts tests/benchmarks/glide-path.test.ts tests/benchmarks/asset-assumptions.test.ts tests/benchmarks/tax-accuracy.test.ts tests/benchmarks/withdrawal-sensitivity.test.ts
+            filter: ""
+          - group: scenarios
+            files: tests/benchmarks/trinity-study.test.ts
+            filter: ""
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
+
+      - name: Benchmark tests, one group
+        if: env.RUN == 'true'
+        # Only the split file passes a name filter; an empty one is rejected.
+        run: pnpm test:benchmarks ${{ matrix.files }} ${FILTER:+"--testNamePattern=$FILTER"}
+        env:
+          FILTER: ${{ matrix.filter }}
+
+  # Build → prerender check → bundle budgets → E2E, in Playwright's image
+  # (browsers and their system libraries included, same version as
+  # @playwright/test). A docs-only push runs on the bare runner instead (an
+  # empty image), so it doesn't pull the image to skip every step.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 20
+    container:
+      image: ${{ needs.changes.outputs.code == 'true' && 'mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f' || '' }}
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # better-sqlite3 builds from source for this Node; the Playwright image
+      # has no compiler.
+      - name: Build tools for native modules
+        if: env.RUN == 'true'
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends build-essential python3 >/dev/null
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
       - name: Cache Next.js build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        if: env.RUN == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          # The source hash saves a fresh cache as the code changes; a miss
+          # restores the newest one for the same lockfile.
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**', 'next.config.mjs') }}
           restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             nextjs-${{ runner.os }}-
 
       - name: Build
+        if: env.RUN == 'true'
         run: pnpm build
         env:
           DATABASE_URL: postgresql://build:build@localhost:5432/build
@@ -98,58 +370,45 @@ jobs:
       # database) must render per request: a prerendered one would ship
       # the build machine's answer. Built above with no Authentik issuer.
       - name: No prerendered sign-in or dashboard page
+        if: env.RUN == 'true'
         run: pnpm tsx scripts/check-prerender.ts
-
-      - name: Test with coverage thresholds
-        run: pnpm test:coverage
-
-      - name: Benchmark tests
-        run: pnpm test:benchmarks
 
       # Blocking: each page's first-load JS (gzipped) against its budget,
       # and no single chunk over 500 KB (scripts/check-bundle-size.ts).
       # The report prints every page's measured size (and the budget block)
       # before the check, so a failing run shows what moved.
       - name: Check bundle size
+        if: env.RUN == 'true'
         run: |
           pnpm check:bundle --report
           pnpm check:bundle
 
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Install Playwright system deps
-        run: npx playwright install-deps chromium
-
-      - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium
-
       - name: E2E tests (SQLite + demo mode)
+        if: env.RUN == 'true'
         run: |
           cp -r .next/static .next/standalone/.next/static
-          [ -d public ] && cp -r public .next/standalone/public || true
+          if [ -d public ]; then cp -r public .next/standalone/public; fi
           # The app reads tax-data/ and reference-data/ from its working
           # directory (server.js chdirs to .next/standalone), as the image does.
           cp -r tax-data reference-data .next/standalone/
+          # Inside the container the workspace is $PWD, not github.workspace.
+          export SQLITE_PATH="$PWD/data/ledgr.db"
           # Write .env for the standalone server (reads dotenv, not shell env).
           # Values here must match the step env: block — single source of truth.
           printf 'SQLITE_PATH=%s\nDEMO_ONLY=%s\nNEXTAUTH_SECRET=%s\nNEXTAUTH_URL=%s\nAUTH_TRUST_HOST=%s\nCRON_SECRET=%s\nENCRYPTION_KEY=%s\n' \
             "$SQLITE_PATH" "$DEMO_ONLY" "$NEXTAUTH_SECRET" "$NEXTAUTH_URL" "$AUTH_TRUST_HOST" "$CRON_SECRET" "$ENCRYPTION_KEY" \
             > .next/standalone/.env
           pnpm db:migrate
-          pnpm run test:e2e
+          pnpm run test:e2e --project=chromium
         env:
           CI: true
           DEMO_ONLY: "true"
-          SQLITE_PATH: ${{ github.workspace }}/data/ledgr.db
           NEXTAUTH_SECRET: e2e-placeholder-secret-at-least-32-chars
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
+          # The standalone server binds to HOSTNAME, which a container sets to
+          # its own id; Playwright waits on localhost.
+          HOSTNAME: 0.0.0.0
           # Fake-but-valid values so the production env invariants in
           # src/lib/env.ts pass. CRON_SECRET must be 32+ chars;
           # ENCRYPTION_KEY must decode to exactly 32 bytes (44-char
@@ -159,93 +418,111 @@ jobs:
           ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
       - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: env.RUN == 'true' && (failure())
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload Playwright test results (screenshots, traces)
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: env.RUN == 'true' && (failure())
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-test-results
           path: test-results/
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Check migrations
-        run: pnpm check:migrations
+  # The image build and the sample compose install, when `changes` says:
+  # always on pull requests and v* pushes, on main only when the image's
+  # inputs changed. The job always runs; its steps skip.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Check tax parameter freshness
-        run: pnpm check:tax-params
+      - name: The image's inputs didn't change
+        if: env.RUN != 'true'
+        run: echo "No image input changed since the newest green ancestor; the build and boot are skipped."
 
-      - name: Tax-data file raises its dataVersion when it changes
-        env:
-          BASE: ${{ github.event_name == 'pull_request' && github.base_ref || github.event.before }}
-        run: |
-          base="$BASE"
-          # A branch's first push has no "before" commit: compare with main.
-          case "$base" in ""|0000000000000000000000000000000000000000) base=main ;; esac
-          git fetch --depth=1 origin "$base" 2>/dev/null || true
-          pnpm tsx scripts/check-tax-data-version.ts FETCH_HEAD
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
-      - name: Verify docs freshness
-        run: pnpm docs:verify
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
 
-      # The projection cache's engine version is a hash of the engine code.
-      - name: Verify the engine hash is current
-        run: pnpm check:engine-hash
+      - if: env.RUN == 'true'
+        run: pnpm install --frozen-lockfile
 
-      # Every calculator, engine and lib/pure export has a row in
-      # docs/CALCULATIONS.md; the exports without one and the high-risk
-      # rows with no independent test may only shrink
-      # (scripts/calculation-register-baseline.json).
-      - name: Calculation register check
-        run: pnpm check:calculation-register
+      - name: Cache Playwright browsers
+        if: env.RUN == 'true'
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
+      # The boot test's browser needs Chromium's system libraries; they
+      # install while the image builds.
       - name: Docker build smoke test
-        if: github.event_name == 'push'
-        run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
+        if: env.RUN == 'true'
+        run: |
+          npx playwright install-deps chromium > "$RUNNER_TEMP/playwright-deps.log" 2>&1 &
+          deps=$!
+          docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
+          wait "$deps" || { cat "$RUNNER_TEMP/playwright-deps.log"; exit 1; }
+
+      - name: Install Playwright browsers
+        if: env.RUN == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
 
       # The sample compose install on an empty volume, SQLite and PostgreSQL:
       # missing required variables are refused by name, .env reaches the
       # container, and each boots to /api/health 200, answers a public
       # tRPC query with no Authentik, and a browser creates the first admin
       # and runs the wizard to Done (tests/e2e/first-run.spec.ts, no
-      # DEMO_ONLY). Builds reuse the cache from the step above.
+      # DEMO_ONLY), then, on SQLite, the specs DEMO_ONLY skips (the
+      # non-demo Playwright project). Builds reuse the cache from the step above.
       - name: Compose install boots on an empty volume
-        if: github.event_name == 'push'
+        if: env.RUN == 'true'
         run: bash scripts/ci-image-boot.sh
 
       - name: Upload first-run E2E results (screenshots, traces)
-        if: failure() && github.event_name == 'push'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure() && env.RUN == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: first-run-e2e-results
-          path: test-results/first-run-*/
+          path: |
+            test-results/first-run-*/
+            test-results/non-demo-*/
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Notify on failure
-        if: failure() && github.ref == 'refs/heads/main'
-        run: |
-          echo "::warning::CI failed on main — check ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-  # The suite above runs on SQLite only. This job checks what must also
+  # The suite above runs on SQLite only. These parts check what must also
   # hold on PostgreSQL (16, the version installs run): migrations from
   # empty, the demo profiles (PostgreSQL schemas), a fresh install, a
-  # seeded router subset and the backup round trip. One throwaway service
-  # database; every test step drops and rebuilds it, so steps don't depend
-  # on each other's data and a new PostgreSQL step is appended as its own
-  # named step.
-  postgres:
-    name: PostgreSQL
+  # seeded router subset with the backup round trip (in three parts by
+  # household, SEEDED_SHARD), and the router baseline. Each part has its
+  # own throwaway service database; every test step drops and rebuilds it.
+  postgres-suites:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    needs: changes
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [install, seeded-1, seeded-2, seeded-3, baseline]
 
     env:
+      RUN: ${{ needs.changes.outputs.code }}
       # Throwaway service database; not a secret.
       TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
       # A missing database fails the PostgreSQL tests instead of skipping them.
@@ -270,18 +547,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
 
-      # The service database starts empty. db-migrate.ts reads no .env:
-      # the URL comes from the step's environment.
+      # The service database starts empty. The migrator reads no .env: the
+      # URL comes from the step's environment. It runs as the image does: the
+      # esbuild bundle, not tsx.
       - name: Migrations from empty on PostgreSQL
-        run: pnpm db:migrate
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: |
+          pnpm build:migrator
+          node db-migrate.js
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
           LEDGR_BACKUP_DIR: ${{ runner.temp }}/ledgr-backups
@@ -290,25 +574,85 @@ jobs:
       # from empty, against scripts/constraints/<dialect>.txt (a migration
       # that drops one still applies cleanly).
       - name: Constraint snapshot on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm check:constraints
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
       - name: Constraint snapshot on SQLite
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm check:constraints
 
       - name: Demo profiles on PostgreSQL (DEMO_ONLY)
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/routers/demo-postgres.test.ts
         env:
           DEMO_ONLY: "true"
 
+      # The same file with DEMO_ONLY off: a household install with a demo
+      # active, through the writes DEMO_ONLY refuses.
+      - name: Demo profile on a household install, PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/routers/demo-postgres.test.ts -t "with a demo active"
+
       - name: Fresh install on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/routers/fresh-install-postgres.test.ts
 
+      - name: Data migrations on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts tests/routers/match-rate-writes-postgres.test.ts
+
       - name: Seeded routers and backup round trip on PostgreSQL
+        if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))
         run: pnpm test tests/routers/seeded-postgres.test.ts
+        env:
+          SEEDED_SHARD: ${{ matrix.part == 'seeded-1' && '1/3' || matrix.part == 'seeded-2' && '2/3' || '3/3' }}
 
       # Behavior baseline part c: every router query for the 17 households
       # in tests/baseline/, compared with the files SQLite pins.
       - name: Router baseline on PostgreSQL (same numbers as SQLite)
+        if: env.RUN == 'true' && (matrix.part == 'baseline')
         run: pnpm test tests/baseline/router-baseline-postgres.test.ts
+
+  # The required check `PostgreSQL`: every part above succeeded.
+  postgres:
+    name: PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: postgres-suites
+    if: always()
+    steps:
+      - name: Every PostgreSQL part succeeded
+        env:
+          RESULT: ${{ needs.postgres-suites.result }}
+        run: |
+          echo "postgres-suites: $RESULT"
+          [ "$RESULT" = success ]
+
+  # The required check `ci`: every other job succeeded (a skipped or
+  # cancelled one fails it).
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      [
+        changes,
+        static,
+        types,
+        lint,
+        unit,
+        coverage,
+        benchmarks,
+        e2e,
+        image,
+        postgres,
+      ]
+    if: always()
+    steps:
+      - name: Every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success")' > /dev/null

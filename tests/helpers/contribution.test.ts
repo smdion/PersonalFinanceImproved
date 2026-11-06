@@ -14,7 +14,7 @@ import {
   computeEmployerMatch,
   computeGroupedEmployerMatch,
   type GroupableMatchRow,
-} from "@/server/helpers/contribution";
+} from "@/lib/pure/contributions/employer-match";
 
 describe("computeEmployerMatch", () => {
   it("returns 0 for no match type", () => {
@@ -189,6 +189,7 @@ describe("computeGroupedEmployerMatch", () => {
       salary: 120000,
       employerMatchType: null,
       employerMatchValue: 0,
+      employerMatchRate: null,
       employerMaxMatchPct: 0,
       employerMatchTaxTreatment: "pre_tax",
       ...overrides,

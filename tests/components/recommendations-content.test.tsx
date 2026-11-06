@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import type { Recommendation } from "@/lib/pure/recommendations";
+import type { Recommendation } from "@/lib/pure/advice/recommendations";
 
 let role = "viewer";
 vi.mock("@/lib/context/user-context", () => ({

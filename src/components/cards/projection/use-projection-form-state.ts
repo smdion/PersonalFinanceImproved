@@ -8,7 +8,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";

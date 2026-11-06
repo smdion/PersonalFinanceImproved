@@ -1,11 +1,32 @@
 import * as fs from "fs";
+import * as nodeCrypto from "crypto";
 import * as path from "path";
-
-/** Kept equal to src/lib/db/demo-schema-marker.ts (standalone build; a test checks). */
-export const DEMO_SCHEMA_MARKER_PREFIX = "ledgr-migrations:";
-/** Kept equal to src/lib/db/demo-schema-marker.ts — "<count>:<last hash>". */
-export const MIGRATION_STAMP_SUBQUERY =
-  "(SELECT count(*)::text || ':' || coalesce((SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 1), '') FROM drizzle.__drizzle_migrations)";
+// esbuild bundles these into db-migrate.js (build:migrator), so the image's
+// migrator runs the app's own code without src/ or the Next build.
+import {
+  DEMO_SCHEMA_MARKER_PREFIX,
+  MIGRATION_STAMP_SUBQUERY,
+} from "./src/lib/db/demo-schema-marker";
+import {
+  parseSimulationPresets,
+  pickApprovedCommunityFile,
+  readTaxDataDir,
+  reconcileReferenceRows,
+  reconcileReferenceRowsSync,
+  seedSimulationPresets,
+  seedSimulationPresetsSync,
+  SIMULATION_PRESETS_FILE,
+  TAX_DATA_DIR,
+  type RefQuery,
+  type SimulationPresetsFile,
+  type TaxDataFile,
+} from "./src/lib/db/reference-reconcile-core";
+import { VERSION_TABLE_NAMES } from "./src/lib/db/version-tables";
+import {
+  MIGRATION_CONVERTERS,
+  runConverterPg,
+  runConverterSqlite,
+} from "./src/lib/db/migration-converters";
 
 function log(
   level: "info" | "warn" | "error",
@@ -35,21 +56,9 @@ function getDialect(): "postgresql" | "sqlite" {
  * tax year or a corrected figure reaches existing installs — without ever
  * touching a figure the household changed (see reconcileReferenceRows).
  * The Simulation presets (reference-data/) are seeded only where every
- * preset table is empty (see presetSeedSteps). The
- * code below is a verbatim copy of src/lib/db/reference-reconcile-core.ts
- * (this file is bundled on its own and doesn't import src/); a test keeps the
- * two identical.
+ * preset table is empty (see presetSeedSteps). Both come from
+ * src/lib/db/reference-reconcile-core.ts, the code the app runs.
  */
-/** The tables the reconcile writes (a test keeps this in step with the core). */
-export const REFERENCE_SEED_TABLES = new Set([
-  "contribution_limits",
-  "tax_brackets",
-  "ltcg_brackets",
-  "irmaa_brackets",
-  "fpl_by_household",
-  "tax_params",
-]);
-
 function readTaxDataFile(): TaxDataFile {
   return readTaxDataDir(fs, path.resolve(TAX_DATA_DIR));
 }
@@ -59,878 +68,6 @@ function readSimulationPresetsFile(): SimulationPresetsFile {
     fs.readFileSync(path.resolve(SIMULATION_PRESETS_FILE), "utf-8"),
   );
 }
-
-// BEGIN reference-reconcile-core (keep identical in db-migrate.ts)
-export type RefDialect = "pg" | "sqlite";
-type Rows = Record<string, unknown>[];
-/** One statement with `?` placeholders; the driver sends back its rows. */
-type RefStep = { sql: string; params: unknown[] };
-/** Run one statement (async driver: Postgres, the app). */
-export type RefQuery = (sql: string, params: unknown[]) => Promise<Rows>;
-/** Run one statement (sync driver: better-sqlite3). */
-export type RefQuerySync = (sql: string, params: unknown[]) => Rows;
-
-/** Highest tax-data file format this code reads. */
-export const TAX_DATA_FORMAT_VERSION = 1;
-
-/** Who a reference figure came from. */
-export const TAX_DATA_ORIGIN_VALUES = [
-  "seed", // shipped with the app (the tax-data file)
-  "carried", // copied forward from an earlier year, not yet confirmed
-  "community", // the tax-data sync between releases
-  "integration", // reserved for an outside data source
-  "user", // the household typed or changed it
-] as const;
-export type TaxDataOrigin = (typeof TAX_DATA_ORIGIN_VALUES)[number];
-
-type Brackets = unknown[];
-export type TaxDataLimit = {
-  value: number;
-  /** Citation (IRS notice, Rev. Proc., …). */
-  source: string;
-  /** Plain-words note; the row's `notes` is this, else `source`. */
-  notes?: string;
-  /** Values this key shipped with before — an install still holding one
-   *  is corrected (when nobody changed it). */
-  supersedes?: number[];
-  exception?: { reason: string; source: string };
-};
-export type TaxDataYear = {
-  revision: number;
-  source: string;
-  notes?: string;
-  /** Every citation the year uses → a link to the document (each
-   *  `source` is one or more citations joined by "; "). Required by the
-   *  validator; optional here so older files still parse. */
-  sources?: Record<string, string>;
-  limits: Record<string, TaxDataLimit>;
-  withholding: {
-    source: string;
-    notes?: string;
-    tables: Record<string, { standard: Brackets; checkbox: Brackets }>;
-    supersedes?: Record<
-      string,
-      { standard?: Brackets[]; checkbox?: Brackets[] }
-    >;
-    exception?: { reason: string; source: string };
-  };
-  ltcg?: {
-    source: string;
-    brackets: Record<string, Brackets>;
-    supersedes?: Record<string, Brackets[]>;
-    exception?: { reason: string; source: string };
-  };
-  irmaa?: {
-    source: string;
-    brackets: Record<string, Brackets>;
-    supersedes?: Record<string, Brackets[]>;
-    exception?: { reason: string; source: string };
-  };
-  fpl?: {
-    source: string;
-    amounts: Record<string, number>;
-    supersedes?: Record<string, number>[];
-    exception?: { reason: string; source: string };
-  };
-};
-export type TaxDataFile = {
-  formatVersion: number;
-  /** Increases with every change to the file. */
-  dataVersion: number;
-  years: Record<string, TaxDataYear>;
-};
-
-/** Where the tax data lives in the repo (and the image): `index.json`
- *  (formatVersion, dataVersion) and one `YYYY.json` per year. Everything
- *  reads it as one TaxDataFile (assembleTaxData) — the published, signed
- *  file is that same single shape. */
-export const TAX_DATA_DIR = "tax-data/us-federal";
-
-/** The directory's files → one TaxDataFile. A `$schema` line in any file
- *  is the editor's and is dropped. Throws on a file that isn't
- *  `index.json` or `YYYY.json`. */
-export function assembleTaxData(
-  files: readonly { name: string; text: string }[],
-): TaxDataFile {
-  const drop = (o: Record<string, unknown>) => {
-    const { $schema: _schema, ...rest } = o;
-    return rest;
-  };
-  const index = files.find((f) => f.name === "index.json");
-  if (!index) throw new Error(`${TAX_DATA_DIR}/index.json is missing`);
-  const head = drop(JSON.parse(index.text)) as {
-    formatVersion: number;
-    dataVersion: number;
-  };
-  const years: Record<string, TaxDataYear> = {};
-  for (const f of files) {
-    if (f.name === "index.json") continue;
-    const m = /^(\d{4})\.json$/.exec(f.name);
-    if (!m)
-      throw new Error(
-        `${TAX_DATA_DIR}/${f.name}: only index.json and YYYY.json belong here`,
-      );
-    years[m[1]!] = drop(JSON.parse(f.text)) as TaxDataYear;
-  }
-  return {
-    formatVersion: head.formatVersion,
-    dataVersion: head.dataVersion,
-    years: Object.fromEntries(
-      Object.keys(years)
-        .sort()
-        .map((y) => [y, years[y]!]),
-    ),
-  };
-}
-
-/** A year with every figure filled in. A year being added
- *  (`pnpm tax-data:new-year`, blanks until filled) isn't: the reconcile
- *  skips it, so a half-done year never reaches a database. */
-export function isCompleteTaxDataYear(d: TaxDataYear): boolean {
-  const num = (v: unknown) => typeof v === "number" && Number.isFinite(v);
-  const rows = (b: unknown) =>
-    (Array.isArray(b) ? b : []) as Record<string, unknown>[];
-  return (
-    Object.values(d.limits ?? {}).every((l) => num(l?.value)) &&
-    Object.values(d.withholding?.tables ?? {}).every((t) =>
-      [t?.standard, t?.checkbox].every((k) =>
-        rows(k).every(
-          (r) => num(r.threshold) && num(r.baseWithholding) && num(r.rate),
-        ),
-      ),
-    ) &&
-    Object.values(d.ltcg?.brackets ?? {}).every((b) =>
-      rows(b).every(
-        (r, i, all) =>
-          num(r.rate) &&
-          (num(r.threshold) || (r.threshold === null && i === all.length - 1)),
-      ),
-    ) &&
-    Object.values(d.irmaa?.brackets ?? {}).every((b) =>
-      rows(b).every((r) => num(r.magiThreshold) && num(r.annualSurcharge)),
-    ) &&
-    Object.values(d.fpl?.amounts ?? {}).every(num)
-  );
-}
-
-/** Read the tax-data directory with the caller's fs (the app, the
- *  migrator and scripts share this). */
-export function readTaxDataDir(
-  fsLike: {
-    readdirSync: (p: string) => string[];
-    readFileSync: (p: string, enc: "utf-8") => string;
-  },
-  dir: string = TAX_DATA_DIR,
-): TaxDataFile {
-  // Only index.json and YYYY.json — a stray file must not stop a start
-  // (tax-data:check and the tests assemble every file, strictly).
-  return assembleTaxData(
-    fsLike
-      .readdirSync(dir)
-      .filter((n) => /^(index|\d{4})\.json$/.test(n))
-      .map((name) => ({
-        name,
-        text: fsLike.readFileSync(`${dir}/${name}`, "utf-8"),
-      })),
-  );
-}
-
-/** One shipped row: its table, natural key, value and older values. */
-type ShippedRow = {
-  table: string;
-  keyCols: string[];
-  keyVals: unknown[];
-  valueCol: string;
-  value: unknown;
-  json: boolean;
-  /** contribution_limits only. */
-  notes?: string;
-  supersedes: unknown[];
-};
-
-/** Every row the file ships, flattened. */
-export function shippedReferenceRows(file: TaxDataFile): ShippedRow[] {
-  const rows: ShippedRow[] = [];
-  for (const [y, data] of Object.entries(file.years)) {
-    const year = Number(y);
-    for (const [type, l] of Object.entries(data.limits))
-      rows.push({
-        table: "contribution_limits",
-        keyCols: ["tax_year", "limit_type"],
-        keyVals: [year, type],
-        valueCol: "value",
-        value: l.value,
-        json: false,
-        notes: l.notes ?? l.source,
-        supersedes: l.supersedes ?? [],
-      });
-    for (const [status, t] of Object.entries(data.withholding.tables))
-      for (const kind of ["standard", "checkbox"] as const)
-        rows.push({
-          table: "tax_brackets",
-          keyCols: ["tax_year", "filing_status", "w4_checkbox"],
-          keyVals: [year, status, kind === "checkbox"],
-          valueCol: "brackets",
-          value: t[kind],
-          json: true,
-          supersedes: data.withholding.supersedes?.[status]?.[kind] ?? [],
-        });
-    for (const [section, table] of [
-      ["ltcg", "ltcg_brackets"],
-      ["irmaa", "irmaa_brackets"],
-    ] as const) {
-      const s = data[section];
-      if (!s) continue;
-      for (const [status, b] of Object.entries(s.brackets))
-        rows.push({
-          table,
-          keyCols: ["tax_year", "filing_status"],
-          keyVals: [year, status],
-          valueCol: "brackets",
-          value: b,
-          json: true,
-          supersedes: s.supersedes?.[status] ?? [],
-        });
-    }
-    if (data.fpl)
-      rows.push({
-        table: "fpl_by_household",
-        keyCols: ["tax_year"],
-        keyVals: [year],
-        valueCol: "amounts",
-        value: data.fpl.amounts,
-        json: true,
-        supersedes: data.fpl.supersedes ?? [],
-      });
-  }
-  return rows;
-}
-
-/** JSON as a comparable value: parsed, numbers as numbers, object keys
- *  sorted, null / missing keys dropped (the LTCG top bracket's threshold
- *  may be stored either way); array order kept. */
-function canonical(v: unknown): unknown {
-  if (typeof v === "string") {
-    try {
-      return canonical(JSON.parse(v));
-    } catch {
-      return v;
-    }
-  }
-  if (Array.isArray(v)) return v.map(canonical);
-  if (v && typeof v === "object") {
-    const out: Record<string, unknown> = {};
-    for (const k of Object.keys(v).sort()) {
-      const x = (v as Record<string, unknown>)[k];
-      if (x !== null && x !== undefined) out[k] = canonical(x);
-    }
-    return out;
-  }
-  if (typeof v === "boolean") return v;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : v;
-}
-
-/** Same figure? Numbers compared numerically (decimal text differs by
- *  dialect), JSON compared parsed. A false "no" only leaves a row alone. */
-export function sameReferenceValue(
-  a: unknown,
-  b: unknown,
-  json: boolean,
-): boolean {
-  // Stored at scale 6 (decimal(12,6)): equal to that precision. Float
-  // noise from a percent typed in Settings (1.45 → 0.0144999…) is no change.
-  if (!json) return Math.abs(Number(a) - Number(b)) < 5e-7;
-  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
-}
-
-/** Where a reconcile's figures come from: the file shipped with this
- *  version, or a community update an admin approved. */
-export type RefMode = "seed" | "community";
-
-/** One figure the reconcile added or changed (notes-only changes aren't
- *  listed). `key` names the row, e.g. "2026|ira_limit". */
-export type RefChange = {
-  table: string;
-  key: string;
-  kind: "insert" | "update";
-  from: unknown;
-  to: unknown;
-};
-
-export type RefResult = {
-  inserted: number;
-  updated: number;
-  changes: RefChange[];
-};
-
-function rowKey(keyVals: unknown[]): string {
-  return keyVals
-    .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
-    .join("|");
-}
-
-/**
- * Reconcile the reference tables with the file:
- * 1. A row nobody has classified yet (`origin='user'` and never confirmed —
- *    i.e. from before tracking, or an old backup) holding the shipped value
- *    or one it supersedes is recognised as shipped.
- * 2. Shipped rows (`seed`, or a `community` sync) from an older file
- *    version, and `carried` rows, take the file's value and notes.
- * 3. Rows the household changed (`user`) are never touched; years and keys
- *    the file doesn't have are never touched or removed. A shipped row's
- *    notes follow the file too (Settings doesn't edit notes; a note change
- *    alone doesn't make a row the household's).
- * 4. Missing rows are added. `tax_params` takes a higher revision.
- * 5. A household-started year past the file's newest gets any figure it
- *    lacks, carried forward from the newest shipped year.
- *
- * Step 5 runs once, with the last file applied (`carryForward`): a seed
- * pass followed by a community pass leaves it to the community file,
- * whose newest year is the real one.
- *
- * `community` mode (an approved community update) never runs step 1 — an
- * outside file must not reclassify the household's rows — writes only
- * rows whose value changes, and marks them `community`.
- */
-function* reconcileSteps(
-  dialect: RefDialect,
-  file: TaxDataFile,
-  mode: RefMode,
-  carryForward: boolean,
-): Generator<RefStep, RefResult, Rows> {
-  const query = (sql: string, params: unknown[] = []) => ({ sql, params });
-  if (file.formatVersion > TAX_DATA_FORMAT_VERSION)
-    throw new Error(
-      `tax-data file format ${file.formatVersion} is newer than this app reads (${TAX_DATA_FORMAT_VERSION})`,
-    );
-  // A year still being filled in is never written.
-  file = {
-    ...file,
-    years: Object.fromEntries(
-      Object.entries(file.years).filter(([, d]) => isCompleteTaxDataYear(d)),
-    ),
-  };
-  const bool = (b: unknown) =>
-    typeof b === "boolean" && dialect === "sqlite" ? (b ? 1 : 0) : b;
-  const write = (r: ShippedRow) =>
-    r.json ? JSON.stringify(r.value) : String(r.value);
-  let inserted = 0;
-  let updated = 0;
-  const changes: RefChange[] = [];
-
-  for (const [y, data] of Object.entries(file.years)) {
-    const [current] = yield query(
-      "SELECT version FROM tax_params WHERE tax_year = ?",
-      [Number(y)],
-    );
-    if (!current) {
-      yield query(
-        "INSERT INTO tax_params (tax_year, version, source, notes) VALUES (?, ?, ?, ?)",
-        [Number(y), data.revision, data.source, data.notes ?? null],
-      );
-      inserted++;
-    } else if (Number(current.version) < data.revision) {
-      yield query(
-        "UPDATE tax_params SET version = ?, source = ?, notes = ? WHERE tax_year = ?",
-        [data.revision, data.source, data.notes ?? null, Number(y)],
-      );
-      updated++;
-    }
-  }
-
-  const shipped = shippedReferenceRows(file);
-  for (const table of [...new Set(shipped.map((r) => r.table))]) {
-    const mine = shipped.filter((r) => r.table === table);
-    const keyCols = mine[0]!.keyCols;
-    const existing = new Map(
-      (yield query(`SELECT * FROM ${table}`)).map((row) => [
-        rowKey(keyCols.map((c) => row[c])),
-        row,
-      ]),
-    );
-    for (const r of mine) {
-      const row = existing.get(rowKey(r.keyVals));
-      const keyParams = r.keyVals.map(bool);
-      if (!row) {
-        const cols = [
-          ...r.keyCols,
-          r.valueCol,
-          ...(r.notes !== undefined ? ["notes"] : []),
-          "origin",
-          "source_version",
-        ];
-        yield query(
-          `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
-          [
-            ...keyParams,
-            write(r),
-            ...(r.notes !== undefined ? [r.notes] : []),
-            mode,
-            file.dataVersion,
-          ],
-        );
-        inserted++;
-        changes.push({
-          table,
-          key: rowKey(r.keyVals),
-          kind: "insert",
-          from: null,
-          to: r.value,
-        });
-        continue;
-      }
-      let origin = String(row.origin);
-      let version = Number(row.source_version ?? 0);
-      const holdsShipped = sameReferenceValue(row[r.valueCol], r.value, r.json);
-      if (
-        mode === "seed" &&
-        origin === "user" &&
-        row.confirmed_at == null &&
-        (holdsShipped ||
-          r.supersedes.some((s) =>
-            sameReferenceValue(row[r.valueCol], s, r.json),
-          ))
-      ) {
-        origin = "seed";
-        version = 0;
-      }
-      const behind =
-        origin === "carried" ||
-        ((origin === "seed" || origin === "community") &&
-          version < file.dataVersion);
-      if (!behind) continue;
-      if (mode === "community" && holdsShipped) continue;
-      const where = r.keyCols.map((c) => `${c} = ?`).join(" AND ");
-      yield query(
-        `UPDATE ${table} SET ${r.valueCol} = ?, ${r.notes !== undefined ? "notes = ?, " : ""}origin = ?, source_version = ?, confirmed_at = NULL WHERE ${where}`,
-        [
-          write(r),
-          ...(r.notes !== undefined ? [r.notes] : []),
-          mode,
-          file.dataVersion,
-          ...keyParams,
-        ],
-      );
-      updated++;
-      if (!holdsShipped)
-        changes.push({
-          table,
-          key: rowKey(r.keyVals),
-          kind: "update",
-          from: row[r.valueCol],
-          to: r.value,
-        });
-    }
-  }
-
-  // 5. A year the household started beyond the file's newest (an early
-  //    "+ Year") gets each figure the newest shipped year has and it lacks
-  //    — a figure added in this release — as carried forward, so a figure
-  //    the calculators require is never missing. Its own rows stand.
-  const fileYears = Object.keys(file.years).map(Number);
-  if (carryForward && fileYears.length > 0) {
-    const newest = Math.max(...fileYears);
-    const newestLimits = file.years[String(newest)]!.limits;
-    const have = new Map<number, Set<string>>();
-    for (const row of yield query(
-      "SELECT tax_year, limit_type FROM contribution_limits WHERE tax_year > ?",
-      [newest],
-    )) {
-      const y = Number(row.tax_year);
-      if (!have.has(y)) have.set(y, new Set());
-      have.get(y)!.add(String(row.limit_type));
-    }
-    for (const [year, keys] of have)
-      for (const [type, l] of Object.entries(newestLimits)) {
-        if (keys.has(type)) continue;
-        yield query(
-          "INSERT INTO contribution_limits (tax_year, limit_type, value, notes, origin) VALUES (?, ?, ?, ?, 'carried')",
-          [year, type, String(l.value), l.notes ?? l.source],
-        );
-        inserted++;
-        changes.push({
-          table: "contribution_limits",
-          key: rowKey([year, type]),
-          kind: "insert",
-          from: null,
-          to: l.value,
-        });
-      }
-  }
-  return { inserted, updated, changes };
-}
-
-/** The newest approved community file this code can read that's newer
- *  than the shipped one (`rows`: tax_data_updates `file_text`s with status
- *  'applied', any order), or null. Every limit key is kept: one this
- *  version doesn't use shows as "not used by Ledgr", and is in place for
- *  the version that does. */
-export function pickApprovedCommunityFile(
-  rows: { file_text: unknown }[],
-  shippedVersion: number,
-): TaxDataFile | null {
-  let best: TaxDataFile | null = null;
-  for (const r of rows) {
-    let f: TaxDataFile;
-    try {
-      f = JSON.parse(String(r.file_text)) as TaxDataFile;
-    } catch {
-      continue;
-    }
-    if (
-      f.formatVersion <= TAX_DATA_FORMAT_VERSION &&
-      f.dataVersion > shippedVersion &&
-      (!best || f.dataVersion > best.dataVersion)
-    )
-      best = f;
-  }
-  return best;
-}
-
-/** Reconcile through an async driver. */
-export async function reconcileReferenceRows(
-  run: RefQuery,
-  dialect: RefDialect,
-  file: TaxDataFile,
-  mode: RefMode = "seed",
-  carryForward = true,
-): Promise<RefResult> {
-  const steps = reconcileSteps(dialect, file, mode, carryForward);
-  let next = steps.next();
-  while (!next.done)
-    next = steps.next(await run(next.value.sql, next.value.params));
-  return next.value;
-}
-
-/** Reconcile through a sync driver (better-sqlite3). */
-export function reconcileReferenceRowsSync(
-  run: RefQuerySync,
-  file: TaxDataFile,
-  mode: RefMode = "seed",
-  carryForward = true,
-): RefResult {
-  const steps = reconcileSteps("sqlite", file, mode, carryForward);
-  let next = steps.next();
-  while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
-  return next.value;
-}
-
-/** Where the shipped Simulation presets live (repo and image). */
-export const SIMULATION_PRESETS_FILE = "reference-data/simulation-presets.json";
-
-/** Highest presets file format this code reads. */
-export const SIMULATION_PRESETS_FORMAT_VERSION = 1;
-
-/** The shipped Simulation presets, the asset classes they draw from and
- *  which composition buckets count toward each class, one array per table;
- *  rows name each other by asset class `name` and preset `key`, never by
- *  id. */
-export type SimulationPresetsFile = {
-  formatVersion: number;
-  asset_class_params: {
-    name: string;
-    mean_return: number;
-    std_dev: number;
-    sort_order: number;
-    is_active: boolean;
-  }[];
-  asset_class_correlations: {
-    class_a: string;
-    class_b: string;
-    correlation: number;
-  }[];
-  asset_class_buckets: { bucket: string; asset_class: string }[];
-  mc_presets: {
-    key: string;
-    label: string;
-    description: string;
-    return_multiplier: number;
-    vol_multiplier: number;
-    inflation_mean: number;
-    inflation_std_dev: number;
-    default_trials: number;
-    return_clamp_min: number;
-    return_clamp_max: number;
-    sort_order: number;
-    is_active: boolean;
-  }[];
-  mc_preset_glide_paths: {
-    preset: string;
-    age: number;
-    asset_class: string;
-    allocation: number;
-  }[];
-  mc_preset_return_overrides: {
-    preset: string;
-    asset_class: string;
-    mean_return: number;
-  }[];
-};
-
-/** The tables the preset seed fills, parents first; it writes only when
- *  all are empty. */
-export const SIMULATION_PRESET_TABLES = [
-  "asset_class_params",
-  "asset_class_correlations",
-  "asset_class_buckets",
-  "mc_presets",
-  "mc_preset_glide_paths",
-  "mc_preset_return_overrides",
-] as const;
-
-/** How far a glide-path age's weights may sum from 100%. */
-export const GLIDE_PATH_SUM_TOLERANCE = 1e-6;
-
-/** Parse the presets file, throwing on a format this code can't read, a
- *  figure that isn't a finite number, a correlation outside [-1, 1], a
- *  glide-path age that doesn't sum to 100%, or a row that names a class or
- *  preset the file doesn't have. */
-export function parseSimulationPresets(text: string): SimulationPresetsFile {
-  const f = JSON.parse(text) as SimulationPresetsFile;
-  const fail = (why: string) => {
-    throw new Error(`${SIMULATION_PRESETS_FILE}: ${why}`);
-  };
-  if (f.formatVersion > SIMULATION_PRESETS_FORMAT_VERSION)
-    throw new Error(
-      `simulation presets format ${f.formatVersion} is newer than this app reads (${SIMULATION_PRESETS_FORMAT_VERSION})`,
-    );
-  for (const t of SIMULATION_PRESET_TABLES)
-    if (!Array.isArray(f[t])) fail(`${t} is missing`);
-  const classes = new Set(f.asset_class_params.map((c) => c.name));
-  const presets = new Set(f.mc_presets.map((p) => p.key));
-  for (const t of SIMULATION_PRESET_TABLES)
-    for (const row of f[t] as Record<string, unknown>[])
-      for (const [col, v] of Object.entries(row)) {
-        if (typeof v === "number" && !Number.isFinite(v))
-          fail(`${t}.${col} is not a finite number`);
-        if (col === "asset_class" || col === "class_a" || col === "class_b")
-          if (!classes.has(String(v))) fail(`unknown asset class ${v}`);
-        if (col === "preset" && !presets.has(String(v)))
-          fail(`unknown preset ${v}`);
-      }
-  for (const r of f.asset_class_correlations)
-    if (!(Math.abs(r.correlation) <= 1))
-      fail(`correlation ${r.class_a}/${r.class_b} is outside [-1, 1]`);
-  const sums = new Map<string, number>();
-  for (const r of f.mc_preset_glide_paths) {
-    const k = `${r.preset} at ${r.age}`;
-    sums.set(k, (sums.get(k) ?? 0) + r.allocation);
-  }
-  for (const [k, sum] of sums)
-    if (Math.abs(sum - 1) > GLIDE_PATH_SUM_TOLERANCE)
-      fail(`glide path ${k} sums to ${sum}, not 1`);
-  return f;
-}
-
-/**
- * Insert the shipped presets when every preset table is empty (a fresh
- * install, "Reset all data", a new demo schema); otherwise do nothing —
- * rows already there are the install's, whatever they hold. Returns the
- * rows inserted.
- */
-function* presetSeedSteps(
-  dialect: RefDialect,
-  file: SimulationPresetsFile,
-): Generator<RefStep, number, Rows> {
-  const query = (sql: string, params: unknown[] = []) => ({ sql, params });
-  for (const t of SIMULATION_PRESET_TABLES)
-    if ((yield query(`SELECT 1 AS present FROM ${t} LIMIT 1`)).length > 0)
-      return 0;
-  const bool = (b: boolean) => (dialect === "sqlite" ? (b ? 1 : 0) : b);
-  const dec = (n: number) => n.toFixed(6);
-  const insert = (table: string, row: Record<string, unknown>) => {
-    const cols = Object.keys(row);
-    return query(
-      `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
-      Object.values(row),
-    );
-  };
-  const idsBy = (rows: Rows, col: string) =>
-    new Map(rows.map((r) => [String(r[col]), Number(r.id)]));
-  let inserted = 0;
-
-  for (const c of file.asset_class_params) {
-    yield insert("asset_class_params", {
-      name: c.name,
-      mean_return: dec(c.mean_return),
-      std_dev: dec(c.std_dev),
-      sort_order: c.sort_order,
-      is_active: bool(c.is_active),
-    });
-    inserted++;
-  }
-  const classId = idsBy(
-    yield query("SELECT id, name FROM asset_class_params"),
-    "name",
-  );
-  for (const r of file.asset_class_correlations) {
-    yield insert("asset_class_correlations", {
-      class_a_id: classId.get(r.class_a),
-      class_b_id: classId.get(r.class_b),
-      correlation: dec(r.correlation),
-    });
-    inserted++;
-  }
-  for (const r of file.asset_class_buckets) {
-    yield insert("asset_class_buckets", {
-      bucket: r.bucket,
-      asset_class_id: classId.get(r.asset_class),
-    });
-    inserted++;
-  }
-  for (const p of file.mc_presets) {
-    yield insert("mc_presets", {
-      key: p.key,
-      label: p.label,
-      description: p.description,
-      return_multiplier: dec(p.return_multiplier),
-      vol_multiplier: dec(p.vol_multiplier),
-      inflation_mean: dec(p.inflation_mean),
-      inflation_std_dev: dec(p.inflation_std_dev),
-      default_trials: p.default_trials,
-      return_clamp_min: dec(p.return_clamp_min),
-      return_clamp_max: dec(p.return_clamp_max),
-      sort_order: p.sort_order,
-      is_active: bool(p.is_active),
-    });
-    inserted++;
-  }
-  const presetId = idsBy(yield query("SELECT id, key FROM mc_presets"), "key");
-  for (const r of file.mc_preset_glide_paths) {
-    yield insert("mc_preset_glide_paths", {
-      preset_id: presetId.get(r.preset),
-      age: r.age,
-      asset_class_id: classId.get(r.asset_class),
-      allocation: dec(r.allocation),
-    });
-    inserted++;
-  }
-  for (const r of file.mc_preset_return_overrides) {
-    yield insert("mc_preset_return_overrides", {
-      preset_id: presetId.get(r.preset),
-      asset_class_id: classId.get(r.asset_class),
-      mean_return: dec(r.mean_return),
-    });
-    inserted++;
-  }
-  return inserted;
-}
-
-/** Seed the presets through an async driver (see presetSeedSteps). */
-export async function seedSimulationPresets(
-  run: RefQuery,
-  dialect: RefDialect,
-  file: SimulationPresetsFile,
-): Promise<number> {
-  const steps = presetSeedSteps(dialect, file);
-  let next = steps.next();
-  while (!next.done)
-    next = steps.next(await run(next.value.sql, next.value.params));
-  return next.value;
-}
-
-/** Seed the presets through a sync driver (better-sqlite3). */
-export function seedSimulationPresetsSync(
-  run: RefQuerySync,
-  file: SimulationPresetsFile,
-): number {
-  const steps = presetSeedSteps("sqlite", file);
-  let next = steps.next();
-  while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
-  return next.value;
-}
-// END reference-reconcile-core
-
-// Table names that are included in versioned backups (must match version-tables.ts).
-// This is a local copy because db-migrate.ts runs in Docker where src/ isn't available.
-// R43 follow-up (schema-reviewer suggestion): "retirement_profiles" and
-// "retirement_profile_people" were missing from this mirror entirely — a
-// pre-existing gap, not introduced by R43, found while reviewing the table
-// R43's own tax_params_year column lives on. Order within this array is not
-// load-bearing (both use sites just dump each table's rows into a JSON
-// snapshot independently, read-only, no FK-insert-order constraint) —
-// unlike version-tables.ts's VERSION_TABLES, which does encode tier order
-// for restore.
-const VERSION_TABLE_NAMES = [
-  "people",
-  "budget_profiles",
-  "savings_goals",
-  "mortgage_loans",
-  "contribution_limits",
-  "retirement_scenarios",
-  "return_rate_table",
-  "tax_brackets",
-  "ltcg_brackets",
-  "irmaa_brackets",
-  "fpl_by_household",
-  "tax_params",
-  "api_connections",
-  "app_settings",
-  "local_admins",
-  "salary_profiles",
-  "contribution_profiles",
-  "retirement_profiles",
-  "scenarios",
-  "asset_class_params",
-  "mc_presets",
-  "portfolio_snapshots",
-  "brokerage_goals",
-  "net_worth_annual",
-  "home_improvement_items",
-  "other_asset_items",
-  "historical_notes",
-  "relocation_scenarios",
-  "jobs",
-  "historical_salaries",
-  "budget_items",
-  "savings_monthly",
-  "savings_planned_transactions",
-  "savings_planned_tx_settlements",
-  "savings_allocation_overrides",
-  "savings_goal_profile_allocations",
-  "self_loans",
-  "performance_accounts",
-  "mortgage_what_if_scenarios",
-  "mortgage_extra_payments",
-  "debts",
-  "retirement_settings",
-  "retirement_profile_people",
-  "retirement_salary_overrides",
-  "retirement_budget_overrides",
-  "asset_class_correlations",
-  "asset_class_buckets",
-  "glide_path_allocations",
-  "brokerage_planned_transactions",
-  "annual_performance",
-  "property_taxes",
-  "paycheck_deductions",
-  "contribution_accounts",
-  "portfolio_accounts",
-  "account_performance",
-  "mc_preset_glide_paths",
-  "mc_preset_return_overrides",
-  "projection_overrides",
-  "mc_user_presets",
-  "budget_income_adjustments",
-  "account_basis",
-  "budget_item_category_links",
-  "savings_goal_category_links",
-  "simplefin_balance_snapshots",
-  "simplefin_accounts",
-  "utility_service",
-  "utility_reading",
-  // v0.8.5 investments foundation
-  "securities",
-  "simplefin_account_balances",
-  "holding_observations",
-  "investment_transactions",
-  "security_facts",
-  // v0.8.8 holding history
-  "holding_periods",
-  "holding_period_weights",
-  "paycheck_earnings",
-];
 
 // ---------------------------------------------------------------------------
 // Squash upgrade detection + backup (PostgreSQL)
@@ -956,11 +93,10 @@ const BASELINE_HASHES: Record<string, string> = {
 };
 
 // sha256 of every PostgreSQL migration file of the v0.8 line, including the
-// pre-release 0004–0011 that v0.8.5 squashed into one, and of the v0.9 line
-// (its baseline first). Add each new migration here when it ships. The LATEST applied row names exactly where an install was, so a
-// backup taken before the squash is labelled with its real schema tag
-// (all are in backup-transforms' V08_SCHEMA_TAGS).
-export const V08_MIGRATION_HASHES: Record<string, string> = {
+// pre-release 0004–0011 that v0.8.5 squashed into one. Those files are in no
+// journal since the v0.9.0 squash, so their hashes are frozen here. A squash
+// freezes the outgoing line's hashes here first (its journal goes).
+const PRE_V09_MIGRATION_HASHES: Record<string, string> = {
   a626ffc04645cdc4d3a28b0793d380796c27be18d954ba22b62514018d595d5f:
     "0000_v8_initial_schema",
   fcdc386e4feec343e36bf406408b945085d25e3ab894400c35380eae6f089db1:
@@ -1010,50 +146,26 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.14: Performance notes, estimated fields, accepted checks.
   "887f50d59ffe2a1e15e321d1116a106d652e8ac4ad96ec0c3d7a5db112690651":
     "0012_v0814_perf_annotations",
-  // v0.9.0 squash: the v0.8 line (0000_v8 + 0001–0012) as one baseline.
-  "4ed68e830f616dd677dddd9e0dd48a0b84a3b758a5766acffea2da1090cca153":
-    "0000_v9_initial_schema",
-  // v0.9.0: where each reference figure came from (origin, source_version, confirmed_at).
-  d210c1418b4e930b2244c6bd723b5a9672f33621c753fa59fcb8cde5a467adf6:
-    "0001_v090_tax_data_origin",
-  // v0.9.0: community tax-data updates fetched and decided.
-  "8031a00f15f435979edae028edd12267db92c427f7cd333b5949a343fffcbaf4":
-    "0002_v090_tax_data_updates",
-  // v0.9.0: utilities cost feed (category + billing lag per service, cost source per reading).
-  "5dbf28830857afa5c706a3186d2038f849575e81732b8362de57d7cbd62fb34d":
-    "0003_v090_utility_feed",
-  // v0.9.0: debts list (Liabilities).
-  d835e0d55fdd16f70497e222b3f5113f2f73365a24063a3d0430001b37d75534:
-    "0004_v090_debts",
-  // v0.9.2: a Retirement Profile's filing status may be empty (= Auto).
-  fc5a04adc960cfb5f6b2aca6c670a1a7574dc29d22bfeb275698de2d92d6f0c6:
-    "0005_v092_filing_status_auto",
-  // v0.9.5: debts purchase/term/pulled balance; VPW params and the
-  // per-strategy Social Security switches.
-  "34805b1b06399bee36372f4a957f544c6bc9a8f2e001a290c75201e6d40c2471":
-    "0006_v095_milestones",
-  // v0.9.5: credentials scrubbed from the change log (data only).
-  "343a1cdb129eb7364a0c952f416452e670fe62dbcf051751b8b98283a0804e87":
-    "0007_v095_redact_change_log",
-  // v0.9.5: IRMAA surcharges inside the budget or on top of it.
-  f9d735d3807b08de4b79ae9ee0ef0484fffde20b88824342ef2aef65a467a9e6:
-    "0008_v095_irmaa_budget",
-  // v0.9.5: holdings kept per report, not per assumed day (index only).
-  "3191a9cd884c7a1ea667d17481dae32ee2478373fd74ba53e3b392bd5ed18e49":
-    "0009_v095_holding_reports",
-  // v0.9.5: Tiingo daily closes kept (market_closes).
-  "57558a9b1f60616f4d97ba5e72c3c19871d6b86abd19b9bfdf9b75402a28c1cb":
-    "0010_v095_market_closes",
-  // v0.9.6: a budget line can name the loan it pays.
-  "2c7456d55beddc75a64cfb14264d1dbc709449840ea1a26b74719abe9f8037cf":
-    "0011_v096_budget_mortgage_link",
-  // v0.9.6: how a year with a paycheck gone saves and draws.
-  bad45447de248cb8792bc68c9381b58f20bff7da4ad1468a79f86ccd63d715f8:
-    "0012_v096_gap_year_settings",
-  // v0.9.7: a SimpleFIN feed as a mortgage's balance.
-  "739d0889a3cfcfc773f0779a5a11d498375217f225b62b59674463cac297ca45":
-    "0013_v097_loan_feed",
 };
+
+/**
+ * Every known PostgreSQL migration's tag by its file's sha256: the frozen v0.8
+ * line, then the journal's, hashed as drizzle records them. It names the
+ * schema an older install was at, in the refusal message
+ * (assertSupportedUpgradePathPg) and in the backup label when the migration
+ * table is missing. A journal it can't read throws; an entry with no file
+ * gets no hash.
+ */
+export function migrationTagsByHash(
+  migrationsFolder: string,
+): Record<string, string> {
+  const hashes = { ...PRE_V09_MIGRATION_HASHES };
+  for (const entry of readJournal(migrationsFolder).entries) {
+    const hash = fileHash(nodeCrypto, `${migrationsFolder}/${entry.tag}.sql`);
+    if (hash) hashes[hash] = entry.tag;
+  }
+  return hashes;
+}
 
 /**
  * Detect the pre-squash schema era. Hash of the earliest applied migration
@@ -1062,15 +174,19 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
  */
 async function detectSchemaEra(
   client: import("pg").PoolClient,
+  migrationsFolder: string,
 ): Promise<string> {
-  // Exact, v0.8 line: the latest migration applied.
+  // Exact, v0.8 line on: the latest migration applied. Outside the try: a
+  // journal or file error throws rather than falling through to the probes.
+  const tags = migrationTagsByHash(migrationsFolder);
   try {
     const { rows: lastRow } = await client.query(
       "SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 1",
     );
     const lastHash = lastRow[0]?.hash as string | undefined;
-    if (lastHash && V08_MIGRATION_HASHES[lastHash]) {
-      return V08_MIGRATION_HASHES[lastHash];
+    const tag = lastHash ? tags[lastHash] : undefined;
+    if (tag) {
+      return tag;
     }
   } catch {
     // __drizzle_migrations absent or unreadable — fall through.
@@ -1401,11 +517,11 @@ function columnMap(
 /**
  * Where an existing database's schema is, by the journal: the last entry
  * whose file hash is recorded, else the last entry whose snapshot's tables
- * and columns are all present (a journal cleared by a failed run), else —
- * the baseline's schema — the squashed line's tip. The label restore
- * transforms key on. The shape fallback only sees additions: once a
- * migration after the baseline drops or renames something, an emptied
- * journal could be labelled one entry early.
+ * and columns are all present and none of the columns it drops is (a
+ * journal cleared by a failed run), else — the baseline's schema — the
+ * squashed line's tip. The label restore transforms key on: a database not
+ * yet past a drop must never be labelled at or after it, or its backup
+ * would skip the restore step that removes the dropped column.
  */
 export function schemaLabel(
   journal: Journal,
@@ -1423,13 +539,65 @@ export function schemaLabel(
   if (lastAppliedTag) return lastAppliedTag;
   for (const entry of [...journal.entries].reverse()) {
     if (entry.idx === 0) break;
-    if (
-      missingFromSnapshot(snapshotColumns(migrationsFolder, entry.idx), actual)
-        .length === 0
-    )
-      return entry.tag;
+    const at = snapshotColumns(migrationsFolder, entry.idx);
+    if (missingFromSnapshot(at, actual).length > 0) continue;
+    const before = snapshotColumns(migrationsFolder, entry.idx - 1);
+    const dropped = [...before].some(([table, cols]) => {
+      const kept = at.get(table);
+      return cols.some((c) => !kept?.includes(c) && actual.get(table)?.has(c));
+    });
+    if (!dropped) return entry.tag;
   }
   return SQUASHED_LINE_TIP;
+}
+
+/** Baseline tables and columns ("table" or "table.column") that a later
+ *  journal entry drops; with `actual`, only entries whose every table and
+ *  column the database holds (a database at one lacks them, not older). */
+function droppedAfterBaseline(
+  journal: Journal,
+  migrationsFolder: string,
+  actual?: Map<string, Set<string>>,
+): Set<string> {
+  const [baseline, ...later] = journal.entries;
+  const dropped = new Set<string>();
+  if (!baseline) return dropped;
+  const base = snapshotColumns(migrationsFolder, baseline.idx);
+  for (const entry of later) {
+    const at = snapshotColumns(migrationsFolder, entry.idx);
+    if (actual && missingFromSnapshot(at, actual).length > 0) continue;
+    for (const [table, cols] of base) {
+      const kept = at.get(table);
+      if (!kept) dropped.add(table);
+      else
+        for (const c of cols)
+          if (!kept.includes(c)) dropped.add(`${table}.${c}`);
+    }
+  }
+  return dropped;
+}
+
+/** Refuse a database a newer Ledgr upgraded: it records every entry of
+ *  this journal plus a migration this journal doesn't have. A replay would
+ *  rewrite its journal and the newer image would then fail on every start. */
+function assertNotFromNewerRelease(
+  journal: Journal,
+  migrationsFolder: string,
+  recordedHashes: Set<string>,
+  crypto: typeof import("crypto"),
+): void {
+  const own = new Set<string>();
+  for (const entry of journal.entries) {
+    const h = fileHash(crypto, `${migrationsFolder}/${entry.tag}.sql`);
+    if (h === null) continue;
+    if (!recordedHashes.has(h)) return;
+    own.add(h);
+  }
+  const unknown = [...recordedHashes].filter((h) => !own.has(h)).length;
+  if (unknown === 0) return;
+  throw new UpgradePathError(
+    `This database was upgraded by a newer Ledgr: it records ${unknown} migration(s) this release doesn't have. Restore the pre-upgrade backup, or run the newer image. Nothing has been changed.`,
+  );
 }
 
 /**
@@ -1438,9 +606,10 @@ export function schemaLabel(
  * install that predates the baseline would never get the columns its
  * release line added later. Allowed: a fresh install (no `people`), one
  * that has recorded the baseline, and one with every table and column of
- * the baseline's snapshot (v0.8.14/v0.8.15, a dev database on any v0.9
- * migration, a journal cleared by a failed run). Anything else stops here,
- * before any backup or change.
+ * the baseline's snapshot that no later entry drops (v0.8.14/v0.8.15, a
+ * dev database on any v0.9 migration, a journal cleared by a failed run at
+ * any entry). Anything else stops here, before any backup or change, and
+ * so does a database from a newer release (assertNotFromNewerRelease).
  */
 export function assertSupportedUpgradePath(
   journal: Journal,
@@ -1451,6 +620,7 @@ export function assertSupportedUpgradePath(
   era: () => string,
 ): void {
   if (!actual.has("people")) return;
+  assertNotFromNewerRelease(journal, migrationsFolder, recordedHashes, crypto);
   const baseline = journal.entries[0];
   if (!baseline) return;
   const baselineHash = fileHash(
@@ -1458,14 +628,26 @@ export function assertSupportedUpgradePath(
     `${migrationsFolder}/${baseline.tag}.sql`,
   );
   if (baselineHash && recordedHashes.has(baselineHash)) return;
-  const missing = missingFromSnapshot(
+  const lacking = missingFromSnapshot(
     snapshotColumns(migrationsFolder, baseline.idx),
     actual,
   );
-  if (missing.length === 0) return;
-  throw new UpgradePathError(
-    `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ` and ${missing.length - 8} more` : ""}.`,
-  );
+  const dropped = droppedAfterBaseline(journal, migrationsFolder);
+  const excused = droppedAfterBaseline(journal, migrationsFolder, actual);
+  const list = (m: string[]) =>
+    `${m.slice(0, 8).join(", ")}${m.length > 8 ? ` and ${m.length - 8} more` : ""}`;
+  const older = lacking.filter((m) => !dropped.has(m));
+  if (older.length > 0)
+    throw new UpgradePathError(
+      `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${list(older)}.`,
+    );
+  // Lacks a dropped column without holding any dropping entry's shape: a
+  // newer release's database with a cleared journal, or a hand edit.
+  const unknown = lacking.filter((m) => !excused.has(m));
+  if (unknown.length > 0)
+    throw new UpgradePathError(
+      `This database's schema matches no release this Ledgr knows. Restore the pre-upgrade backup, or run the image that last used this database. Nothing has been changed. Missing: ${list(unknown)}.`,
+    );
 }
 
 /** Index names of a journal entry's drizzle snapshot. */
@@ -1582,7 +764,7 @@ async function assertSupportedUpgradePathPg(
     const crypto = await import("crypto");
     const actual = await pgColumns(client);
     if (!actual.has("people")) return;
-    const era = await detectSchemaEra(client);
+    const era = await detectSchemaEra(client, migrationsFolder);
     assertSupportedUpgradePath(
       readJournal(migrationsFolder),
       migrationsFolder,
@@ -1651,6 +833,17 @@ async function applyStatementsPg(
     .map((s: string) => s.trim())
     .filter(Boolean))
     await client.query(stmt);
+}
+
+/** A tag's data converter (migration-converters.ts) on PostgreSQL, inside
+ *  the caller's transaction: pending loop and squash replay alike. */
+async function convertPg(
+  client: import("pg").PoolClient,
+  tag: string,
+  phase: "beforeSql" | "afterSql",
+): Promise<void> {
+  const run = await runConverterPg(client, MIGRATION_CONVERTERS, tag, phase);
+  if (run) log("info", "migration_conversion", { tag, ...run });
 }
 
 /**
@@ -1739,7 +932,9 @@ async function handleSquashUpgrade(
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
+        await convertPg(client, entry.tag, "beforeSql");
         await replayStatementsPg(client, sql);
+        await convertPg(client, entry.tag, "afterSql");
         await client.query(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [
@@ -1912,7 +1107,8 @@ async function runPostgres() {
             preClient,
             // The label restore transforms key on — never "unknown", which
             // the import path rejects.
-            pending.lastAppliedTag ?? (await detectSchemaEra(preClient)),
+            pending.lastAppliedTag ??
+              (await detectSchemaEra(preClient, "./drizzle")),
           );
           requireBackupOrAbort(backupPath);
         }
@@ -1932,7 +1128,9 @@ async function runPostgres() {
             const sql = fs.readFileSync(sqlPath, "utf-8");
             const hash = crypto.createHash("sha256").update(sql).digest("hex");
             if (recordedHashes.has(hash)) continue;
+            await convertPg(preClient, entry.tag, "beforeSql");
             await applyStatementsPg(preClient, sql);
+            await convertPg(preClient, entry.tag, "afterSql");
             await preClient.query(
               "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
               [hash, String(Date.now())],
@@ -2239,32 +1437,153 @@ function sqliteRecordedHashes(sqlite: SqliteDb): Set<string> {
   );
 }
 
-/** Squash replay only: run one migration file's statements inside the
- *  caller's transaction, skipping the ones that are already done (or already
- *  moved past — see IGNORABLE_PG_CODES). The replay checks the whole schema
- *  afterwards. */
-function replayStatementsSqlite(sqlite: SqliteDb, sql: string): void {
+/** Squash replay only: an error meaning the statement is already done (or
+ *  already moved past), the SQLite twin of IGNORABLE_PG_CODES. */
+const isIgnorableSqliteError = (err: unknown): boolean =>
+  [
+    "already exists",
+    "duplicate column",
+    "no such column",
+    "no such table",
+    "no such index",
+  ].some((m) => ((err as Error).message ?? "").includes(m));
+
+const sqliteColumnNames = (sqlite: SqliteDb, table: string): string[] =>
+  (
+    sqlite.prepare(`PRAGMA table_info("${table}")`).all() as { name: string }[]
+  ).map((c) => c.name);
+
+/** Squash replay only: a table recreate runs as a unit under a savepoint
+ *  and drops only the columns its own journal entry drops (`ownDrops`). It
+ *  is skipped whole when a statement is already done or X has another
+ *  column `__new_X` lacks; any other error stops the replay. */
+function replayRecreateSqlite(
+  sqlite: SqliteDb,
+  table: string,
+  statements: string[],
+  ownDrops: ReadonlySet<string>,
+): void {
+  sqlite.exec("SAVEPOINT replay_recreate");
+  let skipped: string | null = null;
+  try {
+    sqlite.exec(statements[0]!);
+    const kept = new Set(sqliteColumnNames(sqlite, `__new_${table}`));
+    const lost = sqliteColumnNames(sqlite, table).filter(
+      (c) => !kept.has(c) && !ownDrops.has(c),
+    );
+    if (lost.length > 0) skipped = `would drop ${lost.join(", ")}`;
+    else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
+  } catch (err) {
+    if (!isIgnorableSqliteError(err)) throw err; // the replay rolls back
+    skipped = (err as Error).message;
+  }
+  if (skipped !== null) {
+    sqlite.exec("ROLLBACK TO SAVEPOINT replay_recreate");
+    log("info", "squash_recreate_skipped", { table, reason: skipped });
+  }
+  sqlite.exec("RELEASE SAVEPOINT replay_recreate");
+}
+
+/** Squash replay only: run journal entry `idx`'s statements inside the
+ *  caller's transaction, skipping what is already done; a table recreate
+ *  replays as a unit (replayRecreateSqlite). The replay checks the whole
+ *  schema afterwards. */
+function replayStatementsSqlite(
+  sqlite: SqliteDb,
+  sql: string,
+  migrationsFolder: string,
+  idx: number,
+): void {
   const statements = sql
     .split("--> statement-breakpoint")
-    .map((s: string) => s.trim())
+    .map((s: string) => s.replace(/^(\s*--[^\n]*\n)*/, "").trim())
     .filter(Boolean);
-  for (const stmt of statements) {
-    try {
-      sqlite.exec(stmt);
-    } catch (stmtErr) {
-      const msg = (stmtErr as Error).message ?? "";
-      if (
-        msg.includes("already exists") ||
-        msg.includes("duplicate column") ||
-        msg.includes("no such column") ||
-        msg.includes("no such table") ||
-        msg.includes("no such index")
-      ) {
-        // idempotent — skip
-      } else {
-        throw stmtErr;
+  for (let i = 0; i < statements.length; i++) {
+    const table = /^CREATE TABLE `__new_([^`]+)`/.exec(statements[i]!)?.[1];
+    const end = table
+      ? statements.findIndex(
+          (s, j) =>
+            j > i &&
+            s.startsWith(
+              `ALTER TABLE \`__new_${table}\` RENAME TO \`${table}\``,
+            ),
+        )
+      : -1;
+    if (table && end > i) {
+      // What this entry drops from the table: its snapshot's columns
+      // against the previous entry's.
+      const own = new Set(snapshotColumns(migrationsFolder, idx).get(table));
+      const ownDrops = new Set(
+        idx > 0
+          ? (
+              snapshotColumns(migrationsFolder, idx - 1).get(table) ?? []
+            ).filter((c) => !own.has(c))
+          : [],
+      );
+      replayRecreateSqlite(
+        sqlite,
+        table,
+        statements.slice(i, end + 1),
+        ownDrops,
+      );
+      i = end;
+    } else
+      try {
+        sqlite.exec(statements[i]!);
+      } catch (err) {
+        if (!isIgnorableSqliteError(err)) throw err;
       }
-    }
+  }
+}
+
+/** One SQLite migration transaction (pending or replay) with foreign keys
+ *  off: the pragma is a no-op inside a transaction, so a migration file's
+ *  own PRAGMA foreign_keys=OFF does nothing, and a table recreate's DROP
+ *  TABLE of a parent would fail or cascade-delete its children. Before
+ *  commit, foreign_key_check refuses any broken reference the migration
+ *  made (ones already there are logged, not blamed on it). */
+function sqliteMigrationTransaction(sqlite: SqliteDb, body: () => void): void {
+  type Broken = { table: string; rowid: number; parent: string; fkid: number };
+  // Named by its key's columns, not fkid (renumbered when a recreate drops a
+  // key; the parent alone can't tell two keys to one parent apart). rowid is
+  // stable for an INTEGER PRIMARY KEY table.
+  const check = () => {
+    const columns = new Map<string, Map<number, string>>();
+    return (sqlite.pragma("foreign_key_check") as Broken[]).map((b) => {
+      let byId = columns.get(b.table);
+      if (!byId) {
+        byId = new Map();
+        for (const f of sqlite
+          .prepare(
+            'SELECT id, "from" AS col FROM pragma_foreign_key_list(?) ORDER BY id, seq',
+          )
+          .all(b.table) as { id: number; col: string }[])
+          byId.set(f.id, [byId.get(f.id), f.col].filter(Boolean).join(","));
+        columns.set(b.table, byId);
+      }
+      return {
+        ...b,
+        key: `${b.table}:${b.rowid}:${b.parent}:${byId.get(b.fkid)}`,
+      };
+    });
+  };
+  sqlite.pragma("foreign_keys = OFF");
+  try {
+    sqlite.transaction(() => {
+      const before = new Set(check().map((b) => b.key));
+      if (before.size > 0)
+        log("warn", "sqlite_foreign_keys_already_broken", {
+          count: before.size,
+        });
+      body();
+      const made = check().filter((b) => !before.has(b.key));
+      if (made.length > 0)
+        throw new Error(
+          `Migration would break ${made.length} foreign key reference(s) (first: ${made[0]!.table} row ${made[0]!.rowid} → ${made[0]!.parent}). Nothing was changed.`,
+        );
+    })();
+  } finally {
+    sqlite.pragma("foreign_keys = ON");
   }
 }
 
@@ -2276,6 +1595,17 @@ function applyStatementsSqlite(sqlite: SqliteDb, sql: string): void {
     .map((s: string) => s.trim())
     .filter(Boolean))
     sqlite.exec(stmt);
+}
+
+/** The SQLite twin of convertPg. */
+function convertSqlite(
+  sqlite: SqliteDb,
+  tag: string,
+  phase: "beforeSql" | "afterSql",
+): void {
+  const run = runConverterSqlite(sqlite, MIGRATION_CONVERTERS, tag, phase);
+  if (run)
+    log("info", "migration_conversion", { tag, dialect: "sqlite", ...run });
 }
 
 /** The index names a SQLite database has, as assertSchemaComplete reads
@@ -2348,13 +1678,15 @@ function handleSQLiteSquashUpgrade(
 
   // 2. Clear, replay, record, check — all or nothing.
   try {
-    sqlite.transaction(() => {
+    sqliteMigrationTransaction(sqlite, () => {
       sqlite.prepare("DELETE FROM __drizzle_migrations").run();
       for (const entry of journal.entries) {
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
-        replayStatementsSqlite(sqlite, sql);
+        convertSqlite(sqlite, entry.tag, "beforeSql");
+        replayStatementsSqlite(sqlite, sql, migrationsFolder, entry.idx);
+        convertSqlite(sqlite, entry.tag, "afterSql");
         sqlite
           .prepare(
             "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
@@ -2372,7 +1704,7 @@ function handleSQLiteSquashUpgrade(
         sqliteIndexes(sqlite),
         "Squash replay",
       );
-    })();
+    });
   } catch (err) {
     log("error", "squash_upgrade_failed", {
       error: err instanceof Error ? err.message : String(err),
@@ -2471,14 +1803,16 @@ export function runSQLite() {
     // Same rule as PostgreSQL: every pending migration in one transaction,
     // strictly, with the schema checked before commit.
     if (pending.pendingTags.length > 0)
-      sqlite.transaction(() => {
+      sqliteMigrationTransaction(sqlite, () => {
         for (const entry of journal.entries) {
           const sqlPath = path.resolve(`./drizzle-sqlite/${entry.tag}.sql`);
           if (!fs.existsSync(sqlPath)) continue;
           const sql = fs.readFileSync(sqlPath, "utf-8");
           const hash = crypto.createHash("sha256").update(sql).digest("hex");
           if (appliedHashes.has(hash)) continue;
+          convertSqlite(sqlite, entry.tag, "beforeSql");
           applyStatementsSqlite(sqlite, sql);
+          convertSqlite(sqlite, entry.tag, "afterSql");
           sqlite
             .prepare(
               "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
@@ -2496,7 +1830,7 @@ export function runSQLite() {
           sqliteIndexes(sqlite),
           "Migration",
         );
-      })();
+      });
     else
       warnIfSchemaIncomplete(
         journal,

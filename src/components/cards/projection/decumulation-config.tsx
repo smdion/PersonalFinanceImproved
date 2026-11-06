@@ -2,7 +2,7 @@
 
 /** Withdrawal strategy configuration panel — bracket filling, waterfall, and percentage routing modes with account order and tax preference editors. */
 import { HelpTip } from "@/components/ui/help-tip";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
 import { formatPercent } from "@/lib/utils/format";
 import {

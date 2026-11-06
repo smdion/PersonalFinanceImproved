@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseAppSettings, requireLimit } from "@/server/helpers/settings";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
+import { requireLimit } from "@/lib/pure/tax/tax-limits";
 
 describe("parseAppSettings", () => {
   it("returns fallback for missing key", () => {

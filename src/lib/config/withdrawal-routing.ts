@@ -14,7 +14,7 @@
  * withdraw each year. This governs FROM WHICH accounts. Reusing "Strategy"
  * for both is how the naming split happened in the first place.
  */
-import type { RoutingMode } from "@/lib/calculators/types";
+import type { RoutingMode } from "@/lib/pure/engine/types";
 
 export const WITHDRAWAL_ROUTING_MODES = [
   "bracket_filling",

@@ -11,8 +11,8 @@
 import type {
   ProjectionInput,
   ProjectionResult,
-} from "@/lib/calculators/types";
-import { acct, household } from "../calculators/fixtures/two-person-household";
+} from "@/lib/pure/engine/types";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 const BIRTH_YEAR = 1976;
 export const people = [

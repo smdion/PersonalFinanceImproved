@@ -23,14 +23,17 @@ change → stage → pnpm gate → fresh reviewer → commit → push → CI →
 1. **Before risky work only:** the advisor (below), on whether the approach
    is sound.
 2. **Change one behavior.** A behavior change starts from a failing test.
-3. **Stage it and run `pnpm gate`**: lint and format on the staged files,
-   the type-check, `tests/lint` and the tests related to the staged files.
+3. **Stage it and run `pnpm gate`**: lint, the type-aware lint and format
+   on the staged files, the type-check, `tests/lint` and the tests related
+   to the staged files.
    Fix every failure before review.
 4. **Fresh review.** Spawn the `reviewer` agent with one line of intent and
    the gate's output. Never give it the plan, the advisor's report, your
    reasoning or an earlier round. It answers PASS, or BLOCK citing a rule.
    On a BLOCK, fix, re-stage, re-run the gate and spawn a new reviewer. Two
-   rounds at most; then, or if you disagree with a BLOCK, the owner decides.
+   rounds at most. After a second-round BLOCK you agree with: a docs- or
+   staging-only fix lands as committed; a code fix gets one more fresh
+   reviewer. Only a BLOCK you disagree with goes to the owner.
    Needs review: any staged change to `src/`, unless it is under 20 changed
    lines and outside the engine, `lib/config`, `lib/db`, router procedure
    types and tax data. Tests-only, docs-only and generated changes need none.
@@ -49,8 +52,8 @@ the reviewer and the owner do.
 - **No growth:** no function over 150 lines grows, and no file grows past its
   recorded size.
 - **Commit size:** at most 400 changed `src/` lines, and at most 8 `src/`
-  files in an engine or tax commit. A pure move or rename carries a
-  `Mechanical:` line and is exempt.
+  files in an engine or tax commit. A pure move, rename or split (code
+  moved unchanged) carries a `Mechanical:` line and is exempt.
 - **Shape pass on bug fixes:** why was the bug possible, and where else does
   it exist? Fix the cause there, not one call site.
 
@@ -59,7 +62,7 @@ the reviewer and the owner do.
 The `advisor` subagent (`.claude/agents/advisor.md`) runs on Opus and exists
 to push back. Use it before committing when:
 
-- Changing anything in `lib/calculators/engine/`, `lib/db/pg/*.ts` or `lib/db/schema*.ts`
+- Changing anything in `lib/pure/engine/`, `lib/db/pg/*.ts` or `lib/db/schema*.ts`
 - Editing `lib/config/account-types.ts` or any `lib/config/*tables*.ts` —
   these are the data-driven foundation the engine reads; a wrong helper here
   silently corrupts every consumer
@@ -88,7 +91,7 @@ The advisor should have enough context to disagree.
   Use `pnpm docs:update` to rewrite the markers in place. The PostToolUse
   hook in `.claude/settings.json` runs this automatically and fails loudly
   on drift.
-- Prefer `pnpm test tests/calculators` (or another scoped path) over the full
+- Prefer `pnpm test tests/pure/engine` (or another scoped path) over the full
   `pnpm test` suite. Run `pnpm lint` before committing.
 
 <!-- BEGIN:nextjs-agent-rules -->

@@ -7,7 +7,7 @@
 
 import { eq, sql } from "drizzle-orm";
 import * as schema from "./schema";
-import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { log } from "@/lib/logger";
 import type { AccountMapping } from "./schema";
 import type { Db } from "@/lib/db";

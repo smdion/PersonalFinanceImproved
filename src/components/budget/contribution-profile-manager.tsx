@@ -1,10 +1,10 @@
 "use client";
 
-import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
-import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
+import { takesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
@@ -13,12 +13,17 @@ import {
   EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
-import { formatEmployerMatch } from "@/lib/pure/contributions";
+import {
+  entryMatchFigure,
+  formatEmployerMatch,
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/match-display";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
-import { planInUseMessage } from "@/lib/pure/plans";
+import { planInUseMessage } from "@/lib/pure/household/plans";
 import { toast } from "@/lib/hooks/use-toast";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -30,11 +35,11 @@ import {
 } from "@/components/ui/profile-sidebar";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
-import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
-} from "@/lib/pure/profiles";
+} from "@/lib/pure/household/profiles";
 import { ContributionProfileCompare } from "./contribution-profile-compare";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
@@ -447,9 +452,7 @@ function groupSharedMatchAccounts<
   return { sharedMatchSource, combinedGroupIds };
 }
 
-// ---------------------------------------------------------------------------
 // Profile Detail Panel (right side)
-// ---------------------------------------------------------------------------
 
 function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
@@ -505,19 +508,10 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
           </thead>
           <tbody>
             {(() => {
-              // Roth/Traditional splits of the same physical account (same
-              // person + account type) share one employer match — it's
-              // entered on only one of the split rows but applies against
-              // their COMBINED contributions, not each row's own. Show the
-              // SAME match text on every row in the group (rather than
-              // merging the cell via rowSpan) so it's unambiguous per-row
-              // which account it describes — a merged cell visually reads as
-              // belonging to whichever row it starts on, which is
-              // misleading when that happens to be the row WITHOUT the
-              // config. Only do this when exactly one row in the group
-              // actually has match data — if multiple rows carry (possibly
-              // conflicting) match config, that's outside this assumption,
-              // so leave them per-row rather than guess which is authoritative.
+              // A Roth/Traditional split of one account shares one match,
+              // entered on one row and applied to their combined
+              // contributions: every row in the group shows the same match
+              // text (when exactly one row holds the match; else per row).
               const { sharedMatchSource, combinedGroupIds } =
                 groupSharedMatchAccounts(profile.accountDetails);
 
@@ -604,6 +598,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                           matchSource.liveMatchType,
                           matchSource.liveMatchValue,
                           matchSource.liveMaxMatchPct,
+                          matchSource.liveMatchRate,
                         );
                         return matchText ? (
                           <span
@@ -756,7 +751,6 @@ function ProfileEditor({
     // as every account's own value, editable afterward via the standing
     // editor.
     const contribAccounts: Record<string, Record<string, unknown>> = {};
-    // Merge contribution method/value into contrib accounts
     for (const [accountId, cVal] of Object.entries(contribValues)) {
       if (cVal.value && cVal.value.trim()) {
         const num = parseFloat(cVal.value);
@@ -769,7 +763,6 @@ function ProfileEditor({
         }
       }
     }
-    // Merge custom names into contrib accounts
     for (const [accountId, nameVal] of Object.entries(nameValues)) {
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
@@ -778,7 +771,6 @@ function ProfileEditor({
         };
       }
     }
-    // Merge disabled accounts into contrib accounts
     for (const [accountId, isDisabled] of Object.entries(disabledAccounts)) {
       if (isDisabled) {
         contribAccounts[accountId] = {
@@ -787,7 +779,6 @@ function ProfileEditor({
         };
       }
     }
-    // Merge employer-match type/values into contrib accounts
     for (const [accountId, mVal] of Object.entries(matchValues)) {
       if (mVal.matchType) {
         contribAccounts[accountId] = {
@@ -798,9 +789,13 @@ function ProfileEditor({
       if (mVal.matchValue) {
         const num = parseFloat(mVal.matchValue);
         if (!isNaN(num)) {
+          const typedUnder =
+            mVal.matchType ??
+            baseData?.accountDetails.find((a) => String(a.id) === accountId)
+              ?.liveMatchType;
           contribAccounts[accountId] = {
             ...(contribAccounts[accountId] ?? {}),
-            employerMatchValue: String(num),
+            employerMatchValue: matchValueToStore(typedUnder, String(num)),
           };
         }
       }
@@ -1504,9 +1499,6 @@ function ProfileInlineEditor({
             </thead>
             <tbody>
               {(() => {
-                // Same "combined across Roth/Trad splits" detection as the
-                // read-only Profiles summary table above — shared via
-                // groupSharedMatchAccounts so both render paths stay in sync.
                 const { sharedMatchSource: editSharedMatchSource } =
                   groupSharedMatchAccounts(profile.accountDetails);
                 return profile.accountDetails.map((ad, rowIdx) => {
@@ -1516,29 +1508,16 @@ function ProfileInlineEditor({
                     af.contributionMethod !== undefined
                       ? String(af.contributionMethod)
                       : "";
-                  // The <select> below has no blank option, so an unset
-                  // storedMethod renders as the first CONTRIBUTION_METHOD_LABELS
-                  // entry ("% of Salary") regardless of what this variable says.
-                  // Fall back the same way here (and to any in-progress draft
-                  // pick) so the $/% prefix-suffix always matches what the
-                  // dropdown is actually showing.
+                  // The <select> has no blank option: unset shows "% of Salary".
                   const effectiveMethod =
                     drafts[`a${ad.id}:method`] ??
                     (storedMethod || "percent_of_salary");
                   const isPercent = effectiveMethod === "percent_of_salary";
-                  // employerMatchType is itself profile-overridable (it's a
-                  // PROFILE_OWNED_CONTRIB_FIELDS member) — must resolve the
-                  // same way the server's applyContribActiveFields merge
-                  // does, or a profile that overrides type away from the
-                  // live account's own type shows no editor for it at all.
+                  // Profile-owned: resolved as applyContribActiveFields does.
                   const storedMatchType =
                     af.employerMatchType !== undefined
                       ? String(af.employerMatchType)
                       : "";
-                  // The <select> below commits immediately on change (same
-                  // pattern as the "On" checkbox), not draft-then-blur, so
-                  // no drafts[] lookup here — patchAccount below is the
-                  // single source of truth the instant it fires.
                   const effectiveMatchType =
                     storedMatchType || ad.liveMatchType || "none";
                   const hasMatch = effectiveMatchType !== "none";
@@ -1553,23 +1532,22 @@ function ProfileInlineEditor({
                       ? String(af.contributionValue)
                       : "";
                   const storedName =
-                    (af.displayNameCustom ?? af.displayNameActive) !== undefined
-                      ? String(af.displayNameCustom ?? af.displayNameActive)
+                    af.displayNameCustom !== undefined
+                      ? String(af.displayNameCustom)
                       : "";
-                  // A profile that resolves no value for this account
-                  // (hasValue false) contributes nothing to the engine —
-                  // its live match is never actually "in effect" here, so
-                  // it must not be shown as if it were a real, applying
-                  // value. Same resolver used everywhere else this session
-                  // for this exact distinction (RULES.md Rule 6).
+                  // No resolved value: the live match isn't in effect, so isn't shown.
                   const { hasValue: contribHasValue } =
                     resolveContribFieldDisplayState(af);
+                  const ownMatch = entryMatchFigure(effectiveMatchType, af);
                   const storedMatch =
-                    af.employerMatchValue !== undefined
-                      ? String(af.employerMatchValue)
-                      : contribHasValue && ad.liveMatchValue != null
-                        ? String(ad.liveMatchValue)
-                        : "";
+                    ownMatch ??
+                    (contribHasValue
+                      ? matchFigureForForm(
+                          ad.liveMatchType,
+                          ad.liveMatchValue,
+                          ad.liveMatchRate,
+                        )
+                      : "");
                   const storedCap =
                     af.employerMaxMatchPct !== undefined
                       ? String(Number(af.employerMaxMatchPct) * 100)
@@ -1810,19 +1788,21 @@ function ProfileInlineEditor({
                                     patchAccount(ad.id, {
                                       employerMatchValue: value,
                                     }),
-                                  (num) => String(num),
+                                  (num) =>
+                                    matchValueToStore(
+                                      effectiveMatchType,
+                                      String(num),
+                                    ),
                                 )
                               }
                               title={
-                                af.employerMatchValue === undefined &&
-                                storedMatch !== ""
+                                ownMatch === null && storedMatch !== ""
                                   ? "The account's own match — editing saves a value in this profile only"
                                   : undefined
                               }
                               placeholder="—"
                               className={`bg-surface-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs ${
-                                af.employerMatchValue === undefined &&
-                                storedMatch !== ""
+                                ownMatch === null && storedMatch !== ""
                                   ? "text-faint italic"
                                   : "text-primary"
                               }`}

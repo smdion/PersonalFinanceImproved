@@ -24,7 +24,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { gainLossTextColor } from "@/lib/utils/colors";
-import { snapshotRowLabel } from "@/lib/pure/portfolio/snapshot-row-label";
+import { snapshotRowLabel } from "@/lib/pure/accounts/snapshot-row-label";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineEdit } from "@/components/ui/inline-edit";

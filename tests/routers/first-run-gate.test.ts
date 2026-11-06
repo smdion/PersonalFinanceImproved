@@ -9,7 +9,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { createTestCaller, seedPerson } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
 import { log } from "@/lib/logger";
-import { settleFirstRunGate } from "@/server/helpers/first-run";
+import { settleFirstRunGate } from "@/server/data/first-run";
 
 vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
 

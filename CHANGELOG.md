@@ -8,6 +8,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
+## [0.10.2] - 2026-11-06
+
+v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. The test that records every figure the app shows stays identical through every change in this release. Two behaviours change: Actual uses its Server URL as saved in Settings, and a SimpleFIN account re-added under a new id keeps its row instead of counting twice (below). Two more things change for self-hosters: every outside request is now checked when it is sent, and four data migrations run at start-up.
+
+### Upgrading
+
+- **Take a database dump before upgrading.** The start still writes its own pre-upgrade backup; the dump is what a rollback restores.
+- **To roll back, restore the pre-upgrade database dump; never swap the image back.** The v0.10.1 image can't run on a database v0.10.2 has migrated, and it can't restore a backup taken on v0.10.2, so anything changed after the upgrade is lost on rollback. From v0.10.2 on, a database a newer Ledgr upgraded is refused with a message instead of rewritten.
+- **The first Simulation load after upgrading is slow, once.** The engine's code changed, so cached projections and Simulation runs are rebuilt the first time they're opened. This is not a regression; later loads are as fast as before.
+- **Four migrations run at start-up:** 0014 moves a contribution account's custom name from its old stored key (`displayNameActive`) to `displayNameCustom`; 0015 drops the holding history's never-written performance link and ten settings no version of Ledgr used; 0016 adds the employer match rate as a fraction (50% is stored as 0.5); and 0017 finishes that move: where 0016 stored a rate, the old whole-percent value is cleared, so the rate is the only copy. A dollar or fixed-annual profile override that had no amount of its own first gets the amount it was using, and a value 0016 couldn't convert is kept and read as before. Each runs again cleanly, and restoring an older backup runs them in order.
+- **A profile's own percent match no longer follows a dollar account.** If a Contribution Profile sets its own percent match on an account whose match is in dollars, the profile now keeps the percent it read when you upgraded (or when you last edited that profile): a later change to the account's dollar amount no longer changes the profile's percent, so set the profile's match again if you want it to follow.
+- **API:** contribution accounts and profile entries now return `employerMatchRate`, and `employerMatchValue` is empty on percent matches. A percent match above 200% is refused when it is set.
+
+### Fixed
+
+- **Re-adding an institution in SimpleFIN keeps each account's links and history.** SimpleFIN gives a re-added institution's accounts new ids; Ledgr used to add them as new, unlinked accounts beside the old ones, so their money counted twice. Now an account keeps its row, links and history once its old id has gone unreported for a day, and a duplicate already created is merged on the next sync after that. Anything Ledgr can't pair one to one (two accounts with the same name, a renamed account) is left alone; you can merge it yourself from SimpleFIN settings, right away, where a new account offers "Looks like a re-added account: merge into …?".
+- **Current Balances says which report is missing.** A daily change that leaves an institution out used to say "Voya change not in yet" even when the close it waited on had passed with no report, and only "excludes Voya" on older closes. It now names the days with no report ("no Voya report Nov 2–4"), keeps "not in yet" for the latest close's report that can still come, and adds one line with the account's move across the missing days ("Voya: −$5,821.75 Oct 30 → Nov 5 (no daily reports Nov 2–4)").
+- **An account that sends no holdings no longer shows a market move of +$0.00.** When its balance changed between two closes, its row shows "—" with the balance change on hover ("Balance −$151.08; Voya sends no holdings, so market and deposits can't be split"). The daily total stays the market's move only and leaves it out, said once under the list when it's out of every close shown ("Excludes Joanna HSA (Voya): no holdings reported"), otherwise on the closes it's out of. One whose balance didn't change, like true cash, keeps +$0.00.
+- **A SimpleFIN institution that stopped updating is named.** When SimpleFIN keeps listing an account but its balance date falls more than two days behind your other institutions', Current Balances and SimpleFIN settings say "Voya hasn't updated since Nov 1: reconnect it in SimpleFIN Bridge".
+
+### Safer outside requests
+
+- **One checked fetch** for YNAB, Actual, SimpleFIN, Tiingo and SEC. Actual uses its Server URL as saved in Settings (by anyone with the sync permission), LAN addresses, Docker service names and `.local` names included. YNAB, SimpleFIN, Tiingo and SEC are checked to be public both when a request is sent and at the address actually connected, so a DNS name that points at the LAN, or one that changes between the check and the connection, is refused. **SimpleFIN and Tiingo now refuse `http` URLs.**
+- **Redirects**, for every service, go at most three hops, and only to the same origin or from `http` to `https` on the same host, so a credential header never reaches another host. No error message includes a response body or a URL's user name and password.
+
+### Migrations and backups
+
+- **The migrator refuses what it can't upgrade safely, with nothing changed:** a database a newer Ledgr upgraded is told to restore its backup or run the newer image, and a database at no known release's schema is told to restore, not to install v0.8.15.
+- **SQLite migrations run with foreign keys off and check them before commit,** so a table rebuild can never delete another table's rows through a cascade; a replayed rebuild runs as one unit and keeps a newer release's column.
+- **Data conversions run inside their migration,** in the normal path, both squash replays and the restore of an older backup, and each writes only where its value is still empty, so it never converts twice.
+- The migrator imports the code it used to carry pasted copies of, and its migration list comes from the journal.
+
+### Under the hood
+
+- **One home per kind of code.** The calculators and the projection engine moved from `lib/calculators/` to `lib/pure/<area>/`, their types beside each calculator; `server/helpers/` is gone, its reads now in `server/data/` and its composition in `server/services/<area>/`. Routers no longer import functions from other routers.
+- **Big routers split by concept:** savings, budget, performance, net worth, retirement, sync, SimpleFIN and the paycheck settings, each into a folder of parts, one concept each.
+- **Shared composition gets one path:** the paycheck, contribution, savings and budget summaries, the milestone inputs, profile create, duplicate, delete and switch, and every projection procedure's run set-up each live in one service that every caller uses, so their figures can't drift apart. Each request shares one read of the people across its summaries.
+- **The dashboard's Retirement tile** reads a small Simulation summary (about 1–5 KB) instead of the full result (up to 360 KB); its figures are the same.
+- **Demo:** the demo schema build accepts only a known demo profile, and every demo profile fills what its pages read.
+- **Guards and CI:** every `src/server/` file belongs to a declared layer; ratchets and the behaviour baseline are checked against the merge base; commit rules run on push; the gate runs the type-aware lint; CI runs in parallel jobs with sharded tests, and a docs-only push skips the heavy steps.
+- **The calculation register** covers `lib/pure` only, and names seven more of its functions, with a new row for other liabilities.
+
+Counts: functions over 150 lines 304 → 299; lint suppressions 4,550 → 4,441; type-aware lint suppressions 698 → 688; `src/` 862 lines larger.
+
 ## [0.10.1] - 2026-11-04
 
 v0.10.1 reshapes how Ledgr's code knows things: each domain fact now has one definition that the rest of the code reads, instead of copies that can drift apart. No figure in the app changes; a test records every figure the app shows and stays identical through every change in this release.

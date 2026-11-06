@@ -577,7 +577,7 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       });
 
       const { loadSavingsGoalLinks } =
-        await import("@/server/helpers/category-links");
+        await import("@/server/data/category-links");
       const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
       const ynabLinks = await loadSavingsGoalLinks(
         rawDb,
@@ -673,7 +673,7 @@ describe("savings.convertBudgetItemToGoal", () => {
     expect(result!.apiCategoryId).toBeNull();
 
     const { loadSavingsGoalLinks } =
-      await import("@/server/helpers/category-links");
+      await import("@/server/data/category-links");
     const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
     const links = await loadSavingsGoalLinks(
       rawDb,
@@ -704,7 +704,7 @@ describe("savings.convertBudgetItemToGoal", () => {
     expect(result!.apiCategoryId).toBeNull();
 
     const { loadSavingsGoalLinks } =
-      await import("@/server/helpers/category-links");
+      await import("@/server/data/category-links");
     const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
     const links = await loadSavingsGoalLinks(
       rawDb,
@@ -845,7 +845,7 @@ describe("savings.convertGoalToBudgetItem", () => {
     expect(result!.apiCategoryId).toBeNull();
 
     const { loadBudgetItemLinks } =
-      await import("@/server/helpers/category-links");
+      await import("@/server/data/category-links");
     const rawDb = db as unknown as Parameters<typeof loadBudgetItemLinks>[0];
     const links = await loadBudgetItemLinks(rawDb, [result!.id], "ynab");
     expect(links.get(result!.id)).toMatchObject({
@@ -1011,7 +1011,7 @@ describe("savings.linkReimbursementCategory", () => {
       apiCategoryId: "reimb-actual",
     });
     const { loadSavingsGoalLinks } =
-      await import("@/server/helpers/category-links");
+      await import("@/server/data/category-links");
     const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
     const ynabLinks = await loadSavingsGoalLinks(
       rawDb,

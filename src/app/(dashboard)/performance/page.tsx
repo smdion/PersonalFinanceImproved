@@ -12,7 +12,7 @@
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { PerformanceContent } from "./performance-content";
 
 export default async function PerformancePage() {

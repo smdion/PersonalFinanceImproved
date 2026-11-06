@@ -22,7 +22,7 @@ import { KpiCard } from "./projection/projection-hero-kpis";
 import {
   SIMULATION_NOT_CONFIGURED_MESSAGE,
   type SimulationNotConfigured,
-} from "@/lib/calculators/monte-carlo";
+} from "@/lib/pure/simulation/monte-carlo";
 
 type CoastFireInput = Parameters<
   typeof trpc.projection.computeCoastFire.useQuery

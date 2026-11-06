@@ -48,6 +48,32 @@ async function badResponse(p: Promise<unknown>): Promise<string> {
 
 beforeEach(() => mockFetch.mockReset());
 
+describe("the checked transport", () => {
+  it("streams a direct 200 through it, with redirect: manual", async () => {
+    respond(FUND_TICKERS);
+    expect((await fetchFundTickers("me@example.com")).size).toBe(3);
+    expect((mockFetch.mock.calls[0]![1] as RequestInit).redirect).toBe(
+      "manual",
+    );
+  });
+
+  it("refuses a redirect to another host, sending nothing there", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(null, {
+        status: 301,
+        headers: { location: "https://mirror.example.net/tickers.json" },
+      }),
+    );
+    const err = await fetchFundTickers("me@example.com").catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(BudgetApiError);
+    expect((err as BudgetApiError).code).toBe("refused-url");
+    expect((err as BudgetApiError).message).toContain('"mirror.example.net"');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("fund ticker list", () => {
   it("reads every listed class by symbol", async () => {
     respond(FUND_TICKERS);

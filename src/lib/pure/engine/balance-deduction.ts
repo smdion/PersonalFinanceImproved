@@ -1,0 +1,336 @@
+/**
+ * Balance Deduction — withdrawal deduction, clamping, depletion, and dust cleanup.
+ *
+ * Handles the mechanical balance operations in the decumulation pipeline:
+ * deducting withdrawals from tax buckets and per-account balances, ensuring
+ * no negative balances, tracking per-account depletions, and zeroing out
+ * rounding dust when the portfolio is effectively depleted.
+ */
+import type { DecumulationSlot } from "./types/routing";
+import type { AccountCategory } from "../../config/account-types";
+import type {
+  TaxBuckets,
+  AccountBalances,
+  IndividualAccountInput,
+} from "../accounts/account-balances.types";
+import type { ProjectionResult } from "./types/projection-result";
+import { roundToCents } from "../../utils/math";
+import {
+  getAllCategories,
+  getAccountTypeConfig,
+  isOverflowTarget,
+  isRetirementMoney,
+} from "../../config/account-types";
+import {
+  getTraditionalBalance,
+  getRothBalance,
+  getTotalBalance,
+  getBasis,
+  setTraditional,
+  setRoth,
+  setBalance,
+  setBasis,
+  addBalance,
+  addBasis,
+} from "../../config/account-balance";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+
+// ---------------------------------------------------------------------------
+// Withdrawal Deduction
+// ---------------------------------------------------------------------------
+
+interface DeductWithdrawalsInput {
+  slots: DecumulationSlot[];
+  balances: TaxBuckets;
+  acctBal: AccountBalances;
+  brokerageBasisPortion: number;
+}
+
+/**
+ * Deduct withdrawals from tax buckets and per-account balances.
+ * Mutates `balances` and `acctBal` in place.
+ */
+export function deductWithdrawals(input: DeductWithdrawalsInput): void {
+  const { slots, balances, acctBal, brokerageBasisPortion } = input;
+
+  for (const slot of slots) {
+    if (
+      getAccountTypeConfig(slot.category).balanceStructure === "single_bucket"
+    ) {
+      balances.hsa = roundToCents(balances.hsa - slot.withdrawal);
+      setBalance(
+        acctBal[slot.category],
+        roundToCents(getTotalBalance(acctBal[slot.category]) - slot.withdrawal),
+      );
+    } else if (isOverflowTarget(slot.category)) {
+      balances.afterTax = roundToCents(balances.afterTax - slot.withdrawal);
+      balances.afterTaxBasis = roundToCents(
+        Math.max(0, balances.afterTaxBasis - brokerageBasisPortion),
+      );
+      setBalance(
+        acctBal[slot.category],
+        roundToCents(getTotalBalance(acctBal[slot.category]) - slot.withdrawal),
+      );
+      setBasis(
+        acctBal[slot.category],
+        roundToCents(
+          Math.max(0, getBasis(acctBal[slot.category]) - brokerageBasisPortion),
+        ),
+      );
+    } else {
+      // 401k, 403b, or IRA (roth_traditional)
+      balances.preTax = roundToCents(
+        balances.preTax - slot.traditionalWithdrawal,
+      );
+      balances.taxFree = roundToCents(balances.taxFree - slot.rothWithdrawal);
+      setTraditional(
+        acctBal[slot.category],
+        roundToCents(
+          getTraditionalBalance(acctBal[slot.category]) -
+            slot.traditionalWithdrawal,
+        ),
+      );
+      setRoth(
+        acctBal[slot.category],
+        roundToCents(
+          getRothBalance(acctBal[slot.category]) - slot.rothWithdrawal,
+        ),
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Balance Clamping
+// ---------------------------------------------------------------------------
+
+/**
+ * Ensure no negative balances across all balance systems.
+ * Mutates `balances` and `acctBal` in place.
+ */
+export function clampBalances(
+  balances: TaxBuckets,
+  acctBal: AccountBalances,
+): void {
+  balances.preTax = Math.max(0, balances.preTax);
+  balances.taxFree = Math.max(0, balances.taxFree);
+  balances.hsa = Math.max(0, balances.hsa);
+  balances.afterTax = Math.max(0, balances.afterTax);
+  balances.afterTaxBasis = Math.min(balances.afterTaxBasis, balances.afterTax);
+  for (const cat of getAllCategories()) {
+    const bal = acctBal[cat];
+    if (bal.structure === "roth_traditional") {
+      setTraditional(bal, Math.max(0, bal.traditional));
+      setRoth(bal, Math.max(0, bal.roth));
+    } else if (bal.structure === "single_bucket") {
+      setBalance(bal, Math.max(0, bal.balance));
+    } else {
+      setBalance(bal, Math.max(0, bal.balance));
+      setBasis(bal, Math.min(bal.basis, bal.balance));
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// RMD Excess Reinvestment
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle RMD-forced withdrawal beyond spending need (mode-aware).
+ * When RMD forces withdrawal above spending need + tax cost, the excess is
+ * real after-tax cash the household didn't ask for. What happens to it
+ * depends on `mode`:
+ * - "reinvest" (default, matches prior behavior): credited to
+ *   brokerage as basis.
+ * - "spend": NOT credited anywhere — the household is modeled as consuming
+ *   it. Net worth ends up genuinely lower than "reinvest", by design.
+ *
+ * Either way, returns the excess amount for reporting — the UI is
+ * responsible for wording it correctly per mode
+ * (`rmdExcessHandling` on the resolved config), since "reinvested" isn't
+ * an accurate description of what happened under "spend".
+ *
+ * Mutates `balances` and `acctBal` in place only under "reinvest". When
+ * `indAccts`/`indBal`/`indKey` are also supplied, the reinvestment
+ * additionally credits Retirement-parented overflow-target accounts'
+ * `indBal` directly, proportional to their own balance — this money is
+ * forced out of a Traditional account by the RMD floor (which only ever
+ * forces Retirement-parented money), so it must land back in a
+ * Retirement-parented account too. Without this, the credit only touches
+ * the blended aggregate, and `reconcileIndividualToAggregate`'s
+ * parentCategory-blind proportional redistribution can hand most of it to
+ * a much-larger Portfolio-parented account instead — the same leak
+ * already closed for Roth-conversion tax funding and QCD, surfaced here by
+ * a `[DIAG] indBal/acctBal reconciliation` drift report on a real
+ * household. Falls back to crediting proportionally across every
+ * overflow-target account (the earlier behavior) only if the household has NO
+ * Retirement-parented overflow-target account at all — an edge case, but
+ * inventing a Retirement-parented destination that doesn't exist would be
+ * a second allocation policy.
+ */
+export function reinvestRmdExcess(
+  mode: "reinvest" | "spend",
+  rmdOverrodeRouting: boolean,
+  totalWithdrawal: number,
+  afterTaxNeed: number,
+  taxCost: number,
+  balances: TaxBuckets,
+  acctBal: AccountBalances,
+  indAccts?: IndividualAccountInput[],
+  indBal?: Map<string, number>,
+  indKey?: IndKeyFn,
+): number {
+  if (!rmdOverrodeRouting || totalWithdrawal <= afterTaxNeed + taxCost) {
+    return 0;
+  }
+  const excess = roundToCents(totalWithdrawal - afterTaxNeed - taxCost);
+  if (mode === "reinvest") {
+    balances.afterTax = roundToCents(balances.afterTax + excess);
+    balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);
+    for (const cat of getAllCategories()) {
+      if (isOverflowTarget(cat)) {
+        addBalance(acctBal[cat], excess);
+        addBasis(acctBal[cat], excess);
+        if (indAccts && indBal && indKey) {
+          // Retirement money: the household's chosen account, else every
+          // Retirement brokerage by balance (the projection-only one when
+          // that's all there is). Never a Portfolio account — with no
+          // retirement brokerage it stays in the aggregate only.
+          const retirementAccts = indAccts.filter(
+            (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
+          );
+          const chosen = retirementAccts.filter((ia) => ia.rmdExcessTarget);
+          const target = chosen.length > 0 ? chosen : retirementAccts;
+          const targetTotal = target.reduce(
+            (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+            0,
+          );
+          if (target.length > 0) {
+            if (targetTotal > 0) {
+              let credited = 0;
+              for (const ia of target) {
+                const k = indKey(ia);
+                const bal = Math.max(0, indBal.get(k) ?? 0);
+                const share = roundToCents(excess * (bal / targetTotal));
+                indBal.set(k, roundToCents(bal + share));
+                credited += share;
+              }
+              const remainder = roundToCents(excess - credited);
+              if (remainder !== 0) {
+                const first = target[0]!;
+                const k = indKey(first);
+                indBal.set(k, roundToCents((indBal.get(k) ?? 0) + remainder));
+              }
+            } else {
+              // No weight to distribute by (every target account is at
+              // $0) -- credit the first one entirely rather than inventing
+              // a different allocation policy.
+              const k = indKey(target[0]!);
+              indBal.set(k, roundToCents((indBal.get(k) ?? 0) + excess));
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+  // "spend": intentionally no balance mutation — the money is modeled as
+  // consumed, not reinvested. Still returned so the UI can report it.
+  return excess;
+}
+
+// ---------------------------------------------------------------------------
+// Depletion Tracking
+// ---------------------------------------------------------------------------
+
+/**
+ * Track per-account depletions (first year each sub-bucket hits zero).
+ * Mutates `depletionTracked` and `accountDepletions` in place.
+ */
+export function trackDepletions(
+  acctBal: AccountBalances,
+  depletionTracked: Set<string>,
+  accountDepletions: ProjectionResult["accountDepletions"],
+  year: number,
+  age: number,
+): void {
+  for (const cat of getAllCategories()) {
+    const bal = acctBal[cat];
+    const checks: {
+      key: string;
+      category: AccountCategory;
+      subType?: "traditional" | "roth";
+      balance: number;
+    }[] = [];
+    if (bal.structure === "roth_traditional") {
+      checks.push({
+        key: `${cat}_trad`,
+        category: cat,
+        subType: "traditional",
+        balance: bal.traditional,
+      });
+      checks.push({
+        key: `${cat}_roth`,
+        category: cat,
+        subType: "roth",
+        balance: bal.roth,
+      });
+    } else if (bal.structure === "single_bucket") {
+      checks.push({ key: cat, category: cat, balance: bal.balance });
+    } else {
+      checks.push({ key: cat, category: cat, balance: bal.balance });
+    }
+    for (const check of checks) {
+      if (check.balance <= 0 && !depletionTracked.has(check.key)) {
+        depletionTracked.add(check.key);
+        accountDepletions.push({
+          category: check.category,
+          subType: check.subType,
+          depletionYear: year,
+          depletionAge: age,
+        });
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Dust Cleanup
+// ---------------------------------------------------------------------------
+
+/**
+ * Zero out rounding dust when total portfolio is effectively depleted (< $1).
+ * Mutates `balances`, `acctBal`, and `indBal` in place.
+ * Returns true if dust was cleaned.
+ */
+export function cleanupDust(
+  balances: TaxBuckets,
+  acctBal: AccountBalances,
+  indAccts: IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBal: Map<string, number>,
+): boolean {
+  const rawEndBalance =
+    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax;
+  if (rawEndBalance >= 1) return false;
+
+  balances.preTax = 0;
+  balances.taxFree = 0;
+  balances.hsa = 0;
+  balances.afterTax = 0;
+  balances.afterTaxBasis = 0;
+  for (const cat of getAllCategories()) {
+    const bal = acctBal[cat];
+    if (bal.structure === "roth_traditional") {
+      setTraditional(bal, 0);
+      setRoth(bal, 0);
+    } else if (bal.structure === "basis_tracking") {
+      setBalance(bal, 0);
+      setBasis(bal, 0);
+    } else {
+      setBalance(bal, 0);
+    }
+  }
+  for (const ia of indAccts) indBal.set(indKey(ia), 0);
+  return true;
+}

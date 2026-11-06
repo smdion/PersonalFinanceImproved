@@ -6,9 +6,9 @@
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
-import { buildContribAccounts } from "@/server/helpers/contribution";
-import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
-import type { CapPassed } from "@/lib/pure/contribution-caps";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
+import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 
 const limits = {
   hsa_individual_limit: 4000,

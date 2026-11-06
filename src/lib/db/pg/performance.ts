@@ -275,7 +275,7 @@ export const annualPerformance = pgTable(
      *  enforcement guards against silent drift when account_performance
      *  rows on a finalized year are edited (per DESIGN.md § Data Model
      *  Principles point 4 cascade rule). The router-level guard in
-     *  performance.ts:updateAnnual is the real protection — these fields
+     *  routers/performance:updateAnnual is the real protection — these fields
      *  intentionally have NO CHECK constraints because lifetime_gains
      *  can legitimately be negative (cumulative losses across years). */
     isImmutable: boolean("is_immutable").notNull().default(false),

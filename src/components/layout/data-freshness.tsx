@@ -5,7 +5,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { budgetApiServiceLabel, formatDate } from "@/lib/utils/format";
-import type { DataSourceStatus } from "@/lib/pure/data-freshness";
+import type { DataSourceStatus } from "@/lib/pure/sync/data-freshness";
 import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
 

@@ -20,10 +20,8 @@ import {
   seedRetirementProfilePerson,
 } from "./setup";
 import { eq } from "drizzle-orm";
-import {
-  buildBracketInput,
-  buildLiabilityBracketInput,
-} from "@/server/routers/paycheck";
+import { buildLiabilityBracketInput } from "@/server/services/paycheck/summary";
+import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -310,7 +308,7 @@ describe("settings.people CRUD", () => {
 // Every retirement_profiles row must hold a retirement_settings + a
 // retirement_profile_people row for every person. Person B has no such row
 // itself yet when the new person is created, so build-engine-payload has
-// nothing to invent one from -- settings/paycheck.ts's people.create fans a
+// nothing to invent one from -- settings/people.ts's people.create fans a
 // row into every EXISTING profile, sourced from that profile's primary
 // person, the same rule retirementProfiles.duplicate uses.
 
@@ -766,7 +764,11 @@ describe("settings.contributionAccounts CRUD", () => {
       employerMatchValue: "1.0",
       employerMaxMatchPct: "0.06",
     });
-    expect(updated!.employerMatchValue).toBe("1.0");
+    // A percent match is stored as its rate (decision 13), with no value.
+    expect(updated).toMatchObject({
+      employerMatchValue: null,
+      employerMatchRate: "0.01",
+    });
   });
 
   it("create a joint brokerage contribution account", async () => {

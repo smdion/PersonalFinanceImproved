@@ -20,7 +20,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
 import type { MutableRefObject } from "react";
-import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
 import {
   holdMutation,
   queryAnswer,

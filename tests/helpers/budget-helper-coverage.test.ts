@@ -17,9 +17,11 @@ import {
 import {
   getEffectiveCash,
   getEffectiveCreditCardDebt,
+} from "@/server/services/budget/account-balances";
+import {
   getEffectiveOtherAssets,
   getEffectiveOtherAssetsDetailed,
-} from "@/server/helpers/budget";
+} from "@/server/services/net-worth/other-assets";
 import { createTestDb, type TestDbContext } from "./db-harness";
 
 // Access the mocked budget-api to control return values per test

@@ -1,9 +1,9 @@
 /**
- * The five `X-Cron-Secret` routes share `validateCronHeaderRequest`. Each
- * route keeps its own answer to the three outcomes:
+ * The five `X-Cron-Secret` routes run `cronRoute`, after their own
+ * DEMO_ONLY check. Each answers, in this order:
+ *   - DEMO_ONLY set → 403, whatever the secret
  *   - CRON_SECRET missing or under 32 characters → 500 "Server
- *     misconfiguration" (+ the `cron_secret_misconfigured` error log, except
- *     on /api/startup, which has never logged it — pinned as today's behavior)
+ *     misconfiguration" (+ the `cron_secret_misconfigured` error log)
  *   - wrong or absent header → 401 "Unauthorized"
  *   - right header → the route's work runs (mocked here) and answers 200.
  */
@@ -67,7 +67,6 @@ type Route = {
   path: string;
   load: () => Promise<{ GET: (request: Request) => Promise<Response> }>;
   work: ReturnType<typeof vi.fn>;
-  logsMisconfiguration: boolean;
 };
 
 const ROUTES: Route[] = [
@@ -76,35 +75,30 @@ const ROUTES: Route[] = [
     path: "/api/simplefin/daily",
     load: () => import("@/app/api/simplefin/daily/route"),
     work: m.runSimplefinSync,
-    logsMisconfiguration: true,
   },
   {
     name: "tax-data/weekly",
     path: "/api/tax-data/weekly",
     load: () => import("@/app/api/tax-data/weekly/route"),
     work: m.checkForTaxDataUpdate,
-    logsMisconfiguration: true,
   },
   {
     name: "versions/daily",
     path: "/api/versions/daily",
     load: () => import("@/app/api/versions/daily/route"),
     work: m.createVersion,
-    logsMisconfiguration: true,
   },
   {
     name: "sec/weekly",
     path: "/api/sec/weekly",
     load: () => import("@/app/api/sec/weekly/route"),
     work: m.syncSecurityFacts,
-    logsMisconfiguration: true,
   },
   {
     name: "startup",
     path: "/api/startup",
     load: () => import("@/app/api/startup/route"),
     work: m.backfillPerformanceAccountIds,
-    logsMisconfiguration: false,
   },
 ];
 
@@ -138,6 +132,18 @@ afterEach(() => {
 });
 
 describe.each(ROUTES)("/api/$name cron secret", (route) => {
+  it("DEMO_ONLY → 403 before the secret is checked, nothing logged", async () => {
+    process.env.DEMO_ONLY = "true";
+    delete process.env.CRON_SECRET;
+    const { GET } = await route.load();
+
+    const res = await GET(request(route.path));
+
+    expect(res.status).toBe(403);
+    expect(misconfigLogged()).toBe(false);
+    expect(route.work).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["missing", undefined],
     ["shorter than 32 characters", "s".repeat(31)],
@@ -150,7 +156,7 @@ describe.each(ROUTES)("/api/$name cron secret", (route) => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Server misconfiguration" });
-    expect(misconfigLogged()).toBe(route.logsMisconfiguration);
+    expect(misconfigLogged()).toBe(true);
     expect(route.work).not.toHaveBeenCalled();
   });
 

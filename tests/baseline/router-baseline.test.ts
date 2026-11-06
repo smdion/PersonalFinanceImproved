@@ -1,9 +1,11 @@
 /**
  * Behavior baseline, part c (v0.10.0): every router query for 17 invented
- * households, on SQLite. This file runs the ten review households;
- * router-baseline-ledgers.test.ts runs the seven ledger households (two
- * files, so they run in parallel). router-baseline-postgres.test.ts runs
- * all 17 on PostgreSQL against the same files.
+ * households, on SQLite, in three files so they run in parallel. This file
+ * runs the six review households with a paycheck;
+ * router-baseline-retired.test.ts the four with none;
+ * router-baseline-ledgers.test.ts the seven ledger households.
+ * router-baseline-postgres.test.ts runs all 17 on PostgreSQL against the
+ * same files.
  *
  * Each household (households.ts) is seeded through the app's write
  * procedures into a database migrated from empty, with the clock fixed at
@@ -25,10 +27,13 @@
  *   in the same commit, naming them in the commit body.
  * - Nothing else edits a baseline file. A figure that changes is a bug in
  *   the change (or a v0.11 fix that waits for v0.11).
+ * - CI checks this against the merge base (scripts/check-ratchets.ts); an
+ *   owner-signed re-record carries a `Baseline-rerecord:` line.
  *
  * Regenerating is only for the deletion case above, and only on SQLite:
  *
  *   LEDGR_BASELINE_WRITE=1 pnpm test tests/baseline/router-baseline.test.ts \
+ *     tests/baseline/router-baseline-retired.test.ts \
  *     tests/baseline/router-baseline-ledgers.test.ts
  *
  * then check with `git diff --stat tests/baseline/__baseline__` that only
@@ -43,7 +48,7 @@ import { REVIEWED_HOUSEHOLDS } from "./households-reviewed";
 
 defineRouterBaseline({
   dialect: "sqlite",
-  households: REVIEWED_HOUSEHOLDS,
+  households: REVIEWED_HOUSEHOLDS.filter((h) => h.jobs.length > 0),
   wholeBaselineChecks: true,
   open: async () => {
     const { caller, cleanup } = await createTestCaller();

@@ -14,7 +14,7 @@
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { DataBrowserContent } from "./data-browser-content";
 
 export default async function DataBrowserPage() {

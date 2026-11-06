@@ -3,7 +3,7 @@
  * (portfolioProcedure — built from transaction-level detail). Read-only:
  * the Performance and basis forms prefill from these and the household
  * saves through the usual mutations, which record what was counted (see
- * server/helpers/fill-ledger.ts).
+ * server/services/sync/fill-ledger.ts).
  */
 import { z } from "zod/v4";
 import { and, eq } from "drizzle-orm";
@@ -15,28 +15,34 @@ import {
 } from "@/lib/config/account-types";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { addDays, utcDayOf } from "@/lib/utils/date";
-import { mixFor } from "@/lib/pure/flow-suggestions";
+import { mixFor } from "@/lib/pure/investments/flow-suggestions";
 import {
   rowsPerAccount,
   snapshotNewMoney,
   suggestBasisRow,
-} from "@/lib/pure/fill-suggestions";
+} from "@/lib/pure/investments/fill-suggestions";
 import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
-} from "@/lib/pure/simplefin-feeds";
-import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
-import { loadFillRecord } from "@/server/helpers/fill-ledger";
-import { toNumber } from "@/server/helpers/transforms";
+} from "@/lib/pure/sync/simplefin-feeds";
+import { suggestSnapshotAmounts } from "@/lib/pure/net-worth/snapshot-suggestions";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
+import { loadFillRecord } from "@/server/services/sync/fill-ledger";
+import { toNumber } from "@/lib/utils/numbers";
 import {
   loadAccounts,
   loadClassifiedTransactions,
   loadFeedContext,
-} from "./_shared";
-import { savingsPace } from "@/lib/pure/savings-pace";
-import { loadLiveContributions, toPaceInput } from "./live-contributions";
-import { loadPerformanceSuggestions, loadYearRows } from "./fills";
+} from "@/server/data/investments";
+import { savingsPace } from "@/lib/pure/savings/savings-pace";
+import {
+  loadLiveContributions,
+  toPaceInput,
+} from "@/server/services/investments/live-contributions";
+import {
+  loadPerformanceSuggestions,
+  loadYearRows,
+} from "@/server/services/investments/fill-suggestions";
 
 export const investmentSuggestionsRouter = createTRPCRouter({
   /**

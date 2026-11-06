@@ -12,7 +12,7 @@ import { parseLocalDateOnly } from "@/lib/utils/date";
 import {
   projectGoalBalances,
   buildSettledOccurrencesSet,
-} from "@/lib/pure/savings-projection";
+} from "@/lib/pure/savings/savings-projection";
 import { LoadingCard, ErrorCard } from "./utils";
 import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
 

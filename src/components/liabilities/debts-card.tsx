@@ -6,8 +6,8 @@
  * with its rate, monthly payment and payoff estimate; paid-off debts kept
  * below as history. Balances are as entered (with the date they're as of),
  * never moved forward on their own. The typed "other debts, not itemized"
- * figure and mapped credit cards are shown alongside (server/helpers/
- * debts.ts sums all three).
+ * figure and mapped credit cards are shown alongside (server/services/
+ * debts/other-liabilities.ts sums all three).
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";

@@ -5,7 +5,7 @@ import {
   getAllStrategyKeys,
   getStrategyDefaults,
 } from "@/lib/config/withdrawal-strategies";
-import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 import { formatPercent } from "@/lib/utils/format";
 
 /** VPW's defaults, as the paragraph below quotes them. */

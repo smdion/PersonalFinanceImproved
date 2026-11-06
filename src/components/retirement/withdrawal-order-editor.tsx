@@ -9,7 +9,7 @@
  * the settings panel writes the saved household default.
  */
 import { AccountBadge } from "@/components/ui/account-badge";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 
 export function WithdrawalOrderEditor({
   order,

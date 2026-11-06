@@ -1,6 +1,6 @@
 "use client";
 
-import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import { countsAsFeed } from "@/lib/pure/sync/simplefin-feeds";
 import React, { memo, useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -9,10 +9,24 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatCurrency } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
+import {
+  groupCurrentBalances,
+  noHoldingsTitle,
+  type CurrentGroup,
+} from "@/lib/pure/accounts/current-balance-groups";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
-import { previousTradingDay } from "@/lib/pure/market-calendar";
+import { previousTradingDay } from "@/lib/pure/investments/market-calendar";
+import {
+  gapLines,
+  missingNote,
+  missingReason,
+  alwaysExcludedLine,
+  splitUnpriced,
+} from "@/lib/pure/net-worth/close-notes";
+import { shortDay } from "@/lib/pure/net-worth/short-day";
+import { StaleFeedNotes } from "@/components/settings/simplefin-stale-feeds";
 import { LoadingCard } from "./utils";
 
 /** How the breakdown groups balances; the button steps through them in order. */
@@ -51,14 +65,6 @@ const reportTime = (at: Date | string) =>
     minute: "2-digit",
   });
 
-/** "Oct 30" from YYYY-MM-DD. */
-const shortDay = (day: string) =>
-  new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-
 /** The session a move covers, close to close: "Oct 29→30", "Oct 30→Nov 2". */
 const sessionLabel = (day: string) => {
   const from = previousTradingDay(day);
@@ -67,29 +73,6 @@ const sessionLabel = (day: string) => {
     : `${shortDay(from)}→${shortDay(day)}`;
 };
 
-/** "Fidelity", "Fidelity and Voya", "Fidelity, Voya and Vanguard". */
-const listNames = (names: readonly string[]) =>
-  names.length <= 1
-    ? (names[0] ?? "")
-    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-
-/** "Fidelity" from "Fidelity Investments": notes stay on one line; the
- *  full name is in the hover text. */
-const shortName = (name: string) => name.split(/\s+/)[0] ?? name;
-
-/** The note beside a close with accounts missing. */
-function missingNote(
-  c: { day: string; missing: readonly string[] },
-  target: string | undefined,
-): string | null {
-  if (c.missing.length === 0) return null;
-  const who = listNames([...new Set(c.missing.map(shortName))]);
-  return c.day === target
-    ? `${who} ${c.missing.length === 1 ? "change" : "changes"} not in yet`
-    : `excludes ${who}`;
-}
-
-/** Hover text for a close with accounts missing. */
 /** One short figure: money paid in or out, "~" while some of it is only
  *  seen in balances (institutions send transactions days late). */
 function paidLine(c: {
@@ -109,18 +92,6 @@ function unreportedDetail(c: {
   const sign = (n: number) =>
     `${n >= 0 ? "+" : "−"}${formatCurrency(Math.abs(n), 0)}`;
   return `${c.flows ? `${sign(c.flows)} reported; ` : ""}about ${sign(c.unreported.amount)} at ${c.unreported.names.join(", ")} not reported yet: institutions send transactions days late, so it's read from balances less the market's move.`;
-}
-
-function missingReason(
-  c: { day: string; missing: readonly string[] },
-  target: string | undefined,
-): string | undefined {
-  if (c.missing.length === 0) return undefined;
-  const who = listNames(c.missing);
-  const one = c.missing.length === 1;
-  return c.day === target
-    ? `${who}'s ${shortDay(c.day)} ${one ? "balance is" : "balances are"} in; the change needs ${one ? "its" : "their"} ${shortDay(c.day)} fund prices, which arrive with the next sync. This total leaves ${one ? "it" : "them"} out until then.`
-    : `${who} didn't report a price for ${shortDay(c.day)}, so ${one ? "its" : "their"} change isn't in this total.`;
 }
 
 /** Where the total's figures come from: the snapshot, the institutions'
@@ -199,42 +170,91 @@ function rollupBucket(
   };
 }
 
-type CurrentGroup = {
-  key: string;
-  label: string;
-  /** Adds up to the card's total. */
-  current: number;
-  /** Move into the card's close; null when any fund in it can't be told
-   *  (a partial sum would read as the whole). */
-  move: number | null;
-};
+/** Each close's market move, latest first, then each account's move over
+ *  closes it sent no report for. */
+function DailyChanges({
+  movement,
+  target,
+  reports,
+  unpriced,
+}: {
+  movement: CurrentData["movement"];
+  target: string | undefined;
+  reports: CurrentData["closeReports"];
+  unpriced: CurrentData["unpricedMoves"];
+}) {
+  if (movement.length === 0) return null;
+  const { always, varying } = splitUnpriced(movement, unpriced);
+  return (
+    <>
+      <p className="text-caption text-faint">
+        Daily change by market close (not sync date)
+      </p>
+      <div className="text-caption mb-2 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-2">
+        {movement.map((c) => (
+          <div key={c.day} className="contents">
+            <span className="text-muted">{sessionLabel(c.day)}</span>
+            <span
+              className={`text-right tabular-nums ${c.known === 0 ? "text-faint" : moveColor(c.move)}`}
+            >
+              {c.known === 0 ? "—" : signed(c.move)}
+            </span>
+            <span
+              className="text-faint break-words"
+              title={[
+                missingReason(c, target, reports, varying),
+                unreportedDetail(c),
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {[missingNote(c, target, reports, varying), paidLine(c)]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="text-caption text-faint mb-2 empty:hidden">
+        <StaleFeedNotes />
+        {always.length > 0 && <p>{alwaysExcludedLine(always)}</p>}
+        {gapLines(reports).map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
+    </>
+  );
+}
 
-/** The card's figures by row: largest first, "Not matched" last. */
-export function groupCurrentBalances(
-  balances: readonly CurrentBalanceRow[],
-  bucket: (b: CurrentBalanceRow) => { key: string; label: string },
-): CurrentGroup[] {
-  const groups = new Map<string, CurrentGroup & { unknown: boolean }>();
-  for (const b of balances) {
-    const { key, label } = bucket(b);
-    const g = groups.get(key) ?? {
-      key,
-      label,
-      current: 0,
-      move: 0,
-      unknown: false,
-    };
-    g.current = roundToCents(g.current + b.current);
-    if (b.market && b.move !== null)
-      g.move = roundToCents((g.move ?? 0) + b.move);
-    else if (b.market) g.unknown = true;
-    groups.set(key, g);
-  }
-  return [...groups.values()]
-    .map(({ unknown, ...g }) => ({ ...g, move: unknown ? null : g.move }))
-    .sort((a, b) =>
-      a.key === "" ? 1 : b.key === "" ? -1 : b.current - a.current,
-    );
+/** The total by group: each row's balance and its move into the card's
+ *  close; a row with no holdings has its balance's change on hover. */
+function GroupRows({
+  groups,
+  target,
+}: {
+  groups: readonly CurrentGroup[];
+  target: string | undefined;
+}) {
+  return groups.map((g) => (
+    <div key={g.key} className="contents">
+      <span className="break-words">{g.label}</span>
+      <span className="text-right whitespace-nowrap tabular-nums">
+        {formatCurrency(g.current)}
+      </span>
+      <span
+        className={`text-right whitespace-nowrap tabular-nums ${moveColor(g.move)}`}
+        title={
+          g.noHoldings
+            ? noHoldingsTitle(g.noHoldings)
+            : g.move === null && target
+              ? `Waiting for a fund's ${shortDay(target)} price from the institution`
+              : undefined
+        }
+      >
+        {g.move === null ? "—" : signed(g.move)}
+      </span>
+    </div>
+  ));
 }
 
 function LinkedBalanceCardImpl() {
@@ -357,35 +377,13 @@ function LinkedBalanceCardImpl() {
         </p>
       )}
 
-      {/* Each close's market move, latest first. */}
-      {current && current.movement.length > 0 && (
-        <p className="text-caption text-faint">
-          Daily change by market close (not sync date)
-        </p>
-      )}
-      {current && current.movement.length > 0 && (
-        <div className="text-caption mb-2 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-2">
-          {current.movement.map((c) => (
-            <div key={c.day} className="contents">
-              <span className="text-muted">{sessionLabel(c.day)}</span>
-              <span
-                className={`text-right tabular-nums ${c.known === 0 ? "text-faint" : moveColor(c.move)}`}
-              >
-                {c.known === 0 ? "—" : signed(c.move)}
-              </span>
-              <span
-                className="text-faint break-words"
-                title={[missingReason(c, target), unreportedDetail(c)]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {[missingNote(c, target), paidLine(c)]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-            </div>
-          ))}
-        </div>
+      {current && (
+        <DailyChanges
+          movement={current.movement}
+          target={target}
+          reports={current.closeReports}
+          unpriced={current.unpricedMoves}
+        />
       )}
 
       {/* The total by group: each row's balance and its move into the
@@ -411,24 +409,7 @@ function LinkedBalanceCardImpl() {
             <span className="text-right">
               {target ? sessionLabel(target) : ""}
             </span>
-            {groups.map((g) => (
-              <div key={g.key} className="contents">
-                <span className="break-words">{g.label}</span>
-                <span className="text-right whitespace-nowrap tabular-nums">
-                  {formatCurrency(g.current)}
-                </span>
-                <span
-                  className={`text-right whitespace-nowrap tabular-nums ${moveColor(g.move)}`}
-                  title={
-                    g.move === null && target
-                      ? `Waiting for a fund's ${shortDay(target)} price from the institution`
-                      : undefined
-                  }
-                >
-                  {g.move === null ? "—" : signed(g.move)}
-                </span>
-              </div>
-            ))}
+            <GroupRows groups={groups} target={target} />
           </div>
         </div>
       )}

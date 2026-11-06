@@ -1,0 +1,234 @@
+/**
+ * What the paycheck setup sends to each tracked account in a year, split by
+ * who pays and how it's taxed. Used to estimate the split of a deposit a
+ * feed reports as one amount (see lib/pure/investments/flow-suggestions.ts).
+ *
+ * Uses the globally active Contribution and Salary Profiles — the setup
+ * every page shows unless the household picks another.
+ */
+import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { getAllPeople } from "@/server/data/people";
+import { eq } from "drizzle-orm";
+import * as schema from "@/lib/db/schema";
+import { isPreTaxTreatment, isTaxFree } from "@/lib/config/account-types";
+import type {
+  AccountContributionMix,
+  ContributionMix,
+} from "@/lib/pure/investments/flow-suggestions";
+import { filterActiveJobs } from "@/lib/pure/household/profiles";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { toNumber } from "@/lib/utils/numbers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
+import {
+  contribRemainingFraction,
+  contribStepFraction,
+  monthsDoneYtd,
+  periodsElapsedYtd,
+} from "@/lib/pure/paycheck/paycheck";
+import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
+import {
+  contributionPay,
+  resolveCompensation,
+} from "@/lib/pure/household/compensation";
+import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
+import {
+  computeGroupedEmployerMatch,
+  matchGroupKey,
+  matchPayGroupsWithBonus,
+  storedMatchRate,
+} from "@/lib/pure/contributions/employer-match";
+import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
+import {
+  annualContributionWithBonus,
+  resolveContribPeriods,
+} from "@/lib/pure/contributions/contribution-rows";
+import type { Db } from "@/lib/db";
+
+export async function loadContributionMix(
+  db: Db,
+  asOf: Date = new Date(),
+  /** Tracked account → the day its latest contribution actually arrived (live data). */
+  contributedThrough?: ReadonlyMap<number, string>,
+): Promise<Map<number, AccountContributionMix>> {
+  const [allJobs, contribs, activeProfile] = await Promise.all([
+    db.select().from(schema.jobs),
+    db
+      .select()
+      .from(schema.contributionAccounts)
+      .where(eq(schema.contributionAccounts.isActive, true)),
+    db
+      .select({ value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
+  ]);
+  const profileId = Number(activeProfile[0]?.value ?? NaN);
+  if (!contribs.some((c) => c.performanceAccountId != null)) return new Map();
+
+  const salaryMap = await loadEffectiveSalaryProfile(db, null);
+  const { contribs: effective, jobs } = await loadAndApplyContribProfile(
+    db,
+    Number.isFinite(profileId) ? profileId : null,
+    contribs,
+    filterActiveJobs(allJobs, asOf),
+    salaryMap,
+  );
+  // Capped over a person's rows (a limit spans accounts), then the tracked.
+  const rows = capForRequest(
+    effective,
+    await loadCapHousehold(
+      db,
+      await getAllPeople(db),
+      null,
+      asOf.getFullYear(),
+    ),
+    jobs,
+    salaryMap,
+    new Map(),
+  ).filter((c) => c.performanceAccountId != null);
+  const jobById = new Map(jobs.map((j) => [j.id, j]));
+  const jobByPerson = new Map(jobs.map((j) => [j.personId, j]));
+  // The employer matches what's deferred, on the pay it came from — the
+  // bonus counts for accounts taken from bonus checks (one rule).
+  const bonusGroups = matchPayGroupsWithBonus(rows);
+
+  const resolved = rows.map((c) => {
+    const job =
+      c.jobId != null
+        ? jobById.get(c.jobId)
+        : c.personId != null
+          ? jobByPerson.get(c.personId)
+          : undefined;
+    // This year's pay: base salary and the bonus (the actual when set).
+    const comp =
+      c.jobId != null && job ? resolveCompensation(salaryMap, job.id) : null;
+    const pay = comp
+      ? contributionPay(comp.salary, comp.terms, comp.bonusOverride)
+      : { salary: 0, bonusGross: 0 };
+    const salary = pay.salary;
+    const { periodsPerYear } = resolveContribPeriods(
+      c.contributionMethod,
+      job ? { payPeriod: job.payPeriod ?? undefined } : undefined,
+    );
+    // The year's amount, bonus check included (annualContributionWithBonus),
+    // and the share of it the regular paychecks carry.
+    const annual = annualContributionWithBonus(c, pay, periodsPerYear);
+    const regular = annualContributionWithBonus(c, { salary }, periodsPerYear);
+    const regularShare = annual > 0 ? regular / annual : 1;
+    const matchPay =
+      salary + (bonusGroups.has(matchGroupKey(c)) ? pay.bonusGross : 0);
+    // Where the year stands on this contribution's schedule — the same
+    // paycheck walk the Contributions page's YTD / Year-End Estimate use.
+    const payPeriods =
+      job?.payPeriod != null
+        ? getPeriodsPerYear(job.payPeriod)
+        : DEFAULT_PAY_PERIODS_PER_YEAR;
+    const elapsed = {
+      periodsPerYear: payPeriods,
+      // No job (or no anchor payday): estimated from the month.
+      periodsElapsed: periodsElapsedYtd(
+        asOf,
+        job?.payPeriod ?? "",
+        job?.anchorPayDate,
+        payPeriods,
+      ),
+      monthsElapsed: monthsDoneYtd(
+        asOf,
+        contributedThrough?.get(c.performanceAccountId!),
+      ),
+    };
+    // The bonus check's part is still to come until its date (unknown date:
+    // like the paychecks).
+    const bonusDate =
+      job?.bonusMonth != null
+        ? new Date(
+            asOf.getFullYear(),
+            job.bonusMonth - 1,
+            job.bonusDayOfMonth ?? 1,
+          )
+        : null;
+    return {
+      c,
+      job,
+      matchPay,
+      annual,
+      regularShare,
+      bonusLeft: bonusDate === null ? null : bonusDate > asOf ? 1 : 0,
+      remaining: contribRemainingFraction(c.contributionMethod, elapsed),
+      step: contribStepFraction(c.contributionMethod, payPeriods),
+    };
+  });
+
+  const match = computeGroupedEmployerMatch(
+    resolved.map(({ c, matchPay, annual }) => ({
+      id: c.id,
+      jobId: c.jobId,
+      personId: c.personId,
+      accountType: c.accountType,
+      parentCategory: c.parentCategory,
+      annual,
+      salary: matchPay,
+      employerMatchType: c.employerMatchType,
+      employerMatchValue: toNumber(c.employerMatchValue),
+      employerMatchRate: storedMatchRate(c.employerMatchRate),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+      employerMatchTaxTreatment: c.employerMatchTaxTreatment,
+    })),
+  );
+
+  const empty = (): ContributionMix => ({
+    employeePreTax: 0,
+    employeeRoth: 0,
+    employeeOther: 0,
+    employer: 0,
+    employerRoth: 0,
+  });
+  const add = (
+    mix: ContributionMix,
+    c: (typeof resolved)[number]["c"],
+    annual: number,
+  ) => {
+    if (isTaxFree(c.taxTreatment)) mix.employeeRoth += annual;
+    else if (isPreTaxTreatment(c.taxTreatment)) mix.employeePreTax += annual;
+    else mix.employeeOther += annual;
+    const m = match.get(c.id);
+    mix.employer += m?.matchAnnual ?? 0;
+    if (m && isTaxFree(m.employerMatchTaxTreatment))
+      mix.employerRoth += m.matchAnnual;
+  };
+  const out = new Map<number, AccountContributionMix>();
+  for (const {
+    c,
+    job,
+    annual,
+    regularShare,
+    bonusLeft,
+    remaining,
+    step,
+  } of resolved) {
+    const account = out.get(c.performanceAccountId!) ?? {
+      ...empty(),
+      byPerson: new Map(),
+      remainingThisYear: 0,
+      perContribution: 0,
+    };
+    add(account, c, annual);
+    const withMatch = annual + (match.get(c.id)?.matchAnnual ?? 0);
+    // A paycheck's worth is the regular paychecks' part; the bonus check's
+    // part is still to come only until its date.
+    account.remainingThisYear +=
+      withMatch *
+      (regularShare * remaining +
+        (1 - regularShare) * (bonusLeft ?? remaining));
+    account.perContribution += withMatch * regularShare * step;
+    // Whose paycheck it is: the contribution's person, else its job's.
+    const person = c.personId ?? job?.personId ?? null;
+    if (person !== null) {
+      const own = account.byPerson.get(person) ?? empty();
+      add(own, c, annual);
+      account.byPerson.set(person, own);
+    }
+    out.set(c.performanceAccountId!, account);
+  }
+  return out;
+}

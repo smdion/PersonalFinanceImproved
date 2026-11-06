@@ -14,7 +14,7 @@ import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   adoptFirstRetirementProfile,
   FIRST_RETIREMENT_PROFILE_NAME,
-} from "@/server/helpers/retirement-profile";
+} from "@/server/services/profiles/first-retirement-profile";
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 

@@ -5,7 +5,7 @@
  * failed — a yearly source is not "stale" for 11 months of the year.
  *
  * Adding a source = one entry here plus its input in
- * `lib/pure/data-freshness.ts`'s `DataSourceInputs`.
+ * `lib/pure/sync/data-freshness.ts`'s `DataSourceInputs`.
  */
 
 import type { Focus } from "./focus-topics";
@@ -93,7 +93,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     key: "taxData",
     label: "Tax data",
     mode: "automatic",
-    // Judged by its own publication dates (lib/pure/tax-data-status.ts),
+    // Judged by its own publication dates (lib/pure/tax/data-status.ts),
     // reported as warnings — never by age.
     rhythm: { kind: "days", days: 100_000 },
     rhythmLabel: "Yearly, with Ledgr updates",

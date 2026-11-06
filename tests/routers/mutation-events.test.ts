@@ -7,7 +7,7 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller, adminSession } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
-import { buildYearEndHistory } from "@/server/helpers/snapshot";
+import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
 
 describe("mutation events", () => {
   it("a successful mutation invalidates the year-end history cache", async () => {

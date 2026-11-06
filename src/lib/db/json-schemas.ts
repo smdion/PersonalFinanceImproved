@@ -14,9 +14,9 @@ import {
   payPeriodSchema,
   payWeekSchema,
   bonusDestinationSchema,
-  zDecimal,
-  ROTH_IRA_ROUTE_VALUES,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/enum-values.schema";
+import { ROTH_IRA_ROUTE_VALUES } from "@/lib/config/enum-values";
+import { zDecimal } from "@/lib/utils/zod-fields";
 import { w4FilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 
@@ -338,19 +338,17 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
  * resolvable contribution at all, which is the "incomplete profile" state
  * surfaced by getIncompleteContribAccountIds. Every other field here stays
  * genuinely optional — those describe account behavior a profile MAY
- * customize, not "the" value.
- * contribution_profiles.contribution_active_fields is an EntityFieldMap
- * (schema-pg.ts) whose leaf objects have this known shape.
+ * customize, not "the" value. These are the leaves of the EntityFieldMap
+ * contribution_profiles.contribution_active_fields (schema-pg.ts).
  */
 /**
  * Base shape, all fields optional — used directly (without the refine
  * below) to validate a single-field PATCH, where a caller legitimately
  * sends just `{ isActive: false }` without touching contributionValue/
  * contributionMethod. The paired-or-neither invariant only makes sense
- * once applied to the full, merged entry — see
- * setAccountActiveFields/setDeductionActiveFields in
- * contribution-profiles.ts, which validate the post-merge result against
- * `contribAccountActiveFieldsSchema` (below) before persisting.
+ * once applied to the full, merged entry: setAccountActiveFields and
+ * setDeductionActiveFields (contribution-profiles.ts) validate the merged
+ * entry against `contribAccountActiveFieldsSchema` (below) before saving.
  */
 export const contribAccountActiveFieldsPatchSchema = z
   .object({
@@ -358,6 +356,8 @@ export const contribAccountActiveFieldsPatchSchema = z
     contributionMethod: z.string().optional(),
     employerMatchType: z.string().optional(),
     employerMatchValue: z.union([z.string(), z.number()]).optional(),
+    /** A percent match's rate, a fraction: what is read (0017 drops the value). */
+    employerMatchRate: z.union([z.string(), z.number()]).optional(),
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
@@ -366,16 +366,9 @@ export const contribAccountActiveFieldsPatchSchema = z
     fromBonus: z.boolean().optional(),
     /** A Roth IRA account's route (ROTH_IRA_ROUTE_VALUES). Absent = direct. */
     rothRoute: z.enum(ROTH_IRA_ROUTE_VALUES).optional(),
-    /** A custom display label for this account within this profile —
-     *  cosmetic, not financial (was `displayNameActive`, whose `Active`
-     *  suffix falsely implied it behaves like `isActive` for swap-safety —
-     *  it doesn't, see contrib-profile-diff.ts). */
+    /** A custom display label for this account within this profile,
+     *  cosmetic only (see contrib-profile-diff.ts). */
     displayNameCustom: z.string().optional(),
-    /** @deprecated legacy key. Still accepted so profiles saved before
-     *  the rename pass `.strict()` validation; readers fall back to it
-     *  (`displayNameCustom ?? displayNameActive`) and writers only emit the
-     *  new key, so it decays to dead weight. Drop in the next schema squash. */
-    displayNameActive: z.string().optional(),
   })
   .strict();
 

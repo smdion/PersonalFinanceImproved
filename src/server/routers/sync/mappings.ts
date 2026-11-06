@@ -6,24 +6,22 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
-import {
-  getClientForService,
-  getActiveBudgetApi,
-  getApiConnection,
-} from "@/lib/budget-api";
+import { getApiConnection } from "@/lib/budget-api";
+import { requireBudgetClient } from "@/server/services/budget/budget-client";
 import {
   allowedDirectionsForMapping,
   isPullMapping,
   localTargetsPulledTwice,
   mappingsWithTypedIds,
   remotesPulledTwice,
-} from "@/lib/utils/account-mapping";
-import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
+} from "@/lib/pure/sync/account-mapping";
+import { clearUnmappedPulledBalances } from "@/server/services/sync/apply-pull-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
-import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
+import { pushSnapshotToBudgetApi } from "@/server/services/sync/budget-api-push";
 import { formatList } from "@/lib/utils/format";
 import { serviceEnum } from "./_shared";
 import { toDecimalColumn } from "@/lib/utils/math";
+import { firstRow } from "@/lib/utils/first-row";
 
 /** Why a mapping's direction isn't allowed for its target, or null when it
  *  is. Names the account by its localName, never a raw id. */
@@ -189,21 +187,7 @@ export const syncMappingsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const asOfDate = ctx.scope.asOf;
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No budget API active",
-        });
-      }
-
-      const client = await getClientForService(ctx.db, active);
-      if (!client) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Budget API client not available",
-        });
-      }
+      const { service: active, client } = await requireBudgetClient(ctx.db);
 
       const conn = await getApiConnection(ctx.db, active);
       const mappings = conn?.accountMappings ?? [];
@@ -220,7 +204,7 @@ export const syncMappingsRouter = createTRPCRouter({
         .select()
         .from(schema.portfolioSnapshots)
         .where(eq(schema.portfolioSnapshots.id, input.snapshotId))
-        .then((r) => r[0]);
+        .then(firstRow);
       if (!snapshot) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -239,7 +223,7 @@ export const syncMappingsRouter = createTRPCRouter({
         .from(schema.portfolioSnapshots)
         .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
         .limit(1)
-        .then((r) => r[0]);
+        .then(firstRow);
       const isLatest = latest?.id === snapshot.id;
       if (!isLatest && !input.confirmNonLatest) {
         throw new TRPCError({

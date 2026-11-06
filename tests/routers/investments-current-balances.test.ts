@@ -7,9 +7,9 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedPerson } from "./setup";
 import * as sqlite from "@/lib/db/schema-sqlite";
-import { loadCurrentBalances } from "@/server/routers/investments/load-current-balances";
+import { loadCurrentBalances } from "@/server/services/investments/current-balances";
 
-vi.mock("@/server/helpers/market-prices", () => ({
+vi.mock("@/server/services/investments/market-prices", () => ({
   getLatestMarketClose: async () => null,
   getBenchmarkMonthlyPrices: async () => null,
   getDailyMarketCloses: async (_db: unknown, ticker: string) =>
@@ -137,11 +137,13 @@ describe("investments.getCurrentBalances", () => {
     const r = await ctx.caller.investments.getCurrentBalances();
     expect(Object.keys(r).sort()).toEqual([
       "balances",
+      "closeReports",
       "feeds",
       "movement",
       "snapshotDate",
       "summary",
       "target",
+      "unpricedMoves",
     ]);
     expect(Object.keys(r.balances[0]!).sort()).toEqual([
       "current",
@@ -149,6 +151,7 @@ describe("investments.getCurrentBalances", () => {
       "key",
       "market",
       "move",
+      "noHoldings",
       "noSnapshot",
       "performanceAccountId",
       "snapshot",

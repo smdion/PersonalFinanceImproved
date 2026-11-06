@@ -13,7 +13,7 @@
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
-import { planInUseMessage } from "@/lib/pure/plans";
+import { planInUseMessage } from "@/lib/pure/household/plans";
 import { toast } from "@/lib/hooks/use-toast";
 import {
   ProfileListRow,

@@ -7,8 +7,8 @@ import {
   retirementBridge,
   type BridgeYear,
   type RetirementBridge as Bridge,
-} from "@/lib/pure/retirement-bridge";
-import type { EngineYearProjection } from "@/lib/calculators/types/engine-projection";
+} from "@/lib/pure/retirement/retirement-bridge";
+import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
 import { compactCurrency, formatCurrency } from "@/lib/utils/format";
 
 /** Below this age at retirement, the bridge question applies. */
@@ -67,7 +67,7 @@ function detailLines(b: Extract<Bridge, { status: "bridge" }>): string[] {
 /**
  * The bridge to penalty-free money: can the first retirement years be paid
  * for while some retirement money is still locked by early-withdrawal
- * rules? Read from the fixed-return projection (lib/pure/retirement-bridge).
+ * rules? Read from the fixed-return projection (lib/pure/retirement/retirement-bridge).
  */
 export function RetirementBridge({
   projection,

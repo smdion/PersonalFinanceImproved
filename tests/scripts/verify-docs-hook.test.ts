@@ -16,8 +16,9 @@ describe("verify-docs hook scope", () => {
   it("covers a file in every directory docs:verify counts", () => {
     const docs = scope("DOCS_SCOPE");
     for (const file of [
-      "src/lib/calculators/engine/tax-gross-up.ts",
-      "src/lib/calculators/monte-carlo.ts",
+      "src/lib/pure/engine/withdrawal-solver.ts",
+      "src/lib/pure/engine/projection.ts",
+      "src/lib/pure/simulation/monte-carlo.ts",
       "src/server/routers/settings/paycheck.ts",
       "src/app/(dashboard)/contributions/page.tsx",
       "src/components/settings/people-settings.tsx",

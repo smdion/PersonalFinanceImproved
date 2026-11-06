@@ -1,0 +1,5 @@
+# Review requests for dependency and CI changes, Dependabot's included.
+package.json @smdion
+pnpm-lock.yaml @smdion
+Dockerfile @smdion
+/.github/ @smdion

@@ -1,7 +1,7 @@
 // Consolidated display label maps.
 // Components import from here — never define local label maps.
 
-import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
 import { WEALTH_TIER_PAW_MIN, WEALTH_TIER_UAW_MAX } from "@/lib/constants";
 import {
   filingTable,
@@ -305,7 +305,7 @@ export const PROJECTED_RETIREMENT_BROKERAGE_LABEL =
   "Retirement brokerage (projected)";
 
 /** Where penalty-free money sits at the start of the retirement bridge
- *  (lib/pure/retirement-bridge.ts). */
+ *  (lib/pure/retirement/retirement-bridge.ts). */
 export const BRIDGE_SOURCE_LABELS: Record<
   "brokerage" | "roth" | "workplacePlan" | "traditionalIra" | "other",
   string

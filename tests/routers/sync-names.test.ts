@@ -79,7 +79,7 @@ describe("sync names router", () => {
 
     // Seed a budget profile + item, then link it via
     // budget_item_category_links (the raw apiCategoryId/apiCategoryName
-    // columns are dead — see src/server/helpers/category-links.ts).
+    // columns are dead — see src/server/data/category-links.ts).
     const profileId = await seedBudgetProfile(db);
     const item = db
       .insert(schema.budgetItems)
@@ -198,7 +198,7 @@ describe("sync names router", () => {
 
       // The Actual link's own category name must be untouched.
       const { loadBudgetItemLinks } =
-        await import("@/server/helpers/category-links");
+        await import("@/server/data/category-links");
       // eslint-disable-next-line no-restricted-syntax -- test-only cast to the pg Db type the helper expects
       const rawDb = db as unknown as Parameters<typeof loadBudgetItemLinks>[0];
       const actualLinks = await loadBudgetItemLinks(
@@ -795,7 +795,7 @@ describe("sync-names coverage", () => {
         expect(result.budgetRenamed).toBe(1);
 
         const { loadBudgetItemLinks } =
-          await import("@/server/helpers/category-links");
+          await import("@/server/data/category-links");
         // eslint-disable-next-line no-restricted-syntax -- test-only cast to the pg Db type the helper expects
         const rawDb = db as unknown as Parameters<
           typeof loadBudgetItemLinks

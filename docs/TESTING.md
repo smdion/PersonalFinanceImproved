@@ -6,37 +6,36 @@ pnpm test:benchmarks  # engine vs published research (slower)
 pnpm test:coverage    # with coverage report (coverage/)
 pnpm test:stress      # property tests at 200 runs
 pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to override :3000)
-pnpm vitest run tests/calculators   # one area — prefer this while working
+pnpm vitest run tests/pure/engine   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->621<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->680<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
-| Folder                                         | What it tests                                                                                                                               |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calculators/`                                 | Every calculator and the engine: unit tests, snapshot fixtures, property-based invariants, retirement-scope invariance, spending strategies |
-| `benchmarks/`                                  | The engine against Trinity Study, cFIREsim, asset-class assumptions, glide paths, tax accuracy (own Vitest project)                         |
-| `pure/`                                        | `src/lib/pure/` business logic — no DB, no network (RULES.md § Pure Business Logic Boundary)                                                |
-| `routers/`                                     | tRPC procedures called directly against an isolated SQLite DB, incl. permission enforcement                                                 |
-| `baseline/`                                    | Behavior baseline (v0.10.x): every router query's numbers for 17 invented households, SQLite and PostgreSQL, and the rows sync writes       |
-| `helpers/`                                     | `src/server/helpers/`                                                                                                                       |
-| `components/`, `hooks/`, `accessibility/`      | UI behavior (Testing Library), hooks (`renderHook`), axe-core checks                                                                        |
-| `config/`                                      | Account-type config, IRS limits, RMD tables, tax-data freshness and completeness                                                            |
-| `db/`                                          | Schema, migrations, dialect parity, backup transforms, reference data                                                                       |
-| `integration/`                                 | Zod schemas, backup round-trip through the real version logic                                                                               |
-| `lint/`                                        | RULES.md sweeps over the source (hardcoded categories, tax tables outside config, re-declared constants, theme, …)                          |
-| `budget-api/`, `simplefin/`, `sec/`, `tiingo/` | External clients and sync logic                                                                                                             |
-| `server/`, `utils/`, `scripts/`, `edge-cases/` | Auth callbacks, utilities, repo scripts, extreme inputs                                                                                     |
-| `e2e/`                                         | Playwright smoke tests and the privacy-mode leak scan                                                                                       |
+| Folder                                         | What it tests                                                                                                                                                                                                                            |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pure/<area>/`, `pure/engine/`                 | `src/lib/pure/` business logic, no DB, no network (RULES.md § Pure Business Logic Boundary): every calculator and the engine; unit tests, snapshot fixtures, property-based invariants, retirement-scope invariance, spending strategies |
+| `benchmarks/`                                  | The engine against Trinity Study, cFIREsim, asset-class assumptions, glide paths, tax accuracy (own Vitest project)                                                                                                                      |
+| `routers/`                                     | tRPC procedures called directly against an isolated SQLite DB, incl. permission enforcement                                                                                                                                              |
+| `baseline/`                                    | Behavior baseline (v0.10.x): every router query's numbers for 17 invented households, SQLite and PostgreSQL, and the rows sync writes                                                                                                    |
+| `helpers/`                                     | Tests of shared server reads and services (`src/server/data/`, `src/server/services/`) and some `lib/pure/` modules, from before they had their own folders; new ones go under `server/` or `pure/<area>/`                               |
+| `components/`, `hooks/`, `accessibility/`      | UI behavior (Testing Library), hooks (`renderHook`), axe-core checks                                                                                                                                                                     |
+| `config/`                                      | Account-type config, IRS limits, RMD tables, tax-data freshness and completeness                                                                                                                                                         |
+| `db/`                                          | Schema, migrations, dialect parity, backup transforms, reference data                                                                                                                                                                    |
+| `integration/`                                 | Zod schemas, backup round-trip through the real version logic                                                                                                                                                                            |
+| `lint/`                                        | RULES.md sweeps over the source (hardcoded categories, tax tables outside config, re-declared constants, theme, …)                                                                                                                       |
+| `budget-api/`, `simplefin/`, `sec/`, `tiingo/` | External clients and sync logic                                                                                                                                                                                                          |
+| `server/`, `utils/`, `scripts/`, `edge-cases/` | Auth callbacks, utilities, repo scripts, extreme inputs                                                                                                                                                                                  |
+| `e2e/`                                         | Playwright smoke tests and the privacy-mode leak scan                                                                                                                                                                                    |
 
-**Coverage** is scoped to `src/server/**` and, under `src/lib/`, `calculators`, `config`, `budget-api`, `db`, `pure`, `simplefin`, `env.ts` and four named `utils` files (`vitest.config.ts`). Components, hooks, `tax-data`, `auth`, `sec` and `tiingo` aren't measured; thresholds in `vitest.config.ts`: statements 85%, branches 70%, functions 80%, lines 85%.
+**Coverage** is scoped to `src/server/**` and, under `src/lib/`, `config`, `budget-api`, `db`, `pure`, `simplefin`, `env.ts` and four named `utils` files (`vitest.config.ts`). Components, hooks, `tax-data`, `auth`, `sec` and `tiingo` aren't measured; thresholds in `vitest.config.ts`: statements 85%, branches 70%, functions 80%, lines 85%.
 
 ## Suites worth knowing
 
-- **`calculators/engine-snapshot.test.ts`** — ~70 fixtures; each pins key figures (`toBe`) and a metrics snapshot. A failure reads "sustainable withdrawal changed from X to Y". Every fixture must have consistent starting money (see below).
-- **`calculators/engine-invariants.test.ts`** — property-based ([fast-check](https://github.com/dubzzz/fast-check)): balance conservation, limits never exceeded, phases never reverse, non-negative tax, generated inputs consistent with themselves. 20 runs by default; `FAST_CHECK_NUM_RUNS` for more.
-- **`calculators/retirement-scope-invariance.test.ts`** — adding $1M of Portfolio money (or saving into it) changes no retirement answer.
+- **`pure/engine/engine-snapshot.test.ts`** — ~70 fixtures; each pins key figures (`toBe`) and a metrics snapshot. A failure reads "sustainable withdrawal changed from X to Y". Every fixture must have consistent starting money (see below).
+- **`pure/engine/engine-invariants.test.ts`** — property-based ([fast-check](https://github.com/dubzzz/fast-check)): balance conservation, limits never exceeded, phases never reverse, non-negative tax, generated inputs consistent with themselves. 20 runs by default; `FAST_CHECK_NUM_RUNS` for more.
+- **`pure/retirement/retirement-scope-invariance.test.ts`** — adding $1M of Portfolio money (or saving into it) changes no retirement answer.
 - **`lint/violations.test.ts`** — the RULES.md sweeps; numbered rules in its header.
 - **`**/answer-key-*.test.ts`** — the answer key: figures worked by hand from the published rules, each with its derivation and source beside it, titled `<area>/<id> [CALCULATIONS row]`; [CALCULATIONS.md](CALCULATIONS.md)'s Tested column counts them per row (`pnpm docs:update`). Helpers in `fixtures/answer-key.ts` (`cents`, `ledgerRow`, `xfail`, `runOneYear`). An expected failure is `it.fails` naming the release and TODO item that fix it (`v0.11 …`), with today's figure pinned beside it; `lint/answer-key.test.ts` enforces the naming and unique ids. `lint/calculations-law-year.test.ts` fails when a newer tax year ships than CALCULATIONS' tax-law rows were checked for, or a shipped year lacks a whole-return case for a filing status.
 - **`baseline/router-baseline.test.ts`** — the v0.10.x behavior baseline: each household seeded through the write procedures, every query called with the clock fixed, its numbers (never text) compared with `baseline/__baseline__/`; `sync-writes.test.ts` pins the rows a replayed YNAB or Actual sync writes (`baseline/__sync__/`). A structural commit leaves those files byte-identical (the rule is in the test's header); `LEDGR_BASELINE_WRITE=1` rewrites them only when a deleted procedure's files go.
@@ -45,14 +44,14 @@ pnpm vitest run tests/calculators   # one area — prefer this while working
 
 ## Fixtures and harnesses
 
-| File                                      | Provides                                                                                                                                                                                                                                                                                        |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `calculators/fixtures/engine-fixtures.ts` | `makeTaxBuckets`, `makeAccountBalances`, config factories; **`withConsistentStart`** (keeps buckets and per-category balances in step when a test sets one) and **`startingBalanceGaps`** (asserted empty by the engine suites — a fixture whose money disagrees with itself changes depletion) |
-| `calculators/fixtures.ts`                 | Synthetic household (Person A $120k, Person B $110k): brackets, contribution specs, paycheck inputs                                                                                                                                                                                             |
-| `benchmarks/benchmark-helpers.ts`         | `makeStandardInput`, `makeTrinityInput`, `makePureGrowthInput`, `makeMCInput`, asset classes, correlations, glide paths, tolerances                                                                                                                                                             |
-| `benchmarks/history-replay.ts`            | `replayGrid()`: the simulation spec § 11.6 30-year grid replayed through the engine from `cfiresim-export.csv` (answer key K15 and the behavior baseline in `behavior-baseline-replay-grid.ts`)                                                                                                 |
-| `routers/setup.ts` + `setup-mocks.ts`     | `createTestCaller()` — isolated SQLite DB with migrations and seed; `adminSession`, `viewerSession`, `createViewerSessionWithPermissions([...])`; seed helpers (`seedStandardDataset`, …)                                                                                                       |
-| `fixtures/`                               | Milestone and profile fixtures shared across suites                                                                                                                                                                                                                                             |
+| File                                  | Provides                                                                                                                                                                                                                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pure/fixtures/engine-fixtures.ts`    | `makeTaxBuckets`, `makeAccountBalances`, config factories; **`withConsistentStart`** (keeps buckets and per-category balances in step when a test sets one) and **`startingBalanceGaps`** (asserted empty by the engine suites — a fixture whose money disagrees with itself changes depletion) |
+| `pure/fixtures.ts`                    | Synthetic household (Person A $120k, Person B $110k): brackets, contribution specs, paycheck inputs                                                                                                                                                                                             |
+| `benchmarks/benchmark-helpers.ts`     | `makeStandardInput`, `makeTrinityInput`, `makePureGrowthInput`, `makeMCInput`, asset classes, correlations, glide paths, tolerances                                                                                                                                                             |
+| `benchmarks/history-replay.ts`        | `replayGrid()`: the simulation spec § 11.6 30-year grid replayed through the engine from `cfiresim-export.csv` (answer key K15 and the behavior baseline in `behavior-baseline-replay-grid.ts`)                                                                                                 |
+| `routers/setup.ts` + `setup-mocks.ts` | `createTestCaller()` — isolated SQLite DB with migrations and seed; `adminSession`, `viewerSession`, `createViewerSessionWithPermissions([...])`; seed helpers (`seedStandardDataset`, …)                                                                                                       |
+| `fixtures/`                           | Milestone and profile fixtures shared across suites                                                                                                                                                                                                                                             |
 
 Fixtures use invented data only — never a real household's figures.
 
@@ -71,7 +70,7 @@ Fixtures use invented data only — never a real household's figures.
 When engine output changes on purpose:
 
 ```bash
-pnpm vitest run tests/calculators/engine-snapshot.test.ts -u
+pnpm vitest run tests/pure/engine/engine-snapshot.test.ts -u
 ```
 
 The pinned `toBe` figures don't update with `-u` — change them from the failure messages. Review the snapshot diff and explain the change in the commit.

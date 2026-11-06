@@ -106,7 +106,7 @@ export const RMD_EXCISE_TAX_RATE = 0.25;
 // ---------------------------------------------------------------------------
 // Early-Access Ages (shared by the Tax Buckets analysis tool and
 // the retirement projection engine's withdrawal-eligibility gate —
-// both consume `src/lib/pure/early-access.ts`'s leaf predicates, which read
+// both consume `src/lib/pure/accounts/early-access.ts`'s leaf predicates, which read
 // these constants)
 // ---------------------------------------------------------------------------
 
@@ -136,14 +136,14 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
  *  under IRC §63(f)(1) ("65 or older"). A person is treated as 65 for the
  *  whole tax year if they turn 65 by the first day of the following year, but
  *  the projection works in whole years so a simple `age >= 65` test is used.
- *  Distinct from the OBBBA senior deduction (2025–2028, MAGI-phased), which
- *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
+ *  Separate from the OBBBA senior deduction (2025–2028, MAGI-phased), which
+ *  decumulation years add as well (`obbba-senior-deduction.ts`). */
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
  *  (IRC §72(t)): every gated account type but HSA, whose non-medical
  *  penalty is 20% (`HSA_NON_MEDICAL_PENALTY_RATE`). Used by
- *  `src/lib/pure/early-withdrawal-penalty.ts`. */
+ *  `src/lib/pure/accounts/early-withdrawal-penalty.ts`. */
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
 
 /** 20% early-withdrawal penalty rate for HSA non-medical distributions

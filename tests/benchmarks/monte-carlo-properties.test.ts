@@ -5,8 +5,8 @@
  * right-skew, percentile ordering, spread factors, reproducibility, and convergence.
  */
 import { describe, it, expect } from "vitest";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
+import { calculateProjection } from "@/lib/pure/engine";
 import {
   makeTrinityInput,
   makeMCInput,

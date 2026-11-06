@@ -1,6 +1,6 @@
 /** Projection state — composes form state, data-fetching queries, and derived computations into a single hook, plus override form submission handlers that bridge them. */
 import { useCallback } from "react";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   buildCategoryRecord,
   getAllCategories,

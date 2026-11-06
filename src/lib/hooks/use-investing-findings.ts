@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Investing findings — uninvested cash (lib/pure/cash-positions.ts) and
- * per-fund findings (lib/pure/fund-findings.ts), each judged once,
+ * Investing findings — uninvested cash (lib/pure/accounts/cash-positions.ts) and
+ * per-fund findings (lib/pure/investments/fund-findings.ts), each judged once,
  * from the holdings overview (portfolio permission), the current glide
  * path's cash target, the HSA buffer defaults and setting, and the Roth
  * verdict (a traditional IRA mid-backdoor isn't drag). Fetching only.
@@ -12,20 +12,20 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
-import { backdoorPlanned } from "@/lib/pure/roth-ira";
+import { backdoorPlanned } from "@/lib/pure/contributions/roth-ira";
 import { SK_HSA_CASH_BUFFER } from "@/lib/constants/settings-keys";
 import {
   currentCashClass,
   judgeCashDrag,
   judgeHsaCash,
   type CashFinding,
-} from "@/lib/pure/cash-positions";
+} from "@/lib/pure/accounts/cash-positions";
 import {
   judgeCheaperFunds,
   judgeTaxLossHarvest,
   type CheaperFundFinding,
   type HarvestFinding,
-} from "@/lib/pure/fund-findings";
+} from "@/lib/pure/investments/fund-findings";
 
 export function useInvestingFindings(): {
   isLoading: boolean;

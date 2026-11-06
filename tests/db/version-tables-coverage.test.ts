@@ -81,18 +81,4 @@ describe("state-version table registry coverage", () => {
     }
     expect(violations).toEqual([]);
   });
-
-  it("db-migrate.ts's own copy of the table list matches VERSION_TABLE_NAMES", () => {
-    // db-migrate.ts runs before src/ is available in the container, so it
-    // keeps a local copy for its pre-upgrade backups. A table missing there
-    // is silently left out of the backup taken right before a migration.
-    const source = readFileSync(
-      path.join(process.cwd(), "db-migrate.ts"),
-      "utf8",
-    );
-    const block = source.match(/const VERSION_TABLE_NAMES = \[([\s\S]*?)\];/);
-    expect(block).not.toBeNull();
-    const mirrored = [...block![1]!.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
-    expect([...mirrored].sort()).toEqual([...VERSION_TABLE_NAMES].sort());
-  });
 });

@@ -47,10 +47,11 @@
  *
  * ── THIS TEST IS INTENTIONALLY RED until B1b lands ────────────────────────
  */
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
+import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 
@@ -58,6 +59,13 @@ export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 export function makeRetiringMidyearInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
+  const startingBalances = {
+    preTax: 500000,
+    taxFree: 0,
+    afterTax: 0,
+    afterTaxBasis: 0,
+    hsa: 0,
+  };
   return withCapsAge({
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.1,
@@ -115,13 +123,12 @@ export function makeRetiringMidyearInput(
       ira: 0,
       brokerage: 0,
     },
-    startingBalances: {
-      preTax: 500000,
-      taxFree: 0,
-      afterTax: 0,
-      afterTaxBasis: 0,
-      hsa: 0,
-    },
+    startingBalances,
+    // The engine's own split of those buckets, which it used when this
+    // field was optional and absent.
+    startingAccountBalances: accountBalancesFromTaxBuckets(
+      overrides.startingBalances ?? startingBalances,
+    ),
     annualExpenses: 40000,
     inflationRate: 0.03,
     returnRates: [{ label: "7%", rate: 0.07 }],

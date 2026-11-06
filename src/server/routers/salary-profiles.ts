@@ -37,22 +37,25 @@ import {
   BLANK_SALARY_ENTRY,
   type SalaryEntry,
 } from "@/lib/db/salary-entry-defaults";
-import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { log } from "@/lib/logger";
-import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
 import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
-import { resolveCompensation } from "@/server/helpers";
-import type { SalaryEntryMap } from "@/server/helpers";
-import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { resolveActiveSalaryProfileId } from "@/server/helpers/salary";
-import { computeJobNetPayPerCheck } from "./savings";
+import { resolveCompensation } from "@/lib/pure/household/compensation";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
+import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
+import {
+  createProfile,
+  deleteProfile,
+  duplicateProfile,
+  setActiveProfile,
+} from "@/server/services/profiles/profile-lifecycle";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -378,16 +381,7 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
-
-      const rows = await ctx.db
-        .insert(schema.salaryProfiles)
-        .values({
-          name: input.name,
-          description: input.description ?? null,
-          salaries: input.salaries ?? {},
-        })
-        .returning();
-      return rows[0]!;
+      return createProfile(ctx.db, "salary", input);
     }),
 
   /**
@@ -412,36 +406,7 @@ export const salaryProfileRouter = createTRPCRouter({
         name: z.string().min(1).max(100),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const source = await ctx.db
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
-        .then((r) => r[0]);
-      if (!source)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Source profile not found",
-        });
-
-      const sourceSalaries = (source.salaries ?? {}) as SalaryEntryMap;
-      const salaries: SalaryEntryMap = Object.fromEntries(
-        Object.entries(sourceSalaries).map(([jobId, entry]) => [
-          jobId,
-          { ...entry, extraPaycheckRouting: null },
-        ]),
-      );
-
-      const rows = await ctx.db
-        .insert(schema.salaryProfiles)
-        .values({
-          name: input.name,
-          description: source.description,
-          salaries,
-        })
-        .returning();
-      return rows[0]!;
-    }),
+    .mutation(({ ctx, input }) => duplicateProfile(ctx.db, "salary", input)),
 
   update: contributionProfileProcedure
     .input(
@@ -617,41 +582,7 @@ export const salaryProfileRouter = createTRPCRouter({
    */
   delete: contributionProfileProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const activeSettingRows = await ctx.db
-        .select()
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
-      const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
-
-      const allProfiles = await ctx.db
-        .select({ id: schema.salaryProfiles.id })
-        .from(schema.salaryProfiles);
-
-      const deleteCheck = canDeleteSalaryProfile(
-        activeId,
-        input.id,
-        allProfiles.length,
-      );
-      if (!deleteCheck.allowed)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: deleteCheck.reason ?? "This profile can't be deleted.",
-        });
-
-      if (!allProfiles.some((p) => p.id === input.id))
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
-      await assertNoPlanUses(ctx.db, "salary", input.id);
-
-      await ctx.db
-        .delete(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.id));
-      return { success: true };
-    }),
+    .mutation(({ ctx, input }) => deleteProfile(ctx.db, "salary", input.id)),
 
   /**
    * Mark a profile as the globally-active one (or clear the setting with
@@ -664,31 +595,5 @@ export const salaryProfileRouter = createTRPCRouter({
    */
   setActive: contributionProfileProcedure
     .input(z.object({ id: z.number().nullable() }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.id === null) {
-        await ctx.db
-          .delete(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
-        return { success: true };
-      }
-
-      const [profile] = await ctx.db
-        .select({ id: schema.salaryProfiles.id })
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.id));
-      if (!profile)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
-      await ctx.db
-        .insert(schema.appSettings)
-        .values({ key: SK_ACTIVE_SALARY_PROFILE_ID, value: input.id })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input.id },
-        });
-      return { success: true };
-    }),
+    .mutation(({ ctx, input }) => setActiveProfile(ctx.db, "salary", input.id)),
 });

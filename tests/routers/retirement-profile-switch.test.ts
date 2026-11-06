@@ -23,13 +23,13 @@
  * one, which is a new way to get this wrong under the presence encoding.
  */
 import "./setup-mocks";
-import type { SalaryEntryMap } from "@/server/helpers/salary";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedJob, seedPerformanceAccount } from "./setup";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
 import * as schema from "@/lib/db/schema-sqlite";
 
 const FIXED_NOW = new Date("2026-04-14T12:00:00Z");

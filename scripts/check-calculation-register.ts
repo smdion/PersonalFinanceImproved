@@ -5,9 +5,9 @@
  *
  * 1. Every Function entry exists, with its symbol defined there.
  * 2. Every row names a Function and an Authority.
- * 3. Every value export of `src/lib/calculators/` (the engine included)
- *    and `src/lib/pure/` is named in some row's Function cell. The exports
- *    without a row today are listed in the baseline; that list may only
+ * 3. Every value export of `src/lib/pure/` (the engine included) is named
+ *    in some row's Function cell. The exports without a row today are
+ *    listed in the baseline; that list may only
  *    shrink. A new export needs a row; a listed export that gets a row or
  *    goes away must leave the list (a stale entry fails too).
  * 4. Every row has a risk (H, M or L) in the baseline. High-risk rows with
@@ -37,7 +37,7 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const BASELINE_FILE = "scripts/calculation-register-baseline.json";
 /** The directories whose exports must each have a row. */
-export const COVERED_DIRS = ["src/lib/calculators", "src/lib/pure"];
+export const COVERED_DIRS = ["src/lib/pure"];
 
 export type Risk = "H" | "M" | "L";
 

@@ -1,7 +1,7 @@
 /** Executive-summary section of the advisor report — renders the narrative
- *  paragraph and key numbers lib/pure/report/executive-summary.ts already
+ *  paragraph and key numbers lib/pure/advice/report/executive-summary.ts already
  *  computed. Presentational only. */
-import type { ReportExecutiveSummary } from "@/lib/pure/report/types";
+import type { ReportExecutiveSummary } from "@/lib/pure/advice/report/types";
 import { maskAmountsInText } from "@/lib/utils/format";
 
 export function ReportExecutiveSummarySection({

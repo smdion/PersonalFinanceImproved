@@ -8,14 +8,14 @@
  * fields is read by this hook.
  */
 import { describe, it, expect } from "vitest";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { renderHook } from "@testing-library/react";
 import type {
   EngineYearProjection,
   EngineAccumulationYear,
   EngineDecumulationYear,
-} from "@/lib/calculators/types";
-import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
+} from "@/lib/pure/engine/types";
+import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import type { UseProjectionStateProps } from "@/components/cards/projection/use-projection-state";
 import type { ProjectionFormState } from "@/components/cards/projection/use-projection-form-state";
 import type { ProjectionQueries } from "@/components/cards/projection/use-projection-queries";

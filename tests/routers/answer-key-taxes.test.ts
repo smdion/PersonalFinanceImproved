@@ -1,7 +1,7 @@
 /**
  * Answer key, tax (the Taxes page): this year's household federal tax as
  * `paycheck.computeSummary` gives it (`householdTax`, from
- * `calculateHouseholdTax` in `src/lib/calculators/tax.ts`; there's no tax
+ * `calculateHouseholdTax` in `src/lib/pure/tax/tax.ts`; there's no tax
  * router). Figures worked by hand from the published rules; source of the
  * cases: the November review's tax verdicts (`rebuild/annual-tax-verdicts.md`
  * § 1 and "Cases ready to become answer-key tests"), as collected in the

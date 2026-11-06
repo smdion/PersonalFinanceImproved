@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signInAsBootAdmin } from "./boot-admin";
 
 /**
  * Sync integration journey.
@@ -26,6 +27,8 @@ import { test, expect } from "@playwright/test";
 // adminProcedure), but the demoOnlySession assigned in src/server/trpc.ts
 // uses role="viewer". The admin procedures return UNAUTHORIZED rather
 // than rendering the credential form, so the token input never mounts.
+// The `non-demo` Playwright project runs it on scripts/ci-image-boot.sh's
+// booted install, signed in as the admin first-run created.
 //
 // The coverage gap this skip opens is backfilled by
 // tests/components/integrations.test.tsx, which renders the real
@@ -42,6 +45,8 @@ test.describe("Sync integration journey (M18)", () => {
   );
 
   test.beforeEach(async ({ page }) => {
+    // The non-demo project runs on the booted install as its first admin.
+    await signInAsBootAdmin(page);
     // Intercept the tRPC endpoint used by the "Fetch" button. Playwright
     // matches against the full URL so we use a glob that tolerates
     // tRPC's batch suffix and input query param.

@@ -6,8 +6,8 @@
  */
 import { useState } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { goldilocksPlan } from "@/lib/pure/goldilocks";
-import type { AccountCategory } from "@/lib/calculators/types";
+import { goldilocksPlan } from "@/lib/pure/advice/goldilocks";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { LumpSumEvent } from "./types";
 
 type AccountOption = {

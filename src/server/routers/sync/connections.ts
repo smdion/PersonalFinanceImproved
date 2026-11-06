@@ -1,6 +1,6 @@
 /** Sync connections router for CRUD operations on YNAB/Actual budget API credentials and connection status checks. */
 
-import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
+import { clearUnmappedPulledBalances } from "@/server/services/sync/apply-pull-mapping";
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import {
@@ -17,11 +17,12 @@ import {
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
-import { validateOutboundUrl } from "@/lib/url-safety";
+import { checkOutboundUrl } from "@/lib/http/url-safety";
 import { TRPCError } from "@trpc/server";
 import { BudgetApiError, userMessageFor } from "@/lib/budget-api/errors";
 import { listYnabBudgets } from "@/lib/budget-api/ynab-client";
 import { serviceEnum } from "./_shared";
+import { upsertSetting } from "@/server/data/settings";
 
 export const syncConnectionsRouter = createTRPCRouter({
   /** Get connection status for each service (not just the active one) */
@@ -66,20 +67,18 @@ export const syncConnectionsRouter = createTRPCRouter({
           serverUrl: z.string().url(),
           apiKey: z.string().min(1),
           budgetSyncId: z.string().min(1),
-          // Never sent server-side (no outbound fetch to it), so it gets
-          // no validateOutboundUrl SSRF check — only a valid-URL shape
-          // check, same as any other browser-opened link.
+          // Never fetched server-side, so it gets no checkOutboundUrl
+          // check, only a valid-URL shape check, as any browser-opened link.
           externalUrl: z.string().url().optional().or(z.literal("")),
         }),
       ]),
     )
     .mutation(async ({ ctx, input }) => {
-      // SSRF block: for Actual Budget, the user
-      // supplies a serverUrl and the container makes outbound requests to
-      // it. Reject private/loopback/link-local destinations unless
-      // ALLOWED_ACTUAL_HOSTS env var explicitly opts the host in.
+      // Refuses an Actual URL with another scheme than http/https or with a
+      // user name or password. Its host, private or not, is trusted as
+      // saved by whoever holds the sync permission.
       if (input.service === "actual") {
-        const safety = validateOutboundUrl(input.serverUrl);
+        const safety = checkOutboundUrl(input.serverUrl, "actual");
         if (!safety.ok) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -223,13 +222,7 @@ export const syncConnectionsRouter = createTRPCRouter({
       // If we're deleting the active API, reset to 'none'
       const active = await getActiveBudgetApi(ctx.db);
       if (active === input.service) {
-        await ctx.db
-          .insert(schema.appSettings)
-          .values({ key: "active_budget_api", value: "none" })
-          .onConflictDoUpdate({
-            target: schema.appSettings.key,
-            set: { value: "none" },
-          });
+        await upsertSetting(ctx.db, "active_budget_api", "none");
       }
 
       return { success: true };

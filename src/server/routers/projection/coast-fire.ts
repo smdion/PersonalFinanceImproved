@@ -12,8 +12,11 @@
 import {
   planEndAge as planEndAgeOf,
   planRetirementAge as planRetirementAgeOf,
-} from "@/lib/pure/household-timeline";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+} from "@/lib/pure/household/household-timeline";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
 import {
@@ -22,33 +25,29 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { findCoastFireAge } from "@/lib/calculators/coast-fire";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
-import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
+import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
+import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/lib/pure/engine/types";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
-  buildMcInputs,
   resolveProjectionOverrides,
 } from "./_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
   readProjectionCache,
   writeProjectionCache,
-} from "@/server/helpers/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+} from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
@@ -108,14 +107,9 @@ export const coastFireRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input.selection,
         snapshotId: input.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)
@@ -213,24 +207,18 @@ export const coastFireRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
       // Fetch the engine payload + MC-specific tables in parallel. Mirrors
       // computeMonteCarloProjection for the "default" preset only — no
       // user-adjustable preset, no asset class overrides, no inflation
       // overrides. Coast FIRE MC uses defaults for reproducibility.
       // Coast FIRE's Simulation runs on the default preset.
-      const [data, mc] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+      const [{ payload }, mc] = await Promise.all([
+        prepareProjectionRun(ctx.db, {
+          selection: input.selection,
           snapshotId: input.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
-
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       // No return rate: the projection card says so; nothing to search.
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };

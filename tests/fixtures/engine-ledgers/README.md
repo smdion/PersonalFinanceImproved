@@ -1,6 +1,6 @@
 # Engine ledgers
 
-Hand-style year-by-year ledgers for wave 3, Yearly engine. Written blind: nothing here came from `src/` or `tests/`. The rules they follow are in the November review's engine spec (`.scratch/docs/reviews/2026-11-01/specs/engine.md`, not shipped); `EY-` and `UD-` ids point there. Copied from that review's `specs/engine-ledgers/` for the answer key (`tests/calculators/answer-key-ledgers.test.ts`), with the generator beside them.
+Hand-style year-by-year ledgers for wave 3, Yearly engine. Written blind: nothing here came from `src/` or `tests/`. The rules they follow are in the November review's engine spec (`.scratch/docs/reviews/2026-11-01/specs/engine.md`, not shipped); `EY-` and `UD-` ids point there. Copied from that review's `specs/engine-ledgers/` for the answer key (`tests/pure/engine/answer-key-ledgers.test.ts`), with the generator beside them.
 
 | Household | Shape                                           | Years     | Exercises                                                                                                                         |
 | --------- | ----------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |

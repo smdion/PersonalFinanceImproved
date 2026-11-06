@@ -481,6 +481,37 @@ describe("sync core — syncAll", () => {
       },
     );
   });
+
+  it.each(["actual", "ynab"] as const)(
+    "a %s error answer's body reaches neither the client nor the log",
+    async (service) => {
+      resetActualWrapperGates();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(
+          async () =>
+            new Response("SECRET-BODY echoing the key", { status: 400 }),
+        ),
+      );
+      mockGetClientForService.mockResolvedValue(
+        service === "actual"
+          ? new ActualClient("http://actual.local", "key", "sync-id")
+          : new YnabClient("token", "budget-id"),
+      );
+      const logged = vi.spyOn(console, "error");
+      const error = await caller.sync.syncAll({ service }).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(TRPCError);
+      expect((error as TRPCError).message).toMatch(/^Sync failed: /);
+      expect((error as TRPCError).message).not.toContain("SECRET-BODY");
+      const lines = logged.mock.calls.map((c) => String(c[0]));
+      expect(lines.some((l) => l.includes("sync_failed"))).toBe(true);
+      expect(lines.join("\n")).not.toContain("SECRET-BODY");
+      logged.mockRestore();
+    },
+  );
 });
 
 // ── getPreview ───────────────────────────────────────────────────────
@@ -863,7 +894,7 @@ describe("sync core — getPreview", () => {
 
   // Found live, 2026-08-31: this preview's cash figure was an independent
   // duplicate of getEffectiveCash's type-based auto-detection, so mapping
-  // "Cash" accounts on the Integrations page (server/helpers/budget.ts's
+  // "Cash" accounts on the Integrations page (server/services/budget/account-balances.ts's
   // sumMappedAccountBalances) fixed Net Worth/Assets but this preview kept
   // showing $0 — a second, differently-computed number for the same thing.
   it("uses mapped Cash accounts for the preview total when mappings exist, ignoring type", async () => {

@@ -12,7 +12,7 @@
  * Accumulation (25-45) matches Vanguard TDFs; retirement (55+) floors at ~50% equity.
  */
 import { describe, it, expect } from "vitest";
-import { interpolateAllocations } from "@/lib/calculators/random";
+import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { CURRENT_GLIDE_PATH, TOLERANCES } from "./benchmark-helpers";
 
 // FIRE-adjusted equity targets for our Default preset.

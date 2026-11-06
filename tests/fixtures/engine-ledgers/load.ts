@@ -26,18 +26,18 @@
  */
 import * as fs from "fs";
 import * as path from "path";
-import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
+import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
 import {
   getAllCategories,
   type AccountCategory,
 } from "@/lib/config/account-types";
 import type {
   ContributionSpec,
-  IndividualAccountInput,
   ProjectionInput,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 
 const HERE = __dirname;
 const YEAR = 2026;

@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@/lib/trpc";
-import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
 
 export type RawItem = {
   id: number;

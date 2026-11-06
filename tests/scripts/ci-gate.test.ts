@@ -205,7 +205,12 @@ describe("the script and deploy.sh --dry-run, with a stand-in gh", () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
-  function stage(runs: Partial<CiRun>[], jobs: CiJob[] = greenJobs) {
+  // The script reads HEAD's ci.yml, so a green run reports every job it defines.
+  const headJobs: CiJob[] = workflowJobNames(
+    fs.readFileSync(".github/workflows/ci.yml", "utf8"),
+  ).map((name) => ({ name, status: "completed", conclusion: "success" }));
+
+  function stage(runs: Partial<CiRun>[], jobs: CiJob[] = headJobs) {
     fs.writeFileSync(
       path.join(dir, "runs.json"),
       JSON.stringify(runs.map((r) => pushRun({ headSha: head, ...r }))),
@@ -269,11 +274,20 @@ describe("the script and deploy.sh --dry-run, with a stand-in gh", () => {
     expect(status).toBe(1);
   });
 
-  it("deploy.sh --dry-run --force proceeds past a red run with a warning", () => {
+  it("deploy.sh --dry-run --force still refuses a red run", () => {
     stage([{ conclusion: "failure" }]);
     const { status, out } = deployDryRun("--force");
+    expect(out).toMatch(/Refusing to deploy/);
+    expect(status).toBe(1);
+  });
+
+  it("deploy.sh --dry-run --skip-ci-gate proceeds past a red run with a warning", () => {
+    stage([{ conclusion: "failure" }]);
+    // --force too: a working tree with uncommitted changes (a gate run) is
+    // its own refusal, and --skip-ci-gate doesn't lift it.
+    const { status, out } = deployDryRun("--skip-ci-gate", "--force");
     expect(out).toMatch(
-      /WARNING: --force: deploying \w+ WITHOUT a green CI run/,
+      /WARNING: --skip-ci-gate: deploying \w+ WITHOUT a green CI run/,
     );
     expect(out).toMatch(/Dry run: the checks passed; stopping before SSH/);
     expect(status).toBe(0);

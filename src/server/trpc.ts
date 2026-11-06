@@ -19,8 +19,17 @@ import { clientAddress } from "@/lib/client-address";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
-import { notifyMutationSucceeded } from "./mutation-events";
-import { createRequestScope } from "./data/request-scope";
+import {
+  notifyMutationSucceeded,
+  onMutationSucceeded,
+} from "./mutation-events";
+import {
+  createReadMemo,
+  createRequestScope,
+  invalidateRequestReads,
+  userHasPermission,
+  type ReadMemo,
+} from "./data/request-scope";
 
 type AuthLevel = "public" | "protected" | "admin" | Permission;
 
@@ -32,8 +41,8 @@ export type Context = {
   demoSchema: string | null;
   /** Set ONLY by `internalCaller()` below, for a server-side nested tRPC
    *  call made on behalf of an already-authenticated request (e.g.
-   *  `computeActiveSummary` calling into the paycheck router for its own
-   *  income figure). Skips ONLY the authenticated rate-limit middleware —
+   *  `peekMonteCarloSummary` calling into the Simulation router for its
+   *  cached run). Skips ONLY the authenticated rate-limit middleware —
    *  every other middleware (auth check, permission check, demo guards,
    *  error logging) still runs unchanged, so this is not a second
    *  computation path, just an exemption from double-charging the calling
@@ -42,6 +51,8 @@ export type Context = {
    *  request-supplied input, so this can only ever become `true` via
    *  `internalCaller()` — never from request-derived data. */
   internal?: boolean;
+  /** The HTTP request's shared reads (`scope.load`); none in a mutation. */
+  reads?: ReadMemo;
 };
 
 const isDemoOnly = process.env.DEMO_ONLY === "true";
@@ -104,7 +115,7 @@ export async function createContext(): Promise<Context> {
     // cookies() may throw outside request context (e.g. during build)
   }
 
-  return { db, session, demoSchema };
+  return { db, session, demoSchema, reads: createReadMemo() };
 }
 
 /** The cause of a request refused for its demo profile (missing or built
@@ -146,31 +157,9 @@ export const createTRPCRouter = t.router;
 export const mergeRouters = t.mergeRouters;
 export const createCallerFactory = t.createCallerFactory;
 
-/**
- * Marks a context for a server-side nested call into another router, made
- * on behalf of an already-authenticated request — e.g.
- * `budget.computeActiveSummary` calling into the paycheck router for its
- * own income figure, rather than re-deriving paycheck math independently
- * (single computation path).
- *
- * Use `createCallerFactory(someRouter)(internalCtx(ctx))` for any such
- * nested call, instead of passing `ctx` straight through: it exempts the
- * nested call from the CALLING request's own authenticated rate-limit
- * budget (see `authenticatedRateLimitMiddleware`) — every other middleware
- * (auth check, permission check, demo guards, error logging) still runs
- * exactly as it would for a caller hitting that procedure directly.
- * Without this, a page that internally fans out several nested calls
- * silently burns several extra tokens from the SAME bucket the user's own
- * browser requests draw from, with no way for the client to see or back
- * off from the hidden consumption.
- *
- * A thin wrapper around `{ ...ctx, internal: true }` rather than a generic
- * `createCallerFactory` wrapper — a generic router-typed wrapper here
- * collapses tRPC's own inferred caller type to an uncallable union, so
- * this keeps `createCallerFactory(router)` called directly (full type
- * inference intact) while still giving every nested-call site one shared,
- * documented spelling of the flag that's easy to grep for.
- */
+/** Context for a signed-in request's nested call into another router
+ *  (`createCallerFactory(router)(internalCtx(ctx))`): skips only the
+ *  authenticated rate limit. A plain spread keeps tRPC's caller types. */
 export function internalCtx(ctx: Context): Context {
   return { ...ctx, internal: true };
 }
@@ -470,16 +459,25 @@ const mutationEventsMiddleware = t.middleware(async ({ next, type }) => {
   return result;
 });
 
+onMutationSucceeded(invalidateRequestReads);
+
 // Base procedure: error logging, demo-only guard, demo schema, then the
 // request scope (after the demo switch, so its db; per call, so its asOf).
+// A mutation reads directly and drops the memo, so its nested calls do too.
 const baseProcedure = t.procedure
   .use(errorLoggingMiddleware)
   .use(mutationEventsMiddleware)
   .use(demoOnlyGuard)
   .use(demoSchemaMiddleware)
-  .use(({ ctx, next }) =>
-    next({ ctx: { scope: createRequestScope(ctx.db, new Date()) } }),
-  );
+  .use(({ ctx, next, type }) => {
+    const reads = type === "query" ? ctx.reads : undefined;
+    return next({
+      ctx: {
+        reads,
+        scope: createRequestScope(ctx.db, new Date(), ctx.session?.user, reads),
+      },
+    });
+  });
 
 // Shared by every procedure that requires a session (protected, admin and
 // every withPermission() addon below), so the authenticated rate limit and
@@ -540,14 +538,6 @@ export const adminProcedure = rateLimitedAuthedBase
   });
 
 // Permission-gated — requires admin OR specific permission addon + logs mutations
-/** Whether a signed-in user holds a permission (admins hold all) — the rule withPermission enforces. */
-export function userHasPermission(
-  user: { role: string; permissions: readonly string[] },
-  permission: Permission,
-): boolean {
-  return user.role === "admin" || user.permissions.includes(permission);
-}
-
 function withPermission(permission: Permission) {
   return rateLimitedAuthedBase
     .meta({ auth: permission })

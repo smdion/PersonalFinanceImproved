@@ -1,5 +1,7 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
+import { NextResponse } from "next/server";
+import { log } from "@/lib/logger";
 
 /**
  * Shared cron/internal-endpoint secret validation. `CRON_SECRET` must be at
@@ -50,4 +52,29 @@ export function validateCronBearerRequest(request: Request): boolean {
   const auth = request.headers.get("authorization");
   const provided = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
   return timingSafeSecretMatch(provided, cronSecret);
+}
+
+/**
+ * Runs a cron route's work once its `X-Cron-Secret` header checks out.
+ * A missing or short CRON_SECRET answers 500 and is logged; a wrong or
+ * absent header answers 401.
+ */
+export async function cronRoute(
+  request: Request,
+  run: () => Promise<Response>,
+): Promise<Response> {
+  const cronCheck = validateCronHeaderRequest(request);
+  if (cronCheck === "misconfigured") {
+    log("error", "cron_secret_misconfigured", {
+      message: "CRON_SECRET is missing or too short",
+    });
+    return NextResponse.json(
+      { error: "Server misconfiguration" },
+      { status: 500 },
+    );
+  }
+  if (cronCheck !== "ok") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return run();
 }

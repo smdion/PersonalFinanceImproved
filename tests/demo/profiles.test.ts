@@ -1,5 +1,5 @@
 /**
- * Demo profiles are seeded straight into the database (routers/demo.ts),
+ * Demo profiles are seeded straight into the database (services/demo/demo-seed.ts),
  * past every input check a real household's entries go through. So each
  * profile's rows are held to the same entry schemas here: a demo that seeds
  * a value no one could enter shows visitors figures no household could get
@@ -8,7 +8,7 @@
 import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { DEMO_PROFILES } from "@/lib/demo";
-import { contributionAccountInput } from "@/server/routers/settings/paycheck";
+import { contributionAccountInput } from "@/server/routers/settings/contribution-accounts";
 
 const profiles = Object.values(DEMO_PROFILES);
 
@@ -25,6 +25,7 @@ describe.each(profiles.map((p) => [p.slug, p] as const))(
           taxTreatment: ca.taxTreatment,
           employerMatchType: ca.employerMatchType,
           employerMatchValue: ca.employerMatchValue,
+          employerMatchRate: ca.employerMatchRate,
           employerMaxMatchPct: ca.employerMaxMatchPct,
           hsaCoverageType: ca.hsaCoverageType ?? null,
         });

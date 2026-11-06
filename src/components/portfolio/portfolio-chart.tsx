@@ -17,7 +17,7 @@ import { Card } from "@/components/ui/card";
 import {
   stackedSeries,
   type StackedSnapshot,
-} from "@/lib/pure/snapshot-series";
+} from "@/lib/pure/net-worth/snapshot-series";
 import {
   formatCurrency,
   formatPercent,

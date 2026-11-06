@@ -1,8 +1,8 @@
 /** Cover section of the advisor report: title/date (reuses ReportHeader)
  *  plus a plan-verdict badge. Print-only, presentational — the verdict
- *  itself is computed by lib/pure/report/executive-summary.ts, never
+ *  itself is computed by lib/pure/advice/report/executive-summary.ts, never
  *  re-derived here. */
-import type { ReportVerdict } from "@/lib/pure/report/types";
+import type { ReportVerdict } from "@/lib/pure/advice/report/types";
 import { ReportHeader } from "./report-header";
 
 export function ReportCover({

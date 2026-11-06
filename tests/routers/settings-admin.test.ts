@@ -7,11 +7,12 @@
  *   - apiConnections.list / delete (no generic upsert)
  *   - getDataFreshness
  *   - rbacGroups.get
- *   - settings/_shared's validation schemas (zDecimal, settingValue)
+ *   - the validation schemas zDecimal (lib/utils/zod-fields) and settingValue
+ *     (settings/_shared)
  *
  * savingsGoals, performanceAccounts, portfolioSnapshots, and
- * relocationScenarios CRUD moved out to savings.ts/performance.ts/
- * networth.ts/projection/relocation.ts respectively — their
+ * relocationScenarios CRUD moved out to savings.ts/performance/accounts.ts/
+ * networth/portfolio-snapshots.ts/projection/relocation.ts respectively — their
  * tests moved to savings-goals-crud.test.ts / performance.test.ts /
  * networth.test.ts / projection-relocation.test.ts alongside them.
  * Everything remaining in adminProcedures is a genuine cross-cutting
@@ -33,7 +34,8 @@ import {
   adminSession,
   viewerSession,
 } from "./setup";
-import { zDecimal, settingValue } from "@/server/routers/settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import { settingValue } from "@/server/routers/settings/_shared";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
 
@@ -408,17 +410,17 @@ describe("settings.apiConnections", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // savings.savingsGoals CRUD tests moved to savings-goals-crud.test.ts
-// (procedures moved to routers/savings.ts).
+// (procedures moved to routers/savings/goals.ts).
 
 // relocationScenarios CRUD tests moved to projection-relocation.test.ts
 // (procedures moved to routers/projection/relocation.ts).
 
 // performanceAccounts CRUD tests moved to performance.test.ts (procedures
-// moved to routers/performance.ts).
+// moved to routers/performance/accounts.ts).
 
 // portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
 // delete) moved to networth.test.ts (procedures moved to
-// routers/networth.ts).
+// routers/networth/).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET DATA FRESHNESS
@@ -828,7 +830,7 @@ describe("settings.appSettings.list viewer filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // portfolioSnapshots.delete/create additional coverage moved to
-// networth.test.ts (procedures moved to routers/networth.ts).
+// networth.test.ts (procedures moved to routers/networth/portfolio-snapshots.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // updateDataFreshness — additional branches
@@ -905,7 +907,7 @@ describe("settings.appSettings.setDismissal", () => {
   });
 });
 
-describe("settings/_shared: zDecimal validation", () => {
+describe("zDecimal validation", () => {
   it("accepts a valid decimal string", () => {
     expect(zDecimal.safeParse("123.45").success).toBe(true);
   });

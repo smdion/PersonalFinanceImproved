@@ -17,23 +17,19 @@
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/lib/pure/engine/types";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const withdrawalBracketOptimizerRouter = createTRPCRouter({
@@ -64,14 +60,9 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input.selection,
         snapshotId: input.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)

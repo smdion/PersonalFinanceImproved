@@ -2,7 +2,7 @@
 
 /**
  * Roth IRA MAGI and the direct-vs-backdoor verdict, in full — the Taxes
- * page. Judged by buildRothIraView (lib/pure/roth-ira.ts) via useRothIra;
+ * page. Judged by buildRothIraView (lib/pure/contributions/roth-ira.ts) via useRothIra;
  * this only renders. Without the portfolio permission (no investment
  * income or IRA balances) it shows the wage AGI instead. The dashboard
  * shows only RothIraLine.
@@ -14,10 +14,10 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
-import type { InvestmentIncomeBasis } from "@/lib/pure/investment-income";
+import type { InvestmentIncomeBasis } from "@/lib/pure/investments/investment-income";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
-import { rothIraAdvice } from "@/lib/pure/roth-ira";
+import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   actual: "the year's actual",

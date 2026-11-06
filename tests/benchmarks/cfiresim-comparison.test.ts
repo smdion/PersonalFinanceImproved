@@ -11,7 +11,7 @@
  * cFIREsim export: tests/benchmarks/cfiresim-export.csv
  */
 import { describe, it, expect } from "vitest";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import {
   makeTrinityInput,
   makeMCInput,

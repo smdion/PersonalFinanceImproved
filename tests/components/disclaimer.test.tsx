@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { evaluateMilestones } from "@/lib/pure/milestones";
+import { evaluateMilestones } from "@/lib/pure/advice/milestones/milestones";
 import { makeInput } from "../fixtures/milestones";
 import { setQueryState } from "./trpc-mock";
 
@@ -66,7 +66,7 @@ describe("the shared disclaimer", () => {
 
   it("Plan Health shows it", async () => {
     const { PlanHealthCard } = await import("@/components/cards/plan-health");
-    render(<PlanHealthCard deterministicNestEgg={1_000_000} />);
+    render(<PlanHealthCard retirementHorizonYears={30} />);
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();
   });
 

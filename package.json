@@ -1,6 +1,6 @@
 {
   "name": "ledgr",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "engines": {
@@ -24,7 +24,7 @@
     "validate": "tsx .scratch/seed/validate.ts",
     "test:coverage": "vitest run --coverage --project='!benchmarks'",
     "test:benchmarks": "vitest run --project=benchmarks",
-    "test:stress": "FAST_CHECK_NUM_RUNS=200 vitest run tests/calculators/engine-invariants.test.ts tests/benchmarks/monte-carlo-properties.test.ts",
+    "test:stress": "FAST_CHECK_NUM_RUNS=200 vitest run tests/pure/engine/engine-invariants.test.ts tests/benchmarks/monte-carlo-properties.test.ts",
     "test:e2e": "playwright test",
     "compare": "tsx .scratch/compare/compare-xlsx-to-live.ts",
     "seed:safe": "pnpm validate && pnpm seed && pnpm validate",
@@ -43,6 +43,8 @@
     "check:types-scripts": "tsc -p tsconfig.scripts.json",
     "check:known-diffs": "tsx scripts/check-known-diffs.ts",
     "gate": "bash scripts/gate.sh",
+    "check:batch": "bash scripts/check-batch.sh",
+    "check:release": "bash scripts/check-release.sh",
     "release": "bash scripts/release.sh",
     "deploy": "bash scripts/deploy.sh",
     "analyze": "ANALYZE=true pnpm build",
@@ -51,6 +53,7 @@
     "check:constraints": "tsx scripts/check-constraints.ts",
     "check:tax-params": "tsx scripts/check-tax-params.ts",
     "check:calculation-register": "tsx scripts/check-calculation-register.ts",
+    "check:ratchets": "tsx scripts/check-ratchets.ts",
     "tax-data:keygen": "tsx scripts/tax-data-keygen.ts",
     "tax-data:publish": "tsx scripts/tax-data-publish.ts",
     "tax-data:check": "tsx scripts/tax-data-check.ts",
@@ -77,6 +80,7 @@
     "recharts": "^3.10.1",
     "saxes": "6.0.0",
     "server-only": "^0.0.1",
+    "undici": "8.12.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {

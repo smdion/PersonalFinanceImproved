@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { db } from "@/lib/db";
-import { firstRunState } from "@/server/helpers/first-run";
+import { firstRunState } from "@/server/data/first-run";
 import { oidcConfigured } from "@/server/auth-mode";
 import { LoginForm } from "./login-form";
 

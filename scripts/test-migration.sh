@@ -4,7 +4,9 @@
 # Migration safety test — the release gate for any release with a migration.
 #
 # Snapshots a source PostgreSQL database via pg_dump, restores it into a
-# throwaway database, runs `pnpm db:migrate` against it, and verifies:
+# throwaway database, runs the migrator as the image does (the esbuild
+# bundle: `pnpm build:migrator`, then `node db-migrate.js`) against it, and
+# verifies:
 #   - the migrator exited 0 and logged no squash_upgrade_failed (and, when
 #     the source had more journal rows than the journal has entries, that
 #     the squash completed);
@@ -23,7 +25,8 @@
 # no Docker is needed; it is left in place for inspection. Without one, a
 # throwaway postgres:16 container is started and torn down on exit.
 #
-# Requirements: pg_dump + psql + node in PATH; docker only without a target.
+# Requirements: pg_dump + psql + node + pnpm in PATH, dependencies installed
+# (esbuild); docker only without a target.
 #
 # Exit 0 = migration succeeded against the snapshot.
 # Exit 1 = anything went wrong (dump, restore, migrate, verify).
@@ -158,12 +161,16 @@ COUNTS_BEFORE="$(row_counts)"
 REF_BEFORE="$(ref_counts)"
 ROWS_BEFORE=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM drizzle.__drizzle_migrations" 2>/dev/null || echo 0)
 
-# ── 4. Run db:migrate against the restored copy ──────────────────────
+# ── 4. Run the bundled migrator against the restored copy ────────────
 
-step "Running pnpm db:migrate"
+step "Building and running the migrator bundle (db-migrate.js)"
 
 cd "$(dirname "$0")/.."
-if ! DATABASE_URL="$TEMP_URL" pnpm db:migrate 2>&1 | tee /tmp/ledgr-migrate.log; then
+if ! pnpm build:migrator; then
+  err "pnpm build:migrator failed"
+  exit 1
+fi
+if ! DATABASE_URL="$TEMP_URL" node db-migrate.js 2>&1 | tee /tmp/ledgr-migrate.log; then
   err "Migration failed (see /tmp/ledgr-migrate.log)"
   exit 1
 fi

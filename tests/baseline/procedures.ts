@@ -171,6 +171,11 @@ export const PROCEDURES: BaselineProcedure[] = [
     path: "projection.computeMonteCarloProjection",
     input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
+  // After the run above, with its input: the dashboard tile's cache read.
+  {
+    path: "projection.peekMonteCarloSummary",
+    input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
+  },
   { path: "projection.computeStrategyComparison", input: activeSelection },
   { path: "projection.analyzeStrategy", input: activeSelection },
   { path: "projection.computeStressTest", input: activeSelection },
@@ -320,6 +325,8 @@ export const SKIPPED: Record<string, string> = {
     "external: fetches the published tax-data index",
   "sync.getPreview":
     "external: calls YNAB or Actual Budget (part d replays recorded responses through the sync instead)",
+  "projection.getProjectionMetadata":
+    "computeProjection's response with result null, from the same function (projection-coverage pins the two equal)",
   "projection.getMonteCarloProgress":
     "progress of a run in flight, keyed by a random run id; no household figure",
   "version.getById": "needs a saved version; the baseline seeds none",
@@ -333,6 +340,8 @@ export const SKIPPED: Record<string, string> = {
     "admin table browser: raw PostgreSQL SQL, echoes rows the seeder wrote",
   "dataBrowser.getRows":
     "admin table browser: raw PostgreSQL SQL, echoes rows the seeder wrote",
+  "simplefin.listReaddedAccounts":
+    "new after the baseline was recorded (recording it would move every baseline file); routers/simplefin-readded.test.ts covers it",
 };
 
 /** Queries deleted in v0.10.0 commits 28–31 (the 30/90-day balance

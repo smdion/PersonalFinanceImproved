@@ -12,7 +12,7 @@ import { describe, it, expect } from "vitest";
 import {
   choleskyDecomposition,
   buildCorrelationMatrix,
-} from "@/lib/calculators/random";
+} from "@/lib/pure/simulation/random";
 import { ASSET_CLASSES, CORRELATIONS } from "./benchmark-helpers";
 
 // Published ranges (union of Vanguard VCMM 2024, Morningstar 2024, Ibbotson 1926-2023)

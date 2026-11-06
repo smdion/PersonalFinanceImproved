@@ -2,7 +2,7 @@
 
 /** Displays home value, improvement history, and equity estimates with links to the liabilities page for mortgage context. */
 
-import { loanFeedIsStale } from "@/lib/pure/simplefin-feeds";
+import { loanFeedIsStale } from "@/lib/pure/sync/simplefin-feeds";
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

@@ -258,7 +258,7 @@ export const retirementSettings = sqliteTable(
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
     /** Filing status for retirement projections. Null = "Auto": follow
-     *  this year's filing status (lib/pure/filing-status.ts — the household
+     *  this year's filing status (lib/pure/tax/filing-status.ts — the household
      *  setting, else a W-4). Resolved by resolveRetirementFilingStatus. */
     filingStatus: text("filing_status").$type<ReturnFilingStatus>(),
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
-import { monthKey } from "@/lib/pure/date-keys";
+import { monthKey } from "@/lib/utils/date-keys";
 
 interface OverrideRange {
   startMonth: string;

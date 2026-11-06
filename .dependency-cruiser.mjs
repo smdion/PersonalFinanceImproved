@@ -8,6 +8,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { cruise } from "dependency-cruiser";
+import extractTSConfig from "dependency-cruiser/config-utl/extract-ts-config";
 
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -29,19 +31,17 @@ const SHAPE_FILES =
 const LAYERS = {
   foundation: "^src/lib/(config/|constants(\\.ts$|/)|utils/)",
   shapes: `^src/lib/db/${SHAPE_FILES}`,
-  // lib/calculators and lib/pure merge into lib/pure in v0.10.x.
-  pure: "^src/lib/(pure|calculators)/",
-  // The engine's public API is its index.ts.
-  engine: "^src/lib/(pure|calculators)/engine/",
-  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting|url-safety)\\.ts$)`,
+  pure: "^src/lib/pure/",
+  // The engine's public API is its index.ts, and types/index.ts for types.
+  engine: "^src/lib/pure/engine/",
+  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting)\\.ts$)`,
   data: "^src/server/data/",
-  // server/helpers and server/retirement are today's composition layer;
-  // they dissolve into server/data and server/services.
-  services: "^src/server/(services/|retirement/|helpers/(?!server-trpc\\.ts$))",
+  services: "^src/server/services/",
   routers: "^src/server/routers/",
-  // helpers/server-trpc.ts is today's name for trpc-server.ts.
   serverCore:
-    "^src/server/((trpc|auth|auth\\.config|trpc-server|mutation-events)\\.ts$|helpers/server-trpc\\.ts$)",
+    "^src/server/(trpc|auth|auth\\.config|trpc-server|mutation-events)\\.ts$",
+  // Sign-in helpers below the server core: the environment and local admins.
+  serverAuth: "^src/server/(auth-mode|local-admin-login)\\.ts$",
   apiRoutes: "^src/app/api/",
   serverPages: serverPageFiles().map((f) => `^${escape(f)}$`),
   // Client components under app/ (every app file that isn't a server page
@@ -51,11 +51,74 @@ const LAYERS = {
   scripts: "^(scripts/|db-migrate\\.ts$)",
 };
 
+/** The src/ modules db-migrate.ts imports: esbuild bundles them into the
+ *  image's migrator, which runs with no src/, env or Next. */
+const MIGRATOR_SRC =
+  "^src/lib/(db/(reference-reconcile-core|demo-schema-marker|version-tables|migration-converters|converter-rows|v0102-match-rate|v0102-match-value)|utils/match-rate)\\.ts$";
+
 const L = LAYERS;
 const ABOVE_FOUNDATION = `${L.shapes}|${L.pure}|${L.infra}|^src/server/|^src/components/|^src/app/`;
 // Resolved npm paths (pnpm's `.pnpm/<pkg>@<v>/node_modules/<pkg>/` too).
 const IO_PACKAGES =
   "node_modules/(drizzle-orm|better-sqlite3|postgres|pg|next|react|react-dom|server-only|@trpc/server|@trpc/client|@trpc/react-query)/";
+
+/** Cruise options, shared by the layer check and the Zod reach below. */
+const OPTIONS = {
+  doNotFollow: { path: "node_modules" },
+  exclude: {
+    path: "^src/lib/db/sqlite/|schema-sqlite\\.ts$|monte-carlo-worker\\.js$",
+  },
+  // Type-only imports count: the UI ban covers `import type` from server.
+  tsPreCompilationDeps: true,
+  tsConfig: { fileName: "tsconfig.scripts.json" },
+  enhancedResolveOptions: {
+    exportsFields: ["exports"],
+    conditionNames: ["import", "require", "node", "default", "types"],
+    extensions: [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"],
+  },
+};
+
+/** Imports that add nothing to a bundle: `import type`, `import("x").T`. */
+const TYPE_LEVEL = ["type-only", "type-import"];
+
+/**
+ * What a client module must not value-import: Zod itself, and every non-UI
+ * src module whose value imports reach it. A `reachable` rule can't say
+ * this: it follows type-only imports too, and every UI file reaches all of
+ * Zod through lib/trpc.ts's `import type` of the router. So one cruise of
+ * src with the same options finds the value-import reach first.
+ */
+async function zodReachers() {
+  const { output } = await cruise(
+    ["src"],
+    structuredClone(OPTIONS),
+    {},
+    {
+      tsConfig: extractTSConfig(OPTIONS.tsConfig.fileName),
+    },
+  );
+  const isValue = (d) => !d.dependencyTypes.some((t) => TYPE_LEVEL.includes(t));
+  const reaches = new Set();
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const m of output.modules) {
+      if (reaches.has(m.source)) continue;
+      const hit = m.dependencies.some(
+        (d) =>
+          isValue(d) &&
+          (d.resolved.includes("node_modules/zod/") || reaches.has(d.resolved)),
+      );
+      if (hit) reaches.add(m.source);
+      grew ||= hit;
+    }
+  }
+  const ui = new RegExp(LAYERS.ui);
+  const outside = [...reaches].filter((s) => !ui.test(s)).sort();
+  return ["node_modules/zod/", ...outside.map((s) => `^${escape(s)}$`)].join(
+    "|",
+  );
+}
+const ZOD_REACHERS = await zodReachers();
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 const config = {
@@ -93,7 +156,7 @@ const config = {
       severity: "error",
       comment: "Resolved paths: relative imports count as much as @/ ones.",
       from: { path: "^src/", pathNot: L.engine },
-      to: { path: L.engine, pathNot: `${L.engine}index\\.ts$` },
+      to: { path: L.engine, pathNot: `${L.engine}(types/)?index\\.ts$` },
     },
     {
       name: "infra-below-server",
@@ -112,6 +175,23 @@ const config = {
       severity: "error",
       from: { path: L.services },
       to: { path: `${L.routers}|${L.serverCore}` },
+    },
+    {
+      name: "server-files-in-a-layer",
+      severity: "error",
+      comment:
+        "A src/server/ file outside every layer is checked by no direction rule (it could import routers): add its folder to LAYERS.",
+      from: {
+        path: "^src/server/",
+        pathNot: [L.data, L.services, L.routers, L.serverCore, L.serverAuth],
+      },
+      to: {},
+    },
+    {
+      name: "server-auth-below-server",
+      severity: "error",
+      from: { path: L.serverAuth },
+      to: { path: "^src/server/", pathNot: L.serverAuth },
     },
     {
       name: "no-router-to-router",
@@ -144,7 +224,7 @@ const config = {
       to: {
         path: `^src/server/|${L.infra}`,
         pathNot:
-          "^src/server/((trpc-server|auth)\\.ts$|helpers/server-trpc\\.ts$|data/database-status\\.ts$)",
+          "^src/server/((trpc-server|auth)\\.ts$|data/database-status\\.ts$)",
       },
     },
     {
@@ -163,6 +243,14 @@ const config = {
       comment: "lib/db and other infrastructure at runtime; types are allowed.",
       from: { path: L.ui, pathNot: [...L.serverPages, L.apiRoutes] },
       to: { path: L.infra, dependencyTypesNot: ["type-only"] },
+    },
+    {
+      name: "ui-never-bundles-zod",
+      severity: "error",
+      comment:
+        "A value import that reaches Zod puts it in the page's bundle (v0.10.1: +30 KB on Settings and Expenses); type-only imports add nothing. The target is where the import leaves the UI: Zod, or a non-UI module whose value imports reach it.",
+      from: { path: L.ui, pathNot: [...L.serverPages, L.apiRoutes] },
+      to: { path: ZOD_REACHERS, dependencyTypesNot: TYPE_LEVEL },
     },
     {
       name: "trpc-client-takes-the-router-type",
@@ -190,26 +278,25 @@ const config = {
       to: { path: `^src/server/|${L.infra}|^src/components/` },
     },
     {
+      name: "migrator-imports-listed-src",
+      severity: "error",
+      from: { path: "^db-migrate\\.ts$" },
+      to: { path: "^src/", pathNot: MIGRATOR_SRC },
+    },
+    {
+      name: "migrator-src-stays-standalone",
+      severity: "error",
+      from: { path: MIGRATOR_SRC },
+      to: { dependencyTypesNot: ["core"], pathNot: MIGRATOR_SRC },
+    },
+    {
       name: "scripts-skip-server",
       severity: "error",
       from: { path: L.scripts },
       to: { path: "^src/server/" },
     },
   ],
-  options: {
-    doNotFollow: { path: "node_modules" },
-    exclude: {
-      path: "^src/lib/db/sqlite/|schema-sqlite\\.ts$|monte-carlo-worker\\.js$",
-    },
-    // Type-only imports count: the UI ban covers `import type` from server.
-    tsPreCompilationDeps: true,
-    tsConfig: { fileName: "tsconfig.scripts.json" },
-    enhancedResolveOptions: {
-      exportsFields: ["exports"],
-      conditionNames: ["import", "require", "node", "default", "types"],
-      extensions: [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"],
-    },
-  },
+  options: OPTIONS,
 };
 
 export default config;

@@ -14,7 +14,7 @@ For financial-logic / calculator validation, use the dedicated
 | What you touched                                   | Run these sections                                                       |
 | -------------------------------------------------- | ------------------------------------------------------------------------ |
 | Routers (`src/server/routers/`)                    | §Pre-Merge Checklist + §RULES.md Compliance Sweep                        |
-| Calculators or engine (`src/lib/calculators/`)     | §Pre-Merge Checklist + `review-financial-logic.md`                       |
+| Calculators or engine (`src/lib/pure/`)            | §Pre-Merge Checklist + `review-financial-logic.md`                       |
 | DB schema (`src/lib/db/schema-pg.ts`)              | §Pre-Merge + §RULES.md Compliance + verify migration safety manually     |
 | Config (`src/lib/config/account-types.ts` etc.)    | §RULES.md Compliance Sweep (full) — config is the data-driven foundation |
 | UI components only (`src/components/`, `src/app/`) | §Pre-Merge Checklist alone is usually enough                             |

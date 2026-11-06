@@ -184,8 +184,6 @@ describe("contribution router", () => {
         portfolioWithMatch: 0,
         totalWithoutMatch: 0,
         totalWithMatch: 0,
-        savingsRateWithMatch: 0,
-        savingsRateWithoutMatch: 0,
         compensation: 0,
       };
       expect(person!.totals).toEqual({

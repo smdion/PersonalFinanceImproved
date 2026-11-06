@@ -10,7 +10,7 @@ import {
   type FicaRates,
   type PaystubFigures,
   type PaystubFinding,
-} from "@/lib/pure/paystub-check";
+} from "@/lib/pure/paycheck/paystub-check";
 import { deductionDisplayName } from "./deduction-row";
 import type { PaycheckResult } from "./types";
 

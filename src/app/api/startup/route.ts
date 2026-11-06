@@ -4,7 +4,7 @@ import { backfillPerformanceAccountIds } from "@/lib/db/backfill-perf-ids";
 import { backfillMappingLocalIds } from "@/lib/db/backfill-local-ids";
 import { backfillJointPersonId } from "@/lib/db/backfill-joint-person-id";
 import { log } from "@/lib/logger";
-import { validateCronHeaderRequest } from "@/lib/auth/cron";
+import { cronRoute } from "@/lib/auth/cron";
 
 /**
  * Internal startup route called by instrumentation.ts after server init.
@@ -18,18 +18,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const cronCheck = validateCronHeaderRequest(request);
-  if (cronCheck === "misconfigured") {
-    return NextResponse.json(
-      { error: "Server misconfiguration" },
-      { status: 500 },
-    );
-  }
+  return cronRoute(request, runBackfills);
+}
 
-  if (cronCheck !== "ok") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function runBackfills(): Promise<Response> {
   const results: Record<string, string> = {};
 
   try {

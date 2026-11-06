@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
+import { BOOT_ADMIN } from "./boot-admin";
 
 /**
  * A fresh self-hosted install, start to finish: the real image booted from
@@ -15,11 +16,7 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
  *
  * The household is invented.
  */
-const ADMIN = {
-  name: "Boot Test Admin",
-  email: "boot-admin@example.com",
-  password: "BootTest-Passw0rd",
-};
+const ADMIN = BOOT_ADMIN;
 
 test.describe.configure({ mode: "serial", retries: 0 });
 

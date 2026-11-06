@@ -10,7 +10,7 @@
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";
-import { prefetchForPage } from "@/server/helpers/server-trpc";
+import { prefetchForPage } from "@/server/trpc-server";
 import { PortfolioContent } from "./portfolio-content";
 
 export default async function PortfolioPage() {

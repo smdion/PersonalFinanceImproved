@@ -15,12 +15,12 @@ import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
-import { buildMilestoneInput } from "@/lib/pure/milestone-input";
+import { buildMilestoneInput } from "@/lib/pure/advice/milestones/input";
 import {
   evaluateMilestones,
   type MilestoneInput,
   type MilestoneResult,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 
 /** The contribution-summary input every dashboard card sends. */
 export function useContributionSummaryInput() {

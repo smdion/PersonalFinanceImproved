@@ -2,7 +2,7 @@
  * Documentation Freshness Verification Script
  *
  * Scans the codebase for actual counts of key entities (engine modules,
- * calculators, routers, pages, tables, tests, etc.) and compares them
+ * routers, pages, tables, tests, etc.) and compares them
  * against the counts claimed in DESIGN.md and TESTING.md.
  *
  * Usage:  npx tsx scripts/verify-docs.ts
@@ -57,18 +57,15 @@ function countInFile(filePath: string, pattern: RegExp): number {
 
 // ── Count Functions ──────────────────────────────────────────────────────────
 
+/** The engine's modules. */
+const ENGINE_DIRS = ["src/lib/pure/engine"];
+
 function countEngineModules(): number {
-  const dir = path.join(ROOT, "src/lib/calculators/engine");
-  const files = listFiles(dir, /\.ts$/);
+  const files = ENGINE_DIRS.flatMap((dir) =>
+    listFiles(path.join(ROOT, dir), /\.ts$/),
+  );
   // Exclude index.ts — it's a barrel re-export, not a module
   return files.filter((f) => path.basename(f) !== "index.ts").length;
-}
-
-function countCalculators(): number {
-  const dir = path.join(ROOT, "src/lib/calculators");
-  const files = listFiles(dir, /\.ts$/);
-  // Exclude types.ts (shared types) — only domain calculator files
-  return files.filter((f) => path.basename(f) !== "types.ts").length;
 }
 
 function countRouters(): number {
@@ -317,7 +314,6 @@ function main(): void {
   // Gather actual counts
   const actual = {
     engineModules: countEngineModules(),
-    calculators: countCalculators(),
     primaryRouters: countRouters(),
     settingsSubRouters: countSettingsSubRouters(),
     pages: countPages(),
@@ -369,7 +365,6 @@ function main(): void {
   // Define checks with display names
   const checks: { key: string; label: string }[] = [
     { key: "engineModules", label: "Engine modules" },
-    { key: "calculators", label: "Calculators" },
     { key: "primaryRouters", label: "Primary routers" },
     { key: "settingsSubRouters", label: "Settings sub-routers" },
     { key: "pages", label: "Pages" },

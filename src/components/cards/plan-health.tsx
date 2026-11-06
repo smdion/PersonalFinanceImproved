@@ -2,9 +2,9 @@
 
 /**
  * PlanHealthCard — single point of UI integration for the plan-health
- * helpers (account order, confidence band, strategy recommendation,
- * glide path) and the rosy-assumption detector. Renders 0-N callouts
- * based on the user's plan state.
+ * helpers (account order, strategy recommendation, glide path) and the
+ * rosy-assumption detector. Renders 0-N callouts based on the user's plan
+ * state.
  *
  * Each callout uses a distinct severity color and a one-line action.
  * The card is intentionally minimal (no charts, no interactivity)
@@ -21,7 +21,6 @@
  *     salaryGrowthRate={settings.salaryGrowthRate}
  *     retirementHorizonYears={settings.endAge - settings.retirementAge}
  *     hasBudgetLink={!!data.accumulationBudgetProfileId}
- *     deterministicNestEgg={projection.atRetirement.balance}
  *   />
  *
  * Each prop is optional — the card only renders the callouts whose
@@ -32,18 +31,17 @@
 import { Card } from "@/components/ui/card";
 import { Disclaimer } from "@/components/ui/disclaimer";
 import { trpc } from "@/lib/trpc";
-import { validateContributionOrder } from "@/lib/pure/contributions";
-import { checkGlidePath } from "@/lib/pure/glide-path";
+import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
+import { checkGlidePath } from "@/lib/pure/simulation/glide-path";
 import {
   detectRosyAssumptions,
   getStressTestScenarios,
   type RosyAssumptionFlag,
-} from "@/lib/pure/stress-test";
+} from "@/lib/pure/simulation/stress-test";
 import {
   recommendWithdrawalStrategy,
   type WithdrawalStrategyRecommendation,
-} from "@/lib/pure/withdrawal-strategy-recommendation";
-import { deriveProjectionBand } from "@/lib/pure/projection-bands";
+} from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 import {
   formatPercent,
   formatCurrency,
@@ -66,8 +64,6 @@ interface PlanHealthCardProps {
   hasBudgetLink?: boolean;
   /** True when the household has a non-zero Social Security benefit configured. */
   hasSocialSecurity?: boolean;
-  /** Deterministic nest-egg estimate to derive a band around. */
-  deterministicNestEgg?: number;
 }
 
 function CalloutLine({
@@ -161,25 +157,11 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     );
   }
 
-  // Projection band
-  let band: ReturnType<typeof deriveProjectionBand> | null = null;
-  if (
-    typeof props.deterministicNestEgg === "number" &&
-    props.deterministicNestEgg > 0
-  ) {
-    band = deriveProjectionBand(props.deterministicNestEgg);
-  }
-
   // Don't render the card at all if there's nothing to say.
-  if (callouts.length === 0 && !band) return null;
+  if (callouts.length === 0) return null;
 
   return (
     <Card title="Plan health">
-      {band && (
-        <div className="text-secondary mb-3 text-sm">
-          <strong>Nest egg estimate:</strong> {band.label}
-        </div>
-      )}
       <div className="space-y-2">{callouts}</div>
       <StressTestPanel
         userReturnRate={props.returnRate}
@@ -194,7 +176,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
 /**
  * Stress test panel. Compares the user's
  * current assumptions against the canonical conservative / baseline /
- * optimistic scenarios from src/lib/pure/stress-test.ts.
+ * optimistic scenarios from src/lib/pure/simulation/stress-test.ts.
  *
  * Fires the projection.computeStressTest endpoint which re-runs the
  * deterministic engine three times (once per scenario). The resulting

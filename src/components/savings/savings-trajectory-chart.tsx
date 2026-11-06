@@ -19,7 +19,7 @@ import {
 } from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { GoalProjection } from "./types";
-import { monthKey } from "@/lib/pure/savings-projection";
+import { monthKey } from "@/lib/pure/savings/savings-projection";
 import {
   FUND_COLORS,
   CHART_COLORS,

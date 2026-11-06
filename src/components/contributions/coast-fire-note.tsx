@@ -9,7 +9,7 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
-import { planAgeLabel } from "@/lib/pure/household-timeline";
+import { planAgeLabel } from "@/lib/pure/household/household-timeline";
 
 export function CoastFireNote() {
   const { input, ready } = usePlanEngineInput();

@@ -28,7 +28,7 @@ import {
   xfail,
   xfailTitle,
 } from "../fixtures/answer-key";
-import { acct, household } from "../calculators/fixtures/two-person-household";
+import { acct, household } from "../pure/fixtures/two-person-household";
 
 const TESTS_ROOT = path.resolve(__dirname, "..");
 /** The helper writes `it.fails` with a built title and checks its own;

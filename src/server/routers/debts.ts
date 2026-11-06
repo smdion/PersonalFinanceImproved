@@ -3,16 +3,14 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/server/helpers";
-import { zDecimal, debtKindSchema } from "@/lib/config/enum-values";
+import { toNumber } from "@/lib/utils/numbers";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import { debtKindSchema } from "@/lib/config/enum-values.schema";
 import { isCalendarDate } from "@/lib/utils/date";
-import { debtPayoffEstimate } from "@/lib/pure/debts";
-import {
-  debtBalance,
-  getEffectiveOtherLiabilities,
-  isOpenDebt,
-} from "@/server/helpers/debts";
-import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
+import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
+import { dropMappingsTo } from "@/server/data/delete-references";
 
 const zDate = z.string().refine(isCalendarDate, "Not a date (YYYY-MM-DD)");
 /** Annual rate as a fraction: 0 ≤ r < 1 (6.5% is 0.065, not 6.5). */

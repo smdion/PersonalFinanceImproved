@@ -6,7 +6,7 @@ import {
   taxDataSyncOffReason,
 } from "@/lib/tax-data/sync";
 import { log } from "@/lib/logger";
-import { validateCronHeaderRequest } from "@/lib/auth/cron";
+import { cronRoute } from "@/lib/auth/cron";
 
 /** Weekly community tax-data check — polled hourly by instrumentation.node.ts; runs once a week when turned on. */
 export async function GET(request: Request) {
@@ -16,20 +16,10 @@ export async function GET(request: Request) {
       { status: 403 },
     );
   }
-  const cronCheck = validateCronHeaderRequest(request);
-  if (cronCheck === "misconfigured") {
-    log("error", "cron_secret_misconfigured", {
-      message: "CRON_SECRET is missing or too short",
-    });
-    return NextResponse.json(
-      { error: "Server misconfiguration" },
-      { status: 500 },
-    );
-  }
-  if (cronCheck !== "ok") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return cronRoute(request, checkTaxData);
+}
 
+async function checkTaxData(): Promise<Response> {
   try {
     if (await taxDataSyncOffReason(db))
       return NextResponse.json({ skipped: true, reason: "Turned off" });

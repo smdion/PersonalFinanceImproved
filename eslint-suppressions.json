@@ -230,11 +230,6 @@
       "count": 12
     }
   },
-  "src/app/(dashboard)/layout.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
-    }
-  },
   "src/app/(dashboard)/liabilities/page.tsx": {
     "max-lines-per-function": {
       "count": 1
@@ -600,7 +595,7 @@
       "count": 7
     },
     "ratchet/max-comment-lines": {
-      "count": 16
+      "count": 12
     },
     "ratchet/no-history-comment": {
       "count": 4
@@ -762,9 +757,6 @@
   },
   "src/components/cards/dashboard/linked-balance-card.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },
@@ -1543,9 +1535,6 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-jsx-iife": {
@@ -1879,7 +1868,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 2
     },
     "ratchet/no-raw-input": {
       "count": 4
@@ -2868,7 +2857,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 13
     },
     "ratchet/no-history-comment": {
       "count": 3
@@ -2900,7 +2889,7 @@
   },
   "src/lib/budget-api/errors.ts": {
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     }
   },
   "src/lib/budget-api/factory.ts": {
@@ -2929,591 +2918,6 @@
       "count": 1
     }
   },
-  "src/lib/calculators/brokerage-goals.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/coast-fire.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/contribution.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/efund.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/balance-deduction.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/balance-utils.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/bracket-growth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/brokerage-basis.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/constant-percentage.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/contribution-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/contribution-routing.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/endowment.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/expense-endings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/forgo-inflation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/gap-year-draw.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/growth-application.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/guyton-klinger.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/engine/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/individual-account-tracking.ts": {
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 24
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/inflation-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/obbba-senior-deduction.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/override-resolution.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/engine/post-withdrawal-optimizer.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 22
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/context.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 45
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 8
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/lump-sum.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 12
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/state.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/projection-year-handlers/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
-  "src/lib/calculators/engine/projection.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/engine/qcd.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/engine/rmd-enforcement.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/rmd-smoothing.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/rmd-spending.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/social-security-income.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/spending-decline.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/spending-strategy.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/tax-estimation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 18
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/tax-gross-up.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 18
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/vanguard-dynamic.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/engine/vpw.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/engine/withdrawal-cost-ranking.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 20
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/engine/withdrawal-routing.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 32
-    },
-    "ratchet/no-history-comment": {
-      "count": 7
-    }
-  },
-  "src/lib/calculators/monte-carlo.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 10
-    }
-  },
-  "src/lib/calculators/mortgage.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/lib/calculators/net-worth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/paycheck.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 26
-    },
-    "ratchet/no-guarded-division": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/plan-outcome.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/random.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
-  "src/lib/calculators/relocation.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/savings-capacity.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/savings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/simple-tax-mode.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/social-security.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/strategy-spending.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/tax-brackets.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/tax.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/types/calculators.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/types/engine-config.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 31
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/types/engine-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 31
-    },
-    "ratchet/no-history-comment": {
-      "count": 5
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
-  "src/lib/calculators/types/monte-carlo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/types/shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 5
-    }
-  },
-  "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    }
-  },
-  "src/lib/calculators/year-return-range.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/client-address.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -3537,7 +2941,7 @@
       "count": 16
     },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/config/account-types.types.ts": {
@@ -3702,14 +3106,6 @@
       "count": 4
     }
   },
-  "src/lib/config/tax-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/lib/config/withdrawal-routing.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -3771,9 +3167,6 @@
     }
   },
   "src/lib/db/backfill-perf-ids.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     }
@@ -3789,7 +3182,7 @@
       "count": 25
     },
     "ratchet/no-history-comment": {
-      "count": 33
+      "count": 32
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
@@ -3818,7 +3211,7 @@
   },
   "src/lib/db/json-schemas.ts": {
     "ratchet/max-comment-lines": {
-      "count": 11
+      "count": 9
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -4088,10 +3481,7 @@
   },
   "src/lib/demo/profiles/recently-retired.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 32
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
+      "count": 19
     }
   },
   "src/lib/demo/types.ts": {
@@ -4345,9 +3735,12 @@
       "count": 1
     }
   },
-  "src/lib/pure/account-insights.ts": {
+  "src/lib/pure/accounts/account-balances.types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 1
+      "count": 8
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
     }
   },
   "src/lib/pure/accounts/account-part.ts": {
@@ -4355,20 +3748,12 @@
       "count": 2
     }
   },
-  "src/lib/pure/always-buying.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
+  "src/lib/pure/accounts/balance-dates.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/lib/pure/balance-dates.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/basis-consistency.ts": {
+  "src/lib/pure/accounts/basis-consistency.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     },
@@ -4376,12 +3761,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/benchmark-yearly.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/cash-positions.ts": {
+  "src/lib/pure/accounts/cash-positions.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -4389,51 +3769,7 @@
       "count": 2
     }
   },
-  "src/lib/pure/contrib-profile-diff.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/contribution-caps.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/contributions.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 16
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/controlled-overrides.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/cost-basis.ts": {
+  "src/lib/pure/accounts/cost-basis.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -4441,53 +3777,12 @@
       "count": 1
     }
   },
-  "src/lib/pure/current-balances.ts": {
+  "src/lib/pure/accounts/current-balances.ts": {
     "ratchet/max-comment-lines": {
       "count": 6
     }
   },
-  "src/lib/pure/current-glide-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/daily-movement.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/date-keys.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/debt-rules.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/debts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/deposit-check.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/distribution-tax-rates.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    }
-  },
-  "src/lib/pure/early-access.ts": {
+  "src/lib/pure/accounts/early-access.ts": {
     "ratchet/max-comment-lines": {
       "count": 11
     },
@@ -4495,584 +3790,12 @@
       "count": 1
     }
   },
-  "src/lib/pure/early-withdrawal-penalty.ts": {
+  "src/lib/pure/accounts/early-withdrawal-penalty.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/lib/pure/feed-data-date.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/filing-status.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/fill-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/flow-suggestions.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/fund-facts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-guarded-division": {
-      "count": 6
-    }
-  },
-  "src/lib/pure/fund-findings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/fund-prices.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/gk-anchor-rate.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/glide-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/goldilocks.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/high-income-line.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/holding-periods.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    }
-  },
-  "src/lib/pure/household-income.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/household-timeline.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/internal-transfers.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/investment-income.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/market-calendar.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/matched-mix.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/milestone-first-reached.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/milestone-input.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/milestones.shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/milestones.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-guarded-division": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/milestones.types.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/nest-egg-display.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/paycheck-edit-target.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/paystub-check.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/performance-annotations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/performance-checks.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/performance.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/plan-pace.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/portfolio.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/portfolio/snapshot-row-label.ts": {
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/projection-bands.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/raise-history.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/realized-vs-assumed.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendation-dismissals.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendations-caps.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendations-roth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/recommendations.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/report/aca-irmaa-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/action-items.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/bracket-target-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    }
-  },
-  "src/lib/pure/report/executive-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/report/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/lifetime-tax-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/mc-freshness.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/report/risk-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/report/withdrawal-strategy-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
-    }
-  },
-  "src/lib/pure/report/year-table.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/retirement-bridge.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/return-rate-breakpoints.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/rmd-excess-target.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 4
-    }
-  },
-  "src/lib/pure/roth-basis-rollover.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/roth-basis-tracking.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/roth-distribution-tax.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/roth-ira.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 8
-    }
-  },
-  "src/lib/pure/savings-pace.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/savings-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/sec-composition.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/sec-identity.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simplefin-feeds.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/simplefin-holdings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/simplefin-link-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simplefin-reconcile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simplefin-transactions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simulation/dollars.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/snapshot-flows.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/snapshot-series.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/snapshot-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/standin-advice.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/stock-share.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/strategy-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/stress-test.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/tax-bucket-analysis.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/tax-bucket-projection.ts": {
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 13
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/tax-buckets.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 7
-    }
-  },
-  "src/lib/pure/tax-data-status.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/total-return.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/transaction-kind.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/utility-cost-feed.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/withdrawal-eligibility.ts": {
+  "src/lib/pure/accounts/eligibility.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -5089,11 +3812,1458 @@
       "count": 5
     }
   },
-  "src/lib/pure/withdrawal-strategy-recommendation.ts": {
+  "src/lib/pure/accounts/portfolio-labels.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/portfolio.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/roth-basis-rollover.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/accounts/roth-basis-tracking.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/snapshot-row-label.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/accounts/tax-bucket-analysis.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/tax-bucket-projection.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 13
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/accounts/tax-buckets.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/advice/goldilocks.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/milestone-first-reached.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/milestones/input.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/advice/milestones/milestones.shared.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/milestones/milestones.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-guarded-division": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/advice/milestones/milestones.types.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendation-dismissals.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendations-caps.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendations-roth.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/recommendations.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/report/aca-irmaa-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/action-items.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/bracket-target-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 10
+    }
+  },
+  "src/lib/pure/advice/report/executive-summary.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/report/index.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/lifetime-tax-summary.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/mc-freshness.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/advice/report/risk-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/report/withdrawal-strategy-narrative.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 9
+    }
+  },
+  "src/lib/pure/advice/report/year-table.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/advice/standin-advice.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/active-profile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/budget.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/budget.types.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/transaction-kind.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/budget/utility-cost-feed.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/account-match.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/contributions/accumulation-order.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/cap-pass.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/contributions/category-totals.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/contrib-profile-diff.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/contributions/contribution-caps.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 8
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/contributions/contribution-order.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/contribution-rows.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/contributions/contribution-totals.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/controlled-overrides.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/display-specs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/employer-match.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/contributions/irs-limits.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 11
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/matched-mix.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/profile-contrib-data.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 7
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/contributions/profile-fields.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/contributions/roth-ira.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 8
+    }
+  },
+  "src/lib/pure/contributions/savings-rate.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/debts/debt-rules.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/debts/debts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/debts/mortgage.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/balance-deduction.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/balance-utils.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/bracket-growth.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/brokerage-basis.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/constant-percentage.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/contribution-projection.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/contribution-routing.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/endowment.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/expense-endings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/forgo-inflation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/gap-year-draw.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/growth-application.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/guyton-klinger.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/individual-account-tracking.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 24
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/inflation-path.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/obbba-senior-deduction.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/override-resolution.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/post-withdrawal-optimizer.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 22
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/context.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 44
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 8
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 12
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/state.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 6
+    }
+  },
+  "src/lib/pure/engine/projection.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/qcd.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/engine/rmd-enforcement.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/rmd-smoothing.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 10
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/rmd-spending.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/social-security-income.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-decline.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/spending-strategy.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/tax-estimation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 17
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/types/accumulation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/types/contribution-spec.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/types/decumulation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 20
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/types/projection-result.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 31
+    },
+    "ratchet/no-history-comment": {
+      "count": 5
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/types/routing.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/engine/types/year-overrides.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/vanguard-dynamic.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/engine/vpw.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 18
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 31
+    },
+    "ratchet/no-history-comment": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/engine/withdrawal-solver.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 18
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/compensation.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 11
+    }
+  },
+  "src/lib/pure/household/household-income.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/household-timeline.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/plans.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/profiles.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/household/raise-history.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/household/retirement-profile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/household/what-if.schema.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/investments/account-insights.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/always-buying.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/annual-rollups.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/benchmark-yearly.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/deposit-check.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/fill-suggestions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/investments/flow-suggestions.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/fund-facts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-guarded-division": {
+      "count": 6
+    }
+  },
+  "src/lib/pure/investments/fund-findings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/fund-prices.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/holding-periods.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 7
+    }
+  },
+  "src/lib/pure/investments/investment-income.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/market-calendar.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/investments/performance-annotations.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/performance-checks.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/realized-vs-assumed.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/returns.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/sec-composition.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/sec-identity.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/investments/total-return.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/daily-movement.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/net-worth.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-flows.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-series.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/snapshot-suggestions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/net-worth/year-end-targeting.schema.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/budget-periods.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/high-income-line.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck-edit-target.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck-input.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 26
+    },
+    "ratchet/no-guarded-division": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck.types.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paystub-check.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/withholding.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/coast-fire.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/retirement/gk-anchor-rate.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/nest-egg-display.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/retirement/plan-outcome.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/retirement/plan-pace.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/relocation.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/retirement/retirement-bridge.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/rmd-excess-target.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
+    }
+  },
+  "src/lib/pure/retirement/social-security-entries.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/social-security.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 12
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/strategy-spending.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/strategy-summary.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 12
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/retirement/withdrawal-strategy-recommendation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/brokerage-goals.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/efund.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/internal-transfers.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/savings/savings-capacity.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/savings/savings-pace.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/savings/savings-projection.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/savings/savings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/current-glide-path.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/dollars.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/glide-path.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/simulation/inflation-risk.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/monte-carlo.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 10
+    }
+  },
+  "src/lib/pure/simulation/monte-carlo.types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/lib/pure/simulation/random.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/simulation/return-rate-breakpoints.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/stock-share.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/simulation/stress-test-run.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/simulation/stress-test.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/simulation/year-return-range.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/sync/account-mapping.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/sync/feed-data-date.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/sync/simplefin-feeds.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/sync/simplefin-holdings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/sync/simplefin-link-suggestions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/sync/simplefin-reconcile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/sync/simplefin-transactions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/data-status.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/distribution-tax-rates.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 11
+    }
+  },
+  "src/lib/pure/tax/filing-status.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/roth-distribution-tax.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/tax/simple-tax-mode.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/tax-brackets.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/tax/tax.ts": {
+    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -5130,7 +5300,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/simplefin/ingest.ts": {
@@ -5157,12 +5327,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 9
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },
@@ -5216,19 +5383,14 @@
       "count": 1
     }
   },
-  "src/lib/url-safety.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/utils/account-mapping.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/lib/utils/colors.ts": {
     "ratchet/max-comment-lines": {
       "count": 10
+    }
+  },
+  "src/lib/utils/date-keys.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     }
   },
   "src/lib/utils/date.ts": {
@@ -5297,53 +5459,12 @@
       "count": 4
     }
   },
-  "src/server/helpers/api-balance-resolution.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/apply-pull-mapping.ts": {
+  "src/server/data/budget-profiles.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
     }
   },
-  "src/server/helpers/budget-api-push.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/budget-income-materializer.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/server/helpers/budget.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/category-links.ts": {
+  "src/server/data/category-links.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     },
@@ -5351,102 +5472,7 @@
       "count": 1
     }
   },
-  "src/server/helpers/contribution-caps.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/contribution-match.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 4
-    }
-  },
-  "src/server/helpers/contribution-mix.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/contribution.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 26
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 35
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 8
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 11
-    }
-  },
-  "src/server/helpers/debts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/extra-paycheck-materializer.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/fill-ledger.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/first-run.ts": {
+  "src/server/data/first-run.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
     },
@@ -5454,22 +5480,49 @@
       "count": 1
     }
   },
-  "src/server/helpers/household-timezone.ts": {
+  "src/server/data/household-timezone.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/server/helpers/loan-feed.ts": {
+  "src/server/data/investments.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/data/jobs.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/server/helpers/market-prices.ts": {
+  "src/server/data/lock-row.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/data/people.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/data/salaries.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     }
   },
-  "src/server/helpers/merge-setting.ts": {
+  "src/server/data/settings.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -5477,33 +5530,9 @@
       "count": 1
     }
   },
-  "src/server/helpers/monte-carlo-worker-client.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/paycheck-input.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/people.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/performance-edit.ts": {
+  "src/server/data/snapshots.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5512,109 +5541,7 @@
       "count": 1
     }
   },
-  "src/server/helpers/performance-rollups.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/portfolio-labels.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/projection-cache.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/server/helpers/retirement-profile.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/server/helpers/roth-basis.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/salary.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 15
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/savings-allocation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/server-trpc.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/server/helpers/simulation-preset.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/snapshot-derivatives.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/snapshot.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
-  "src/server/helpers/sub-accounts.ts": {
+  "src/server/data/sub-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
@@ -5622,19 +5549,6 @@
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/transaction-lock.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/helpers/transforms.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -5648,172 +5562,97 @@
       "count": 1
     }
   },
-  "src/server/retirement/build-engine-payload.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 11
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 30
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
-  "src/server/retirement/payload/budget-expenses.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/retirement/payload/expense-endings.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/retirement/payload/individual-accounts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/server/retirement/payload/profile-switches.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/retirement/payload/retirement-contributions.ts": {
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/server/retirement/social-security-entries.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/_shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    }
-  },
   "src/server/routers/assets.ts": {
     "max-lines-per-function": {
       "count": 1
     }
   },
-  "src/server/routers/budget.ts": {
+  "src/server/routers/budget/api-links.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 21
-    },
-    "max-lines-per-function": {
-      "count": 2
+      "count": 7
+    }
+  },
+  "src/server/routers/budget/api-sync.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 31
+      "count": 1
+    }
+  },
+  "src/server/routers/budget/columns.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    }
+  },
+  "src/server/routers/budget/item-amounts.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 7
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/budget/item-links.ts": {
+    "ratchet/max-comment-lines": {
       "count": 4
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
+    }
+  },
+  "src/server/routers/budget/items.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
+    }
+  },
+  "src/server/routers/budget/profiles.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/server/routers/budget/summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
     }
   },
   "src/server/routers/contribution-profiles.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 13
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 14
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
-  "src/server/routers/contribution.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 11
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
       "count": 12
     },
-    "ratchet/no-history-comment": {
+    "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-string-closed-set-field": {
-      "count": 3
+    "ratchet/max-comment-lines": {
+      "count": 10
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
     }
   },
   "src/server/routers/demo.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 2
     }
   },
   "src/server/routers/historical.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
-    }
-  },
-  "src/server/routers/investments/_shared.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/investments/account-insights.ts": {
@@ -5848,39 +5687,6 @@
       "count": 1
     }
   },
-  "src/server/routers/investments/holdings-overview.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/investments/live-contributions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/server/routers/investments/load-current-balances.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/routers/investments/suggestions.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -5895,75 +5701,103 @@
     }
   },
   "src/server/routers/milestones.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/routers/networth/comparison.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
+    "max-lines-per-function": {
+      "count": 1
+    },
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
-  "src/server/routers/networth.ts": {
+  "src/server/routers/networth/portfolio-snapshots.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 2
     },
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
     }
   },
-  "src/server/routers/paycheck.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
+  "src/server/routers/networth/snapshot-accounts.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/server/routers/networth/snapshots.ts": {
+    "max-lines-per-function": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 2
-    },
     "ratchet/max-comment-lines": {
-      "count": 17
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
-  "src/server/routers/performance.ts": {
+  "src/server/routers/networth/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
       "count": 3
     },
+    "max-lines-per-function": {
+      "count": 1
+    },
     "ratchet/max-comment-lines": {
-      "count": 13
+      "count": 1
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 2
     }
   },
-  "src/server/routers/projection-v5-helpers.ts": {
+  "src/server/routers/performance/accounts.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/performance/finalize-year.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/server/routers/performance/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 6
+    }
+  },
+  "src/server/routers/performance/year-records.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     },
-    "ratchet/no-string-closed-set-field": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/server/routers/projection/_shared.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 5
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 5
     }
   },
   "src/server/routers/projection/coast-fire-probe.ts": {
@@ -6030,14 +5864,8 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
+      "count": 4
     }
   },
   "src/server/routers/projection/social-security.ts": {
@@ -6098,23 +5926,32 @@
       "count": 1
     }
   },
-  "src/server/routers/retirement.ts": {
+  "src/server/routers/retirement/overrides.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
-    },
-    "max-lines-per-function": {
       "count": 1
-    },
+    }
+  },
+  "src/server/routers/retirement/profile-people.ts": {
     "ratchet/max-comment-lines": {
-      "count": 21
+      "count": 4
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 1
+    }
+  },
+  "src/server/routers/retirement/profiles.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/server/routers/retirement/settings.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
     }
   },
   "src/server/routers/salary-profiles.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 5
     },
     "ratchet/max-comment-lines": {
       "count": 12
@@ -6123,18 +5960,47 @@
       "count": 2
     }
   },
-  "src/server/routers/savings.ts": {
+  "src/server/routers/savings/api-sync.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 9
+      "count": 1
     },
     "max-lines-per-function": {
-      "count": 3
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 31
+      "count": 2
+    }
+  },
+  "src/server/routers/savings/extra-paycheck-routing.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/server/routers/savings/goals.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 1
+    }
+  },
+  "src/server/routers/savings/planned-transactions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/routers/savings/profile-allocations.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 8
     }
   },
   "src/server/routers/settings/admin.ts": {
@@ -6148,23 +6014,46 @@
       "count": 1
     }
   },
+  "src/server/routers/settings/contribution-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 8
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/routers/settings/deductions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/settings/earnings.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/settings/jobs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/server/routers/settings/onboarding.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/server/routers/settings/paycheck.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
-    },
+  "src/server/routers/settings/people.ts": {
     "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
+      "count": 4
     }
   },
   "src/server/routers/settings/tax-data-sync.ts": {
@@ -6186,17 +6075,27 @@
       "count": 1
     }
   },
-  "src/server/routers/simplefin.ts": {
+  "src/server/routers/simplefin/accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 8
+      "count": 4
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/simplefin/index.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/routers/simplefin/links.ts": {
+    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6210,24 +6109,7 @@
       "count": 4
     },
     "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/server/routers/sync/core.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
-    "ratchet/no-history-comment": {
-      "count": 5
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
     }
   },
   "src/server/routers/sync/mappings.ts": {
@@ -6244,6 +6126,23 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/routers/sync/preview.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 4
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -6278,12 +6177,522 @@
       "count": 1
     }
   },
+  "src/server/services/accounts/roth-basis.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/advice/milestone-inputs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/budget/account-balances.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/budget/active-summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 7
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/budget/annual-expenses.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    }
+  },
+  "src/server/services/budget/budget-income-materializer.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/server/services/budget/extra-paycheck-materializer.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/server/services/budget/linked-items.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/account-edits.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 6
+    },
+    "ratchet/max-comment-lines": {
+      "count": 7
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/caps.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/server/services/contributions/contribution-mix.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/live-data.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/paycheck-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/profile.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 10
+    },
+    "ratchet/max-comment-lines": {
+      "count": 11
+    },
+    "ratchet/no-history-comment": {
+      "count": 5
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 11
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 11
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
+    }
+  },
+  "src/server/services/debts/other-liabilities.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/demo/demo-schema.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    }
+  },
+  "src/server/services/demo/demo-seed.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/current-balances.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/holdings-overview.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/live-contributions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/market-prices.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/net-worth/other-assets.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/net-worth/snapshot-derivatives.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/net-worth/year-end-history.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 9
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/paycheck/job-net-pay.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/paycheck/summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 14
+    }
+  },
+  "src/server/services/performance/performance-edit.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/performance/performance-rollups.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/profiles/first-retirement-profile.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/profiles/plans.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/profiles/salary-profile.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/engine-payload/budget-expenses.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 6
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/engine-payload/build-engine-payload.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 11
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 30
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/server/services/projection/engine-payload/expense-endings.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/engine-payload/individual-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/server/services/projection/engine-payload/profile-switches.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 11
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/engine-payload/retirement-contributions.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/projection-cache.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/server/services/projection/projection-metadata.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/relocation-analysis.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/savings/savings-allocation.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/savings/summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/simulation/mc-inputs.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/simulation/monte-carlo-worker-client.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/simulation/simulation-preset.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/sync/api-balance-resolution.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/apply-pull-mapping.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/sync/budget-api-push.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/fill-ledger.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/loan-feed.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/simplefin.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/server/services/sync/sync-all.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/trpc-server.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
   "src/server/trpc.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
     },
     "ratchet/max-comment-lines": {
-      "count": 8
+      "count": 7
     }
   },
   "src/workers/monte-carlo-worker.ts": {

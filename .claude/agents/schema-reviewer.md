@@ -83,7 +83,7 @@ Every schema change must follow the project's established conventions.
 **Enum-like columns:**
 
 - All enum-like columns are `text` (not `pgEnum`), narrowed via `.$type<EnumType>()`
-- App-layer validation via Zod against `src/lib/config/enum-values.ts`
+- App-layer validation via Zod: values in `src/lib/config/enum-values.ts`, schemas in `enum-values.schema.ts`
 - Do NOT introduce `pgEnum` — it would require a migration every time a valid value is added
 
 **JSONB:**

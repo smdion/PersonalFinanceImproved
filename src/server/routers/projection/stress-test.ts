@@ -3,22 +3,18 @@
  *
  * Re-runs the deterministic projection three times — once each at the
  * conservative, baseline, and optimistic stress-test parameter sets defined
- * in `src/lib/pure/stress-test.ts`. Used by the PlanHealthCard stress-test
+ * in `src/lib/pure/simulation/stress-test.ts`. Used by the PlanHealthCard stress-test
  * panel to render side-by-side outcomes.
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
-import { runStressTestScenarios } from "../projection-v5-helpers";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
 import {
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
-import type { ProjectionInput } from "@/lib/calculators/types";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const stressTestRouter = createTRPCRouter({
@@ -27,7 +23,7 @@ export const stressTestRouter = createTRPCRouter({
    *
    * Re-runs the deterministic projection three times — once each at the
    * conservative, baseline, and optimistic stress test parameter sets
-   * defined in src/lib/pure/stress-test.ts. Each scenario overrides
+   * defined in src/lib/pure/simulation/stress-test.ts. Each scenario overrides
    * returnRates / inflationRate / salaryGrowthRate / withdrawalRate
    * before calling calculateProjection. Returns summary metrics
    * (nest egg at retirement, sustainable withdrawal, depletion age) so
@@ -44,14 +40,9 @@ export const stressTestRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input?.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input?.selection,
         snapshotId: input?.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { scenarios: [], retirementAge: null };
 
@@ -68,7 +59,7 @@ export const stressTestRouter = createTRPCRouter({
       // (computeProjection, computeStrategyComparison, analyzeStrategy).
       // Each of the three stress scenarios then overrides only
       // `withdrawalRate`, its own controlled variable
-      // (runStressTestScenarios, projection-v5-helpers.ts). Previously this
+      // (runStressTestScenarios, stress-test-run.ts). Previously this
       // hand-built the object inline and silently dropped rmdExcessHandling/
       // qcdMaximize/rmdSmoothingEnabled/discretionaryWithdrawalOrder to
       // engine defaults regardless of what was configured.

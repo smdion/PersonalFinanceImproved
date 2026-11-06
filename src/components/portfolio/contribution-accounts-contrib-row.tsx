@@ -2,7 +2,8 @@
 
 /** Contribution row UI: displays a single contribution's summary/edit view with tax treatment, method, employer match fields, and an add-contribution form. */
 
-import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { mergedMatchRate } from "@/lib/pure/contributions/employer-match";
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -22,10 +23,14 @@ import { InlineText, InlineSelect } from "./contribution-accounts-inline";
 import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
-} from "@/lib/pure/profiles";
-import { formatEmployerMatch } from "@/lib/pure/contributions";
+} from "@/lib/pure/household/profiles";
+import {
+  formatEmployerMatch,
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/match-display";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
-import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 
@@ -68,12 +73,8 @@ export function ContributionRow({
     ? (jobs.find((j) => j.id === c.jobId)?.employerName ?? String(c.jobId))
     : "Personal";
 
-  // employerMatchType/Value/MaxMatchPct are PROFILE_OWNED_CONTRIB_FIELDS —
-  // onUpdate already routes edits to the active profile when one is set
-  // (see handleContribUpdate), but `c` itself is the raw, unmerged account
-  // row. Display must merge the profile's own override over the live
-  // value the same way applyContribActiveFields does server-side, or this
-  // row shows/edits a number that isn't the one actually in effect.
+  // `c` is the unmerged account row: the active profile's match fields merge
+  // over it as applyContribActiveFields does: the row shows what's in effect.
   const activeMatchFields = activeProfileFields as {
     employerMatchType?: string;
     employerMatchValue?: string | number;
@@ -83,6 +84,7 @@ export function ContributionRow({
     activeMatchFields?.employerMatchType ?? c.employerMatchType;
   const effectiveMatchValue =
     activeMatchFields?.employerMatchValue ?? c.employerMatchValue;
+  const effectiveMatchRate = mergedMatchRate(c, activeMatchFields ?? {});
   const effectiveMaxMatchPct =
     activeMatchFields?.employerMaxMatchPct ?? c.employerMaxMatchPct;
   const isPercentMatch = effectiveMatchType === "percent_of_contribution";
@@ -91,22 +93,21 @@ export function ContributionRow({
     effectiveMatchType,
     effectiveMatchValue,
     effectiveMaxMatchPct,
+    effectiveMatchRate,
   );
   const sharedMatchText = sharedMatchFrom
     ? formatEmployerMatch(
         sharedMatchFrom.employerMatchType,
         sharedMatchFrom.employerMatchValue,
         sharedMatchFrom.employerMaxMatchPct,
+        sharedMatchFrom.employerMatchRate,
       )
     : null;
   const sharedMatchLabel = sharedMatchFrom
     ? `${sharedMatchText ?? "0"} match, combined with this account's ${TAX_LABELS[c.taxTreatment] ?? c.taxTreatment} contribution — see the ${TAX_LABELS[sharedMatchFrom.taxTreatment] ?? sharedMatchFrom.taxTreatment} row`
     : "";
 
-  // What this account is actually worth in the profile that's live right
-  // now — the account itself carries no value (applyContribActiveFields),
-  // so this is the one place on this page that answers "why is this row
-  // showing what it's showing" without a trip to the Budget page.
+  // The account's value in the active profile (accounts carry none).
   const profileStatus = resolveContribFieldDisplayState(
     activeProfileFields as ContribAccountActiveFields,
   );
@@ -126,7 +127,6 @@ export function ContributionRow({
     <div
       className={`bg-surface-primary rounded-lg border ${!c.isActive ? "opacity-50" : ""}`}
     >
-      {/* Summary line — hidden when edit is open */}
       {!showAdvanced && (
         <>
           <div className="flex items-center gap-2 px-3 py-2 text-xs">
@@ -183,14 +183,8 @@ export function ContributionRow({
                 Not a funding target
               </span>
             )}
-            {/* Restoring only ever changes a flag on the account itself —
-             *  it can never do the thing "restore" implies (make it
-             *  actually funded), since values only ever live in a
-             *  Contribution Profile, not here. That action lives in the
-             *  Profile editor and Compare view instead, next to the value
-             *  field it needs. Removing stays here: it has a real,
-             *  immediate effect on its own (stops counting the account
-             *  toward the dashboard/net-worth totals). */}
+            {/* Removing stops counting the account; restoring (a value in a
+             *  Contribution Profile) lives in the Profile editor and Compare. */}
             {onUpdate && c.isActive && (
               <button
                 onClick={(e) => {
@@ -220,7 +214,6 @@ export function ContributionRow({
         </>
       )}
 
-      {/* Editable fields — replaces summary when open */}
       {showAdvanced && (
         <div className="px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between">
@@ -314,10 +307,17 @@ export function ContributionRow({
                       ? "Match Amount"
                       : "Match %"
                   }
-                  value={String(effectiveMatchValue ?? "")}
+                  value={matchFigureForForm(
+                    effectiveMatchType,
+                    effectiveMatchValue,
+                    effectiveMatchRate,
+                  )}
                   placeholder={isPercentMatch ? "e.g. 50" : "e.g. 400"}
                   onSave={(val) =>
-                    onUpdate?.({ employerMatchValue: val || null })
+                    onUpdate?.({
+                      employerMatchValue:
+                        matchValueToStore(effectiveMatchType, val) || null,
+                    })
                   }
                   disabled={!onUpdate}
                 />
@@ -464,10 +464,6 @@ export function ContributionRow({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Add Contribution Form
-// ---------------------------------------------------------------------------
-
 export function AddContribForm({
   accountType,
   parentCategory,
@@ -507,7 +503,7 @@ export function AddContribForm({
       taxTreatment,
       employerMatchType: matchType,
       ...(matchType !== "none" && matchValue
-        ? { employerMatchValue: matchValue }
+        ? { employerMatchValue: matchValueToStore(matchType, matchValue) }
         : {}),
       ...(matchType === "percent_of_contribution" && maxMatchPct
         ? { employerMaxMatchPct: String(parseFloat(maxMatchPct) / 100) }

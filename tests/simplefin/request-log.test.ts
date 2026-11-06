@@ -48,6 +48,7 @@ const emptyResponse = {
   accounts: [],
   providerErrors: [],
   accountIdsWithErrors: [],
+  errorScope: [],
 };
 
 describe("SimpleFIN request ledger", () => {

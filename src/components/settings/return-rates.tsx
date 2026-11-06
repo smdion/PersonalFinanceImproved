@@ -24,7 +24,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/utils/format";
-import { returnRateAtAge } from "@/lib/pure/return-rate-breakpoints";
+import { returnRateAtAge } from "@/lib/pure/simulation/return-rate-breakpoints";
 /** Display-only cap for the glide-path bar and the last breakpoint's
  *  open-ended range label — the engine itself has no upper bound, a
  *  breakpoint's rate just keeps applying past this. */

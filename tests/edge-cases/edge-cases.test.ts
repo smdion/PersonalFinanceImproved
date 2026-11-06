@@ -6,21 +6,19 @@
  * no limits data, negative values, and extreme inputs.
  */
 import { describe, it, expect } from "vitest";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
 import {
   taxForOnePerson,
   type OnePersonTaxInput,
-} from "../calculators/tax-helpers";
-import { calculateBudget } from "@/lib/calculators/budget";
-import { calculateContributions } from "@/lib/calculators/contribution";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
-import { calculateSavings } from "@/lib/calculators/savings";
-import {
-  MFJ_2C_BRACKETS,
-  MFJ_TAXABLE_INCOME_BRACKETS,
-} from "../calculators/fixtures";
-import type { PaycheckInput, NetWorthInput } from "@/lib/calculators/types";
+} from "../pure/tax/tax-helpers";
+import { calculateBudget } from "@/lib/pure/budget/budget";
+import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
+import { calculateMortgage } from "@/lib/pure/debts/mortgage";
+import { calculateNetWorth } from "@/lib/pure/net-worth/net-worth";
+import { calculateSavings } from "@/lib/pure/savings/savings";
+import { MFJ_2C_BRACKETS, MFJ_TAXABLE_INCOME_BRACKETS } from "../pure/fixtures";
+import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
+import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
 
 const JAN_1 = new Date(2025, 0, 1); // local-time constructor — avoids UTC-string timezone shift
 const DEC_31 = new Date(2025, 11, 31);
@@ -660,11 +658,11 @@ describe("savings edge cases", () => {
 
 // ── Retirement / projection edge cases ──
 
-import { calculateProjection } from "@/lib/calculators/engine/projection";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import { calculateProjection } from "@/lib/pure/engine/projection";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { makeAccumulationDefaults } from "../calculators/fixtures/engine-fixtures";
+import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },

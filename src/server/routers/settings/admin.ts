@@ -7,7 +7,7 @@ import { z } from "zod/v4";
 import {
   parseCurrentGlidePath,
   unknownAssetClassIds,
-} from "@/lib/pure/current-glide-path";
+} from "@/lib/pure/simulation/current-glide-path";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, desc } from "drizzle-orm";
 import {
@@ -29,34 +29,34 @@ import {
   SK_ROTH_IRA_DIRECT_MARGIN,
   SK_HSA_CASH_BUFFER,
 } from "@/lib/constants/settings-keys";
-import { currentGlidePathSchema } from "@/lib/pure/current-glide-path";
+import { currentGlidePathSchema } from "@/lib/pure/simulation/current-glide-path";
 import {
   dismissalIdSchema,
   dismissalSchema,
   dismissalsSchema,
   nextDismissals,
   parseDismissals,
-} from "@/lib/pure/recommendation-dismissals";
+} from "@/lib/pure/advice/recommendation-dismissals";
 import { isCalendarDate } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
   milestoneChecklistSchema,
   savingsTargetSourceSchema,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/advice/milestones/milestones";
 import {
   applyHouseholdTimeZone,
   isValidTimeZone,
-} from "@/server/helpers/household-timezone";
-import { invalidateYearEndCache } from "@/server/helpers";
+} from "@/server/data/household-timezone";
+import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { RBAC_SETTINGS_PREFIX, RBAC_ADMIN_GROUP_KEY } from "@/server/auth";
 import { PERMISSIONS } from "@/lib/config/permissions";
 import { settingValue } from "./_shared";
-import { applyPlan } from "@/server/helpers/plans";
-import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
-import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
+import { applyPlan } from "@/server/services/profiles/plans";
+import { firstReachedSchema } from "@/lib/pure/advice/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
+import { mergeSettingAtomically, upsertSetting } from "@/server/data/settings";
 
 // --- Zod schemas ---
 
@@ -179,25 +179,14 @@ export const adminProcedures = {
         }
       }
       if (input.performanceDate) {
-        await ctx.db
-          .insert(schema.appSettings)
-          .values({
-            key: "performance_last_updated",
-            value: input.performanceDate,
-          })
-          .onConflictDoUpdate({
-            target: schema.appSettings.key,
-            set: { value: input.performanceDate },
-          });
+        await upsertSetting(
+          ctx.db,
+          "performance_last_updated",
+          input.performanceDate,
+        );
       }
       if (input.basisDate) {
-        await ctx.db
-          .insert(schema.appSettings)
-          .values({ key: "basis_last_updated", value: input.basisDate })
-          .onConflictDoUpdate({
-            target: schema.appSettings.key,
-            set: { value: input.basisDate },
-          });
+        await upsertSetting(ctx.db, "basis_last_updated", input.basisDate);
       }
       return { ok: true };
     }),
@@ -330,7 +319,7 @@ export const adminProcedures = {
     }),
   }),
 
-  // ══ PLANS (a named set of profiles — see server/helpers/plans.ts) ══
+  // ══ PLANS (a named set of profiles — see server/services/profiles/plans.ts) ══
   scenarios: createTRPCRouter({
     /** Every saved Plan. */
     list: protectedProcedure.query(({ ctx }) =>

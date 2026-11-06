@@ -54,6 +54,12 @@ export const contributionAccounts = pgTable(
       precision: 14,
       scale: 2,
     }),
+    /** A percent match's rate as a fraction (0.5 = 50%): what is read;
+     *  migration 0017 clears the whole-percent value where this is set. */
+    employerMatchRate: decimal("employer_match_rate", {
+      precision: 12,
+      scale: 6,
+    }),
     employerMaxMatchPct: decimal("employer_max_match_pct", {
       precision: 8,
       scale: 6,
@@ -98,7 +104,7 @@ export const contributionAccounts = pgTable(
     ),
     // At most one active row per (job, accountType, parentCategory) may
     // carry real employer match config. computeGroupedEmployerMatch
-    // (server/helpers/contribution.ts) combines a physical account's
+    // (lib/pure/contributions/employer-match.ts) combines a physical account's
     // Roth/Traditional splits before applying the match cap once, and
     // requires exactly one "winning" row's config for that group — two
     // independently-configured siblings is an ambiguous state the app

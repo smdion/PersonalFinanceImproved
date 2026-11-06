@@ -20,23 +20,23 @@ Also read the existing test file for that module if one exists. Match its style:
 
 ## Step 2 — Choose the right test type
 
-| Code being tested                             | Test type               | Location                                      |
-| --------------------------------------------- | ----------------------- | --------------------------------------------- |
-| Pure calculator function (`lib/calculators/`) | Unit test               | `tests/calculators/<name>.test.ts`            |
-| Engine module (`lib/calculators/engine/`)     | Unit test or snapshot   | `tests/calculators/engine-*.test.ts`          |
-| tRPC router procedure                         | Router integration test | `tests/routers/<name>.test.ts`                |
-| Pure business logic (`lib/pure/`)             | Unit test, no DB        | `tests/pure/<name>.test.ts`                   |
-| Server helper (`server/helpers/`)             | Helper unit test        | `tests/helpers/<name>.test.ts`                |
-| Engine payload, auth, tRPC setup (`server/`)  | Server test             | `tests/server/<name>.test.ts`                 |
-| A figure worked by hand from published rules  | Answer key              | `tests/**/answer-key-<area>.test.ts`          |
-| React component (`components/`)               | Component test          | `tests/components/<name>.test.tsx`            |
-| Config table (`lib/config/`)                  | Config test             | `tests/config/<name>.test.ts`                 |
-| Cross-calculator consistency                  | Logic gaps              | `tests/calculators/logic-gaps.test.ts`        |
-| Extreme/boundary inputs                       | Edge case               | `tests/edge-cases/edge-cases.test.ts`         |
-| Engine invariant (holds for any input)        | Property-based          | `tests/calculators/engine-invariants.test.ts` |
-| Engine output unchanged after refactor        | Snapshot                | `tests/calculators/engine-snapshot.test.ts`   |
-| Published research validation                 | Benchmark               | `tests/benchmarks/<name>.test.ts`             |
-| Zod schema validation                         | Integration             | `tests/integration/zod-schemas.test.ts`       |
+| Code being tested                                                  | Test type               | Location                                      |
+| ------------------------------------------------------------------ | ----------------------- | --------------------------------------------- |
+| Pure calculator function (`lib/pure/<area>/`)                      | Unit test               | `tests/pure/<area>/<name>.test.ts`            |
+| Engine module (`lib/pure/engine/`)                                 | Unit test or snapshot   | `tests/pure/engine/engine-*.test.ts`          |
+| tRPC router procedure                                              | Router integration test | `tests/routers/<name>.test.ts`                |
+| Pure business logic (`lib/pure/`)                                  | Unit test, no DB        | `tests/pure/<name>.test.ts`                   |
+| Shared server read or service (`server/data/`, `server/services/`) | Server test             | `tests/server/<layer>/<area>/<name>.test.ts`  |
+| Engine payload, auth, tRPC setup (`server/`)                       | Server test             | `tests/server/<name>.test.ts`                 |
+| A figure worked by hand from published rules                       | Answer key              | `tests/**/answer-key-<area>.test.ts`          |
+| React component (`components/`)                                    | Component test          | `tests/components/<name>.test.tsx`            |
+| Config table (`lib/config/`)                                       | Config test             | `tests/config/<name>.test.ts`                 |
+| Cross-calculator consistency                                       | Logic gaps              | `tests/pure/logic-gaps.test.ts`               |
+| Extreme/boundary inputs                                            | Edge case               | `tests/edge-cases/edge-cases.test.ts`         |
+| Engine invariant (holds for any input)                             | Property-based          | `tests/pure/engine/engine-invariants.test.ts` |
+| Engine output unchanged after refactor                             | Snapshot                | `tests/pure/engine/engine-snapshot.test.ts`   |
+| Published research validation                                      | Benchmark               | `tests/benchmarks/<name>.test.ts`             |
+| Zod schema validation                                              | Integration             | `tests/integration/zod-schemas.test.ts`       |
 
 When in doubt between unit and integration: if the code touches a DB or external system, it needs a router/integration test. If it's a pure function, it needs a unit test.
 
@@ -48,8 +48,8 @@ When in doubt between unit and integration: if the code touches a DB or external
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { calculateXxx } from "@/lib/calculators/xxx";
-import type { XxxInput } from "@/lib/calculators/types";
+import { calculateXxx } from "@/lib/pure/<area>/xxx";
+import type { XxxInput } from "@/lib/pure/<area>/xxx";
 
 describe("calculateXxx", () => {
   it("describes what this specific case tests", () => {
@@ -74,7 +74,7 @@ describe("calculateXxx", () => {
 - Assert specific numeric outputs — `toBe(23000)` not `toBeTruthy()`
 - One behavior per test — split multiple assertions into multiple `it()` blocks if they test different things
 - Derive the expected figure by hand from the rule or source and write the arithmetic beside it; never paste the function's current output as the expected value
-- Invented households only (`tests/calculators/fixtures.ts`, `tests/fixtures/`), never a real household's figures
+- Invented households only (`tests/pure/fixtures.ts`, `tests/fixtures/`), never a real household's figures
 
 ### Router integration tests
 

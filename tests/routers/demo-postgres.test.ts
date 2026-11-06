@@ -7,7 +7,8 @@
  * Runs only when TEST_DATABASE_URL names a throwaway database (its name
  * must end in `_test`): the test drops and rebuilds its public schema. CI
  * runs it against a PostgreSQL service with DEMO_ONLY on, as the public
- * demo runs.
+ * demo runs, and its "with a demo active" case again with DEMO_ONLY off,
+ * as a household install runs a demo.
  */
 // First: its mocks must be in place before any app module loads.
 import {
@@ -21,6 +22,7 @@ import { cookies } from "next/headers";
 import pg from "pg";
 import type { Session } from "next-auth";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type { ReadMemo } from "@/server/data/request-scope";
 import { runMigrator } from "./fresh-install-cases";
 
 // Not imported from ./setup: that module loads the db module (as SQLite)
@@ -44,7 +46,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   /** A caller with `demoSchema` active. Imported only after DATABASE_URL
    *  points at the test database: the db module picks its dialect when it's
    *  first imported. */
-  async function callerFor(demoSchema: string | null) {
+  async function callerFor(demoSchema: string | null, reads?: ReadMemo) {
     const { appRouter } = await import("@/server/routers");
     const { createCallerFactory } = await import("@/server/trpc");
     const { db } = await import("@/lib/db");
@@ -52,6 +54,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
       db,
       session: adminSession,
       demoSchema,
+      reads,
     });
   }
 
@@ -110,7 +113,8 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     // computes it (computeSummary → householdSavings): projected, match
     // included, Portfolio money counted — the glossary's savings rate.
     const { DEMO_PROFILES } = await import("@/lib/demo");
-    const { householdSavings } = await import("@/lib/pure/contributions");
+    const { householdSavings } =
+      await import("@/lib/pure/contributions/savings-rate");
     for (const profile of Object.values(DEMO_PROFILES)) {
       const { schemaName: demo } = await (
         await callerFor(null)
@@ -149,6 +153,108 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
         .toBe(profile.keyStats.savingsRate);
     }
   }, 300_000);
+
+  it("each profile's demo schema fills every data table but the listed empty ones", async () => {
+    // The SQLite guard (tests/demo/demo-completeness.test.ts) on the real
+    // demo path, for the tables: the same list and the same empty cases.
+    const { DEMO_PROFILES } = await import("@/lib/demo");
+    const { DEMO_DATA_TABLES, expectedEmptyTables } =
+      await import("../demo/demo-tables");
+    for (const profile of Object.values(DEMO_PROFILES)) {
+      const { schemaName: demo } = await (
+        await callerFor(null)
+      ).demo.activateProfile({ slug: profile.slug });
+      const empty: string[] = [];
+      for (const table of DEMO_DATA_TABLES) {
+        const { rows } = await admin.query<{ filled: boolean }>(
+          `SELECT EXISTS (SELECT 1 FROM "${demo}"."${table}") AS filled`,
+        );
+        if (!rows[0]!.filled) empty.push(table);
+      }
+      expect
+        .soft(empty.sort(), profile.slug)
+        .toEqual(expectedEmptyTables(profile.slug, DEMO_DATA_TABLES));
+    }
+  }, 300_000);
+
+  // A household install with a demo active (DEMO_ONLY off): the live pool's
+  // reads and the write go to the demo schema. The public schema has no
+  // budget profile or pay, so a public read would fail the call.
+  it.skipIf(process.env.DEMO_ONLY === "true")(
+    "savings.recalculateAllocation with a demo active reads and writes the demo schema",
+    async () => {
+      // A profile with pay, so its live pool is positive.
+      const { schemaName: demo } = await (
+        await callerFor(null)
+      ).demo.activateProfile({ slug: "single-income" });
+      const { rows: target } = await admin.query<{
+        goal: number;
+        profile: number;
+      }>(
+        `SELECT (SELECT min(id) FROM "${demo}".savings_goals WHERE is_active) AS goal,
+                (SELECT min(id) FROM "${demo}".budget_profiles WHERE is_active) AS profile`,
+      );
+      const { goal, profile } = target[0]!;
+      expect(goal).not.toBeNull();
+      expect(profile).not.toBeNull();
+      await admin.query(
+        `DELETE FROM "${demo}".savings_goal_profile_allocations WHERE goal_id = $1 AND budget_profile_id = $2`,
+        [goal, profile],
+      );
+      await admin.query(
+        `INSERT INTO "${demo}".savings_goal_profile_allocations (goal_id, budget_profile_id, allocation_percent, monthly_contribution) VALUES ($1, $2, '10.000', '0.00')`,
+        [goal, profile],
+      );
+
+      const result = await (
+        await callerFor(demo)
+      ).savings.recalculateAllocation({ goalId: goal });
+
+      expect(result).toEqual({ updated: 1 });
+      const { rows: written } = await admin.query<{ amount: string }>(
+        `SELECT monthly_contribution AS amount FROM "${demo}".savings_goal_profile_allocations WHERE goal_id = $1 AND budget_profile_id = $2`,
+        [goal, profile],
+      );
+      expect(Number(written[0]!.amount)).toBeGreaterThan(0);
+      const { rows: publicRows } = await admin.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM public.savings_goal_profile_allocations",
+      );
+      expect(publicRows[0]!.n).toBe(0);
+    },
+  );
+
+  it.runIf(process.env.DEMO_ONLY === "true")(
+    "savings.recalculateAllocation is refused on the public demo",
+    async () => {
+      await expect(
+        (await callerFor(schemaName)).savings.recalculateAllocation(),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    },
+  );
+
+  it("never serves a demo call a public read, or the reverse, under one memo", async () => {
+    const { createReadMemo } = await import("@/server/data/request-scope");
+    const reads = createReadMemo({ freeze: true });
+    const demo = await callerFor(schemaName, reads);
+    const install = await callerFor(null, reads);
+    const names = (s: { people: { person: { name: string } }[] }) =>
+      s.people.map((p) => p.person.name);
+    const [publicFirst, demoSummary, contribution, publicAfter] =
+      await Promise.all([
+        install.paycheck.computeSummary(),
+        demo.paycheck.computeSummary(),
+        demo.contribution.computeSummary(),
+        install.paycheck.computeSummary(),
+      ]);
+    expect(names(publicFirst)).toEqual([]);
+    expect(names(publicAfter)).toEqual([]);
+    const { rows } = await admin.query<{ name: string }>(
+      `SELECT name FROM "${schemaName}".people ORDER BY id`,
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(names(demoSummary)).toEqual(rows.map((r) => r.name));
+    expect(contribution.people.length).toBe(rows.length);
+  });
 
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);

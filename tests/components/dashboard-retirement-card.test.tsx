@@ -82,8 +82,8 @@ vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
 const milestoneInputsAre = (
   data: MockOutput<"milestones.computeInputs"> | undefined,
 ) => setQuery("milestones.computeInputs", data);
-const mcPeekIs = (data: MockOutput<"projection.computeMonteCarloProjection">) =>
-  setQuery("projection.computeMonteCarloProjection", data);
+const mcPeekIs = (data: MockOutput<"projection.peekMonteCarloSummary">) =>
+  setQuery("projection.peekMonteCarloSummary", data);
 const coastFireMcPeekIs = (data: MockOutput<"projection.computeCoastFireMC">) =>
   setQuery("projection.computeCoastFireMC", data);
 
@@ -132,8 +132,8 @@ describe("RetirementCard dashboard cache-peek features", () => {
 
   it("shows the MC confidence badge with a relative freshness label on a peek hit", () => {
     mcPeekIs({
-      result: { successRate: 0.92, today: { percentileBands: [] } },
-      simulationInputs: { computedAt: new Date().toISOString() },
+      result: { successRate: 0.92, todayBands: [] },
+      computedAt: new Date().toISOString(),
     });
     coastFireMcPeekIs({ result: null });
     render(<RetirementCard />);
@@ -160,19 +160,17 @@ describe("RetirementCard dashboard cache-peek features", () => {
 describe("RetirementCard nest egg: simulated or baseline", () => {
   it("shows the Retirement page's simulated median and range, baseline alongside", () => {
     // Inflation 0 so today's $ = nominal for the baseline; the card reads
-    // the simulation's own today's-dollar bands (deflated per trial).
+    // the simulation's own today's-dollar bands (deflated per trial; the
+    // summary picks them: tests/routers/projection-coverage.test.ts).
     engineData.settings.annualInflation = "0";
     mcPeekIs({
       result: {
         successRate: 0.9,
-        percentileBands: [{ age: 65, year: 2051, p25: 1, p50: 2, p75: 3 }],
-        today: {
-          percentileBands: [
-            { age: 65, year: 2051, p25: 400000, p50: 620000, p75: 900000 },
-          ],
-        },
+        todayBands: [
+          { age: 65, year: 2051, p25: 400000, p50: 620000, p75: 900000 },
+        ],
       },
-      simulationInputs: { computedAt: new Date().toISOString() },
+      computedAt: new Date().toISOString(),
     });
     coastFireMcPeekIs({ result: null });
     render(<RetirementCard />);

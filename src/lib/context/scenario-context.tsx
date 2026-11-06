@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useMemo } from "react";
 
-import type { ViewMode } from "@/lib/calculators/types";
+import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 export type { ViewMode };
 
 /**

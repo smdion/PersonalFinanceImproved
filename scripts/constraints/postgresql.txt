@@ -91,13 +91,10 @@ historical_notes: unique index historical_notes_year_field_idx (year, field)
 historical_salaries: foreign key (person_id) references people(id) on delete cascade on update no action
 historical_salaries: primary key (id)
 historical_salaries: unique index historical_salaries_person_year_idx (person_id, year)
-holding_observations: foreign key (performance_account_id) references performance_accounts(id) on delete restrict on update no action
 holding_observations: foreign key (security_id) references securities(id) on delete restrict on update no action
 holding_observations: foreign key (simplefin_account_id) references simplefin_accounts(id) on delete restrict on update no action
-holding_observations: index holding_observations_perf_account_idx (performance_account_id)
 holding_observations: index holding_observations_security_idx (security_id)
 holding_observations: primary key (id)
-holding_observations: unique index holding_observations_manual_idx (performance_account_id, security_id, as_of) partial
 holding_observations: unique index holding_observations_simplefin_idx (simplefin_account_id, security_id, as_of) partial
 holding_observations: unique index holding_observations_simplefin_report_idx (simplefin_account_id, security_id, balance_date) partial
 holding_period_weights: foreign key (holding_period_id) references holding_periods(id) on delete cascade on update no action

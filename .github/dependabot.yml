@@ -1,3 +1,8 @@
+# Weekly, one grouped pull request per ecosystem. Nothing merges itself:
+# each Dependabot PR waits for the owner's OK like every merge to main.
+# Review requests come from .github/CODEOWNERS (Dependabot's own
+# `reviewers` option is retired).
+# Labels must exist in the repository, or Dependabot drops them.
 version: 2
 updates:
   - package-ecosystem: "npm"
@@ -11,15 +16,18 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    reviewers:
-      - "seandion"
     labels:
       - "dependencies"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "ci"
@@ -29,6 +37,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    groups:
+      docker:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "docker"

@@ -1,9 +1,13 @@
 "use client";
 
-import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
-import { capMessage } from "@/lib/pure/contribution-caps";
-import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
+import { capMessage } from "@/lib/pure/contributions/contribution-caps";
+import {
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/match-display";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
@@ -54,6 +58,17 @@ export function ContribCard({
   const linkedInstitution = performanceAccounts?.find(
     (pa) => pa.id === c.performanceAccountId,
   );
+  const matchFigure = matchFigureForForm(
+    c.employerMatchType,
+    c.employerMatchValue ?? (c.employerMatchRate == null ? "0" : null),
+    c.employerMatchRate,
+  );
+  const saveMatchFigure = (v: string) =>
+    onUpdateContrib(
+      c.id,
+      "employerMatchValue",
+      matchValueToStore(c.employerMatchType, v),
+    );
 
   return (
     <div className="bg-surface-primary group/card relative rounded-lg border p-3 text-sm shadow-sm">
@@ -75,9 +90,9 @@ export function ContribCard({
       )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          {(c.displayNameCustom ?? c.displayNameActive) ? (
+          {c.displayNameCustom ? (
             <span className="text-xs font-medium text-amber-600">
-              {c.displayNameCustom ?? c.displayNameActive}
+              {c.displayNameCustom}
             </span>
           ) : (
             <>
@@ -93,7 +108,6 @@ export function ContribCard({
                   (Family)
                 </span>
               )}
-              {/* Show account name for brokerage sub-types (ESPP, named accounts) */}
               {isOverflowTarget(c.accountType) && (c.subType || c.label) && (
                 <span className="text-muted text-xs font-medium">
                   {getDisplayConfig(
@@ -156,8 +170,6 @@ export function ContribCard({
         </div>
       </div>
 
-      {/* What to fix: over the IRS limit (the figures show the capped
-          amount), or a missing owner / HSA coverage type. */}
       {capMessage(c) && (
         <p
           className={`text-caption mt-1 ${(c.cap?.overBy ?? 0) > 0 ? "font-medium text-red-600" : "text-amber-600"}`}
@@ -165,14 +177,12 @@ export function ContribCard({
           {capMessage(c)}
         </p>
       )}
-      {/* Joint account clarification */}
       {c.ownership === "joint" && (
         <p className="text-caption text-faint mt-1">
           Shared contribution (total, not per person)
         </p>
       )}
 
-      {/* Institution link/unlink */}
       {!readOnly && onUpdateInstitution && (
         <div className="mt-1">
           {editingInstitution ? (
@@ -210,14 +220,13 @@ export function ContribCard({
         </div>
       )}
 
-      {/* Employer match info — editable */}
       {c.employerMatchType !== "none" && (
         <div className="text-muted mt-1 flex flex-wrap items-center gap-1 text-xs">
           {getDisplayConfig(c.accountType, c.subType).hasDiscountBar ? (
             <>
               <InlineEdit
-                value={c.employerMatchValue ?? "0"}
-                onSave={(v) => onUpdateContrib(c.id, "employerMatchValue", v)}
+                value={matchFigure}
+                onSave={saveMatchFigure}
                 formatDisplay={(v) => formatPercent(Number(v) / 100, 0)}
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
@@ -230,8 +239,8 @@ export function ContribCard({
             <>
               <span>Employer:</span>
               <InlineEdit
-                value={c.employerMatchValue ?? "0"}
-                onSave={(v) => onUpdateContrib(c.id, "employerMatchValue", v)}
+                value={matchFigure}
+                onSave={saveMatchFigure}
                 formatDisplay={(v) => `${formatCurrency(Number(v))}/yr`}
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
@@ -243,8 +252,8 @@ export function ContribCard({
             <>
               <span>Employer match:</span>
               <InlineEdit
-                value={c.employerMatchValue ?? "0"}
-                onSave={(v) => onUpdateContrib(c.id, "employerMatchValue", v)}
+                value={matchFigure}
+                onSave={saveMatchFigure}
                 formatDisplay={(v) => formatPercent(Number(v) / 100, 0)}
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
@@ -314,9 +323,8 @@ export function ContribCard({
         </div>
       )}
 
-      {/* This account's own Contribution Profile election — the one gate
-          for money taken from bonus checks (bonusCheckContribution).
-          Payroll accounts only: nothing else is on a check. */}
+      {/* The Contribution Profile's bonus-check election (bonusCheckContribution),
+          payroll accounts only: nothing else is on a check. */}
       {isPaidThroughPayroll(c) && (
         <div className="mt-1">
           <Toggle
@@ -342,13 +350,9 @@ export function ContribCard({
         </div>
       )}
 
-      {/* Auto-max toggle with explanation */}
       {categoriesWithIrsLimit().includes(c.accountType as AccountCategory) &&
         onToggleAutoMax &&
         (() => {
-          // Compute what automax would set the contribution to
-          // Account for sibling contributions sharing the same IRS limit (e.g., Trad 401k + Roth 401k)
-          // For HSA: employer match counts toward the IRS limit, so subtract it from available space
           const currentValue = Number(c.contributionValue);
           const irsCategory = categoriesWithIrsLimit().includes(
             c.accountType as AccountCategory,
@@ -433,7 +437,6 @@ export function ContribCard({
             annualLimit > 0 &&
             siblingAnnualContribs >= annualLimit
           ) {
-            // Sibling already uses the full limit
             automaxPreview = {
               label: "$0",
               current:
@@ -451,7 +454,6 @@ export function ContribCard({
                 <Toggle
                   isChecked={c.autoMaximize}
                   onChange={(v) => {
-                    // When toggling ON, compute the target contribution value
                     let targetValue: number | undefined;
                     if (v && remainingLimit > 0) {
                       if (
@@ -488,7 +490,6 @@ export function ContribCard({
                   </span>
                 )}
               </div>
-              {/* Preview: show what would change when NOT enabled */}
               {!c.autoMaximize &&
                 automaxPreview &&
                 automaxPreview.wouldChange && (
@@ -519,7 +520,6 @@ export function ContribCard({
                     Already at max — no change needed
                   </p>
                 )}
-              {/* Status when enabled */}
               {c.autoMaximize && (
                 <p className="text-caption mt-1 text-green-600">
                   {c.contributionMethod === "percent_of_salary"

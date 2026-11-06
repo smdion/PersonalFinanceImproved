@@ -1,10 +1,10 @@
 /** Risk-analysis section of the advisor report — the stated centerpiece.
- *  Renders lib/pure/report/risk-narrative.ts's output plus a static,
+ *  Renders lib/pure/advice/report/risk-narrative.ts's output plus a static,
  *  print-safe percentile-band chart. Presentational only. */
 import type {
   RiskNarrative,
   RiskBandPoint,
-} from "@/lib/pure/report/risk-narrative";
+} from "@/lib/pure/advice/report/risk-narrative";
 import { ReportRiskBandChart } from "./report-risk-band-chart";
 
 export function ReportRiskAnalysisSection({

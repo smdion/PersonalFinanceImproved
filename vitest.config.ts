@@ -46,7 +46,7 @@ export default defineConfig({
     maxWorkers: "100%",
     globalSetup: ["tests/global-setup.ts"],
     execArgv,
-    // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
+    // Most of the suite (server/routers/pure/db/helpers/etc.) is
     // pure Node logic that never touches the DOM. Only the files that
     // actually render components/hooks or assert on DOM output need jsdom —
     // paying jsdom's setup cost for every file was a measured chunk of the
@@ -64,11 +64,11 @@ export default defineConfig({
           environment: "node",
           include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
           // tests/components is flat (no subdirectories), so the extglob
-          // negation below excludes every file in it except the three that
+          // negation below excludes every file in it except the two that
           // test exported pure helpers, not rendered components — those
           // don't need jsdom and are handled by this project instead.
           exclude: [
-            "tests/components/!(linked-balance-card|portfolio-quick-look-stats|projection-utils).test.ts*",
+            "tests/components/!(portfolio-quick-look-stats|projection-utils).test.ts*",
             "tests/hooks/**",
             "tests/accessibility/**",
             "tests/benchmarks/**",
@@ -100,7 +100,6 @@ export default defineConfig({
             "tests/accessibility/**/*.test.tsx",
           ],
           exclude: [
-            "tests/components/linked-balance-card.test.ts",
             "tests/components/portfolio-quick-look-stats.test.ts",
             "tests/components/projection-utils.test.ts",
           ],
@@ -110,7 +109,6 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
-        "src/lib/calculators/**",
         "src/lib/config/**",
         "src/lib/budget-api/**",
         "src/lib/db/**",
@@ -120,10 +118,10 @@ export default defineConfig({
         // get first-class tests. Files not listed are NOT counted toward
         // coverage (neither numerator nor denominator), so gaps stay visible
         // when you audit the exclude list rather than drifting silently.
-        "src/lib/utils/account-mapping.ts",
         "src/lib/utils/format.ts",
         "src/lib/utils/math.ts",
         "src/lib/utils/date.ts",
+        "src/lib/utils/date-keys.ts",
         // src/lib/env.ts — production env invariants (CRON_SECRET,
         // ENCRYPTION_KEY, DEMO_ONLY + NEXT_PHASE carve-outs from v0.5.0).
         // Load-bearing at container boot.
@@ -135,7 +133,6 @@ export default defineConfig({
         // directory globs above would otherwise try to parse them.
         "**/*.md",
         // Pure type definitions — no runtime code to test
-        "src/lib/calculators/types/**",
         "src/lib/types/**",
         // Auth infrastructure — auth.config.ts is edge-runtime metadata only.
         // auth.ts has its testable pure logic (assignRoleAndPermissions,
@@ -144,13 +141,12 @@ export default defineConfig({
         // in vitest. Leaving auth.ts in coverage so the testable pieces count.
         "src/server/auth.config.ts",
         // Server-side tRPC caller — requires Next.js Server Component context
-        "src/server/helpers/server-trpc.ts",
+        "src/server/trpc-server.ts",
         // Demo router — requires Postgres pool, cookies, schema isolation
         "src/server/routers/demo.ts",
         // Router re-export barrels and documentation-only files
         "src/server/routers/index.ts",
         "src/server/routers/settings/index.ts",
-        "src/server/helpers/index.ts",
         // Documentation-only (no executable statements)
         "src/server/routers/_shared.ts",
         // Data browser — all procedures use db.execute() (Postgres raw SQL)
@@ -175,12 +171,27 @@ export default defineConfig({
         "src/lib/db/backfill-local-ids.ts",
         "src/lib/db/backfill-perf-ids.ts",
       ],
-      thresholds: {
-        statements: 85,
-        branches: 70,
-        functions: 80,
-        lines: 85,
-      },
+      // The gate covers the engine and lib/pure, the code that produces the
+      // figures. CI's unit shards (LEDGR_COVERAGE_SHARD) each see part of the
+      // suite, so only the merged report is checked.
+      ...(process.env.LEDGR_COVERAGE_SHARD
+        ? {}
+        : {
+            thresholds: {
+              "src/lib/pure/engine/**": {
+                statements: 90,
+                branches: 80,
+                functions: 90,
+                lines: 90,
+              },
+              "src/lib/pure/**": {
+                statements: 90,
+                branches: 80,
+                functions: 90,
+                lines: 90,
+              },
+            },
+          }),
     },
   },
   resolve: {

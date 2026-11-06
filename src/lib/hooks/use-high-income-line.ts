@@ -15,7 +15,7 @@ import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import {
   effectiveHighIncomeLine,
   type HighIncomeLineBasis,
-} from "@/lib/pure/high-income-line";
+} from "@/lib/pure/paycheck/high-income-line";
 
 export function useHighIncomeLine(): {
   threshold: number | undefined;

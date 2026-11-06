@@ -7,7 +7,7 @@ import "./setup-mocks";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 
-vi.mock("@/server/helpers/market-prices", () => ({
+vi.mock("@/server/services/investments/market-prices", () => ({
   getLatestMarketClose: vi.fn(async () => null),
   getBenchmarkMonthlyPrices: vi.fn(async (_db: unknown, ticker: string) => {
     // Stocks +1%/month, bonds flat.

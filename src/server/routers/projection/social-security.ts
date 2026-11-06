@@ -21,28 +21,24 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { sweepClaimingAges } from "@/lib/calculators/social-security";
+import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
 import type {
   AccumulationOverride,
   DecumulationOverride,
   ProjectionInput,
-} from "@/lib/calculators/types";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/lib/pure/engine/types";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   buildSocialSecurityEntries,
   type SsEntryOverride,
-} from "@/server/retirement/social-security-entries";
+} from "@/lib/pure/retirement/social-security-entries";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const socialSecurityRouter = createTRPCRouter({
@@ -84,14 +80,9 @@ export const socialSecurityRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
-      const data = await fetchRetirementData(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx.db, {
+        selection: input.selection,
         snapshotId: input.snapshotId,
-        contributionProfileId: profiles.contributionProfileId,
-        salaryProfileId: profiles.salaryProfileId,
-      });
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)

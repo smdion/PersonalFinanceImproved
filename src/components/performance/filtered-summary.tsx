@@ -5,7 +5,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE, DEFAULT_RETURN_RATE } from "@/lib/constants";
-import type { ChainedReturn } from "@/lib/pure/performance";
+import type { ChainedReturn } from "@/lib/pure/investments/returns";
 
 /** Long-run nominal S&P 500 average (~10%, per Ibbotson/SBBI data since
  *  1926) — the "beating the market" reference point. Not a codebase

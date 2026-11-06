@@ -6,6 +6,8 @@
  * year) at the base ref with the working tree's.
  *
  * Usage: tsx scripts/check-tax-data-version.ts <git ref of the base>
+ * (CI passes the merge base with origin/main; a ref that doesn't resolve
+ * fails rather than comparing nothing.)
  */
 import { execFileSync } from "child_process";
 import * as fs from "fs";
@@ -27,6 +29,13 @@ const git = (...a: string[]) =>
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   });
+
+try {
+  git("rev-parse", "--verify", "--quiet", `${base}^{commit}`);
+} catch {
+  console.error(`${base} is not a commit here; fetch it first.`);
+  process.exit(2);
+}
 
 /** The data at the base ref; null when the base has none in this layout
  *  (the single-file layout before it: compared by its own dataVersion). */

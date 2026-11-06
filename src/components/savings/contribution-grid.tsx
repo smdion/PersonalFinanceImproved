@@ -1,6 +1,6 @@
 "use client";
 
-import { isGoalMet } from "@/lib/pure/savings-goal-met";
+import { isGoalMet } from "@/lib/pure/savings/savings-goal-met";
 import React, { useState } from "react";
 import {
   formatCurrency,
@@ -8,7 +8,7 @@ import {
   MONTH_NAMES_SHORT,
 } from "@/lib/utils/format";
 import { GoalProjection } from "./types";
-import { monthKey } from "@/lib/pure/savings-projection";
+import { monthKey } from "@/lib/pure/savings/savings-projection";
 import { FUND_COLORS } from "@/lib/utils/colors";
 import { safeDivide } from "@/lib/utils/math";
 

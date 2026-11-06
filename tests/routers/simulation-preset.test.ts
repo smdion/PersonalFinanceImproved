@@ -11,8 +11,9 @@ import * as sqlite from "@/lib/db/schema-sqlite";
 import {
   loadSimulationPreset,
   presetAssetClasses,
-} from "@/server/helpers/simulation-preset";
-import { computeCurrentStockAllocationPercent } from "@/server/routers/projection-v5-helpers";
+} from "@/server/services/simulation/simulation-preset";
+import { computeCurrentStockAllocationPercent } from "@/lib/pure/simulation/stock-share";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/build-engine-payload";
 
 describe("simulation presets", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
@@ -126,7 +127,10 @@ describe("simulation presets", () => {
 
   it("the glide-path check reads the Default preset, not Custom's table", async () => {
     expect(
-      await computeCurrentStockAllocationPercent(ctx.db as never, 60),
+      computeCurrentStockAllocationPercent(
+        await fetchRetirementData(ctx.db as never),
+        60,
+      ),
     ).toBeCloseTo(60, 1);
   });
 });

@@ -26,12 +26,15 @@
 import {
   planEndAge as planEndAgeOf,
   planRetirementAge as planRetirementAgeOf,
-} from "@/lib/pure/household-timeline";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+} from "@/lib/pure/household/household-timeline";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import { strategySpending } from "@/lib/calculators/strategy-spending";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
@@ -41,22 +44,20 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateProjection } from "@/lib/calculators/engine";
-import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
-import type { SimulationNotConfigured } from "@/lib/calculators/monte-carlo";
+import { calculateProjection } from "@/lib/pure/engine";
+import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
+import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
 import {
   interpolateAllocations,
   geometricMean,
-} from "@/lib/calculators/random";
+} from "@/lib/pure/simulation/random";
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
-import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
-import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
+import { computeAdjustedBenefit } from "@/lib/pure/retirement/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
@@ -66,22 +67,22 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import {
   buildStrategyParams,
-  buildMcInputs,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
 } from "./_shared";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
   readProjectionCache,
   writeProjectionCache,
-} from "@/server/helpers/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+} from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { upsertSetting } from "@/server/data/settings";
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -105,7 +106,6 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -113,7 +113,7 @@ export const strategyRouter = createTRPCRouter({
         decumulationOverrides: DecumulationOverride[];
       };
       const [
-        data,
+        { payload },
         {
           mcAssetClasses,
           mcCorrelations,
@@ -123,17 +123,12 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+        prepareProjectionRun(ctx.db, {
+          selection: input?.selection,
           snapshotId: input?.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
-
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       if (!payload) return { strategies: [], activeStrategy: null };
       if (payload.notConfigured)
         return {
@@ -399,7 +394,6 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input?.selection);
       // The household's saved "Changes by year" apply to every strategy
       // (D6) — a comparison without them describes a different plan.
       const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
@@ -407,7 +401,7 @@ export const strategyRouter = createTRPCRouter({
         decumulationOverrides: DecumulationOverride[];
       };
       const [
-        data,
+        { profiles, data, payload },
         {
           mcAssetClasses,
           mcCorrelations,
@@ -417,18 +411,13 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+        prepareProjectionRun(ctx.db, {
+          selection: input?.selection,
           snapshotId: input?.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
-      const payloadOpts = {
-        ...profiles,
-      };
-      const payload = await buildEnginePayload(ctx.db, data, payloadOpts);
       if (!payload)
         return {
           baseline: null,
@@ -686,7 +675,7 @@ export const strategyRouter = createTRPCRouter({
             // that follows from the retirement year (profile switches,
             // contribution caps, working years) moves with it.
             const shifted = await buildEnginePayload(ctx.db, data, {
-              ...payloadOpts,
+              ...profiles,
               retirementAgeDelta: rounded - lever.currentValue,
             });
             if (!shifted) continue;
@@ -834,13 +823,7 @@ export const strategyRouter = createTRPCRouter({
           .where(eq(schema.appSettings.key, key));
         return { updated: true, count: 0 };
       }
-      await db
-        .insert(schema.appSettings)
-        .values({ key, value: input })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value: input },
-        });
+      await upsertSetting(db, key, input);
       return { updated: true, count: input.length };
     }),
 });

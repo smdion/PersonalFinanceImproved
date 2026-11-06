@@ -3,15 +3,10 @@ import { z } from "zod/v4";
 import { asc, eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateMortgage } from "@/lib/calculators/mortgage";
-import {
-  toNumber,
-  buildMortgageInputs,
-  getActiveMortgageLoan,
-} from "@/server/helpers";
-import type { MortgageInput, MortgageWhatIf } from "@/lib/calculators/types";
-import { zDecimal } from "./settings/_shared";
-import { dropMappingsTo } from "@/server/helpers/delete-references";
+import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
+import { dropMappingsTo } from "@/server/data/delete-references";
+import { firstRow } from "@/lib/utils/first-row";
+import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
 
 // --- CRUD Zod schemas ---
 
@@ -19,11 +14,7 @@ const mortgageLoanInput = z.object({
   name: z.string().min(1),
   isActive: z.boolean().default(false),
   refinancedFromId: z.number().int().nullable().optional(),
-  paidOffDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
-    .optional(),
+  paidOffDate: zCalendarDate.nullable().optional(),
   principalAndInterest: zDecimal,
   pmi: zDecimal.default("0"),
   insuranceAndTaxes: zDecimal.default("0"),
@@ -31,7 +22,7 @@ const mortgageLoanInput = z.object({
   interestRate: zDecimal,
   termYears: z.number().int().min(1).max(50),
   originalLoanAmount: zDecimal,
-  firstPaymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  firstPaymentDate: zCalendarDate,
   propertyValuePurchase: zDecimal,
   propertyValueEstimated: zDecimal.nullable().optional(),
   usePurchaseOrEstimated: z.string().default("purchase"),
@@ -58,56 +49,9 @@ const mortgageExtraPaymentInput = z.object({
 });
 
 export const mortgageRouter = createTRPCRouter({
-  computeActiveSummary: protectedProcedure.query(async ({ ctx }) => {
-    const [loans, extraPayments, whatIfRows] = await Promise.all([
-      ctx.db
-        .select()
-        .from(schema.mortgageLoans)
-        .orderBy(asc(schema.mortgageLoans.id)),
-      ctx.db
-        .select()
-        .from(schema.mortgageExtraPayments)
-        .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-      ctx.db
-        .select()
-        .from(schema.mortgageWhatIfScenarios)
-        .orderBy(asc(schema.mortgageWhatIfScenarios.sortOrder)),
-    ]);
-
-    const { loanInputs, extras } = buildMortgageInputs(loans, extraPayments);
-
-    const whatIfScenarios: MortgageWhatIf[] = whatIfRows.map((s) => ({
-      id: s.id,
-      label: s.label,
-      extraMonthlyPrincipal: toNumber(s.extraMonthlyPrincipal),
-      extraOneTimePayment: toNumber(s.extraOneTimePayment),
-      refinanceRate: s.refinanceRate ? toNumber(s.refinanceRate) : undefined,
-      refinanceTerm: s.refinanceTerm ?? undefined,
-      loanId: s.loanId ?? undefined,
-    }));
-
-    const input: MortgageInput = {
-      loans: loanInputs,
-      extraPayments: extras,
-      whatIfScenarios,
-      asOfDate: ctx.scope.asOf,
-    };
-
-    const result = calculateMortgage(input);
-    const activeLoan = getActiveMortgageLoan(loans);
-    const activeLoanResult = activeLoan
-      ? (result.loans.find((r) => r.loanId === activeLoan.id) ??
-        result.loans[0])
-      : result.loans[0];
-
-    return {
-      loans,
-      result,
-      whatIfScenarios: whatIfRows,
-      activeLoanId: activeLoan?.id ?? null,
-      activeLoanResult: activeLoanResult ?? null,
-    };
-  }),
+  computeActiveSummary: protectedProcedure.query(({ ctx }) =>
+    computeMortgageActiveSummary(ctx),
+  ),
 
   mortgageLoans: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
@@ -116,13 +60,15 @@ export const mortgageRouter = createTRPCRouter({
         .from(schema.mortgageLoans)
         .orderBy(asc(schema.mortgageLoans.id)),
     ),
-    create: adminProcedure.input(mortgageLoanInput).mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(schema.mortgageLoans)
-        .values(input)
-        .returning()
-        .then((r) => r[0]),
-    ),
+    create: adminProcedure
+      .input(mortgageLoanInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.mortgageLoans)
+          .values(input)
+          .returning()
+          .then(firstRow),
+      ),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(mortgageLoanInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>
@@ -131,7 +77,7 @@ export const mortgageRouter = createTRPCRouter({
           .set(data)
           .where(eq(schema.mortgageLoans.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -159,7 +105,7 @@ export const mortgageRouter = createTRPCRouter({
           .insert(schema.mortgageWhatIfScenarios)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -171,7 +117,7 @@ export const mortgageRouter = createTRPCRouter({
           .set(data)
           .where(eq(schema.mortgageWhatIfScenarios.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -196,7 +142,7 @@ export const mortgageRouter = createTRPCRouter({
           .insert(schema.mortgageExtraPayments)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -210,7 +156,7 @@ export const mortgageRouter = createTRPCRouter({
           .set(data)
           .where(eq(schema.mortgageExtraPayments.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

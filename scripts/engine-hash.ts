@@ -17,20 +17,37 @@ import { build } from "esbuild";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = "src/lib/generated/engine-hash.ts";
 
-const CACHE_MODULE = "src/server/helpers/projection-cache.ts";
 const WORKER = "src/workers/monte-carlo-worker.ts";
+const CACHE_VERSION_EXPORT = /\bexport const PROJECTION_CACHE_ENGINE_VERSION\b/;
+
+function sourceFiles(root: string): { file: string; text: string }[] {
+  return fs
+    .readdirSync(path.join(root, "src"), { recursive: true, encoding: "utf8" })
+    .map((f) => path.posix.join("src", f.split(path.sep).join("/")))
+    .filter((f) => /\.tsx?$/.test(f))
+    .map((file) => ({
+      file,
+      text: fs.readFileSync(path.join(root, file), "utf8"),
+    }));
+}
+
+/** The module that defines the cache (it exports its engine version), wherever it lives. */
+export function cacheModule(root = ROOT, files = sourceFiles(root)): string {
+  const found = files.filter((f) => CACHE_VERSION_EXPORT.test(f.text));
+  if (found.length !== 1)
+    throw new Error(
+      `expected one src/ module exporting PROJECTION_CACHE_ENGINE_VERSION, found ${found.length}`,
+    );
+  return found[0]!.file;
+}
 
 /** Every src/ file that writes projection_cache, and the worker they run. */
-export function entryPoints(): string[] {
-  const writers = fs
-    .readdirSync(path.join(ROOT, "src"), { recursive: true, encoding: "utf8" })
-    .map((f) => path.posix.join("src", f.split(path.sep).join("/")))
-    .filter((f) => /\.tsx?$/.test(f) && f !== CACHE_MODULE)
-    .filter((f) =>
-      fs
-        .readFileSync(path.join(ROOT, f), "utf8")
-        .includes("writeProjectionCache("),
-    );
+export function entryPoints(root = ROOT): string[] {
+  const files = sourceFiles(root);
+  const cache = cacheModule(root, files);
+  const writers = files
+    .filter((f) => f.file !== cache && f.text.includes("writeProjectionCache("))
+    .map((f) => f.file);
   return [...writers.sort(), WORKER];
 }
 

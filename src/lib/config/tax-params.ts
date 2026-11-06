@@ -2,7 +2,7 @@
  * Tax-parameter resolver.
  *
  * ONE function every tax consumer calls the same way — the retirement
- * projection payload builder, the paycheck router, `savings.ts`, the annual
+ * projection payload builder, the paycheck summary, `savings.ts`, the annual
  * tax-liability path. Previously each of those had its own `WHERE tax_year =
  * X` / `MAX(tax_year)` logic (three-plus independent copies), and the
  * `irmaa_brackets` / FPL data was not consulted at all.
@@ -167,7 +167,7 @@ function toNum(v: number | string): number {
  *  year. If a year could be selected from, say, `tax_brackets` alone, an
  *  admin seeding next year's withholding brackets early (before
  *  contribution limits are published) would make that year "newest" and
- *  take down every household's projections and the paycheck router with a
+ *  take down every household's projections and the paycheck summary with a
  *  throw, even though the previous year has complete data. The other four
  *  slices (`withholdingBrackets`/`ltcgByStatus`/`irmaaByStatus`/
  *  `fplByHousehold`) resolve per section (`sectionFallback`), so they

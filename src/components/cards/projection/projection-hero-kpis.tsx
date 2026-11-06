@@ -7,9 +7,9 @@ import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   baselineNestEgg,
   simulatedOrBaseline,
-} from "@/lib/pure/nest-egg-display";
-import { dominantFailureReason } from "@/lib/calculators/plan-outcome";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+} from "@/lib/pure/retirement/nest-egg-display";
+import { dominantFailureReason } from "@/lib/pure/retirement/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { rowTotal } from "./utils";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";

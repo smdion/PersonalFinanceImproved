@@ -30,7 +30,7 @@ import {
 } from "@/lib/config/display-labels";
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
-import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
@@ -41,9 +41,9 @@ import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
-import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
   Settings,
   SelectedScenario,

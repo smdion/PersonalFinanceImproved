@@ -36,7 +36,10 @@ import {
   formatPercent,
   isPrivacyMode,
 } from "@/lib/utils/format";
-import { combineHoldings, fundsInBucket } from "@/lib/pure/fund-facts";
+import {
+  combineHoldings,
+  fundsInBucket,
+} from "@/lib/pure/investments/fund-facts";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
 import {

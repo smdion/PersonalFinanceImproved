@@ -23,14 +23,14 @@ import * as schema from "@/lib/db/schema-sqlite";
 import {
   buildEnginePayload,
   fetchRetirementData,
-} from "@/server/retirement/build-engine-payload";
-import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
+} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 
 /** Same shape as projection-coverage.test.ts's seedFullProjectionData —
  *  duplicated locally rather than imported (that helper isn't exported)

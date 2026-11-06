@@ -1,38 +1,33 @@
 [
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/monte-carlo.ts",
-    "to": "src/lib/calculators/engine/inflation-path.ts"
+    "from": "src/lib/pure/retirement/plan-outcome.ts",
+    "to": "src/lib/pure/engine/gap-year-draw.ts"
   },
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/calculators/engine/gap-year-draw.ts"
+    "from": "src/lib/pure/simulation/monte-carlo.ts",
+    "to": "src/lib/pure/engine/inflation-path.ts"
   },
   {
     "rule": "engine-through-index",
-    "from": "src/lib/calculators/simple-tax-mode.ts",
-    "to": "src/lib/calculators/engine/projection-year-handlers/lump-sum.ts"
-  },
-  {
-    "rule": "engine-through-index",
-    "from": "src/lib/calculators/types/engine-projection.ts",
-    "to": "src/lib/calculators/engine/gap-year-draw.ts"
+    "from": "src/lib/pure/tax/simple-tax-mode.ts",
+    "to": "src/lib/pure/engine/projection-year-handlers/lump-sum.ts"
   },
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/display-labels.ts",
-    "to": "src/lib/pure/profiles.ts"
+    "to": "src/lib/pure/household/profiles.ts"
   },
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/performance-help.ts",
-    "to": "src/lib/pure/performance-annotations.ts"
+    "to": "src/lib/pure/investments/performance-annotations.ts"
   },
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/performance-help.ts",
-    "to": "src/lib/pure/performance-checks.ts"
+    "to": "src/lib/pure/investments/performance-checks.ts"
   },
   {
     "rule": "foundation-is-the-floor",
@@ -42,22 +37,12 @@
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/withdrawal-routing.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/utils/account-mapping.ts",
-    "to": "src/lib/db/schema.ts"
-  },
-  {
-    "rule": "infra-below-server",
-    "from": "src/lib/db/backfill-local-ids.ts",
-    "to": "src/server/helpers/portfolio-labels.ts"
+    "to": "src/lib/pure/engine/types/index.ts"
   },
   {
     "rule": "infra-below-server",
     "from": "src/lib/simplefin/sync.ts",
-    "to": "src/server/helpers/loan-feed.ts"
+    "to": "src/server/services/sync/loan-feed.ts"
   },
   {
     "rule": "no-circular",
@@ -81,241 +66,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/balance-utils.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/bracket-growth.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/constant-percentage.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/endowment.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/forgo-inflation.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/balance-deduction.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/brokerage-basis.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/override-resolution.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/projection-year-handlers/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/social-security-income.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/withdrawal-cost-ranking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/engine/withdrawal-routing.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/early-withdrawal-penalty.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/roth-distribution-tax.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/gap-year-draw.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/guyton-klinger.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/individual-account-tracking.ts",
-    "to": "src/lib/calculators/engine/contribution-projection.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/individual-account-tracking.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/individual-account-tracking.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/inflation-path.ts",
-    "to": "src/lib/calculators/engine/bracket-growth.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/calculators/engine/brokerage-basis.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/projection-year-handlers/types.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/rmd-spending.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/spending-decline.ts",
-    "to": "src/lib/calculators/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/spending-strategy.ts",
-    "to": "src/lib/calculators/engine/vanguard-dynamic.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/spending-strategy.ts",
-    "to": "src/lib/calculators/engine/vpw.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/pure/roth-basis-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/pure/roth-distribution-tax.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/calculators/engine/balance-utils.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/calculators/engine/tax-estimation.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/calculators/engine/withdrawal-cost-ranking.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-routing.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/calculators/engine/gap-year-draw.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/plan-outcome.ts",
-    "to": "src/lib/calculators/types.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types.ts",
-    "to": "src/lib/calculators/types/calculators.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types.ts",
-    "to": "src/lib/calculators/types/engine-config.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types.ts",
-    "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-projection.ts",
-    "to": "src/lib/calculators/types/engine-config.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/engine-projection.ts",
-    "to": "src/lib/calculators/types/shared.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/types/monte-carlo.ts",
-    "to": "src/lib/calculators/types/engine-projection.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/db/pg/contribution-profiles.ts",
     "to": "src/lib/db/pg/scenarios.ts"
   },
@@ -326,243 +76,68 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/tax-bucket-analysis.ts",
-    "to": "src/lib/pure/tax-buckets.ts"
+    "from": "src/lib/pure/accounts/account-balances.types.ts",
+    "to": "src/lib/pure/accounts/tax-bucket-analysis.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/tax-bucket-projection.ts",
-    "to": "src/lib/calculators/types/engine-projection.ts"
+    "from": "src/lib/pure/engine/constant-percentage.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/tax-bucket-projection.ts",
-    "to": "src/lib/pure/tax-bucket-analysis.ts"
+    "from": "src/lib/pure/engine/endowment.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/withdrawal-eligibility.ts",
-    "to": "src/lib/pure/tax-bucket-analysis.ts"
+    "from": "src/lib/pure/engine/forgo-inflation.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/pure/withdrawal-eligibility.ts",
-    "to": "src/lib/pure/tax-bucket-projection.ts"
+    "from": "src/lib/pure/engine/guyton-klinger.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/server/helpers/contribution-caps.ts",
-    "to": "src/server/helpers/contribution.ts"
+    "from": "src/lib/pure/engine/rmd-spending.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/server/retirement/build-engine-payload.ts",
-    "to": "src/server/retirement/payload/individual-accounts.ts"
+    "from": "src/lib/pure/engine/spending-decline.ts",
+    "to": "src/lib/pure/engine/spending-strategy.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/server/retirement/build-engine-payload.ts",
-    "to": "src/server/retirement/payload/profile-switches.ts"
+    "from": "src/lib/pure/engine/spending-strategy.ts",
+    "to": "src/lib/pure/engine/vanguard-dynamic.ts"
   },
   {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/assets.ts",
-    "to": "src/server/routers/_shared.ts"
+    "rule": "no-circular",
+    "from": "src/lib/pure/engine/spending-strategy.ts",
+    "to": "src/lib/pure/engine/vpw.ts"
   },
   {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/brokerage.ts",
-    "to": "src/server/routers/settings/_shared.ts"
+    "rule": "no-circular",
+    "from": "src/server/services/projection/engine-payload/build-engine-payload.ts",
+    "to": "src/server/services/projection/engine-payload/individual-accounts.ts"
   },
   {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/budget.ts",
-    "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/budget.ts",
-    "to": "src/server/routers/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/contribution.ts",
-    "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/contribution.ts",
-    "to": "src/server/routers/investments/live-contributions.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/demo.ts",
-    "to": "src/server/routers/settings/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/historical.ts",
-    "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/investments/comparison.ts",
-    "to": "src/server/routers/projection/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/brokerage.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/contribution.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/investments/index.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/mortgage.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/milestones.ts",
-    "to": "src/server/routers/savings.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/mortgage.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/networth.ts",
-    "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/networth.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/paycheck.ts",
-    "to": "src/server/routers/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/performance.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/projection/scenarios.ts",
-    "to": "src/server/routers/projection-v5-helpers.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/projection/stress-test.ts",
-    "to": "src/server/routers/projection-v5-helpers.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/retirement.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/salary-profiles.ts",
-    "to": "src/server/routers/savings.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/savings.ts",
-    "to": "src/server/routers/budget.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/savings.ts",
-    "to": "src/server/routers/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/savings.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/tax-buckets.ts",
-    "to": "src/server/routers/settings/_shared.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/utilities.ts",
-    "to": "src/server/routers/settings/_shared.ts"
+    "rule": "no-circular",
+    "from": "src/server/services/projection/engine-payload/build-engine-payload.ts",
+    "to": "src/server/services/projection/engine-payload/profile-switches.ts"
   },
   {
     "rule": "pure-has-no-io",
-    "from": "src/lib/pure/contributions.ts",
-    "to": "src/server/helpers/settings.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/distribution-tax-rates.ts",
-    "to": "src/server/helpers/settings.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/distribution-tax-rates.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/historical.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/performance.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/portfolio.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/savings-projection.ts",
-    "to": "src/components/savings/types.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/tax-buckets.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/utility-cost-feed.ts",
+    "from": "src/lib/pure/budget/utility-cost-feed.ts",
     "to": "src/lib/budget-api/types.ts"
   },
   {
-    "rule": "server-pages-prefetch-only",
-    "from": "src/app/(dashboard)/layout.tsx",
-    "to": "src/lib/db/compat.ts"
-  },
-  {
-    "rule": "server-pages-prefetch-only",
-    "from": "src/app/(dashboard)/layout.tsx",
-    "to": "src/lib/db/index.ts"
+    "rule": "pure-has-no-io",
+    "from": "src/lib/pure/savings/savings-projection.ts",
+    "to": "src/components/savings/types.ts"
   },
   {
     "rule": "server-pages-prefetch-only",
@@ -582,22 +157,87 @@
   {
     "rule": "server-pages-prefetch-only",
     "from": "src/app/login/page.tsx",
-    "to": "src/server/helpers/first-run.ts"
+    "to": "src/server/data/first-run.ts"
   },
   {
     "rule": "services-below-routers",
-    "from": "src/server/helpers/snapshot.ts",
+    "from": "src/server/services/net-worth/year-end-history.ts",
     "to": "src/server/mutation-events.ts"
   },
   {
     "rule": "shapes-above-foundation-only",
     "from": "src/lib/db/profile-fields.ts",
-    "to": "src/lib/pure/paycheck-edit-target.ts"
+    "to": "src/lib/pure/paycheck/paycheck-edit-target.ts"
   },
   {
-    "rule": "shared-stays-in-group",
-    "from": "src/server/routers/investments/comparison.ts",
-    "to": "src/server/routers/projection/_shared.ts"
+    "rule": "ui-never-bundles-zod",
+    "from": "src/app/(dashboard)/paycheck/page.tsx",
+    "to": "src/lib/db/profile-fields.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/app/(dashboard)/paycheck/page.tsx",
+    "to": "src/lib/db/salary-entry-edit.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/budget/salary-profile-manager.tsx",
+    "to": "src/lib/db/salary-entry-edit.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/investments/hsa-cash-buffer.tsx",
+    "to": "src/lib/pure/accounts/cash-positions.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/milestones/foo-ladder.tsx",
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/milestones/milestones-hero.tsx",
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/performance/account-notes-dialog.tsx",
+    "to": "src/lib/pure/investments/performance-annotations.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/performance/update-performance-form.tsx",
+    "to": "src/lib/pure/investments/performance-annotations.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-first-reached.ts",
+    "to": "src/lib/pure/advice/milestone-first-reached.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-investing-findings.ts",
+    "to": "src/lib/pure/accounts/cash-positions.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-milestones.ts",
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-recommendation-dismissals.ts",
+    "to": "src/lib/pure/advice/recommendation-dismissals.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-recommendations.ts",
+    "to": "src/lib/pure/advice/milestones/milestones.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/lib/hooks/use-recommendations.ts",
+    "to": "src/lib/pure/advice/recommendation-dismissals.ts"
   },
   {
     "rule": "ui-never-runs-infra",

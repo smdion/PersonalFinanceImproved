@@ -1,1 +1,1 @@
-{"accounts":[{"live":{"employerMatchValue":50,"employerMaxMatchPct":0.06}},null,null,null],"profiles":[{"accountActiveFields":{"1":{"contributionValue":6},"3":{"contributionValue":1500}}}]}
+{"accounts":[{"live":{"employerMatchRate":0.5,"employerMaxMatchPct":0.06}},null,null,null],"profiles":[{"accountActiveFields":{"1":{"contributionValue":6},"3":{"contributionValue":1500}}}]}

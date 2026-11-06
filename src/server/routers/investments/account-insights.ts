@@ -4,30 +4,30 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
-import { changeSinceSnapshot } from "@/lib/pure/current-balances";
-import { loadCurrentBalances } from "./load-current-balances";
+import { changeSinceSnapshot } from "@/lib/pure/accounts/current-balances";
+import { loadCurrentBalances } from "@/server/services/investments/current-balances";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { addDays, utcDayOf } from "@/lib/utils/date";
-import { accountInsight } from "@/lib/pure/account-insights";
+import { accountInsight } from "@/lib/pure/investments/account-insights";
 import { tracksCostBasis } from "@/lib/config/account-types";
 import {
   dailyEstimates,
   liveCoversAccount,
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
-} from "@/lib/pure/simplefin-feeds";
+} from "@/lib/pure/sync/simplefin-feeds";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
-import { loadContributionMix } from "@/server/helpers/contribution-mix";
-import { toNumber } from "@/server/helpers/transforms";
+import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
+import { toNumber } from "@/lib/utils/numbers";
 import {
   loadAccounts,
   loadClassifiedTransactions,
   loadFeedContext,
   loadLatestHoldings,
   loadBalanceHistory,
-} from "./_shared";
-import { valueHoldings } from "./holdings-overview";
+} from "@/server/data/investments";
+import { valueHoldings } from "@/server/services/investments/holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
   getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {

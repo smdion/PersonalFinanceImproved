@@ -2,7 +2,7 @@
 import {
   assessPlan,
   describePlanFailure,
-} from "@/lib/calculators/plan-outcome";
+} from "@/lib/pure/retirement/plan-outcome";
 import React from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {

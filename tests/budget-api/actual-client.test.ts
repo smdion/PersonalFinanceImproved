@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import {
   ActualClient,
@@ -17,6 +17,21 @@ function jsonResponse(data: unknown, status = 200) {
     json: () => Promise.resolve(data),
     text: () => Promise.resolve(JSON.stringify(data)),
   });
+}
+
+/**
+ * Settles `pending` while the retry backoff (1 s, then 2 s, errors.ts
+ * retryWithBackoff) sleeps on a fake clock, so a retried failure costs no
+ * real time. The ActualClient block restores real timers after each case.
+ */
+async function settleThroughBackoff<T>(pending: Promise<T>): Promise<T> {
+  await vi.runAllTimersAsync();
+  return pending;
+}
+
+/** Fakes the timers the retry backoff and the request timeout use. */
+function fakeBackoffClock() {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 }
 
 /** Prepare a goal write, then apply it: what a push does per item. */
@@ -86,6 +101,10 @@ describe("ActualClient", () => {
       "test-api-key",
       "sync-id-123",
     );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe("testConnection", () => {
@@ -191,7 +210,8 @@ describe("ActualClient", () => {
         }
         return jsonResponse({ data: 50000 });
       });
-      const accounts = await client.getAccounts();
+      fakeBackoffClock();
+      const accounts = await settleThroughBackoff(client.getAccounts());
       expect(accounts.map((a) => a.balance)).toEqual([500, -12345]);
     });
 
@@ -202,9 +222,11 @@ describe("ActualClient", () => {
           return Promise.reject(new TypeError("fetch failed"));
         return jsonResponse({ data: 50000 });
       });
-      await expect(client.getAccounts()).rejects.toThrow(
+      fakeBackoffClock();
+      const done = expect(client.getAccounts()).rejects.toThrow(
         /didn't return a balance for Car loan — nothing was synced/,
       );
+      await settleThroughBackoff(done);
     });
 
     it("the error keeps the failure's code, never a plain Error", async () => {
@@ -214,10 +236,12 @@ describe("ActualClient", () => {
           return Promise.reject(new TypeError("fetch failed"));
         return jsonResponse({ data: 50000 });
       });
-      await expect(client.getAccounts()).rejects.toMatchObject({
+      fakeBackoffClock();
+      const done = expect(client.getAccounts()).rejects.toMatchObject({
         name: "BudgetApiError",
         code: "network",
       });
+      await settleThroughBackoff(done);
     });
 
     it("a failure that isn't transient stops at once, without the second try", async () => {
@@ -289,9 +313,11 @@ describe("ActualClient", () => {
           return jsonResponse({ data: [tx] });
         }),
       );
-      await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
+      fakeBackoffClock();
+      const done = expect(client.getTransactions("2026-01-01")).rejects.toThrow(
         /Savings/,
       );
+      await settleThroughBackoff(done);
     });
   });
 
@@ -877,7 +903,7 @@ describe("ActualClient", () => {
     });
 
     // Live-user bug, 2026-08-30: every caller in this codebase
-    // (sync/core.ts, budget-api/cache.ts) computes `month` as YNAB's own
+    // (sync/preview.ts, services/sync/sync-all.ts, budget-api/cache.ts) computes `month` as YNAB's own
     // native format, `YYYY-MM-01` (a full ISO date) -- correct for YNAB's
     // real API, but Actual's actual-http-api wrapper's `/months/:id` route
     // rejects anything but the shorter `YYYY-MM` with a real 400 error
@@ -1024,10 +1050,14 @@ describe("ActualClient", () => {
           ? Promise.reject(new TypeError("fetch failed"))
           : jsonResponse(monthBody),
       );
-      await expect(client.getMonthDetail("2026-01")).rejects.toMatchObject({
+      fakeBackoffClock();
+      const done = expect(
+        client.getMonthDetail("2026-01"),
+      ).rejects.toMatchObject({
         code: "network",
         message: expect.stringMatching(/note for Rent/),
       });
+      await settleThroughBackoff(done);
     });
 
     it("a note fetch that fails for a reason that isn't transient fails the call: a goal left out would read as unset", async () => {

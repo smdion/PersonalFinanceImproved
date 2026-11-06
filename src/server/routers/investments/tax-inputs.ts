@@ -17,19 +17,19 @@ import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   estimateTaxableInvestmentIncome,
   investmentIncomeGaps,
-} from "@/lib/pure/investment-income";
+} from "@/lib/pure/investments/investment-income";
 import {
   PENDING_CONVERSION_WINDOW_DAYS,
   pendingConversion,
   preTaxIraByPerson,
-} from "@/lib/pure/roth-ira";
-import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
-import { loadTrackedAccountNames } from "@/server/helpers/account-names";
+} from "@/lib/pure/contributions/roth-ira";
+import { loadLatestSubAccounts } from "@/server/data/sub-accounts";
+import { loadTrackedAccountNames } from "@/server/data/account-names";
 import {
   loadAccounts,
   loadBalanceHistory,
   loadClassifiedTransactions,
-} from "./_shared";
+} from "@/server/data/investments";
 
 export const investmentTaxInputsRouter = createTRPCRouter({
   getRothIraInputs: portfolioProcedure

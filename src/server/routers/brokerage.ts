@@ -7,13 +7,15 @@ import {
   brokerageProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/server/helpers";
+import { toNumber } from "@/lib/utils/numbers";
 import {
   getApiAccountBalanceMap,
   resolveAccountBalance,
-} from "@/server/helpers/api-balance-resolution";
+} from "@/server/services/sync/api-balance-resolution";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
-import { zDecimal } from "@/server/routers/settings/_shared";
+import { zDecimal } from "@/lib/utils/zod-fields";
+import { firstRow } from "@/lib/utils/first-row";
+import { listBrokerageGoals } from "@/server/data/brokerage-goals";
 
 /** Positive decimal amount — brokerage goal targets must be > 0. */
 const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
@@ -21,25 +23,7 @@ const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
 export const brokerageRouter = createTRPCRouter({
   // ══ GOALS ══
 
-  listGoals: protectedProcedure.query(async ({ ctx }) => {
-    const goals = await ctx.db
-      .select()
-      .from(schema.brokerageGoals)
-      .where(eq(schema.brokerageGoals.isActive, true))
-      .orderBy(
-        asc(schema.brokerageGoals.targetYear),
-        asc(schema.brokerageGoals.priority),
-      );
-    return goals.map((g) => ({
-      id: g.id,
-      name: g.name,
-      targetAmount: toNumber(g.targetAmount),
-      targetYear: g.targetYear,
-      priority: g.priority,
-      isActive: g.isActive,
-      notes: g.notes,
-    }));
-  }),
+  listGoals: protectedProcedure.query(({ ctx }) => listBrokerageGoals(ctx)),
 
   createGoal: brokerageProcedure
     .input(
@@ -151,7 +135,7 @@ export const brokerageRouter = createTRPCRouter({
             .from(schema.portfolioSnapshots)
             .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
             .limit(1)
-            .then((r) => r[0]);
+            .then(firstRow);
 
           if (latestSnapshot) {
             const [snapshotAccounts, perfAccounts] = await Promise.all([

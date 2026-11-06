@@ -26,10 +26,15 @@ vi.mock("@/lib/budget-api", async (importOriginal) => ({
     ],
   })),
 }));
-vi.mock("@/server/helpers/api-balance-resolution", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  getApiAccountBalanceMap: vi.fn(async () => new Map([["remote-401k", 15000]])),
-}));
+vi.mock(
+  "@/server/services/sync/api-balance-resolution",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    getApiAccountBalanceMap: vi.fn(
+      async () => new Map([["remote-401k", 15000]]),
+    ),
+  }),
+);
 
 describe("snapshot auto-pull", () => {
   it("Performance's ending balance is the pulled figure, not the typed one", async () => {

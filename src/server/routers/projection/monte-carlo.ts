@@ -6,13 +6,16 @@
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
 import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
-import { planEndAge as planEndAgeOf } from "@/lib/pure/household-timeline";
+import { planEndAge as planEndAgeOf } from "@/lib/pure/household/household-timeline";
 import {
   loadSimulationPreset,
   presetAssetClasses,
-} from "@/server/helpers/simulation-preset";
+} from "@/server/services/simulation/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+import {
+  classifyAssetClasses,
+  stockShareByAge,
+} from "@/lib/pure/simulation/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -28,44 +31,41 @@ import * as schema from "@/lib/db/schema";
 import {
   calculateMonteCarlo,
   simulationNotConfigured,
-} from "@/lib/calculators/monte-carlo";
+} from "@/lib/pure/simulation/monte-carlo";
 import {
   runMonteCarloOffThread,
   getMonteCarloProgress,
-} from "@/server/helpers/monte-carlo-worker-client";
+} from "@/server/services/simulation/monte-carlo-worker-client";
 import {
   interpolateAllocations,
   geometricMean,
-} from "@/lib/calculators/random";
-import { toNumber } from "@/server/helpers";
+} from "@/lib/pure/simulation/random";
+import { toNumber } from "@/lib/utils/numbers";
 import { sumBy } from "@/lib/utils/math";
 import type {
   AccumulationOverride,
   DecumulationOverride,
-} from "@/lib/calculators/types";
-import { toSimpleTaxMode } from "@/lib/calculators/simple-tax-mode";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/retirement/build-engine-payload";
+} from "@/lib/pure/engine/types";
+import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
+import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
-  buildMcInputs,
-  resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
-import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
+import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
   readProjectionCache,
   writeProjectionCache,
   generateSeed,
   clearProjectionCache,
-} from "@/server/helpers/projection-cache";
-import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+} from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { upsertSetting } from "@/server/data/settings";
 
 export const monteCarloRouter = createTRPCRouter({
   /**
@@ -144,10 +144,9 @@ export const monteCarloRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const profiles = engineProfileOptions(input.selection);
       // Fetch shared data + MC-specific tables + saved overrides in parallel
       const [
-        data,
+        { profiles, payload },
         {
           mcAssetClasses: baseMcAssetClasses,
           mcCorrelations,
@@ -155,10 +154,9 @@ export const monteCarloRouter = createTRPCRouter({
         },
         savedAssetOverridesRow,
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, {
+        prepareProjectionRun(ctx.db, {
+          selection: input.selection,
           snapshotId: input.snapshotId,
-          contributionProfileId: profiles.contributionProfileId,
-          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db),
         ctx.db
@@ -175,9 +173,6 @@ export const monteCarloRouter = createTRPCRouter({
         stdDev?: number;
       }[];
 
-      const payload = await buildEnginePayload(ctx.db, data, {
-        ...profiles,
-      });
       // No return rate: the projection card says so.
       if (!payload || payload.notConfigured)
         return {
@@ -228,7 +223,7 @@ export const monteCarloRouter = createTRPCRouter({
           ? toSimpleTaxMode(engineInput, payload.simpleTaxMode)
           : engineInput;
 
-      // ----- What this run's preset means (helpers/simulation-preset.ts) -----
+      // ----- What this run's preset means (services/simulation/simulation-preset.ts) -----
       const preset = await loadSimulationPreset(ctx.db, input.preset);
 
       // Validate asset class override IDs match DB
@@ -530,13 +525,7 @@ export const monteCarloRouter = createTRPCRouter({
         returnClampMin: input.returnClampMin,
         returnClampMax: input.returnClampMax,
       };
-      await db
-        .insert(schema.appSettings)
-        .values({ key: SK_MC_CUSTOM_CLAMP_BOUNDS, value })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value },
-        });
+      await upsertSetting(db, SK_MC_CUSTOM_CLAMP_BOUNDS, value);
       return { updated: true };
     }),
 

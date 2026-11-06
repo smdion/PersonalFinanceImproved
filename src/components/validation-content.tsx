@@ -433,32 +433,6 @@ export function ValidationContent() {
           20yr&ndash;40yr). Benchmarks: 20yr &gt; 95%, 40yr &gt; 70%. This
           matches the intuition that a longer retirement is harder to sustain.
         </p>
-
-        <h4 className="text-secondary mt-4 font-semibold">
-          Complexity layer isolation
-        </h4>
-        <p>
-          We measure the success rate impact of each complexity layer to ensure
-          no single layer introduces unreasonable drag:
-        </p>
-        <ol className="list-decimal space-y-1 pl-5">
-          <li>
-            <strong>Baseline:</strong> Single account, no tax &mdash; highest
-            success rate
-          </li>
-          <li>
-            <strong>+ Taxes:</strong> 22% traditional, 15% capital gains &mdash;
-            moderate reduction
-          </li>
-          <li>
-            <strong>+ Multi-account:</strong> Traditional/Roth/HSA/brokerage
-            split &mdash; small reduction
-          </li>
-          <li>
-            <strong>+ Full lifecycle:</strong> Accumulation phase before
-            retirement &mdash; realistic scenario
-          </li>
-        </ol>
       </ProseSection>
 
       <ProseSection title="Test Coverage Summary">

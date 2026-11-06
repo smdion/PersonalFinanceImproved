@@ -18,11 +18,11 @@ import {
   MONEY_GUY_CHECKPOINTS,
   type CheckpointSource,
 } from "@/lib/config/milestones";
-import { type MilestoneYear } from "@/lib/pure/milestones";
+import { type MilestoneYear } from "@/lib/pure/advice/milestones/milestones";
 import {
   checkpointBalance,
   incomeMultipleTarget,
-} from "@/lib/pure/milestones.shared";
+} from "@/lib/pure/advice/milestones/milestones.shared";
 
 /** A projection with its settings (not the no-people stub). */
 type Projection = Extract<
@@ -69,7 +69,7 @@ function Readiness({
   const viewAge = projectedAge ?? currentAge;
   const projecting = projectedAge !== null && projectedAge > currentAge;
   const yearData = projecting
-    ? result?.projectionByYear.find((y) => y.age === projectedAge)
+    ? result.projectionByYear.find((y) => y.age === projectedAge)
     : undefined;
   // Money Guy counts every account plus cash (held flat); Fidelity only the
   // Retirement accounts this card already projects.
@@ -236,9 +236,7 @@ export function RetirementBenchmarks(props: {
     <div className="space-y-4">
       <Readiness {...props} />
       <Growth data={props.data} currentAge={props.currentAge} />
-      {props.data.result && (
-        <RetirementBridge projection={props.data.result.projectionByYear} />
-      )}
+      <RetirementBridge projection={props.data.result.projectionByYear} />
     </div>
   );
 }

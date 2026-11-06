@@ -20,12 +20,12 @@ import {
   within,
 } from "@testing-library/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { calculateProjection } from "@/lib/calculators/engine";
+import { calculateProjection } from "@/lib/pure/engine";
 import type {
   EngineAccumulationYear,
   EngineDecumulationYear,
   ProjectionResult,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import { formatCurrency } from "@/lib/utils/format";
 import { useProjectionDerived } from "@/components/cards/projection/use-projection-derived";
 import type { ProjectionFormState } from "@/components/cards/projection/use-projection-form-state";

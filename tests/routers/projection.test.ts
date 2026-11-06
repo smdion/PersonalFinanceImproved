@@ -18,7 +18,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
 import { clearSimulationPresets } from "../helpers/db-harness";
-import { startingBalanceGaps } from "../calculators/fixtures/engine-fixtures";
+import { startingBalanceGaps } from "../pure/fixtures/engine-fixtures";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -396,13 +396,9 @@ describe("projection router — computeProjection", () => {
     return { personId, jobId, perfAcctId };
   }
 
-  it("returns result: null when metadataOnly is true (no engine run)", async () => {
+  it("the metadata query returns result: null (no engine run)", async () => {
     seedProjectionData();
-    const response = await caller.projection.computeProjection({
-      metadataOnly: true,
-      accumulationOverrides: [],
-      decumulationOverrides: [],
-    });
+    const response = await caller.projection.getProjectionMetadata({});
     expect(response.result).toBeNull();
   });
 
@@ -426,6 +422,7 @@ describe("projection router — computeProjection", () => {
       accumulationOverrides: [],
       decumulationOverrides: [],
     });
+    if (!("settings" in response)) throw new Error("no metadata");
     expect(response.result).not.toBeNull();
     expect(response.combinedSalary).toBe(120000);
     expect(response.people).toHaveLength(1);
@@ -479,6 +476,7 @@ describe("projection router — computeProjection", () => {
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
+      if (!("settings" in response)) throw new Error("no metadata");
       expect(response.settings?.rmdExcessTargetPerformanceAccountId).toBe(
         brokerage,
       );

@@ -40,8 +40,8 @@ import {
   type SimulationPresetsFile,
 } from "./reference-reconcile-core";
 
-/** The tables the reference data writes (db-migrate.ts keeps the same set;
- *  a test checks). */
+/** The tables the reference data writes (a test checks the shipped rows
+ *  name only these). */
 export const REFERENCE_TABLES = [
   "contribution_limits",
   "tax_brackets",

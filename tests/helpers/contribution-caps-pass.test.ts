@@ -5,13 +5,13 @@
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
-import { capEffectiveContribs } from "@/server/helpers/contribution-caps";
+import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import {
-  aggregateContributionsByCategory,
   annualContributionWithBonus,
-  buildContribAccounts,
   type ContribRow,
-} from "@/server/helpers/contribution";
+} from "@/lib/pure/contributions/contribution-rows";
+import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 
 const limits = {
   "401k_employee_limit": 20000,

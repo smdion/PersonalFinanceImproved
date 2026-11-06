@@ -2,14 +2,14 @@
  * Benchmarks holdings overview and fund-facts actions. Tiingo and SEC are
  * mocked; funds, accounts and values are invented.
  */
-import { geometricMean } from "@/lib/calculators/random";
+import { geometricMean } from "@/lib/pure/simulation/random";
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 
-vi.mock("@/server/helpers/market-prices", () => ({
+vi.mock("@/server/services/investments/market-prices", () => ({
   getLatestMarketClose: vi.fn(async (_db: unknown, ticker: string) =>
     ticker === "EXSTX" ? { date: "2026-10-09", close: 50 } : null,
   ),

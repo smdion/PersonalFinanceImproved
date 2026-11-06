@@ -1,23 +1,22 @@
 "use client";
 
-import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
-import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import {
-  flatDeflator,
-  simulationDollars,
-  toTodaysDollars,
-} from "@/lib/pure/simulation/dollars";
+  planAgeLabel,
+  yearOfPlanAge,
+} from "@/lib/pure/household/household-timeline";
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
 import {
   baselineNestEgg,
   simulatedOrBaseline,
-} from "@/lib/pure/nest-egg-display";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+} from "@/lib/pure/retirement/nest-egg-display";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { memo } from "react";
 import Link from "next/link";
 import { settingsHref } from "@/lib/config/settings-sections";
-import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
+import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/simulation/return-rate-breakpoints";
 
 import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
@@ -42,7 +41,7 @@ import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies"
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { isHighIncomeHousehold } from "@/lib/pure/contributions";
+import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
 function RetirementCardImpl() {
   const { engineInput, ready, data, isLoading, error } =
@@ -68,8 +67,8 @@ function RetirementCardImpl() {
   // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
   // just surface whatever the Retirement page's last real run already
   // computed, if the inputs still match. Null result = nothing cached yet.
-  const { data: mcPeek } = trpc.projection.computeMonteCarloProjection.useQuery(
-    { ...engineInput, peekOnly: true },
+  const { data: mcPeek } = trpc.projection.peekMonteCarloSummary.useQuery(
+    engineInput,
     // Always re-read: a run made on the Retirement page should show here
     // as soon as the dashboard is opened again.
     { staleTime: 0, enabled: ready },
@@ -172,9 +171,7 @@ function RetirementCardImpl() {
     : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
     // Today's dollars, from the Simulation's own per-trial deflation.
-    bands: mcPeek?.result
-      ? simulationDollars(mcPeek.result, "real").percentileBands
-      : null,
+    bands: mcPeek?.result?.todayBands,
     baseline: nestEgg,
     targetAge: nestEggAge,
     personFiltered: false,
@@ -388,9 +385,7 @@ function RetirementCardImpl() {
             )}
             {(() => {
               const lastRunAt = [
-                mcPeek && "simulationInputs" in mcPeek
-                  ? mcPeek.simulationInputs.computedAt
-                  : null,
+                mcPeek?.computedAt,
                 coastFireMcPeek?.computedAt,
               ]
                 .filter((v): v is string => !!v)

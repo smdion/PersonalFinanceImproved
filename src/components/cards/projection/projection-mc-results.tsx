@@ -1,8 +1,8 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings and compact summary bar. */
-import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
-import { strategySpending } from "@/lib/calculators/strategy-spending";
+import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
+import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -15,8 +15,8 @@ import {
   formatRelativeTime,
   maskAmountsInText,
 } from "@/lib/utils/format";
-import type { EngineDecumulationYear } from "@/lib/calculators/types";
-import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
+import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
+import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
 
 /** MC loading, errors, warnings, and compact summary bar. */

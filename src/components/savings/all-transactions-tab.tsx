@@ -13,7 +13,7 @@ import { FUND_COLORS } from "@/lib/utils/colors";
 import {
   buildSettledOccurrencesSet,
   occurrenceKey,
-} from "@/lib/pure/savings-projection";
+} from "@/lib/pure/savings/savings-projection";
 import type { GoalProjection, PlannedTransaction } from "./types";
 
 interface EditForm {

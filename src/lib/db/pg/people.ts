@@ -38,7 +38,7 @@ export const jobs = pgTable(
      *  scenarios against (e.g. "moving to Chicago in 5 years") — never a
      *  real job. Always has endDate: null (it never "ends") but must be
      *  excluded everywhere "active job" means "this person's real job" —
-     *  see findActiveJob/filterActiveJobs in lib/pure/profiles.ts, the
+     *  see findActiveJob/filterActiveJobs in lib/pure/household/profiles.ts, the
      *  single source of truth for that exclusion. */
     isSpeculative: boolean("is_speculative").notNull().default(false),
   },

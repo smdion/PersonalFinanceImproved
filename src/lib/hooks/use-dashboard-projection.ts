@@ -8,8 +8,8 @@
  */
 import { trpc } from "@/lib/trpc";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
-import { projectedFiYear } from "@/lib/pure/milestones.shared";
-import { milestoneProjectionYears } from "@/lib/pure/milestone-input";
+import { projectedFiYear } from "@/lib/pure/advice/milestones/milestones.shared";
+import { milestoneProjectionYears } from "@/lib/pure/advice/milestones/input";
 
 /** The plan's projection (usePlanEngineInput — the same input the
  *  Retirement page sends, so the dashboard reads the page's cached runs). */

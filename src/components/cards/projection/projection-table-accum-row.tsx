@@ -1,5 +1,5 @@
 /** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
-import { annualRaiseLabel } from "@/lib/pure/raise-rates";
+import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -14,11 +14,11 @@ import {
   formatPercent,
   maskAmountsInText,
 } from "@/lib/utils/format";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type {
-  AccountCategory,
   EngineAccumulationYear,
   AccumulationSlot,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   getAccountSegments,
   getAllCategories,
@@ -55,7 +55,7 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
-import { shortfallFloor } from "@/lib/calculators/engine";
+import { shortfallFloor } from "@/lib/pure/engine";
 import {
   buildEligibilityNote,
   ownerAccountLabel,

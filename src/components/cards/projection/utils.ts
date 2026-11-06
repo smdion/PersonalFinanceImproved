@@ -3,8 +3,7 @@ import type {
   EngineYearProjection,
   EngineAccumulationYear,
   AccumulationSlot,
-  IndividualAccountYearBalance,
-} from "@/lib/calculators/types";
+} from "@/lib/pure/engine/types";
 import {
   type AccountCategory,
   getAllCategories,
@@ -487,7 +486,7 @@ export function colKeyParts(key: string): {
 
 /** Read a column's balance from balanceByAccount — data-driven, no if-chains. */
 export function colBalance(
-  ba: import("@/lib/calculators/types").AccountBalances,
+  ba: import("@/lib/pure/accounts/account-balances.types").AccountBalances,
   key: string,
 ): number {
   const { category, treatment } = colKeyParts(key);
@@ -644,7 +643,7 @@ export function iaBelongsToBucket(
 
 // --- Shared calculation helpers ---
 
-// Moved to lib/pure/report/withdrawal-strategy-narrative.ts so
+// Moved to lib/pure/advice/report/withdrawal-strategy-narrative.ts so
 // the retirement advisor report can reuse them without a pure module
 // importing this component-layer file — re-exported here so the existing
 // tooltip call sites (projection-table-decum-row.tsx) don't need to change
@@ -652,7 +651,7 @@ export function iaBelongsToBucket(
 export {
   formatDiscretionaryTierBreakdown,
   formatRmdDivisorDetail,
-} from "@/lib/pure/report/withdrawal-strategy-narrative";
+} from "@/lib/pure/advice/report/withdrawal-strategy-narrative";
 
 export function percentOf(value: number, total: number): number {
   return Math.round(safeDivide(value, total) * 100);
@@ -746,7 +745,8 @@ export function computeAccountSplits(
 // Lump sum helpers
 // ---------------------------------------------------------------------------
 
-import type { LumpSum } from "@/lib/calculators/types/shared";
+import type { LumpSum } from "@/lib/pure/engine/types";
+import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 
 type PortfolioTaxBucket = "preTax" | "taxFree" | "hsa" | "afterTax";
 

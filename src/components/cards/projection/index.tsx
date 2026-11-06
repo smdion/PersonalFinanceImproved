@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { settingsHref } from "@/lib/config/settings-sections";
-import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
+import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/simulation/return-rate-breakpoints";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
@@ -27,8 +27,8 @@ import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 import { ProjectionTableSkeleton } from "./projection-table-skeleton";
 import { ReportRoot } from "./report/report-root";
-import { checkReportGate } from "@/lib/pure/report/mc-freshness";
-import type { ReportGateFailure } from "@/lib/pure/report/mc-freshness";
+import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
+import type { ReportGateFailure } from "@/lib/pure/advice/report/mc-freshness";
 import { ReportGateModal } from "./report/report-gate-modal";
 
 // Code-split Recharts-heavy children. Each chart is

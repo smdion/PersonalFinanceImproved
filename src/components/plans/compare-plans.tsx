@@ -6,7 +6,7 @@
  * pages use, run with that Plan's profiles (a Plan slot left empty uses the
  * active profile of that kind, as applying it would).
  */
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import {
   type PlanProfileIds,
   type PlanProfileKind,
 } from "@/lib/config/plans";
-import { planProfileIds } from "@/lib/pure/plans";
+import { planProfileIds } from "@/lib/pure/household/plans";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 

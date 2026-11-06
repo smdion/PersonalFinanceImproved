@@ -8,7 +8,7 @@
  * driver returns `decimal`/`numeric` columns as JS **strings** (`"1234.56"`);
  * `better-sqlite3` returns the same columns as **numbers** (`1234.56`). Every
  * helper that reads a decimal column has to normalize it — `toNumber()` in
- * `src/server/helpers/transforms.ts` — or the value crosses into financial
+ * `src/lib/utils/numbers.ts` — or the value crosses into financial
  * math as a string. That fails only in production, and never in CI (SQLite).
  *
  * This suite feeds each boundary-crossing helper **PG-style string inputs**
@@ -48,26 +48,26 @@
 // hand-built PG-style string rows — no real database is touched.
 import "../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { CapPassed } from "@/lib/pure/contribution-caps";
+import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { getTableName } from "drizzle-orm";
 
-import { resolvePersonYearIncome } from "@/server/helpers/salary";
-import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
-import { buildContribAccounts } from "@/server/helpers/contribution";
-import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
-import { buildMortgageInputs } from "@/server/helpers/mortgage";
-import { buildPaycheckInputForJob } from "@/server/helpers/paycheck-input";
+import { resolvePersonYearIncome } from "@/lib/pure/household/compensation";
+import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
+import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
+import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
+import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
   JobForPaycheckInput,
   ResolvedPaycheckInputs,
-} from "@/server/helpers/paycheck-input";
-import { getResolvedGoalAllocations } from "@/server/helpers/savings-allocation";
-import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
+} from "@/lib/pure/paycheck/paycheck-input";
+import { getResolvedGoalAllocations } from "@/server/services/savings/savings-allocation";
+import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis";
+import { getLatestSnapshot } from "@/server/data/snapshots";
 import {
-  getLatestSnapshot,
   buildYearEndHistory,
   invalidateYearEndCache,
-} from "@/server/helpers/snapshot";
+} from "@/server/services/net-worth/year-end-history";
 
 // ---------------------------------------------------------------------------
 // Table-dispatching db mock
@@ -202,7 +202,7 @@ describe("contribution.ts — PG string mode", () => {
   });
 });
 
-describe("mortgage.ts — PG string mode", () => {
+describe("mortgage-balance.ts — PG string mode", () => {
   it("buildMortgageInputs normalizes loan + extra-payment decimals", () => {
     // mortgage_loans decimals: original_loan_amount, interest_rate,
     //   principal_and_interest, api_balance (+ more not read here)
@@ -385,7 +385,7 @@ describe("roth-basis.ts — PG string mode", () => {
   });
 });
 
-describe("snapshot.ts — PG string mode", () => {
+describe("year-end-history.ts — PG string mode", () => {
   beforeEach(() => {
     // buildYearEndHistory has a 5s module-level cache — a second test would
     // otherwise assert against the first test's fixture.

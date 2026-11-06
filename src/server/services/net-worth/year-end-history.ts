@@ -1,0 +1,1093 @@
+/** The year-end history rows (one per year, finalized or live) and their cache. */
+import { onMutationSucceeded } from "@/server/mutation-events";
+import { asc } from "drizzle-orm";
+import * as schema from "@/lib/db/schema";
+import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
+import { toNumber } from "@/lib/utils/numbers";
+import { getAllPeople } from "@/server/data/people";
+import {
+  resolveRetirementProfileIdFrom,
+  pickProfileSettingsRow,
+} from "@/lib/pure/household/retirement-profile";
+import { safeDivide } from "@/lib/utils/math";
+import {
+  parseLocalDateOnly,
+  localMidnight,
+  localDateStr,
+  calendarYear,
+} from "@/lib/utils/date";
+import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
+import { parseAppSettings } from "@/lib/pure/household/app-settings";
+import {
+  getTotalCompensation,
+  resolveCompensation,
+  mergeSalaryProfileJobFields,
+} from "@/lib/pure/household/compensation";
+import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
+import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { getEffectiveCash } from "@/server/services/budget/account-balances";
+import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
+import {
+  getAnnualExpensesFromBudget,
+  type BudgetTargeting,
+} from "@/server/services/budget/annual-expenses";
+import {
+  computeMortgageBalance,
+  getActiveMortgageLoan,
+} from "@/lib/pure/debts/mortgage-balance";
+import {
+  calculateNetWorth,
+  wealthFormulaIncome,
+} from "@/lib/pure/net-worth/net-worth";
+import {
+  checksPaidYtd,
+  periodsBeforeStart,
+} from "@/lib/pure/paycheck/paycheck";
+import type { NetWorthInput } from "@/lib/pure/net-worth/net-worth.types";
+import { payPeriodConfig } from "@/lib/config/pay-periods";
+import {
+  accountTypeToPerformanceCategory,
+  PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_RETIREMENT,
+} from "@/lib/config/display-labels";
+import { sumAccounts, computeReturn } from "@/lib/pure/investments/returns";
+import { filterActiveJobs } from "@/lib/pure/household/profiles";
+import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
+import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
+import type { Db } from "@/lib/db";
+import { getLatestSnapshot } from "@/server/data/snapshots";
+
+// ---------------------------------------------------------------------------
+// Year-end history rows (used by historical + networth routers)
+// ---------------------------------------------------------------------------
+
+/** Per-category performance breakdown (contributions, gains, distributions). */
+type CategoryPerformance = {
+  endingBalance: number;
+  contributions: number;
+  employerMatch: number;
+  gainLoss: number;
+  distributions: number;
+  /** Portion of employerMatch that is a purchase-price discount (e.g. ESPP),
+   *  not real cash — see isDiscountBasisEmployerContrib(). 0 when no
+   *  discount-kind account contributes to this category/year. */
+  employerMatchDiscount: number;
+};
+
+/** Tax-type distribution within a parent category. */
+type TaxLocationBreakdown = {
+  retirement: Record<string, number>; // taxType → amount
+  portfolio: Record<string, number>; // taxType → amount
+};
+
+/** Unified year-end row returned by buildYearEndHistory. */
+type YearEndRow = {
+  year: number;
+  yearEndDate: string;
+  isCurrent: boolean;
+  // Net worth
+  netWorth: number;
+  // Portfolio (from annual_performance when finalized, otherwise net_worth_annual or live snapshot)
+  portfolioTotal: number;
+  portfolioByType: Record<string, number>; // keyed by accountType ('401k', '403b', 'ira', 'hsa', 'brokerage')
+  // Non-portfolio assets
+  cash: number;
+  houseValue: number;
+  otherAssets: number;
+  homeImprovements: number;
+  // Liabilities
+  mortgageBalance: number;
+  otherLiabilities: number;
+  // Income & tax
+  grossIncome: number;
+  combinedAgi: number;
+  ssaEarnings: number | null;
+  effectiveTaxRate: number | null;
+  taxesPaid: number | null;
+  propertyTaxes: number | null;
+  // Performance summary (from annual_performance — Portfolio category)
+  perfBeginningBalance: number | null;
+  perfContributions: number | null;
+  perfEmployerMatch: number | null;
+  perfGainLoss: number | null;
+  perfEndingBalance: number | null;
+  perfReturnPct: number | null;
+  /** Per-account performance breakdown (from account_performance table). */
+  perfByAccount: {
+    label: string;
+    accountType: string;
+    beginningBalance: number;
+    contributions: number;
+    employerMatch: number;
+    gainLoss: number;
+    endingBalance: number;
+  }[];
+  /** When performance data was last synced (ISO string). Set for current year to explain
+   *  why End Bal (from snapshot) may differ from Beg + Contribs + Gain/Loss. */
+  perfLastUpdated: string | null;
+  /** Snapshot date used for End Bal on current year (ISO string). */
+  snapshotDate: string | null;
+  /** How many days old the snapshot is (current-year row only). Null for prior years. */
+  snapshotAgeDays: number | null;
+  /** Performance breakdown by display category (keys from accountTypeToPerformanceCategory). */
+  performanceByCategory: Record<string, CategoryPerformance>;
+  /** Portfolio broken down by parentCategory × taxType. Available from snapshot for current year;
+   *  approximated from portfolioByType + account config for prior years. */
+  portfolioByTaxLocation: TaxLocationBreakdown | null;
+  /** Performance breakdown by parentCategory (Retirement / Portfolio).
+   *  Derived from account_performance rows grouped by their parentCategory field. */
+  performanceByParentCategory: Record<string, CategoryPerformance>;
+  /** Fraction of year elapsed (periodsElapsed / periodsPerYear). 1.0 for finalized years.
+   *  Used to annualize YTD flow metrics for meaningful year-over-year comparisons. */
+  ytdRatio: number;
+  // Computed wealth metrics (single computation path — all consumers read these)
+  /** Net worth / lifetime earnings (savings efficiency %) — market value. */
+  wealthScoreMarket: number;
+  /** Net worth / lifetime earnings (savings efficiency %) — cost basis. */
+  wealthScoreCostBasis: number;
+  /** Money Guy Wealth Accumulator — market value. */
+  aawScoreMarket: number;
+  /** Money Guy Wealth Accumulator — cost basis. */
+  aawScoreCostBasis: number;
+  /** (portfolioTotal + cash) / fiTarget. */
+  fiProgress: number;
+  /** annualExpenses / withdrawalRate. */
+  fiTarget: number;
+  /** Market-value net worth (home at estimated value). */
+  netWorthMarket: number;
+  /** Cost-basis net worth (home at purchase + improvements). */
+  netWorthCostBasis: number;
+  /** Home value at cost basis (purchase price + cumulative improvements). */
+  houseValueCostBasis: number;
+  // Inputs used for computed metrics (for display / debugging)
+  /** Average age across all household members for this year. */
+  averageAge: number;
+  /** Gross pretax income (AGI where gross wasn't recorded), optionally 3yr averaged. */
+  effectiveIncome: number;
+  /** Cumulative gross income (AGI where gross wasn't recorded) through this year. */
+  lifetimeEarnings: number;
+  /** Annual expenses from budget. */
+  annualExpenses: number;
+  /** Withdrawal rate from retirement settings. */
+  withdrawalRate: number;
+  /** True when withdrawalRate is the hardcoded default (no retirement settings configured). */
+  withdrawalRateIsDefault: boolean;
+};
+
+/**
+ * Build unified year-end history rows from net_worth_annual + annual_performance.
+ *
+ * This is the single source of truth for historical year-end data, used by both
+ * the historical and networth routers. It:
+ * 1. Reads all finalized net_worth_annual rows
+ * 2. Overlays portfolio data from finalized annual_performance (source of truth)
+ * 3. Appends a current-year YTD row from live app state if not yet finalized
+ *
+ * Eliminates the duplicated logic that previously existed in both routers.
+ *
+ * Results are cached for 5 seconds to deduplicate concurrent calls (e.g. NetWorth
+ * page fires getSummary + getHistory in parallel, both of which call this function).
+ * The cache is keyed by the as-of day and the full targeting (budget profile,
+ * column, session salaries), so a Plan-pinned or profile-scoped call only ever
+ * reads a result built with exactly the same inputs.
+ */
+type YearEndHistoryTargeting = BudgetTargeting;
+
+// A 5s cache keyed by the targeting, so one page load builds a targeted
+// history once; scoped per database handle, so a demo schema never shares an
+// entry, and `generation` drops a build that started before an invalidation.
+const YEAR_END_CACHE_TTL_MS = 5_000;
+type YearEndCacheEntry = { data: YearEndRow[]; expiresAt: number };
+let _yearEndCache = new WeakMap<object, Map<string, YearEndCacheEntry>>();
+let _yearEndCacheGeneration = 0;
+
+function yearEndCacheKey(
+  asOfDate: Date,
+  targeting: YearEndHistoryTargeting | undefined,
+) {
+  return JSON.stringify([
+    localDateStr(asOfDate),
+    targeting?.budgetProfileId ?? null,
+    targeting?.budgetColumn ?? null,
+  ]);
+}
+
+export async function buildYearEndHistory(
+  db: Db,
+  asOfDate: Date = new Date(),
+  targeting?: YearEndHistoryTargeting,
+): Promise<YearEndRow[]> {
+  const cacheKey = yearEndCacheKey(asOfDate, targeting);
+  const generation = _yearEndCacheGeneration;
+  const cached = _yearEndCache.get(db)?.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+  const [
+    nwRows,
+    perfAccounts,
+    accountPerfRows,
+    annualPerfRows,
+    mortgageLoans,
+    extraPayments,
+    settings,
+    jobs,
+    snapshotData,
+    propTaxRows,
+    people,
+    retirementSettingsRows,
+    retirementProfileRows,
+    annualExpensesBudget,
+    homeImprovementItems,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(schema.netWorthAnnual)
+      .orderBy(asc(schema.netWorthAnnual.yearEndDate)),
+    db.select().from(schema.performanceAccounts),
+    db.select().from(schema.accountPerformance),
+    db.select().from(schema.annualPerformance),
+    db.select().from(schema.mortgageLoans),
+    db
+      .select()
+      .from(schema.mortgageExtraPayments)
+      .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
+    db.select().from(schema.appSettings),
+    db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
+    getLatestSnapshot(db),
+    db.select().from(schema.propertyTaxes),
+    getAllPeople(db),
+    db.select().from(schema.retirementSettings),
+    db
+      .select()
+      .from(schema.retirementProfiles)
+      .orderBy(asc(schema.retirementProfiles.id)),
+    getAnnualExpensesFromBudget(db, targeting),
+    db
+      .select()
+      .from(schema.homeImprovementItems)
+      .orderBy(asc(schema.homeImprovementItems.year)),
+  ]);
+
+  // Bonus terms have no live value on a job any more — resolve against the
+  // globally-ACTIVE Salary Profile (this builds a permanent net_worth_annual
+  // record, a "recorded fact," same philosophy as savings.ts's
+  // computeJobNetPayPerCheck).
+  const activeSalaryProfileId = Number(
+    settings.find((s) => s.key === SK_ACTIVE_SALARY_PROFILE_ID)?.value ?? NaN,
+  );
+  const salaryProfileActiveMap: SalaryProfileActiveMap = Number.isFinite(
+    activeSalaryProfileId,
+  )
+    ? await loadAndApplySalaryProfile(db, activeSalaryProfileId)
+    : new Map();
+
+  // Build cumulative home improvements by year from items table (source of truth).
+  // The net_worth_annual.home_improvements_cumulative column is per-year, not cumulative — ignore it.
+  const homeImprovementsCumulativeByYear = new Map<number, number>();
+  {
+    let cumulative = 0;
+    const allYears = new Set([
+      ...homeImprovementItems.map((i) => i.year),
+      ...nwRows.map((r) => calendarYear(r.yearEndDate)),
+    ]);
+    for (const year of Array.from(allYears).sort()) {
+      const yearItems = homeImprovementItems.filter((i) => i.year <= year);
+      cumulative = yearItems.reduce((s, i) => s + toNumber(i.cost), 0);
+      homeImprovementsCumulativeByYear.set(year, cumulative);
+    }
+  }
+
+  // Build property tax lookup by year (sum across all loans for a given year)
+  const propTaxByYear = new Map<number, number>();
+  for (const pt of propTaxRows) {
+    propTaxByYear.set(
+      pt.year,
+      (propTaxByYear.get(pt.year) ?? 0) + toNumber(pt.taxAmount),
+    );
+  }
+
+  const perfAcctMap = new Map(perfAccounts.map((pa) => [pa.id, pa]));
+
+  function resolveHistoryMaster(acct: {
+    id: number;
+    performanceAccountId: number | null;
+    institution: string;
+    accountLabel: string;
+  }): (typeof perfAccounts)[number] {
+    if (acct.performanceAccountId == null) {
+      throw new Error(
+        `account_performance.id=${acct.id} (${acct.institution}:${acct.accountLabel}) has null performanceAccountId`,
+      );
+    }
+    const master = perfAcctMap.get(acct.performanceAccountId);
+    if (!master) {
+      throw new Error(
+        `account_performance.id=${acct.id} references missing performance_account.id=${acct.performanceAccountId}`,
+      );
+    }
+    return master;
+  }
+
+  // Sum employer_contributions per performance category, but only for
+  // accounts whose employer money is a purchase-price discount (e.g. ESPP),
+  // not a real cash match. Used to backfill CategoryPerformance.employerMatchDiscount
+  // without touching the existing employerMatch accumulation logic.
+  function sumDiscountEmployerByCategory(
+    rows: typeof accountPerfRows,
+  ): Map<string, number> {
+    const sums = new Map<string, number>();
+    for (const acct of rows) {
+      const master = resolveHistoryMaster(acct);
+      if (!isDiscountBasisEmployerContrib(master.accountType, master.subType))
+        continue;
+      const category = accountTypeToPerformanceCategory(master.accountType);
+      sums.set(
+        category,
+        (sums.get(category) ?? 0) + toNumber(acct.employerContributions),
+      );
+    }
+    return sums;
+  }
+
+  // Build performance portfolio breakdown by year
+  // (from account_performance ending balances, grouped by accountType)
+  // Includes ALL years with account data, not just finalized — so historical page
+  // can show portfolio breakdown even for years without finalized annual rows.
+  const perfPortfolioByYear = new Map<
+    number,
+    { portfolioTotal: number; byType: Record<string, number> }
+  >();
+
+  const allPerfAccountYears = new Set(accountPerfRows.map((a) => a.year));
+  for (const year of Array.from(allPerfAccountYears)) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    let portfolioTotal = 0;
+    const byType: Record<string, number> = {};
+
+    for (const acct of yearAccounts) {
+      const endBal = toNumber(acct.endingBalance);
+      const master = resolveHistoryMaster(acct);
+
+      portfolioTotal += endBal;
+      byType[master.accountType] = (byType[master.accountType] ?? 0) + endBal;
+    }
+
+    perfPortfolioByYear.set(year, { portfolioTotal, byType });
+  }
+
+  // Build per-account performance detail by year (for tooltip breakdowns)
+  const perfByAccountByYear = new Map<number, YearEndRow["perfByAccount"]>();
+  for (const year of Array.from(allPerfAccountYears)) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const accounts: YearEndRow["perfByAccount"] = yearAccounts.map((acct) => ({
+      label: `${acct.institution} — ${acct.accountLabel.replace(` (${acct.institution})`, "")}`,
+      accountType: resolveHistoryMaster(acct).accountType,
+      beginningBalance: toNumber(acct.beginningBalance),
+      contributions: toNumber(acct.totalContributions),
+      employerMatch: toNumber(acct.employerContributions),
+      gainLoss: toNumber(acct.yearlyGainLoss),
+      endingBalance: toNumber(acct.endingBalance),
+    }));
+    perfByAccountByYear.set(year, accounts);
+  }
+
+  // Build performance breakdown by display category per year (for spreadsheet view).
+  // Uses annualPerformance for finalized non-Portfolio categories, falls back to
+  // aggregating accountPerformance rows by accountTypeToPerformanceCategory().
+  const perfByCategoryByYear = new Map<
+    number,
+    Record<string, CategoryPerformance>
+  >();
+
+  // 1. Populate from finalized annual_performance rows (non-Portfolio categories)
+  for (const row of annualPerfRows) {
+    if (!row.isFinalized || row.category === PERF_CATEGORY_PORTFOLIO) continue;
+    const yearMap = perfByCategoryByYear.get(row.year) ?? {};
+    yearMap[row.category] = {
+      endingBalance: toNumber(row.endingBalance),
+      contributions: toNumber(row.totalContributions),
+      employerMatch: toNumber(row.employerContributions),
+      gainLoss: toNumber(row.yearlyGainLoss),
+      distributions: toNumber(row.distributions),
+      employerMatchDiscount: 0, // backfilled below from account_performance rows
+    };
+    perfByCategoryByYear.set(row.year, yearMap);
+  }
+
+  // 2. For years without finalized annual rows, compute from account_performance
+  for (const year of Array.from(allPerfAccountYears)) {
+    if (perfByCategoryByYear.has(year)) continue;
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const yearMap: Record<string, CategoryPerformance> = {};
+    for (const acct of yearAccounts) {
+      const master = resolveHistoryMaster(acct);
+      const category = accountTypeToPerformanceCategory(master.accountType);
+      const existing = yearMap[category] ?? {
+        endingBalance: 0,
+        contributions: 0,
+        employerMatch: 0,
+        gainLoss: 0,
+        distributions: 0,
+        employerMatchDiscount: 0, // backfilled below from account_performance rows
+      };
+      existing.endingBalance += toNumber(acct.endingBalance);
+      existing.contributions += toNumber(acct.totalContributions);
+      existing.employerMatch += toNumber(acct.employerContributions);
+      existing.gainLoss += toNumber(acct.yearlyGainLoss);
+      existing.distributions += toNumber(acct.distributions);
+      yearMap[category] = existing;
+    }
+    perfByCategoryByYear.set(year, yearMap);
+  }
+
+  // 3. Backfill employerMatchDiscount onto perfByCategoryByYear for every
+  // year, regardless of whether it was populated by branch 1 (finalized) or
+  // branch 2 (fallback) above — a finalized annual_performance row has no
+  // per-account breakdown to derive this from, so it's always recomputed
+  // fresh from account_performance rows here instead. Every other field
+  // (contributions, employerMatch, gainLoss, endingBalance) keeps reading
+  // from its original source untouched.
+  //
+  // Only merges onto category keys that already exist in a year's map —
+  // never creates a new partial CategoryPerformance object (which would be
+  // missing gainLoss/endingBalance and produce NaN downstream). Note: a
+  // partially-finalized year can already drop an entire non-finalized
+  // category from this map (see the year-level `.has(year)` check in branch
+  // 2 above) — this backfill doesn't fix that pre-existing gap, just avoids
+  // making it worse.
+  for (const [year, yearMap] of perfByCategoryByYear.entries()) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const discountSums = sumDiscountEmployerByCategory(yearAccounts);
+    for (const [category, discountAmount] of discountSums.entries()) {
+      const existing = yearMap[category];
+      if (!existing) continue;
+      existing.employerMatchDiscount = discountAmount;
+    }
+  }
+
+  // Build performance breakdown by parentCategory (Retirement / Portfolio) per year.
+  // Uses parentCategory directly from account_performance rows — not derived from config.
+  const perfByParentCategoryByYear = new Map<
+    number,
+    Record<string, CategoryPerformance>
+  >();
+  for (const year of Array.from(allPerfAccountYears)) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const yearMap: Record<string, CategoryPerformance> = {};
+    for (const acct of yearAccounts) {
+      const master = resolveHistoryMaster(acct);
+      const parentCategory = master.parentCategory;
+      const existing = yearMap[parentCategory] ?? {
+        endingBalance: 0,
+        contributions: 0,
+        employerMatch: 0,
+        gainLoss: 0,
+        distributions: 0,
+        // Type symmetry only — nothing currently reads a parent-category
+        // employerMatchDiscount (the Trends table's cashBasisAccessor only
+        // sits on per-category rows), so this isn't backfilled.
+        employerMatchDiscount: 0,
+      };
+      existing.endingBalance += toNumber(acct.endingBalance);
+      existing.contributions += toNumber(acct.totalContributions);
+      existing.employerMatch += toNumber(acct.employerContributions);
+      existing.gainLoss += toNumber(acct.yearlyGainLoss);
+      existing.distributions += toNumber(acct.distributions);
+      yearMap[parentCategory] = existing;
+    }
+    perfByParentCategoryByYear.set(year, yearMap);
+  }
+
+  // Build annual_performance summary by year — prefer finalized "Portfolio" category,
+  // fall back to computing from account_performance data (same as performance page getSummary)
+  type PerfSummary = {
+    beginningBalance: number;
+    contributions: number;
+    employerMatch: number;
+    gainLoss: number;
+    endingBalance: number;
+    returnPct: number | null;
+  };
+  const perfSummaryByYear = new Map<number, PerfSummary>();
+
+  // 1. Finalized Portfolio annual rows (authoritative)
+  for (const row of annualPerfRows) {
+    if (!row.isFinalized || row.category !== PERF_CATEGORY_PORTFOLIO) continue;
+    perfSummaryByYear.set(row.year, {
+      beginningBalance: toNumber(row.beginningBalance),
+      contributions: toNumber(row.totalContributions),
+      employerMatch: toNumber(row.employerContributions),
+      gainLoss: toNumber(row.yearlyGainLoss),
+      endingBalance: toNumber(row.endingBalance),
+      returnPct:
+        row.annualReturnPct !== null ? toNumber(row.annualReturnPct) : null,
+    });
+  }
+
+  // 2. For years with account_performance data but no finalized Portfolio annual row,
+  // compute summary from account data (mirrors performance page getSummary logic)
+  const allAccountYears = new Set(accountPerfRows.map((a) => a.year));
+  for (const year of Array.from(allAccountYears)) {
+    if (perfSummaryByYear.has(year)) continue; // already have finalized data
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    if (yearAccounts.length === 0) continue;
+    const sums = sumAccounts(yearAccounts);
+    perfSummaryByYear.set(year, {
+      beginningBalance: sums.beginBal,
+      contributions: sums.contribs,
+      employerMatch: sums.employer,
+      gainLoss: sums.gainLoss,
+      endingBalance: sums.endBal,
+      returnPct: computeReturn(
+        sums.beginBal,
+        sums.contribs,
+        sums.gainLoss,
+        sums.distributions,
+        sums.fees,
+        sums.rollovers,
+      ),
+    });
+  }
+
+  // Pre-compute mortgage balance by year from loan amortization data.
+  // If loan data covers the year, use the computed balance; otherwise fall back to manual netWorthAnnual.mortgageBalance.
+  const earliestLoanYear =
+    mortgageLoans.length > 0
+      ? Math.min(...mortgageLoans.map((l) => calendarYear(l.firstPaymentDate)))
+      : Infinity;
+  const mortgageBalanceByYear = new Map<number, number>();
+  for (const r of nwRows) {
+    const year = calendarYear(r.yearEndDate);
+    if (mortgageLoans.length > 0 && year >= earliestLoanYear) {
+      const yearEnd = new Date(year, 11, 31); // Dec 31
+      mortgageBalanceByYear.set(
+        year,
+        computeMortgageBalance(mortgageLoans, extraPayments, yearEnd, asOfDate),
+      );
+    }
+  }
+
+  // Map net_worth_annual rows to unified YearEndRow
+  const history: YearEndRow[] = nwRows.map((r) => {
+    const year = calendarYear(r.yearEndDate);
+    const perf = perfPortfolioByYear.get(year);
+    const perfSummary = perfSummaryByYear.get(year);
+
+    // Portfolio fields: prefer finalized performance data over stored net_worth_annual
+    const portfolioTotal = perf?.portfolioTotal ?? toNumber(r.portfolioTotal);
+    // Portfolio breakdown by accountType: prefer perf data, fall back to legacy columns
+    const portfolioByType: Record<string, number> = perf?.byType ?? {
+      "401k": toNumber(r.retirementTotal), // legacy: 401k+403b+IRA combined
+      hsa: toNumber(r.hsa),
+      brokerage:
+        toNumber(r.ltBrokerage) + toNumber(r.espp) + toNumber(r.rBrokerage),
+    };
+
+    // Non-portfolio fields always from net_worth_annual
+    const cash = toNumber(r.cash);
+    const houseValue = toNumber(r.houseValue);
+    const otherAssets = toNumber(r.otherAssets);
+    // Mortgage balance: derived from loan amortization when loan data covers this year,
+    // falls back to manual netWorthAnnual.mortgageBalance for years predating loan data
+    const mortgageBalance =
+      mortgageBalanceByYear.get(year) ?? toNumber(r.mortgageBalance);
+    const otherLiabilities = toNumber(r.otherLiabilities);
+    const netWorth =
+      portfolioTotal +
+      cash +
+      houseValue +
+      otherAssets -
+      mortgageBalance -
+      otherLiabilities;
+
+    return {
+      year,
+      yearEndDate: r.yearEndDate,
+      isCurrent: false,
+      netWorth,
+      portfolioTotal,
+      portfolioByType,
+      cash,
+      houseValue,
+      otherAssets,
+      homeImprovements: homeImprovementsCumulativeByYear.get(year) ?? 0,
+      mortgageBalance,
+      otherLiabilities,
+      grossIncome: toNumber(r.grossIncome),
+      combinedAgi: toNumber(r.combinedAgi),
+      ssaEarnings: r.ssaEarnings ? toNumber(r.ssaEarnings) : null,
+      effectiveTaxRate: r.effectiveTaxRate
+        ? toNumber(r.effectiveTaxRate)
+        : null,
+      taxesPaid: r.taxesPaid ? toNumber(r.taxesPaid) : null,
+      propertyTaxes:
+        propTaxByYear.get(year) ??
+        (r.propertyTaxes ? toNumber(r.propertyTaxes) : null),
+      perfBeginningBalance: perfSummary?.beginningBalance ?? null,
+      perfContributions: perfSummary?.contributions ?? null,
+      perfEmployerMatch: perfSummary?.employerMatch ?? null,
+      perfGainLoss: perfSummary?.gainLoss ?? null,
+      perfEndingBalance: perfSummary?.endingBalance ?? null,
+      perfReturnPct: perfSummary?.returnPct ?? null,
+      perfByAccount: perfByAccountByYear.get(year) ?? [],
+      perfLastUpdated: null,
+      snapshotDate: null,
+      snapshotAgeDays: null,
+      performanceByCategory: perfByCategoryByYear.get(year) ?? {},
+      performanceByParentCategory: perfByParentCategoryByYear.get(year) ?? {},
+      portfolioByTaxLocation: r.portfolioByTaxLocation as TaxLocationBreakdown,
+      ytdRatio: 1, // finalized year — full year
+      // Placeholders — computed in final pass after all rows are built
+      wealthScoreMarket: 0,
+      wealthScoreCostBasis: 0,
+      aawScoreMarket: 0,
+      aawScoreCostBasis: 0,
+      fiProgress: 0,
+      fiTarget: 0,
+      netWorthMarket: netWorth,
+      netWorthCostBasis: netWorth, // overwritten in final pass
+      houseValueCostBasis: 0, // overwritten in final pass
+      averageAge: 0,
+      effectiveIncome: 0,
+      lifetimeEarnings: 0,
+      annualExpenses: 0,
+      withdrawalRate: 0,
+      withdrawalRateIsDefault: false,
+    };
+  });
+
+  // Append current year from live data if not already in history
+  const currentYear = asOfDate.getFullYear();
+  const hasCurrentYear = history.some((h) => h.year === currentYear);
+  if (!hasCurrentYear) {
+    const portfolioTotal = snapshotData?.total ?? 0;
+    // Group snapshot accounts by accountType for portfolio breakdown
+    const portfolioByType: Record<string, number> = {};
+    if (snapshotData) {
+      for (const a of snapshotData.accounts) {
+        portfolioByType[a.accountType] =
+          (portfolioByType[a.accountType] ?? 0) + a.amount;
+      }
+    }
+
+    const setting = parseAppSettings(settings);
+    const { cash } = await getEffectiveCash(db, settings);
+    const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
+    // Typed figure + the debts list + mapped credit cards
+    // (server/services/debts/other-liabilities.ts). Only computed for the CURRENT (isCurrent: true) row; a
+    // finalized past year always reads otherLiabilities from the stored
+    // net_worth_annual row instead (below), which finalizeYear (routers/performance/finalize-year.ts)
+    // writes with this same addition baked in at finalize time.
+    const otherLiabilities = (
+      await getEffectiveOtherLiabilities(db, { asOf: asOfDate })
+    ).total;
+
+    const mortgageBalance = computeMortgageBalance(
+      mortgageLoans,
+      extraPayments,
+      asOfDate,
+    );
+
+    const activeLoan = getActiveMortgageLoan(mortgageLoans);
+    const houseValue = activeLoan
+      ? toNumber(
+          activeLoan.propertyValueEstimated ?? activeLoan.propertyValuePurchase,
+        )
+      : 0;
+
+    // Gross income from active jobs (includes bonus — matches finalized year-end data)
+    const activeJobs = mergeSalaryProfileJobFields(
+      filterActiveJobs(jobs, asOfDate),
+      salaryProfileActiveMap,
+    );
+    const combinedGross = activeJobs.reduce((s, job) => {
+      const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+      return s + getTotalCompensation(comp.salary, comp.terms);
+    }, 0);
+
+    const netWorth =
+      portfolioTotal +
+      cash +
+      houseValue +
+      otherAssets -
+      mortgageBalance -
+      otherLiabilities;
+
+    // Current year performance — recompute from account_performance data
+    // (annual_performance rows for non-finalized years have stale zeros;
+    // the performance page recomputes from account data, so we must do the same)
+    const currentYearAcctPerf = accountPerfRows.filter(
+      (a) => a.year === currentYear,
+    );
+    const currentPortfolioRow = annualPerfRows.find(
+      (r) => r.year === currentYear && r.category === PERF_CATEGORY_PORTFOLIO,
+    );
+    let perfSummary: {
+      beginningBalance: number;
+      contributions: number;
+      employerMatch: number;
+      gainLoss: number;
+      endingBalance: number;
+      returnPct: number | null;
+    } | null = null;
+
+    if (currentYearAcctPerf.length > 0) {
+      // Sum from account_performance (same logic as performance page getSummary)
+      const sums = sumAccounts(currentYearAcctPerf);
+      perfSummary = {
+        beginningBalance: sums.beginBal,
+        contributions: sums.contribs,
+        employerMatch: sums.employer,
+        gainLoss: sums.gainLoss,
+        // Use snapshot total (most current) instead of stale performance ending balance
+        endingBalance: portfolioTotal,
+        returnPct: computeReturn(
+          sums.beginBal,
+          sums.contribs,
+          sums.gainLoss,
+          sums.distributions,
+          sums.fees,
+          sums.rollovers,
+        ),
+      };
+    } else if (currentPortfolioRow) {
+      // Fallback to annual_performance row if no account data
+      perfSummary = {
+        beginningBalance: toNumber(currentPortfolioRow.beginningBalance),
+        contributions: toNumber(currentPortfolioRow.totalContributions),
+        employerMatch: toNumber(currentPortfolioRow.employerContributions),
+        gainLoss: toNumber(currentPortfolioRow.yearlyGainLoss),
+        endingBalance: toNumber(currentPortfolioRow.endingBalance),
+        returnPct:
+          currentPortfolioRow.annualReturnPct !== null
+            ? toNumber(currentPortfolioRow.annualReturnPct)
+            : null,
+      };
+    }
+
+    history.push({
+      year: currentYear,
+      // Local calendar day — `.toISOString()` would render this in UTC and
+      // store tomorrow's date (and the wrong YEAR at a Dec-31 boundary) for
+      // the "current" year-end row any evening in a US timezone.
+      yearEndDate: localDateStr(asOfDate),
+      isCurrent: true,
+      netWorth,
+      portfolioTotal,
+      portfolioByType,
+      cash,
+      houseValue,
+      otherAssets,
+      homeImprovements:
+        homeImprovementsCumulativeByYear.get(currentYear) ??
+        setting("current_home_improvements", 0),
+      mortgageBalance,
+      otherLiabilities,
+      grossIncome: combinedGross,
+      combinedAgi: 0,
+      ssaEarnings: null,
+      effectiveTaxRate: null,
+      taxesPaid: null,
+      propertyTaxes: null,
+      perfBeginningBalance: perfSummary?.beginningBalance ?? null,
+      perfContributions: perfSummary?.contributions ?? null,
+      perfEmployerMatch: perfSummary?.employerMatch ?? null,
+      perfGainLoss: perfSummary?.gainLoss ?? null,
+      perfEndingBalance: perfSummary?.endingBalance ?? null,
+      perfReturnPct: perfSummary?.returnPct ?? null,
+      perfByAccount: perfByAccountByYear.get(currentYear) ?? [],
+      perfLastUpdated:
+        (settings.find((s) => s.key === "performance_last_updated")
+          ?.value as string) ?? null,
+      snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
+      // Calendar-day difference, not a raw ms/86400000 divide — the old
+      // version parsed the date-only snapshotDate as UTC midnight against
+      // Date.now() (a real instant), which reads a same-day snapshot as
+      // already 1 day old for part of every day. Compare local calendar
+      // dates instead.
+      snapshotAgeDays: snapshotData
+        ? Math.round(
+            (localMidnight(new Date()).getTime() -
+              parseLocalDateOnly(
+                snapshotData.snapshot.snapshotDate,
+              ).getTime()) /
+              86_400_000,
+          )
+        : null,
+      performanceByCategory: (() => {
+        // Prefer pre-computed data from account_performance rows
+        const preComputed = perfByCategoryByYear.get(currentYear);
+        if (preComputed && Object.keys(preComputed).length > 0)
+          return preComputed;
+        // Build from current year account_performance rows if available
+        if (currentYearAcctPerf.length > 0) {
+          const catMap: Record<string, CategoryPerformance> = {};
+          for (const acct of currentYearAcctPerf) {
+            const master = resolveHistoryMaster(acct);
+            const category = accountTypeToPerformanceCategory(
+              master?.accountType ?? null,
+            );
+            const existing = catMap[category] ?? {
+              endingBalance: 0,
+              contributions: 0,
+              employerMatch: 0,
+              gainLoss: 0,
+              distributions: 0,
+              employerMatchDiscount: 0,
+            };
+            existing.endingBalance += toNumber(acct.endingBalance);
+            existing.contributions += toNumber(acct.totalContributions);
+            existing.employerMatch += toNumber(acct.employerContributions);
+            existing.gainLoss += toNumber(acct.yearlyGainLoss);
+            existing.distributions += toNumber(acct.distributions);
+            // This catMap is a separate, throwaway object that never merges
+            // into perfByCategoryByYear — safe to compute inline here too.
+            if (
+              isDiscountBasisEmployerContrib(master.accountType, master.subType)
+            ) {
+              existing.employerMatchDiscount += toNumber(
+                acct.employerContributions,
+              );
+            }
+            catMap[category] = existing;
+          }
+          return catMap;
+        }
+        // Final fallback: derive ending balances from snapshot portfolioByType
+        // (no contribution/gain data available — only balances, so no way to
+        // compute employerMatchDiscount here)
+        const catMap: Record<string, CategoryPerformance> = {};
+        for (const [accountType, amount] of Object.entries(portfolioByType)) {
+          const category = accountTypeToPerformanceCategory(accountType);
+          const existing = catMap[category] ?? {
+            endingBalance: 0,
+            contributions: 0,
+            employerMatch: 0,
+            gainLoss: 0,
+            distributions: 0,
+            employerMatchDiscount: 0,
+          };
+          existing.endingBalance += amount;
+          catMap[category] = existing;
+        }
+        return catMap;
+      })(),
+      performanceByParentCategory:
+        perfByParentCategoryByYear.get(currentYear) ?? {},
+      portfolioByTaxLocation: (() => {
+        // For current year, use actual snapshot accounts with real taxType + parentCategory
+        if (!snapshotData) return null;
+        const breakdown: TaxLocationBreakdown = {
+          retirement: {},
+          portfolio: {},
+        };
+        for (const a of snapshotData.accounts) {
+          const parentCat = a.parentCategory ?? PERF_CATEGORY_RETIREMENT;
+          const taxType = a.taxType ?? "preTax";
+          const bucket =
+            parentCat === PERF_CATEGORY_PORTFOLIO
+              ? breakdown.portfolio
+              : breakdown.retirement;
+          bucket[taxType] = (bucket[taxType] ?? 0) + a.amount;
+        }
+        return breakdown;
+      })(),
+      // YTD ratio from paycheck schedule (salary-weighted average across jobs).
+      // Uses perfLastUpdated as the reference date — annualization should match
+      // the point in time when performance data was recorded, not today.
+      ytdRatio: (() => {
+        const perfUpdated = settings.find(
+          (s) => s.key === "performance_last_updated",
+        )?.value as string | undefined;
+        const asOf = perfUpdated ? new Date(perfUpdated) : asOfDate;
+        let totalSalary = 0;
+        let weightedRatio = 0;
+        for (const job of activeJobs) {
+          // No entry for this job in the active Salary Profile — no
+          // schedule to weight this job's contribution to the ratio by;
+          // excluded, not defaulted to a guessed period count.
+          if (job.payPeriod == null) continue;
+          const ppy = payPeriodConfig(job.payPeriod)?.periodsPerYear ?? 12;
+          // The checks this job has paid out of the ones it pays THIS year
+          // (a job started this year has fewer — none before its start), so
+          // YTD ÷ ratio is this year's own total. Contributions' ytdRatio
+          // divides by a full year's checks instead (full-year rates).
+          const anchor = job.anchorPayDate ?? job.startDate;
+          const paid = checksPaidYtd(
+            asOf,
+            job.payPeriod,
+            anchor,
+            ppy,
+            job.startDate,
+          );
+          const thisYear =
+            ppy -
+            periodsBeforeStart(asOf, job.payPeriod, anchor, job.startDate);
+          const ratio = safeDivide(paid, thisYear, 0);
+          const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+          const salary = getTotalCompensation(comp.salary, comp.terms);
+          weightedRatio += ratio * salary;
+          totalSalary += salary;
+        }
+        return safeDivide(weightedRatio, totalSalary, 0);
+      })(),
+      // Placeholders — computed in final pass
+      wealthScoreMarket: 0,
+      wealthScoreCostBasis: 0,
+      aawScoreMarket: 0,
+      aawScoreCostBasis: 0,
+      fiProgress: 0,
+      fiTarget: 0,
+      netWorthMarket: netWorth,
+      netWorthCostBasis: netWorth, // overwritten in final pass
+      houseValueCostBasis: 0, // overwritten in final pass
+      averageAge: 0,
+      effectiveIncome: 0,
+      lifetimeEarnings: 0,
+      annualExpenses: 0,
+      withdrawalRate: 0,
+      withdrawalRateIsDefault: false,
+    });
+  }
+
+  // =========================================================================
+  // Final pass: compute wealth metrics for every row (single computation path)
+  // =========================================================================
+
+  const setting = parseAppSettings(settings);
+  const useSalaryAverage = setting("use_salary_average_3_year", 0) === 1;
+
+  // Birth years for average age
+  const birthYears = people.map((p) => calendarYear(p.dateOfBirth));
+
+  // Withdrawal rate from the ACTIVE RETIREMENT PROFILE's settings row.
+  // Was "the primary person's row", which read an arbitrary row when no
+  // person is flagged primary; resolving through the profile makes this
+  // agree with what the projection itself uses.
+  const primaryPerson = getPrimaryPerson(people);
+  const activeRetProfileId = resolveRetirementProfileIdFrom(
+    settings,
+    retirementProfileRows,
+  );
+  const primaryRetSettings = pickProfileSettingsRow(
+    retirementSettingsRows,
+    activeRetProfileId,
+    primaryPerson?.id ?? null,
+  );
+  const withdrawalRate = primaryRetSettings
+    ? toNumber(primaryRetSettings.withdrawalRate)
+    : DEFAULT_WITHDRAWAL_RATE;
+
+  // Purchase price for cost basis
+  const activeMortgageForCostBasis = getActiveMortgageLoan(mortgageLoans);
+  const purchasePrice = activeMortgageForCostBasis
+    ? toNumber(activeMortgageForCostBasis.propertyValuePurchase)
+    : 0;
+
+  // Sort by year for cumulative lifetime earnings
+  history.sort((a, b) => a.year - b.year);
+  let cumulativeEarnings = 0;
+
+  for (const row of history) {
+    // Average age for this year
+    const avgAge =
+      birthYears.length > 0
+        ? birthYears.reduce((s, by) => s + (row.year - by), 0) /
+          birthYears.length
+        : 0;
+
+    // One income definition for both the wealth formula and lifetime
+    // earnings: gross pretax income (AGI only where gross wasn't recorded).
+    const yearIncome = wealthFormulaIncome(row);
+
+    // Optionally average over 3 most recent years
+    let effectiveIncome = yearIncome;
+    if (useSalaryAverage) {
+      const recent = history
+        .filter((h) => h.year <= row.year && wealthFormulaIncome(h) > 0)
+        .sort((a, b) => b.year - a.year)
+        .slice(0, 3);
+      if (recent.length > 0) {
+        effectiveIncome =
+          recent.reduce((s, h) => s + wealthFormulaIncome(h), 0) /
+          recent.length;
+      }
+    }
+
+    // Cumulative lifetime earnings
+    cumulativeEarnings += yearIncome;
+
+    // Cost basis net worth
+    const houseValueCostBasis =
+      row.houseValue > 0 ? purchasePrice + row.homeImprovements : 0;
+    const netWorthCostBasis =
+      row.portfolioTotal +
+      row.cash +
+      houseValueCostBasis +
+      row.otherAssets -
+      row.mortgageBalance -
+      row.otherLiabilities;
+
+    // Call calculateNetWorth — single computation path for all metrics
+    const nwInput: NetWorthInput = {
+      portfolioTotal: row.portfolioTotal,
+      cash: row.cash,
+      homeValueEstimated: row.houseValue,
+      homeValueConservative: houseValueCostBasis,
+      otherAssets: row.otherAssets,
+      mortgageBalance: row.mortgageBalance,
+      otherLiabilities: row.otherLiabilities,
+      averageAge: avgAge,
+      effectiveIncome,
+      lifetimeEarnings: cumulativeEarnings,
+      annualExpenses: annualExpensesBudget,
+      withdrawalRate,
+      asOfDate: new Date(row.yearEndDate),
+    };
+    const result = calculateNetWorth(nwInput);
+
+    // Write computed values back to the row
+    row.wealthScoreMarket = result.wealthScoreMarket;
+    row.wealthScoreCostBasis = result.wealthScoreCostBasis;
+    row.aawScoreMarket = result.aawScoreMarket;
+    row.aawScoreCostBasis = result.aawScoreCostBasis;
+    row.fiProgress = result.fiProgress;
+    row.fiTarget = result.fiTarget;
+    row.netWorthMarket = result.netWorthMarket;
+    row.netWorthCostBasis = netWorthCostBasis;
+    row.houseValueCostBasis = houseValueCostBasis;
+    row.averageAge = avgAge;
+    row.effectiveIncome = effectiveIncome;
+    row.lifetimeEarnings = cumulativeEarnings;
+    row.annualExpenses = annualExpensesBudget;
+    row.withdrawalRate = withdrawalRate;
+    row.withdrawalRateIsDefault = !primaryRetSettings;
+  }
+
+  if (generation === _yearEndCacheGeneration) {
+    const now = Date.now();
+    let entries = _yearEndCache.get(db);
+    if (!entries) {
+      entries = new Map();
+      _yearEndCache.set(db, entries);
+    }
+    for (const [key, entry] of entries) {
+      if (entry.expiresAt <= now) entries.delete(key);
+    }
+    entries.set(cacheKey, {
+      data: history,
+      expiresAt: now + YEAR_END_CACHE_TTL_MS,
+    });
+  }
+  return history;
+}
+
+/** Invalidate the buildYearEndHistory cache (call after mutations that affect its data). */
+export function invalidateYearEndCache(): void {
+  _yearEndCache = new WeakMap();
+  _yearEndCacheGeneration++;
+}
+// Any successful write may change what the history is built from.
+onMutationSucceeded(invalidateYearEndCache);

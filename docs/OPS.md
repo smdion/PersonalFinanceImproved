@@ -15,8 +15,8 @@ The supported install is the Docker image with the sample compose file (README �
 
 A version is deployed before it is released, so a deploy problem is fixed on the version branch without using up a version number. Before `pnpm deploy X.Y.Z`:
 
-- `package.json` holds the version being deployed (`deploy.sh` refuses a mismatch unless `--force`).
-- CI is green for the commit being deployed. `deploy.sh` checks before it builds (`scripts/ci-gate.ts`, through `gh`): the newest push run of `ci.yml` for HEAD's exact commit must have completed with success, with every job that commit's `ci.yml` defines (`ci` and `PostgreSQL`) run and green. Push runs only: the image build and the compose boot test, which signs in through the first-run wizard, run on pushes. No run yet, a run still going, a red or skipped job, or `gh` not signed in: it refuses. `--force` deploys anyway after a printed warning; `--dry-run` runs the version, CI and clean-tree checks and stops before touching the host.
+- `package.json` holds the version being deployed (`deploy.sh` refuses a mismatch, or a dirty tree, unless `--force`).
+- CI is green for the commit being deployed. `deploy.sh` checks before it builds (`scripts/ci-gate.ts`, through `gh`): the newest push run of `ci.yml` for HEAD's exact commit must have completed with success, with every job that commit's `ci.yml` defines (`ci` and `PostgreSQL`) run and green. Push runs only, since a release deploys from its `v*` push. The jobs run in parallel and `ci` needs all of them; the image build and the compose boot test (which signs in through the first-run wizard) run on every pull request and `v*` push, and on a push to `main` when the image's inputs changed (`scripts/ci-changes.sh`). A push that changes only docs, compared with its newest ancestor that has a green push run, skips the heavy steps; every job still runs and reports, and `docs:verify` still checks it. No run yet, a run still going, a red or skipped job, or `gh` not signed in: it refuses. `--skip-ci-gate` (not `--force`) deploys anyway after a printed warning; `--dry-run` runs the version, CI and clean-tree checks and stops before touching the host.
 - If the release has a migration: it was tried against a copy of production data, and a database dump was taken (§ Backups).
 
 `pnpm deploy X.Y.Z` (`scripts/deploy.sh`, configured by a gitignored `.env.deploy`) builds the image on the host, restarts the demo container first and stops if it isn't healthy, then restarts production and checks `/api/health` reports the new version. It is safe to re-run with the same version. After it, check both containers' logs for the migration events and for errors, and smoke-test production.
@@ -36,7 +36,7 @@ A version is deployed before it is released, so a deploy problem is fixed on the
 2. Dump the database if a migration is pending (§ Backups), then `pnpm deploy X.Y.Z` (§ Deploy gate).
 3. Push the branch and open a pull request into `main`; wait for CI.
 4. Merge only with the owner's explicit OK.
-5. On `main`: `pnpm release X.Y.Z --dry-run`, then `pnpm release X.Y.Z` (`scripts/release.sh`): checks the CHANGELOG entry, tests and docs, tags, pushes and creates the GitHub release from the CHANGELOG section.
+5. On `main`, at the merged commit: `pnpm release X.Y.Z --dry-run`, then `pnpm release X.Y.Z` (`scripts/release.sh`): refuses unless `package.json` is already at X.Y.Z (the bump is a commit in the release PR, step 1), checks the CHANGELOG entry, tests and docs, tags `vX.Y.Z`, pushes the tag only (never a branch: `main` takes changes through a PR) and creates the GitHub release from the CHANGELOG section.
 
 ## Rollback
 
@@ -63,8 +63,11 @@ new release's own migrations stay incremental after the baseline. Rules:
 - The squash replay is one transaction ending in a check that every table
   and column of the latest snapshot exists; a failure stops startup with
   nothing changed.
-- Keep every old tag in `V08_SCHEMA_TAGS` (backups name them) and every
-  hash in `V08_MIGRATION_HASHES`.
+- Keep every old tag and hash (backups name them). The current line's tags
+  and file hashes are read from the journal, which the squash replaces, so
+  first freeze the outgoing line's tags into `V08_SCHEMA_TAGS`
+  (`backup-transforms.ts`) and its hashes into `PRE_V09_MIGRATION_HASHES`
+  (`db-migrate.ts`); the two journal-pin tests fail otherwise.
 - Verify on a restored prod dump, a fresh install from the new chain and one
   from the old chain (`pg_dump -s`, by name), both dialects, plus a refused
   older install.

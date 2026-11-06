@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => ({ db: {} }));
 const { firstRunState } = vi.hoisted(() => ({
   firstRunState: vi.fn(async () => ({ adminNeeded: false })),
 }));
-vi.mock("@/server/helpers/first-run", () => ({ firstRunState }));
+vi.mock("@/server/data/first-run", () => ({ firstRunState }));
 vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("./trpc-mock")).trpc,
 }));

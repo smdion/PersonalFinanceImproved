@@ -7,7 +7,15 @@
  * Supplements projection.test.ts without duplicating its tests.
  */
 import "./setup-mocks";
-import { vi, describe, it, expect, assert } from "vitest";
+import {
+  vi,
+  describe,
+  it,
+  expect,
+  assert,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -32,13 +40,17 @@ vi.mock("@/lib/budget-api", () => ({
 
 // The simulation runs in-process with a handful of trials instead of on the
 // worker thread at full size. These tests check the routers and the
-// projection cache, not the simulation's statistics (calculators/
+// projection cache, not the simulation's statistics (pure/simulation/
 // monte-carlo* and the worker client have their own tests), and a full-size
 // run here cost minutes. The real engine still runs, so results are real;
 // `mcRuns` counts runs so cache tests can prove a hit doesn't recompute.
 const mcRuns = vi.hoisted(() => ({ count: 0 }));
-vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
-  const { calculateMonteCarlo } = await import("@/lib/calculators/monte-carlo");
+// The cache blocks count runs and compare results, never a rate, so they
+// run 5 trials (`fewTrialsForCacheTests`); every other case runs 25.
+const mcTrialCap = vi.hoisted(() => ({ value: 25 }));
+vi.mock("@/server/services/simulation/monte-carlo-worker-client", async () => {
+  const { calculateMonteCarlo } =
+    await import("@/lib/pure/simulation/monte-carlo");
   return {
     runMonteCarloOffThread: async (
       input: Parameters<typeof calculateMonteCarlo>[0],
@@ -46,7 +58,7 @@ vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
       mcRuns.count++;
       return calculateMonteCarlo({
         ...input,
-        numTrials: Math.min(input.numTrials, 25),
+        numTrials: Math.min(input.numTrials, mcTrialCap.value),
       });
     },
     getMonteCarloProgress: () => null,
@@ -56,6 +68,16 @@ vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** For a cache describe block: its cases run 5 trials, then back to 25. */
+function fewTrialsForCacheTests() {
+  beforeEach(() => {
+    mcTrialCap.value = 5;
+  });
+  afterEach(() => {
+    mcTrialCap.value = 25;
+  });
+}
 
 /** Two asset class rows (in place of the shipped ones) so glide path FK
  *  references work. */
@@ -234,20 +256,29 @@ describe("projection router — computeProjection cache", () => {
     }
   });
 
-  it("metadataOnly does not read or write the cache", async () => {
+  it("the metadata query does not read or write the cache", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
 
-      const response = await caller.projection.computeProjection({
-        metadataOnly: true,
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
+      const response = await caller.projection.getProjectionMetadata({});
 
       expect(response.result).toBeNull();
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("the metadata query is computeProjection's response with no result", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const full = await caller.projection.computeProjection({});
+      const meta = await caller.projection.getProjectionMetadata({});
+      expect(full.result).not.toBeNull();
+      expect(meta).toEqual({ ...full, result: null });
     } finally {
       cleanup();
     }
@@ -307,9 +338,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
     try {
       seedFullProjectionData(db);
       db.delete(schema.returnRateTable).run();
-      const meta = await caller.projection.computeProjection({
-        metadataOnly: true,
-      });
+      const meta = await caller.projection.getProjectionMetadata({});
       expect(meta).not.toHaveProperty("notConfigured");
       expect(meta).toHaveProperty("settings");
     } finally {
@@ -921,10 +950,80 @@ describe("projection router — computeMonteCarloProjection", () => {
 });
 
 // ---------------------------------------------------------------------------
+// peekMonteCarloSummary — the dashboard tile's slice of a cached run
+// ---------------------------------------------------------------------------
+
+describe("projection router — peekMonteCarloSummary", () => {
+  it("returns the cached run's success rate, today's bands and run time, never running trials", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = {
+        numTrials: 100,
+        preset: "custom",
+        taxMode: "simple",
+        seed: 42,
+      } as const;
+      const runsBefore = mcRuns.count;
+      const empty = await caller.projection.peekMonteCarloSummary(input);
+      expect(empty).toEqual({ result: null, computedAt: null });
+      expect(mcRuns.count).toBe(runsBefore);
+
+      await caller.projection.computeMonteCarloProjection(input);
+      // What the full query's peek returns (the cache keeps whole seconds).
+      const full = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        peekOnly: true,
+      });
+      assert(full.result && "simulationInputs" in full);
+      const peek = await caller.projection.peekMonteCarloSummary(input);
+      expect(mcRuns.count).toBe(runsBefore + 1);
+      expect(peek).toEqual({
+        result: {
+          successRate: full.result.successRate,
+          // Today's dollars (deflated per trial), not the nominal bands.
+          todayBands: full.result.today.percentileBands.map(
+            ({ age, year, p25, p50, p75 }) => ({ age, year, p25, p50, p75 }),
+          ),
+        },
+        computedAt: full.simulationInputs.computedAt,
+      });
+      expect(peek.result!.todayBands).not.toEqual(
+        full.result.percentileBands.map(({ age, year, p25, p50, p75 }) => ({
+          age,
+          year,
+          p25,
+          p50,
+          p75,
+        })),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("rejects what the full query's input rejects", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await expect(
+        caller.projection.peekMonteCarloSummary({ numTrials: 5 }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeMonteCarloProjection — persistent projection cache
 // ---------------------------------------------------------------------------
 
 describe("projection router — computeMonteCarloProjection cache", () => {
+  fewTrialsForCacheTests();
+
   it("a second identical unseeded call reuses the same minted seed and result", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1170,6 +1269,9 @@ describe("projection router — computeStrategyComparison", () => {
           strat.maxAnnualWithdrawal,
         );
         expect(strat.yearByYear.length).toBeGreaterThan(0);
+        expect(strat.yearByYear[0]).toHaveProperty("age");
+        expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
+        expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
         // Without MC data, successRate should be null
         expect(strat.successRate).toBeNull();
       }
@@ -1205,6 +1307,9 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
+      // year1Withdrawal comes from the deterministic projection: no
+      // simulation needs to run.
+      clearSimulationPresets(db);
 
       const base = await caller.projection.computeStrategyComparison();
       const response = await caller.projection.computeStrategyComparison({
@@ -1226,6 +1331,9 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const { perfAcctId, snapId } = seedFullProjectionData(db);
+      // endRetirementBalance comes from the deterministic projection: no
+      // simulation needs to run.
+      clearSimulationPresets(db);
 
       // A newer $300k snapshot is the default; snapshotId picks the $100k one.
       seedSnapshot(db, "2025-06-01", [
@@ -1253,6 +1361,9 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
+      // endRetirementBalance comes from the deterministic projection: no
+      // simulation needs to run.
+      clearSimulationPresets(db);
       const fixedEnd = async () =>
         (await caller.projection.computeStrategyComparison()).strategies.find(
           (st) => st.strategy === "fixed",
@@ -1269,26 +1380,6 @@ describe("projection router — computeStrategyComparison", () => {
       cleanup();
     }
   });
-
-  it("year-by-year data is populated for decumulation years", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedFullProjectionData(db);
-
-      const response = await caller.projection.computeStrategyComparison();
-
-      for (const strat of response.strategies) {
-        // If there are yearByYear entries, they should have age, withdrawal, retirementBalance
-        if (strat.yearByYear.length > 0) {
-          expect(strat.yearByYear[0]).toHaveProperty("age");
-          expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
-          expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
-        }
-      }
-    } finally {
-      cleanup();
-    }
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1296,6 +1387,8 @@ describe("projection router — computeStrategyComparison", () => {
 // ---------------------------------------------------------------------------
 
 describe("projection router — computeStrategyComparison cache", () => {
+  fewTrialsForCacheTests();
+
   it("a second identical call is served from cache (same result, one cache row)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1535,6 +1628,7 @@ describe("projection router — computeProjection edge cases", () => {
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
+      if (!("settings" in response)) throw new Error("no metadata");
 
       expect(response).toHaveProperty("people");
       expect(response.people!.length).toBeGreaterThanOrEqual(1);
@@ -1598,6 +1692,7 @@ describe("projection router — computeProjection edge cases", () => {
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
+      if (!("settings" in response)) throw new Error("no metadata");
 
       expect(response.result).not.toBeNull();
       expect(response.contributionSpecs!.length).toBeGreaterThanOrEqual(1);
@@ -1626,6 +1721,7 @@ describe("projection router — computeProjection edge cases", () => {
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
+      if (!("settings" in response)) throw new Error("no metadata");
 
       const summary = response.returnRateSummary;
       expect(summary!.retirementRate).toBeCloseTo(0.05);
@@ -1648,7 +1744,7 @@ describe("projection router — MC edge cases", () => {
     const { db, cleanup } = await createTestCaller(adminSession);
     try {
       const { buildMcInputs } =
-        await import("@/server/routers/projection/_shared");
+        await import("@/server/services/simulation/mc-inputs");
       for (const key of ["aggressive", "default", "conservative"] as const)
         expect(
           (await buildMcInputs(db as never, key)).notConfigured,
@@ -2330,6 +2426,8 @@ function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
 }
 
 describe("projection router — computeCoastFireMC cache", () => {
+  fewTrialsForCacheTests();
+
   it("a second identical call is served from cache (same result, one cache row)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

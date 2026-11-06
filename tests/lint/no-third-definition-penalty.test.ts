@@ -25,12 +25,12 @@ import * as path from "path";
 import {
   computeWithdrawalEligibility,
   type EligibilityAccountInput,
-} from "@/lib/pure/withdrawal-eligibility";
+} from "@/lib/pure/accounts/eligibility";
 import {
   computeRothIraAccess,
   computeEmployerPlanPreTaxAccess,
   computeHsaAccess,
-} from "@/lib/pure/early-access";
+} from "@/lib/pure/accounts/early-access";
 
 const SRC_ROOT = path.resolve(__dirname, "../../src");
 
