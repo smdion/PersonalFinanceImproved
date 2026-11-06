@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { cookies } from "next/headers";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { DEMO_PROFILES, getDemoProfileList } from "@/lib/demo";
+import { getDemoProfileList, isDemoProfileSlug } from "@/lib/demo";
 import { isPostgres } from "@/lib/db/dialect";
 import { buildDemoSchema } from "@/server/services/demo/demo-schema";
 
@@ -45,15 +45,14 @@ export const demoRouter = createTRPCRouter({
         });
       }
 
-      const profile = DEMO_PROFILES[input.slug];
-      if (!profile) {
+      if (!isDemoProfileSlug(input.slug)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Unknown demo profile: ${input.slug}`,
         });
       }
 
-      const schemaName = await buildDemoSchema(input.slug, profile);
+      const schemaName = await buildDemoSchema(input.slug);
 
       // Set HttpOnly cookie server-side so it's not accessible to JavaScript
       const cookieStore = await cookies();

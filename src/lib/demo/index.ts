@@ -8,14 +8,30 @@ import { recentlyRetiredProfile } from "./profiles/recently-retired";
 
 export type { DemoProfile } from "./types";
 
-/** All demo profiles, keyed by slug. */
-export const DEMO_PROFILES: Record<string, DemoProfile> = {
+const PROFILES = {
   "single-income": singleIncomeProfile,
   "dual-income-family": dualIncomeFamilyProfile,
   "early-retirement": earlyRetirementProfile,
   "debt-payoff": debtPayoffProfile,
   "recently-retired": recentlyRetiredProfile,
-};
+} satisfies Record<string, DemoProfile>;
+
+/** A demo profile's slug: one of DEMO_PROFILES' keys. */
+export type DemoProfileSlug = keyof typeof PROFILES;
+
+/** All demo profiles, keyed by slug. */
+export const DEMO_PROFILES: Record<string, DemoProfile> = PROFILES;
+
+/** Whether `slug` is one of DEMO_PROFILES' own keys (never an inherited
+ *  name such as `constructor`). */
+export function isDemoProfileSlug(slug: string): slug is DemoProfileSlug {
+  return Object.hasOwn(DEMO_PROFILES, slug);
+}
+
+/** The demo profile `slug` names, or null when it names none. */
+export function getDemoProfile(slug: string): DemoProfile | null {
+  return isDemoProfileSlug(slug) ? PROFILES[slug] : null;
+}
 
 /** Ordered list of profile slugs for display. */
 const DEMO_PROFILE_ORDER = [

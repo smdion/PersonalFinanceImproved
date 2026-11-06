@@ -9,7 +9,7 @@ import { UserProvider } from "@/lib/context/user-context";
 import { PrivacyProvider } from "@/lib/context/privacy-context";
 import { PRIVACY_COOKIE } from "@/lib/utils/format";
 import { DemoBanner } from "@/components/layout/demo-banner";
-import { DEMO_PROFILES } from "@/lib/demo";
+import { getDemoProfile } from "@/lib/demo";
 import { databaseStatus } from "@/server/data/database-status";
 import { devBypass } from "@/server/auth-mode";
 
@@ -82,7 +82,7 @@ export default async function DashboardLayout({
   // Check for active demo mode
   const cookieStore = await cookies();
   const demoSlug = cookieStore.get("demo_active_profile")?.value;
-  const demoProfile = demoSlug ? DEMO_PROFILES[demoSlug] : null;
+  const demoProfile = demoSlug ? getDemoProfile(demoSlug) : null;
   const privacy = cookieStore.get(PRIVACY_COOKIE)?.value === "1";
 
   // In demo-only mode, require a demo profile to be active

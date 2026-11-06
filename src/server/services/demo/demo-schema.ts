@@ -12,7 +12,7 @@ import { applyReferenceData } from "@/lib/db/reference-data";
 import * as schema from "@/lib/db/schema";
 import { pool, type db as appDb } from "@/lib/db";
 import { serializeQueries } from "@/lib/db/serial-client";
-import type { DemoProfile } from "@/lib/demo";
+import { getDemoProfile, type DemoProfileSlug } from "@/lib/demo";
 import { seedProfile } from "@/server/services/demo/demo-seed";
 
 /**
@@ -26,12 +26,12 @@ function quoteIdent(name: string): string {
 /** Maximum number of demo schemas allowed (DoS prevention). */
 const MAX_DEMO_SCHEMAS = 10;
 
-/** Builds (or rebuilds) the demo schema for `slug`, seeds `profile` into it
- *  and returns the schema's name. */
-export async function buildDemoSchema(
-  slug: string,
-  profile: DemoProfile,
-): Promise<string> {
+/** Builds (or rebuilds) the demo schema for profile `slug`, seeds the
+ *  profile into it and returns the schema's name. Refuses a slug that isn't
+ *  a profile's before any SQL runs, whatever its caller checked. */
+export async function buildDemoSchema(slug: DemoProfileSlug): Promise<string> {
+  const profile = getDemoProfile(slug);
+  if (!profile) throw new Error(`Not a demo profile: ${JSON.stringify(slug)}`);
   const schemaName = `demo_${slug.replace(/-/g, "_")}`;
   const quotedSchema = quoteIdent(schemaName);
 
