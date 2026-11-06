@@ -176,7 +176,9 @@
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 53,
     "src/server/routers/networth.ts": 1485,
-    "src/server/routers/performance/index.ts": 1879,
+    "src/server/routers/performance/finalize-year.ts": 552,
+    "src/server/routers/performance/index.ts": 13,
+    "src/server/routers/performance/summary.ts": 744,
     "src/server/routers/projection/_shared.ts": 235,
     "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 539,
@@ -895,10 +897,12 @@
       "networthRouter.listSnapshots.query()": 216,
       "networthRouter.portfolioSnapshots.create.mutation()": 273
     },
-    "src/server/routers/performance/index.ts": {
-      "performanceRouter.computeSummary.query()": 686,
-      "performanceRouter.finalizeYear.mutation()": 482,
-      "performanceRouter.finalizeYear.mutation().transaction()": 477
+    "src/server/routers/performance/finalize-year.ts": {
+      "finalizeYearProcedures.finalizeYear.mutation()": 482,
+      "finalizeYearProcedures.finalizeYear.mutation().transaction()": 477
+    },
+    "src/server/routers/performance/summary.ts": {
+      "summaryProcedures.computeSummary.query()": 686
     },
     "src/server/routers/projection/coast-fire.ts": {
       "coastFireRouter.computeCoastFireMC.query()": 248

@@ -2076,7 +2076,7 @@ const BUILT_AT_LOAD = [
   "src/lib/pure/household/what-if.schema.ts zSandboxContribAdditions",
   "src/server/routers/networth.ts portfolioSnapshotInput",
   "src/server/routers/networth.ts networthRouter",
-  "src/server/routers/performance/index.ts performanceAccountInput",
+  "src/server/routers/performance/accounts.ts performanceAccountInput",
   "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
   "src/server/routers/settings/paycheck.ts contributionAccountInput",

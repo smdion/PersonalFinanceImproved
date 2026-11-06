@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**382 procedures across 72 routers.**
+**394 procedures across 76 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -286,6 +286,38 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure        | Kind  | Auth                 | Description      |
 | ---------------- | ----- | -------------------- | ---------------- |
 | `computeSummary` | query | `protectedProcedure` | (no description) |
+
+## `performance/accounts`
+
+| Procedure         | Kind     | Auth                   | Description      |
+| ----------------- | -------- | ---------------------- | ---------------- |
+| `create`          | mutation | `performanceProcedure` | (no description) |
+| `delete`          | mutation | `performanceProcedure` | (no description) |
+| `list`            | query    | `protectedProcedure`   | (no description) |
+| `update`          | mutation | `performanceProcedure` | (no description) |
+| `updateCostBasis` | mutation | `performanceProcedure` | (no description) |
+
+## `performance/finalize-year`
+
+| Procedure      | Kind     | Auth                   | Description                                                                                                                                                    |
+| -------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `finalizeYear` | mutation | `performanceProcedure` | Finalize a year: marks all account_performance and annual_performance rows for that year as finalized, then auto-creates next year's rows for active accounts. |
+
+## `performance/summary`
+
+| Procedure        | Kind  | Auth                 | Description                                                                                                                                                                                       |
+| ---------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeSummary` | query | `protectedProcedure` | computeSummary — returns all performance data joined through the master performance_accounts table. Includes: annual rollups, account-level detail, master account list, and current-year status. |
+
+## `performance/year-records`
+
+| Procedure             | Kind     | Auth                   | Description                                                                                                                                                                                              |
+| --------------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `annotateAccount`     | mutation | `performanceProcedure` | The household's note on an account-year, which figures are still estimates, and gaps accepted as on purpose. Accepting reads the gap from the same checks the page shows, and needs its own reason; the  |
+| `batchUpdateAccounts` | mutation | `performanceProcedure` | Batch-update account_performance rows for the current year. Used by the Update Performance form to save all flow fields in one pass. Annual rollups are recomputed automatically by computeSummary on ne |
+| `createAccount`       | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `updateAccount`       | mutation | `performanceProcedure` | Edit one account row (editAccountRow: a balanced row stays balanced, every affected year's rollups follow). `chainNextYear` moves next year's beginning with a changed ending; `dryRun` returns what wou |
+| `updateAnnual`        | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `projection/coast-fire`
 

@@ -11,7 +11,7 @@
  *     (settings/_shared)
  *
  * savingsGoals, performanceAccounts, portfolioSnapshots, and
- * relocationScenarios CRUD moved out to savings.ts/performance/index.ts/
+ * relocationScenarios CRUD moved out to savings.ts/performance/accounts.ts/
  * networth.ts/projection/relocation.ts respectively — their
  * tests moved to savings-goals-crud.test.ts / performance.test.ts /
  * networth.test.ts / projection-relocation.test.ts alongside them.
@@ -416,7 +416,7 @@ describe("settings.apiConnections", () => {
 // (procedures moved to routers/projection/relocation.ts).
 
 // performanceAccounts CRUD tests moved to performance.test.ts (procedures
-// moved to routers/performance/index.ts).
+// moved to routers/performance/accounts.ts).
 
 // portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
 // delete) moved to networth.test.ts (procedures moved to

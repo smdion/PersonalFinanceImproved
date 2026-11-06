@@ -759,9 +759,14 @@
       "count": 3
     }
   },
-  "src/server/routers/performance/index.ts": {
+  "src/server/routers/performance/summary.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 1
+    }
+  },
+  "src/server/routers/performance/year-records.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/server/routers/projection/_shared.ts": {
