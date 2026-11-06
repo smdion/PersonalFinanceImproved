@@ -171,7 +171,7 @@
     "src/server/data/salaries.ts": 41,
     "src/server/data/snapshots.ts": 107,
     "src/server/routers/assets.ts": 528,
-    "src/server/routers/budget.ts": 2053,
+    "src/server/routers/budget.ts": 1770,
     "src/server/routers/contribution-profiles.ts": 827,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 411,
@@ -194,6 +194,7 @@
     "src/server/routers/sync/core.ts": 1117,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
+    "src/server/services/budget/active-summary.ts": 334,
     "src/server/services/budget/annual-expenses.ts": 59,
     "src/server/services/budget/linked-items.ts": 206,
     "src/server/services/contributions/account-edits.ts": 256,
@@ -877,9 +878,6 @@
     "src/server/routers/assets.ts": {
       "assetsRouter.computeSummary.query()": 241
     },
-    "src/server/routers/budget.ts": {
-      "budgetRouter.computeActiveSummary.query()": 261
-    },
     "src/server/routers/contribution-profiles.ts": {
       "contributionProfileRouter.getById.query()": 186
     },
@@ -932,6 +930,9 @@
     },
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159
+    },
+    "src/server/services/budget/active-summary.ts": {
+      "computeBudgetActiveSummary": 254
     },
     "src/server/services/budget/linked-items.ts": {
       "resolveLinkedBudgetItemAmounts": 152

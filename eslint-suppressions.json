@@ -5591,16 +5591,13 @@
   },
   "src/server/routers/budget.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 21
-    },
-    "max-lines-per-function": {
-      "count": 1
+      "count": 17
     },
     "ratchet/max-comment-lines": {
-      "count": 28
+      "count": 21
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 2
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
@@ -6065,6 +6062,20 @@
   "src/server/services/budget/account-balances.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    }
+  },
+  "src/server/services/budget/active-summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 7
     },
     "ratchet/no-history-comment": {
       "count": 2
