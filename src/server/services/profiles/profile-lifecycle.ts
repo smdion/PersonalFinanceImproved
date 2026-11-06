@@ -1,7 +1,7 @@
 // Create, duplicate, delete and make active for Contribution, Salary and
 // Retirement Profiles, each kind keeping its router's own rules. Permission
 // checks stay in each router's procedure type.
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
@@ -11,6 +11,7 @@ import {
   canDeleteSalaryProfile,
 } from "@/lib/pure/household/profiles";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
+import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-profile";
 import {
   ACTIVE_SETTING_KEY,
@@ -23,6 +24,7 @@ export type LifecycleKind = "contribution" | "salary" | "retirement";
 
 type ContributionProfile = typeof schema.contributionProfiles.$inferSelect;
 type SalaryProfile = typeof schema.salaryProfiles.$inferSelect;
+type RetirementProfile = typeof schema.retirementProfiles.$inferSelect;
 type ContributionActiveFields = ContributionProfile["contributionActiveFields"];
 
 const CAN_DELETE = {
@@ -143,15 +145,21 @@ export function duplicateProfile(
   kind: "salary",
   input: DuplicateInput,
 ): Promise<SalaryProfile>;
+export function duplicateProfile(
+  db: Db,
+  kind: "retirement",
+  input: DuplicateInput & { description?: string },
+): Promise<RetirementProfile>;
 /** Add a new, inactive profile copied from another: Contribution verbatim
  *  (after `checkCopy`), Salary with every entry's extra-paycheck routing
- *  cleared. */
+ *  cleared, Retirement with each person's rows. */
 export async function duplicateProfile(
   db: Db,
-  kind: "contribution" | "salary",
-  input: DuplicateInput,
+  kind: LifecycleKind,
+  input: DuplicateInput & { description?: string },
   checkCopy?: (fields: ContributionActiveFields) => Promise<void>,
-): Promise<ContributionProfile | SalaryProfile> {
+): Promise<ContributionProfile | SalaryProfile | RetirementProfile> {
+  if (kind === "retirement") return duplicateRetirementProfile(db, input);
   if (kind === "contribution") {
     const source = await db
       .select()
@@ -209,6 +217,98 @@ function sourceNotFound(): TRPCError {
   return new TRPCError({
     code: "NOT_FOUND",
     message: "Source profile not found",
+  });
+}
+
+/** Each person's own source rows into the new profile; the primary
+ *  person's row for anyone with none of their own. */
+function duplicateRetirementProfile(
+  db: Db,
+  input: DuplicateInput & { description?: string },
+): Promise<RetirementProfile> {
+  return db.transaction(async (tx) => {
+    const people = await tx
+      .select()
+      .from(schema.people)
+      .orderBy(asc(schema.people.id));
+    if (people.length === 0) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "No people exist to seed the new profile with.",
+      });
+    }
+    const primaryPerson = getPrimaryPerson(people);
+
+    const sourceSettings = await tx
+      .select()
+      .from(schema.retirementSettings)
+      .where(eq(schema.retirementSettings.profileId, input.sourceProfileId));
+    const sourceHousehold =
+      (primaryPerson
+        ? sourceSettings.find((s) => s.personId === primaryPerson.id)
+        : undefined) ?? sourceSettings[0];
+    if (!sourceHousehold) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Source profile has no settings to clone.",
+      });
+    }
+
+    const sourcePeopleRows = await tx
+      .select()
+      .from(schema.retirementProfilePeople)
+      .where(
+        eq(schema.retirementProfilePeople.profileId, input.sourceProfileId),
+      );
+    const sourcePrimaryPeopleRow =
+      (primaryPerson
+        ? sourcePeopleRows.find((r) => r.personId === primaryPerson.id)
+        : undefined) ?? sourcePeopleRows[0];
+
+    const [newProfile] = await tx
+      .insert(schema.retirementProfiles)
+      .values({
+        name: input.name,
+        description: input.description ?? null,
+      })
+      .returning();
+    if (!newProfile) throw new Error("Failed to create profile.");
+
+    const sourceSettingsByPerson = new Map(
+      sourceSettings.map((s) => [s.personId, s]),
+    );
+    await tx.insert(schema.retirementSettings).values(
+      people.map((p) => {
+        const src = sourceSettingsByPerson.get(p.id) ?? sourceHousehold;
+        const {
+          id: _hhId,
+          personId: _hhPersonId,
+          profileId: _hhProfileId,
+          ...fields
+        } = src;
+        return { ...fields, personId: p.id, profileId: newProfile.id };
+      }),
+    );
+
+    if (sourcePrimaryPeopleRow) {
+      const sourcePeopleByPerson = new Map(
+        sourcePeopleRows.map((r) => [r.personId, r]),
+      );
+      await tx.insert(schema.retirementProfilePeople).values(
+        people.map((p) => {
+          const src = sourcePeopleByPerson.get(p.id) ?? sourcePrimaryPeopleRow;
+          const {
+            id: _ppId,
+            personId: _ppPersonId,
+            profileId: _ppProfileId,
+            ...fields
+          } = src;
+          return { ...fields, personId: p.id, profileId: newProfile.id };
+        }),
+      );
+    }
+
+    return newProfile;
   });
 }
 

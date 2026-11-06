@@ -11,7 +11,10 @@ import {
   redundantReturnRateIds,
   returnRateAtAge,
 } from "@/lib/pure/simulation/return-rate-breakpoints";
-import { deleteProfile } from "@/server/services/profiles/profile-lifecycle";
+import {
+  deleteProfile,
+  duplicateProfile,
+} from "@/server/services/profiles/profile-lifecycle";
 import { eq, ne, asc, and, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -1160,20 +1163,7 @@ export const retirementRouter = createTRPCRouter({
         .orderBy(asc(schema.retirementProfiles.id)),
     ),
 
-    /**
-     * Clone an existing profile's retirement_settings row (per person) and
-     * retirement_profile_people row (per person) into a new profile.
-     *
-     * Household-grain columns on retirement_settings are still duplicated
-     * onto every person's row (the contract step that collapses this to one
-     * row per profile is deferred to a future schema squash) and can legitimately have
-     * drifted between people — pickProfileSettingsRow's own docblock records
-     * a real household whose withdrawal_rate/rmd_excess_handling disagreed
-     * across person rows. Cloning from the PRIMARY person's source row into
-     * every person's new row (not each person's own current row) avoids
-     * baking that drift in as if it were intentional per-person
-     * configuration in the new profile.
-     */
+    /** Clone a profile's per-person rows into a new profile (profile-lifecycle.ts). */
     duplicate: adminProcedure
       .input(
         z.object({
@@ -1182,106 +1172,9 @@ export const retirementRouter = createTRPCRouter({
           description: z.string().max(500).optional(),
         }),
       )
-      .mutation(async ({ ctx, input }) => {
-        return ctx.db.transaction(async (tx) => {
-          const people = await tx
-            .select()
-            .from(schema.people)
-            .orderBy(asc(schema.people.id));
-          if (people.length === 0) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "No people exist to seed the new profile with.",
-            });
-          }
-          const primaryPerson = getPrimaryPerson(people);
-
-          const sourceSettings = await tx
-            .select()
-            .from(schema.retirementSettings)
-            .where(
-              eq(schema.retirementSettings.profileId, input.sourceProfileId),
-            );
-          const sourceHousehold =
-            (primaryPerson
-              ? sourceSettings.find((s) => s.personId === primaryPerson.id)
-              : undefined) ?? sourceSettings[0];
-          if (!sourceHousehold) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Source profile has no settings to clone.",
-            });
-          }
-
-          const sourcePeopleRows = await tx
-            .select()
-            .from(schema.retirementProfilePeople)
-            .where(
-              eq(
-                schema.retirementProfilePeople.profileId,
-                input.sourceProfileId,
-              ),
-            );
-          const sourcePrimaryPeopleRow =
-            (primaryPerson
-              ? sourcePeopleRows.find((r) => r.personId === primaryPerson.id)
-              : undefined) ?? sourcePeopleRows[0];
-
-          const [newProfile] = await tx
-            .insert(schema.retirementProfiles)
-            .values({
-              name: input.name,
-              description: input.description ?? null,
-            })
-            .returning();
-          if (!newProfile) throw new Error("Failed to create profile.");
-
-          // Duplicate each person's OWN source row, not the primary's row
-          // fanned out to everyone — a household with 2+ people previously
-          // had every non-primary person's retirementAge/endAge/
-          // socialSecurityMonthly/ssStartAge/ruleOf55Override/raise-rate
-          // silently overwritten with the primary's values on every
-          // profile duplication. Fall back to the primary's row only for a
-          // person with no source row of their own (matches the
-          // pre-existing behaviour for that edge case).
-          const sourceSettingsByPerson = new Map(
-            sourceSettings.map((s) => [s.personId, s]),
-          );
-          await tx.insert(schema.retirementSettings).values(
-            people.map((p) => {
-              const src = sourceSettingsByPerson.get(p.id) ?? sourceHousehold;
-              const {
-                id: _hhId,
-                personId: _hhPersonId,
-                profileId: _hhProfileId,
-                ...fields
-              } = src;
-              return { ...fields, personId: p.id, profileId: newProfile.id };
-            }),
-          );
-
-          if (sourcePrimaryPeopleRow) {
-            const sourcePeopleByPerson = new Map(
-              sourcePeopleRows.map((r) => [r.personId, r]),
-            );
-            await tx.insert(schema.retirementProfilePeople).values(
-              people.map((p) => {
-                const src =
-                  sourcePeopleByPerson.get(p.id) ?? sourcePrimaryPeopleRow;
-                const {
-                  id: _ppId,
-                  personId: _ppPersonId,
-                  profileId: _ppProfileId,
-                  ...fields
-                } = src;
-                return { ...fields, personId: p.id, profileId: newProfile.id };
-              }),
-            );
-          }
-
-          return newProfile;
-        });
-      }),
+      .mutation(({ ctx, input }) =>
+        duplicateProfile(ctx.db, "retirement", input),
+      ),
 
     /** Rename / re-describe a profile, or pin its tax-law year. Household/
      *  per-person assumptions themselves are edited through

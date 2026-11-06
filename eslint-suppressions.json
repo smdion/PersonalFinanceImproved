@@ -5913,10 +5913,10 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 20
+      "count": 18
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/routers/salary-profiles.ts": {

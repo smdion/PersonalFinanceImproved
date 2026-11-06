@@ -186,7 +186,7 @@
     "src/server/routers/projection/scenarios.ts": 161,
     "src/server/routers/projection/strategy.ts": 829,
     "src/server/routers/projection/tax-optimization.ts": 527,
-    "src/server/routers/retirement.ts": 1359,
+    "src/server/routers/retirement.ts": 1252,
     "src/server/routers/salary-profiles.ts": 599,
     "src/server/routers/savings.ts": 2574,
     "src/server/routers/settings/admin.ts": 412,
