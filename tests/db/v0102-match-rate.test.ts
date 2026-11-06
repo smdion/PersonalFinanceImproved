@@ -8,9 +8,8 @@ import { describe, it, expect } from "vitest";
 import {
   MATCH_RATE_CONVERTER,
   MATCH_RATE_TAG,
-  effectiveMatchType,
-  rateFromPercent,
 } from "@/lib/db/v0102-match-rate";
+import { effectiveMatchType, rateFromPercent } from "@/lib/utils/match-rate";
 import {
   MIGRATION_CONVERTERS,
   convertBackup,

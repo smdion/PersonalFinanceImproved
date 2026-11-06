@@ -35,6 +35,7 @@ describe("the migrator bundle", () => {
       "src/lib/db/reference-reconcile-core.ts",
       "src/lib/db/v0102-match-rate.ts",
       "src/lib/db/version-tables.ts",
+      "src/lib/utils/match-rate.ts",
     ]);
     expect(
       inputs.filter((f) => /node_modules\/(next|server-only)\//.test(f)),
