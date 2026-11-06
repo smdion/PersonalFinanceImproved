@@ -14,6 +14,9 @@ projection-year-handlers/    one year of work
   pre-year-setup.ts          return rate, profile switches, spending strategy
   accumulation-year.ts       runAccumulationYear
   decumulation-year.ts       runDecumulationYear
+  decumulation-income.ts     the year's income before any draw: each owner's RMD
+  rmd-step.ts                the QCD, then each RMD enforced on the routed draw (UD-04)
+  year-deduction.ts          the year's standard deduction, grown, with the senior add-ons
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
