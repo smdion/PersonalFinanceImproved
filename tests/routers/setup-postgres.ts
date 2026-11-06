@@ -7,15 +7,22 @@
  * The suites drop and rebuild the database's schemas, so TEST_DATABASE_URL
  * must name a throwaway database ending in `_test`. Without it they skip,
  * unless REQUIRE_TEST_DATABASE=true (CI) makes a missing URL fail instead.
+ * Each file holds the test database's lock (test-database-lock.ts) for its
+ * whole run, so files run in parallel take turns instead of racing.
  *
  * Imports no app module at load: the db module picks its dialect when it's
  * first imported, which must be after `pointAtTestDatabase()`.
  */
-import { vi } from "vitest";
+import { afterAll, beforeAll, vi } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import type pg from "pg";
+import {
+  lockTestDatabase,
+  releaseTestDatabase,
+  TEST_DATABASE_LOCK_WAIT_MS,
+} from "./test-database-lock";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockRejectedValue(new Error("No request context")),
@@ -53,6 +60,23 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
+
+// File-level hooks: the lock is taken before the file's own hooks run and
+// released after its last one.
+if (TEST_DATABASE_URL) {
+  let lock: pg.Client | undefined;
+  beforeAll(async () => {
+    const { default: pgDriver } = await import("pg");
+    const client = new pgDriver.Client({
+      connectionString: TEST_DATABASE_URL,
+    });
+    await lockTestDatabase(client);
+    lock = client;
+  }, TEST_DATABASE_LOCK_WAIT_MS);
+  afterAll(async () => {
+    if (lock) await releaseTestDatabase(lock);
+  });
+}
 
 /** True when there's no test database and CI didn't require one. */
 export const skipWithoutPostgres =
