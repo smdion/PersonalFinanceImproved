@@ -80,18 +80,19 @@ export function entryWithMatchRate(
 }
 
 /** A percent match a write may store: a rate 0 to MAX_MATCH_RATE at two
- *  decimals of a percent, and one for any value that reads as a number.
- *  What is already stored (`before`) stays editable for every other field. */
+ *  decimals of a percent, for any value that reads as a number. A percent
+ *  already stored (`before`, typed as it resolved) stays editable. */
 export function matchRefused(
   percent: boolean,
   next: { rate: unknown; value: unknown },
-  before: { rate: unknown; value: unknown },
+  before: { type: unknown; rate: unknown; value: unknown },
 ): boolean {
   if (!percent) return false;
+  const wasPercent = before.type === PERCENT;
   if (next.rate == null)
     return (
       Number.isFinite(parseFloat(String(next.value))) &&
-      String(next.value) !== String(before.value)
+      (!wasPercent || String(next.value) !== String(before.value))
     );
   const rate = Number(next.rate);
   const fits =
@@ -99,6 +100,8 @@ export function matchRefused(
     rate <= MAX_MATCH_RATE &&
     (String(next.rate).split(".")[1] ?? "").length <= 4;
   if (fits) return false;
-  const stored = before.rate ?? rateFromPercent(before.value);
+  const stored = wasPercent
+    ? (before.rate ?? rateFromPercent(before.value))
+    : null;
   return stored == null || Number(stored) !== rate;
 }

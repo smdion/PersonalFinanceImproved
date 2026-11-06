@@ -28,13 +28,21 @@ function assertMatchFits(...args: Parameters<typeof matchRefused>): void {
 export function accountMatchWrite(
   type: string,
   incoming: { employerMatchValue?: Stored; employerMatchRate?: Stored },
-  stored: { employerMatchValue: Stored; employerMatchRate: Stored } | null,
+  stored: {
+    employerMatchType: string;
+    employerMatchValue: Stored;
+    employerMatchRate: Stored;
+  } | null,
 ): ReturnType<typeof accountMatchColumns> {
   const columns = accountMatchColumns(type, incoming, stored);
   assertMatchFits(
     type === PERCENT_MATCH,
     { rate: columns.employerMatchRate, value: columns.employerMatchValue },
-    { rate: stored?.employerMatchRate, value: stored?.employerMatchValue },
+    {
+      type: stored?.employerMatchType,
+      rate: stored?.employerMatchRate,
+      value: stored?.employerMatchValue,
+    },
   );
   return columns;
 }
@@ -71,6 +79,7 @@ export async function entriesWithMatchRates(
         (sent || Object.hasOwn(next, "employerMatchValue")),
       { rate: next["employerMatchRate"], value: next["employerMatchValue"] },
       {
+        type: effectiveMatchType(before[id] ?? {}, account?.type),
         rate: before[id]?.["employerMatchRate"],
         value: before[id]?.["employerMatchValue"],
       },

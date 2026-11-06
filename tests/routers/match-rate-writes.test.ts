@@ -253,6 +253,24 @@ describe("an account's type change", () => {
     ).rejects.toThrow(/200%/);
   });
 
+  // M14 (advisor E9 F2): a dollar value is no rate already stored.
+  it("refuses a dollar value kept across a switch to percent", async () => {
+    const a = (await t.caller.settings.contributionAccounts.create({
+      ...account,
+      personId,
+      jobId,
+      employerMatchType: "dollar_match",
+      employerMatchValue: "5000",
+    }))!.id;
+    await expect(update(a, { employerMatchValue: "5000" })).rejects.toThrow(
+      /200%/,
+    );
+    expect(row(a)).toMatchObject({
+      employerMatchType: "dollar_match",
+      employerMatchRate: null,
+    });
+  });
+
   it("refuses a new percent finer than two decimals", async () => {
     const id = await percentAccount("50");
     await expect(update(id, { employerMatchValue: "12.345" })).rejects.toThrow(
@@ -330,6 +348,20 @@ describe("the profile entry write", () => {
     await patch(p, a, { employerMatchType: "dollar_match" });
     expect(entries(p)[a]).not.toHaveProperty("employerMatchRate");
     expect(entries(p)[a]).toMatchObject({ employerMatchValue: "40" });
+  });
+
+  // M14 (advisor E9 F2), the entry's own type.
+  it("refuses an entry's dollar value kept across its switch to percent", async () => {
+    const a = await percentAccount("50");
+    const p = await profileWith(a, {
+      employerMatchType: "dollar_match",
+      employerMatchValue: "5000",
+    });
+    await expect(
+      patch(p, a, { employerMatchType: "percent_of_contribution" }),
+    ).rejects.toThrow(/200%/);
+    expect(entries(p)[a]).toMatchObject({ employerMatchType: "dollar_match" });
+    expect(entries(p)[a]).not.toHaveProperty("employerMatchRate");
   });
 
   it("refuses a patched rate past 200%, and edits an entry stored above it", async () => {

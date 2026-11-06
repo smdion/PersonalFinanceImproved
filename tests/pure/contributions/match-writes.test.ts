@@ -197,7 +197,7 @@ describe("a sent rate with no percent", () => {
         matchRefused(
           true,
           { rate: cols.employerMatchRate, value: cols.employerMatchValue },
-          { rate: "0.5", value: "50" },
+          { type: PERCENT, rate: "0.5", value: "50" },
         ),
       ).toBe(true);
     },
@@ -205,8 +205,9 @@ describe("a sent rate with no percent", () => {
 });
 
 describe("matchRefused", () => {
-  const none = { rate: null, value: null };
+  const none = { type: PERCENT, rate: null, value: null };
   const at = (rate: string | null, value: string | null = null) => ({
+    type: PERCENT,
     rate,
     value,
   });
@@ -233,6 +234,21 @@ describe("matchRefused", () => {
     expect(matchRefused(true, at("2.5"), at("2.5", "250"))).toBe(false);
     expect(matchRefused(true, at("3"), at(null, "300"))).toBe(false);
     expect(matchRefused(true, at("0.12345"), at(null, "12.345"))).toBe(false);
+  });
+  // M14 (advisor E9 F2): a dollar value is no stored rate.
+  it("refuses a value kept across a switch to percent from another type", () => {
+    const dollars = { type: "dollar_match", rate: null, value: "5000" };
+    expect(matchRefused(true, at("50", "5000"), dollars)).toBe(true);
+    expect(
+      matchRefused(true, at(null, "100000000"), {
+        ...dollars,
+        value: "100000000",
+      }),
+    ).toBe(true);
+    expect(
+      matchRefused(true, at("50", "5000"), { ...dollars, rate: "50" }),
+    ).toBe(true);
+    expect(matchRefused(true, at("0.5", "50"), dollars)).toBe(false);
   });
 });
 
