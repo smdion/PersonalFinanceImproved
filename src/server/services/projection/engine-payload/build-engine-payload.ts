@@ -998,7 +998,6 @@ export async function buildEnginePayload(
     accountBreakdownByCategory,
   };
 
-  // Build per-account contribution specs via shared helper (single source of truth)
   const toContribDataRow = (c: (typeof activeContribs)[number]) => ({
     id: c.id,
     personId: c.personId,
@@ -1012,6 +1011,7 @@ export async function buildEnginePayload(
     taxTreatment: c.taxTreatment,
     employerMatchType: c.employerMatchType,
     employerMatchValue: c.employerMatchValue,
+    employerMatchRate: c.employerMatchRate,
     employerMaxMatchPct: c.employerMaxMatchPct,
     isPayrollDeducted: c.isPayrollDeducted,
     fromBonus: c.fromBonus,

@@ -1,5 +1,4 @@
 /** A contribution row in yearly dollars, and the job its pay comes from. */
-
 import { safeDivide } from "@/lib/utils/math";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { computeValue } from "./contribution-caps";
@@ -79,6 +78,7 @@ export type ContribRow = {
   taxTreatment: string;
   employerMatchType: string | null;
   employerMatchValue: string | null;
+  employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | null;
   /** Paid through payroll; null/absent = when it has a job. */
   isPayrollDeducted?: boolean | null;

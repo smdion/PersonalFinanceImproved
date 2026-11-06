@@ -22,10 +22,6 @@ import {
 import { aggregateContributionsByCategory } from "./category-totals";
 import { matchAccountForContribution } from "./account-match";
 
-// ---------------------------------------------------------------------------
-// Profile → Engine data builder
-// ---------------------------------------------------------------------------
-
 /** Context needed from the main buildEnginePayload for spec building. */
 type ProfileContribContext = {
   perfCategoryMap: Map<number, string>;
@@ -74,6 +70,7 @@ type ContribInputRow = {
   taxTreatment: string | null;
   employerMatchType: string | null;
   employerMatchValue: string | number | null;
+  employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | number | null;
   /** Paid through payroll; null/absent = when it has a job. */
   isPayrollDeducted?: boolean | null;
@@ -106,9 +103,8 @@ export function buildProfileContribData(
   }[],
   ctx: ProfileContribContext,
 ): ProfileContribData {
-  // salary = base salary; bonusGross = the bonus (contributionPay — each
-  // account takes its share only when set to, fromBonus); totalComp =
-  // always includes bonus — used for rate calculations
+  // salary: base; bonusGross: the bonus (an account takes its share when
+  // fromBonus); totalComp: always with the bonus, for the rates.
   const totalCompensation = jobSalaries.reduce(
     (sum, js) => sum + js.totalComp,
     0,
@@ -132,6 +128,7 @@ export function buildProfileContribData(
     employerMatchValue: c.employerMatchValue
       ? String(c.employerMatchValue)
       : null,
+    employerMatchRate: c.employerMatchRate,
     employerMaxMatchPct: c.employerMaxMatchPct
       ? String(c.employerMaxMatchPct)
       : null,

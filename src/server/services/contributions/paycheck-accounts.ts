@@ -20,21 +20,14 @@ import {
   matchPayGroupsWithBonus,
   matchGroupKey,
   computeGroupedEmployerMatch,
+  storedMatchRate,
 } from "@/lib/pure/contributions/employer-match";
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
 import type { ContribRowWithActiveFields } from "./profile";
 
-/**
- * Build ContributionAccountInput[] from DB rows for a given job + person.
- * Handles percent_of_salary (stored as whole number, e.g. 14 = 14%),
- * fixed_per_period, and fixed_annual methods. Employer match cap
- * (employerMaxMatchPct) is stored as a fraction (e.g. 0.06 = 6%); the
- * match rate (employerMatchValue) is a whole-number percent.
- *
- * Employer match is computed via computeGroupedEmployerMatch so a Roth +
- * Traditional split of the same physical account gets capped against
- * their combined contribution — see that function's docblock.
- */
+/** ContributionAccountInput[] from DB rows for a job and person. The match
+ *  is grouped (computeGroupedEmployerMatch): a Roth + Traditional split of
+ *  one account is capped on their combined contribution. */
 export function buildContribAccounts(
   jobContribs: (ContribRowWithActiveFields & CapPassed)[],
   personalContribs: (ContribRowWithActiveFields & CapPassed)[],
@@ -83,6 +76,7 @@ export function buildContribAccounts(
       salary: matchPay(c),
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
+      employerMatchRate: storedMatchRate(c.employerMatchRate),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
       employerMatchTaxTreatment: c.employerMatchTaxTreatment,
     })),
@@ -103,6 +97,7 @@ export function buildContribAccounts(
             salary,
             employerMatchType: c.employerMatchType,
             employerMatchValue: toNumber(c.employerMatchValue),
+            employerMatchRate: storedMatchRate(c.employerMatchRate),
             employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
             employerMatchTaxTreatment: c.employerMatchTaxTreatment,
           })),

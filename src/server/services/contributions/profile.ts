@@ -15,6 +15,7 @@ import {
   mergeSalaryProfileJobFields,
 } from "@/lib/pure/household/compensation";
 import type { Db } from "@/lib/db";
+import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
 
 /**
  * Resolve a profile against live data, returning effective contribs + salaries.
@@ -58,14 +59,8 @@ export function resolveProfile<
   const accountActiveFields =
     contribActiveFieldsRoot.contributionAccounts ?? {};
 
-  // Apply contribution account active fields — same no-fallback,
-  // unconditional-merge, exclude-if-absent rule as applyContribActiveFields
-  // (the single source of truth for how active fields merge onto a row; a
-  // second hand-rolled copy of this logic here is exactly the kind of drift
-  // that let this one differ — filtering merged fields by `field in c` — from
-  // that one, which does a full merge). An account with no active-field
-  // entry under this profile has no value anywhere and is excluded, not
-  // passed through with a stale/absent value.
+  // The merge applyContribActiveFields does: an account with no value in
+  // this profile has none anywhere, so it is excluded.
   const activeContribs = liveContribs
     .map((c) => {
       const activeFields = accountActiveFields[String(c.id)];
@@ -77,7 +72,7 @@ export function resolveProfile<
         return null;
       return {
         ...c,
-        ...activeFields,
+        ...entryWithMergedRate(c, activeFields),
         fromBonus: activeFields.fromBonus === true,
       } as C & {
         contributionValue: string | number;
@@ -172,7 +167,7 @@ export function applyContribActiveFields(
         return null;
       return {
         ...row,
-        ...activeFields,
+        ...entryWithMergedRate(row, activeFields),
         // An overlay layer that doesn't set it keeps the first layer's.
         fromBonus:
           (activeFields.fromBonus ??

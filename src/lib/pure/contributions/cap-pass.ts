@@ -11,7 +11,7 @@ import {
 } from "@/lib/config/account-types";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
 import { sumBy } from "@/lib/utils/math";
-import { computeGroupedEmployerMatch } from "./employer-match";
+import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {
   type JobRef,
   type JobSalaryRef,
@@ -45,8 +45,7 @@ export type CapPassHousehold = Omit<
   "activeJobs" | "jobSalaries"
 >;
 
-/** The fields of an effective contribution row the pass reads — DB rows,
- *  profile- and sandbox-resolved rows and engine input rows all fit. */
+/** The fields of an effective row the pass reads (DB, profile, sandbox, engine rows). */
 export type CapPassRow = {
   id: number;
   personId: number | null;
@@ -60,6 +59,7 @@ export type CapPassRow = {
   taxTreatment: string | null;
   employerMatchType: string | null;
   employerMatchValue: string | number | null;
+  employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | number | null;
   isPayrollDeducted?: boolean | null;
   fromBonus?: boolean;
@@ -81,6 +81,7 @@ const asContribRow = (c: CapPassRow): ContribRow => ({
   employerMatchType: c.employerMatchType,
   employerMatchValue:
     c.employerMatchValue == null ? null : String(c.employerMatchValue),
+  employerMatchRate: c.employerMatchRate,
   employerMaxMatchPct:
     c.employerMaxMatchPct == null ? null : String(c.employerMaxMatchPct),
   isPayrollDeducted: c.isPayrollDeducted,
@@ -116,6 +117,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
       salary: salaryById.get(c.id)!,
       employerMatchType: c.employerMatchType,
       employerMatchValue: Number(c.employerMatchValue ?? 0),
+      employerMatchRate: storedMatchRate(c.employerMatchRate),
       employerMaxMatchPct: Number(c.employerMaxMatchPct ?? 0),
       employerMatchTaxTreatment: "pre_tax" as const,
     }));
@@ -187,10 +189,8 @@ export function capEffectiveContribs<R extends CapPassRow>(
   });
 }
 
-/**
- * Cap a request's effective rows: each person's active job paid this
- * year's pay (thisYearJobPay — the same pay the request's figures use).
- */
+/** Cap a request's effective rows: each person's active job paid this
+ *  year's pay (thisYearJobPay, the same pay the request's figures use). */
 export function capForRequest<R extends CapPassRow>(
   rows: readonly R[],
   household: CapPassHousehold,

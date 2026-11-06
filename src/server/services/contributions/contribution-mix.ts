@@ -36,6 +36,7 @@ import {
   computeGroupedEmployerMatch,
   matchGroupKey,
   matchPayGroupsWithBonus,
+  storedMatchRate,
 } from "@/lib/pure/contributions/employer-match";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import {
@@ -72,8 +73,7 @@ export async function loadContributionMix(
     filterActiveJobs(allJobs, asOf),
     salaryMap,
   );
-  // Capped over all of a person's rows (a limit spans accounts), then the
-  // tracked ones.
+  // Capped over a person's rows (a limit spans accounts), then the tracked.
   const rows = capForRequest(
     effective,
     await loadCapHousehold(
@@ -170,6 +170,7 @@ export async function loadContributionMix(
       salary: matchPay,
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
+      employerMatchRate: storedMatchRate(c.employerMatchRate),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
       employerMatchTaxTreatment: c.employerMatchTaxTreatment,
     })),

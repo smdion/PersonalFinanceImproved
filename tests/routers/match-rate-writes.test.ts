@@ -364,3 +364,36 @@ describe("the profile entry write", () => {
     });
   });
 });
+
+describe("readers take the rate, and the whole percent when none is stored", () => {
+  it("a profile's match reads the account's rate; with none, its value", async () => {
+    const a = await percentAccount("50");
+    const p = await t.caller.contributionProfile.create({
+      name: "Invented plan",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [a]: {
+            contributionValue: "6",
+            contributionMethod: "percent_of_salary",
+          },
+        },
+        deductions: {},
+      },
+    });
+    const match = async () =>
+      (await t.caller.contributionProfile.list()).find((x) => x.id === p.id)!
+        .summary.annualEmployerMatch;
+    const setRate = (rate: string | null) =>
+      t.db
+        .update(sqliteSchema.contributionAccounts)
+        .set({ employerMatchRate: rate })
+        .where(eq(sqliteSchema.contributionAccounts.id, a))
+        .run();
+    const withRate = await match();
+    expect(withRate).toBeGreaterThan(0);
+    setRate(null);
+    expect(await match()).toBe(withRate);
+    setRate("0.25");
+    expect(await match()).toBeCloseTo(withRate / 2, 6);
+  });
+});

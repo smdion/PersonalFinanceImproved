@@ -6297,9 +6297,6 @@
   "src/server/services/contributions/paycheck-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/services/contributions/profile.ts": {
@@ -6307,7 +6304,7 @@
       "count": 10
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 11
     },
     "ratchet/no-history-comment": {
       "count": 5

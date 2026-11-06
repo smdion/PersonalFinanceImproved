@@ -9,6 +9,7 @@ import {
   matchPayGroupsWithBonus,
   matchGroupKey,
   computeGroupedEmployerMatch,
+  storedMatchRate,
 } from "./employer-match";
 import {
   jobPayFor,
@@ -20,10 +21,6 @@ import {
 } from "./contribution-rows";
 
 type PersonRef = { id: number; name: string };
-
-// ---------------------------------------------------------------------------
-// Per-record contribution spec builder with match redistribution
-// ---------------------------------------------------------------------------
 
 /** Output of buildContributionDisplaySpecs — per-record spec with match. */
 type ContribDisplaySpec = {
@@ -121,6 +118,7 @@ export function buildContributionDisplaySpecs(
       salary: salaryById.get(c.id)!,
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
+      employerMatchRate: storedMatchRate(c.employerMatchRate),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
       employerMatchTaxTreatment: "pre_tax", // not used by ContribDisplaySpec
     })),

@@ -10,17 +10,13 @@ import {
 } from "@/lib/config/account-types";
 import type { CapPassed } from "./contribution-caps";
 import { toNumber } from "@/lib/utils/numbers";
-import { computeGroupedEmployerMatch } from "./employer-match";
+import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {
   contribRowAmounts,
   type ContribRow,
   type JobRef,
   type JobSalaryRef,
 } from "./contribution-rows";
-
-// ---------------------------------------------------------------------------
-// Contribution aggregation by waterfall category
-// ---------------------------------------------------------------------------
 
 /** Per-category contribution totals with tax breakdown. */
 type ContribCategorySummary = {
@@ -106,6 +102,7 @@ export function aggregateContributionsByCategory(
       salary: salaryById.get(c.id)!,
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
+      employerMatchRate: storedMatchRate(c.employerMatchRate),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
       employerMatchTaxTreatment: "pre_tax", // not used by this aggregation
     })),

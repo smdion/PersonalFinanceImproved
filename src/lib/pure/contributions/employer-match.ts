@@ -12,6 +12,7 @@ import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
 import {
   fractionFromPercent,
   parseEmployerMatch,
+  type Fraction,
 } from "@/lib/pure/contributions/contribution-amount";
 
 /**
@@ -27,8 +28,15 @@ export function computeEmployerMatch(
   empContribMethod: ContributionMethod | "combined",
   empContribValue: number,
   salary: number,
+  /** The stored rate of a percent match; null: none stored. */
+  matchRate: Fraction | null = null,
 ): number {
-  const match = parseEmployerMatch(matchType, matchValue, maxMatchPct);
+  const match = parseEmployerMatch(
+    matchType,
+    matchValue,
+    maxMatchPct,
+    matchRate,
+  );
   if (match.kind === "none") return 0;
   if (match.kind === "flat") return match.perYear;
   if (salary <= 0) return 0;
@@ -37,6 +45,31 @@ export function computeEmployerMatch(
       ? fractionFromPercent(empContribValue)
       : empContribAnnual / salary;
   return salary * applyCeiling(empPct, match.capOfPay) * match.rate;
+}
+
+/** A stored rate as a Fraction; null where none is stored. */
+export function storedMatchRate(stored: unknown): Fraction | null {
+  if (stored == null || stored === "") return null;
+  const rate = Number(stored);
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a stored rate is a fraction
+  return Number.isFinite(rate) ? (rate as Fraction) : null;
+}
+
+/** A profile entry as it merges onto a row, its rate the one the merged row
+ *  carries: the entry's own; none when the entry has a value of its own but
+ *  no rate (that value is read); else the row's. */
+export function entryWithMergedRate(
+  row: object,
+  entry: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  const rate = Object.hasOwn(entry, "employerMatchRate")
+    ? entry["employerMatchRate"]
+    : Object.hasOwn(entry, "employerMatchValue")
+      ? null
+      : "employerMatchRate" in row
+        ? row.employerMatchRate
+        : null;
+  return { ...entry, employerMatchRate: rate ?? null };
 }
 
 /**
@@ -59,6 +92,10 @@ export type GroupableMatchRow = {
   salary: number;
   employerMatchType: string | null;
   employerMatchValue: number;
+  /** A percent match per contributed dollar, as stored (storedMatchRate);
+   *  null or absent: none stored. Not employerMatchRateByCategory (match
+   *  dollars as a share of total pay). */
+  employerMatchRate?: Fraction | null;
   /** Fraction (e.g. 0.06 for 6%), not a whole-number percent — matches how
    *  computeEmployerMatch already reads it. */
   employerMaxMatchPct: number;
@@ -213,6 +250,7 @@ export function computeGroupedEmployerMatch(
       "combined", // not "percent_of_salary" — see comment above
       0,
       winner.salary,
+      winner.employerMatchRate ?? null,
     );
 
     // The full match: the same formula with the group contributing at
@@ -229,6 +267,7 @@ export function computeGroupedEmployerMatch(
       "combined",
       0,
       winner.salary,
+      winner.employerMatchRate ?? null,
     );
 
     for (const m of members) {
