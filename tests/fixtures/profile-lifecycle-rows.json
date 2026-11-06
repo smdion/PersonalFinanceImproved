@@ -1,0 +1,3469 @@
+{
+  "contribution": [
+    {
+      "step": "start",
+      "outcome": null,
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": [],
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "create",
+      "outcome": {
+        "result": {
+          "id": 3,
+          "name": "Max the 401k",
+          "description": "every dollar the IRS allows",
+          "contributionActiveFields": {
+            "contributionAccounts": {
+              "1": {
+                "contributionValue": "12",
+                "contributionMethod": "percent_of_salary"
+              }
+            },
+            "deductions": {}
+          },
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Max the 401k",
+            "description": "every dollar the IRS allows",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "1": {
+                  "contributionValue": "12",
+                  "contributionMethod": "percent_of_salary"
+                }
+              },
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "create without a description or fields",
+      "outcome": {
+        "result": {
+          "id": 4,
+          "name": "Bare",
+          "description": null,
+          "contributionActiveFields": {
+            "contributionAccounts": {},
+            "deductions": {}
+          },
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Max the 401k",
+            "description": "every dollar the IRS allows",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "1": {
+                  "contributionValue": "12",
+                  "contributionMethod": "percent_of_salary"
+                }
+              },
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "create refuses a joint percent-of-salary account",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Joint accounts using percent-of-salary contributions must be linked to a specific job"
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate",
+      "outcome": {
+        "result": {
+          "id": 5,
+          "name": "Max the 401k (copy)",
+          "description": "every dollar the IRS allows",
+          "contributionActiveFields": {
+            "contributionAccounts": {
+              "1": {
+                "contributionValue": "12",
+                "contributionMethod": "percent_of_salary"
+              }
+            },
+            "deductions": {}
+          },
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Max the 401k",
+            "description": "every dollar the IRS allows",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "1": {
+                  "contributionValue": "12",
+                  "contributionMethod": "percent_of_salary"
+                }
+              },
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 5,
+            "name": "Max the 401k (copy)",
+            "description": "every dollar the IRS allows",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "1": {
+                  "contributionValue": "12",
+                  "contributionMethod": "percent_of_salary"
+                }
+              },
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate refuses a missing source",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Source profile not found"
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate refuses a joint percent-of-salary source",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Joint accounts using percent-of-salary contributions must be linked to a specific job"
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "setActive",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 3
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "setActive refuses a missing profile",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Profile not found"
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses the active profile",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete an inactive profile",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Max the 401k",
+            "description": "every dollar the IRS allows",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "1": {
+                  "contributionValue": "12",
+                  "contributionMethod": "percent_of_salary"
+                }
+              },
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses a missing profile",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Profile not found"
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses a profile a Plan uses",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Can't delete: used by Plan Keep Bare. Choose a different contribution profile in that Plan first."
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": [
+          {
+            "id": 1,
+            "name": "Keep Bare",
+            "description": null,
+            "budgetProfileId": null,
+            "contributionProfileId": 4,
+            "salaryProfileId": null,
+            "retirementProfileId": null,
+            "createdAt": "<timestamp>",
+            "updatedAt": "<timestamp>"
+          }
+        ],
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "setActive moves to another profile",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 4
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete the profile that was active",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete with the active id stored as a string",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Contribution settings as they stand",
+            "contributionActiveFields": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": "2"
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "setActive null clears the setting",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete profile 1 with no active profile",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses the last profile",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the only remaining Contribution Profile"
+        }
+      },
+      "rows": {
+        "contributionProfiles": "unchanged",
+        "plans": [],
+        "activeSettings": "unchanged"
+      }
+    }
+  ],
+  "salary": [
+    {
+      "step": "start",
+      "outcome": null,
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Routed",
+            "description": "extra checks go to savings",
+            "salaries": {
+              "1": {
+                "salary": 95000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": "2026-01-02",
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": {
+                  "rules": [
+                    {
+                      "from": "2026-01",
+                      "to": null,
+                      "splits": []
+                    }
+                  ],
+                  "overrides": [],
+                  "baseNetPayPerCheck": 2400.5,
+                  "baseYear": 2026,
+                  "yearlyGrowth": {}
+                }
+              },
+              "2": {
+                "salary": 40000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": [],
+        "savingsPlannedTransactions": [],
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "create",
+      "outcome": {
+        "result": {
+          "id": 3,
+          "name": "Raise",
+          "description": "after the promotion",
+          "salaries": {
+            "1": {
+              "salary": 110000,
+              "bonusPercent": 10,
+              "bonusMultiplier": 1,
+              "monthsInBonusYear": 12,
+              "bonusOverride": null,
+              "payPeriod": "biweekly",
+              "payWeek": "na",
+              "anchorPayDate": null,
+              "budgetPeriodsPerMonth": null,
+              "w4FilingStatus": "MFJ",
+              "w4Box2cChecked": false,
+              "additionalFedWithholding": 0,
+              "bonusMonth": null,
+              "bonusDayOfMonth": null,
+              "extraPaycheckRouting": null
+            }
+          },
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Routed",
+            "description": "extra checks go to savings",
+            "salaries": {
+              "1": {
+                "salary": 95000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": "2026-01-02",
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": {
+                  "rules": [
+                    {
+                      "from": "2026-01",
+                      "to": null,
+                      "splits": []
+                    }
+                  ],
+                  "overrides": [],
+                  "baseNetPayPerCheck": 2400.5,
+                  "baseYear": 2026,
+                  "yearlyGrowth": {}
+                }
+              },
+              "2": {
+                "salary": 40000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "create with no entries",
+      "outcome": {
+        "result": {
+          "id": 4,
+          "name": "Empty",
+          "description": null,
+          "salaries": {},
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Routed",
+            "description": "extra checks go to savings",
+            "salaries": {
+              "1": {
+                "salary": 95000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": "2026-01-02",
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": {
+                  "rules": [
+                    {
+                      "from": "2026-01",
+                      "to": null,
+                      "splits": []
+                    }
+                  ],
+                  "overrides": [],
+                  "baseNetPayPerCheck": 2400.5,
+                  "baseYear": 2026,
+                  "yearlyGrowth": {}
+                }
+              },
+              "2": {
+                "salary": 40000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Empty",
+            "description": null,
+            "salaries": {},
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "create refuses a filing status with no brackets",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "No tax bracket data found for filing status \"HOH\" (multiple jobs: true) for tax year 2026 \u2014 cannot save this entry for job 1."
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate clears extra-paycheck routing",
+      "outcome": {
+        "result": {
+          "id": 5,
+          "name": "Routed (copy)",
+          "description": "extra checks go to savings",
+          "salaries": {
+            "1": {
+              "salary": 95000,
+              "bonusPercent": 0,
+              "bonusMultiplier": 1,
+              "monthsInBonusYear": 12,
+              "bonusOverride": null,
+              "payPeriod": "biweekly",
+              "payWeek": "na",
+              "anchorPayDate": "2026-01-02",
+              "budgetPeriodsPerMonth": null,
+              "w4FilingStatus": "MFJ",
+              "w4Box2cChecked": false,
+              "additionalFedWithholding": 0,
+              "bonusMonth": null,
+              "bonusDayOfMonth": null,
+              "extraPaycheckRouting": null
+            },
+            "2": {
+              "salary": 40000,
+              "bonusPercent": 0,
+              "bonusMultiplier": 1,
+              "monthsInBonusYear": 12,
+              "bonusOverride": null,
+              "payPeriod": "biweekly",
+              "payWeek": "na",
+              "anchorPayDate": null,
+              "budgetPeriodsPerMonth": null,
+              "w4FilingStatus": "MFJ",
+              "w4Box2cChecked": false,
+              "additionalFedWithholding": 0,
+              "bonusMonth": null,
+              "bonusDayOfMonth": null,
+              "extraPaycheckRouting": null
+            }
+          },
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Routed",
+            "description": "extra checks go to savings",
+            "salaries": {
+              "1": {
+                "salary": 95000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": "2026-01-02",
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": {
+                  "rules": [
+                    {
+                      "from": "2026-01",
+                      "to": null,
+                      "splits": []
+                    }
+                  ],
+                  "overrides": [],
+                  "baseNetPayPerCheck": 2400.5,
+                  "baseYear": 2026,
+                  "yearlyGrowth": {}
+                }
+              },
+              "2": {
+                "salary": 40000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Empty",
+            "description": null,
+            "salaries": {},
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 5,
+            "name": "Routed (copy)",
+            "description": "extra checks go to savings",
+            "salaries": {
+              "1": {
+                "salary": 95000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": "2026-01-02",
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 40000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate refuses a missing source",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Source profile not found"
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "setActive",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 2
+          }
+        ]
+      }
+    },
+    {
+      "step": "setActive refuses a missing profile",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Profile not found"
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses the active profile",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete an inactive profile",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Routed",
+            "description": "extra checks go to savings",
+            "salaries": {
+              "1": {
+                "salary": 95000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": "2026-01-02",
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": {
+                  "rules": [
+                    {
+                      "from": "2026-01",
+                      "to": null,
+                      "splits": []
+                    }
+                  ],
+                  "overrides": [],
+                  "baseNetPayPerCheck": 2400.5,
+                  "baseYear": 2026,
+                  "yearlyGrowth": {}
+                }
+              },
+              "2": {
+                "salary": 40000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Empty",
+            "description": null,
+            "salaries": {},
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses a missing profile",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Profile not found"
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses a profile a Plan uses",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Can't delete: used by Plan Keep Raise. Choose a different salary profile in that Plan first."
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": [
+          {
+            "id": 1,
+            "name": "Keep Raise",
+            "description": null,
+            "budgetProfileId": null,
+            "contributionProfileId": null,
+            "salaryProfileId": 3,
+            "retirementProfileId": null,
+            "createdAt": "<timestamp>",
+            "updatedAt": "<timestamp>"
+          }
+        ],
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "setActive moves to another profile",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 3
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete the profile that was active",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Empty",
+            "description": null,
+            "salaries": {},
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete with the active id stored as a string",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 1,
+            "name": "Current",
+            "description": "Every salary follows its job record",
+            "salaries": {
+              "1": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              },
+              "2": {
+                "salary": 120000,
+                "bonusPercent": 0,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": "4"
+          }
+        ]
+      }
+    },
+    {
+      "step": "setActive null clears the setting",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete profile 1 with no active profile",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses the last profile",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the only remaining Salary Profile"
+        }
+      },
+      "rows": {
+        "salaryProfiles": "unchanged",
+        "plans": [],
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    }
+  ],
+  "retirement": [
+    {
+      "step": "start",
+      "outcome": null,
+      "rows": {
+        "retirementProfiles": [],
+        "retirementSettings": [],
+        "retirementProfilePeople": [],
+        "plans": [],
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "first settings save makes the first profile",
+      "outcome": {
+        "result": {
+          "id": 1,
+          "personId": 1,
+          "retirementAge": 62,
+          "endAge": 95,
+          "returnAfterRetirement": "0.05",
+          "annualInflation": "0.025",
+          "postRetirementInflation": null,
+          "salaryAnnualIncrease": "0.03",
+          "salaryCap": null,
+          "raisesDuringRetirement": false,
+          "ruleOf55Override": true,
+          "withdrawalRate": "0.04",
+          "taxMultiplier": "1.0",
+          "grossUpForTaxes": true,
+          "rothBracketTarget": "0.12",
+          "socialSecurityMonthly": "2500",
+          "ssStartAge": 67,
+          "enableRothConversions": false,
+          "rothConversionTarget": null,
+          "withdrawalStrategy": "fixed",
+          "discretionaryWithdrawalOrder": "roth_first",
+          "withdrawalRoutingMode": "bracket_filling",
+          "withdrawalOrder": null,
+          "withdrawalSplits": null,
+          "gkUpperGuardrail": "0.80",
+          "gkLowerGuardrail": "1.20",
+          "gkIncreasePct": "0.10",
+          "gkDecreasePct": "0.10",
+          "gkSkipInflationAfterLoss": true,
+          "sdAnnualDeclineRate": "0.02",
+          "cpWithdrawalPercent": "0.05",
+          "cpFloorPercent": "0.90",
+          "enWithdrawalPercent": "0.05",
+          "enRollingYears": 10,
+          "enFloorPercent": "0.90",
+          "vdBasePercent": "0.05",
+          "vdCeilingPercent": "0.05",
+          "vdFloorPercent": "0.025",
+          "rmdMultiplier": "1.0",
+          "vpwCap": null,
+          "vpwEndAge": null,
+          "cpSsInAmount": null,
+          "enSsInAmount": null,
+          "vdSsInAmount": null,
+          "rmdSsInAmount": null,
+          "vpwSsInAmount": null,
+          "rmdExcessHandling": "reinvest",
+          "rmdExcessTargetPerformanceAccountId": null,
+          "qcdMaximize": false,
+          "rmdSmoothingEnabled": false,
+          "rmdSmoothingMaxBracketTarget": null,
+          "enableIrmaaAwareness": false,
+          "gapYearStopSaving": false,
+          "gapYearDraws": true,
+          "irmaaOnTopOfBudget": false,
+          "enableAcaAwareness": false,
+          "householdSize": 2,
+          "filingStatus": null,
+          "profileId": 1,
+          "distributionTaxRateTraditional": null,
+          "distributionTaxRateRoth": null,
+          "distributionTaxRateHsa": null,
+          "distributionTaxRateBrokerage": null
+        }
+      },
+      "rows": {
+        "retirementProfiles": [
+          {
+            "id": 1,
+            "name": "Current Retirement",
+            "description": null,
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "retirementSettings": [
+          {
+            "id": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 1,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 2,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 1,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          }
+        ],
+        "retirementProfilePeople": [
+          {
+            "id": 1,
+            "profileId": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 2,
+            "profileId": 1,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 3,
+            "key": "active_retirement_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "duplicate",
+      "outcome": {
+        "result": {
+          "id": 2,
+          "name": "Retire at 60",
+          "description": "both stop early",
+          "taxParamsYear": null,
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "retirementProfiles": [
+          {
+            "id": 1,
+            "name": "Current Retirement",
+            "description": null,
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Retire at 60",
+            "description": "both stop early",
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "retirementSettings": [
+          {
+            "id": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 1,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 3,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 4,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          }
+        ],
+        "retirementProfilePeople": [
+          {
+            "id": 1,
+            "profileId": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 3,
+            "profileId": 2,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 4,
+            "profileId": 2,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate without a description",
+      "outcome": {
+        "result": {
+          "id": 3,
+          "name": "Later",
+          "description": null,
+          "taxParamsYear": null,
+          "createdAt": "<timestamp>"
+        }
+      },
+      "rows": {
+        "retirementProfiles": [
+          {
+            "id": 1,
+            "name": "Current Retirement",
+            "description": null,
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Retire at 60",
+            "description": "both stop early",
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 3,
+            "name": "Later",
+            "description": null,
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "retirementSettings": [
+          {
+            "id": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 1,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 3,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 4,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 5,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 3,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 6,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 3,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          }
+        ],
+        "retirementProfilePeople": [
+          {
+            "id": 1,
+            "profileId": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 3,
+            "profileId": 2,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 4,
+            "profileId": 2,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 5,
+            "profileId": 3,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 6,
+            "profileId": 3,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "duplicate refuses a source with no settings",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Source profile has no settings to clone."
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses the implicitly active (lowest id) one",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "make a profile active through the app setting",
+      "outcome": {
+        "result": {
+          "id": 4,
+          "key": "active_retirement_profile_id",
+          "value": 2
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 4,
+            "key": "active_retirement_profile_id",
+            "value": 2
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete refuses the active profile",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete an inactive profile and its rows",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "retirementProfiles": [
+          {
+            "id": 1,
+            "name": "Current Retirement",
+            "description": null,
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 2,
+            "name": "Retire at 60",
+            "description": "both stop early",
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "retirementSettings": [
+          {
+            "id": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 1,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 3,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 4,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          }
+        ],
+        "retirementProfilePeople": [
+          {
+            "id": 1,
+            "profileId": 1,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 3,
+            "profileId": 2,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 4,
+            "profileId": 2,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses a missing profile",
+      "outcome": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "Profile not found"
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete refuses a profile a Plan uses",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Can't delete: used by Plan Keep first. Choose a different retirement profile in that Plan first."
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": [
+          {
+            "id": 1,
+            "name": "Keep first",
+            "description": null,
+            "budgetProfileId": null,
+            "contributionProfileId": null,
+            "salaryProfileId": null,
+            "retirementProfileId": 1,
+            "createdAt": "<timestamp>",
+            "updatedAt": "<timestamp>"
+          }
+        ],
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete with the active id stored as a string",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": [],
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 4,
+            "key": "active_retirement_profile_id",
+            "value": "1"
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete with a stale active id",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 4,
+            "key": "active_retirement_profile_id",
+            "value": 9999
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete the profile that was implicitly active",
+      "outcome": {
+        "result": {
+          "success": true
+        }
+      },
+      "rows": {
+        "retirementProfiles": [
+          {
+            "id": 2,
+            "name": "Retire at 60",
+            "description": "both stop early",
+            "taxParamsYear": null,
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "retirementSettings": [
+          {
+            "id": 3,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          },
+          {
+            "id": 4,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "returnAfterRetirement": "0.05",
+            "annualInflation": "0.025",
+            "postRetirementInflation": null,
+            "salaryAnnualIncrease": "0.03",
+            "salaryCap": null,
+            "raisesDuringRetirement": false,
+            "ruleOf55Override": true,
+            "withdrawalRate": "0.04",
+            "taxMultiplier": "1.0",
+            "grossUpForTaxes": true,
+            "rothBracketTarget": "0.12",
+            "socialSecurityMonthly": "2500",
+            "ssStartAge": 67,
+            "enableRothConversions": false,
+            "rothConversionTarget": null,
+            "withdrawalStrategy": "fixed",
+            "discretionaryWithdrawalOrder": "roth_first",
+            "withdrawalRoutingMode": "bracket_filling",
+            "withdrawalOrder": null,
+            "withdrawalSplits": null,
+            "gkUpperGuardrail": "0.80",
+            "gkLowerGuardrail": "1.20",
+            "gkIncreasePct": "0.10",
+            "gkDecreasePct": "0.10",
+            "gkSkipInflationAfterLoss": true,
+            "sdAnnualDeclineRate": "0.02",
+            "cpWithdrawalPercent": "0.05",
+            "cpFloorPercent": "0.90",
+            "enWithdrawalPercent": "0.05",
+            "enRollingYears": 10,
+            "enFloorPercent": "0.90",
+            "vdBasePercent": "0.05",
+            "vdCeilingPercent": "0.05",
+            "vdFloorPercent": "0.025",
+            "rmdMultiplier": "1.0",
+            "vpwCap": null,
+            "vpwEndAge": null,
+            "cpSsInAmount": null,
+            "enSsInAmount": null,
+            "vdSsInAmount": null,
+            "rmdSsInAmount": null,
+            "vpwSsInAmount": null,
+            "rmdExcessHandling": "reinvest",
+            "rmdExcessTargetPerformanceAccountId": null,
+            "qcdMaximize": false,
+            "rmdSmoothingEnabled": false,
+            "rmdSmoothingMaxBracketTarget": null,
+            "enableIrmaaAwareness": false,
+            "gapYearStopSaving": false,
+            "gapYearDraws": true,
+            "irmaaOnTopOfBudget": false,
+            "enableAcaAwareness": false,
+            "householdSize": 2,
+            "filingStatus": null,
+            "profileId": 2,
+            "distributionTaxRateTraditional": null,
+            "distributionTaxRateRoth": null,
+            "distributionTaxRateHsa": null,
+            "distributionTaxRateBrokerage": null
+          }
+        ],
+        "retirementProfilePeople": [
+          {
+            "id": 3,
+            "profileId": 2,
+            "personId": 1,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          },
+          {
+            "id": 4,
+            "profileId": 2,
+            "personId": 2,
+            "retirementAge": 62,
+            "endAge": 95,
+            "socialSecurityMonthly": "2500",
+            "socialSecurityPia": null,
+            "ssStartAge": 67,
+            "ruleOf55Override": null,
+            "salaryAnnualIncrease": null
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": [
+          {
+            "id": 2,
+            "key": "active_contrib_profile_id",
+            "value": 1
+          },
+          {
+            "id": 4,
+            "key": "active_retirement_profile_id",
+            "value": 2
+          },
+          {
+            "id": 1,
+            "key": "active_salary_profile_id",
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "step": "delete refuses the last profile",
+      "outcome": {
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the only remaining Retirement Profile"
+        }
+      },
+      "rows": {
+        "retirementProfiles": "unchanged",
+        "retirementSettings": "unchanged",
+        "retirementProfilePeople": "unchanged",
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    }
+  ]
+}
