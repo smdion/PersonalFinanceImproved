@@ -174,7 +174,7 @@ function salaryByYear(
 /** Year-end history mapped for the Milestones engine, plus the household's
  *  own goals and checklist. */
 async function loadMilestoneInputs(
-  db: Context["db"],
+  db: import("@/lib/db").Db,
   input: z.infer<typeof zYearEndTargeting>,
 ) {
   const asOfDate = new Date();
