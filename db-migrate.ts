@@ -1420,17 +1420,15 @@ const sqliteColumnNames = (sqlite: SqliteDb, table: string): string[] =>
     sqlite.prepare(`PRAGMA table_info("${table}")`).all() as { name: string }[]
   ).map((c) => c.name);
 
-/** Squash replay only: a table recreate (create `__new_X`, copy, drop X,
- *  rename) runs as a unit under a savepoint. It is skipped whole when one
- *  of its statements is already done or moved past, or when X has a column
- *  that a later migration adds and `__new_X` lacks (the database is past
- *  this recreate; running it would drop that column). Any other error
- *  stops the replay. */
+/** Squash replay only: a table recreate runs as a unit under a savepoint
+ *  and drops only the columns its own journal entry drops (`ownDrops`). It
+ *  is skipped whole when a statement is already done or X has another
+ *  column `__new_X` lacks; any other error stops the replay. */
 function replayRecreateSqlite(
   sqlite: SqliteDb,
   table: string,
   statements: string[],
-  addedLater: ReadonlySet<string>,
+  ownDrops: ReadonlySet<string>,
 ): void {
   sqlite.exec("SAVEPOINT replay_recreate");
   let skipped: string | null = null;
@@ -1438,7 +1436,7 @@ function replayRecreateSqlite(
     sqlite.exec(statements[0]!);
     const kept = new Set(sqliteColumnNames(sqlite, `__new_${table}`));
     const lost = sqliteColumnNames(sqlite, table).filter(
-      (c) => !kept.has(c) && addedLater.has(c),
+      (c) => !kept.has(c) && !ownDrops.has(c),
     );
     if (lost.length > 0) skipped = `would drop ${lost.join(", ")}`;
     else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
@@ -1462,7 +1460,6 @@ function replayStatementsSqlite(
   sql: string,
   migrationsFolder: string,
   idx: number,
-  latestIdx: number,
 ): void {
   const statements = sql
     .split("--> statement-breakpoint")
@@ -1480,17 +1477,21 @@ function replayStatementsSqlite(
         )
       : -1;
     if (table && end > i) {
+      // What this entry drops from the table: its snapshot's columns
+      // against the previous entry's.
       const own = new Set(snapshotColumns(migrationsFolder, idx).get(table));
-      const addedLater = new Set(
-        (snapshotColumns(migrationsFolder, latestIdx).get(table) ?? []).filter(
-          (c) => !own.has(c),
-        ),
+      const ownDrops = new Set(
+        idx > 0
+          ? (
+              snapshotColumns(migrationsFolder, idx - 1).get(table) ?? []
+            ).filter((c) => !own.has(c))
+          : [],
       );
       replayRecreateSqlite(
         sqlite,
         table,
         statements.slice(i, end + 1),
-        addedLater,
+        ownDrops,
       );
       i = end;
     } else
@@ -1655,13 +1656,7 @@ function handleSQLiteSquashUpgrade(
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
         convertSqlite(sqlite, entry.tag, "beforeSql");
-        replayStatementsSqlite(
-          sqlite,
-          sql,
-          migrationsFolder,
-          entry.idx,
-          journal.entries.at(-1)!.idx,
-        );
+        replayStatementsSqlite(sqlite, sql, migrationsFolder, entry.idx);
         convertSqlite(sqlite, entry.tag, "afterSql");
         sqlite
           .prepare(
