@@ -449,11 +449,11 @@ export async function buildEnginePayload(
     };
   });
 
-  // When a historical snapshot is selected, use its date as the reference point
-  const referenceDate = data.snapshotData?.snapshot.snapshotDate
+  // The plan's "as of" date: a selected historical snapshot's date, else today.
+  const asOfDate = data.snapshotData?.snapshot.snapshotDate
     ? new Date(data.snapshotData.snapshot.snapshotDate)
     : new Date();
-  const currentYear = referenceDate.getFullYear();
+  const currentYear = asOfDate.getFullYear();
 
   // Budget profile summaries (for budget override "from profile" UI) — each
   // linked item's dollar amount resolved through the same contribution-
@@ -501,7 +501,7 @@ export async function buildEnginePayload(
   // Salary comes from the Salary Profile (salaryProfileActiveMap, resolved
   // above); the Contribution Profile contributes no salary — the two are
   // independent.
-  const asOfDate = referenceDate;
+
   // Each person's current job, or the next one they start; its dates bound
   // the years it's worked (workingYearsByPerson, below).
   const activeJobs = projectionJobs(patchedJobs, asOfDate);
