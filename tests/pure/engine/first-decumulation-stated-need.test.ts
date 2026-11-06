@@ -193,3 +193,79 @@ describe("firstDecumulationYearStatedNeed", () => {
     expect(result.firstDecumulationYearStatedNeed).toBeCloseTo(81461.39, 2);
   });
 });
+
+describe("firstDecumulationYearStatedNeed when retirement starts before a full year", () => {
+  const firstRow = (input: ProjectionInput) => {
+    const result = calculateProjection(input);
+    const row = result.projectionByYear.find(
+      (y) => y.phase === "decumulation",
+    )!;
+    return { result, row };
+  };
+
+  it("retiring mid-year: the first decumulation year is next year, inflated one year", () => {
+    // As of March, retiring this year: this year finishes as a working year.
+    const { result, row } = firstRow(
+      makeInput({ retirementYear: AS_OF.getFullYear() }),
+    );
+    expect(row.year).toBe(AS_OF.getFullYear() + 1);
+    expect(result.firstDecumulationYearStatedNeed).toBe(73800); // 72,000 × 1.025
+  });
+
+  it("retiring mid-year, with an override on the first decumulation year: the override", () => {
+    const { result, row } = firstRow(
+      makeInput({
+        retirementYear: AS_OF.getFullYear(),
+        budgetOverrides: [{ year: AS_OF.getFullYear() + 1, value: 4000 }],
+      }),
+    );
+    expect(row.projectedExpenses).toBe(48000);
+    expect(result.firstDecumulationYearStatedNeed).toBe(48000);
+  });
+
+  it("already retired: this year is the first decumulation year, not inflated", () => {
+    const { result, row } = firstRow(
+      makeInput({ retirementYear: AS_OF.getFullYear() - 3 }),
+    );
+    expect(row.year).toBe(AS_OF.getFullYear());
+    expect(result.firstDecumulationYearStatedNeed).toBe(72000);
+  });
+
+  it("already retired, with an override this year: the override", () => {
+    const { result } = firstRow(
+      makeInput({
+        retirementYear: AS_OF.getFullYear() - 3,
+        budgetOverrides: [{ year: AS_OF.getFullYear(), value: 4000 }],
+      }),
+    );
+    expect(result.firstDecumulationYearStatedNeed).toBe(48000);
+  });
+
+  // Known Gap (v0.11, advisor A1 F3): the stated need re-derives the seed
+  // and skips one of its rules. An override in the retirement year (still
+  // a working year when retiring mid-year) stops the loop's ending cut in
+  // the first decumulation year, but not the stated need's: $51,660 here
+  // against the loop's $73,800. Fix: record the need from the seed the
+  // loop used (budget-only expenses after the override and ending blocks).
+  it.fails(
+    "v0.11 records the need from the seed: with an override in the retirement year and an ending the next, it equals the first year's budget-only expenses",
+    () => {
+      const { result, row } = firstRow(
+        makeInput({
+          retirementYear: AS_OF.getFullYear(),
+          budgetOverrides: [{ year: AS_OF.getFullYear(), value: 5000 }],
+          expenseEndings: [
+            {
+              year: AS_OF.getFullYear() + 1,
+              accumulation: 0,
+              decumulation: 0.3,
+            },
+          ],
+        }),
+      );
+      expect(result.firstDecumulationYearStatedNeed).toBe(
+        row.budgetOnlyExpenses,
+      );
+    },
+  );
+});

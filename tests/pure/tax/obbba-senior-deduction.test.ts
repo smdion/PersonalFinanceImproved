@@ -131,7 +131,18 @@ describe("computeObbbaSeniorDeduction", () => {
     ).toBe(0);
   });
 
-  it("is $0 when MAGI is undefined (no prior-year MAGI — decumulation year 1)", () => {
+  it("gives the full deduction for a known MAGI of $0 (known, not missing)", () => {
+    expect(
+      computeObbbaSeniorDeduction({
+        ...BASE,
+        seniorCount: 2,
+        magi: { kind: "known", value: 0 },
+        year: 2026,
+      }),
+    ).toBe(12000);
+  });
+
+  it("is $0 when MAGI is unknown (no prior-year MAGI — decumulation year 1)", () => {
     expect(
       computeObbbaSeniorDeduction({
         ...BASE,
