@@ -9,6 +9,8 @@ import "./setup-mocks";
 import { describe, it, expect, onTestFinished, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { zPaycheckSummaryInput } from "@/server/services/paycheck/summary";
+import { zContributionSummaryInput } from "@/server/services/contributions/summary";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -148,4 +150,21 @@ describe("stored active ids that the paths accept", () => {
       h.cleanup();
     }
   });
+});
+
+// summaryProfileIdsInput parses with the paycheck schema's id fields for
+// both summaries: the contribution schema must refuse the same ids.
+it("the paycheck and contribution summaries parse profile ids alike", () => {
+  const ids = [1, 0, -3, 2.5, Infinity, NaN, 2 ** 53, "7", null];
+  const verdicts = (schema: {
+    safeParse: (v: unknown) => { success: boolean };
+  }) =>
+    ids.flatMap((id) =>
+      (["contributionProfileId", "salaryProfileId"] as const).map(
+        (field) => schema.safeParse({ [field]: id }).success,
+      ),
+    );
+  expect(verdicts(zContributionSummaryInput)).toEqual(
+    verdicts(zPaycheckSummaryInput),
+  );
 });
