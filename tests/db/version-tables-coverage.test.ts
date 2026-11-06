@@ -12,12 +12,20 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { getTableName } from "drizzle-orm";
+import { getTableName, is } from "drizzle-orm";
+import { PgTable, getTableConfig as pgTableConfig } from "drizzle-orm/pg-core";
+import {
+  SQLiteTable,
+  getTableConfig as sqliteTableConfig,
+} from "drizzle-orm/sqlite-core";
 import * as pgSchema from "@/lib/db/schema-pg";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   VERSION_TABLES,
   VERSION_TABLE_NAMES,
   EXCLUDED_TABLES,
+  ADMIN_ONLY_RESTORE_TABLES,
+  VERSION_PREVIEW_WITHHELD_TABLES,
 } from "@/lib/db/version-tables";
 
 function allSchemaTableNames(): string[] {
@@ -81,4 +89,47 @@ describe("state-version table registry coverage", () => {
     }
     expect(violations).toEqual([]);
   });
+});
+
+// A non-admin's restore or import leaves the installation's tables to their
+// own handling; it truncates every other table with CASCADE on PostgreSQL.
+describe("tables a non-admin's restore keeps", () => {
+  it("are versioned and never previewed", () => {
+    expect(ADMIN_ONLY_RESTORE_TABLES.length).toBeGreaterThan(0);
+    for (const t of ADMIN_ONLY_RESTORE_TABLES) {
+      expect(VERSION_TABLE_NAMES, t).toContain(t);
+      expect(VERSION_PREVIEW_WITHHELD_TABLES, t).toContain(t);
+    }
+  });
+
+  /** Each foreign key in a dialect's schema, as "from -> to". */
+  function foreignKeys(dialect: "pg" | "sqlite"): string[] {
+    const edges: string[] = [];
+    const tables = Object.values(dialect === "pg" ? pgSchema : sqliteSchema);
+    for (const table of tables) {
+      const config = is(table, PgTable)
+        ? pgTableConfig(table)
+        : is(table, SQLiteTable)
+          ? sqliteTableConfig(table)
+          : null;
+      if (!config) continue;
+      for (const fk of config.foreignKeys)
+        edges.push(
+          `${config.name} -> ${getTableName(fk.reference().foreignTable)}`,
+        );
+    }
+    return edges;
+  }
+
+  it.each(["pg", "sqlite"] as const)(
+    "have no foreign key into or out of them (%s schema)",
+    (dialect) => {
+      const edges = foreignKeys(dialect);
+      expect(edges.length).toBeGreaterThan(0);
+      const touching = edges.filter((e) =>
+        e.split(" -> ").some((t) => ADMIN_ONLY_RESTORE_TABLES.includes(t)),
+      );
+      expect(touching).toEqual([]);
+    },
+  );
 });
