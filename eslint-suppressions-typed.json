@@ -741,7 +741,7 @@
   },
   "src/server/routers/contribution-profiles.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/routers/contribution.ts": {
@@ -806,7 +806,7 @@
   },
   "src/server/routers/salary-profiles.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 4
     }
   },
   "src/server/routers/savings.ts": {

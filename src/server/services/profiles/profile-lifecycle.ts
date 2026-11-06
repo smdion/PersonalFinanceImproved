@@ -1,6 +1,6 @@
-// Delete and make active for Contribution, Salary and
-// Retirement Profiles, each kind keeping its router's own rules (no
-// permission checks: each router keeps its procedure type).
+// Create, duplicate, delete and make active for Contribution, Salary and
+// Retirement Profiles, each kind keeping its router's own rules. Permission
+// checks stay in each router's procedure type.
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
@@ -10,6 +10,7 @@ import {
   canDeleteRetirementProfile,
   canDeleteSalaryProfile,
 } from "@/lib/pure/household/profiles";
+import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-profile";
 import {
   ACTIVE_SETTING_KEY,
@@ -19,6 +20,10 @@ import {
 import { upsertSetting } from "@/server/data/settings";
 
 export type LifecycleKind = "contribution" | "salary" | "retirement";
+
+type ContributionProfile = typeof schema.contributionProfiles.$inferSelect;
+type SalaryProfile = typeof schema.salaryProfiles.$inferSelect;
+type ContributionActiveFields = ContributionProfile["contributionActiveFields"];
 
 const CAN_DELETE = {
   contribution: canDeleteContribProfile,
@@ -76,6 +81,136 @@ const DELETE_ROWS: Record<
     });
   },
 };
+
+// ── create ──
+
+type NewProfile = { name: string; description?: string };
+
+export function createProfile(
+  db: Db,
+  kind: "contribution",
+  input: NewProfile & { contributionActiveFields: ContributionActiveFields },
+): Promise<ContributionProfile>;
+export function createProfile(
+  db: Db,
+  kind: "salary",
+  input: NewProfile & { salaries?: SalaryEntryMap },
+): Promise<SalaryProfile>;
+/** Add a profile holding exactly what it was given (Salary: no entries when
+ *  none are given, never copied from another profile). */
+export async function createProfile(
+  db: Db,
+  kind: "contribution" | "salary",
+  input: NewProfile & {
+    contributionActiveFields?: ContributionActiveFields;
+    salaries?: SalaryEntryMap;
+  },
+): Promise<ContributionProfile | SalaryProfile> {
+  if (kind === "contribution") {
+    const rows = await db
+      .insert(schema.contributionProfiles)
+      .values({
+        name: input.name,
+        description: input.description ?? null,
+        contributionActiveFields: input.contributionActiveFields,
+      })
+      .returning();
+    return rows[0]!;
+  }
+  const rows = await db
+    .insert(schema.salaryProfiles)
+    .values({
+      name: input.name,
+      description: input.description ?? null,
+      salaries: input.salaries ?? {},
+    })
+    .returning();
+  return rows[0]!;
+}
+
+// ── duplicate ──
+
+type DuplicateInput = { sourceProfileId: number; name: string };
+
+export function duplicateProfile(
+  db: Db,
+  kind: "contribution",
+  input: DuplicateInput,
+  checkCopy: (fields: ContributionActiveFields) => Promise<void>,
+): Promise<ContributionProfile>;
+export function duplicateProfile(
+  db: Db,
+  kind: "salary",
+  input: DuplicateInput,
+): Promise<SalaryProfile>;
+/** Add a new, inactive profile copied from another: Contribution verbatim
+ *  (after `checkCopy`), Salary with every entry's extra-paycheck routing
+ *  cleared. */
+export async function duplicateProfile(
+  db: Db,
+  kind: "contribution" | "salary",
+  input: DuplicateInput,
+  checkCopy?: (fields: ContributionActiveFields) => Promise<void>,
+): Promise<ContributionProfile | SalaryProfile> {
+  if (kind === "contribution") {
+    const source = await db
+      .select()
+      .from(schema.contributionProfiles)
+      .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
+      .then((r) => r[0]);
+    if (!source) throw sourceNotFound();
+
+    const contributionActiveFields = orEmpty(source.contributionActiveFields);
+    await checkCopy?.(contributionActiveFields);
+
+    const rows = await db
+      .insert(schema.contributionProfiles)
+      .values({
+        name: input.name,
+        description: source.description,
+        contributionActiveFields,
+      })
+      .returning();
+    return rows[0]!;
+  }
+
+  const source = await db
+    .select()
+    .from(schema.salaryProfiles)
+    .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
+    .then((r) => r[0]);
+  if (!source) throw sourceNotFound();
+
+  const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
+  const salaries: SalaryEntryMap = Object.fromEntries(
+    Object.entries(sourceSalaries).map(([jobId, entry]) => [
+      jobId,
+      { ...entry, extraPaycheckRouting: null },
+    ]),
+  );
+
+  const rows = await db
+    .insert(schema.salaryProfiles)
+    .values({
+      name: input.name,
+      description: source.description,
+      salaries,
+    })
+    .returning();
+  return rows[0]!;
+}
+
+/** A stored JSON `null` reads back as null although the column is NOT NULL. */
+function orEmpty<T extends object>(stored: T | null): T | Record<never, never> {
+  return stored ?? {};
+}
+
+function sourceNotFound(): TRPCError {
+  return new TRPCError({
+    code: "NOT_FOUND",
+    message: "Source profile not found",
+  });
+}
 
 // ── delete ──
 

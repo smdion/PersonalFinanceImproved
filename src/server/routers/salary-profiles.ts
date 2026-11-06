@@ -51,7 +51,9 @@ import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import {
+  createProfile,
   deleteProfile,
+  duplicateProfile,
   setActiveProfile,
 } from "@/server/services/profiles/profile-lifecycle";
 
@@ -379,16 +381,7 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
-
-      const rows = await ctx.db
-        .insert(schema.salaryProfiles)
-        .values({
-          name: input.name,
-          description: input.description ?? null,
-          salaries: input.salaries ?? {},
-        })
-        .returning();
-      return rows[0]!;
+      return createProfile(ctx.db, "salary", input);
     }),
 
   /**
@@ -413,36 +406,7 @@ export const salaryProfileRouter = createTRPCRouter({
         name: z.string().min(1).max(100),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const source = await ctx.db
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
-        .then((r) => r[0]);
-      if (!source)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Source profile not found",
-        });
-
-      const sourceSalaries = (source.salaries ?? {}) as SalaryEntryMap;
-      const salaries: SalaryEntryMap = Object.fromEntries(
-        Object.entries(sourceSalaries).map(([jobId, entry]) => [
-          jobId,
-          { ...entry, extraPaycheckRouting: null },
-        ]),
-      );
-
-      const rows = await ctx.db
-        .insert(schema.salaryProfiles)
-        .values({
-          name: input.name,
-          description: source.description,
-          salaries,
-        })
-        .returning();
-      return rows[0]!;
-    }),
+    .mutation(({ ctx, input }) => duplicateProfile(ctx.db, "salary", input)),
 
   update: contributionProfileProcedure
     .input(

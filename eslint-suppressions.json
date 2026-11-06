@@ -5921,7 +5921,7 @@
   },
   "src/server/routers/salary-profiles.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 5
     },
     "ratchet/max-comment-lines": {
       "count": 12

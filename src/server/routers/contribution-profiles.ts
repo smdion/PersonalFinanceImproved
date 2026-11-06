@@ -45,7 +45,9 @@ import {
 } from "@/lib/db/json-schemas";
 import type { Db } from "@/lib/db";
 import {
+  createProfile,
   deleteProfile,
+  duplicateProfile,
   setActiveProfile,
 } from "@/server/services/profiles/profile-lifecycle";
 
@@ -579,16 +581,7 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-
-      const rows = await ctx.db
-        .insert(schema.contributionProfiles)
-        .values({
-          name: input.name,
-          description: input.description ?? null,
-          contributionActiveFields: input.contributionActiveFields,
-        })
-        .returning();
-      return rows[0]!;
+      return createProfile(ctx.db, "contribution", input);
     }),
 
   /**
@@ -609,34 +602,11 @@ export const contributionProfileRouter = createTRPCRouter({
         name: z.string().min(1).max(100),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const source = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
-        .then((r) => r[0]);
-      if (!source)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Source profile not found",
-        });
-
-      const contributionActiveFields = source.contributionActiveFields ?? {};
-      await assertNoJointPercentOfSalaryWithoutJob(
-        ctx.db,
-        contributionActiveFields,
-      );
-
-      const rows = await ctx.db
-        .insert(schema.contributionProfiles)
-        .values({
-          name: input.name,
-          description: source.description,
-          contributionActiveFields,
-        })
-        .returning();
-      return rows[0]!;
-    }),
+    .mutation(({ ctx, input }) =>
+      duplicateProfile(ctx.db, "contribution", input, (fields) =>
+        assertNoJointPercentOfSalaryWithoutJob(ctx.db, fields),
+      ),
+    ),
 
   /**
    * Update an existing contribution profile.
