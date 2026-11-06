@@ -3,13 +3,38 @@
  * shared with PostgreSQL): each case runs on a fresh migrated database.
  */
 import "../routers/setup-mocks";
-import { describe } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
 
 describe("backup connections fence (SQLite)", () => {
   backupFenceCases(async () => {
+    const { rawDb, sqlite, cleanup } = await createTestCaller();
+    const columns = async (table: string) =>
+      sqlite
+        .prepare(`PRAGMA table_info("${table}")`)
+        .all()
+        .map((c) => (c as { name: string }).name);
+    return { db: rawDb, columns, done: cleanup };
+  });
+});
+
+describe("an installation table with no column lists", () => {
+  it("stops a non-admin's import rather than keeping it whole", async () => {
+    const { INSTALLATION_COLUMNS } = await import("@/lib/db/installation-rows");
+    const { exportBackup, importBackup } =
+      await import("@/lib/db/version-logic");
     const { rawDb, cleanup } = await createTestCaller();
-    return { db: rawDb, done: cleanup };
+    const listed = INSTALLATION_COLUMNS["api_connections"];
+    delete INSTALLATION_COLUMNS["api_connections"];
+    try {
+      const backup = await exportBackup(rawDb);
+      await expect(
+        importBackup(rawDb, backup, { asAdmin: false }),
+      ).rejects.toThrow("api_connections: no installation columns listed");
+    } finally {
+      INSTALLATION_COLUMNS["api_connections"] = listed!;
+      cleanup();
+    }
   });
 });

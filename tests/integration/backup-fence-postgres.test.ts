@@ -45,7 +45,14 @@ describe.skipIf(skipWithoutPostgres)(
       // Imported only after DATABASE_URL points at the test database: the db
       // module picks its dialect when it's first imported.
       const { db } = await import("@/lib/db");
-      return { db: db as never, done: () => {} };
+      const columns = async (table: string) =>
+        (
+          await admin.query<{ column_name: string }>(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1",
+            [table],
+          )
+        ).rows.map((r) => r.column_name);
+      return { db: db as never, columns, done: () => {} };
     });
   },
 );

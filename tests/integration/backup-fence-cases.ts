@@ -1,9 +1,10 @@
 /**
  * The connections fence on a backup import or version restore, shared by the
  * SQLite and PostgreSQL files: someone who isn't an admin keeps today's
- * credentials and sync state and takes the backup's links (mappings, skipped
- * categories, linked profile and column) with the backup's rows; an admin
- * takes the backup's connections whole. Each file supplies `fresh()`.
+ * credentials (config, server knowledge) and takes the backup's links
+ * (mappings, skipped categories, linked profile and column) and last sync
+ * time with the backup's rows; an admin takes the backup's connections
+ * whole. Each file supplies `fresh()`.
  *
  * Imports only types from the app: the PostgreSQL file must point
  * DATABASE_URL at its database before the db module is first imported.
@@ -17,8 +18,16 @@ type Db = NodePgDatabase<typeof Schema>;
 
 export interface FenceDb {
   db: Db;
+  /** The live table's column names. */
+  columns: (table: string) => Promise<string[]>;
   done: () => Promise<void> | void;
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** A whole second, so SQLite's seconds column gives it back unchanged. */
+const at = (iso: string) => new Date(iso);
+const daysAgo = (days: number) =>
+  new Date(Math.floor(Date.now() / 1000) * 1000 - days * DAY_MS);
 
 const notAdmin = { asAdmin: false };
 const admin = { asAdmin: true };
@@ -30,7 +39,12 @@ async function app() {
 }
 
 /** An invented asset, budget profile and connection set for one household. */
-async function household(db: Db, label: string, services: string[]) {
+async function household(
+  db: Db,
+  label: string,
+  services: string[],
+  lastSyncedAt: Date | null = null,
+) {
   const { schema } = await app();
   const [asset] = await db
     .insert(schema.otherAssetItems)
@@ -56,6 +70,7 @@ async function household(db: Db, label: string, services: string[]) {
       linkedProfileId: profile!.id,
       linkedColumnIndex: 0,
       serverKnowledge: label.length,
+      lastSyncedAt,
     });
   return { assetId: asset!.id, profileId: profile!.id };
 }
@@ -88,7 +103,7 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     const { db, done } = await fresh();
     try {
       const { schema, createVersion, restoreVersion } = await app();
-      await household(db, "Kept", ["ynab"]);
+      await household(db, "Kept", ["ynab"], at("2026-03-01T12:00:00Z"));
       const version = await createVersion(db, {
         name: "before",
         type: "manual",
@@ -103,6 +118,8 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         .update(schema.apiConnections)
         .set({
           config: { accessToken: "today-token", budgetId: "b-1" },
+          serverKnowledge: 99,
+          lastSyncedAt: at("2026-11-06T12:00:00Z"),
           accountMappings: [
             ...(ynab!.accountMappings ?? []),
             {
@@ -121,6 +138,8 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         accessToken: "today-token",
         budgetId: "b-1",
       });
+      expect(after!.serverKnowledge).toBe(99);
+      expect(after!.lastSyncedAt).toEqual(at("2026-03-01T12:00:00Z"));
       expect(await linkTargets(db)).toEqual(atVersion);
 
       // An asset created now may take the later asset's old id: unmapped.
@@ -141,12 +160,22 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     const { db, done } = await fresh();
     try {
       const { schema, exportBackup, importBackup } = await app();
-      await household(db, "Theirs", ["ynab", "sec"]);
+      await household(
+        db,
+        "Theirs",
+        ["ynab", "sec"],
+        at("2026-02-01T08:00:00Z"),
+      );
       const backup = JSON.parse(JSON.stringify(await exportBackup(db)));
 
       // Today: our own rows and credentials; sec isn't connected here.
       await db.delete(schema.apiConnections);
-      await household(db, "Ours", ["ynab", "actual"]);
+      await household(
+        db,
+        "Ours",
+        ["ynab", "actual"],
+        at("2026-11-01T08:00:00Z"),
+      );
 
       await importBackup(db, backup, notAdmin);
       const after = await connections(db);
@@ -163,11 +192,14 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         skippedCategoryIds: ["Theirs-category"],
         linkedColumnIndex: 0,
         serverKnowledge: "Ours".length,
+        lastSyncedAt: at("2026-02-01T08:00:00Z"),
       });
       expect(after.find((c) => c.service === "actual")).toMatchObject({
         accountMappings: null,
         skippedCategoryIds: null,
         linkedColumnIndex: null,
+        lastSyncedAt: null,
+        serverKnowledge: "Ours".length,
       });
     } finally {
       await done();
@@ -178,7 +210,12 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     const { db, done } = await fresh();
     try {
       const { schema, exportBackup, importBackup } = await app();
-      await household(db, "Theirs", ["ynab", "sec"]);
+      await household(
+        db,
+        "Theirs",
+        ["ynab", "sec"],
+        at("2026-02-01T08:00:00Z"),
+      );
       const backup = JSON.parse(JSON.stringify(await exportBackup(db)));
       const theirs = await connections(db);
       await db.delete(schema.apiConnections);
@@ -195,7 +232,12 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     const { db, done } = await fresh();
     try {
       const { schema, createVersion, restoreVersion } = await app();
-      await household(db, "Kept", ["ynab", "actual"]);
+      await household(
+        db,
+        "Kept",
+        ["ynab", "actual"],
+        at("2026-03-01T12:00:00Z"),
+      );
       const atVersion = await connections(db);
       const version = await createVersion(db, {
         name: "before",
@@ -207,6 +249,61 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
 
       await restoreVersion(db, version.id, admin);
       expect(await connections(db)).toEqual(atVersion);
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin restore takes SimpleFIN's last sync from the version, so today's sync runs and fetches the gap", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, createVersion, restoreVersion } = await app();
+      const { hasSyncedToday, transactionWindowStart } =
+        await import("@/lib/simplefin/sync");
+      const atVersion = daysAgo(30);
+      await household(db, "Kept", ["simplefin"], atVersion);
+      const version = await createVersion(db, {
+        name: "before",
+        type: "manual",
+        createdBy: "test",
+      });
+      await db
+        .update(schema.apiConnections)
+        .set({ lastSyncedAt: daysAgo(0) })
+        .where(eq(schema.apiConnections.service, "simplefin"));
+      expect(await hasSyncedToday(db as never)).toBe(true);
+
+      await restoreVersion(db, version.id, notAdmin);
+      const [after] = await connections(db);
+      expect(after!.lastSyncedAt).toEqual(atVersion);
+      expect(await hasSyncedToday(db as never)).toBe(false);
+      const now = new Date();
+      expect(
+        transactionWindowStart(after!.lastSyncedAt, now).getTime(),
+      ).toBeLessThanOrEqual(atVersion.getTime());
+    } finally {
+      await done();
+    }
+  });
+
+  it("every column of each installation table is kept or taken from the backup, never both", async () => {
+    const { columns, done } = await fresh();
+    try {
+      const { VERSION_TABLES } = await import("@/lib/db/version-tables");
+      const { INSTALLATION_COLUMNS } =
+        await import("@/lib/db/installation-rows");
+      const tables = VERSION_TABLES.filter((t) => t.scope === "installation");
+      expect(tables.length).toBeGreaterThan(0);
+      for (const { name } of tables) {
+        const listed = INSTALLATION_COLUMNS[name];
+        expect(listed, name).toBeDefined();
+        const sides = [...listed!.kept, ...listed!.fromBackup];
+        expect(new Set(sides).size, `${name}: a column on both lists`).toBe(
+          sides.length,
+        );
+        expect([...sides].sort(), name).toEqual((await columns(name)).sort());
+        expect(listed!.kept, name).toContain(listed!.key);
+      }
     } finally {
       await done();
     }
