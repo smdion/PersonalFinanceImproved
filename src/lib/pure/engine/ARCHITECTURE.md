@@ -97,7 +97,7 @@ projection-year-handlers/    one year of work
 8. `applyGrowth`
 9. `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`
 
-The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`../plan-outcome.ts`) judges the run.
+The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`lib/pure/retirement/plan-outcome.ts`) judges the run.
 
 ## Types
 

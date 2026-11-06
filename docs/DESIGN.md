@@ -68,6 +68,8 @@ Key concept → directory map:
 | Shared utilities        | `src/lib/utils/` (dates, formatting, math; no domain logic)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | DB schema               | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Shared server reads     | `src/server/data/` (one read per table or subject, shared by routers and services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Server services         | `src/server/services/<area>/`: composition that needs I/O (reads, then pure calculators), shared by routers                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -308,7 +310,7 @@ type XxxResult = { /* outputs */ warnings: string[]; };
 export function calculateXxx(input: XxxInput): XxxResult { ... }
 ```
 
-**tRPC routers** fetch from DB, convert strings via `toNumber()`, call calculators, return typed results.
+**tRPC routers** read through `src/server/data/` (shared reads) and `src/server/services/` (composition that needs I/O), convert strings via `toNumber()`, call calculators, return typed results.
 
 ### Key Calculators
 
@@ -896,18 +898,13 @@ tag in `MIGRATION_CONVERTERS` (`src/lib/db/migration-converters.ts`), it runs
 in the pending loop and both squash replays, before the tag's SQL when that
 drops what it reads, after it when that adds what it writes) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
-`transformV0810ProfileSets`; a registered converter through `convertBackup`,
-e.g. 0016's `employer_match_rate`). `db-migrate.ts` imports the converter from
+`transformV0810ProfileSets`). `db-migrate.ts` imports the converter from
 `src/` (esbuild bundles it into `db-migrate.js`, so the image needs neither
 `src/` nor the Next build): **one copy** serves both paths, as the
 reference-data reconcile, the demo-schema stamp and the versioned table list
 already do. Converters work
-on snake_case rows (JSON as object or text), are idempotent by storage (a
-squash replay runs them again, so they write only where their target, a new
-column or key, is still empty, and never decide by the value they read) and
-write only non-default values; each update names one row, and a value that
-isn't text, a finite number, a boolean, null or plain JSON stops the
-migration; the restore path
+on snake_case rows (JSON as object or text), are idempotent (a no-op once
+their source is gone) and write only non-default values; the restore path
 also drops the columns the migration drops. A migration that only renames
 or removes a JSON key, moving the value unchanged (no arithmetic, no lookup
 across rows; migration 0014), may instead be one SQL file per dialect plus a
