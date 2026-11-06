@@ -25,6 +25,7 @@ describe.each(profiles.map((p) => [p.slug, p] as const))(
           taxTreatment: ca.taxTreatment,
           employerMatchType: ca.employerMatchType,
           employerMatchValue: ca.employerMatchValue,
+          employerMatchRate: ca.employerMatchRate,
           employerMaxMatchPct: ca.employerMaxMatchPct,
           hsaCoverageType: ca.hsaCoverageType ?? null,
         });

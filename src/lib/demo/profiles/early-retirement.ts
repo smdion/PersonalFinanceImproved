@@ -182,7 +182,7 @@ export const earlyRetirementProfile: DemoProfile = {
       // the taxable brokerage below.
       contributionValue: "10",
       employerMatchType: "percent_of_contribution",
-      employerMatchValue: "100",
+      employerMatchRate: "1",
       employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) Mega",
     },

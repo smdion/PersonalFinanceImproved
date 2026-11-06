@@ -201,7 +201,7 @@ export const singleIncomeProfile: DemoProfile = {
       contributionMethod: "percent_of_salary",
       contributionValue: "10",
       employerMatchType: "percent_of_contribution",
-      employerMatchValue: "50",
+      employerMatchRate: "0.5",
       employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) - TechCorp",
     },

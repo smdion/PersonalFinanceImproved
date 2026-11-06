@@ -102,7 +102,10 @@ export type DemoProfile = {
     contributionMethod: string;
     contributionValue: string;
     employerMatchType: EmployerMatchType;
-    employerMatchValue: string | null;
+    /** Dollars, or a whole percent; a percent match may give its rate
+     *  instead, a fraction ("0.5" = 50%). */
+    employerMatchValue?: string | null;
+    employerMatchRate?: string | null;
     employerMaxMatchPct: string | null;
     /** accountLabel of the performance account to link to */
     perfAccountLabel?: string;
