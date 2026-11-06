@@ -11,7 +11,7 @@ import {
   redundantReturnRateIds,
   returnRateAtAge,
 } from "@/lib/pure/simulation/return-rate-breakpoints";
-import { assertNoPlanUses } from "@/server/services/profiles/plans";
+import { deleteProfile } from "@/server/services/profiles/profile-lifecycle";
 import { eq, ne, asc, and, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -53,11 +53,7 @@ import {
 } from "@/lib/config/account-types";
 import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
-import {
-  filterActiveJobs,
-  canDeleteRetirementProfile,
-} from "@/lib/pure/household/profiles";
-import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { strategyParamInputShape } from "@/lib/config/withdrawal-strategy-inputs";
 import { zDecimal } from "@/lib/utils/zod-fields";
@@ -1314,66 +1310,9 @@ export const retirementRouter = createTRPCRouter({
 
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(async ({ ctx, input }) => {
-        const activeSettingRows = await ctx.db
-          .select()
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_ACTIVE_RETIREMENT_PROFILE_ID));
-
-        const allProfiles = await ctx.db
-          .select({ id: schema.retirementProfiles.id })
-          .from(schema.retirementProfiles);
-        // The resolved active profile — with the setting unset (or stale) it
-        // is implicitly the lowest id, and deleting that one would silently
-        // switch the engine to another profile.
-        const activeId = resolveRetirementProfileIdFrom(
-          activeSettingRows,
-          allProfiles,
-        );
-
-        const deleteCheck = canDeleteRetirementProfile(
-          activeId,
-          input.id,
-          allProfiles.length,
-        );
-        if (!deleteCheck.allowed)
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: deleteCheck.reason ?? "This profile can't be deleted.",
-          });
-
-        if (!allProfiles.some((p) => p.id === input.id))
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Profile not found",
-          });
-
-        await assertNoPlanUses(ctx.db, "retirement", input.id);
-
-        // Explicit child-row cleanup, NOT relying on ON DELETE cascade.
-        // Both FKs declare cascade in schema-pg.ts, and Postgres (the
-        // production dialect) honours it — but the migration that added
-        // retirement_settings.profile_id used ALTER TABLE ADD COLUMN, and
-        // drizzle-kit's SQLite generator emits that form WITHOUT the ON
-        // DELETE clause — confirmed live: SQLite CREATE TABLE
-        // preserves it, ALTER TABLE ADD COLUMN silently drops it. Any
-        // SQLite-dialect install — which schema-sqlite.ts exists to
-        // support, not just tests — would fail this delete with a foreign
-        // key error instead of cascading. Deleting explicitly here is
-        // correct and harmless on both dialects.
-        await ctx.db.transaction(async (tx) => {
-          await tx
-            .delete(schema.retirementProfilePeople)
-            .where(eq(schema.retirementProfilePeople.profileId, input.id));
-          await tx
-            .delete(schema.retirementSettings)
-            .where(eq(schema.retirementSettings.profileId, input.id));
-          await tx
-            .delete(schema.retirementProfiles)
-            .where(eq(schema.retirementProfiles.id, input.id));
-        });
-        return { success: true };
-      }),
+      .mutation(({ ctx, input }) =>
+        deleteProfile(ctx.db, "retirement", input.id),
+      ),
   }),
 
   returnRates: createTRPCRouter({

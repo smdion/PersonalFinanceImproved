@@ -43,13 +43,13 @@ const SET_ACTIVE_PERMISSION: Record<PlanProfileKind, Permission | "admin"> = {
   retirement: "admin",
 };
 
-const ACTIVE_SETTING_KEY = {
+export const ACTIVE_SETTING_KEY = {
   contribution: SK_ACTIVE_CONTRIB_PROFILE_ID,
   salary: SK_ACTIVE_SALARY_PROFILE_ID,
   retirement: SK_ACTIVE_RETIREMENT_PROFILE_ID,
 } as const;
 
-const PROFILE_TABLE = {
+export const PROFILE_TABLE = {
   budget: schema.budgetProfiles,
   contribution: schema.contributionProfiles,
   salary: schema.salaryProfiles,

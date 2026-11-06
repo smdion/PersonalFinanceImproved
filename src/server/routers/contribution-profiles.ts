@@ -24,12 +24,10 @@ import {
 } from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
-import { assertNoPlanUses } from "@/server/services/profiles/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
-import { canDeleteContribProfile } from "@/lib/pure/household/profiles";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -45,9 +43,11 @@ import {
   contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
 } from "@/lib/db/json-schemas";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
-import { upsertSetting } from "@/server/data/settings";
+import {
+  deleteProfile,
+  setActiveProfile,
+} from "@/server/services/profiles/profile-lifecycle";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
@@ -823,41 +823,9 @@ export const contributionProfileRouter = createTRPCRouter({
    */
   delete: contributionProfileProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const activeSettingRows = await ctx.db
-        .select()
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
-      const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
-
-      const allProfiles = await ctx.db
-        .select({ id: schema.contributionProfiles.id })
-        .from(schema.contributionProfiles);
-
-      const deleteCheck = canDeleteContribProfile(
-        activeId,
-        input.id,
-        allProfiles.length,
-      );
-      if (!deleteCheck.allowed)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: deleteCheck.reason ?? "This profile can't be deleted.",
-        });
-
-      if (!allProfiles.some((p) => p.id === input.id))
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
-      await assertNoPlanUses(ctx.db, "contribution", input.id);
-
-      await ctx.db
-        .delete(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.id));
-      return { success: true };
-    }),
+    .mutation(({ ctx, input }) =>
+      deleteProfile(ctx.db, "contribution", input.id),
+    ),
 
   /**
    * Mark a profile as the globally-active one (or clear the setting with
@@ -883,25 +851,7 @@ export const contributionProfileRouter = createTRPCRouter({
    */
   setActive: contributionProfileProcedure
     .input(z.object({ id: z.number().nullable() }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.id === null) {
-        await ctx.db
-          .delete(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
-        return { success: true };
-      }
-
-      const [profile] = await ctx.db
-        .select({ id: schema.contributionProfiles.id })
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.id));
-      if (!profile)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
-      await upsertSetting(ctx.db, SK_ACTIVE_CONTRIB_PROFILE_ID, input.id);
-      return { success: true };
-    }),
+    .mutation(({ ctx, input }) =>
+      setActiveProfile(ctx.db, "contribution", input.id),
+    ),
 });
