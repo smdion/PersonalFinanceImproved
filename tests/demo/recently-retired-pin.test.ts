@@ -5,7 +5,7 @@
  * purpose re-pins the digest and counts in that commit.
  */
 import { createHash } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { seedProfile } from "@/server/routers/demo";
 import { DEMO_PROFILES } from "@/lib/demo";
@@ -51,6 +51,9 @@ const COUNTS = {
   savings_monthly: 24,
 };
 
+/** The day the pins were recorded: the seed dates rows from the clock. */
+const PINNED_DAY = new Date("2026-11-05T12:00:00Z");
+
 /** sha256 of today's rows (JSON, tables by name, rows in insert order). */
 const DIGEST =
   "fd2b505e9a50a2d309704bfc89e24877646a4020e1215eda1d211af6a9cfb02b";
@@ -84,6 +87,7 @@ describe("Recently Retired demo seed (pinned)", () => {
   let rows: Record<string, unknown[]>;
 
   beforeAll(async () => {
+    vi.useFakeTimers({ now: PINNED_DAY, toFake: ["Date"] });
     seeded = await createTestCaller();
     // From empty tables, as a demo schema starts (CREATE TABLE LIKE copies no rows).
     const { sqlite } = seeded;
@@ -100,7 +104,10 @@ describe("Recently Retired demo seed (pinned)", () => {
     rows = dump(sqlite);
   });
 
-  afterAll(() => seeded?.cleanup());
+  afterAll(() => {
+    vi.useRealTimers();
+    seeded?.cleanup();
+  });
 
   it("seeds today's row count in every table", () => {
     expect(
