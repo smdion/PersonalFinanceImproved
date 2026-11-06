@@ -213,7 +213,7 @@ function seniorDeduction(c: {
   const from: Year = c.year <= 2025 ? 2025 : 2026;
   return computeObbbaSeniorDeduction({
     seniorCount: c.seniors,
-    magi: c.magi,
+    magi: { kind: "known", value: c.magi },
     perPerson: limit(from, "obbba_senior_deduction_per_person"),
     phaseoutStart: limit(
       from,

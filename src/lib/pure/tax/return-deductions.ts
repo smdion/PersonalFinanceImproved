@@ -24,9 +24,9 @@
 type ObbbaSeniorDeductionInput = {
   /** Household members 65+ in the projection year this deduction applies to. */
   seniorCount: number;
-  /** Prior year's MAGI — the phaseout basis. Undefined in decumulation year 1
+  /** Prior year's MAGI — the phaseout basis. Unknown in decumulation year 1
    *  (no MAGI history exists yet) ⇒ $0 deduction that year only. */
-  magi: number | undefined;
+  magi: { kind: "known"; value: number } | { kind: "unknown" };
   /** $6,000/person per the statute — from `contribution_limits`
    *  (`obbba_senior_deduction_per_person`). Undefined ⇒ not seeded for this
    *  tax year ⇒ $0 (same convention as every other deduction figure here). */
@@ -69,13 +69,13 @@ export function computeObbbaSeniorDeduction(
     perPerson == null ||
     phaseoutStart == null ||
     phaseoutRate == null ||
-    magi == null ||
+    magi.kind === "unknown" ||
     sunsetYear == null ||
     year > sunsetYear
   ) {
     return 0;
   }
   const base = perPerson * seniorCount;
-  const reduction = phaseoutRate * Math.max(0, magi - phaseoutStart);
+  const reduction = phaseoutRate * Math.max(0, magi.value - phaseoutStart);
   return Math.max(0, base - reduction);
 }

@@ -459,16 +459,15 @@ export function runDecumulationYear(
   // OBBBA temporary senior deduction (2025-2028) — same injection point as
   // §63(f) above (folded in BEFORE routing/tax estimation runs; see
   // return-deductions.ts's docblock for why it can't be applied later).
-  // Uses LAST YEAR's MAGI (incomeHistory, not yet pushed for `year` at this
-  // point in the function) as the phaseout basis, the same 1-year-lag
-  // circularity-breaking pattern IRMAA's 2-year lookback uses further below.
-  // Decumulation year 1 has no prior year's income ⇒ $0 that year only, a
-  // deliberate, understood, self-healing gap (not a silent omission) —
-  // real accuracy resumes from year 2 on.
+  // Phaseout basis: LAST YEAR's MAGI (incomeHistory has no `year` entry yet),
+  // the 1-year lag IRMAA's lookback also uses. Decumulation year 1 has none:
+  // the MAGI is unknown ⇒ $0 that year only, by design.
   const lastYearIncome = incomeHistory.at(-1);
   const obbbaAddon = computeObbbaSeniorDeduction({
     seniorCount,
-    magi: lastYearIncome && yearMagi(lastYearIncome, "seniorDeduction"),
+    magi: lastYearIncome
+      ? { kind: "known", value: yearMagi(lastYearIncome, "seniorDeduction") }
+      : { kind: "unknown" },
     perPerson: taxRates.obbbaSeniorDeductionPerPerson,
     phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
     phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,

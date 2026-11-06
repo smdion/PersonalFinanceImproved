@@ -22,7 +22,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         year: 2026,
       }),
     ).toBe(6000);
@@ -33,7 +33,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 2,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         year: 2026,
       }),
     ).toBe(12000);
@@ -45,7 +45,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: 200000,
+        magi: { kind: "known", value: 200000 },
         year: 2026,
       }),
     ).toBe(3000);
@@ -56,7 +56,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: 250000,
+        magi: { kind: "known", value: 250000 },
         year: 2026,
       }),
     ).toBe(0);
@@ -67,7 +67,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: 1000000,
+        magi: { kind: "known", value: 1000000 },
         year: 2026,
       }),
     ).toBe(0);
@@ -84,7 +84,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 2,
-        magi: 300000,
+        magi: { kind: "known", value: 300000 },
         year: 2026,
       }),
     ).toBeGreaterThan(0);
@@ -92,7 +92,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 2,
-        magi: 350000,
+        magi: { kind: "known", value: 350000 },
         year: 2026,
       }),
     ).toBe(0);
@@ -103,7 +103,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         year: 2029,
       }),
     ).toBe(0);
@@ -114,7 +114,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         year: 2028,
       }),
     ).toBe(6000);
@@ -125,7 +125,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 0,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         year: 2026,
       }),
     ).toBe(0);
@@ -136,7 +136,7 @@ describe("computeObbbaSeniorDeduction", () => {
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 1,
-        magi: undefined,
+        magi: { kind: "unknown" },
         year: 2026,
       }),
     ).toBe(0);
@@ -146,7 +146,7 @@ describe("computeObbbaSeniorDeduction", () => {
     expect(
       computeObbbaSeniorDeduction({
         seniorCount: 1,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         perPerson: undefined,
         phaseoutStart: 150000,
         phaseoutRate: 0.06,
@@ -157,7 +157,7 @@ describe("computeObbbaSeniorDeduction", () => {
     expect(
       computeObbbaSeniorDeduction({
         seniorCount: 1,
-        magi: 100000,
+        magi: { kind: "known", value: 100000 },
         perPerson: 6000,
         phaseoutStart: 150000,
         phaseoutRate: 0.06,
