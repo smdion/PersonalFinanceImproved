@@ -3,19 +3,10 @@ import { z } from "zod/v4";
 import { asc, eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateMortgage } from "@/lib/pure/debts/mortgage";
-import {
-  buildMortgageInputs,
-  getActiveMortgageLoan,
-} from "@/lib/pure/debts/mortgage-balance";
-import { toNumber } from "@/lib/utils/numbers";
-import type {
-  MortgageInput,
-  MortgageWhatIf,
-} from "@/lib/pure/debts/mortgage.types";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/data/delete-references";
 import { firstRow } from "@/lib/utils/first-row";
+import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
 
 // --- CRUD Zod schemas ---
 
@@ -58,56 +49,9 @@ const mortgageExtraPaymentInput = z.object({
 });
 
 export const mortgageRouter = createTRPCRouter({
-  computeActiveSummary: protectedProcedure.query(async ({ ctx }) => {
-    const [loans, extraPayments, whatIfRows] = await Promise.all([
-      ctx.db
-        .select()
-        .from(schema.mortgageLoans)
-        .orderBy(asc(schema.mortgageLoans.id)),
-      ctx.db
-        .select()
-        .from(schema.mortgageExtraPayments)
-        .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-      ctx.db
-        .select()
-        .from(schema.mortgageWhatIfScenarios)
-        .orderBy(asc(schema.mortgageWhatIfScenarios.sortOrder)),
-    ]);
-
-    const { loanInputs, extras } = buildMortgageInputs(loans, extraPayments);
-
-    const whatIfScenarios: MortgageWhatIf[] = whatIfRows.map((s) => ({
-      id: s.id,
-      label: s.label,
-      extraMonthlyPrincipal: toNumber(s.extraMonthlyPrincipal),
-      extraOneTimePayment: toNumber(s.extraOneTimePayment),
-      refinanceRate: s.refinanceRate ? toNumber(s.refinanceRate) : undefined,
-      refinanceTerm: s.refinanceTerm ?? undefined,
-      loanId: s.loanId ?? undefined,
-    }));
-
-    const input: MortgageInput = {
-      loans: loanInputs,
-      extraPayments: extras,
-      whatIfScenarios,
-      asOfDate: ctx.scope.asOf,
-    };
-
-    const result = calculateMortgage(input);
-    const activeLoan = getActiveMortgageLoan(loans);
-    const activeLoanResult = activeLoan
-      ? (result.loans.find((r) => r.loanId === activeLoan.id) ??
-        result.loans[0])
-      : result.loans[0];
-
-    return {
-      loans,
-      result,
-      whatIfScenarios: whatIfRows,
-      activeLoanId: activeLoan?.id ?? null,
-      activeLoanResult: activeLoanResult ?? null,
-    };
-  }),
+  computeActiveSummary: protectedProcedure.query(({ ctx }) =>
+    computeMortgageActiveSummary(ctx),
+  ),
 
   mortgageLoans: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>

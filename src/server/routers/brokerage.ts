@@ -15,6 +15,7 @@ import {
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
+import { listBrokerageGoals } from "@/server/data/brokerage-goals";
 
 /** Positive decimal amount — brokerage goal targets must be > 0. */
 const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
@@ -22,25 +23,7 @@ const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
 export const brokerageRouter = createTRPCRouter({
   // ══ GOALS ══
 
-  listGoals: protectedProcedure.query(async ({ ctx }) => {
-    const goals = await ctx.db
-      .select()
-      .from(schema.brokerageGoals)
-      .where(eq(schema.brokerageGoals.isActive, true))
-      .orderBy(
-        asc(schema.brokerageGoals.targetYear),
-        asc(schema.brokerageGoals.priority),
-      );
-    return goals.map((g) => ({
-      id: g.id,
-      name: g.name,
-      targetAmount: toNumber(g.targetAmount),
-      targetYear: g.targetYear,
-      priority: g.priority,
-      isActive: g.isActive,
-      notes: g.notes,
-    }));
-  }),
+  listGoals: protectedProcedure.query(({ ctx }) => listBrokerageGoals(ctx)),
 
   createGoal: brokerageProcedure
     .input(

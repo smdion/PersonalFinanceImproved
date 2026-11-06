@@ -13,7 +13,7 @@ import { compositionBucketSchema } from "@/lib/config/enum-values.schema";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { WriteStopped } from "@/lib/budget-api/errors";
-import { loadHoldingsOverview } from "./holdings-overview";
+import { loadHoldingsOverview } from "@/server/services/investments/holdings-overview";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 

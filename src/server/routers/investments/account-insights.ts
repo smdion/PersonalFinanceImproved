@@ -27,7 +27,7 @@ import {
   loadLatestHoldings,
   loadBalanceHistory,
 } from "@/server/data/investments";
-import { valueHoldings } from "./holdings-overview";
+import { valueHoldings } from "@/server/services/investments/holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
   getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {

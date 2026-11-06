@@ -5674,20 +5674,6 @@
       "count": 1
     }
   },
-  "src/server/routers/investments/holdings-overview.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/routers/investments/suggestions.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -5706,7 +5692,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
   "src/server/routers/networth.ts": {
@@ -6059,6 +6045,11 @@
       "count": 2
     }
   },
+  "src/server/services/advice/milestone-inputs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/server/services/budget/account-balances.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
@@ -6212,6 +6203,20 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/services/investments/holdings-overview.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
