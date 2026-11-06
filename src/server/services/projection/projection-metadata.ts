@@ -1,5 +1,16 @@
 /** The parts of a projection response that need no engine run: what the
  *  Retirement, tax and brokerage pages read beside the result. */
+import { calendarYear } from "@/lib/utils/date";
+import { jobYearsNote } from "@/lib/pure/household/profiles";
+import { DEFAULT_RETURN_RATE } from "@/lib/constants";
+import { buildAccumulationOrder } from "@/lib/pure/contributions/accumulation-order";
+import { computeCurrentStockAllocationPercent } from "@/lib/pure/simulation/stock-share";
+import { toNumber } from "@/lib/utils/numbers";
+import {
+  getAllCategories,
+  categoriesWithTaxPreference,
+} from "@/lib/config/account-types";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import {
   strategyParamFields,
@@ -9,10 +20,9 @@ import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import type { prepareProjectionRun } from "@/server/services/projection/projection-run";
 
+type Run = Awaited<ReturnType<typeof prepareProjectionRun>>;
 /** A built payload (not null), notConfigured or ready. */
-type Payload = NonNullable<
-  Awaited<ReturnType<typeof prepareProjectionRun>>["payload"]
->;
+type Payload = NonNullable<Run["payload"]>;
 
 /** A settings row's strategy param columns, as stored. */
 function pickStrategyParamColumns<
@@ -166,5 +176,176 @@ export function projectionSettings(payload: Payload) {
     filingStatus,
     filingStatusExplicit: settings.filingStatus ?? null,
     standardDeduction: distributionTaxRates.standardDeduction ?? null,
+  };
+}
+
+/** The return-rate schedule by age, and its rates at and around retirement. */
+function returnRateSummary(
+  relevantReturnRates: Payload["relevantReturnRates"],
+  planRetirementAge: number,
+) {
+  const schedule = relevantReturnRates.map((r) => {
+    const ageMatch = r.label.match(/(\d+)/);
+    return { age: ageMatch ? Number(ageMatch[1]) : 0, rate: r.rate };
+  });
+  const accRates = schedule.filter((r) => r.age <= planRetirementAge);
+  return {
+    currentRate: schedule[0]?.rate ?? null,
+    retirementRate:
+      schedule.find((r) => r.age === planRetirementAge)?.rate ?? null,
+    postRetirementRate:
+      schedule.find((r) => r.age === planRetirementAge + 1)?.rate ?? null,
+    avgAccumulation:
+      accRates.length > 0
+        ? sumBy(accRates, (r) => r.rate) / accRates.length
+        : DEFAULT_RETURN_RATE,
+    schedule,
+  };
+}
+
+/** Everything in a projection response but the engine result, from a
+ *  built run (ready or notConfigured). */
+export function projectionMetadata(data: Run["data"], payload: Payload) {
+  const {
+    primaryPerson,
+    people,
+    activeContribs,
+    age,
+    planRetirementAge,
+    totalCompensation,
+    portfolioByTaxType,
+    portfolioByTaxTypeByParentCat,
+    portfolioByAccount,
+    accountOwnersByCategory,
+    ownershipByPerson,
+    accountBreakdownByCategory,
+    contribByCategory,
+    employerMatchByCategory,
+    salaryByPerson,
+    salaryOverrideRows,
+    budgetOverrideRows,
+    perPersonSettings,
+    budgetProfileSummaries,
+    selectedScenario,
+    relevantReturnRates,
+    displayContribRate,
+    annualExpensesVal,
+    accumulationExpenses,
+    decumulationExpenses,
+    accProfile,
+    accCol,
+    decProfile,
+    decCol,
+    irsGroupLimits,
+    rothConversionPresets,
+    baseEngineInput,
+  } = payload;
+  // Plan health inputs — derived inputs
+  // the PlanHealthCard needs for contribution-order and glide-path
+  // warnings. Implementation lives in accumulation-order.ts and stock-share.ts.
+  const accumulationOrder = buildAccumulationOrder(activeContribs);
+  const currentStockAllocationPercent = computeCurrentStockAllocationPercent(
+    data,
+    age,
+  );
+  // portfolioAccountLabel wants id → name, for the contributionSpecs
+  // perf-account-label fallback below.
+  const nameMap = new Map(people.map((p) => [p.id, p.name] as const));
+
+  return {
+    /** Job start/end dates the projection counts in whole years. */
+    jobYearsNote: jobYearsNote(
+      baseEngineInput.workingYearsByPerson ?? {},
+      (id) => nameMap.get(id) ?? "",
+    ),
+    planHealth: {
+      currentAge: age,
+      accumulationOrder,
+      currentStockAllocationPercent,
+    },
+    combinedSalary: roundToCents(totalCompensation),
+    /** Each limit group's household limit, shared limits counted once. */
+    irsGroupLimits,
+    portfolioByTaxType,
+    portfolioByTaxTypeByParentCat,
+    portfolioByAccount,
+    accountOwnersByCategory,
+    ownershipByPerson,
+    accountBreakdownByCategory,
+    /** Per-account contribution specs used for projection (shared helper) */
+    contributionSpecs: projectionContributionSpecs(payload, nameMap),
+    /** Real-world contribution data derived from active paycheck/contribution accounts */
+    realDefaults: {
+      contributionRate: displayContribRate,
+      taxSplits: Object.fromEntries(
+        categoriesWithTaxPreference().map((cat) => [
+          cat,
+          contribByCategory[cat].rothFraction,
+        ]),
+      ),
+      annualByCategory: Object.fromEntries(
+        getAllCategories().map((cat) => [cat, contribByCategory[cat].annual]),
+      ),
+      employerMatchByCategory,
+    },
+    people: people.map((p) => ({
+      id: p.id,
+      name: p.name,
+      birthYear: calendarYear(p.dateOfBirth),
+    })),
+    selectedScenario: selectedScenario
+      ? {
+          distributionTaxRateTraditional:
+            selectedScenario.distributionTaxRateTraditional,
+          distributionTaxRateRoth: selectedScenario.distributionTaxRateRoth,
+          distributionTaxRateBrokerage:
+            selectedScenario.distributionTaxRateBrokerage,
+        }
+      : null,
+    returnRateSummary: returnRateSummary(
+      relevantReturnRates,
+      planRetirementAge,
+    ),
+    /** DB-stored overrides for salary/budget CRUD in the UI */
+    dbSalaryOverrides: salaryOverrideRows.map((o) => ({
+      id: o.id,
+      personId: o.personId,
+      projectionYear: o.projectionYear,
+      overrideSalary: toNumber(o.overrideSalary),
+      contributionProfileId: o.contributionProfileId ?? null,
+      salaryProfileId: o.salaryProfileId ?? null,
+      notes: o.notes,
+    })),
+    salaryByPerson,
+    dbBudgetOverrides: budgetOverrideRows
+      .filter((o) => o.personId === primaryPerson.id)
+      .map((o) => ({
+        id: o.id,
+        personId: o.personId,
+        projectionYear: o.projectionYear,
+        overrideMonthlyBudget: toNumber(o.overrideMonthlyBudget),
+        notes: o.notes,
+      })),
+    primaryPersonId: primaryPerson.id,
+    settings: projectionSettings(payload),
+    perPersonSettings,
+    annualExpenses: annualExpensesVal,
+    accumulationBudgetProfileId: accProfile?.id ?? null,
+    accumulationBudgetColumn: accCol,
+    decumulationBudgetProfileId: decProfile?.id ?? null,
+    decumulationBudgetColumn: decCol,
+    accumulationExpenses,
+    decumulationExpenses,
+    budgetProfileSummaries,
+    /** Unique bracket rates from DB tax brackets for Roth conversion dropdown presets. */
+    rothConversionPresets,
+    /** Brokerage goals for the brokerage page */
+    brokerageGoals: data.brokerageGoalRows.map((g) => ({
+      id: g.id,
+      name: g.name,
+      targetAmount: toNumber(g.targetAmount),
+      targetYear: g.targetYear,
+      priority: g.priority,
+    })),
   };
 }

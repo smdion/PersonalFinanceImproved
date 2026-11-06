@@ -426,6 +426,7 @@ describe("projection router — computeProjection", () => {
       accumulationOverrides: [],
       decumulationOverrides: [],
     });
+    if (!("settings" in response)) throw new Error("no metadata");
     expect(response.result).not.toBeNull();
     expect(response.combinedSalary).toBe(120000);
     expect(response.people).toHaveLength(1);
@@ -479,6 +480,7 @@ describe("projection router — computeProjection", () => {
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
+      if (!("settings" in response)) throw new Error("no metadata");
       expect(response.settings?.rmdExcessTargetPerformanceAccountId).toBe(
         brokerage,
       );
