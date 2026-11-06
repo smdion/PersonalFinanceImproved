@@ -4387,6 +4387,17 @@
       "count": 1
     }
   },
+  "src/lib/pure/engine/input-validation.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/engine/obbba-senior-deduction.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -4474,14 +4485,11 @@
     }
   },
   "src/lib/pure/engine/projection.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-history-comment": {
-      "count": 5
+      "count": 4
     }
   },
   "src/lib/pure/engine/qcd.ts": {
