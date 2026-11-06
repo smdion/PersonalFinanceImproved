@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 90 routers.**
+**394 procedures across 94 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -625,6 +625,44 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsert`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 
+## `settings/contribution-accounts`
+
+| Procedure            | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| -------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`             | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `setActive`          | mutation | `adminProcedure`     | have the curated accountDetails/compareData view of an account, not every raw structural field. Deliberately separate from any profile-scoped mutation: this flag isn't profile-owned (it gates the acco |
+| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `update`             | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+
+## `settings/deductions`
+
+| Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`  | mutation | `contributionProfileProcedure` | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
+| `delete`  | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `list`    | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
+| `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
+
+## `settings/earnings`
+
+| Procedure | Kind     | Auth                           | Description                                                                                                      |
+| --------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `create`  | mutation | `contributionProfileProcedure` | Same permission level as deductions: structure only, the amount is the Salary Profile's.                         |
+| `delete`  | mutation | `adminProcedure`               | Also drops its amount from every Salary Profile, so no profile keeps an amount for a line that no longer exists. |
+| `list`    | query    | `protectedProcedure`           | (no description)                                                                                                 |
+| `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                 |
+
+## `settings/jobs`
+
+| Procedure | Kind     | Auth                 | Description      |
+| --------- | -------- | -------------------- | ---------------- |
+| `create`  | mutation | `adminProcedure`     | (no description) |
+| `delete`  | mutation | `adminProcedure`     | (no description) |
+| `list`    | query    | `protectedProcedure` | (no description) |
+| `update`  | mutation | `adminProcedure`     | (no description) |
+
 ## `settings/onboarding`
 
 | Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                              |
@@ -635,32 +673,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `isOnboardingComplete` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `testOidcConnection`   | query    | `publicProcedure`    | Test whether OIDC (Authentik) is configured and reachable. Checks env vars and fetches the issuer's well-known endpoint.                                                                                 |
 
-## `settings/paycheck`
+## `settings/people`
 
-| Procedure            | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| -------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `create`             | mutation | `contributionProfileProcedure` | Same permission level as deductions: structure only, the amount is the Salary Profile's.                                                                                                                 |
-| `create`             | mutation | `contributionProfileProcedure` | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
-| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `delete`             | mutation | `adminProcedure`               | Also drops its amount from every Salary Profile, so no profile keeps an amount for a line that no longer exists.                                                                                         |
-| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
-| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
-| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
-| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
-| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
-| `setActive`          | mutation | `adminProcedure`               | have the curated accountDetails/compareData view of an account, not every raw structural field. Deliberately separate from any profile-scoped mutation: this flag isn't profile-owned (it gates the acco |
-| `setPriorYearAmount` | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
+| Procedure | Kind     | Auth                 | Description      |
+| --------- | -------- | -------------------- | ---------------- |
+| `create`  | mutation | `adminProcedure`     | (no description) |
+| `delete`  | mutation | `adminProcedure`     | (no description) |
+| `list`    | query    | `protectedProcedure` | (no description) |
+| `update`  | mutation | `adminProcedure`     | (no description) |
 
 ## `settings/tax-data-sync`
 

@@ -808,7 +808,7 @@ export async function buildEnginePayload(
   // Per-person account types for limit aggregation.
   // A jobless row is "active" if it's tied to a currently-known person, OR
   // if personId is null — which (per the ownership/personId invariant
-  // enforced in settings/paycheck.ts) only ever means a joint account, not
+  // enforced in settings/contribution-accounts.ts) only ever means a joint account, not
   // a data error. Without the null case, joint jobless contributions
   // (e.g. a joint brokerage account with no linked job) would silently
   // drop out of activeContribs entirely once their personId is cleared,

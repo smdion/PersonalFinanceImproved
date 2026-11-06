@@ -6023,23 +6023,46 @@
       "count": 1
     }
   },
+  "src/server/routers/settings/contribution-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 8
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/routers/settings/deductions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/settings/earnings.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/server/routers/settings/jobs.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/server/routers/settings/onboarding.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/server/routers/settings/paycheck.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
-    },
+  "src/server/routers/settings/people.ts": {
     "ratchet/max-comment-lines": {
-      "count": 10
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
+      "count": 4
     }
   },
   "src/server/routers/settings/tax-data-sync.ts": {

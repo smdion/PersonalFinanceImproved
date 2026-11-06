@@ -196,7 +196,7 @@
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 407,
     "src/server/routers/settings/admin.ts": 412,
-    "src/server/routers/settings/paycheck.ts": 710,
+    "src/server/routers/settings/paycheck.ts": 13,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin/accounts.ts": 254,
     "src/server/routers/simplefin/index.ts": 24,

@@ -8,7 +8,7 @@
 import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { DEMO_PROFILES } from "@/lib/demo";
-import { contributionAccountInput } from "@/server/routers/settings/paycheck";
+import { contributionAccountInput } from "@/server/routers/settings/contribution-accounts";
 
 const profiles = Object.values(DEMO_PROFILES);
 

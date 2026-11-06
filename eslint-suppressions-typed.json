@@ -839,9 +839,14 @@
       "count": 5
     }
   },
-  "src/server/routers/settings/paycheck.ts": {
+  "src/server/routers/settings/contribution-accounts.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
+    }
+  },
+  "src/server/routers/settings/earnings.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/routers/sync/preview.ts": {

@@ -308,7 +308,7 @@ describe("settings.people CRUD", () => {
 // Every retirement_profiles row must hold a retirement_settings + a
 // retirement_profile_people row for every person. Person B has no such row
 // itself yet when the new person is created, so build-engine-payload has
-// nothing to invent one from -- settings/paycheck.ts's people.create fans a
+// nothing to invent one from -- settings/people.ts's people.create fans a
 // row into every EXISTING profile, sourced from that profile's primary
 // person, the same rule retirementProfiles.duplicate uses.
 

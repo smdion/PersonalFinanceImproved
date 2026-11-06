@@ -44,7 +44,7 @@ export function JobsSettings() {
   const { data: people } = trpc.settings.people.list.useQuery();
   const { data: rawData, isLoading } = trpc.settings.jobs.list.useQuery();
   // The auto-provisioned speculative job (a permanent peg for Salary
-  // Profile what-if scenarios, see settings/paycheck.ts's
+  // Profile what-if scenarios, see server/data/jobs.ts's
   // speculativeJobValues) isn't real employment history — it never
   // appears in the Employment Timeline or Jobs table, only in the Salary
   // Profile editor's job picker where it's actually used.

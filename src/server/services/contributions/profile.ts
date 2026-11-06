@@ -188,7 +188,7 @@ export function applyContribActiveFields(
  * hand-added hypothetical accounts. Negative `id`s so they can never
  * collide with a real autoincrement id; every field this app's calculators
  * actually read is filled in with the same defaults
- * `contributionAccountInput` (settings/paycheck.ts) would use for a
+ * `contributionAccountInput` (settings/contribution-accounts.ts) would use for a
  * freshly-created real row — no employer match, default tax treatment for
  * the chosen account type. Exists once here so the paycheck and contribution
  * summaries and budget.ts can't each guess the defaults differently.

@@ -460,7 +460,7 @@ export default function PaycheckPage() {
                           }
                           // Only real job columns left: employerName and
                           // title (jobs.update's trimmed schema — see
-                          // settings/paycheck.ts). Household setup: admin.
+                          // settings/jobs.ts). Household setup: admin.
                           if (!setupEditable) return;
                           updateJob.mutate({
                             id: job.id,

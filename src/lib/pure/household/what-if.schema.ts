@@ -150,7 +150,7 @@ export const zSandboxContribActiveFields = z
  * `contribution_accounts` row exists yet, keyed by `personId` and appended
  * to that person's account list for the duration of the request only.
  * Deliberately minimal (account type, method, value) — the same fields
- * `contributionAccountInput` (settings/paycheck.ts) actually requires,
+ * `contributionAccountInput` (settings/contribution-accounts.ts) actually requires,
  * everything else (institution, label, employer match, sub-accounts) takes
  * that mutation's own defaults, same as a freshly-created real account
  * would have before anyone edits it further. `employerMatchType` defaults
