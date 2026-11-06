@@ -427,19 +427,6 @@ function importLinesOnly(
   return `rose +${rise.by} in a Mechanical: commit, which adds ${added} ${lines} across ${files.join(", ")} (a move or split rises by exactly those)`;
 }
 
-/**
- * Raises the owner approved whose trailer names only the ratchet file and
- * whose text names no entry; an entry goes once its commit is on main.
- */
-export const APPROVED_BEFORE_ENTRY_TRAILERS: Record<string, string[]> = {
-  e3768ddbe70c19c90d46273f6b222426c887c11d: [
-    "vitest.config.ts\0threshold statements",
-    "vitest.config.ts\0threshold branches",
-    "vitest.config.ts\0threshold functions",
-    "vitest.config.ts\0threshold lines",
-  ],
-};
-
 /** `This reverts commit <sha>` in a message → that sha. */
 const reverted = (message: string) =>
   /^This reverts commit ([0-9a-f]{7,40})\b/m.exec(message)?.[1];
@@ -468,7 +455,6 @@ export function checkRatchets(
     const mechanical = trailerValues(message, "Mechanical").length > 0;
     let read: Moves | undefined;
     const moves = () => (read ??= movesOf(git, sha));
-    const approved = APPROVED_BEFORE_ENTRY_TRAILERS[sha] ?? [];
     const undone = reverted(message);
     // A revert may put an entry back to its value before the reverted commit.
     let stillHigher: Set<string> | undefined;
@@ -485,12 +471,6 @@ export function checkRatchets(
       const renamedBy = renamedKeys.get(rise.id);
       if (renamedBy) {
         excused.push(`${where}, by "${KNOWN_RENAMED}: ${renamedBy.value}"`);
-        continue;
-      }
-      if (approved.includes(rise.id)) {
-        excused.push(
-          `${where}, by the owner's OK (named in check-ratchets.ts)`,
-        );
         continue;
       }
       if (stillHigher && !stillHigher.has(rise.id)) {
