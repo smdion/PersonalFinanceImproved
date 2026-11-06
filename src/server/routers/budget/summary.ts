@@ -3,7 +3,10 @@ import { protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getResolvedGoalAllocations } from "@/server/services/savings/savings-allocation";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
-import { resolveProfileSelection } from "@/server/services/profile-selection";
+import {
+  resolveProfileSelection,
+  summaryProfileIdsInput,
+} from "@/server/services/profile-selection";
 import { computePaycheckSummary } from "@/server/services/paycheck/summary";
 import {
   computeBudgetActiveSummary,
@@ -75,14 +78,10 @@ export const summaryProcedures = {
     // profile, since a budget column is a spending level, not a different
     // pay world. One computePaycheckSummary call (the summary the
     // Paycheck page shows), not a parallel re-derivation.
-    const paycheckData = await computePaycheckSummary(ctx, {
-      ...(activeProfiles.contribProfileId != null
-        ? { contributionProfileId: activeProfiles.contribProfileId }
-        : {}),
-      ...(activeProfiles.salaryProfileId != null
-        ? { salaryProfileId: activeProfiles.salaryProfileId }
-        : {}),
-    });
+    const paycheckData = await computePaycheckSummary(
+      ctx,
+      summaryProfileIdsInput(activeProfiles),
+    );
     const netMonthly = netMonthlyTakeHome(paycheckData);
 
     const rows: Array<

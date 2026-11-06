@@ -6,7 +6,10 @@ import type { RequestScope } from "@/server/data/request-scope";
 import { log } from "@/lib/logger";
 import { effectiveHighIncomeLine } from "@/lib/pure/paycheck/high-income-line";
 import { householdHighIncomeLine } from "@/server/services/paycheck/high-income-line";
-import { resolveProfileSelection } from "@/server/services/profile-selection";
+import {
+  resolveProfileSelection,
+  summaryProfileIdsInput,
+} from "@/server/services/profile-selection";
 import { computeContributionSummary } from "@/server/services/contributions/summary";
 import { computeSavingsSummary } from "@/server/services/savings/summary";
 import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
@@ -315,8 +318,7 @@ export async function activeMilestoneInput(ctx: {
   const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
   const portfolio = ctx.scope.can("portfolio");
   // Contributions need the profile ids the page sends; with none they're $0.
-  const { contribProfileId, salaryProfileId } =
-    await resolveProfileSelection(ctx);
+  const profileIds = summaryProfileIdsInput(await resolveProfileSelection(ctx));
   const [
     inputs,
     contributions,
@@ -328,12 +330,7 @@ export async function activeMilestoneInput(ctx: {
     line,
   ] = await Promise.all([
     loadMilestoneInputs(ctx.db, undefined),
-    computeContributionSummary(ctx, {
-      ...(contribProfileId != null
-        ? { contributionProfileId: contribProfileId }
-        : {}),
-      ...(salaryProfileId != null ? { salaryProfileId } : {}),
-    }),
+    computeContributionSummary(ctx, profileIds),
     computeSavingsSummary(
       ctx,
       typeof efundColumn === "number" && efundColumn >= 0

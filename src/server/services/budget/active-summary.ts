@@ -24,7 +24,10 @@ import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
-import { resolveProfileSelection } from "@/server/services/profile-selection";
+import {
+  resolveProfileSelection,
+  summaryProfileIdsInput,
+} from "@/server/services/profile-selection";
 import { computePaycheckSummary } from "@/server/services/paycheck/summary";
 
 export const zBudgetActiveSummaryInput = z
@@ -279,14 +282,7 @@ export async function computeBudgetActiveSummary(
   let netMonthlyIncome: number | null = null;
   try {
     const incomePaycheckData = await computePaycheckSummary(ctx, {
-      ...(profiles.contribProfileId != null
-        ? {
-            contributionProfileId: profiles.contribProfileId,
-          }
-        : {}),
-      ...(profiles.salaryProfileId != null
-        ? { salaryProfileId: profiles.salaryProfileId }
-        : {}),
+      ...summaryProfileIdsInput(profiles),
       ...(input?.sandboxSalaryEntries
         ? { sandboxSalaryEntries: input.sandboxSalaryEntries }
         : {}),

@@ -202,7 +202,7 @@
     "src/server/routers/sync/core.ts": 1117,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
-    "src/server/services/budget/active-summary.ts": 334,
+    "src/server/services/budget/active-summary.ts": 330,
     "src/server/services/budget/annual-expenses.ts": 59,
     "src/server/services/budget/linked-items.ts": 206,
     "src/server/services/contributions/account-edits.ts": 256,
@@ -945,7 +945,7 @@
       "syncNamesRouter.syncAllNames.mutation()": 159
     },
     "src/server/services/budget/active-summary.ts": {
-      "computeBudgetActiveSummary": 254
+      "computeBudgetActiveSummary": 247
     },
     "src/server/services/budget/linked-items.ts": {
       "resolveLinkedBudgetItemAmounts": 152
