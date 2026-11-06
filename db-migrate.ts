@@ -842,13 +842,8 @@ async function convertPg(
   tag: string,
   phase: "beforeSql" | "afterSql",
 ): Promise<void> {
-  for (const note of await runConverterPg(
-    client,
-    MIGRATION_CONVERTERS,
-    tag,
-    phase,
-  ))
-    log("info", "migration_conversion", { tag, note });
+  const run = await runConverterPg(client, MIGRATION_CONVERTERS, tag, phase);
+  if (run) log("info", "migration_conversion", { tag, ...run });
 }
 
 /**
@@ -1608,13 +1603,9 @@ function convertSqlite(
   tag: string,
   phase: "beforeSql" | "afterSql",
 ): void {
-  for (const note of runConverterSqlite(
-    sqlite,
-    MIGRATION_CONVERTERS,
-    tag,
-    phase,
-  ))
-    log("info", "migration_conversion", { tag, note, dialect: "sqlite" });
+  const run = runConverterSqlite(sqlite, MIGRATION_CONVERTERS, tag, phase);
+  if (run)
+    log("info", "migration_conversion", { tag, dialect: "sqlite", ...run });
 }
 
 /** The index names a SQLite database has, as assertSchemaComplete reads

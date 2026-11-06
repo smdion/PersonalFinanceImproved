@@ -900,8 +900,12 @@ restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
 `src/` nor the Next build): **one copy** serves both paths, as the
 reference-data reconcile, the demo-schema stamp and the versioned table list
 already do. Converters work
-on snake_case rows (JSON as object or text), are idempotent (a no-op once
-their source is gone) and write only non-default values; the restore path
+on snake_case rows (JSON as object or text), are idempotent by storage (a
+squash replay runs them again, so they write only where their target, a new
+column or key, is still empty, and never decide by the value they read) and
+write only non-default values; each update names one row, and a value that
+isn't text, a finite number, a boolean, null or plain JSON stops the
+migration; the restore path
 also drops the columns the migration drops. A migration that only renames
 or removes a JSON key, moving the value unchanged (no arithmetic, no lookup
 across rows; migration 0014), may instead be one SQL file per dialect plus a

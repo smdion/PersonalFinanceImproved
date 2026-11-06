@@ -12,23 +12,33 @@ export type RowUpdate = {
   readonly set: Readonly<Record<string, unknown>>;
 };
 
+export type ConverterResult = {
+  readonly updates: readonly RowUpdate[];
+  readonly notes: readonly string[];
+};
+
 export type DataConverter = {
   /** The tables it reads; one that doesn't exist reads as absent. */
   readonly tables: readonly string[];
   /** Before the tag's SQL (it drops what the converter reads) or after it
    *  (it adds what the converter writes). */
   readonly runs: "beforeSql" | "afterSql";
-  /** Idempotent: a no-op once its source is gone. */
-  readonly convert: (tables: ConverterTables) => {
-    readonly updates: readonly RowUpdate[];
-    readonly notes: readonly string[];
-  };
+  /** Idempotent by storage: a replay reruns it, so it writes only where its
+   *  new column or key is empty, never deciding by the value it reads (0.5
+   *  is both a whole percent and a fraction). */
+  readonly convert: (tables: ConverterTables) => ConverterResult;
 };
 
 /** Migration tag → its converter. */
 export const MIGRATION_CONVERTERS: Readonly<Record<string, DataConverter>> = {};
 
 type Phase = DataConverter["runs"];
+
+/** What one converter run did, for its one log line. */
+export type ConversionRun = {
+  readonly updates: number;
+  readonly notes: readonly string[];
+};
 
 function converterFor(
   converters: Readonly<Record<string, DataConverter>>,
@@ -41,39 +51,83 @@ function converterFor(
 
 const quoted = (name: string) => `"${name.replace(/"/g, '""')}"`;
 
-/** A value as a statement parameter: objects and arrays as JSON text. */
-function param(value: unknown): unknown {
+/** Null, text, a finite number, a boolean, or a plain object or array of
+ *  them (a JSON column), at any depth. */
+function writable(value: unknown): boolean {
+  if (value === null || typeof value === "string") return true;
+  if (typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.every(writable);
+  const proto: unknown = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+  return Object.values(value).every(writable);
+}
+
+/** Anything else (undefined, NaN, a Date) is a converter bug: it stops the
+ *  migration rather than reach the database as something else. */
+function checked(u: RowUpdate, column: string): unknown {
+  const value = u.set[column];
+  if (!writable(value))
+    throw new Error(
+      `Converter update ${u.table} id ${u.id}: ${column} can't be written (${String(value)})`,
+    );
+  return value;
+}
+
+/** A value as a statement parameter: objects and arrays as JSON text, a
+ *  boolean as 1/0 on SQLite (better-sqlite3 binds no booleans). */
+function param(u: RowUpdate, column: string, sqlite: boolean): unknown {
+  const value = checked(u, column);
+  if (typeof value === "boolean" && sqlite) return value ? 1 : 0;
   return value !== null && typeof value === "object"
     ? JSON.stringify(value)
     : value;
 }
 
-function updateSql(u: RowUpdate, placeholder: (i: number) => string) {
+function updateSql(
+  u: RowUpdate,
+  placeholder: (i: number) => string,
+  sqlite: boolean,
+) {
   const cols = Object.keys(u.set);
+  if (cols.length === 0 || !Number.isSafeInteger(u.id))
+    throw new Error(
+      `Converter update ${u.table} id ${String(u.id)} sets nothing or names no row`,
+    );
   const sets = cols.map((c, i) => `${quoted(c)} = ${placeholder(i + 1)}`);
   return {
     sql: `UPDATE ${quoted(u.table)} SET ${sets.join(", ")} WHERE "id" = ${placeholder(cols.length + 1)}`,
-    params: [...cols.map((c) => param(u.set[c])), u.id],
+    params: [...cols.map((c) => param(u, c, sqlite)), u.id],
   };
+}
+
+/** Each update names exactly one row. */
+function assertOneRow(u: RowUpdate, changed: number | null | undefined) {
+  if (changed !== 1)
+    throw new Error(
+      `Converter update ${u.table} id ${u.id} changed ${String(changed)} rows, not 1`,
+    );
 }
 
 type PgClient = {
   query: (
     sql: string,
     params?: unknown[],
-  ) => Promise<{ rows: Record<string, unknown>[] }>;
+  ) => Promise<{ rows: Record<string, unknown>[]; rowCount?: number | null }>;
 };
 
 /** Run `tag`'s converter for `phase` on PostgreSQL, inside the caller's
- *  transaction. Returns its notes for the caller to log. */
+ *  transaction. Null when it has none; else what it did, for the caller to
+ *  log in one line. */
 export async function runConverterPg(
   client: PgClient,
   converters: Readonly<Record<string, DataConverter>>,
   tag: string,
   phase: Phase,
-): Promise<readonly string[]> {
+): Promise<ConversionRun | null> {
   const c = converterFor(converters, tag, phase);
-  if (!c) return [];
+  if (!c) return null;
   const tables: Record<string, unknown[] | undefined> = {};
   for (const table of c.tables) {
     const { rows } = await client.query(
@@ -87,17 +141,17 @@ export async function runConverterPg(
   }
   const result = c.convert(tables);
   for (const u of result.updates) {
-    const { sql, params } = updateSql(u, (i) => `$${i}`);
-    await client.query(sql, params);
+    const { sql, params } = updateSql(u, (i) => `$${i}`, false);
+    assertOneRow(u, (await client.query(sql, params)).rowCount);
   }
-  return result.notes;
+  return { updates: result.updates.length, notes: result.notes };
 }
 
 type SqliteDb = {
   prepare(sql: string): {
     all(...params: unknown[]): unknown[];
     get(...params: unknown[]): unknown;
-    run(...params: unknown[]): unknown;
+    run(...params: unknown[]): { changes: number };
   };
 };
 
@@ -108,9 +162,9 @@ export function runConverterSqlite(
   converters: Readonly<Record<string, DataConverter>>,
   tag: string,
   phase: Phase,
-): readonly string[] {
+): ConversionRun | null {
   const c = converterFor(converters, tag, phase);
-  if (!c) return [];
+  if (!c) return null;
   const tables: Record<string, unknown[] | undefined> = {};
   for (const table of c.tables)
     if (
@@ -123,8 +177,8 @@ export function runConverterSqlite(
       tables[table] = sqlite.prepare(`SELECT * FROM ${quoted(table)}`).all();
   const result = c.convert(tables);
   for (const u of result.updates) {
-    const { sql, params } = updateSql(u, () => "?");
-    sqlite.prepare(sql).run(...params);
+    const { sql, params } = updateSql(u, () => "?", true);
+    assertOneRow(u, sqlite.prepare(sql).run(...params).changes);
   }
-  return result.notes;
+  return { updates: result.updates.length, notes: result.notes };
 }

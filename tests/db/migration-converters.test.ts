@@ -65,13 +65,14 @@ describe("runConverterSqlite / runConverterPg", () => {
         notes: [String(t["app_settings"]?.length)],
       }),
     };
-    expect(runConverterSqlite(db, { [TAG]: c }, TAG, "beforeSql")).toEqual([]);
-    expect(runConverterSqlite(db, { [TAG]: c }, "other", "afterSql")).toEqual(
-      [],
-    );
-    expect(runConverterSqlite(db, { [TAG]: c }, TAG, "afterSql")).toEqual([
-      "1",
-    ]);
+    expect(runConverterSqlite(db, { [TAG]: c }, TAG, "beforeSql")).toBeNull();
+    expect(
+      runConverterSqlite(db, { [TAG]: c }, "other", "afterSql"),
+    ).toBeNull();
+    expect(runConverterSqlite(db, { [TAG]: c }, TAG, "afterSql")).toEqual({
+      updates: 1,
+      notes: ["1"],
+    });
     expect(db.prepare("SELECT value FROM app_settings").get()).toEqual({
       value: '{"n":1}',
     });
@@ -86,7 +87,7 @@ describe("runConverterSqlite / runConverterPg", () => {
           return { rows: [{ present: params?.[0] === "app_settings" }] };
         if (sql.startsWith("SELECT *"))
           return { rows: [{ id: 4, key: "invented_b", value: "x" }] };
-        return { rows: [] };
+        return { rows: [], rowCount: 1 };
       },
     };
     const seen: ConverterTables[] = [];
@@ -96,7 +97,7 @@ describe("runConverterSqlite / runConverterPg", () => {
       TAG,
       "afterSql",
     );
-    expect(notes).toEqual(["1 marked"]);
+    expect(notes).toEqual({ updates: 1, notes: ["1 marked"] });
     expect(Object.keys(seen[0]!)).toEqual(["app_settings"]);
     expect(calls.at(-1)).toEqual([
       'UPDATE "app_settings" SET "value" = $1 WHERE "id" = $2',
@@ -110,6 +111,97 @@ describe("runConverterSqlite / runConverterPg", () => {
       "beforeSql",
     );
     expect(calls).toEqual([]);
+  });
+});
+
+describe("what a converter may write", () => {
+  const settingsDb = () => {
+    const db = new Database(":memory:");
+    db.exec(
+      "CREATE TABLE app_settings (id INTEGER PRIMARY KEY, key TEXT, value TEXT, flag INTEGER)",
+    );
+    db.exec("INSERT INTO app_settings VALUES (1, 'invented_a', 'x', 0)");
+    return db;
+  };
+  const writing = (set: Record<string, unknown>, id = 1): DataConverter => ({
+    tables: ["app_settings"],
+    runs: "afterSql",
+    convert: () => ({
+      updates: [{ table: "app_settings", id, set }],
+      notes: [],
+    }),
+  });
+
+  it.each([
+    ["undefined", { value: undefined }],
+    ["NaN", { value: Number.NaN }],
+    ["Infinity", { value: Number.POSITIVE_INFINITY }],
+    ["a Date", { value: new Date(0) }],
+    ["NaN inside a JSON value", { value: { a: [1, Number.NaN] } }],
+    ["undefined inside a JSON value", { value: { a: undefined } }],
+  ])("refuses %s, on both dialects", async (_, set) => {
+    const db = settingsDb();
+    expect(() =>
+      runConverterSqlite(db, { [TAG]: writing(set) }, TAG, "afterSql"),
+    ).toThrow(/can't be written/);
+    expect(db.prepare("SELECT value FROM app_settings").get()).toEqual({
+      value: "x",
+    });
+    const client = {
+      query: vi.fn(async () => ({ rows: [{ present: true }], rowCount: 1 })),
+    };
+    await expect(
+      runConverterPg(client, { [TAG]: writing(set) }, TAG, "afterSql"),
+    ).rejects.toThrow(/can't be written/);
+    expect(client.query).not.toHaveBeenCalledWith(
+      expect.stringMatching(/^UPDATE/),
+      expect.anything(),
+    );
+  });
+
+  it("binds a boolean as 1/0 on SQLite and as itself on PostgreSQL", async () => {
+    const db = settingsDb();
+    runConverterSqlite(db, { [TAG]: writing({ flag: true }) }, TAG, "afterSql");
+    expect(db.prepare("SELECT flag FROM app_settings").get()).toEqual({
+      flag: 1,
+    });
+    const calls: unknown[][] = [];
+    const client = {
+      query: async (sql: string, params?: unknown[]) => {
+        calls.push([sql, params]);
+        return { rows: [{ present: true }], rowCount: 1 };
+      },
+    };
+    await runConverterPg(
+      client,
+      { [TAG]: writing({ flag: false }) },
+      TAG,
+      "afterSql",
+    );
+    expect(calls.at(-1)?.[1]).toEqual([false, 1]);
+  });
+
+  it("stops when an update changes no row or more than one", async () => {
+    const db = settingsDb();
+    expect(() =>
+      runConverterSqlite(
+        db,
+        { [TAG]: writing({ value: "y" }, 9) },
+        TAG,
+        "afterSql",
+      ),
+    ).toThrow(/changed 0 rows, not 1/);
+    const client = {
+      query: async () => ({ rows: [{ present: true }], rowCount: 2 }),
+    };
+    await expect(
+      runConverterPg(
+        client,
+        { [TAG]: writing({ value: "y" }) },
+        TAG,
+        "afterSql",
+      ),
+    ).rejects.toThrow(/changed 2 rows, not 1/);
   });
 });
 
