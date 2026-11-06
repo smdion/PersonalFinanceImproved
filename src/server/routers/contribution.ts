@@ -1,6 +1,5 @@
 /** Contribution router for computing per-account contribution allocations, IRS limits, employer matches, and accumulation order across retirement and brokerage accounts. */
 import { eq } from "drizzle-orm";
-import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
@@ -35,11 +34,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/data/people";
 import { householdHighIncomeLine } from "@/server/services/paycheck/high-income-line";
-import {
-  zSandboxSalaryEntries,
-  zSandboxContribActiveFields,
-  zSandboxContribAdditions,
-} from "@/lib/pure/household/what-if.schema";
+import { zContributionSummaryInput } from "@/server/services/contributions/summary";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContribWindow } from "@/lib/utils/date";
@@ -203,25 +198,7 @@ export const contributionRouter = createTRPCRouter({
     householdHighIncomeLine(ctx.db),
   ),
   computeSummary: protectedProcedure
-    .input(
-      z
-        .object({
-          contributionProfileId: z.number().int().optional(),
-          salaryProfileId: z.number().int().optional(),
-          /** See paycheckRouter.computeSummary's identical field — must be
-           *  sent to both routers together or the contribution cards and
-           *  the pay stub disagree, same bug class as the ContributionsSection
-           *  fix this hook already exists to avoid. */
-          sandboxSalaryEntries: zSandboxSalaryEntries,
-          /** See paycheckRouter.computeSummary's identical field — must be
-           *  sent to both routers or the pay stub and the contribution
-           *  cards disagree, same bug class as this hook's own fix. */
-          sandboxContribActiveFields: zSandboxContribActiveFields,
-          /** See paycheckRouter.computeSummary's identical field. */
-          sandboxContribAdditions: zSandboxContribAdditions,
-        })
-        .optional(),
-    )
+    .input(zContributionSummaryInput)
     .query(async ({ ctx, input }) => {
       const currentYear = ctx.scope.asOf.getFullYear();
       const inPriorYearWindow = isPriorYearContribWindow();

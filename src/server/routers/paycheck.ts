@@ -6,7 +6,6 @@ import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { TRPCError } from "@trpc/server";
-import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -42,13 +41,6 @@ import {
   applyActiveBonusTerms,
   contributionPay,
 } from "@/lib/pure/household/compensation";
-import {
-  zSandboxSalaryEntries,
-  zSandboxDeductionEdits,
-  zSandboxDeductionAdditions,
-  zSandboxContribActiveFields,
-  zSandboxContribAdditions,
-} from "@/lib/pure/household/what-if.schema";
 import type {
   DeductionLine,
   TaxBracketInput,
@@ -73,6 +65,7 @@ import { findActiveJob } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
+import { zPaycheckSummaryInput } from "@/server/services/paycheck/summary";
 
 /**
  * Annual-liability variant of buildBracketInput: same limits, but brackets
@@ -100,29 +93,7 @@ export function buildLiabilityBracketInput(
 
 export const paycheckRouter = createTRPCRouter({
   computeSummary: protectedProcedure
-    .input(
-      z
-        .object({
-          taxYearOverride: z.number().int().min(2000).max(2100).optional(),
-          contributionProfileId: z.number().int().optional(),
-          salaryProfileId: z.number().int().optional(),
-          /** The What-If tab's hand-edited salary/bonus entries — highest
-           *  precedence tier, above the Salary Profile. See applySandboxSalaryEntries. */
-          sandboxSalaryEntries: zSandboxSalaryEntries,
-          /** The What-If tab's hand-edited amount for an existing deduction. */
-          sandboxDeductionEdits: zSandboxDeductionEdits,
-          /** The What-If tab's hand-added hypothetical deductions. */
-          sandboxDeductionAdditions: zSandboxDeductionAdditions,
-          /** The What-If tab's hand-edited contribution account values —
-           *  one more layer on top of the picked Contribution Profile's own
-           *  overrides, via the SAME applyContribActiveFields merge. */
-          sandboxContribActiveFields: zSandboxContribActiveFields,
-          /** The What-If tab's hand-added hypothetical contribution
-           *  accounts — no DB row, personId-keyed. */
-          sandboxContribAdditions: zSandboxContribAdditions,
-        })
-        .optional(),
-    )
+    .input(zPaycheckSummaryInput)
     .query(async ({ ctx, input }) => {
       const deductionEditMap = new Map(
         (input?.sandboxDeductionEdits ?? []).map((e) => [
