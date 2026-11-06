@@ -2,6 +2,8 @@
  *  serves the live migration (db-migrate.ts: pending loop and both squash
  *  replays, in the migration's transaction) and the restore step. */
 
+import { MATCH_RATE_CONVERTER, MATCH_RATE_TAG } from "./v0102-match-rate";
+
 /** A table's rows as read: snake_case keys, JSON as object or text. */
 export type ConverterTables = Record<string, readonly unknown[] | undefined>;
 
@@ -30,7 +32,9 @@ export type DataConverter = {
 };
 
 /** Migration tag → its converter. */
-export const MIGRATION_CONVERTERS: Readonly<Record<string, DataConverter>> = {};
+export const MIGRATION_CONVERTERS: Readonly<Record<string, DataConverter>> = {
+  [MATCH_RATE_TAG]: MATCH_RATE_CONVERTER,
+};
 
 type Phase = DataConverter["runs"];
 
@@ -43,10 +47,10 @@ export type ConversionRun = {
 function converterFor(
   converters: Readonly<Record<string, DataConverter>>,
   tag: string,
-  phase: Phase,
+  phase: Phase | "restore",
 ): DataConverter | null {
   const c = Object.hasOwn(converters, tag) ? converters[tag] : undefined;
-  return c && c.runs === phase ? c : null;
+  return c && (phase === "restore" || c.runs === phase) ? c : null;
 }
 
 const quoted = (name: string) => `"${name.replace(/"/g, '""')}"`;
@@ -114,8 +118,29 @@ type PgClient = {
   query: (
     sql: string,
     params?: unknown[],
-  ) => Promise<{ rows: Record<string, unknown>[]; rowCount?: number | null }>;
+  ) => Promise<{
+    rows: Record<string, unknown>[];
+    rowCount?: number | null;
+    fields?: readonly { name: string; dataTypeID: number }[];
+  }>;
 };
+
+/** json and jsonb type ids. */
+const PG_JSON_TYPES = new Set([114, 3802]);
+
+/** A table's rows as a converter reads them: a json value that node-pg
+ *  gives as a string (a JSON string scalar, e.g. a double-encoded column)
+ *  becomes its JSON text, so it can't pass for SQLite's object text. */
+async function selectPg(client: PgClient, table: string) {
+  const { rows, fields } = await client.query(`SELECT * FROM ${quoted(table)}`);
+  const json = (fields ?? []).filter((f) => PG_JSON_TYPES.has(f.dataTypeID));
+  return rows.map((row) => {
+    const out = { ...row };
+    for (const { name } of json)
+      if (typeof out[name] === "string") out[name] = JSON.stringify(out[name]);
+    return out;
+  });
+}
 
 /** Run `tag`'s converter for `phase` on PostgreSQL, inside the caller's
  *  transaction. Null when it has none; else what it did, for the caller to
@@ -134,10 +159,7 @@ export async function runConverterPg(
       "SELECT to_regclass($1) IS NOT NULL AS present",
       [table],
     );
-    if (rows[0]?.["present"])
-      tables[table] = (
-        await client.query(`SELECT * FROM ${quoted(table)}`)
-      ).rows;
+    if (rows[0]?.["present"]) tables[table] = await selectPg(client, table);
   }
   const result = c.convert(tables);
   for (const u of result.updates) {
@@ -179,6 +201,30 @@ export function runConverterSqlite(
   for (const u of result.updates) {
     const { sql, params } = updateSql(u, () => "?", true);
     assertOneRow(u, sqlite.prepare(sql).run(...params).changes);
+  }
+  return { updates: result.updates.length, notes: result.notes };
+}
+
+/** The restore step: `tag`'s converter over a backup's tables, its updates
+ *  applied to the rows in place (a JSON column keeps the object). */
+export function convertBackup(
+  tables: Record<string, unknown[]>,
+  converters: Readonly<Record<string, DataConverter>>,
+  tag: string,
+): ConversionRun | null {
+  const c = converterFor(converters, tag, "restore");
+  if (!c) return null;
+  const read: Record<string, unknown[] | undefined> = {};
+  for (const table of c.tables) read[table] = tables[table];
+  const result = c.convert(read);
+  for (const u of result.updates) {
+    const rows = (tables[u.table] ?? []).filter(
+      (r): r is Record<string, unknown> =>
+        typeof r === "object" && r !== null && "id" in r && r.id === u.id,
+    );
+    assertOneRow(u, rows.length);
+    for (const column of Object.keys(u.set))
+      rows[0]![column] = checked(u, column);
   }
   return { updates: result.updates.length, notes: result.notes };
 }

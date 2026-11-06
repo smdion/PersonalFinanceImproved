@@ -2,7 +2,8 @@
  * A v0.10.1 backup is labelled 0013, older than the current schema, so a
  * restore runs it through the whole transform ladder. A current-shape
  * export of each baseline household, labelled 0013, comes back unchanged
- * apart from the displayNameActive rename. Settings rows without a
+ * apart from the displayNameActive rename and migration 0016's match rate
+ * (a percent match's whole percent as a fraction). Settings rows without a
  * retirement profile are the one state the ladder adds to: it creates one.
  */
 // First: the SQLite harness's mocks, then the baseline's.
@@ -80,9 +81,23 @@ function withOldKey(tables: Tables): { input: Tables; expected: Tables } {
   return { input, expected };
 }
 
+/** Migration 0016's step: a percent match gains its rate (the households
+ *  hold 50% and 100%), so the test fails on any other value. */
+const RATE_OF: Record<string, string> = { "50": "0.5", "100": "1" };
+function withMatchRates(tables: Tables): Tables {
+  for (const row of tables["contribution_accounts"] ?? [])
+    if (
+      row["employer_match_type"] === "percent_of_contribution" &&
+      row["employer_match_value"] != null
+    )
+      row["employer_match_rate"] =
+        RATE_OF[String(row["employer_match_value"])] ?? "unexpected value";
+  return tables;
+}
+
 describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
   it.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
-    "%s comes back unchanged except for the rename",
+    "%s comes back unchanged except for the rename and the match rate",
     async (_key, household) => {
       const { input, expected } = withOldKey(await exported(household));
       const before = structuredClone(input);
@@ -92,7 +107,7 @@ describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
         CURRENT,
       );
       expect(transformed).toBe(true);
-      expect(tables).toEqual(expected);
+      expect(tables).toEqual(withMatchRates(expected));
       expect(input).toEqual(before);
     },
   );
@@ -109,7 +124,7 @@ describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
     );
     const { retirement_profiles: added, ...others } = out;
     const { retirement_profiles: _none, ...unchanged } = input;
-    expect(others).toEqual(unchanged);
+    expect(others).toEqual(withMatchRates(structuredClone(unchanged)));
     // The settings rows already name profile 1, so they now point at it.
     expect(
       new Set(out["retirement_settings"]!.map((r) => (r as Row)["profile_id"])),

@@ -13,6 +13,8 @@ import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "./v0810-profile-sets";
 import { renameDisplayNameActive } from "./v0102-display-name-custom";
 import { dropDeadHoldingLinkAndSettings } from "./v0102-dead-data";
+import { convertBackup, MIGRATION_CONVERTERS } from "./migration-converters";
+import { MATCH_RATE_TAG } from "./v0102-match-rate";
 import pgJournal from "../../../drizzle/meta/_journal.json";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
@@ -23,16 +25,10 @@ const CURRENT_LINE_TAGS = pgJournal.entries.map((e) => e.tag);
 // ---------------------------------------------------------------------------
 
 /**
- * Every v0.7-line journal tag, in both dialects.
- *
- * Declared ONCE and consumed by both `KNOWN_SCHEMA_VERSIONS` (which decides
- * whether a backup is importable at all) and `schemaEra()` (which decides
- * which transform runs). Those two lists were previously maintained by hand
- * and drifted: tags `0002`–`0031` shipped without being added to either, so
- * `transformBackupToCurrentSchema` threw `Unknown schema version` for any
- * backup taken between v0.7.0 and v0.7.10 — restore was simply broken across
- * most of the v0.7 line. Sharing one list means adding a
- * migration can't silently break restore again.
+ * Every v0.7-line journal tag, in both dialects. Declared ONCE and consumed
+ * by both `KNOWN_SCHEMA_VERSIONS` (which decides whether a backup is
+ * importable at all) and `schemaEra()` (which decides which transform runs):
+ * two hand-kept lists once drifted and broke restore across most of v0.7.
  *
  * Tags 0007–0024 are hand-named and identical in both journals, so they
  * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
@@ -1103,6 +1099,9 @@ export function transformBackupToCurrentSchema(
   transformV095SsInAmount(cloned);
   renameDisplayNameActive(cloned);
   dropDeadHoldingLinkAndSettings(cloned);
+  const matchRate = convertBackup(cloned, MIGRATION_CONVERTERS, MATCH_RATE_TAG);
+  if (matchRate)
+    log("info", "backup_conversion", { tag: MATCH_RATE_TAG, ...matchRate });
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

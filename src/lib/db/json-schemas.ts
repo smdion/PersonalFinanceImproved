@@ -338,19 +338,17 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
  * resolvable contribution at all, which is the "incomplete profile" state
  * surfaced by getIncompleteContribAccountIds. Every other field here stays
  * genuinely optional — those describe account behavior a profile MAY
- * customize, not "the" value.
- * contribution_profiles.contribution_active_fields is an EntityFieldMap
- * (schema-pg.ts) whose leaf objects have this known shape.
+ * customize, not "the" value. These are the leaves of the EntityFieldMap
+ * contribution_profiles.contribution_active_fields (schema-pg.ts).
  */
 /**
  * Base shape, all fields optional — used directly (without the refine
  * below) to validate a single-field PATCH, where a caller legitimately
  * sends just `{ isActive: false }` without touching contributionValue/
  * contributionMethod. The paired-or-neither invariant only makes sense
- * once applied to the full, merged entry — see
- * setAccountActiveFields/setDeductionActiveFields in
- * contribution-profiles.ts, which validate the post-merge result against
- * `contribAccountActiveFieldsSchema` (below) before persisting.
+ * once applied to the full, merged entry: setAccountActiveFields and
+ * setDeductionActiveFields (contribution-profiles.ts) validate the merged
+ * entry against `contribAccountActiveFieldsSchema` (below) before saving.
  */
 export const contribAccountActiveFieldsPatchSchema = z
   .object({
@@ -358,6 +356,8 @@ export const contribAccountActiveFieldsPatchSchema = z
     contributionMethod: z.string().optional(),
     employerMatchType: z.string().optional(),
     employerMatchValue: z.union([z.string(), z.number()]).optional(),
+    /** Migration 0016's fraction beside a percent's value; not read yet. */
+    employerMatchRate: z.union([z.string(), z.number()]).optional(),
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),

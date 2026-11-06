@@ -181,6 +181,36 @@ describe("what a converter may write", () => {
     expect(calls.at(-1)?.[1]).toEqual([false, 1]);
   });
 
+  it("PostgreSQL: a json value node-pg gives as a string reaches the converter as its JSON text", async () => {
+    const seen: ConverterTables[] = [];
+    const client = {
+      query: async (sql: string) =>
+        sql.startsWith("SELECT *")
+          ? {
+              rows: [
+                { id: 1, value: { a: 1 }, key: "{}" },
+                { id: 2, value: '{"a":1}', key: "{}" },
+              ],
+              fields: [
+                { name: "id", dataTypeID: 23 },
+                { name: "value", dataTypeID: 3802 },
+                { name: "key", dataTypeID: 25 },
+              ],
+            }
+          : { rows: [{ present: true }], rowCount: 1 },
+    };
+    await runConverterPg(
+      client,
+      { [TAG]: marker("afterSql", seen) },
+      TAG,
+      "afterSql",
+    );
+    expect(seen[0]!["app_settings"]).toEqual([
+      { id: 1, value: { a: 1 }, key: "{}" },
+      { id: 2, value: '"{\\"a\\":1}"', key: "{}" },
+    ]);
+  });
+
   it("stops when an update changes no row or more than one", async () => {
     const db = settingsDb();
     expect(() =>
@@ -234,11 +264,14 @@ describe("the hook in the real SQLite migrator", () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
-  /** An install one migration behind (no 0015), with invented settings. */
+  /** An install at 0014 (0015 and later pending), with invented settings. */
   function installBehind(): string {
     const shipped = fs.readFileSync(journalPath(), "utf8");
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
-    journal.entries = journal.entries.filter((e) => e.tag !== TAG);
+    journal.entries = journal.entries.slice(
+      0,
+      journal.entries.findIndex((e) => e.tag === TAG),
+    );
     fs.writeFileSync(journalPath(), JSON.stringify(journal));
     runSQLite();
     const db = open();

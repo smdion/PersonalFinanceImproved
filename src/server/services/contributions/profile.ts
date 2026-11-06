@@ -190,9 +190,8 @@ export function applyContribActiveFields(
  * actually read is filled in with the same defaults
  * `contributionAccountInput` (settings/contribution-accounts.ts) would use for a
  * freshly-created real row — no employer match, default tax treatment for
- * the chosen account type. Exists once here so the paycheck and contribution
- * summaries and budget.ts can't each guess the defaults differently.
- */
+ * the chosen account type. One copy for the paycheck and contribution
+ * summaries and budget.ts. */
 export function buildSandboxContribRow(
   addition: {
     personId: number;
@@ -216,6 +215,7 @@ export function buildSandboxContribRow(
     contributionValue: addition.contributionValue,
     employerMatchType: "none",
     employerMatchValue: null,
+    employerMatchRate: null,
     employerMaxMatchPct: null,
     employerMatchTaxTreatment: "pre_tax",
     hsaCoverageType: null,

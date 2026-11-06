@@ -410,17 +410,23 @@ describe("schemaLabel — what a pre-squash backup is labelled", () => {
     // The newest migration whose tables and columns match — a label, not a
     // record of what ran (0007 and 0014 are data only, 0009 indexes only).
     expect(schemaLabel(journal, FOLDER, new Set(), allApplied, crypto)).toBe(
-      "0015_v0102_dead_data",
+      journal.entries.at(-1)!.tag,
     );
   });
 
   it("a database not yet past a dropped column is labelled before the drop", () => {
     // 0015 drops holding_observations.performance_account_id: a database
     // that still has it is at 0014's shape, whatever else matches.
-    const at0014 = new Map(
-      [...allApplied].map(([t, cols]) => [t, new Set(cols)]),
+    const through0014 = journal.entries.slice(
+      0,
+      journal.entries.findIndex((e) => e.tag === "0015_v0102_dead_data"),
     );
-    at0014.get("holding_observations")!.add("performance_account_id");
+    const at0014 = columns((db) => {
+      for (const e of through0014) exec(db, e.tag);
+    });
+    expect(at0014.get("holding_observations")).toContain(
+      "performance_account_id",
+    );
     expect(schemaLabel(journal, FOLDER, new Set(), at0014, crypto)).toBe(
       "0014_v0102_display_name_custom",
     );

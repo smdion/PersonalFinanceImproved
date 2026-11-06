@@ -54,7 +54,7 @@ const LAYERS = {
 /** The src/ modules db-migrate.ts imports: esbuild bundles them into the
  *  image's migrator, which runs with no src/, env or Next. */
 const MIGRATOR_SRC =
-  "^src/lib/db/(reference-reconcile-core|demo-schema-marker|version-tables|migration-converters)\\.ts$";
+  "^src/lib/db/(reference-reconcile-core|demo-schema-marker|version-tables|migration-converters|v0102-match-rate)\\.ts$";
 
 const L = LAYERS;
 const ABOVE_FOUNDATION = `${L.shapes}|${L.pure}|${L.infra}|^src/server/|^src/components/|^src/app/`;

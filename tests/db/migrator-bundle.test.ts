@@ -1,7 +1,7 @@
 /**
  * The image runs db-migrate.js, the esbuild bundle of db-migrate.ts (built
  * with package.json's build:migrator flags), with no src/, env or Next. Its
- * inputs are db-migrate.ts, the three src/ modules it imports, and npm
+ * inputs are db-migrate.ts, the src/ modules it imports, and npm
  * packages that are neither Next nor server-only.
  */
 import { build } from "esbuild";
@@ -33,6 +33,7 @@ describe("the migrator bundle", () => {
       "src/lib/db/demo-schema-marker.ts",
       "src/lib/db/migration-converters.ts",
       "src/lib/db/reference-reconcile-core.ts",
+      "src/lib/db/v0102-match-rate.ts",
       "src/lib/db/version-tables.ts",
     ]);
     expect(

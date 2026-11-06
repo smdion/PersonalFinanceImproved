@@ -15,7 +15,16 @@ import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
 
 const REPO = process.cwd();
-const TAG = "0016_test_recreate_people";
+const TAG = "0099_test_recreate_people";
+/** The shipped journal's length: an install at the latest tag. */
+const SHIPPED = (
+  JSON.parse(
+    fs.readFileSync(
+      path.join("drizzle-sqlite", "meta", "_journal.json"),
+      "utf8",
+    ),
+  ) as { entries: unknown[] }
+).entries.length;
 
 describe("SQLite table recreates in the real migrator", () => {
   let dir: string;
@@ -104,7 +113,12 @@ describe("SQLite table recreates in the real migrator", () => {
   it("recreating a parent table keeps its children (cascade and restrict)", () => {
     addRecreate(COPY);
     runSQLite();
-    expect(counts()).toEqual({ people: 1, salaries: 1, jobs: 1, recorded: 17 });
+    expect(counts()).toEqual({
+      people: 1,
+      salaries: 1,
+      jobs: 1,
+      recorded: SHIPPED + 1,
+    });
     const db = open();
     expect(db.pragma("foreign_key_check")).toEqual([]);
     db.close();
@@ -113,7 +127,12 @@ describe("SQLite table recreates in the real migrator", () => {
   it("a recreate that breaks a reference rolls everything back", () => {
     addRecreate(COPY.replace(" FROM `people`;", " FROM `people` WHERE 0;"));
     expect(() => runSQLite()).toThrow(/break 2 foreign key reference/);
-    expect(counts()).toEqual({ people: 1, salaries: 1, jobs: 1, recorded: 16 });
+    expect(counts()).toEqual({
+      people: 1,
+      salaries: 1,
+      jobs: 1,
+      recorded: SHIPPED,
+    });
   });
 
   it("a replayed recreate whose copy fails is skipped whole: the table stays", () => {
@@ -123,7 +142,12 @@ describe("SQLite table recreates in the real migrator", () => {
     // no longer matches, so the next start replays the journal.
     addRecreateBroken();
     runSQLite();
-    expect(counts()).toEqual({ people: 1, salaries: 1, jobs: 1, recorded: 17 });
+    expect(counts()).toEqual({
+      people: 1,
+      salaries: 1,
+      jobs: 1,
+      recorded: SHIPPED + 1,
+    });
   });
   function addRecreateBroken() {
     const file = path.join(folder(), `${TAG}.sql`);
@@ -222,7 +246,7 @@ describe("SQLite table recreates in the real migrator", () => {
       recreate();
       const logged = events(() => runSQLite());
       expect(logged).toContain("sqlite_foreign_keys_already_broken");
-      expect(counts().recorded).toBe(17);
+      expect(counts().recorded).toBe(SHIPPED + 1);
       const db = open();
       expect(db.pragma("foreign_key_check")).toEqual([
         { table: "invented_child", rowid: 1, parent: "people", fkid: 1 },
@@ -243,7 +267,7 @@ describe("SQLite table recreates in the real migrator", () => {
         people: 1,
         salaries: 1,
         jobs: 1,
-        recorded: 16,
+        recorded: SHIPPED,
       });
     });
   });
@@ -268,7 +292,7 @@ describe("SQLite table recreates in the real migrator", () => {
     expect(() => runSQLite()).toThrow(
       /break 1 foreign key reference.*invented_loan row 1 → invented_goal/,
     );
-    expect(counts().recorded).toBe(16);
+    expect(counts().recorded).toBe(SHIPPED);
   });
 
   describe("a squash replay of 0015 on a 0014-shaped database", () => {
@@ -279,8 +303,9 @@ describe("SQLite table recreates in the real migrator", () => {
         fs.rmSync(`${process.env.SQLITE_PATH!}${ext}`, { force: true });
       const shipped = fs.readFileSync(journalPath(), "utf8");
       const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
-      journal.entries = journal.entries.filter(
-        (e) => e.tag !== "0015_v0102_dead_data",
+      journal.entries = journal.entries.slice(
+        0,
+        journal.entries.findIndex((e) => e.tag === "0015_v0102_dead_data"),
       );
       fs.writeFileSync(journalPath(), JSON.stringify(journal));
       runSQLite();
