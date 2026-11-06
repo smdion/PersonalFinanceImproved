@@ -19,6 +19,7 @@ import {
   assertNoPlanUses,
 } from "@/server/services/profiles/plans";
 import { upsertSetting } from "@/server/data/settings";
+import { firstRow } from "@/lib/utils/first-row";
 
 export type LifecycleKind = "contribution" | "salary" | "retirement";
 
@@ -165,7 +166,7 @@ export async function duplicateProfile(
       .select()
       .from(schema.contributionProfiles)
       .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
-      .then((r) => r[0]);
+      .then(firstRow);
     if (!source) throw sourceNotFound();
 
     const contributionActiveFields = orEmpty(source.contributionActiveFields);
@@ -186,7 +187,7 @@ export async function duplicateProfile(
     .select()
     .from(schema.salaryProfiles)
     .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
-    .then((r) => r[0]);
+    .then(firstRow);
   if (!source) throw sourceNotFound();
 
   const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
