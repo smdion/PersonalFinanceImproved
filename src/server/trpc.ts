@@ -20,7 +20,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
 import { notifyMutationSucceeded } from "./mutation-events";
-import { createRequestScope } from "./data/request-scope";
+import { createRequestScope, userHasPermission } from "./data/request-scope";
 
 type AuthLevel = "public" | "protected" | "admin" | Permission;
 
@@ -478,7 +478,11 @@ const baseProcedure = t.procedure
   .use(demoOnlyGuard)
   .use(demoSchemaMiddleware)
   .use(({ ctx, next }) =>
-    next({ ctx: { scope: createRequestScope(ctx.db, new Date()) } }),
+    next({
+      ctx: {
+        scope: createRequestScope(ctx.db, new Date(), ctx.session?.user),
+      },
+    }),
   );
 
 // Shared by every procedure that requires a session (protected, admin and
@@ -540,14 +544,6 @@ export const adminProcedure = rateLimitedAuthedBase
   });
 
 // Permission-gated — requires admin OR specific permission addon + logs mutations
-/** Whether a signed-in user holds a permission (admins hold all) — the rule withPermission enforces. */
-export function userHasPermission(
-  user: { role: string; permissions: readonly string[] },
-  permission: Permission,
-): boolean {
-  return user.role === "admin" || user.permissions.includes(permission);
-}
-
 function withPermission(permission: Permission) {
   return rateLimitedAuthedBase
     .meta({ auth: permission })

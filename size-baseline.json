@@ -173,7 +173,7 @@
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2103,
     "src/server/routers/contribution-profiles.ts": 907,
-    "src/server/routers/contribution.ts": 1428,
+    "src/server/routers/contribution.ts": 1423,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 411,
     "src/server/routers/networth.ts": 1485,
@@ -216,7 +216,7 @@
     "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
-    "src/server/trpc.ts": 591
+    "src/server/trpc.ts": 587
   },
   "functions": {
     "src/app/(dashboard)/assets/assets-content.tsx": {
@@ -886,7 +886,7 @@
       "contributionProfileRouter.getById.query()": 186
     },
     "src/server/routers/contribution.ts": {
-      "contributionRouter.computeSummary.query()": 1199,
+      "contributionRouter.computeSummary.query()": 1198,
       "contributionRouter.computeSummary.query().results.map()": 739
     },
     "src/server/routers/demo.ts": {

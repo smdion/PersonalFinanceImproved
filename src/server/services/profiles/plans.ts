@@ -130,7 +130,7 @@ export async function applyPlan(
 
   const missing = targets
     .filter(({ kind }) => {
-      // Same rule as trpc.ts userHasPermission: admins hold every permission.
+      // Same rule as request-scope.ts userHasPermission: admins hold every permission.
       const needed = SET_ACTIVE_PERMISSION[kind];
       if (user.role === "admin") return false;
       return needed === "admin" || !user.permissions.includes(needed);

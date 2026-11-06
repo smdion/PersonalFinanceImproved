@@ -1,11 +1,7 @@
 /** Contribution router for computing per-account contribution allocations, IRS limits, employer matches, and accumulation order across retirement and brokerage accounts. */
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  userHasPermission,
-} from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import {
@@ -297,10 +293,9 @@ export const contributionRouter = createTRPCRouter({
       // With the portfolio permission, actuals are live (Performance + what
       // SimpleFIN has seen since + what's on its way, through today) — see
       // investments/live-contributions. Those accounts need no stale-gap fill.
-      const live =
-        ctx.session?.user && userHasPermission(ctx.session.user, "portfolio")
-          ? await loadLiveContributions(ctx.db)
-          : null;
+      const live = ctx.scope.can("portfolio")
+        ? await loadLiveContributions(ctx.db)
+        : null;
       const liveThroughToday = new Set<number>();
       // The day each live account's latest contribution actually arrived —
       // a month already paid into counts as done (monthsDoneYtd).

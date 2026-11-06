@@ -746,7 +746,7 @@
   },
   "src/server/routers/contribution.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 3
     }
   },
   "src/server/routers/debts.ts": {

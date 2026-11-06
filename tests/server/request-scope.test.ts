@@ -20,13 +20,22 @@ import {
   publicProcedure,
 } from "@/server/trpc";
 import { createRequestScope } from "@/server/data/request-scope";
-import { createTestCaller } from "../routers/setup";
+import {
+  adminSession,
+  createTestCaller,
+  createViewerSessionWithPermissions,
+  viewerSession,
+} from "../routers/setup";
 
 const probeRouter = createTRPCRouter({
   scope: publicProcedure.query(({ ctx }) => ({
     asOf: ctx.scope.asOf.toISOString(),
     today: ctx.scope.today,
     sameDb: ctx.scope.db === ctx.db,
+  })),
+  can: publicProcedure.query(({ ctx }) => ({
+    portfolio: ctx.scope.can("portfolio"),
+    brokerage: ctx.scope.can("brokerage"),
   })),
 });
 
@@ -67,7 +76,28 @@ describe("RequestScope", () => {
   it("dates today in the household time zone, not UTC", () => {
     process.env.TZ = "America/Chicago";
     const asOf = new Date("2026-01-01T03:00:00Z");
-    const scope = createRequestScope(harness.rawDb, asOf);
+    const scope = createRequestScope(harness.rawDb, asOf, undefined);
     expect(scope.today).toBe("2025-12-31");
+  });
+
+  it("asks the viewer: admins hold every permission, a viewer only theirs, no session none", async () => {
+    const can = (session: typeof adminSession | null) =>
+      createCallerFactory(probeRouter)({
+        db: harness.rawDb,
+        session,
+        demoSchema: null,
+      }).can();
+    expect(await can(adminSession)).toEqual({
+      portfolio: true,
+      brokerage: true,
+    });
+    expect(
+      await can(createViewerSessionWithPermissions(["portfolio"])),
+    ).toEqual({ portfolio: true, brokerage: false });
+    expect(await can(viewerSession)).toEqual({
+      portfolio: false,
+      brokerage: false,
+    });
+    expect(await can(null)).toEqual({ portfolio: false, brokerage: false });
   });
 });
