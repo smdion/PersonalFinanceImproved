@@ -641,7 +641,7 @@ export function WhatIfTab({
   // additions' name/amount/treatment fields) update on raw onChange, not
   // blur — typing into a text field can otherwise re-key this query on
   // every keystroke, each one making a REAL server round trip (which
-  // itself nests a paycheck.computeSummary call — see budget.ts's
+  // itself computes a paycheck summary too — see budget.ts's
   // computeActiveSummary). Matches the debounce pattern
   // use-projection-queries.ts already uses for the same reason.
   const computeActiveSummaryInput = useDebouncedValue(

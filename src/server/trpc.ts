@@ -32,8 +32,8 @@ export type Context = {
   demoSchema: string | null;
   /** Set ONLY by `internalCaller()` below, for a server-side nested tRPC
    *  call made on behalf of an already-authenticated request (e.g.
-   *  `computeActiveSummary` calling into the paycheck router for its own
-   *  income figure). Skips ONLY the authenticated rate-limit middleware —
+   *  `peekMonteCarloSummary` calling into the Simulation router for its
+   *  cached run). Skips ONLY the authenticated rate-limit middleware —
    *  every other middleware (auth check, permission check, demo guards,
    *  error logging) still runs unchanged, so this is not a second
    *  computation path, just an exemption from double-charging the calling
@@ -149,9 +149,9 @@ export const createCallerFactory = t.createCallerFactory;
 /**
  * Marks a context for a server-side nested call into another router, made
  * on behalf of an already-authenticated request — e.g.
- * `budget.computeActiveSummary` calling into the paycheck router for its
- * own income figure, rather than re-deriving paycheck math independently
- * (single computation path).
+ * `projection.peekMonteCarloSummary` calling into the Simulation router
+ * for its cached run, rather than re-deriving it independently (single
+ * computation path).
  *
  * Use `createCallerFactory(someRouter)(internalCtx(ctx))` for any such
  * nested call, instead of passing `ctx` straight through: it exempts the

@@ -303,7 +303,7 @@ export async function fetchContributionProfile(
  *
  * `allDeductions` is optional and deliberately not threaded through
  * everywhere this function is called (budget.ts, build-engine-payload.ts
- * don't need deduction data) — only the paycheck router path passes it.
+ * don't need deduction data) — only the paycheck summary passes it.
  * See the Contribution Profile plan's Ground Rules: widening this
  * function's deduction support is scoped to its actual consumer, not
  * `resolveProfile` generally.

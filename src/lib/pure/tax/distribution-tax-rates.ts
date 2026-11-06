@@ -209,7 +209,7 @@ export function buildDistributionTaxRates({
     // LTCG bracket lookups need real taxable income, not gross ordinary
     // income — this sources the deduction from real config
     // (`contribution_limits`, already loaded into limitsMap above) rather
-    // than a hardcoded constant. Same key format `paycheck.ts`'s own
+    // than a hardcoded constant. Same key format the paycheck summary's own
     // standard-deduction lookup uses. Undefined when not seeded for this
     // filing status ⇒ the LTCG helper subtracts 0, reproducing pre-fix
     // behavior rather than throwing.

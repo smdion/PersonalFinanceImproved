@@ -171,7 +171,7 @@
     "src/server/data/salaries.ts": 41,
     "src/server/data/snapshots.ts": 107,
     "src/server/routers/assets.ts": 528,
-    "src/server/routers/budget.ts": 2103,
+    "src/server/routers/budget.ts": 2053,
     "src/server/routers/contribution-profiles.ts": 827,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 411,
@@ -878,7 +878,7 @@
       "assetsRouter.computeSummary.query()": 241
     },
     "src/server/routers/budget.ts": {
-      "budgetRouter.computeActiveSummary.query()": 266
+      "budgetRouter.computeActiveSummary.query()": 261
     },
     "src/server/routers/contribution-profiles.ts": {
       "contributionProfileRouter.getById.query()": 186

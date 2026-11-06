@@ -10,22 +10,10 @@ import { eq, asc, inArray, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure, budgetProcedure } from "../trpc";
 import {
-  createTRPCRouter,
-  protectedProcedure,
-  budgetProcedure,
-  createCallerFactory,
-  internalCtx,
-} from "../trpc";
-import { paycheckRouter } from "./paycheck";
-import {
-  zSandboxSalaryEntries,
   zItemAmountActiveFields,
   toItemAmountActiveMap,
-  zSandboxDeductionEdits,
-  zSandboxDeductionAdditions,
-  zSandboxContribActiveFields,
-  zSandboxContribAdditions,
 } from "@/lib/pure/household/what-if.schema";
 import * as schema from "@/lib/db/schema";
 import {
@@ -81,6 +69,8 @@ import {
   type PayProfileSelection,
 } from "@/lib/pure/household/profile-selection.schema";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
+import { zBudgetActiveSummaryInput } from "@/server/services/budget/active-summary";
+import { computePaycheckSummary } from "@/server/services/paycheck/summary";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
@@ -154,7 +144,7 @@ async function resolveEffectiveContribProfileIdForItem(
 }
 
 /**
- * Household monthly take-home from paycheck.computeSummary: each job's net
+ * Household monthly take-home from computePaycheckSummary: each job's net
  * pay × the paychecks per month the budget counts. netPay is gross −
  * pre-tax − withholding − FICA − post-tax, so this is the same take-home the
  * client's buildPayrollBreakdown derives line by line. Null when no one has
@@ -239,11 +229,9 @@ export const budgetRouter = createTRPCRouter({
     // ── Take-home pay ──
     // The active Contribution/Salary pair — the same for every budget
     // profile, since a budget column is a spending level, not a different
-    // pay world. One paycheck.computeSummary call (the procedure the
-    // Paycheck page uses), not a parallel re-derivation.
-    const paycheckData = await createCallerFactory(paycheckRouter)(
-      internalCtx(ctx),
-    ).computeSummary({
+    // pay world. One computePaycheckSummary call (the summary the
+    // Paycheck page shows), not a parallel re-derivation.
+    const paycheckData = await computePaycheckSummary(ctx, {
       ...(activeProfiles.contribProfileId != null
         ? { contributionProfileId: activeProfiles.contribProfileId }
         : {}),
@@ -580,40 +568,7 @@ export const budgetRouter = createTRPCRouter({
 
   /** Returns the active budget profile's calculator result for a given column. */
   computeActiveSummary: protectedProcedure
-    .input(
-      z
-        .object({
-          selectedColumn: z.number().optional(),
-          profileId: z.number().optional(),
-          /** The page's own Contribution/Salary picks (What-If); absent =
-           *  the active profiles. */
-          selection: payProfileSelectionSchema.optional(),
-          /** The What-If tab's hand-edited salary/bonus entries — see
-           *  paycheckRouter.computeSummary's identical field. Threaded into
-           *  every paycheck.computeSummary call this procedure makes
-           *  (contribution-linked amounts AND netMonthlyIncome below), so
-           *  they can't disagree about which income reality is in effect. */
-          sandboxSalaryEntries: zSandboxSalaryEntries,
-          /** The What-If tab's hand-edited budget item amounts — one more
-           *  layer on top of the existing per-item resolution chain (see
-           *  toItemAmountActiveMap's docblock). */
-          itemAmountActiveFields: zItemAmountActiveFields,
-          /** See paycheckRouter.computeSummary's identical fields — threaded
-           *  into netMonthlyIncome's paycheck.computeSummary call below so a
-           *  deduction edit/addition actually moves the income figure the
-           *  budget step is checked against. */
-          sandboxDeductionEdits: zSandboxDeductionEdits,
-          sandboxDeductionAdditions: zSandboxDeductionAdditions,
-          /** See paycheckRouter.computeSummary's identical field — applied
-           *  both to linked-item resolution (below) and netMonthlyIncome's
-           *  paycheck.computeSummary call, so a contribution edit moves
-           *  both consistently. */
-          sandboxContribActiveFields: zSandboxContribActiveFields,
-          /** See paycheckRouter.computeSummary's identical field. */
-          sandboxContribAdditions: zSandboxContribAdditions,
-        })
-        .optional(),
-    )
+    .input(zBudgetActiveSummaryInput)
     .query(async ({ ctx, input }) => {
       const activeProfile = await resolveTargetBudgetProfile(
         ctx.db,
@@ -813,7 +768,7 @@ export const budgetRouter = createTRPCRouter({
       );
 
       // Monthly take-home under the (Contribution, Salary) pair in use,
-      // honoring sandboxSalaryEntries — the same paycheck.computeSummary
+      // honoring sandboxSalaryEntries — the same computePaycheckSummary
       // call and the same netMonthlyTakeHome as listProfiles, so the What-If tab's "available income"
       // figure can't disagree with what Savings' Unspent shows for the same
       // inputs. Not derived from WhatIfPaycheckSummary's client-side annual
@@ -821,36 +776,31 @@ export const budgetRouter = createTRPCRouter({
       // job.budgetPeriodsPerMonth.
       let netMonthlyIncome: number | null = null;
       try {
-        const paycheckCallerForIncome = createCallerFactory(paycheckRouter)(
-          internalCtx(ctx),
-        );
-        const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
-          {
-            ...(profiles.contribProfileId != null
-              ? {
-                  contributionProfileId: profiles.contribProfileId,
-                }
-              : {}),
-            ...(profiles.salaryProfileId != null
-              ? { salaryProfileId: profiles.salaryProfileId }
-              : {}),
-            ...(input?.sandboxSalaryEntries
-              ? { sandboxSalaryEntries: input.sandboxSalaryEntries }
-              : {}),
-            ...(input?.sandboxDeductionEdits
-              ? { sandboxDeductionEdits: input.sandboxDeductionEdits }
-              : {}),
-            ...(input?.sandboxDeductionAdditions
-              ? { sandboxDeductionAdditions: input.sandboxDeductionAdditions }
-              : {}),
-            ...(input?.sandboxContribActiveFields
-              ? { sandboxContribActiveFields: input.sandboxContribActiveFields }
-              : {}),
-            ...(input?.sandboxContribAdditions
-              ? { sandboxContribAdditions: input.sandboxContribAdditions }
-              : {}),
-          },
-        );
+        const incomePaycheckData = await computePaycheckSummary(ctx, {
+          ...(profiles.contribProfileId != null
+            ? {
+                contributionProfileId: profiles.contribProfileId,
+              }
+            : {}),
+          ...(profiles.salaryProfileId != null
+            ? { salaryProfileId: profiles.salaryProfileId }
+            : {}),
+          ...(input?.sandboxSalaryEntries
+            ? { sandboxSalaryEntries: input.sandboxSalaryEntries }
+            : {}),
+          ...(input?.sandboxDeductionEdits
+            ? { sandboxDeductionEdits: input.sandboxDeductionEdits }
+            : {}),
+          ...(input?.sandboxDeductionAdditions
+            ? { sandboxDeductionAdditions: input.sandboxDeductionAdditions }
+            : {}),
+          ...(input?.sandboxContribActiveFields
+            ? { sandboxContribActiveFields: input.sandboxContribActiveFields }
+            : {}),
+          ...(input?.sandboxContribAdditions
+            ? { sandboxContribAdditions: input.sandboxContribAdditions }
+            : {}),
+        });
         netMonthlyIncome = netMonthlyTakeHome(incomePaycheckData);
       } catch (err) {
         // Supplementary figure for the What-If tab's income handoff — a

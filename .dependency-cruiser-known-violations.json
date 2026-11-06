@@ -131,11 +131,6 @@
   },
   {
     "rule": "no-router-to-router",
-    "from": "src/server/routers/budget.ts",
-    "to": "src/server/routers/paycheck.ts"
-  },
-  {
-    "rule": "no-router-to-router",
     "from": "src/server/routers/milestones.ts",
     "to": "src/server/routers/brokerage.ts"
   },
