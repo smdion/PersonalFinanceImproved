@@ -80,7 +80,7 @@ import {
   trackDepletions,
   cleanupDust,
 } from "../balance-deduction";
-import { computeRmdAmount, getRmdFactor } from "../../../config/rmd-tables";
+import { getRmdFactor } from "../../../config/rmd-tables";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -88,6 +88,7 @@ import type {
 } from "./types";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
+import { rmdIncomeByOwner } from "./decumulation-income";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
@@ -202,64 +203,14 @@ export function runDecumulationYear(
     age,
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
-  // --- Per-person RMD (moved ahead of routing/tax gross-up) ---
-  // Compute each person's RMD from their own Traditional balance and age.
-  // Previously computed AFTER routing (only needed for enforceRmd's
-  // override), but the QCD step needs the RMD amount BEFORE tax
-  // gross-up runs -- a QCD reduces taxable income for the year, so it has
-  // to be known (and deducted) before estimateWithdrawalTaxCost, not
-  // after. Pure computation, no dependency on routing -- safe to hoist.
-  // Multi-person households with tracked accounts enforce each owner's RMD
-  // on that owner's accounts, whether or not one is due this year; the
-  // household calculation (primary's age on the pooled balance) is for
-  // single-person households only.
-  const perOwnerRmd = hasIndividualAccounts && rmdStartAgeByPerson.size > 0;
-  let perPersonRmdTotal: number | undefined;
-  let rmdByPerson:
-    | {
-        personId: number;
-        personName: string;
-        amount: number;
-        divisor?: number;
-        priorYearEndTradBalance?: number;
-        age?: number;
-        shortfall?: number;
-      }[]
-    | undefined;
-  if (perOwnerRmd) {
-    rmdByPerson = [];
-    let total = 0;
-    for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
-      const personAge = ageInYear(birthYear, year);
-      const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
-      if (personAge >= startAge && personTrad > 0) {
-        const rmdAmount = computeRmdAmount(personTrad, personAge);
-        if (rmdAmount != null) {
-          rmdByPerson.push({
-            personId,
-            personName:
-              input.socialSecurityEntries?.find((e) => e.personId === personId)
-                ?.personName ??
-              ctx.indAccts.find((a) => a.ownerPersonId === personId)
-                ?.ownerName ??
-              "Account owner",
-            amount: rmdAmount,
-            // "Why is my RMD this amount" — the IRS Uniform Lifetime Table
-            // divisor and the prior-year-end Traditional balance it's
-            // divided by, both already computed just above (computeRmdAmount
-            // itself calls getRmdFactor internally) — surfaced here rather
-            // than re-derived by the UI, so the displayed math can't drift
-            // from what actually produced `amount`.
-            divisor: getRmdFactor(personAge) ?? undefined,
-            priorYearEndTradBalance: personTrad,
-            age: personAge,
-          });
-          total += rmdAmount;
-        }
-      }
-    }
-    if (total > 0) perPersonRmdTotal = roundToCents(total);
-  }
+  const { perOwnerRmd, perPersonRmdTotal, rmdByPerson } = rmdIncomeByOwner(
+    year,
+    input,
+    ctx,
+    hasIndividualAccounts,
+    rmdStartAgeByPerson,
+    priorYearEndTradByPerson,
+  );
 
   // The year's after-tax need: spending less Social Security — or, when
   // the strategy sized the gross withdrawal (Social Security on top), what
