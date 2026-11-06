@@ -38,7 +38,6 @@ import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import {
   resolveRetirementProfileIdFrom,
-  retirementProfileIsFallback,
   pickProfileSettingsRow,
 } from "@/lib/pure/household/retirement-profile";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -50,11 +49,6 @@ import {
   isRetirementMoney,
 } from "@/lib/config/account-types";
 import type { SimpleTaxModeParts } from "@/lib/pure/tax/simple-tax-mode";
-import { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
-import {
-  findMissingCostBasis,
-  missingCostBasisWarning,
-} from "@/lib/pure/accounts/basis-consistency";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
@@ -77,13 +71,12 @@ import {
   profileSwitchFrom,
 } from "./profile-switches";
 import { retirementContributions } from "./retirement-contributions";
-import { buildIndividualAccounts } from "./individual-accounts";
 import { applyProfiles, type fetchRetirementData } from "./load";
 import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
 import { budgetSummaries } from "./display";
 import { resolveTaxYear } from "./tax-year";
+import { startingAccounts } from "./accounts";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_IRS_LIMIT_GROWTH_RATE,
@@ -311,13 +304,6 @@ export async function buildEnginePayload(
     (js) => js.totalCompFullFormula,
   );
 
-  // Portfolio by tax bucket + per-account balances (combined for engine).
-  // Shared with the Tax Buckets analysis tool — see src/lib/pure/accounts/tax-buckets.ts.
-  const taxBucketBreakdown = computeTaxBucketBreakdown(
-    snapshotData,
-    people,
-    perfAccounts,
-  );
   const {
     portfolioByTaxType,
     portfolioByTaxTypeByParentCat,
@@ -326,87 +312,25 @@ export async function buildEnginePayload(
     accountOwnersByCategory,
     ownershipByPerson,
     accountBreakdownByCategory,
-  } = taxBucketBreakdown;
-
-  // Where reinvested RMD money goes (Retirement settings): the chosen
-  // Retirement brokerage, else every Retirement brokerage — never a
-  // Portfolio account. With no Retirement brokerage, a projection-only one
-  // holds that money and contribution overflow.
-  const rmdTarget = resolveRmdExcessTarget({
-    targetPerformanceAccountId:
-      settings.rmdExcessTargetPerformanceAccountId ?? null,
-    reinvest: settings.rmdExcessHandling !== "spend",
-    entries: Object.entries(accountBreakdownByCategory).flatMap(
-      ([category, accts]) => accts.map((a) => ({ ...a, category })),
-    ),
+    inputWarnings,
+    personNameById,
+    birthYearByPersonId,
+    individualAccounts,
+  } = startingAccounts(
+    snapshotData,
+    people,
     perfAccounts,
-  });
-  // Brokerages holding money with no cost basis: the projection taxes every
-  // dollar drawn from them as a gain — say so (0 also means "not entered").
-  const basisWarnings = [
-    ...new Set(
-      findMissingCostBasis(
-        Object.entries(accountBreakdownByCategory).flatMap(
-          ([category, accts]) =>
-            accts
-              .filter((a) => a.costBasis != null)
-              .map((a) => ({
-                category,
-                name: a.name,
-                balance: a.amount,
-                costBasis: a.costBasis!,
-              })),
-        ),
-      ).map((a) => missingCostBasisWarning(a.name)),
-    ),
-  ];
-  const viewingFallbackProfile =
-    activeProfileId !== opts.retirementProfileId &&
-    retirementProfileIsFallback(allAppSettings, retProfiles);
-  const inputWarnings = [
-    ...(viewingFallbackProfile
-      ? [
-          `No active retirement profile is set, so this uses ${retProfiles.find((p) => p.id === activeProfileId)?.name}. Choose one in the Retirement profiles.`,
-        ]
-      : []),
-    ...(rmdTarget.warning ? [rmdTarget.warning] : []),
-    ...basisWarnings,
-  ];
-  const personNameById = new Map(people.map((p) => [p.id, p.name]));
-
-  const birthYearByPersonId = new Map(
-    perPersonSettings.map((p) => [p.personId, p.birthYear]),
-  );
-  // Rule of 55 forecasting override -- see
-  // IndividualAccountInput.ruleOf55ForceIneligible's docblock for the full
-  // contract. Only ever set true (never false) below, so a household not
-  // using this feature gets a byte-identical engine input.
-  const ruleOf55OverrideByPerson = new Map(
-    perPersonSettings.map((p) => [p.personId, p.ruleOf55Override]),
-  );
-  // When each person's still-active job ends (Rule of 55): their own
-  // planned retirement year.
-  const retirementYearByPersonId = new Map(
-    perPersonSettings.flatMap((ps) => {
-      const birthYear = birthYearByPersonId.get(ps.personId);
-      return birthYear != null
-        ? [[ps.personId, birthYear + ps.retirementAge] as const]
-        : [];
-    }),
-  );
-  const individualAccounts = buildIndividualAccounts({
+    settings,
+    activeProfileId,
+    opts,
+    allAppSettings,
+    retProfiles,
+    perPersonSettings,
     allJobs,
     jobLinkRows,
     accountBasisRows,
-    perfAccounts,
-    people,
     asOfDate,
-    taxBucketBreakdown,
-    birthYearByPersonId,
-    retirementYearByPersonId,
-    ruleOf55OverrideByPerson,
-    rmdTarget,
-  });
+  );
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
