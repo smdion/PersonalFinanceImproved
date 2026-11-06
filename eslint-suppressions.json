@@ -6121,9 +6121,6 @@
     }
   },
   "src/server/routers/sync/names.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -6133,7 +6130,7 @@
   },
   "src/server/routers/sync/preview.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
@@ -6670,7 +6667,7 @@
   },
   "src/server/services/sync/sync-all.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 2

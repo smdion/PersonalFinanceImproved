@@ -33,7 +33,7 @@ export async function syncAll(
     });
   }
 
-  const service = input.service as BudgetApiService;
+  const service = input.service;
 
   try {
     // Read previous cached account list BEFORE the new fetch so we

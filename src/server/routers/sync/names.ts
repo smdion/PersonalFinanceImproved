@@ -6,7 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { cacheGet } from "@/lib/budget-api";
-import type { BudgetApiService, BudgetCategoryGroup } from "@/lib/budget-api";
+import type { BudgetCategoryGroup } from "@/lib/budget-api";
 import {
   loadBudgetItemLinks,
   setBudgetItemLink,
@@ -23,7 +23,7 @@ export const syncNamesRouter = createTRPCRouter({
       const links = await loadBudgetItemLinks(
         ctx.db,
         [input.budgetItemId],
-        input.service as BudgetApiService,
+        input.service,
       );
       const link = links.get(input.budgetItemId);
       if (!link?.categoryName) {
@@ -56,7 +56,7 @@ export const syncNamesRouter = createTRPCRouter({
       const links = await loadBudgetItemLinks(
         ctx.db,
         [input.budgetItemId],
-        input.service as BudgetApiService,
+        input.service,
       );
       const link = links.get(input.budgetItemId);
       if (!link) {
@@ -67,7 +67,7 @@ export const syncNamesRouter = createTRPCRouter({
       }
       await setBudgetItemLink(ctx.db, {
         budgetItemId: input.budgetItemId,
-        service: input.service as BudgetApiService,
+        service: input.service,
         categoryId: link.categoryId,
         categoryName: item.subcategory,
         syncDirection: link.syncDirection,
@@ -100,7 +100,7 @@ export const syncNamesRouter = createTRPCRouter({
       const links = await loadSavingsGoalLinks(
         ctx.db,
         [input.goalId],
-        input.service as BudgetApiService,
+        input.service,
         "primary",
       );
       const link = links.get(input.goalId);
@@ -134,7 +134,7 @@ export const syncNamesRouter = createTRPCRouter({
       const links = await loadSavingsGoalLinks(
         ctx.db,
         [input.goalId],
-        input.service as BudgetApiService,
+        input.service,
         "primary",
       );
       const link = links.get(input.goalId);
@@ -146,7 +146,7 @@ export const syncNamesRouter = createTRPCRouter({
       }
       await setSavingsGoalLink(ctx.db, {
         savingsGoalId: input.goalId,
-        service: input.service as BudgetApiService,
+        service: input.service,
         role: "primary",
         categoryId: link.categoryId,
         categoryName: goal.name,
@@ -169,7 +169,7 @@ export const syncNamesRouter = createTRPCRouter({
       let savingsRenamed = 0;
       let categoriesMoved = 0;
 
-      const service = input.service as BudgetApiService;
+      const service = input.service;
 
       // Budget items with a link for this service
       const allBudgetItemRows = await ctx.db

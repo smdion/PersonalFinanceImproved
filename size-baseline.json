@@ -201,7 +201,7 @@
     "src/server/routers/simplefin/accounts.ts": 254,
     "src/server/routers/simplefin/index.ts": 24,
     "src/server/routers/sync/core.ts": 12,
-    "src/server/routers/sync/preview.ts": 734,
+    "src/server/routers/sync/preview.ts": 733,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
     "src/server/services/budget/active-summary.ts": 330,

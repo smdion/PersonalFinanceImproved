@@ -7,7 +7,6 @@ import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
 import {
   getApiConnection,
   cacheGet,
-  type BudgetApiService,
   type BudgetAccount,
   type BudgetCategoryGroup,
   type BudgetMonthDetail,
@@ -33,7 +32,7 @@ export const previewProcedures = {
   getPreview: protectedProcedure
     .input(z.object({ service: serviceEnum }))
     .query(async ({ ctx, input }) => {
-      const service = input.service as BudgetApiService;
+      const service = input.service;
 
       const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
