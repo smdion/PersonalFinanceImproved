@@ -22,6 +22,11 @@ import {
   type TaxDataFile,
 } from "./src/lib/db/reference-reconcile-core";
 import { VERSION_TABLE_NAMES } from "./src/lib/db/version-tables";
+import {
+  MIGRATION_CONVERTERS,
+  runConverterPg,
+  runConverterSqlite,
+} from "./src/lib/db/migration-converters";
 
 function log(
   level: "info" | "warn" | "error",
@@ -767,6 +772,22 @@ async function applyStatementsPg(
     await client.query(stmt);
 }
 
+/** A tag's data converter (migration-converters.ts) on PostgreSQL, inside
+ *  the caller's transaction: pending loop and squash replay alike. */
+async function convertPg(
+  client: import("pg").PoolClient,
+  tag: string,
+  phase: "beforeSql" | "afterSql",
+): Promise<void> {
+  for (const note of await runConverterPg(
+    client,
+    MIGRATION_CONVERTERS,
+    tag,
+    phase,
+  ))
+    log("info", "migration_conversion", { tag, note });
+}
+
 /**
  * Handle a migration squash: when the database has more applied migrations
  * than the journal has entries (or none recorded but tables present, or
@@ -853,7 +874,9 @@ async function handleSquashUpgrade(
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
+        await convertPg(client, entry.tag, "beforeSql");
         await replayStatementsPg(client, sql);
+        await convertPg(client, entry.tag, "afterSql");
         await client.query(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [
@@ -1047,7 +1070,9 @@ async function runPostgres() {
             const sql = fs.readFileSync(sqlPath, "utf-8");
             const hash = crypto.createHash("sha256").update(sql).digest("hex");
             if (recordedHashes.has(hash)) continue;
+            await convertPg(preClient, entry.tag, "beforeSql");
             await applyStatementsPg(preClient, sql);
+            await convertPg(preClient, entry.tag, "afterSql");
             await preClient.query(
               "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
               [hash, String(Date.now())],
@@ -1393,6 +1418,21 @@ function applyStatementsSqlite(sqlite: SqliteDb, sql: string): void {
     sqlite.exec(stmt);
 }
 
+/** The SQLite twin of convertPg. */
+function convertSqlite(
+  sqlite: SqliteDb,
+  tag: string,
+  phase: "beforeSql" | "afterSql",
+): void {
+  for (const note of runConverterSqlite(
+    sqlite,
+    MIGRATION_CONVERTERS,
+    tag,
+    phase,
+  ))
+    log("info", "migration_conversion", { tag, note, dialect: "sqlite" });
+}
+
 /** The index names a SQLite database has, as assertSchemaComplete reads
  *  them. */
 function sqliteIndexes(sqlite: SqliteDb): Set<string> {
@@ -1469,7 +1509,9 @@ function handleSQLiteSquashUpgrade(
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
+        convertSqlite(sqlite, entry.tag, "beforeSql");
         replayStatementsSqlite(sqlite, sql);
+        convertSqlite(sqlite, entry.tag, "afterSql");
         sqlite
           .prepare(
             "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
@@ -1593,7 +1635,9 @@ export function runSQLite() {
           const sql = fs.readFileSync(sqlPath, "utf-8");
           const hash = crypto.createHash("sha256").update(sql).digest("hex");
           if (appliedHashes.has(hash)) continue;
+          convertSqlite(sqlite, entry.tag, "beforeSql");
           applyStatementsSqlite(sqlite, sql);
+          convertSqlite(sqlite, entry.tag, "afterSql");
           sqlite
             .prepare(
               "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",

@@ -890,8 +890,10 @@ The Simulation runs the whole projection many times, each trial with its own ran
 ### Data-converting migrations
 
 A migration that rewrites data runs **one converter** both on a live
-database (`db-migrate.ts`, inside the migration's transaction, just before
-its SQL drops what the converter reads) and on an older backup being
+database (`db-migrate.ts`, inside the migration's transaction: registered by
+tag in `MIGRATION_CONVERTERS` (`src/lib/db/migration-converters.ts`), it runs
+in the pending loop and both squash replays, before the tag's SQL when that
+drops what it reads, after it when that adds what it writes) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
 `transformV0810ProfileSets`). `db-migrate.ts` imports the converter from
 `src/` (esbuild bundles it into `db-migrate.js`, so the image needs neither

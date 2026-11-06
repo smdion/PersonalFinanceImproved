@@ -31,6 +31,7 @@ describe("the migrator bundle", () => {
     expect(inputs.filter((f) => !f.includes("node_modules/")).sort()).toEqual([
       "db-migrate.ts",
       "src/lib/db/demo-schema-marker.ts",
+      "src/lib/db/migration-converters.ts",
       "src/lib/db/reference-reconcile-core.ts",
       "src/lib/db/version-tables.ts",
     ]);
