@@ -15,20 +15,7 @@
  *   5. owner + parentCat                       (drop taxType)
  *   6. owner OR no-owner                       (loosest)
  */
-import { describe, it, expect, vi } from "vitest";
-
-// Same shims the sibling contribution.test.ts uses — importing the module
-// pulls in the db barrels; the function under test touches neither. The
-// account-types config is the real one.
-vi.mock("@/lib/db/schema", () => ({
-  contributionAccounts: {},
-  jobs: {},
-  people: {},
-  performanceAccounts: {},
-  contributionProfiles: {},
-}));
-vi.mock("@/lib/db", () => ({ db: {} }));
-
+import { describe, it, expect } from "vitest";
 import {
   matchAccountForContribution,
   type BreakdownAccount,

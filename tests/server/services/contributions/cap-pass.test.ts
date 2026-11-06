@@ -3,7 +3,7 @@
  * value every calculation reads, and the yearly money figured from the
  * capped value is exactly the module's capped amount. Invented figures.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
 import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";

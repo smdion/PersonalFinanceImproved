@@ -6,7 +6,7 @@
  * set to be taken from bonus checks. Fictional household: $100,000 salary,
  * $20,000 bonus, a 6% 401(k) matched 100% up to 4% of pay.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { describe, it, expect } from "vitest";
 import {

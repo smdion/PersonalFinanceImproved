@@ -1,6 +1,5 @@
-import "../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
-import { salaryEntry } from "./salary-entry";
+import { salaryEntry } from "../../helpers/salary-entry";
 import {
   computeBonusGross,
   contributionPay,

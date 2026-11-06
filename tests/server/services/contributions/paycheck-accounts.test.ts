@@ -4,7 +4,7 @@
  * limit for the coverage and age, less employer money; 401(k) deferrals and
  * money paid in outside payroll are FICA wages.
  */
-import "./setup-mocks";
+import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";

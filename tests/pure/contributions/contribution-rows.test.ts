@@ -4,7 +4,6 @@
  * resolveContribPeriods used to hand back 0 for those methods, so the
  * bonus share was regular / 0 = Infinity and the cap pass zeroed the account.
  */
-import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
@@ -84,5 +83,76 @@ describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () 
       0,
     );
     expect(annual).toBe(1200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// annualContributionWithBonus — the one yearly amount (the paycheck's way)
+// ---------------------------------------------------------------------------
+
+describe("annualContributionWithBonus", () => {
+  const pct = (
+    value: number,
+    jobId: number | null = 1,
+    fromBonus: boolean | undefined = true,
+  ) => ({
+    contributionMethod: "percent_of_salary",
+    contributionValue: value,
+    jobId,
+    fromBonus,
+  });
+
+  it("takes the rate of the base salary when the bonus check carries nothing", () => {
+    expect(annualContributionWithBonus(pct(10), { salary: 100_000 }, 26)).toBe(
+      10_000,
+    );
+  });
+
+  it("adds the rate of the bonus once when the account is taken from bonus checks", () => {
+    // The bonus is never also part of the salary, so it can't be counted twice.
+    expect(
+      annualContributionWithBonus(
+        pct(10),
+        { salary: 100_000, bonusGross: 12_000 },
+        26,
+      ),
+    ).toBe(11_200);
+  });
+
+  it("takes a fixed per-paycheck amount once more from the bonus check", () => {
+    expect(
+      annualContributionWithBonus(
+        {
+          contributionMethod: "fixed_per_period",
+          contributionValue: 200,
+          jobId: 1,
+          fromBonus: true,
+        },
+        { salary: 100_000, bonusGross: 12_000 },
+        26,
+      ),
+    ).toBe(200 * 27);
+  });
+
+  it("takes nothing from the bonus unless the account is set to (fromBonus)", () => {
+    for (const fromBonus of [false, undefined]) {
+      expect(
+        annualContributionWithBonus(
+          { ...pct(10), fromBonus },
+          { salary: 100_000, bonusGross: 12_000 },
+          26,
+        ),
+      ).toBe(10_000);
+    }
+  });
+
+  it("takes nothing from the bonus for an account not paid through payroll", () => {
+    expect(
+      annualContributionWithBonus(
+        pct(10, null),
+        { salary: 100_000, bonusGross: 12_000 },
+        26,
+      ),
+    ).toBe(10_000);
   });
 });

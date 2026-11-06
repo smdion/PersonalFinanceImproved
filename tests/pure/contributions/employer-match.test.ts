@@ -1,15 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
-
-// Mock DB schema to avoid pg driver import; the account-types config is real
-vi.mock("@/lib/db/schema", () => ({
-  contributionAccounts: {},
-  jobs: {},
-  people: {},
-  performanceAccounts: {},
-  contributionProfiles: {},
-}));
-vi.mock("@/lib/db", () => ({ db: {} }));
-
+import { describe, it, expect } from "vitest";
 import {
   computeEmployerMatch,
   computeGroupedEmployerMatch,
