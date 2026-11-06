@@ -804,7 +804,7 @@
       "count": 4
     }
   },
-  "src/server/routers/savings.ts": {
+  "src/server/routers/savings/index.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }

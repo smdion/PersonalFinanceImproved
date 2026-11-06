@@ -5869,7 +5869,7 @@
       "count": 2
     }
   },
-  "src/server/routers/savings.ts": {
+  "src/server/routers/savings/index.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },

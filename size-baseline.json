@@ -186,7 +186,7 @@
     "src/server/routers/projection/tax-optimization.ts": 527,
     "src/server/routers/retirement.ts": 1252,
     "src/server/routers/salary-profiles.ts": 599,
-    "src/server/routers/savings.ts": 2158,
+    "src/server/routers/savings/index.ts": 2158,
     "src/server/routers/settings/admin.ts": 412,
     "src/server/routers/settings/paycheck.ts": 710,
     "src/server/routers/settings/tax-limits.ts": 784,
@@ -914,7 +914,7 @@
     "src/server/routers/retirement.ts": {
       "retirementRouter.computeRelocationAnalysis.query()": 399
     },
-    "src/server/routers/savings.ts": {
+    "src/server/routers/savings/index.ts": {
       "savingsRouter.pushContributionsToApi.mutation()": 201
     },
     "src/server/routers/simplefin.ts": {
