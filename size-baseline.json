@@ -20,7 +20,7 @@
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 954,
     "src/components/budget/budget-summary-table.tsx": 772,
-    "src/components/budget/contribution-profile-manager.tsx": 2063,
+    "src/components/budget/contribution-profile-manager.tsx": 2057,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
@@ -59,7 +59,7 @@
     "src/components/mortgage/mortgage-settings.tsx": 728,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
     "src/components/onboarding/onboarding-wizard.tsx": 1020,
-    "src/components/paycheck/contrib-account-form.tsx": 627,
+    "src/components/paycheck/contrib-account-form.tsx": 625,
     "src/components/paycheck/contrib-card.tsx": 539,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
@@ -68,7 +68,7 @@
     "src/components/performance/year-row.tsx": 749,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 666,
-    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 640,
+    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 637,
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 835,
     "src/components/portfolio/portfolio-chart.tsx": 476,
@@ -117,7 +117,7 @@
     "src/lib/pure/contributions/accumulation-order.ts": 30,
     "src/lib/pure/contributions/cap-pass.ts": 225,
     "src/lib/pure/contributions/category-totals.ts": 157,
-    "src/lib/pure/contributions/contribution-amount.ts": 110,
+    "src/lib/pure/contributions/contribution-amount.ts": 109,
     "src/lib/pure/contributions/contribution-caps.ts": 674,
     "src/lib/pure/contributions/contribution-order.ts": 93,
     "src/lib/pure/contributions/contribution-rows.ts": 216,
@@ -341,9 +341,9 @@
       "ProfileDetailPanel": 254,
       "ProfileEditor": 518,
       "ProfileEditor.map()": 212,
-      "ProfileInlineEditor": 799,
-      "ProfileInlineEditor.iife()": 385,
-      "ProfileInlineEditor.iife().map()": 378
+      "ProfileInlineEditor": 789,
+      "ProfileInlineEditor.iife()": 375,
+      "ProfileInlineEditor.iife().map()": 371
     },
     "src/components/budget/hooks/use-item-mutations.ts": {
       "useItemMutations": 182
@@ -526,11 +526,11 @@
       "OnboardingWizard": 345
     },
     "src/components/paycheck/contrib-account-form.tsx": {
-      "ContribAccountForm": 523
+      "ContribAccountForm": 517
     },
     "src/components/paycheck/contrib-card.tsx": {
-      "ContribCard": 507,
-      "ContribCard.iife()": 189
+      "ContribCard": 503,
+      "ContribCard.iife()": 182
     },
     "src/components/paycheck/contribution-snapshot.tsx": {
       "ContributionSnapshot": 674,
@@ -587,7 +587,7 @@
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
       "AddContribForm": 170,
-      "ContributionRow": 434
+      "ContributionRow": 431
     },
     "src/components/portfolio/contribution-accounts-create-form.tsx": {
       "CreateAccountForm": 197

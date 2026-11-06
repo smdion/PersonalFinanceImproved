@@ -13,7 +13,11 @@ import {
   EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
-import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
+import {
+  formatEmployerMatch,
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/contribution-amount";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
@@ -756,7 +760,6 @@ function ProfileEditor({
     // as every account's own value, editable afterward via the standing
     // editor.
     const contribAccounts: Record<string, Record<string, unknown>> = {};
-    // Merge contribution method/value into contrib accounts
     for (const [accountId, cVal] of Object.entries(contribValues)) {
       if (cVal.value && cVal.value.trim()) {
         const num = parseFloat(cVal.value);
@@ -769,7 +772,6 @@ function ProfileEditor({
         }
       }
     }
-    // Merge custom names into contrib accounts
     for (const [accountId, nameVal] of Object.entries(nameValues)) {
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
@@ -778,7 +780,6 @@ function ProfileEditor({
         };
       }
     }
-    // Merge disabled accounts into contrib accounts
     for (const [accountId, isDisabled] of Object.entries(disabledAccounts)) {
       if (isDisabled) {
         contribAccounts[accountId] = {
@@ -787,7 +788,6 @@ function ProfileEditor({
         };
       }
     }
-    // Merge employer-match type/values into contrib accounts
     for (const [accountId, mVal] of Object.entries(matchValues)) {
       if (mVal.matchType) {
         contribAccounts[accountId] = {
@@ -798,9 +798,13 @@ function ProfileEditor({
       if (mVal.matchValue) {
         const num = parseFloat(mVal.matchValue);
         if (!isNaN(num)) {
+          const typedUnder =
+            mVal.matchType ??
+            baseData?.accountDetails.find((a) => String(a.id) === accountId)
+              ?.liveMatchType;
           contribAccounts[accountId] = {
             ...(contribAccounts[accountId] ?? {}),
-            employerMatchValue: String(num),
+            employerMatchValue: matchValueToStore(typedUnder, String(num)),
           };
         }
       }
@@ -1504,9 +1508,6 @@ function ProfileInlineEditor({
             </thead>
             <tbody>
               {(() => {
-                // Same "combined across Roth/Trad splits" detection as the
-                // read-only Profiles summary table above — shared via
-                // groupSharedMatchAccounts so both render paths stay in sync.
                 const { sharedMatchSource: editSharedMatchSource } =
                   groupSharedMatchAccounts(profile.accountDetails);
                 return profile.accountDetails.map((ad, rowIdx) => {
@@ -1516,29 +1517,17 @@ function ProfileInlineEditor({
                     af.contributionMethod !== undefined
                       ? String(af.contributionMethod)
                       : "";
-                  // The <select> below has no blank option, so an unset
-                  // storedMethod renders as the first CONTRIBUTION_METHOD_LABELS
-                  // entry ("% of Salary") regardless of what this variable says.
-                  // Fall back the same way here (and to any in-progress draft
-                  // pick) so the $/% prefix-suffix always matches what the
-                  // dropdown is actually showing.
+                  // The <select> has no blank option: unset shows "% of Salary".
                   const effectiveMethod =
                     drafts[`a${ad.id}:method`] ??
                     (storedMethod || "percent_of_salary");
                   const isPercent = effectiveMethod === "percent_of_salary";
-                  // employerMatchType is itself profile-overridable (it's a
-                  // PROFILE_OWNED_CONTRIB_FIELDS member) — must resolve the
-                  // same way the server's applyContribActiveFields merge
-                  // does, or a profile that overrides type away from the
-                  // live account's own type shows no editor for it at all.
+                  // Profile-owned: resolved as applyContribActiveFields does.
                   const storedMatchType =
                     af.employerMatchType !== undefined
                       ? String(af.employerMatchType)
                       : "";
-                  // The <select> below commits immediately on change (same
-                  // pattern as the "On" checkbox), not draft-then-blur, so
-                  // no drafts[] lookup here — patchAccount below is the
-                  // single source of truth the instant it fires.
+                  // Its <select> commits on change, so no drafts[] lookup.
                   const effectiveMatchType =
                     storedMatchType || ad.liveMatchType || "none";
                   const hasMatch = effectiveMatchType !== "none";
@@ -1556,19 +1545,20 @@ function ProfileInlineEditor({
                     af.displayNameCustom !== undefined
                       ? String(af.displayNameCustom)
                       : "";
-                  // A profile that resolves no value for this account
-                  // (hasValue false) contributes nothing to the engine —
-                  // its live match is never actually "in effect" here, so
-                  // it must not be shown as if it were a real, applying
-                  // value. Same resolver used everywhere else this session
-                  // for this exact distinction (RULES.md Rule 6).
+                  // No resolved value: the live match isn't in effect, so isn't shown.
                   const { hasValue: contribHasValue } =
                     resolveContribFieldDisplayState(af);
                   const storedMatch =
                     af.employerMatchValue !== undefined
-                      ? String(af.employerMatchValue)
+                      ? matchFigureForForm(
+                          effectiveMatchType,
+                          String(af.employerMatchValue),
+                        )
                       : contribHasValue && ad.liveMatchValue != null
-                        ? String(ad.liveMatchValue)
+                        ? matchFigureForForm(
+                            ad.liveMatchType,
+                            String(ad.liveMatchValue),
+                          )
                         : "";
                   const storedCap =
                     af.employerMaxMatchPct !== undefined
@@ -1810,7 +1800,11 @@ function ProfileInlineEditor({
                                     patchAccount(ad.id, {
                                       employerMatchValue: value,
                                     }),
-                                  (num) => String(num),
+                                  (num) =>
+                                    matchValueToStore(
+                                      effectiveMatchType,
+                                      String(num),
+                                    ),
                                 )
                               }
                               title={

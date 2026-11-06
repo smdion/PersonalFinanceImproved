@@ -1,7 +1,5 @@
-/**
- * A contribution row's yearly dollars and its employer match terms. Stored
- * percents are whole numbers (6 means 6%); they become a Fraction once, here.
- */
+/** A contribution row's yearly dollars and its employer match terms. Stored
+ *  percents are whole numbers (6 means 6%); they become a Fraction once, here. */
 import {
   CONTRIBUTION_METHOD_VALUES,
   EMPLOYER_MATCH_TYPE_VALUES,
@@ -82,21 +80,24 @@ export function parseEmployerMatch(
   }
 }
 
-/**
- * Format an account's employer match for read-only display — the one
- * computation shared by every summary/detail view (previously three
- * independent hand-rolled copies, one of which — the Portfolio page's
- * contribution row — hardcoded "% match" for every type, including
- * dollar_match/fixed_annual flat-dollar matches). Returns null for
- * none/null, matching every call site's existing "—" fallback for that
- * case. Mirrors computeEmployerMatch's own type branching
- * (src/lib/pure/contributions/employer-match.ts) — only percent_of_contribution
- * reads maxMatchPct at all.
- */
+type MatchType = string | null | undefined;
+type Stored = string | number | null | undefined;
+
+/** A stored match value as the figure a form shows and edits: a whole percent
+ *  or dollars, "" when none. matchValueToStore stores a typed one. */
+export function matchFigureForForm(_type: MatchType, stored: Stored): string {
+  return stored == null ? "" : String(stored);
+}
+
+export function matchValueToStore(_type: MatchType, typed: string): string {
+  return typed;
+}
+
+/** An account's employer match for read-only display; null for no match. */
 export function formatEmployerMatch(
-  matchType: string | null | undefined,
-  matchValue: string | number | null | undefined,
-  maxMatchPct: string | number | null | undefined,
+  matchType: MatchType,
+  matchValue: Stored,
+  maxMatchPct: Stored,
 ): string | null {
   if (!matchType || matchType === "none") return null;
   const value = parseFloat(String(matchValue ?? "0"));
@@ -104,7 +105,5 @@ export function formatEmployerMatch(
     const cap = parseFloat(String(maxMatchPct ?? "0"));
     return cap > 0 ? `${value}% of ${formatPercent(cap, 2)}` : `${value}%`;
   }
-  // dollar_match / fixed_annual — a flat dollar amount, not a rate, so no
-  // "%" suffix and no cap (computeEmployerMatch ignores maxMatchPct here).
   return `${formatCurrency(value)}/yr`;
 }

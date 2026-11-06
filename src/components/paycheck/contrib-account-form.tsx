@@ -41,6 +41,10 @@ import {
 } from "@/lib/config/display-labels";
 import { InstitutionPicker } from "./institution-picker";
 import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
+import {
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/contribution-amount";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =
@@ -132,9 +136,7 @@ export function ContribAccountForm({
       : "",
   );
 
-  // Owner falls back to the first loaded person until the caller pins one
-  // or the user picks explicitly — resolved at render/submit time instead
-  // of an effect, since `people` arrives async from its own query.
+  // The first loaded person until one is picked (`people` loads async).
   const effectivePersonId =
     v.ownership === "individual"
       ? (v.personId ?? people?.[0]?.id ?? null)
@@ -150,10 +152,7 @@ export function ContribAccountForm({
     cfg.irsLimitKeys != null && "coverageVariant" in cfg.irsLimitKeys;
   const subTypeOptions = cfg.subTypeOptions;
 
-  // An institution can already have a contribution row for this account
-  // type — often an inactive stub auto-created alongside a sibling tax
-  // treatment (see settings.contributionAccounts.create), or a real
-  // account. Surface it instead of silently creating a duplicate row.
+  // A row of this type already at this institution: offered, not duplicated.
   const matchingExisting = (existingAccounts ?? []).filter(
     (a) =>
       v.performanceAccountId != null &&
@@ -162,10 +161,7 @@ export function ContribAccountForm({
       a.id !== linkedExistingId,
   );
 
-  // Which Contribution Profiles have set an active value for a given
-  // existing account — surfaced as context, not a blocker: reusing an
-  // account another profile already values is fine, it just shouldn't be a
-  // surprise.
+  // Profiles already valuing an existing account: context, not a blocker.
   const profileNamesFor = (accountId: number): string[] =>
     (compareData?.profiles ?? [])
       .filter(
@@ -229,9 +225,7 @@ export function ContribAccountForm({
         "coverageVariant" in nextCfg.irsLimitKeys
           ? prev.hsaCoverageType
           : null,
-      // The linked institution is scoped to the previous account type —
-      // clear it rather than leave a mismatched id the picker can no
-      // longer display an option for.
+      // Scoped to the previous account type.
       performanceAccountId: null,
     }));
     setLinkedExistingId(null);
@@ -252,10 +246,7 @@ export function ContribAccountForm({
 
   return (
     <div className="space-y-3">
-      {/* Always-visible mode indicator — the amber "existing accounts"
-          banner and the submit button's label both signal this too, but
-          only when scrolled into view; this stays pinned at the top so the
-          create-vs-reuse distinction can't be missed. */}
+      {/* Pinned, so create vs reuse can't be missed. */}
       <div
         className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
           linkedExistingId != null
@@ -423,9 +414,16 @@ export function ContribAccountForm({
               <FormInput
                 type="number"
                 step="any"
-                value={v.employerMatchValue ?? ""}
+                value={matchFigureForForm(
+                  v.employerMatchType,
+                  v.employerMatchValue,
+                )}
                 onChange={(e) =>
-                  set("employerMatchValue", e.target.value || null)
+                  set(
+                    "employerMatchValue",
+                    matchValueToStore(v.employerMatchType, e.target.value) ||
+                      null,
+                  )
                 }
                 placeholder={
                   EMPLOYER_MATCH_VALUE_UNIT[v.employerMatchType] === "$"

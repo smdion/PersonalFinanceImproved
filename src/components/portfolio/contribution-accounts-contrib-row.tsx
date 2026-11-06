@@ -23,7 +23,11 @@ import {
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
 } from "@/lib/pure/household/profiles";
-import { formatEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
+import {
+  formatEmployerMatch,
+  matchFigureForForm,
+  matchValueToStore,
+} from "@/lib/pure/contributions/contribution-amount";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
@@ -68,12 +72,8 @@ export function ContributionRow({
     ? (jobs.find((j) => j.id === c.jobId)?.employerName ?? String(c.jobId))
     : "Personal";
 
-  // employerMatchType/Value/MaxMatchPct are PROFILE_OWNED_CONTRIB_FIELDS —
-  // onUpdate already routes edits to the active profile when one is set
-  // (see handleContribUpdate), but `c` itself is the raw, unmerged account
-  // row. Display must merge the profile's own override over the live
-  // value the same way applyContribActiveFields does server-side, or this
-  // row shows/edits a number that isn't the one actually in effect.
+  // `c` is the unmerged account row: the active profile's match fields merge
+  // over it as applyContribActiveFields does: the row shows what's in effect.
   const activeMatchFields = activeProfileFields as {
     employerMatchType?: string;
     employerMatchValue?: string | number;
@@ -103,10 +103,7 @@ export function ContributionRow({
     ? `${sharedMatchText ?? "0"} match, combined with this account's ${TAX_LABELS[c.taxTreatment] ?? c.taxTreatment} contribution — see the ${TAX_LABELS[sharedMatchFrom.taxTreatment] ?? sharedMatchFrom.taxTreatment} row`
     : "";
 
-  // What this account is actually worth in the profile that's live right
-  // now — the account itself carries no value (applyContribActiveFields),
-  // so this is the one place on this page that answers "why is this row
-  // showing what it's showing" without a trip to the Budget page.
+  // The account's value in the active profile (accounts carry none).
   const profileStatus = resolveContribFieldDisplayState(
     activeProfileFields as ContribAccountActiveFields,
   );
@@ -126,7 +123,6 @@ export function ContributionRow({
     <div
       className={`bg-surface-primary rounded-lg border ${!c.isActive ? "opacity-50" : ""}`}
     >
-      {/* Summary line — hidden when edit is open */}
       {!showAdvanced && (
         <>
           <div className="flex items-center gap-2 px-3 py-2 text-xs">
@@ -220,7 +216,6 @@ export function ContributionRow({
         </>
       )}
 
-      {/* Editable fields — replaces summary when open */}
       {showAdvanced && (
         <div className="px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between">
@@ -314,10 +309,16 @@ export function ContributionRow({
                       ? "Match Amount"
                       : "Match %"
                   }
-                  value={String(effectiveMatchValue ?? "")}
+                  value={matchFigureForForm(
+                    effectiveMatchType,
+                    effectiveMatchValue,
+                  )}
                   placeholder={isPercentMatch ? "e.g. 50" : "e.g. 400"}
                   onSave={(val) =>
-                    onUpdate?.({ employerMatchValue: val || null })
+                    onUpdate?.({
+                      employerMatchValue:
+                        matchValueToStore(effectiveMatchType, val) || null,
+                    })
                   }
                   disabled={!onUpdate}
                 />
@@ -464,10 +465,6 @@ export function ContributionRow({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Add Contribution Form
-// ---------------------------------------------------------------------------
-
 export function AddContribForm({
   accountType,
   parentCategory,
@@ -507,7 +504,7 @@ export function AddContribForm({
       taxTreatment,
       employerMatchType: matchType,
       ...(matchType !== "none" && matchValue
-        ? { employerMatchValue: matchValue }
+        ? { employerMatchValue: matchValueToStore(matchType, matchValue) }
         : {}),
       ...(matchType === "percent_of_contribution" && maxMatchPct
         ? { employerMaxMatchPct: String(parseFloat(maxMatchPct) / 100) }
