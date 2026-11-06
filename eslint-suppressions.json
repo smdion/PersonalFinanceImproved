@@ -6515,13 +6515,13 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 30
+      "count": 25
     },
     "ratchet/no-guarded-division": {
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/projection/engine-payload/expense-endings.ts": {

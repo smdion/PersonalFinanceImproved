@@ -89,6 +89,7 @@ import {
 } from "./profile-switches";
 import { retirementContributions } from "./retirement-contributions";
 import { buildIndividualAccounts } from "./individual-accounts";
+import { settingsFor, type ActiveProfileRows } from "./settings-for";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
@@ -415,94 +416,36 @@ export async function buildEnginePayload(
     rate: number;
   }[];
 
-  // Per-person retirement settings (for per-person age display + editing)
-  // Per-person assumptions come from the active profile's own child rows.
+  // Per-person retirement settings (for per-person age display + editing),
+  // from the active profile's own rows: settingsFor.
   //
-  // The `?? settings.X` fallbacks that used to be here are GONE, deliberately.
-  // They existed because retirement_settings was per-person and a person might
-  // have no row; step A's backfill materialised a row for every person in
-  // every profile (the completeness invariant), populated from exactly what
-  // those fallbacks resolved to — so removing them changes nothing today and
-  // stops "person has no row" from silently inheriting stale household values.
-  // If a row really is missing, fall back to the profile's own household
-  // values rather than returning null, so a page renders instead of blanking.
-  const profilePeople = retProfilePeople.filter(
-    (r) => r.profileId === activeProfileId,
-  );
-  // Primary person's raise rate — the fallback every other person inherits
-  // when they have no `retirement_settings` row in the active profile at
-  // all (not when their row holds an explicit 0 — 0% is a real, meaningful
-  // rate, e.g. someone at a salary cap or modeling a freeze; treating it as
-  // "unset" silently overwrote it with the primary's rate, defeating the
-  // per-person raise-rate control). Computed here so BOTH
-  // `perPersonSettings` (below, for the per-person UI control) and
-  // `raiseRateByPerson` (further down, for salary-override growth) resolve
-  // the effective rate the same way — one decision, one code path.
+  // A person with no `retirement_settings` row inherits `primaryRaiseRate`,
+  // here and in profile switches' salary-override growth alike.
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
+  const activeProfileRows: ActiveProfileRows = {
+    activeProfileId,
+    profilePeople: retProfilePeople.filter(
+      (r) => r.profileId === activeProfileId,
+    ),
+    retSettings,
+    settings,
+    primaryRaiseRate,
+  };
   const perPersonSettings = people.map((p) => {
-    const pp = profilePeople.find((r) => r.personId === p.id);
-    // Only this profile's row: another profile's values never stand in.
-    // With no profile at all (null), every row has a null profile id.
-    const ps =
-      pp ??
-      retSettings.find(
-        (s) => s.personId === p.id && s.profileId === activeProfileId,
-      );
-    // salary_annual_increase DOES exist as a column on retirement_profile_people
-    // (migration 0032 backfilled it, profile duplication clones it) — but
-    // nothing reads or writes it there; `pp` above is never used for this
-    // field. retirement_settings stays the live source, genuinely per
-    // (profile, person). Scope to the active profile so a household with
-    // 2+ profiles doesn't pick an arbitrary one's rate (same fix the
-    // raiseRateByPerson docblock records).
-    const rsRowForRaise = retSettings.find(
-      (s) => s.personId === p.id && s.profileId === activeProfileId,
-    );
-    const parsedRaiseRate = rsRowForRaise
-      ? toNumber(rsRowForRaise.salaryAnnualIncrease)
-      : NaN;
-    const effectiveRaiseRate = Number.isFinite(parsedRaiseRate)
-      ? parsedRaiseRate
-      : primaryRaiseRate;
+    const own = settingsFor(p.id, activeProfileRows);
     return {
       personId: p.id,
       name: p.name,
       birthYear: calendarYear(p.dateOfBirth),
-      retirementAge:
-        (ps?.retirementAge ?? settings.retirementAge) +
-        (opts.retirementAgeDelta ?? 0),
-      endAge: ps?.endAge ?? settings.endAge,
-      // Effective pre-retirement raise rate for THIS person. A person with
-      // no retirement_settings row in the active profile at all shows the
-      // primary's rate here; a person with a row (including an explicit 0)
-      // shows their own — the per-person control edits this effective
-      // value directly.
-      salaryAnnualIncrease: String(effectiveRaiseRate),
-      // Still read from THIS person's own retirement_settings row, not from
-      // the profile's. The field is dead (the client's PerPersonSettings type
-      // doesn't carry it and nothing writes it back), but rows can disagree
-      // on it, so sourcing it differently would move a value in the response
-      // for no benefit. Removing it is its own change, not a ride-along in a
-      // behaviour-neutral migration.
-      withdrawalRate:
-        retSettings.find(
-          (s) => s.personId === p.id && s.profileId === activeProfileId,
-        )?.withdrawalRate ?? settings.withdrawalRate,
-      socialSecurityMonthly:
-        ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
-      // PIA (benefit at FRA) — opt-in, no household-level fallback (decision
-      // #5 in SOCIAL-SECURITY-OPTIMIZATION-PLAN.md: unlike every other field
-      // here, an unset PIA on this person's row does NOT fall back to
-      // `settings`, since a household-wide PIA makes no sense — PIA is
-      // inherently per-person, computed from an individual's own earnings
-      // record. null means "not opted in," not "use the household default."
-      // Read from `pp` specifically (the retirement_profile_people row),
-      // not the wider `ps` union — `ps`'s fallback (a bare
-      // retirement_settings row) has no PIA column at all; there's no
-      // household-grain equivalent to fall back to.
-      socialSecurityPia: pp?.socialSecurityPia ?? null,
-      ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
-      ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
+      retirementAge: own.retirementAge + (opts.retirementAgeDelta ?? 0),
+      endAge: own.endAge,
+      // The effective raise rate: the per-person control edits it directly.
+      salaryAnnualIncrease: String(own.salaryAnnualIncrease),
+      withdrawalRate: own.withdrawalRate,
+      socialSecurityMonthly: own.socialSecurityMonthly,
+      socialSecurityPia: own.socialSecurityPia,
+      ssStartAge: own.ssStartAge,
+      ruleOf55Override: own.ruleOf55Override,
     };
   });
 
