@@ -6509,19 +6509,19 @@
   },
   "src/server/services/projection/engine-payload/build-engine-payload.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 11
+      "count": 9
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 25
+      "count": 20
     },
     "ratchet/no-guarded-division": {
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/server/services/projection/engine-payload/expense-endings.ts": {
@@ -6541,6 +6541,11 @@
     },
     "ratchet/max-comment-lines": {
       "count": 5
+    }
+  },
+  "src/server/services/projection/engine-payload/load.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
     }
   },
   "src/server/services/projection/engine-payload/profile-switches.ts": {

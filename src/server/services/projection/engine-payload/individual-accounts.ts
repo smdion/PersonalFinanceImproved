@@ -27,7 +27,7 @@ import {
 } from "@/lib/pure/accounts/tax-bucket-analysis";
 import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
 import { toNumber } from "@/lib/utils/numbers";
-import type { fetchRetirementData } from "./build-engine-payload";
+import type { fetchRetirementData } from "./load";
 
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
 

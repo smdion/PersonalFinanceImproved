@@ -31,10 +31,8 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { calculateProjection } from "@/lib/pure/engine";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { SK_RETIREMENT_DEC_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";

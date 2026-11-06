@@ -10,7 +10,7 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
     const { computeCurrentStockAllocationPercent } =
       await import("@/lib/pure/simulation/stock-share");
     const { fetchRetirementData } =
-      await import("@/server/services/projection/engine-payload/build-engine-payload");
+      await import("@/server/services/projection/engine-payload/load");
     const sqlite = await import("@/lib/db/schema-sqlite");
     const { db, cleanup } = await createTestCaller();
     try {

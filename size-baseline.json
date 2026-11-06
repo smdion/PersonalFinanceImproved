@@ -190,7 +190,7 @@
     "src/server/routers/projection/_shared.ts": 235,
     "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 531,
-    "src/server/routers/projection/relocation.ts": 664,
+    "src/server/routers/projection/relocation.ts": 662,
     "src/server/routers/projection/scenarios.ts": 161,
     "src/server/routers/projection/strategy.ts": 819,
     "src/server/routers/projection/tax-optimization.ts": 527,
@@ -227,7 +227,8 @@
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 98,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 1306,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 1148,
+    "src/server/services/projection/engine-payload/load.ts": 159,
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/projection/relocation-analysis.ts": 481,
@@ -975,7 +976,7 @@
       "computePaycheckSummary.results.map()": 306
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 1079
+      "buildEnginePayload": 1049
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
       "buildIndividualAccounts": 238

@@ -22,10 +22,8 @@ import { calculateProjection } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { buildDecumulationDefaults } from "./_shared";
 import { safeDivide } from "@/lib/utils/math";
 import {

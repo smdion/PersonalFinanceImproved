@@ -22,10 +22,8 @@ import {
   seedStandardDataset,
   seedContributionProfile,
 } from "./setup";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import * as schema from "@/lib/db/schema-sqlite";
 import { clearSimulationPresets } from "../helpers/db-harness";
 

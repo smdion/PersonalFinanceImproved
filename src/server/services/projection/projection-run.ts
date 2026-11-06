@@ -2,10 +2,8 @@
 
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import type { ProfileSelection } from "@/lib/pure/household/profile-selection.schema";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import type { Db } from "@/lib/db";
 
 /**

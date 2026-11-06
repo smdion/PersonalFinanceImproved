@@ -19,10 +19,8 @@ import {
   seedContributionProfile,
   seedBudgetItem,
 } from "./setup";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
