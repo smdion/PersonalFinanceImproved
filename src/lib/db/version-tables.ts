@@ -130,11 +130,24 @@ export const VERSION_TABLE_NAMES = VERSION_TABLES.map((t) => t.name);
 
 /** Versioned, but never shown in a version preview: they hold credentials
  *  (admin password hashes; the budget, SimpleFIN, Tiingo and SEC
- *  connections' config). A restore still carries them. */
+ *  connections' config). A restore carries them (see ADMIN_ONLY_RESTORE_TABLES). */
 export const VERSION_PREVIEW_WITHHELD_TABLES: readonly string[] = [
   "local_admins",
   "api_connections",
 ];
+
+/** Versioned, but left as they are when a user who isn't an admin imports
+ *  a backup or restores a version: the backup permission manages the
+ *  household's data, not the installation's own connections. */
+export const ADMIN_ONLY_RESTORE_TABLES: readonly string[] = ["api_connections"];
+
+/** The tables a restore or import writes: every versioned one for an admin,
+ *  all but ADMIN_ONLY_RESTORE_TABLES for anyone else. In insert order. */
+export function restoredTables(by: { asAdmin: boolean }): VersionTableEntry[] {
+  return by.asAdmin
+    ? VERSION_TABLES
+    : VERSION_TABLES.filter((t) => !ADMIN_ONLY_RESTORE_TABLES.includes(t.name));
+}
 
 /** Excluded from versioning (audit/version tables + ephemeral caches). */
 export const EXCLUDED_TABLES = [

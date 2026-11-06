@@ -113,13 +113,13 @@ Auth.js with Authentik OIDC or a local admin (`local_admins`). Dev Login (any na
 | `ledgr-admin`                | (admin role)          | Full access to everything                                                                                                                      |
 | `ledgr-scenario`             | `scenario`            | Create/edit/delete Plans (sets of profiles)                                                                                                    |
 | `ledgr-contribution-profile` | `contributionProfile` | Contribution and Salary Profiles — every Salary Profile entry field (incl. W-4, pay schedule, where the bonus goes) — and making either active |
-| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups)                                                                                    |
+| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups); a non-admin's restore or import leaves the integration connections as they are    |
 | `ledgr-portfolio`            | `portfolio`           | Create/delete portfolio snapshots                                                                                                              |
 | `ledgr-performance`          | `performance`         | Manage performance accounts + account performance                                                                                              |
 | `ledgr-budget`               | `budget`              | Edit budget items, columns, profiles                                                                                                           |
 | `ledgr-savings`              | `savings`             | Manage savings goals, transactions, allocations                                                                                                |
 | `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                  |
-| `ledgr-sync`                 | `sync`                | Trigger budget API sync operations                                                                                                             |
+| `ledgr-sync`                 | `sync`                | Trigger budget API sync operations (connecting YNAB or Actual is admin-only)                                                                   |
 
 The `(dashboard)` layout redirects to `/login`; `src/proxy.ts` runs `auth` but has no `authorized` callback, so it blocks nothing. Permission enforcement is at tRPC procedure level, and API routes check for themselves. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
 

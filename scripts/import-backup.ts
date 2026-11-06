@@ -127,12 +127,17 @@ async function run() {
     try {
       const db = drizzle(pool, { schema });
       const { importBackup } = await import("../src/lib/db/version-logic");
-      const result = await importBackup(db, {
-        schemaVersion: backup.schemaVersion,
-        exportedAt: backup.exportedAt,
-        tables: backup.tables, // importBackup handles transformation internally
-        sourceDialect: backup.sourceDialect,
-      });
+      const result = await importBackup(
+        db,
+        {
+          schemaVersion: backup.schemaVersion,
+          exportedAt: backup.exportedAt,
+          tables: backup.tables, // importBackup handles transformation internally
+          sourceDialect: backup.sourceDialect,
+        },
+        // Run by the server's operator: the whole backup, as an admin's.
+        { asAdmin: true },
+      );
       console.error(
         `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
       );
@@ -162,12 +167,17 @@ async function run() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as any;
       const { importBackup } = await import("../src/lib/db/version-logic");
-      const result = await importBackup(db, {
-        schemaVersion: backup.schemaVersion,
-        exportedAt: backup.exportedAt,
-        tables: backup.tables,
-        sourceDialect: backup.sourceDialect,
-      });
+      const result = await importBackup(
+        db,
+        {
+          schemaVersion: backup.schemaVersion,
+          exportedAt: backup.exportedAt,
+          tables: backup.tables,
+          sourceDialect: backup.sourceDialect,
+        },
+        // Run by the server's operator: the whole backup, as an admin's.
+        { asAdmin: true },
+      );
       console.error(
         `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
       );

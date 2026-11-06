@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/pure/engine   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->694<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->695<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
@@ -38,7 +38,7 @@ pnpm vitest run tests/pure/engine   # one area — prefer this while working
 - **`pure/retirement/retirement-scope-invariance.test.ts`** — adding $1M of Portfolio money (or saving into it) changes no retirement answer.
 - **`lint/violations.test.ts`** — the RULES.md sweeps; numbered rules in its header.
 - **`**/answer-key-*.test.ts`** — the answer key: figures worked by hand from the published rules, each with its derivation and source beside it, titled `<area>/<id> [CALCULATIONS row]`; [CALCULATIONS.md](CALCULATIONS.md)'s Tested column counts them per row (`pnpm docs:update`). Helpers in `fixtures/answer-key.ts` (`cents`, `ledgerRow`, `xfail`, `runOneYear`). An expected failure is `it.fails` naming the release and TODO item that fix it (`v0.11 …`), with today's figure pinned beside it; `lint/answer-key.test.ts` enforces the naming and unique ids. `lint/calculations-law-year.test.ts` fails when a newer tax year ships than CALCULATIONS' tax-law rows were checked for, or a shipped year lacks a whole-return case for a filing status.
-- **`baseline/router-baseline.test.ts`** — the v0.10.x behavior baseline: each household seeded through the write procedures, every query called with the clock fixed, its numbers (never text) compared with `baseline/__baseline__/`; `sync-writes.test.ts` pins the rows a replayed YNAB or Actual sync writes and the preview it then shows, `finalize-writes.test.ts` the rows `performance.finalizeYear` writes (`baseline/__sync__/`), and `projection-text.test.ts` the engine result's warnings, strings and flags (`baseline/__text__/`). A structural commit leaves those files byte-identical (the rule is in the test's header); `LEDGR_BASELINE_WRITE=1` rewrites them only when a deleted procedure's files go.
+- **`baseline/router-baseline.test.ts`** — the v0.10.x behavior baseline: each household seeded through the write procedures, every query called with the clock fixed, its numbers (never text) compared with `baseline/__baseline__/`; `sync-writes.test.ts` pins the rows a replayed YNAB or Actual sync writes (`baseline/__sync__/`). A structural commit leaves those files byte-identical (the rule is in the test's header); `LEDGR_BASELINE_WRITE=1` rewrites them only when a deleted procedure's files go.
 - **`e2e/privacy-mode.spec.ts`** — every route with the privacy cookie set must show no `$<digit>`; server HTML must carry no amounts.
 - **`e2e/first-run.spec.ts`** — a fresh install signs in: the first local admin is created on /login and the onboarding wizard runs to Done, no `DEMO_ONLY`. Runs only inside `scripts/ci-image-boot.sh` (CI pushes), against the real image booted from each sample compose file on an empty volume.
 

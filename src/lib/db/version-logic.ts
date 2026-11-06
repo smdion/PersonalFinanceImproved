@@ -27,7 +27,7 @@ import {
   execRaw,
 } from "./compat";
 import { reconcileReferenceData } from "./reference-data";
-import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
+import { VERSION_TABLE_NAMES, restoredTables } from "./version-tables";
 import { log } from "@/lib/logger";
 import {
   REBUILT_ON_RESTORE,
@@ -215,10 +215,11 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
 export async function tablesLostOnRestore(
   database: NodePgDatabase<typeof schema>,
   backupTableNames: Iterable<string>,
+  by: { asAdmin: boolean },
 ): Promise<{ tableName: string; currentRows: number }[]> {
   const present = new Set(backupTableNames);
   const lost: { tableName: string; currentRows: number }[] = [];
-  for (const tableName of VERSION_TABLE_NAMES) {
+  for (const { name: tableName } of restoredTables(by)) {
     if (present.has(tableName)) continue;
     // Rebuilt by the restore from a table the backup does carry.
     const source = REBUILT_ON_RESTORE[tableName];
@@ -238,9 +239,44 @@ export async function tablesLostOnRestore(
   return lost;
 }
 
+/** Inserts one table's rows, 500 to a statement; returns how many. */
+async function insertRows(
+  tx: Parameters<typeof execRaw>[0],
+  tableName: string,
+  rows: Record<string, unknown>[],
+): Promise<number> {
+  const columns = unionColumns(rows);
+  validateColumns(tableName, columns);
+  const colList = columns.map((c) => `"${c}"`).join(", ");
+  const BATCH_SIZE = 500;
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const valueClauses = batch.map((row) => {
+      const values = columns.map((col) => {
+        const val = row[col];
+        if (val === null || val === undefined) return sql`NULL`;
+        if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
+        if (typeof val === "object") {
+          const jsonStr = JSON.stringify(val);
+          return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
+        }
+        return sql`${val}`;
+      });
+      return sql`(${sql.join(values, sql.raw(", "))})`;
+    });
+    await execRaw(
+      tx,
+      sql`INSERT INTO ${sql.raw(`"${tableName}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
+    );
+  }
+  return rows.length;
+}
+
 export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,
+  by: { asAdmin: boolean },
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Load version metadata
   const [version] = await database
@@ -284,13 +320,15 @@ export async function restoreVersion(
   // Wrap in a transaction so truncate + inserts are atomic.
   // If anything fails, the database rolls back to its pre-restore state.
   let restoredRows = 0;
+  const tables = restoredTables(by);
+  const tableNames = tables.map((t) => t.name);
 
   await database.transaction(async (tx) => {
     // Truncate all user tables
-    await truncateTables(tx, VERSION_TABLE_NAMES);
+    await truncateTables(tx, tableNames);
 
     // Insert rows per table in tier order (0 → 1 → 2)
-    const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
+    const sortedTables = [...tables].sort((a, b) => a.tier - b.tier);
 
     for (const tableEntry of sortedTables) {
       const tableData = tableDataMap.get(tableEntry.name);
@@ -303,36 +341,11 @@ export async function restoreVersion(
       }
 
       const rows = tableData.data as Record<string, unknown>[];
-      const columns = unionColumns(rows);
-      validateColumns(tableEntry.name, columns);
-      const colList = columns.map((c) => `"${c}"`).join(", ");
-      const BATCH_SIZE = 500;
-
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
-        const valueClauses = batch.map((row) => {
-          const values = columns.map((col) => {
-            const val = row[col];
-            if (val === null || val === undefined) return sql`NULL`;
-            if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
-            if (typeof val === "object") {
-              const jsonStr = JSON.stringify(val);
-              return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
-            }
-            return sql`${val}`;
-          });
-          return sql`(${sql.join(values, sql.raw(", "))})`;
-        });
-        await execRaw(
-          tx,
-          sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
-        );
-        restoredRows += batch.length;
-      }
+      restoredRows += await insertRows(tx, tableEntry.name, rows);
     }
 
     // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
-    await resetSequences(tx, VERSION_TABLE_NAMES);
+    await resetSequences(tx, tableNames);
 
     // Log restore action
     try {
@@ -396,6 +409,7 @@ export async function exportBackup(
 export async function importBackup(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
+  by: { asAdmin: boolean },
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Transform backup to current schema if needed (supports v0.1.x → v0.2.0+)
   const { tables: transformedTables, transformed } =
@@ -429,8 +443,8 @@ export async function importBackup(
   }
 
   const result = isPostgres()
-    ? await importBackupPg(database, transformedBackup)
-    : await importBackupSqlite(database, transformedBackup);
+    ? await importBackupPg(database, transformedBackup, restoredTables(by))
+    : await importBackupSqlite(database, transformedBackup, restoredTables(by));
   // The backup's reference rows replaced today's (see restoreVersion).
   await reconcileReferenceData(database);
   return result;
@@ -439,6 +453,7 @@ export async function importBackup(
 async function importBackupPg(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
+  tables: ReturnType<typeof restoredTables>,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
@@ -453,11 +468,12 @@ async function importBackupPg(
     await client.query("SET session_replication_role = 'replica'");
 
     // Truncate all tables
-    const allTableNames = VERSION_TABLE_NAMES.map((n) => `"${n}"`).join(", ");
+    const tableNames = tables.map((t) => t.name);
+    const allTableNames = tableNames.map((n) => `"${n}"`).join(", ");
     await client.query(`TRUNCATE ${allTableNames} CASCADE`);
 
     let restoredRows = 0;
-    const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
+    const sortedTables = [...tables].sort((a, b) => a.tier - b.tier);
 
     // Cache jsonb column sets per table
     const jsonbCols = new Map<string, Set<string>>();
@@ -508,7 +524,7 @@ async function importBackupPg(
     }
 
     // Reset serial sequences
-    for (const tableName of tablesWithIdColumn(VERSION_TABLE_NAMES)) {
+    for (const tableName of tablesWithIdColumn(tableNames)) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
       );
@@ -550,43 +566,22 @@ async function importBackupPg(
 async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
+  tables: ReturnType<typeof restoredTables>,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   let restoredRows = 0;
-  const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
+  const sortedTables = [...tables].sort((a, b) => a.tier - b.tier);
 
   await database.transaction(async (tx) => {
-    await truncateTables(tx, VERSION_TABLE_NAMES);
+    await truncateTables(
+      tx,
+      sortedTables.map((t) => t.name),
+    );
 
     for (const tableEntry of sortedTables) {
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
       if (!rows || rows.length === 0) continue;
 
-      const columns = unionColumns(rows);
-      validateColumns(tableEntry.name, columns);
-      const colList = columns.map((c) => `"${c}"`).join(", ");
-      const BATCH_SIZE = 500;
-
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
-        const valueClauses = batch.map((row) => {
-          const values = columns.map((col) => {
-            const val = row[col];
-            if (val === null || val === undefined) return sql`NULL`;
-            if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
-            if (typeof val === "object") {
-              const jsonStr = JSON.stringify(val);
-              return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
-            }
-            return sql`${val}`;
-          });
-          return sql`(${sql.join(values, sql.raw(", "))})`;
-        });
-        await execRaw(
-          tx,
-          sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
-        );
-        restoredRows += batch.length;
-      }
+      restoredRows += await insertRows(tx, tableEntry.name, rows);
     }
 
     // Log import (non-critical)
