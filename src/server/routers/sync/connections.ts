@@ -74,7 +74,9 @@ export const syncConnectionsRouter = createTRPCRouter({
       ]),
     )
     .mutation(async ({ ctx, input }) => {
-      // Refuses a private, local or single-label Actual URL at save.
+      // Refuses an Actual URL with another scheme than http/https or with a
+      // user name or password. Its host, private or not, is trusted as
+      // saved by whoever holds the sync permission.
       if (input.service === "actual") {
         const safety = checkOutboundUrl(input.serverUrl, "actual");
         if (!safety.ok) {

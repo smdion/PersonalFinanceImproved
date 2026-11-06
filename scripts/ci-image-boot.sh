@@ -63,7 +63,7 @@ write_env() {
     "CRON_SECRET=ci-placeholder-cron-secret-at-least-32-chars" \
     "ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" \
     "POSTGRES_PASSWORD=ci-placeholder-postgres-password" \
-    "ALLOWED_ACTUAL_HOSTS=ci-forwarded.invalid"; do
+    "TRUSTED_PROXY_HEADER=none"; do
     if [ "${kv%%=*}" != "$skip" ]; then echo "$kv" >> .env; fi
   done
 }
@@ -96,7 +96,7 @@ check_config() {
   write_env
   json=$(docker compose -f "$file" config --format json) ||
     fail "$file: compose refused a complete .env."
-  for v in ENCRYPTION_KEY ALLOWED_ACTUAL_HOSTS; do
+  for v in ENCRYPTION_KEY TRUSTED_PROXY_HEADER; do
     got=$(jq -r --arg v "$v" '.services.ledgr.environment[$v] // empty' <<<"$json")
     [ "$got" = "$(grep "^$v=" .env | cut -d= -f2-)" ] ||
       fail "$file: $v from .env doesn't reach the ledgr container (got '${got}')."

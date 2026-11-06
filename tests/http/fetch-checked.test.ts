@@ -5,7 +5,7 @@
  * retried. fetch is stubbed, so nothing resolves or connects here
  * (tests/http/connect-check.test.ts covers the connected address).
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { inspect } from "node:util";
 import { z } from "zod/v4";
 import {
@@ -23,15 +23,8 @@ const redirect = (status: number, location: string) =>
 const ok = (body: unknown = { ok: true }) =>
   new Response(JSON.stringify(body), { status: 200 });
 
-let originalAllowlist: string | undefined;
 beforeEach(() => {
   mockFetch.mockReset();
-  originalAllowlist = process.env.ALLOWED_ACTUAL_HOSTS;
-  delete process.env.ALLOWED_ACTUAL_HOSTS;
-});
-afterEach(() => {
-  if (originalAllowlist === undefined) delete process.env.ALLOWED_ACTUAL_HOSTS;
-  else process.env.ALLOWED_ACTUAL_HOSTS = originalAllowlist;
 });
 
 async function refusal(p: Promise<unknown>): Promise<BudgetApiError> {
@@ -235,8 +228,7 @@ describe("http to https on the same host", () => {
     );
   });
 
-  it("is followed for an allowlisted host, which keeps its own connections", async () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "actual.example.com";
+  it("is followed for Actual, which keeps its own connections", async () => {
     mockFetch
       .mockResolvedValueOnce(
         redirect(308, "https://actual.example.com:443/v1/budgets"),
@@ -252,10 +244,9 @@ describe("http to https on the same host", () => {
 });
 
 describe("every request", () => {
-  it("is sent with redirect: manual and a dispatcher; an allowlisted host gets its own", async () => {
+  it("is sent with redirect: manual and a dispatcher; Actual gets its own", async () => {
     mockFetch.mockResolvedValue(ok());
-    await fetchChecked("https://actual.example.com/x", {}, "actual");
-    process.env.ALLOWED_ACTUAL_HOSTS = "actual.example.com";
+    await fetchChecked("https://api.ynab.com/x", {}, "ynab");
     await fetchChecked("https://actual.example.com/x", {}, "actual");
     const inits = mockFetch.mock.calls.map(
       (c) => c[1] as RequestInit & { dispatcher?: unknown },
@@ -266,20 +257,40 @@ describe("every request", () => {
     expect(inits[1]!.dispatcher).not.toBe(inits[0]!.dispatcher);
   });
 
-  it("an allowlisted IPv6 literal with its port gets the allowlisted connections", async () => {
-    mockFetch.mockResolvedValue(ok());
-    await fetchChecked("https://api.ynab.com/x", {}, "ynab");
-    process.env.ALLOWED_ACTUAL_HOSTS = "[fd00::5]:5006";
-    await fetchChecked("http://[fd00::5]:5006/v1", {}, "actual");
-    await expect(
-      fetchChecked("http://[fd00::5]:5007/v1", {}, "actual"),
-    ).rejects.toThrow(/private or local address/);
-    const [publicOnly, allowlisted] = mockFetch.mock.calls.map(
-      (c) => (c[1] as { dispatcher?: unknown }).dispatcher,
+  it.each([
+    "http://10.0.0.5:5006/v1",
+    "http://127.0.0.1:5006/v1",
+    "http://actual-http-api:5007/v1",
+    "http://actual.local/v1",
+    "http://[fd00::5]:5006/v1",
+  ])(
+    "sends Actual's private host %s on Actual's own connections",
+    async (url) => {
+      mockFetch.mockResolvedValue(ok());
+      await fetchChecked("https://api.ynab.com/x", {}, "ynab");
+      await fetchChecked(url, {}, "actual");
+      const [publicOnly, privateOpen] = mockFetch.mock.calls.map(
+        (c) => (c[1] as { dispatcher?: unknown }).dispatcher,
+      );
+      expect(mockFetch.mock.calls[1]![0]).toBe(url);
+      expect(privateOpen).toBeDefined();
+      expect(privateOpen).not.toBe(publicOnly);
+    },
+  );
+
+  it("refuses a redirect from Actual's private host to another host, sending nothing there", async () => {
+    mockFetch.mockResolvedValueOnce(
+      redirect(302, "http://10.0.0.6:5007/v1/budgets"),
     );
-    expect(allowlisted).toBeDefined();
-    expect(allowlisted).not.toBe(publicOnly);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const err = await refusal(
+      fetchChecked(
+        "http://actual-http-api:5007/v1/budgets",
+        { headers: { "x-api-key": "actual-key" } },
+        "actual",
+      ),
+    );
+    expect(err.message).toMatch(/another host \("10\.0\.0\.6"\)/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it("reaches fetch with the caller's URL spelling unchanged", async () => {
@@ -290,23 +301,7 @@ describe("every request", () => {
 });
 
 describe("a refused URL", () => {
-  it("is never sent or retried, and its sentence names the allowlist for Actual", async () => {
-    const err = await refusal(
-      externalRequest({
-        service: "actual",
-        endpoint: "/v1/budgets",
-        url: "http://actual-http-api:5007/v1/budgets",
-        schema: z.unknown(),
-      }),
-    );
-    expect(mockFetch).not.toHaveBeenCalled();
-    expect(err.isRetryable).toBe(false);
-    expect(externalErrorSentence(err)).toBe(
-      'Ledgr won\'t connect to Actual: "actual-http-api" is a single-label host (a local or Docker name). Add the host to ALLOWED_ACTUAL_HOSTS to allow it.',
-    );
-  });
-
-  it("names no allowlist for another service", async () => {
+  it("is never sent or retried, and its sentence names the host", async () => {
     const err = await refusal(
       externalRequest({
         service: "simplefin",
@@ -315,7 +310,24 @@ describe("a refused URL", () => {
         schema: z.unknown(),
       }),
     );
-    expect(externalErrorSentence(err)).not.toMatch(/ALLOWED_ACTUAL_HOSTS/);
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(err.isRetryable).toBe(false);
+    expect(externalErrorSentence(err)).toBe(
+      'Ledgr won\'t connect to SimpleFIN: "10.0.0.5" is a private or local address.',
+    );
+  });
+
+  it("names the credential problem for Actual, whose private hosts are open", async () => {
+    const err = await refusal(
+      externalRequest({
+        service: "actual",
+        endpoint: "/v1/budgets",
+        url: "http://u:p@actual-http-api:5007/v1/budgets",
+        schema: z.unknown(),
+      }),
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(err.message).toMatch(/user name or password/);
   });
 
   it("passes the sync fixtures, which nothing resolves under a stubbed fetch", async () => {

@@ -1,6 +1,6 @@
 /** Where Ledgr may send a request: a scheme the service takes, no user name
- *  or password, and a public host as `new URL` normalises it. A private or
- *  local host opens only for Actual, through ALLOWED_ACTUAL_HOSTS. */
+ *  or password, and a public host as `new URL` normalises it. Actual takes
+ *  any host: its Server URL is the one saved in Settings (sync permission). */
 import "server-only";
 import {
   lookup as dnsLookup,
@@ -8,23 +8,24 @@ import {
   type LookupAllOptions,
 } from "node:dns";
 import { BlockList, isIP, type LookupFunction } from "node:net";
-import { log } from "@/lib/logger";
 
 export type OutboundService =
   "ynab" | "actual" | "simplefin" | "tiingo" | "sec";
 
 type UrlPolicy = {
   schemes: readonly ("http:" | "https:")[];
-  /** Whether ALLOWED_ACTUAL_HOSTS may open a private or local host. */
-  allowlist: boolean;
+  /** Whether a private, local or single-label host is open, at the URL
+   *  check and at connect. */
+  privateHosts: boolean;
 };
 
-const HTTPS_ONLY: UrlPolicy = { schemes: ["https:"], allowlist: false };
+const HTTPS_ONLY: UrlPolicy = { schemes: ["https:"], privateHosts: false };
 
-// http: is open for Actual: a LAN server often has no TLS, so its
+// Actual's Server URL is the deployment's own (often a LAN or Docker name), so
+// any host is open. http: too: a LAN server often has no TLS, so its
 // x-api-key crosses that network in cleartext.
 const URL_POLICIES: Record<OutboundService, UrlPolicy> = {
-  actual: { schemes: ["http:", "https:"], allowlist: true },
+  actual: { schemes: ["http:", "https:"], privateHosts: true },
   ynab: HTTPS_ONLY,
   simplefin: HTTPS_ONLY,
   tiingo: HTTPS_ONLY,
@@ -102,63 +103,7 @@ function bareHost(hostname: string): string {
     .replace(/\.+$/, "");
 }
 
-type AllowEntry = { host: string; port: string | null };
-
-const warnedEntries = new Set<string>();
-
-/** One ALLOWED_ACTUAL_HOSTS entry, `host` or `host:port`, normalised as a
- *  URL host is; null when it isn't a host. */
-function parseAllowEntry(entry: string): AllowEntry | null {
-  // A bare IPv6 address (`fd00::5`) is written without brackets.
-  const spelled = isIP(entry) === 6 ? `[${entry}]` : entry;
-  let url: URL;
-  try {
-    url = new URL(`http://${spelled}`);
-  } catch {
-    return null;
-  }
-  if (url.href !== `http://${url.host}/`) return null;
-  // `new URL` drops http's default port, so an explicit `:80` is read here.
-  const explicit = /:(\d+)$/.exec(spelled.replace(/^\[[^\]]*\]/, ""));
-  return {
-    host: bareHost(url.hostname),
-    port: url.port || explicit?.[1] || null,
-  };
-}
-
-/** ALLOWED_ACTUAL_HOSTS, read on every call so a change applies at once.
- *  An entry that isn't a host is skipped and logged once. */
-function allowEntries(): AllowEntry[] {
-  const raw = process.env.ALLOWED_ACTUAL_HOSTS ?? "";
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .flatMap((entry) => {
-      const parsed = parseAllowEntry(entry);
-      if (parsed) return [parsed];
-      if (!warnedEntries.has(entry)) {
-        warnedEntries.add(entry);
-        log("warn", "allowed_actual_hosts_entry_ignored", {
-          entry,
-          reason: "not a host or host:port",
-        });
-      }
-      return [];
-    });
-}
-
-/** Whether ALLOWED_ACTUAL_HOSTS lists this URL's host (any port, or the
- *  port the entry names). */
-export function isAllowlisted(url: URL): boolean {
-  const host = bareHost(url.hostname);
-  const port = url.port || (url.protocol === "https:" ? "443" : "80");
-  return allowEntries().some(
-    (e) => e.host === host && (e.port === null || e.port === port),
-  );
-}
-
-/** Why a host that isn't allowlisted is refused, or null when it's public. */
+/** Why a host is refused for a public-only service, or null when it's public. */
 function refusal(host: string): string | null {
   if (host === "localhost" || host === "localhost.localdomain")
     return "a local name";
@@ -195,27 +140,16 @@ export function checkOutboundUrl(
   if (url.username || url.password) {
     return { ok: false, reason: "URL must not carry a user name or password" };
   }
+  if (policy.privateHosts) return { ok: true, url };
   const host = bareHost(url.hostname);
-  if (policy.allowlist && isAllowlisted(url)) return { ok: true, url };
   const why = refusal(host);
   if (!why) return { ok: true, url };
-  return { ok: false, reason: `"${host}" is ${why}.${allowHint(service)}` };
+  return { ok: false, reason: `"${host}" is ${why}.` };
 }
 
-/** What a refusal adds for a service that takes the allowlist. */
-export function allowHint(service: OutboundService): string {
-  return URL_POLICIES[service].allowlist
-    ? " Add the host to ALLOWED_ACTUAL_HOSTS to allow it."
-    : "";
-}
-
-/** Whether a request to this URL may connect to a private address: an
- *  allowlisted host may resolve to one (split DNS, a reverse proxy). */
-export function opensPrivateAddress(
-  url: URL,
-  service: OutboundService,
-): boolean {
-  return URL_POLICIES[service].allowlist && isAllowlisted(url);
+/** Whether a request for `service` may connect to a private address. */
+export function opensPrivateAddress(service: OutboundService): boolean {
+  return URL_POLICIES[service].privateHosts;
 }
 
 /** A connection refused because its name resolved to a blocked address. */
@@ -253,7 +187,7 @@ function lookupWith(
     });
 }
 
-/** A lookup for an allowlisted host: any address it resolves to. */
+/** A lookup for a service open to private hosts: any address it resolves to. */
 export function plainLookup(resolve: ResolveAll = resolveAll): LookupFunction {
   return lookupWith(resolve, () => null);
 }

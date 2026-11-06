@@ -1,36 +1,22 @@
 /**
  * The one outbound URL check (src/lib/http/url-safety.ts): every bypass the
  * two older validators let through, every spelling `new URL` normalises,
- * the per-service schemes and the ALLOWED_ACTUAL_HOSTS allowlist.
+ * the per-service schemes, and Actual's admin-saved host, private or not.
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-
-const log = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/logger", () => ({ log }));
-
+import { describe, it, expect } from "vitest";
 import {
   checkOutboundUrl,
-  isAllowlisted,
   isBlockedAddress,
   type OutboundService,
 } from "@/lib/http/url-safety";
 
-let originalAllowlist: string | undefined;
+/** The public-only services; Actual takes any host. */
+const PUBLIC_ONLY = ["ynab", "simplefin", "tiingo", "sec"] as const;
 
-beforeEach(() => {
-  originalAllowlist = process.env.ALLOWED_ACTUAL_HOSTS;
-  delete process.env.ALLOWED_ACTUAL_HOSTS;
-  log.mockClear();
-});
-
-afterEach(() => {
-  if (originalAllowlist === undefined) delete process.env.ALLOWED_ACTUAL_HOSTS;
-  else process.env.ALLOWED_ACTUAL_HOSTS = originalAllowlist;
-});
-
-const refused = (url: string, service: OutboundService = "actual") =>
+// The host checks run for a public-only service, over https (its scheme).
+const refused = (url: string, service: OutboundService = "sec") =>
   checkOutboundUrl(url, service).ok === false;
-const reason = (url: string, service: OutboundService = "actual") => {
+const reason = (url: string, service: OutboundService = "sec") => {
   const r = checkOutboundUrl(url, service);
   return r.ok ? null : r.reason;
 };
@@ -64,9 +50,9 @@ describe("checkOutboundUrl: IPv6 literals", () => {
     "[2001:0:4136:e378:8000:63bf:3fff:fdd2]",
     "[2001:db8::1]",
     "[100::1]",
-  ])("refuses http://%s", (host) => {
-    expect(refused(`http://${host}/`)).toBe(true);
-    expect(reason(`http://${host}/`)).toMatch(/private or local address/);
+  ])("refuses https://%s", (host) => {
+    expect(refused(`https://${host}/`)).toBe(true);
+    expect(reason(`https://${host}/`)).toMatch(/private or local address/);
   });
 
   it.each([
@@ -91,8 +77,8 @@ describe("checkOutboundUrl: IPv4 spellings normalised before the check", () => {
     "0",
     "0.0.0.0",
     "127.0.0.1.",
-  ])("refuses http://%s", (host) => {
-    expect(refused(`http://${host}/`)).toBe(true);
+  ])("refuses https://%s", (host) => {
+    expect(refused(`https://${host}/`)).toBe(true);
   });
 });
 
@@ -111,8 +97,8 @@ describe("checkOutboundUrl: non-public IPv4", () => {
     "240.0.0.1",
     "255.255.255.255",
     "169.254.169.254",
-  ])("refuses http://%s", (host) => {
-    expect(refused(`http://${host}/`)).toBe(true);
+  ])("refuses https://%s", (host) => {
+    expect(refused(`https://${host}/`)).toBe(true);
   });
 
   it.each(["11.1.1.1", "172.32.0.1", "8.8.8.8"])(
@@ -134,32 +120,30 @@ describe("checkOutboundUrl: local and single-label names", () => {
     "localhost..",
     "a.localhost..",
   ])("refuses %s as a local name", (host) => {
-    expect(reason(`http://${host}:5006/`)).toMatch(/local name/);
+    expect(reason(`https://${host}:5006/`)).toMatch(/local name/);
   });
 
   it.each(["actual", "actual.", "actual-http-api"])(
     "refuses %s as a single-label host",
     (host) => {
-      expect(reason(`http://${host}:5007/`)).toMatch(/single-label/);
+      expect(reason(`https://${host}:5007/`)).toMatch(/single-label/);
     },
   );
-
-  it("names ALLOWED_ACTUAL_HOSTS for Actual only", () => {
-    expect(reason("http://actual:5007/", "actual")).toMatch(
-      /ALLOWED_ACTUAL_HOSTS/,
-    );
-    expect(reason("https://actual/", "simplefin")).not.toMatch(
-      /ALLOWED_ACTUAL_HOSTS/,
-    );
-  });
 });
 
 describe("checkOutboundUrl: credentials, schemes and invalid URLs", () => {
   it("refuses a URL with a user name or password, without echoing them", () => {
-    expect(refused("http://a@h.example/")).toBe(true);
-    const r = reason("http://u:p@h.example/");
+    expect(refused("http://a@h.example/", "actual")).toBe(true);
+    const r = reason("http://u:p@h.example/", "actual");
     expect(r).toMatch(/user name or password/);
     expect(r).not.toContain("u:p");
+    // A private host opens nothing else for Actual.
+    expect(reason("http://u:p@10.0.0.5:5006/", "actual")).toMatch(
+      /user name or password/,
+    );
+    expect(reason("https://u:p@h.example/", "ynab")).toMatch(
+      /user name or password/,
+    );
   });
 
   it.each([
@@ -171,6 +155,7 @@ describe("checkOutboundUrl: credentials, schemes and invalid URLs", () => {
     "ws://h.example/",
     "gopher://h.example/",
   ])("refuses %s", (url) => {
+    expect(reason(url, "actual")).toMatch(/scheme/);
     expect(reason(url)).toMatch(/scheme/);
   });
 
@@ -213,121 +198,43 @@ describe("checkOutboundUrl: the services' real hosts and the test fixtures", () 
     expect(checkOutboundUrl(url, service).ok).toBe(true);
   });
 
-  // The sync fixtures pass the string check with no allowlist: two labels,
-  // not an IP, and no host is refused for its top-level domain. Their
-  // fetch is stubbed, so no address is ever resolved for them.
+  // The sync fixtures' fetch is stubbed, so no address is ever resolved.
   it.each(["http://actual.local", "https://actual.baseline.example"])(
-    "allows the fixture %s with no allowlist",
+    "allows the fixture %s",
     (url) => {
       expect(checkOutboundUrl(url, "actual").ok).toBe(true);
     },
   );
 });
 
-describe("ALLOWED_ACTUAL_HOSTS", () => {
-  it("a bare host opens any port; host:port opens that port only", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "actual-http-api";
-    expect(checkOutboundUrl("http://actual-http-api:5007", "actual").ok).toBe(
-      true,
-    );
-    process.env.ALLOWED_ACTUAL_HOSTS = "actual-http-api:5007";
-    expect(checkOutboundUrl("http://actual-http-api:5007", "actual").ok).toBe(
-      true,
-    );
-    process.env.ALLOWED_ACTUAL_HOSTS = "actual-http-api:5006";
-    expect(checkOutboundUrl("http://actual-http-api:5007", "actual").ok).toBe(
-      false,
-    );
-  });
-
-  it("an entry's port compares against the scheme's default port", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "10.0.0.5:80";
-    expect(isAllowlisted(new URL("http://10.0.0.5/"))).toBe(true);
-    expect(isAllowlisted(new URL("https://10.0.0.5/"))).toBe(false);
-    process.env.ALLOWED_ACTUAL_HOSTS = "10.0.0.5:443";
-    expect(isAllowlisted(new URL("https://10.0.0.5/"))).toBe(true);
-  });
-
-  it("entries are normalised: brackets, case, trailing dot, IPv4 spelling", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS =
-      "10.0.0.5, [fd00::5] ,ACTUAL.LAN.,fd00::6,0x7f.1";
-    for (const url of [
-      "http://10.0.0.5:5006",
-      "http://[fd00::5]",
-      "http://actual.lan",
-      "http://actual.lan.:5006",
-      "http://[fd00::6]:5006",
-      "http://127.0.0.1",
-    ]) {
-      expect(checkOutboundUrl(url, "actual").ok).toBe(true);
-    }
-    expect(checkOutboundUrl("http://10.0.0.6", "actual").ok).toBe(false);
-  });
-
-  it("opens localhost and private literals when listed", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "localhost,10.10.10.50";
-    expect(checkOutboundUrl("http://localhost:5006", "actual").ok).toBe(true);
-    expect(checkOutboundUrl("http://10.10.10.50:5006", "actual").ok).toBe(true);
-    expect(checkOutboundUrl("http://10.10.10.51:5006", "actual").ok).toBe(
-      false,
-    );
-  });
-
-  it("never opens another service", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "10.0.0.5";
-    for (const service of ["simplefin", "ynab", "tiingo", "sec"] as const) {
-      expect(checkOutboundUrl("https://10.0.0.5", service).ok).toBe(false);
+describe("Actual's Server URL, as an admin saved it", () => {
+  it.each([
+    "http://10.0.0.5:5006",
+    "http://192.168.1.20:5007/",
+    "http://127.0.0.1:5006",
+    "http://localhost:5006",
+    "http://actual-http-api:5007",
+    "http://[fd00::5]:5006",
+  ])("allows %s for Actual and refuses it for every other service", (url) => {
+    expect(checkOutboundUrl(url, "actual").ok).toBe(true);
+    for (const service of PUBLIC_ONLY) {
+      const https = url.replace(/^http:/, "https:");
+      expect(checkOutboundUrl(https, service).ok).toBe(false);
     }
   });
 
-  it.each([["unset"], [""], [" , "], [","]])(
-    "an empty allowlist (%j) opens nothing",
-    (value) => {
-      if (value === "unset") delete process.env.ALLOWED_ACTUAL_HOSTS;
-      else process.env.ALLOWED_ACTUAL_HOSTS = value;
-      expect(checkOutboundUrl("http://10.0.0.5:5006", "actual").ok).toBe(false);
-      expect(checkOutboundUrl("http://actual:5006", "actual").ok).toBe(false);
-    },
-  );
-
-  it("trims spaces around a host:port entry", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "  actual-http-api:5007  , 10.0.0.5 ";
-    expect(checkOutboundUrl("http://actual-http-api:5007", "actual").ok).toBe(
+  // A .local name passes the string check for every service; the connect
+  // check (tests/http/connect-check.test.ts) refuses its LAN address for
+  // the public-only ones.
+  it("allows a .local name for Actual", () => {
+    expect(checkOutboundUrl("http://actual.local:5006", "actual").ok).toBe(
       true,
     );
-    expect(checkOutboundUrl("http://actual-http-api:5006", "actual").ok).toBe(
-      false,
-    );
   });
 
-  it("reads an unbracketed IPv6 entry as an address, never as host:port", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "fd00::7:5006";
-    expect(checkOutboundUrl("http://[fd00::7]:5006", "actual").ok).toBe(false);
-    expect(checkOutboundUrl("http://[fd00::7:5006]", "actual").ok).toBe(true);
-    process.env.ALLOWED_ACTUAL_HOSTS = "[fd00::7]:5006";
-    expect(checkOutboundUrl("http://[fd00::7]:5006", "actual").ok).toBe(true);
-    expect(checkOutboundUrl("http://[fd00::7]:5007", "actual").ok).toBe(false);
-  });
-
-  it("is read on every call", () => {
-    expect(checkOutboundUrl("http://10.0.0.5", "actual").ok).toBe(false);
-    process.env.ALLOWED_ACTUAL_HOSTS = "10.0.0.5";
-    expect(checkOutboundUrl("http://10.0.0.5", "actual").ok).toBe(true);
-    delete process.env.ALLOWED_ACTUAL_HOSTS;
-    expect(checkOutboundUrl("http://10.0.0.5", "actual").ok).toBe(false);
-  });
-
-  it("skips an entry that isn't a host, and logs it once", () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "http://actual:5006,u@h,10.0.0.5";
-    expect(checkOutboundUrl("http://10.0.0.5", "actual").ok).toBe(true);
-    expect(checkOutboundUrl("http://actual:5006", "actual").ok).toBe(false);
-    const warned = log.mock.calls.filter(
-      (c) => c[1] === "allowed_actual_hosts_entry_ignored",
-    );
-    expect(warned.map((c) => (c[2] as { entry: string }).entry)).toEqual([
-      "http://actual:5006",
-      "u@h",
-    ]);
+  it("keeps Actual to http and https", () => {
+    expect(reason("ftp://10.0.0.5/", "actual")).toMatch(/scheme/);
+    expect(reason("file:///etc/passwd", "actual")).toMatch(/scheme/);
   });
 });
 

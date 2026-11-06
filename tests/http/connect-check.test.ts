@@ -4,15 +4,7 @@
  * the global fetch to a server on 127.0.0.1, with node:dns answering for
  * example.com names. Nothing leaves the machine.
  */
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  afterEach,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { LookupAddress } from "node:dns";
@@ -35,6 +27,8 @@ const ANSWERS: Record<string, LookupAddress[]> = {
   "public.example.com": [{ address: "93.184.215.14", family: 4 }],
   // The one private address a test can listen on stands in for a LAN one.
   "lan.example.com": [{ address: "127.0.0.1", family: 4 }],
+  "actual-http-api": [{ address: "127.0.0.1", family: 4 }],
+  "actual.local": [{ address: "127.0.0.1", family: 4 }],
   "empty.example.com": [],
 };
 
@@ -134,7 +128,7 @@ describe("guardedLookup", () => {
   });
 });
 
-describe("plainLookup (an allowlisted host)", () => {
+describe("plainLookup (Actual, open to private hosts)", () => {
   it("answers a private address", async () => {
     const r = await ask(
       plainLookup(fakeResolve([{ address: "10.0.0.5", family: 4 }])),
@@ -149,7 +143,6 @@ describe("the real fetch, through the transport's dispatchers", () => {
   let server: Server;
   let port: number;
   let connections = 0;
-  const original = process.env.ALLOWED_ACTUAL_HOSTS;
 
   beforeAll(async () => {
     server = createServer((req, res) => {
@@ -166,14 +159,12 @@ describe("the real fetch, through the transport's dispatchers", () => {
   afterAll(async () => {
     await new Promise((r) => server.close(r));
   });
-  afterEach(() => {
-    if (original === undefined) delete process.env.ALLOWED_ACTUAL_HOSTS;
-    else process.env.ALLOWED_ACTUAL_HOSTS = original;
-  });
 
+  /** A public-only service: the lookup refuses before any TCP connect, so
+   *  https needs no TLS server here. */
   const refusedBefore = async (url: string) => {
     const before = connections;
-    const err = await fetchChecked(url, {}, "actual").then(
+    const err = await fetchChecked(url, {}, "tiingo").then(
       () => null,
       (e: unknown) => e,
     );
@@ -184,29 +175,28 @@ describe("the real fetch, through the transport's dispatchers", () => {
   };
 
   it.each(["lan", "private", "mixed", "mapped"])(
-    "refuses %s.example.com before connecting when it isn't allowlisted",
+    "refuses %s.example.com for a public-only service before connecting",
     async (name) => {
-      delete process.env.ALLOWED_ACTUAL_HOSTS;
-      const err = await refusedBefore(`http://${name}.example.com:${port}/`);
+      const err = await refusedBefore(`https://${name}.example.com:${port}/`);
       expect(err.message).toMatch(/resolves to a private or local address/);
-      expect(err.message).toMatch(/ALLOWED_ACTUAL_HOSTS/);
     },
   );
 
-  it("connects to an allowlisted name that resolves to a private address", async () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "lan.example.com";
-    const res = await fetchChecked(
-      `http://lan.example.com:${port}/`,
-      {},
-      "actual",
-    );
-    expect(await res.json()).toEqual({ ok: true, path: "/" });
+  it("an IP literal is refused by the URL check, never reaching connect", async () => {
+    await refusedBefore(`https://127.0.0.1:${port}/`);
   });
 
+  it.each(["lan.example.com", "127.0.0.1", "actual-http-api", "actual.local"])(
+    "connects Actual to %s, a private host",
+    async (host) => {
+      const res = await fetchChecked(`http://${host}:${port}/`, {}, "actual");
+      expect(await res.json()).toEqual({ ok: true, path: "/" });
+    },
+  );
+
   it("follows a same-origin redirect: the real fetch exposes Location under redirect: manual", async () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = "lan.example.com";
     const res = await fetchChecked(
-      `http://lan.example.com:${port}/start`,
+      `http://actual-http-api:${port}/start`,
       {},
       "actual",
     );
@@ -216,7 +206,6 @@ describe("the real fetch, through the transport's dispatchers", () => {
   it.each(["nowhere", "empty"])(
     "%s.example.com, which resolves to nothing, is a network error, not a refusal",
     async (name) => {
-      delete process.env.ALLOWED_ACTUAL_HOSTS;
       const err = await externalRequest({
         service: "actual",
         endpoint: "/",
@@ -231,14 +220,4 @@ describe("the real fetch, through the transport's dispatchers", () => {
       expect(err?.isRetryable).toBe(true);
     },
   );
-
-  it("an allowlist entry for another port leaves the name checked", async () => {
-    process.env.ALLOWED_ACTUAL_HOSTS = `lan.example.com:${port + 1}`;
-    await refusedBefore(`http://lan.example.com:${port}/`);
-  });
-
-  it("an IP literal is refused by the URL check, never reaching connect", async () => {
-    delete process.env.ALLOWED_ACTUAL_HOSTS;
-    await refusedBefore(`http://127.0.0.1:${port}/`);
-  });
 });

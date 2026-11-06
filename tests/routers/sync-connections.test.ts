@@ -165,6 +165,33 @@ describe("sync.saveConnection", () => {
     ).rejects.toThrow();
   });
 
+  it.each(["http://actual-http-api:5007", "http://10.0.0.5:5006"])(
+    "saves an Actual connection to the admin's private host %s",
+    async (serverUrl) => {
+      const result = await caller.sync.saveConnection({
+        service: "actual",
+        serverUrl,
+        apiKey: "ak-xyz",
+        budgetSyncId: "sync-456",
+      });
+      expect(result).toEqual({ success: true });
+    },
+  );
+
+  it.each([
+    ["http://u:p@actual-http-api:5007", /user name or password/],
+    ["ftp://actual-http-api:5007", /scheme/],
+  ])("refuses to save the Actual URL %s", async (serverUrl, why) => {
+    await expect(
+      caller.sync.saveConnection({
+        service: "actual",
+        serverUrl,
+        apiKey: "ak-xyz",
+        budgetSyncId: "sync-456",
+      }),
+    ).rejects.toThrow(why);
+  });
+
   it("saves an Actual connection's optional External URL alongside credentials", async () => {
     const result = await caller.sync.saveConnection({
       service: "actual",

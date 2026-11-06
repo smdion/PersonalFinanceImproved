@@ -25,7 +25,6 @@ import {
   serviceError,
 } from "@/lib/budget-api/errors";
 import {
-  allowHint,
   BlockedAddressError,
   checkOutboundUrl,
   guardedLookup,
@@ -89,11 +88,12 @@ const SERVICE_NAMES: Record<OutboundService, string> = {
   sec: "SEC",
 };
 
-/** Connections for every host but an allowlisted one: a name is refused
- *  when it resolves to a private or local address. */
+/** Connections for a public-only service: a name is refused when it
+ *  resolves to a private or local address. */
 const PUBLIC_ONLY = new Agent({ connect: { lookup: guardedLookup() } });
-/** Connections for an allowlisted host, to whatever address it resolves. */
-const ALLOWLISTED = new Agent({ connect: { lookup: plainLookup() } });
+/** Connections for a service open to private hosts (Actual), to whatever
+ *  address its name resolves. */
+const PRIVATE_OPEN = new Agent({ connect: { lookup: plainLookup() } });
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -123,20 +123,19 @@ function blockedCause(e: unknown): BlockedAddressError | null {
  *  caller's spelling reaches fetch unchanged. */
 async function sendOnce(
   target: string,
-  url: URL,
   init: RequestInit,
   service: OutboundService,
 ): Promise<Response> {
   const options: RequestInit & { dispatcher: Dispatcher } = {
     ...init,
     redirect: "manual",
-    dispatcher: opensPrivateAddress(url, service) ? ALLOWLISTED : PUBLIC_ONLY,
+    dispatcher: opensPrivateAddress(service) ? PRIVATE_OPEN : PUBLIC_ONLY,
   };
   try {
     return await fetch(target, options);
   } catch (e) {
     const blocked = blockedCause(e);
-    if (blocked) throw refused(service, blocked.message + allowHint(service));
+    if (blocked) throw refused(service, blocked.message);
     throw e;
   }
 }
@@ -176,7 +175,7 @@ export async function fetchChecked(
   let target = input;
   const method = (init.method ?? "GET").toUpperCase();
   for (let hop = 0; ; hop++) {
-    const res = await sendOnce(target, url, init, service);
+    const res = await sendOnce(target, init, service);
     const location = REDIRECTS.has(res.status)
       ? res.headers.get("location")
       : null;

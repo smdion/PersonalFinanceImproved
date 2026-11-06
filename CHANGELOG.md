@@ -14,7 +14,6 @@ v0.10.2 gives every piece of code one home by what it does: pure calculations in
 
 ### Upgrading
 
-- **If your Actual server URL is a Docker service name, a single-label name or a LAN address, add it to `ALLOWED_ACTUAL_HOSTS` (`host` or `host:port`) before upgrading.** Every request is now checked when it is sent, not only when the URL is saved, so a URL that v0.10.1 accepted (such as the README's `http://actual-http-api:5007`) stops budget sync, snapshot pushes and category links on the first request until it is allowed. The refusal names the host and the setting, is never retried, and changes no data. SimpleFIN and Tiingo now refuse `http` URLs.
 - **Take a database dump before upgrading.** The start still writes its own pre-upgrade backup; the dump is what a rollback restores.
 - **To roll back, restore the pre-upgrade database dump; never swap the image back.** The v0.10.1 image can't run on a database v0.10.2 has migrated, and it can't restore a backup taken on v0.10.2, so anything changed after the upgrade is lost on rollback. From v0.10.2 on, a database a newer Ledgr upgraded is refused with a message instead of rewritten.
 - **The first Simulation load after upgrading is slow, once.** The engine's code changed, so cached projections and Simulation runs are rebuilt the first time they're opened. This is not a regression; later loads are as fast as before.
@@ -24,8 +23,8 @@ v0.10.2 gives every piece of code one home by what it does: pure calculations in
 
 ### Safer outside requests
 
-- **One checked fetch** for YNAB, Actual, SimpleFIN, Tiingo and SEC: each URL is checked before it is sent, and the address actually connected is checked too, so a DNS name that points at the LAN, or one that changes between the check and the connection, is refused unless allowed.
-- **Redirects** go at most three hops, and only to the same origin or from `http` to `https` on the same host, so a credential header never reaches another host. No error message includes a response body or a URL's user name and password.
+- **One checked fetch** for YNAB, Actual, SimpleFIN, Tiingo and SEC. Actual uses its Server URL as saved in Settings (by anyone with the sync permission), LAN addresses, Docker service names and `.local` names included. YNAB, SimpleFIN, Tiingo and SEC are checked to be public both when a request is sent and at the address actually connected, so a DNS name that points at the LAN, or one that changes between the check and the connection, is refused. **SimpleFIN and Tiingo now refuse `http` URLs.**
+- **Redirects**, for every service, go at most three hops, and only to the same origin or from `http` to `https` on the same host, so a credential header never reaches another host. No error message includes a response body or a URL's user name and password.
 
 ### Migrations and backups
 
