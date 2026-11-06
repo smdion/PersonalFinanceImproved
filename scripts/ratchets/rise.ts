@@ -16,6 +16,8 @@ export type Rise = {
   entry: Entry;
   /** A size file rise: the files whose recorded lines were summed. */
   sized?: string[];
+  /** A size file rise: every file of the commit its move or split joins. */
+  joined?: string[];
 };
 /** A file's text at one side of the comparison (undefined: no such file). */
 export type Tree = (file: string) => string | undefined;

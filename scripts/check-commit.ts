@@ -11,8 +11,9 @@
  * touched (a `Mechanical:` trailer exempts a pure move, rename or split: git
  * sees a rename or code moved between files, and every other changed line is
  * an import, a path rewrite, or code moved in whole top-level statements kept
- * in order, or a function body moved whole into a new top-level function and
- * called from where it was), and the
+ * in order, a function body moved whole into a new top-level function and
+ * called from where it was, or router procedures moved whole into a new
+ * part mounted where they were), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first. A revert says why in its own words: git's "This reverts
@@ -564,13 +565,52 @@ function collapse(
 }
 
 /**
+ * A body cutMovedBodies found: the files it left and joined, where its
+ * source expression started in the old file, the new function's name, and
+ * the lines of each side's wrapper (the head or signature through `{`, and
+ * `}` to the end) and body, all lines and code lines (not blank).
+ */
+export type BodyMove = {
+  from: string;
+  to: string;
+  start: { line: number; character: number };
+  name: string;
+  wrapper: { old: number; new: number };
+  body: { old: number; new: number };
+  bodyCode: { old: number; new: number };
+};
+
+/** A function's wrapper lines and its body's lines, all and not blank. */
+function wrapperAndBody(
+  node: ts.FunctionLikeDeclaration & { body: ts.Block },
+  source: ts.SourceFile,
+  lines: string[],
+): { wrapper: number; body: number; bodyCode: number } {
+  const line = (pos: number) => source.getLineAndCharacterOfPosition(pos).line;
+  const start = line(node.getStart(source));
+  const open = line(node.body.getStart(source));
+  const close = line(node.body.getEnd());
+  const end = line(node.getEnd());
+  if (open === close) return { wrapper: end - start + 1, body: 0, bodyCode: 0 };
+  const inner = lines.slice(open + 1, close);
+  return {
+    wrapper: open - start + 1 + (end - close + 1),
+    body: inner.length,
+    bodyCode: inner.filter((l) => !BLANK_LINE.test(l)).length,
+  };
+}
+
+/**
  * Finds each body moved whole into a new top-level function, and cuts it out
  * of both sides: the source expression and its replacement become one marker,
  * and the destination function goes (its doc comment stays a comment). The
  * lines left around the marker are then read as any other changed line.
- * Returns how many statements moved between files.
+ * Returns how many statements moved between files, and each move.
  */
-function cutMovedBodies(files: FileDiff[], names?: RegExp): number {
+function cutMovedBodies(
+  files: FileDiff[],
+  names?: RegExp,
+): { movedAcross: number; moves: BodyMove[] } {
   const code = files
     .map((entry) => ({
       entry,
@@ -637,6 +677,7 @@ function cutMovedBodies(files: FileDiff[], names?: RegExp): number {
   const groupOf = (side: DiffSide, line: number) =>
     side.changed.find((c) => c.at === line)?.group;
   const claimed = new Set<number>();
+  const moves: BodyMove[] = [];
   let movedAcross = 0;
   let marker = 0;
   for (const dest of dests) {
@@ -704,6 +745,21 @@ function cutMovedBodies(files: FileDiff[], names?: RegExp): number {
       destTaken.push({ ...d, text: "" });
       claimed.add(s);
       if (from.f !== dest.f) movedAcross += dest.key.length;
+      const was = wrapperAndBody(from.node, at.oldSource, at.entry.old.lines);
+      const now = wrapperAndBody(
+        dest.node as ts.FunctionDeclaration & { body: ts.Block },
+        to.newSource,
+        to.entry.new.lines,
+      );
+      moves.push({
+        from: at.entry.file,
+        to: to.entry.file,
+        start: at.oldSource.getLineAndCharacterOfPosition(e.start),
+        name: dest.node.name!.text,
+        wrapper: { old: was.wrapper, new: now.wrapper },
+        body: { old: was.body, new: now.body },
+        bodyCode: { old: was.bodyCode, new: now.bodyCode },
+      });
       break;
     }
   }
@@ -713,7 +769,356 @@ function cutMovedBodies(files: FileDiff[], names?: RegExp): number {
     if (spans[f]!.new.length > 0)
       entry.new = collapse(entry.new, newSource, spans[f]!.new);
   });
-  return movedAcross;
+  return { movedAcross, moves };
+}
+
+/**
+ * Procedures a router split moved (plan 42): whole properties of one router
+ * object literal, in order, into a new router file's literal, mounted back.
+ * `kind` is "router" for `export const x = createTRPCRouter({…})` (mounted
+ * as `key: x`), "object" for `export const x = {…}` (mounted as `...x`).
+ */
+export type RouterMove = {
+  from: string;
+  to: string;
+  name: string;
+  kind: "router" | "object";
+  properties: number;
+  /** Code lines (not blank) of the moved properties, at each side. */
+  code: { old: number; new: number };
+};
+
+const ROUTER_CALL = "createTRPCRouter";
+
+/** A router object literal: `createTRPCRouter({…})`'s argument, or a top-level `const x = {…}`. */
+function isRouterLiteral(node: ts.Node): node is ts.ObjectLiteralExpression {
+  if (!ts.isObjectLiteralExpression(node)) return false;
+  const up = node.parent;
+  if (
+    ts.isCallExpression(up) &&
+    ts.isIdentifier(up.expression) &&
+    up.expression.text === ROUTER_CALL &&
+    !up.typeArguments &&
+    up.arguments.length === 1 &&
+    up.arguments[0] === node
+  )
+    return true;
+  return (
+    ts.isVariableDeclaration(up) &&
+    up.initializer === node &&
+    ts.isVariableDeclarationList(up.parent) &&
+    ts.isVariableStatement(up.parent.parent) &&
+    ts.isSourceFile(up.parent.parent.parent)
+  );
+}
+
+/** The names on the way down to a literal (`fooRouter.portfolioSnapshots`). */
+function literalPath(node: ts.Node): string {
+  const names: string[] = [];
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+    if (
+      (ts.isPropertyAssignment(up) || ts.isVariableDeclaration(up)) &&
+      ts.isIdentifier(up.name)
+    )
+      names.unshift(up.name.text);
+  return names.join(".");
+}
+
+/**
+ * A new router part: a top-level `export const x = createTRPCRouter({…});`
+ * or `export const x = {…};` (no type, no `as`/`satisfies`), alone on its
+ * lines, holding only `key: value` properties.
+ */
+function newRouterPart(statement: ts.Statement):
+  | {
+      name: string;
+      kind: RouterMove["kind"];
+      literal: ts.ObjectLiteralExpression;
+    }
+  | undefined {
+  if (!ts.isVariableStatement(statement)) return undefined;
+  const modifiers = ts.getModifiers(statement) ?? [];
+  if (
+    modifiers.length !== 1 ||
+    modifiers[0]!.kind !== ts.SyntaxKind.ExportKeyword
+  )
+    return undefined;
+  const list = statement.declarationList;
+  if (!(list.flags & ts.NodeFlags.Const) || list.declarations.length !== 1)
+    return undefined;
+  const decl = list.declarations[0]!;
+  if (!ts.isIdentifier(decl.name) || decl.type || decl.exclamationToken)
+    return undefined;
+  const init = decl.initializer;
+  const literal = init && literalOf(init);
+  if (!init || !literal || !isRouterLiteral(literal)) return undefined;
+  if (literal.properties.length === 0) return undefined;
+  if (!literal.properties.every(ts.isPropertyAssignment)) return undefined;
+  return {
+    name: decl.name.text,
+    kind: ts.isCallExpression(init) ? "router" : "object",
+    literal,
+  };
+}
+
+/** `{…}` itself, or the `{…}` of `createTRPCRouter({…})`. */
+function literalOf(
+  init: ts.Expression,
+): ts.ObjectLiteralExpression | undefined {
+  if (ts.isObjectLiteralExpression(init)) return init;
+  if (ts.isCallExpression(init) && init.arguments.length === 1) {
+    const arg = init.arguments[0]!;
+    if (ts.isObjectLiteralExpression(arg)) return arg;
+  }
+  return undefined;
+}
+
+/** A node's span with the comma after it, when one follows on its line. */
+function withComma(node: ts.Node, source: ts.SourceFile): Span {
+  const start = node.getStart(source);
+  let end = node.getEnd();
+  const after = /^[ \t]*,/.exec(source.text.slice(end));
+  if (after) end += after[0].length;
+  return { start, end, text: "" };
+}
+
+/** Code lines (not blank) from `start`'s line to `end`'s. */
+function codeLinesIn(
+  side: DiffSide,
+  source: ts.SourceFile,
+  start: number,
+  end: number,
+): number {
+  const first = source.getLineAndCharacterOfPosition(start).line;
+  const last = source.getLineAndCharacterOfPosition(end).line;
+  return side.lines.slice(first, last + 1).filter((l) => !BLANK_LINE.test(l))
+    .length;
+}
+
+/**
+ * Finds each router split (plan 42) and cuts it out of both sides: the
+ * moved properties leave the old literal, the new part's statement goes,
+ * and so does its one mount in the old literal (`key: part` for a
+ * `createTRPCRouter` part, `...part` for a procedures object). The part
+ * holds only whole properties of one router literal, each wholly removed
+ * there, in their old order, token for token; its file is another file;
+ * the mount is a new property of the same literal (same names down to it)
+ * in the file the properties left. What is left is read as before.
+ */
+function cutMovedProcedures(
+  files: FileDiff[],
+  names?: RegExp,
+): { movedAcross: number; moves: RouterMove[] } {
+  const code = files
+    .map((entry) => ({
+      entry,
+      oldSource: parseSide(entry.file, entry.old),
+      newSource: parseSide(entry.file, entry.new),
+    }))
+    .filter(
+      ({ entry }) =>
+        CODE_FILE.test(entry.file) && !MOVE_BOOKKEEPING.test(entry.file),
+    );
+  type Removed = { prop: ts.PropertyAssignment; key: string };
+  const literals: {
+    f: number;
+    path: string;
+    removed: (Removed | undefined)[];
+  }[] = [];
+  code.forEach(({ entry, oldSource }, f) => {
+    const visit = (node: ts.Node) => {
+      if (isRouterLiteral(node))
+        literals.push({
+          f,
+          path: literalPath(node),
+          removed: node.properties.map((prop) =>
+            ts.isPropertyAssignment(prop) &&
+            allChanged(
+              entry.old,
+              oldSource,
+              prop.getStart(oldSource),
+              prop.getEnd(),
+            )
+              ? { prop, key: tokensOf(prop, oldSource, names).join(" ") }
+              : undefined,
+          ),
+        });
+      ts.forEachChild(node, visit);
+    };
+    visit(oldSource);
+  });
+
+  const spans = code.map(() => ({ old: [] as Span[], new: [] as Span[] }));
+  const lineOf = (source: ts.SourceFile, pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const free = (taken: Span[], source: ts.SourceFile, span: Span) =>
+    taken.every(
+      (t) =>
+        lineOf(source, span.end) < lineOf(source, t.start) ||
+        lineOf(source, span.start) > lineOf(source, t.end),
+    );
+  const claimed = new Set<ts.Node>();
+  const moves: RouterMove[] = [];
+  let movedAcross = 0;
+  code.forEach((to, d) => {
+    for (const statement of to.newSource.statements) {
+      const part = newRouterPart(statement);
+      if (!part) continue;
+      const start = statement.getStart(to.newSource);
+      const end = statement.getEnd();
+      const at = to.newSource.getLineAndCharacterOfPosition(start);
+      const endAt = to.newSource.getLineAndCharacterOfPosition(end);
+      if (at.character !== 0) continue;
+      if (
+        !BLANK_LINE.test(to.entry.new.lines[endAt.line]!.slice(endAt.character))
+      )
+        continue;
+      if (!allChanged(to.entry.new, to.newSource, start, end)) continue;
+      const keys = part.literal.properties.map((p) =>
+        tokensOf(p, to.newSource, names).join(" "),
+      );
+      for (const literal of literals) {
+        if (literal.f === d) continue;
+        // The part's properties, in order, among the literal's removed ones.
+        const picked: Removed[] = [];
+        let i = 0;
+        for (const key of keys) {
+          while (
+            i < literal.removed.length &&
+            (literal.removed[i]?.key !== key ||
+              claimed.has(literal.removed[i]!.prop))
+          )
+            i += 1;
+          if (i === literal.removed.length) break;
+          picked.push(literal.removed[i++]!);
+        }
+        if (picked.length !== keys.length) continue;
+        // Its one mount, in the same literal where the properties left.
+        const from = code[literal.f]!;
+        let mount: ts.Node | undefined;
+        const look = (node: ts.Node) => {
+          if (mount) return;
+          if (isRouterLiteral(node) && literalPath(node) === literal.path) {
+            mount = node.properties.find(
+              (p) =>
+                !claimed.has(p) &&
+                (part.kind === "router"
+                  ? ts.isPropertyAssignment(p) &&
+                    ts.isIdentifier(p.initializer) &&
+                    p.initializer.text === part.name
+                  : ts.isSpreadAssignment(p) &&
+                    ts.isIdentifier(p.expression) &&
+                    p.expression.text === part.name) &&
+                allChanged(
+                  from.entry.new,
+                  from.newSource,
+                  p.getStart(from.newSource),
+                  p.getEnd(),
+                ),
+            );
+            return;
+          }
+          ts.forEachChild(node, look);
+        };
+        look(from.newSource);
+        if (!mount) continue;
+        const oldSpans = picked.map((r) => withComma(r.prop, from.oldSource));
+        const mountSpan = withComma(mount, from.newSource);
+        const partSpan: Span = { start, end, text: "" };
+        if (
+          !oldSpans.every((s) =>
+            free(spans[literal.f]!.old, from.oldSource, s),
+          ) ||
+          !free(spans[literal.f]!.new, from.newSource, mountSpan) ||
+          !free(spans[d]!.new, to.newSource, partSpan)
+        )
+          continue;
+        spans[literal.f]!.old.push(...oldSpans);
+        spans[literal.f]!.new.push(mountSpan);
+        spans[d]!.new.push(partSpan);
+        for (const r of picked) claimed.add(r.prop);
+        claimed.add(mount);
+        movedAcross += picked.length;
+        const sum = (counts: number[]) => counts.reduce((a, b) => a + b, 0);
+        moves.push({
+          from: from.entry.file,
+          to: to.entry.file,
+          name: part.name,
+          kind: part.kind,
+          properties: picked.length,
+          code: {
+            old: sum(
+              picked.map((r) =>
+                codeLinesIn(
+                  from.entry.old,
+                  from.oldSource,
+                  r.prop.getStart(from.oldSource),
+                  r.prop.getEnd(),
+                ),
+              ),
+            ),
+            new: sum(
+              part.literal.properties.map((p) =>
+                codeLinesIn(
+                  to.entry.new,
+                  to.newSource,
+                  p.getStart(to.newSource),
+                  p.getEnd(),
+                ),
+              ),
+            ),
+          },
+        });
+        break;
+      }
+    }
+  });
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    if (spans[f]!.old.length > 0)
+      entry.old = collapse(entry.old, oldSource, spans[f]!.old);
+    if (spans[f]!.new.length > 0)
+      entry.new = collapse(entry.new, newSource, spans[f]!.new);
+  });
+  return { movedAcross, moves };
+}
+
+/**
+ * The moves a `Mechanical:` commit makes that aren't whole statements: each
+ * body moved whole into a new function (cutMovedBodies) and each router
+ * split (cutMovedProcedures), and every file's lines at both sides before
+ * and after they are cut out. The size ratchet reads these: what is left
+ * once they are cut may rise only by its import lines.
+ */
+export function structuralMoves(
+  numstat: FileChange[],
+  diff: string,
+): {
+  bodies: BodyMove[];
+  routers: RouterMove[];
+  files: {
+    file: string;
+    old: string[];
+    new: string[];
+    oldCut: string[];
+    newCut: string[];
+  }[];
+} {
+  const names = renamedNames(numstat);
+  const files = readDiff(diff);
+  const before = files.map((e) => ({ old: e.old.lines, new: e.new.lines }));
+  const bodies = cutMovedBodies(files, names).moves;
+  const routers = cutMovedProcedures(files, names).moves;
+  return {
+    bodies,
+    routers,
+    files: files.map((e, i) => ({
+      file: e.file,
+      old: before[i]!.old,
+      new: before[i]!.new,
+      oldCut: e.old.lines,
+      newCut: e.new.lines,
+    })),
+  };
 }
 
 /** A side's code lines (not blank, comment or import), with its statements. */
@@ -926,7 +1331,9 @@ function matchCode(code: { old: CodeSide; new: CodeSide }[]): {
  * (the same change group, in order), or as part of a run of whole top-level
  * statements, kept in order, moved within the file or to another one. An
  * arrow or function expression's whole body may move into a new top-level
- * function, its statements compared token by token (cutMovedBodies). Other
+ * function, its statements compared token by token (cutMovedBodies), and
+ * whole router procedures into a new part mounted where they were
+ * (cutMovedProcedures). Other
  * lines (docs, data, comments) match by path rewrite as a multiset: first in
  * the same file (a moved entry in a sorted list matches too), then in any
  * other file of the commit. A prettier re-wrap of a file's changed lines
@@ -950,7 +1357,9 @@ export function notAMove(
     );
   const code: { old: CodeSide; new: CodeSide }[] = [];
   const files = readDiff(diff);
-  const bodiesAcross = cutMovedBodies(files, names);
+  const bodiesAcross =
+    cutMovedBodies(files, names).movedAcross +
+    cutMovedProcedures(files, names).movedAcross;
   for (const entry of files) {
     const { file, wholeFile } = entry;
     if (MOVE_BOOKKEEPING.test(file)) continue;

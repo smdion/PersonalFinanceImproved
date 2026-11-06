@@ -800,3 +800,227 @@ describe("checkRatchets in a repository", () => {
     ]);
   });
 });
+
+describe("checkRatchets: a body or a router split moved whole (owner Q14)", () => {
+  let dir: string;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" }).trim();
+  const write = (file: string, lines: string[]) => {
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), `${lines.join("\n")}\n`);
+  };
+  const filler = Array.from(
+    { length: 420 },
+    (_, i) => `export const f${i} = compute(${i});`,
+  );
+  const body = [
+    ...Array.from(
+      { length: 410 },
+      (_, i) => `const v${i} = await load(ctx, input, ${i});`,
+    ),
+    "return v409;",
+  ];
+  const ROUTER = "src/r.ts";
+  const SERVICE = "src/summary.ts";
+  const PART = "src/part.ts";
+  const imports = [
+    'import { createTRPCRouter, protectedProcedure } from "./trpc";',
+    'import { compute, load } from "./lib";',
+  ];
+  const router = (summary: string[], extraImports: string[] = []) => [
+    ...imports,
+    ...extraImports,
+    "",
+    ...filler,
+    "",
+    "export const rRouter = createTRPCRouter({",
+    ...summary,
+    "});",
+  ];
+  const inline = [
+    "  summary: protectedProcedure.query(async ({ ctx, input }) => {",
+    ...body.map((l) => `    ${l}`),
+    "  }),",
+  ];
+  const service = (inner = body.map((l) => `  ${l}`)) => [
+    'import type { Ctx, Input } from "./trpc";',
+    'import { load } from "./lib";',
+    "",
+    "export async function computeSummary(",
+    "  ctx: Ctx,",
+    "  input: Input,",
+    ") {",
+    ...inner,
+    "}",
+  ];
+  const count = (file: string) =>
+    fs.readFileSync(path.join(dir, file), "utf8").split("\n").length - 1;
+  /** size-baseline.json at the files' sizes, with the given function entries. */
+  const record = (
+    files: string[],
+    functions: Record<string, Record<string, number>>,
+  ) =>
+    write("size-baseline.json", [
+      JSON.stringify({
+        files: Object.fromEntries(files.map((f) => [f, count(f)])),
+        functions,
+      }),
+    ]);
+  const commit = (message: string) => {
+    git("add", "-A");
+    git("commit", "-q", "-m", message);
+    return git("rev-parse", "HEAD");
+  };
+  let base: string;
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-ratchets-q14-"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "Test");
+    write(ROUTER, router(inline));
+    record([ROUTER], { [ROUTER]: { "rRouter.summary.query()": 413 } });
+    base = commit("chore: base");
+  });
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  const movedBody = (inService = service(), fns = { computeSummary: 416 }) => {
+    git("checkout", "-q", "-B", "body", base);
+    write(
+      ROUTER,
+      router(
+        [
+          "  summary: protectedProcedure.query(({ ctx, input }) => computeSummary(ctx, input)),",
+        ],
+        ['import { computeSummary } from "./summary";'],
+      ),
+    );
+    write(SERVICE, inService);
+    record([ROUTER, SERVICE], { [SERVICE]: fns });
+    commit(
+      `refactor: the summary body moves to a service\n\nMechanical: body moved\nRatchet-raise: size-baseline.json — src/summary.ts +40; src/summary.ts computeSummary +4, its signature`,
+    );
+  };
+
+  it("passes a body moved whole: imports, signature, brace and call, and its function entry taken over", () => {
+    movedBody();
+    const report = checkRatchets(base, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining("files src/r.ts, src/summary.ts"),
+      expect.stringContaining(
+        "functions in src/summary.ts: 416 recorded lines (longest 416), 413",
+      ),
+    ]);
+  });
+
+  it("fails a body move with an extra line", () => {
+    movedBody([...service(), "export const extra = 1;"]);
+    expect(checkRatchets(base, "HEAD", dir).failures).toEqual([
+      expect.stringContaining(
+        "the code lines left across src/r.ts, src/summary.ts change by 4, their import lines by 3",
+      ),
+    ]);
+  });
+
+  it("fails a body with a statement changed: no move, so only imports", () => {
+    movedBody(
+      service(body.map((l) => `  ${l.replace("input, 7)", "input, 8)")}`)),
+    );
+    const { failures } = checkRatchets(base, "HEAD", dir);
+    expect(failures).toHaveLength(2);
+    expect(failures[0]).toMatch(/which adds 3 import lines/);
+    expect(failures[1]).toMatch(
+      /functions in src\/summary\.ts: 416 .*adds 0 lines of import/,
+    );
+  });
+
+  it("fails a moved function longer than the arrow it left plus its signature", () => {
+    // A blank line inside: the code lines balance, the function entry doesn't.
+    const inner = body.map((l) => `  ${l}`);
+    movedBody(service([...inner.slice(0, 5), "", ...inner.slice(5)]), {
+      computeSummary: 417,
+    });
+    expect(checkRatchets(base, "HEAD", dir).failures).toEqual([
+      expect.stringContaining(
+        "src/summary.ts computeSummary(): 417, rRouter.summary.query() 413 +3 for its signature",
+      ),
+    ]);
+  });
+
+  const procs = (from: number, to: number) =>
+    Array.from({ length: to - from }, (_, k) => {
+      const i = from + k;
+      return [
+        `  p${i}: protectedProcedure.query(async ({ ctx }) => {`,
+        `    const rows = await load(ctx, ${i});`,
+        "    return rows.length;",
+        "  }),",
+      ];
+    }).flat();
+  let longRouter = "";
+  const split = (partLines: string[], keep = procs(0, 110)) => {
+    git("checkout", "-q", "-B", "split", longRouter);
+    write(ROUTER, [
+      ...imports,
+      'import { partRouter } from "./part";',
+      "",
+      "export const rRouter = createTRPCRouter({",
+      ...keep,
+      "  part: partRouter,",
+      "});",
+    ]);
+    write(PART, partLines);
+    record([ROUTER, PART], {});
+    commit(
+      "refactor: r splits\n\nMechanical: split\nRatchet-raise: size-baseline.json — src/part.ts +20, its wrapper and mount",
+    );
+  };
+  const part = (
+    open = "export const partRouter = createTRPCRouter({",
+    props = procs(110, 220),
+    close = "});",
+  ) => [...imports, "", open, ...props, close];
+
+  it("passes a router split: imports, the part's wrapper and its mount", () => {
+    git("checkout", "-q", "-B", "split-base", base);
+    write(ROUTER, [
+      ...imports,
+      "",
+      "export const rRouter = createTRPCRouter({",
+      ...procs(0, 220),
+      "});",
+    ]);
+    record([ROUTER], {});
+    const start = commit("chore: a long router");
+    longRouter = start;
+    split(part());
+    const report = checkRatchets(start, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining("files src/part.ts, src/r.ts"),
+    ]);
+
+    // An extra line in the part.
+    split([...part(), "export const extra = 1;"]);
+    expect(checkRatchets(start, "HEAD", dir).failures).toEqual([
+      expect.stringContaining("change by 4, their import lines by 3"),
+    ]);
+    // Procedures reordered on the way: no split, so only imports.
+    split(part(undefined, [...procs(111, 220), ...procs(110, 111)]));
+    expect(checkRatchets(start, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(/which adds 3 import lines/),
+    ]);
+    // A wrapper that does more.
+    split(
+      part(
+        "export const partRouter = withLogging(createTRPCRouter({",
+        undefined,
+        "}));",
+      ),
+    );
+    expect(checkRatchets(start, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(/which adds 3 import lines/),
+    ]);
+  });
+});

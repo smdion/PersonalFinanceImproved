@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   checkCommit,
   countPriorFixes,
@@ -10,6 +14,7 @@ import {
   trailerValues,
   spotsFromDiff,
   srcLinesChanged,
+  structuralMoves,
   type CommitFacts,
 } from "../../scripts/check-commit";
 
@@ -655,6 +660,247 @@ describe("notAMove: a procedure's body moves to a service function", () => {
     expect(
       notAMove(numstat, diff({ inService: ["log(input);", ...moved] })),
     ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+});
+
+describe("notAMove: a router split moves whole procedures to a new part", () => {
+  let dir: string;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+  const write = (files: Record<string, string[] | null>) => {
+    for (const [file, lines] of Object.entries(files)) {
+      const full = path.join(dir, file);
+      if (lines === null) fs.rmSync(full, { force: true });
+      else {
+        fs.mkdirSync(path.dirname(full), { recursive: true });
+        fs.writeFileSync(full, `${lines.join("\n")}\n`);
+      }
+    }
+  };
+  const procedure = (name: string, call: string) => [
+    `  ${name}: protectedProcedure.input(z${name}).query(async ({ ctx, input }) => {`,
+    `    const rows = await ${call}(ctx.db, input.year);`,
+    "    return rows.map((row) => row.amount);",
+    "  }),",
+  ];
+  const [a, b, c] = [
+    procedure("a", "loadA"),
+    procedure("b", "loadB"),
+    procedure("c", "loadC"),
+  ];
+  const trpc =
+    'import { createTRPCRouter, protectedProcedure } from "../trpc";';
+  const parent = (props: string[], imports: string[] = []) => [
+    trpc,
+    'import { loadA, loadB, loadC, za, zb, zc } from "./lib";',
+    ...imports,
+    "",
+    "export const fooRouter = createTRPCRouter({",
+    ...props,
+    "});",
+  ];
+  const part = (open: string, props: string[], close = "});") => [
+    open.includes("createTRPCRouter")
+      ? trpc
+      : 'import { protectedProcedure } from "../trpc";',
+    'import { loadB, loadC, zb, zc } from "./lib";',
+    "",
+    open,
+    ...props,
+    close,
+  ];
+  const ROUTER = "export const barRouter = createTRPCRouter({";
+  const OBJECT = "export const barProcedures = {";
+  /** notAMove on the change from the base router to `files`. */
+  const split = (files: Record<string, string[] | null>) => {
+    git("checkout", "-q", "-f", "main");
+    git("clean", "-qfd");
+    write(files);
+    git("add", "-A");
+    return notAMove(
+      parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+      git("diff", "--cached", "-M", "-U1000000"),
+    );
+  };
+  const FOO = "src/routers/foo.ts";
+  const BAR = "src/routers/bar.ts";
+  const mounted = (mount = "  bar: barRouter,") =>
+    parent([...a, mount], ['import { barRouter } from "./bar";']);
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-router-split-"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "Test");
+    write({ [FOO]: parent([...a, ...b, ...c]) });
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+  });
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it("passes procedures moved whole into a createTRPCRouter part the parent mounts", () => {
+    expect(
+      split({ [FOO]: mounted(), [BAR]: part(ROUTER, [...b, ...c]) }),
+    ).toBeUndefined();
+    const moves = structuralMoves(
+      parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+      git("diff", "--cached", "-M", "-U1000000"),
+    );
+    expect(moves.routers).toEqual([
+      {
+        from: FOO,
+        to: BAR,
+        name: "barRouter",
+        kind: "router",
+        properties: 2,
+        code: { old: 8, new: 8 },
+      },
+    ]);
+  });
+
+  it("passes a procedures object the parent spreads, and a part that skips a procedure", () => {
+    expect(
+      split({
+        [FOO]: parent(
+          [...a, "  ...barProcedures,"],
+          ['import { barProcedures } from "./bar";'],
+        ),
+        [BAR]: part(OBJECT, [...b, ...c], "};"),
+      }),
+    ).toBeUndefined();
+    expect(
+      split({
+        [FOO]: parent(
+          [...a, ...b, "  bar: barRouter,"],
+          ['import { barRouter } from "./bar";'],
+        ),
+        [BAR]: part(ROUTER, c),
+      }),
+    ).toBeUndefined();
+    // Two parts, each mounted once.
+    expect(
+      split({
+        [FOO]: parent(
+          [...a, "  bar: barRouter,", "  baz: bazRouter,"],
+          [
+            'import { barRouter } from "./bar";',
+            'import { bazRouter } from "./baz";',
+          ],
+        ),
+        [BAR]: part(ROUTER, b),
+        "src/routers/baz.ts": part(
+          "export const bazRouter = createTRPCRouter({",
+          c,
+        ),
+      }),
+    ).toBeUndefined();
+  });
+
+  it("fails the part without its mount", () => {
+    // The shape needs the wrapper and mount cut: without a mount it isn't one.
+    expect(
+      split({ [FOO]: parent(a), [BAR]: part(ROUTER, [...b, ...c]) }),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
+  it("fails an extra line in the part or the parent", () => {
+    const fails = (files: Record<string, string[] | null>) =>
+      expect(split(files)).toMatch(
+        /changed line\(s\)|not whole top-level statements/,
+      );
+    fails({
+      [FOO]: mounted(),
+      [BAR]: [...part(ROUTER, [...b, ...c]), "export const extra = 1;"],
+    });
+    fails({
+      [FOO]: [...mounted(), "export const extra = 1;"],
+      [BAR]: part(ROUTER, [...b, ...c]),
+    });
+    // A property of the part's own that came from nowhere.
+    fails({
+      [FOO]: mounted(),
+      [BAR]: part(ROUTER, [
+        ...b,
+        ...c,
+        "  d: protectedProcedure.query(() => 1),",
+      ]),
+    });
+    // A second mount of the same part.
+    fails({
+      [FOO]: parent(
+        [...a, "  bar: barRouter,", "  again: barRouter,"],
+        ['import { barRouter } from "./bar";'],
+      ),
+      [BAR]: part(ROUTER, [...b, ...c]),
+    });
+  });
+
+  it("fails a procedure changed on the way", () => {
+    expect(
+      split({
+        [FOO]: mounted(),
+        [BAR]: part(ROUTER, [
+          ...b,
+          ...c.map((l) => l.replace("row.amount", "row.amount * 2")),
+        ]),
+      }),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
+  it("fails procedures reordered in the part", () => {
+    expect(
+      split({ [FOO]: mounted(), [BAR]: part(ROUTER, [...c, ...b]) }),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
+  it("fails a wrapper or a mount that does more", () => {
+    const fails = (files: Record<string, string[] | null>) =>
+      expect(split(files)).toMatch(
+        /changed line\(s\)|not whole top-level statements/,
+      );
+    fails({
+      [FOO]: mounted(),
+      [BAR]: part(
+        "export const barRouter = withLogging(createTRPCRouter({",
+        [...b, ...c],
+        "}));",
+      ),
+    });
+    fails({
+      [FOO]: mounted(),
+      [BAR]: part("export const barRouter: AnyRouter = createTRPCRouter({", [
+        ...b,
+        ...c,
+      ]),
+    });
+    fails({
+      [FOO]: mounted(),
+      [BAR]: part(ROUTER, [...b, ...c], "}).interop();"),
+    });
+    fails({
+      [FOO]: mounted("  bar: withAudit(barRouter),"),
+      [BAR]: part(ROUTER, [...b, ...c]),
+    });
+    // A router spread, or a procedures object mounted under a key.
+    fails({
+      [FOO]: mounted("  ...barRouter,"),
+      [BAR]: part(ROUTER, [...b, ...c]),
+    });
+    fails({
+      [FOO]: parent(
+        [...a, "  bar: barProcedures,"],
+        ['import { barProcedures } from "./bar";'],
+      ),
+      [BAR]: part(OBJECT, [...b, ...c], "};"),
+    });
+    // Mounted somewhere other than the literal the procedures left.
+    fails({
+      [FOO]: parent(
+        [...a, "  nested: createTRPCRouter({ bar: barRouter }),"],
+        ['import { barRouter } from "./bar";'],
+      ),
+      [BAR]: part(ROUTER, [...b, ...c]),
+    });
   });
 });
 

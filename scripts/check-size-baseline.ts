@@ -9,12 +9,19 @@
  * can't regrow to the limit; a part over the limit is refused. With
  * `--from <old>`, the parts' long functions carry the old file's entries, a
  * part of a recorded file may be over the limit, and the parts (with what
- * is left of the old file) together never exceed its entry.
+ * is left of the old file) together never exceed its entry. A body moved
+ * whole into a part's function (the router now only calls it) hands that
+ * function the router arrow's entry, plus its signature lines (owner Q14),
+ * and the total may also hold the import, signature, brace and call lines
+ * and what the parts held before (bodyCarry).
  */
+import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import ts from "typescript";
+
+import { importLines } from "./ratchets/raise";
 
 const FILE_LIMIT = 400;
 const FUNCTION_LIMIT = 150;
@@ -109,9 +116,13 @@ function isFunctionNode(node: ts.Node): node is ts.FunctionLikeDeclaration {
 
 /**
  * Every function over FUNCTION_LIMIT in the file, keyed by its dotted path,
- * with its length. Same-named ones are numbered in source order.
+ * with its length and where it starts. Same-named ones are numbered in
+ * source order.
  */
-function functionLengths(file: string, text: string): Map<string, number> {
+export function functionEntries(
+  file: string,
+  text: string,
+): Map<string, { lines: number; line: number; character: number }> {
   const kind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   const sf = ts.createSourceFile(
     file,
@@ -120,25 +131,34 @@ function functionLengths(file: string, text: string): Map<string, number> {
     true,
     kind,
   );
-  const lengths = new Map<string, number>();
+  const entries = new Map<
+    string,
+    { lines: number; line: number; character: number }
+  >();
   const visit = (node: ts.Node, segments: string[]) => {
     const segment = segmentOf(node);
     const here = segment ? [...segments, segment] : segments;
     if (isFunctionNode(node) && node.body) {
-      const start = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line;
+      const at = sf.getLineAndCharacterOfPosition(node.getStart(sf));
       const end = sf.getLineAndCharacterOfPosition(node.getEnd()).line;
-      const lines = end - start + 1;
+      const lines = end - at.line + 1;
       if (lines > FUNCTION_LIMIT) {
         const base = here.join(".") || "anonymous";
         let key = base;
-        for (let n = 2; lengths.has(key); n++) key = `${base} #${n}`;
-        lengths.set(key, lines);
+        for (let n = 2; entries.has(key); n++) key = `${base} #${n}`;
+        entries.set(key, { lines, line: at.line, character: at.character });
       }
     }
     ts.forEachChild(node, (child) => visit(child, here));
   };
   visit(sf, []);
-  return lengths;
+  return entries;
+}
+
+function functionLengths(file: string, text: string): Map<string, number> {
+  return new Map(
+    [...functionEntries(file, text)].map(([key, { lines }]) => [key, lines]),
+  );
 }
 
 function measure(): Baseline {
@@ -272,13 +292,39 @@ export function moved(baseline: Baseline, measured: Baseline, paths: string[]) {
 /** A key without its first segment: a router const a split renames. */
 const tail = (key: string) => key.slice(key.indexOf(".") + 1);
 
-/** The old file's entry a part's function carries: same key, else same tail. */
+/**
+ * What `--record --from` carries for a procedure body moved whole into a
+ * service function (owner Q14): each new function's name → the router
+ * entry it came from (`computeX` → `xRouter.summary.query()`), the lines
+ * its signature and closing brace may add over the router's arrow (whose
+ * head and `})` are read as one line each), and the lines the parts and
+ * what is left may total over the old entry: the import lines they add,
+ * each moved body's signature, brace and one-line call, and the lines the
+ * parts already held.
+ */
+export type BodyCarry = {
+  renames: Record<string, string>;
+  wrapper: Record<string, number>;
+  total: number;
+};
+
+/**
+ * The old file's entry a part's function carries: same key, else a moved
+ * body's rename (its nested keys too), else same tail.
+ */
 function carriedEntry(
   key: string,
   old: Record<string, number>,
   used: Set<string>,
+  renames: Record<string, string> = {},
 ): string | undefined {
   if (old[key] !== undefined && !used.has(key)) return key;
+  const dot = key.indexOf(".");
+  const renamed = renames[dot < 0 ? key : key.slice(0, dot)];
+  if (renamed !== undefined) {
+    const was = renamed + (dot < 0 ? "" : key.slice(dot));
+    return old[was] !== undefined && !used.has(was) ? was : undefined;
+  }
   if (!key.includes(".")) return undefined;
   const matches = Object.keys(old).filter(
     (k) => k.includes(".") && tail(k) === tail(key) && !used.has(k),
@@ -297,6 +343,7 @@ export function recorded(
   measured: Baseline,
   parts: string[],
   from?: string,
+  carry?: BodyCarry,
 ) {
   const problems: string[] = [];
   const files = { ...baseline.files };
@@ -328,15 +375,15 @@ export function recorded(
       measured.functions[file] ?? {},
     )) {
       if (baseline.functions[file]?.[key] !== undefined) continue;
-      const carried = carriedEntry(key, oldFns, used);
+      const carried = carriedEntry(key, oldFns, used, carry?.renames);
       const where = `${file} ${key}()`;
       if (carried === undefined)
         problems.push(
           `${where}: ${fnLines} lines, no entry in ${from} — ${GROW}`,
         );
-      else if (fnLines > oldFns[carried]!)
+      else if (fnLines > oldFns[carried]! + (carry?.wrapper[key] ?? 0))
         problems.push(
-          `${where}: ${fnLines} lines, ${from} ${carried}() ${oldFns[carried]} — ${GROW}`,
+          `${where}: ${fnLines} lines, ${from} ${carried}() ${oldFns[carried]}${carry?.wrapper[key] ? ` and +${carry.wrapper[key]} for its signature` : ""} — ${GROW}`,
         );
       else {
         used.add(carried);
@@ -348,12 +395,105 @@ export function recorded(
     const total =
       parts.reduce((sum, f) => sum + (measured.files[f] ?? 0), 0) +
       (measured.files[from] ?? 0);
-    if (total > oldEntry)
+    const allowed = oldEntry + (carry?.total ?? 0);
+    if (total > allowed)
       problems.push(
-        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry} — ${GROW}`,
+        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${carry?.total ? ` and +${carry.total} for the moved bodies` : ""} — ${GROW}`,
       );
   }
   return { baseline: { files, functions }, problems };
+}
+
+/** A function node's key, as functionEntries names it (unnumbered). */
+function keyOf(node: ts.Node): string {
+  const segments: string[] = [];
+  for (let n: ts.Node | undefined = node; n; n = n.parent) {
+    const segment = segmentOf(n);
+    if (segment) segments.unshift(segment);
+  }
+  return segments.join(".") || "anonymous";
+}
+
+/** The callee of a pass-through: `(…) => fn(…)` or `(…) => { return fn(…); }`. */
+function passedTo(node: ts.Node): string | undefined {
+  if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node))
+    return undefined;
+  let call: ts.Node | undefined = node.body;
+  if (ts.isBlock(node.body))
+    call =
+      node.body.statements.length === 1 &&
+      ts.isReturnStatement(node.body.statements[0]!)
+        ? node.body.statements[0].expression
+        : undefined;
+  return call && ts.isCallExpression(call) && ts.isIdentifier(call.expression)
+    ? call.expression.text
+    : undefined;
+}
+
+/**
+ * The BodyCarry for a split from `from` into `parts`: a part's top-level
+ * function that `from` now only calls through (the router's pass-through)
+ * takes the entry of that arrow's key. `now` and `before` read a file in
+ * the tree and at HEAD.
+ */
+export function bodyCarry(
+  from: string,
+  parts: string[],
+  now: (file: string) => string | undefined,
+  before: (file: string) => string | undefined,
+): BodyCarry {
+  const carry: BodyCarry = { renames: {}, wrapper: {}, total: 0 };
+  const parse = (file: string, text: string) =>
+    ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const fromText = now(from);
+  if (fromText === undefined) return carry;
+  const passes = new Map<string, string>();
+  const visit = (node: ts.Node) => {
+    const callee = passedTo(node);
+    if (callee !== undefined) passes.set(callee, keyOf(node));
+    ts.forEachChild(node, visit);
+  };
+  visit(parse(from, fromText));
+  for (const part of parts) {
+    const text = now(part);
+    if (text === undefined) continue;
+    const sf = parse(part, text);
+    const line = (pos: number) => sf.getLineAndCharacterOfPosition(pos).line;
+    for (const statement of sf.statements) {
+      if (!ts.isFunctionDeclaration(statement) || !statement.body) continue;
+      const name = statement.name?.text;
+      const key = name === undefined ? undefined : passes.get(name);
+      if (name === undefined || key === undefined) continue;
+      const signature =
+        line(statement.body.getStart(sf)) - line(statement.getStart(sf)) + 1;
+      carry.renames[name] = key;
+      carry.wrapper[name] = Math.max(0, signature + 1 - 2);
+      carry.total += signature + 1 + 1;
+    }
+  }
+  if (Object.keys(carry.renames).length === 0) return carry;
+  for (const file of [from, ...parts]) {
+    const [was, is] = [
+      importLines(file, before(file)),
+      importLines(file, now(file)),
+    ];
+    carry.total += is.statements + is.types - was.statements - was.types;
+    const held = before(file);
+    if (file !== from && held !== undefined) carry.total += countLines(held);
+  }
+  return carry;
+}
+
+function gitShowHead(file: string): string | undefined {
+  try {
+    return execFileSync("git", ["show", `HEAD:${file}`], {
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 function main(argv: string[]): number {
@@ -369,7 +509,21 @@ function main(argv: string[]): number {
     const result =
       mode === "--move"
         ? moved(readBaseline(), measured, args)
-        : recorded(readBaseline(), measured, parts, from);
+        : recorded(
+            readBaseline(),
+            measured,
+            parts,
+            from,
+            from === undefined
+              ? undefined
+              : bodyCarry(
+                  from,
+                  parts,
+                  (f) =>
+                    fs.existsSync(f) ? fs.readFileSync(f, "utf8") : undefined,
+                  gitShowHead,
+                ),
+          );
     for (const line of result.problems) console.log(line);
     if (result.problems.length) return 1;
     writeBaseline(result.baseline);

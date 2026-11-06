@@ -17,7 +17,10 @@
  * `Ratchet-raise:` trailer naming the entry and at least its rise
  * (scripts/ratchets/raise.ts has the format), or the commit reverts the one
  * that lowered it. In a `Mechanical:` commit a size entry rises by exactly
- * the import lines the commit adds to the files it joins. Every excused rise
+ * the import lines the commit adds to the files it joins, or (owner Q14) by
+ * those plus a body moved whole's signature, brace and call, or a router
+ * split's part wrapper and mount: once check-commit's moves are cut out,
+ * the code lines left rise by exactly the import lines. Every excused rise
  * is printed. A re-recorded baseline file needs
  * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
  *
@@ -48,9 +51,11 @@ import {
   commitsIn,
   gitIn,
   parseNumstat,
+  structuralMoves,
   trailerValues,
   type Git,
 } from "./check-commit";
+import { functionEntries } from "./check-size-baseline";
 import { attributeMoves, groupsOf, parseDiff } from "./ratchets/moves";
 import { RAISE, excuse, importLines } from "./ratchets/raise";
 import type { Rise, Tree } from "./ratchets/rise";
@@ -183,13 +188,16 @@ export function risesBetween(git: Git, from: string, to: string): Rise[] {
   const both = (file: string) => [was(file) ?? "", now(file) ?? ""] as const;
 
   const emptySize: SizeBaseline = { files: {}, functions: {} };
-  rises.push(
-    ...sizeRises(
-      json(was, SIZE_FILE, emptySize),
-      json(now, SIZE_FILE, emptySize),
-      group,
-    ),
-  );
+  const changed = [...diffs.keys()];
+  for (const rise of sizeRises(
+    json(was, SIZE_FILE, emptySize),
+    json(now, SIZE_FILE, emptySize),
+    group,
+  )) {
+    const g = group((rise.sized ?? rise.entry.paths)[0] ?? "");
+    const joined = new Set([...(rise.sized ?? rise.entry.paths), ...changed]);
+    rises.push({ ...rise, joined: [...joined].filter((f) => group(f) === g) });
+  }
   for (const file of SUPPRESSION_FILES)
     rises.push(
       ...suppressionRises(
@@ -244,10 +252,158 @@ const plus = (rise: Rise) => (rise.by === undefined ? "" : ` (+${rise.by})`);
 /**
  * In a `Mechanical:` commit an excused size rise is exactly the import lines
  * the commit adds to the files it joins, net across them; a function's entry
- * exactly the lines its `import("…")` types grow by.
+ * exactly the lines its `import("…")` types grow by. Else the moves of
+ * structuralLines may explain it.
  */
-function notImportLines(git: Git, sha: string, rise: Rise): string | undefined {
+function notImportLines(
+  git: Git,
+  sha: string,
+  rise: Rise,
+  moves: () => Moves,
+): string | undefined {
   if (rise.file !== SIZE_FILE) return undefined;
+  const plain = importLinesOnly(git, sha, rise);
+  if (plain === undefined) return undefined;
+  const structural = structuralLines(git, sha, rise, moves());
+  if (structural === undefined) return undefined;
+  return structural === "" ? plain : `${plain}; ${structural}`;
+}
+
+type Moves = ReturnType<typeof structuralMoves>;
+
+/** A Mechanical commit's moved bodies and router splits (check-commit's own reading). */
+function movesOf(git: Git, sha: string): Moves {
+  return structuralMoves(
+    parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+    git("show", "-M", "-U1000000", "--format=", sha),
+  );
+}
+
+const codeLines = (lines: string[]) =>
+  lines.filter((l) => !/^\s*$/.test(l)).length;
+
+/**
+ * Owner Q14: a procedure body moved whole into a service function may raise
+ * size entries by its import lines plus its signature, closing brace and the
+ * router's one-line call; a router split (plan 42) by its imports plus the
+ * new part's `export const … = createTRPCRouter({` / `});` and its one mount.
+ * check-commit's own reading finds those moves (structuralMoves). Once they
+ * are cut out of the joined files, what is left may rise by exactly its
+ * import lines, counted in code lines (blank lines are layout); the moved
+ * code itself may not grow. A function entry the moved body takes over
+ * (`xRouter.summary.query()` → `computeX`, and the functions inside it)
+ * may grow by the lines its signature and brace add over the router's
+ * arrow, and nothing else. Returns undefined when that explains the rise,
+ * "" when no such move joins these files, else why not.
+ */
+function structuralLines(
+  git: Git,
+  sha: string,
+  rise: Rise,
+  moves: Moves,
+): string | undefined {
+  const joined = new Set(rise.joined ?? []);
+  const inside = (m: { from: string; to: string }) =>
+    joined.has(m.from) && joined.has(m.to);
+  const bodies = moves.bodies.filter(inside);
+  const routers = moves.routers.filter(inside);
+  if (bodies.length + routers.length === 0) return "";
+  const what = `${bodies.length} moved bod${bodies.length === 1 ? "y" : "ies"} and ${routers.length} router part(s)`;
+  const grew = [
+    ...bodies
+      .filter((b) => b.bodyCode.new > b.bodyCode.old)
+      .map((b) => `${b.name}'s body`),
+    ...routers
+      .filter((r) => r.code.new > r.code.old)
+      .map((r) => `${r.name}'s procedures`),
+  ];
+  if (grew.length > 0)
+    return `moved code grew on the way (${grew.join(", ")}), which ${what} don't explain`;
+  if (rise.sized) {
+    let left = 0;
+    let imports = 0;
+    for (const f of moves.files) {
+      if (!joined.has(f.file)) continue;
+      left += codeLines(f.newCut) - codeLines(f.oldCut);
+      const [was, now] = [
+        importLines(f.file, f.old.join("\n")),
+        importLines(f.file, f.new.join("\n")),
+      ];
+      imports += now.statements + now.types - was.statements - was.types;
+    }
+    if (left === imports) return undefined;
+    return `once check-commit's ${what} are cut out, the code lines left across ${[...joined].sort().join(", ")} change by ${left}, their import lines by ${imports} (they may differ by nothing)`;
+  }
+  return functionsTakenOver(git, sha, rise, bodies, what);
+}
+
+/** The function-entry half of structuralLines. */
+function functionsTakenOver(
+  git: Git,
+  sha: string,
+  rise: Rise,
+  bodies: Moves["bodies"],
+  what: string,
+): string | undefined {
+  const empty: SizeBaseline = { files: {}, functions: {} };
+  const read = (ref: string): SizeBaseline => {
+    const text = treeAt(git, ref)(SIZE_FILE);
+    return text === undefined ? empty : (JSON.parse(text) as SizeBaseline);
+  };
+  const [base, head] = [read(`${sha}^`), read(sha)];
+  const joined = rise.joined ?? [];
+  const wasByName = new Map<string, number>();
+  for (const f of joined)
+    for (const [fn, n] of Object.entries(base.functions[f] ?? {}))
+      wasByName.set(fn, Math.max(n, wasByName.get(fn) ?? 0));
+  // Each moved body's new function takes the entry of the arrow it left.
+  const takes = new Map<string, { was: string; extra: number }>();
+  for (const b of bodies) {
+    const text = treeAt(git, `${sha}^`)(b.from);
+    if (text === undefined) continue;
+    const key = [...functionEntries(b.from, text)].find(
+      ([, at]) =>
+        at.line === b.start.line && at.character === b.start.character,
+    )?.[0];
+    if (key === undefined) continue;
+    const old = base.functions[b.from] ?? {};
+    for (const k of Object.keys(old))
+      if (k === key || k.startsWith(`${key}.`))
+        takes.set(`${b.to}\0${b.name}${k.slice(key.length)}`, {
+          was: `${b.from}\0${k}`,
+          extra: k === key ? Math.max(0, b.wrapper.new - b.wrapper.old) : 0,
+        });
+  }
+  const problems: string[] = [];
+  const call = (k: string) => (k.endsWith(")") ? k : `${k}()`);
+  for (const f of joined)
+    for (const [fn, n] of Object.entries(head.functions[f] ?? {})) {
+      const taken = takes.get(`${f}\0${fn}`);
+      if (taken) {
+        const [wf, wk] = taken.was.split("\0") as [string, string];
+        const was = base.functions[wf]![wk]!;
+        if (n > was + taken.extra)
+          problems.push(
+            `${f} ${call(fn)}: ${n}, ${call(wk)} ${was} +${taken.extra} for its signature`,
+          );
+        continue;
+      }
+      const was = base.functions[f]?.[fn] ?? wasByName.get(fn);
+      if (was === undefined)
+        problems.push(`${f} ${call(fn)}: ${n}, no entry it takes over`);
+      else if (n > was)
+        problems.push(`${f} ${call(fn)}: ${n}, ${was} at the base`);
+    }
+  if (problems.length === 0) return undefined;
+  return `${what} don't explain ${problems.join("; ")}`;
+}
+
+/** The import-lines rule alone (before owner Q14). */
+function importLinesOnly(
+  git: Git,
+  sha: string,
+  rise: Rise,
+): string | undefined {
   const files = rise.sized ?? rise.entry.paths;
   const was = treeAt(git, `${sha}^`);
   const now = treeAt(git, sha);
@@ -296,6 +452,8 @@ export function checkRatchets(
 
   const judge = (sha: string, message: string, rises: Rise[]) => {
     const mechanical = trailerValues(message, "Mechanical").length > 0;
+    let read: Moves | undefined;
+    const moves = () => (read ??= movesOf(git, sha));
     const approved = APPROVED_BEFORE_ENTRY_TRAILERS[sha] ?? [];
     const undone = reverted(message);
     // A revert may put an entry back to its value before the reverted commit.
@@ -329,7 +487,9 @@ export function checkRatchets(
         );
         continue;
       }
-      const imports = mechanical ? notImportLines(git, sha, rise) : undefined;
+      const imports = mechanical
+        ? notImportLines(git, sha, rise, moves)
+        : undefined;
       if (imports) failures.push(`${where}: ${imports}`);
       else excused.push(`${where}, by "${verdict.trailer}"`);
     }

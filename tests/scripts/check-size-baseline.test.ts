@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  bodyCarry,
   check,
   moved,
   recorded,
@@ -140,5 +141,136 @@ describe("--record", () => {
     expect(
       recorded(baseline(), split(100, 100), [PART_A], "src/none.ts").problems,
     ).toEqual(["src/none.ts: no entry to split from"]);
+  });
+});
+
+describe("--record --from: a procedure body moved whole into a service (owner Q14)", () => {
+  const ROUTER = "src/server/routers/garden.ts";
+  const SERVICE = "src/server/services/garden/summary.ts";
+  const router = (procedure: string[]) =>
+    [
+      'import { createTRPCRouter, protectedProcedure } from "../trpc";',
+      'import { computeGardenSummary } from "@/server/services/garden/summary";',
+      "",
+      "export const gardenRouter = createTRPCRouter({",
+      ...procedure,
+      "});",
+    ].join("\n");
+  const passThrough = [
+    "  summary: protectedProcedure.query(({ ctx, input }) =>",
+    "    computeGardenSummary(ctx, input),",
+    "  ),",
+  ];
+  const service = [
+    'import type { Ctx, Input } from "@/server/trpc";',
+    'import { load } from "@/server/data/garden";',
+    "",
+    "export async function computeGardenSummary(",
+    "  ctx: Ctx,",
+    "  input: Input,",
+    ") {",
+    "  return load(ctx, input);",
+    "}",
+  ].join("\n");
+  const was = [
+    'import { createTRPCRouter, protectedProcedure } from "../trpc";',
+    'import { load } from "@/server/data/garden";',
+    "",
+    "export const gardenRouter = createTRPCRouter({",
+    "  summary: protectedProcedure.query(async ({ ctx, input }) => {",
+    "    return load(ctx, input);",
+    "  }),",
+    "});",
+  ].join("\n");
+  const tree = (files: Record<string, string>) => (f: string) => files[f];
+  const carry = (now = router(passThrough)) =>
+    bodyCarry(
+      ROUTER,
+      [SERVICE],
+      tree({ [ROUTER]: now, [SERVICE]: service }),
+      tree({ [ROUTER]: was }),
+    );
+  const old: Baseline = {
+    files: { [ROUTER]: 820 },
+    functions: {
+      [ROUTER]: {
+        "gardenRouter.summary.query()": 700,
+        "gardenRouter.summary.query().beds.map()": 300,
+      },
+    },
+  };
+  const measured = (fns: Record<string, number>, service = 812) => ({
+    files: { [SERVICE]: service, [ROUTER]: 9 },
+    functions: { [SERVICE]: fns },
+  });
+
+  it("names the router entry each new function takes, and what its signature adds", () => {
+    // Signature 4 lines and a brace, over the arrow's head and `})`: +3.
+    // The total: the router's imports the same, +2 service imports,
+    // signature, brace and call (6), and none the service held before.
+    expect(carry()).toEqual({
+      renames: { computeGardenSummary: "gardenRouter.summary.query()" },
+      wrapper: { computeGardenSummary: 3 },
+      total: 2 + 6,
+    });
+    // A router that does more than call is no pass-through.
+    expect(
+      carry(
+        router([
+          "  summary: protectedProcedure.query(({ ctx, input }) =>",
+          "    computeGardenSummary(ctx, input).then(log),",
+          "  ),",
+        ]),
+      ),
+    ).toEqual({ renames: {}, wrapper: {}, total: 0 });
+  });
+
+  it("records the moved function under its new name at its size, and the ones inside it", () => {
+    const result = recorded(
+      old,
+      measured({
+        computeGardenSummary: 703,
+        "computeGardenSummary.beds.map()": 298,
+      }),
+      [SERVICE],
+      ROUTER,
+      carry(),
+    );
+    expect(result.problems).toEqual([]);
+    expect(result.baseline.files[SERVICE]).toBe(812);
+    expect(result.baseline.functions[SERVICE]).toEqual({
+      computeGardenSummary: 703,
+      "computeGardenSummary.beds.map()": 298,
+    });
+  });
+
+  it("refuses a moved function past its signature, an inner one that grew, and a total past the allowance", () => {
+    expect(
+      recorded(
+        old,
+        measured(
+          {
+            computeGardenSummary: 704,
+            "computeGardenSummary.beds.map()": 301,
+          },
+          822,
+        ),
+        [SERVICE],
+        ROUTER,
+        carry(),
+      ).problems,
+    ).toEqual([
+      `${SERVICE} computeGardenSummary(): 704 lines, ${ROUTER} gardenRouter.summary.query()() 700 and +3 for its signature — split it; never raise the baseline`,
+      `${SERVICE} computeGardenSummary.beds.map()(): 301 lines, ${ROUTER} gardenRouter.summary.query().beds.map()() 300 — split it; never raise the baseline`,
+      `${ROUTER}: the parts and what is left total 831 lines, entry 820 and +8 for the moved bodies — split it; never raise the baseline`,
+    ]);
+    // Without the carry the renamed function has no entry, and no allowance.
+    expect(
+      recorded(old, measured({ computeGardenSummary: 700 }), [SERVICE], ROUTER)
+        .problems,
+    ).toEqual([
+      `${SERVICE} computeGardenSummary(): 700 lines, no entry in ${ROUTER} — split it; never raise the baseline`,
+      `${ROUTER}: the parts and what is left total 821 lines, entry 820 — split it; never raise the baseline`,
+    ]);
   });
 });
