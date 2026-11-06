@@ -1,6 +1,6 @@
 /**
- * Tests for stress-test, projection-bands, and withdrawal-strategy-recommendation.
- * Three small modules tested together since they're all UI-feeding helpers.
+ * Tests for stress-test and withdrawal-strategy-recommendation.
+ * Two small modules tested together since they're all UI-feeding helpers.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -10,7 +10,6 @@ import {
   getStressTestScenarios,
   detectRosyAssumptions,
 } from "@/lib/pure/simulation/stress-test";
-import { deriveProjectionBand } from "@/lib/pure/simulation/projection-bands";
 import {
   recommendWithdrawalStrategy,
   type PlanCharacteristics,
@@ -76,42 +75,6 @@ describe("detectRosyAssumptions", () => {
   it("flags multiple fields when multiple are rosy", () => {
     const flags = detectRosyAssumptions(0.1, 0.02, 0.06);
     expect(flags.length).toBe(3);
-  });
-});
-
-// ── Projection bands ────────────────────────────────────────────────
-
-describe("deriveProjectionBand", () => {
-  it("returns symmetric ±25% by default", () => {
-    const b = deriveProjectionBand(2_400_000);
-    expect(b.point).toBe(2_400_000);
-    expect(b.low).toBe(1_800_000);
-    expect(b.high).toBe(3_000_000);
-    expect(b.rangeFraction).toBe(0.25);
-  });
-
-  it("respects a custom range fraction", () => {
-    const b = deriveProjectionBand(1_000_000, 0.4);
-    expect(b.low).toBe(600_000);
-    expect(b.high).toBe(1_400_000);
-  });
-
-  it("clamps low to zero on a small point", () => {
-    const b = deriveProjectionBand(100, 0.99);
-    expect(b.low).toBeCloseTo(1, 5);
-    expect(b.low).toBeGreaterThanOrEqual(0);
-  });
-
-  it("returns 'Insufficient data' label for invalid input", () => {
-    expect(deriveProjectionBand(NaN).label).toMatch(/Insufficient/);
-    expect(deriveProjectionBand(-1).label).toMatch(/Insufficient/);
-  });
-
-  it("label includes compact dollar formatting", () => {
-    const b = deriveProjectionBand(2_400_000);
-    expect(b.label).toMatch(/\$2\.4M/);
-    expect(b.label).toMatch(/\$1\.8M/);
-    expect(b.label).toMatch(/\$3\.0M/);
   });
 });
 

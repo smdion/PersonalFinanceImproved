@@ -5149,11 +5149,6 @@
       "count": 5
     }
   },
-  "src/lib/pure/simulation/projection-bands.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/lib/pure/simulation/random.ts": {
     "ratchet/max-comment-lines": {
       "count": 6
