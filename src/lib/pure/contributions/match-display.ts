@@ -5,22 +5,22 @@ import { PERCENT_MATCH, percentFromRate } from "@/lib/utils/match-rate";
 type MatchType = string | null | undefined;
 type Stored = string | number | null | undefined;
 
-/** A stored match value as the figure a form shows and edits: a whole percent
- *  (the stored one, else its rate's) or dollars, "" when none.
- *  matchValueToStore stores a typed one. */
+/** A stored match as the figure a form shows and edits: a percent's rate as
+ *  its whole percent (read first, as the engine reads it), else the stored
+ *  value, "" when none. matchValueToStore stores a typed one. */
 export function matchFigureForForm(
   type: MatchType,
   stored: Stored,
   rate?: Stored,
 ): string {
-  if (stored != null) return String(stored);
-  return type === PERCENT_MATCH && rate != null
-    ? (percentFromRate(rate) ?? "")
-    : "";
+  const ratePercent =
+    type === PERCENT_MATCH && rate != null ? percentFromRate(rate) : null;
+  return ratePercent ?? (stored != null ? String(stored) : "");
 }
 
-/** A profile entry's own match as a form figure (its value, else its
- *  rate's percent); null when it holds neither, so the account's shows. */
+/** A profile entry's own match as a form figure (matchFigureForForm over
+ *  its own value and rate); null when it holds neither, so the account's
+ *  shows. */
 export function entryMatchFigure(
   type: MatchType,
   entry: { employerMatchValue?: Stored; employerMatchRate?: Stored },

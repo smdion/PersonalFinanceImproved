@@ -193,8 +193,11 @@ describe("the form and display read the rate", () => {
       formatEmployerMatch("fixed_annual", "1000", 0),
     );
   });
-  it("matchFigureForForm keeps the stored value, and shows the rate's percent with none", () => {
-    expect(matchFigureForForm(PERCENT, "50.00", "0.5")).toBe("50.00");
+  it("matchFigureForForm shows a percent's rate as its whole percent, else the stored value", () => {
+    expect(matchFigureForForm(PERCENT, "50.00", "0.5")).toBe("50");
+    expect(matchFigureForForm(PERCENT, "50.00", "")).toBe("50.00");
+    expect(matchFigureForForm(PERCENT, "50.00", null)).toBe("50.00");
+    expect(matchFigureForForm("dollar_match", "60", "0.4")).toBe("60");
     expect(matchFigureForForm(PERCENT, null, "0.035")).toBe("3.5");
     expect(matchFigureForForm(PERCENT, null, null)).toBe("");
     expect(matchFigureForForm("fixed_annual", null, "0.5")).toBe("");
