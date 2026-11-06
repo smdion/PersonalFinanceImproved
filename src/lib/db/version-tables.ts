@@ -144,12 +144,12 @@ export const VERSION_PREVIEW_WITHHELD_TABLES = namesIn([
 /** Versioned, but a non-admin's import or restore keeps today's credentials. */
 export const ADMIN_ONLY_RESTORE_TABLES = namesIn(["installation"]);
 
-/** The tables a restore or import takes from the backup whole: every one for
- *  an admin, all but ADMIN_ONLY_RESTORE_TABLES for anyone else. */
-export function restoredTables(by: { asAdmin: boolean }): VersionTableEntry[] {
-  return by.asAdmin
-    ? VERSION_TABLES
-    : VERSION_TABLES.filter((t) => t.scope !== "installation");
+/** Of these tables, the ones a restore or import takes from the backup whole:
+ *  all for an admin, all but ADMIN_ONLY_RESTORE_TABLES for anyone else. */
+export function tablesFromBackup(names: string[], by: { asAdmin: boolean }) {
+  return names.filter(
+    (n) => by.asAdmin || !ADMIN_ONLY_RESTORE_TABLES.includes(n),
+  );
 }
 
 /** Excluded from versioning (audit/version tables + ephemeral caches). */

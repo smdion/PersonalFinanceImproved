@@ -115,7 +115,7 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         })
         .where(eq(schema.apiConnections.service, "ynab"));
 
-      await restoreVersion(db, version.id, notAdmin);
+      const fenced = await restoreVersion(db, version.id, notAdmin);
       const [after] = await connections(db);
       expect(after!.config).toEqual({
         accessToken: "today-token",
@@ -128,6 +128,10 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
       expect(
         (after!.accountMappings ?? []).map((m) => m.assetId),
       ).not.toContain(next.assetId);
+
+      // Its count leaves out the table it didn't take from the version.
+      const whole = await restoreVersion(db, version.id, admin);
+      expect(fenced.restoredTables).toBe(whole.restoredTables - 1);
     } finally {
       await done();
     }

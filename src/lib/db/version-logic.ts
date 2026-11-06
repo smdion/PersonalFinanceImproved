@@ -30,7 +30,7 @@ import { reconcileReferenceData } from "./reference-data";
 import {
   VERSION_TABLE_NAMES,
   VERSION_TABLES,
-  restoredTables,
+  tablesFromBackup,
 } from "./version-tables";
 import { withInstallationRows } from "./installation-rows";
 import { log } from "@/lib/logger";
@@ -224,7 +224,7 @@ export async function tablesLostOnRestore(
 ): Promise<{ tableName: string; currentRows: number }[]> {
   const present = new Set(backupTableNames);
   const lost: { tableName: string; currentRows: number }[] = [];
-  for (const { name: tableName } of restoredTables(by)) {
+  for (const tableName of tablesFromBackup(VERSION_TABLE_NAMES, by)) {
     if (present.has(tableName)) continue;
     // Rebuilt by the restore from a table the backup does carry.
     const source = REBUILT_ON_RESTORE[tableName];
@@ -301,11 +301,9 @@ export async function restoreVersion(
 
   // Transform version-row data if it was created at an older schema version
   const rawTableMap: Record<string, unknown[]> = {};
-  for (const t of tableDatas) {
-    if (Array.isArray(t.data) && t.data.length > 0) {
+  for (const t of tableDatas)
+    if (Array.isArray(t.data) && t.data.length > 0)
       rawTableMap[t.tableName] = t.data;
-    }
-  }
 
   const { tables: transformedMap } = transformBackupToCurrentSchema(
     rawTableMap,
@@ -371,7 +369,8 @@ export async function restoreVersion(
   // that it lacks (a newer tax year), as the next start would.
   await reconcileReferenceData(database);
 
-  return { restoredTables: tableDatas.length, restoredRows };
+  const names = tableDatas.map((t) => t.tableName);
+  return { restoredTables: tablesFromBackup(names, by).length, restoredRows };
 }
 
 export type BackupData = {

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ReplacesNote } from "@/components/versions/replaces-note";
 import { localDateStr } from "@/lib/utils/date";
 
 function formatBytes(bytes: number | null): string {
@@ -795,11 +796,11 @@ export default function VersionsPage() {
             <h3 className="text-primary mb-2 text-lg font-semibold">
               Restore Version
             </h3>
-            <p className="text-muted mb-3 text-sm">
-              This will replace <strong>all current data</strong> with the data
-              from <strong>&ldquo;{restoreTarget.name}&rdquo;</strong>. This
-              action cannot be undone unless you create a backup first.
-            </p>
+            <ReplacesNote className="mb-3">
+              with the data from{" "}
+              <strong>&ldquo;{restoreTarget.name}&rdquo;</strong>. This action
+              cannot be undone unless you create a backup first.
+            </ReplacesNote>
 
             <DataLossWarning tables={restoreDataLoss} />
 
@@ -899,10 +900,7 @@ export default function VersionsPage() {
             <h3 className="text-primary mb-2 text-lg font-semibold">
               Import Backup
             </h3>
-            <p className="text-muted mb-1 text-sm">
-              This will replace <strong>all current data</strong> with the
-              contents of:
-            </p>
+            <ReplacesNote className="mb-1">with the contents of:</ReplacesNote>
             <p className="text-primary mb-3 font-mono text-sm font-medium">
               {importFile?.name}
             </p>
