@@ -2075,7 +2075,7 @@ const BUILT_AT_LOAD = [
   "src/lib/utils/colors.ts CATEGORY_CHART_HEX",
   "src/lib/pure/household/what-if.schema.ts zSandboxContribAdditions",
   "src/server/routers/networth/index.ts portfolioSnapshotInput",
-  "src/server/routers/networth/index.ts networthRouter",
+  "src/server/routers/networth/index.ts snapshotAccountInput",
   "src/server/routers/performance/accounts.ts performanceAccountInput",
   "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",

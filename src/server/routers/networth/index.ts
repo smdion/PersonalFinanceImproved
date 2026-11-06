@@ -70,6 +70,19 @@ const portfolioSnapshotInput = z.object({
   ),
 });
 
+const snapshotAccountInput = z.object({
+  snapshotId: z.number().int(),
+  institution: z.string().trim().min(1),
+  taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
+  amount: zDecimal,
+  accountType: z.enum(accountCategoryEnum()),
+  subType: z.string().nullable().optional(),
+  label: z.string().trim().nullable().optional(),
+  parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),
+  ownerPersonId: z.number().int().nullable().optional(),
+  performanceAccountId: z.number().int().nullable().optional(),
+});
+
 export const networthRouter = createTRPCRouter({
   computeSummary: protectedProcedure
     .input(zYearEndTargeting)
@@ -1369,20 +1382,7 @@ export const networthRouter = createTRPCRouter({
 
     /** Create a new sub-account row in the latest snapshot. */
     createAccount: portfolioProcedure
-      .input(
-        z.object({
-          snapshotId: z.number().int(),
-          institution: z.string().trim().min(1),
-          taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
-          amount: zDecimal,
-          accountType: z.enum(accountCategoryEnum()),
-          subType: z.string().nullable().optional(),
-          label: z.string().trim().nullable().optional(),
-          parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),
-          ownerPersonId: z.number().int().nullable().optional(),
-          performanceAccountId: z.number().int().nullable().optional(),
-        }),
-      )
+      .input(snapshotAccountInput)
       .mutation(async ({ ctx, input }) => {
         // Defensive invariant, not a reachable UI path today: the only
         // shipped caller (AddSubAccountForm) never sends a
