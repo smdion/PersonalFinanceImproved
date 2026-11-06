@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 94 routers.**
+**396 procedures across 94 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -753,6 +753,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `acceptLinkSuggestions` | mutation | `syncProcedure`      | Link every unlinked SimpleFIN account to its suggested (sub-)account, and narrow whole-account links to their suggested sub-account.                                                                    |
 | `listLinkableLoans`     | query    | `protectedProcedure` | Loans a feed can report; `feedId` shows which are taken.                                                                                                                                                |
 | `listMatchableAccounts` | query    | `protectedProcedure` | Active performance_accounts, for the match-to-existing-account picker.                                                                                                                                  |
+| `listReaddedAccounts`   | query    | `protectedProcedure` | an account absent from the latest sync (readdedCandidates).                                                                                                                                             |
+| `mergeReaddedAccount`   | mutation | `syncProcedure`      | confirmed: no 24-hour wait.                                                                                                                                                                             |
 | `setAccountMapping`     | mutation | `syncProcedure`      | multiple SimpleFIN accounts can point at the same performance account (e.g. historical account splits/merges Ledgr still tracks as a single account) — listAccounts sums every linked account's balance |
 | `setLoanLink`           | mutation | `syncProcedure`      | Make a feed a mortgage's balance (or stop, with loanId null). The feed stops being an account: it leaves any tracked-account link and the live total, and it's included, or the link would do nothing.  |
 

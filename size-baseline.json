@@ -84,7 +84,7 @@
     "src/components/savings/fund-transaction-list.tsx": 413,
     "src/components/savings/savings-trajectory-table.tsx": 550,
     "src/components/settings/general.tsx": 449,
-    "src/components/settings/integrations-simplefin.tsx": 493,
+    "src/components/settings/integrations-simplefin.tsx": 474,
     "src/components/settings/integrations.tsx": 707,
     "src/components/settings/integrations/budget-section.tsx": 712,
     "src/components/settings/integrations/portfolio-section.tsx": 659,

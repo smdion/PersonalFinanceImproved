@@ -94,6 +94,12 @@ export const GONE_AFTER_HOURS = 24;
 /** Clock slack between the app (lastSeenAt) and the database (createdAt). */
 const CLOCK_SLACK_MS = 5 * 60_000;
 
+/** The copy has history from while the row was still reported: they were
+ *  two accounts side by side, not one under a new id. */
+const reportedTogether = (copy: StoredFeedIdentity, row: StoredFeedIdentity) =>
+  copy.firstHistoryAt !== null &&
+  copy.firstHistoryAt.getTime() <= row.lastSeenAt.getTime() + CLOCK_SLACK_MS;
+
 const keyOf = (org: string, name: string) => `${org}\u0000${name}`;
 
 function groupBy<T>(items: readonly T[], key: (t: T) => string) {
@@ -177,10 +183,7 @@ export function planReidentify(args: {
       plan.ambiguous.push({ ids, reason: "reported_copy_linked" });
     else if (!hasLink(row))
       plan.ambiguous.push({ ids, reason: "neither_linked" });
-    else if (
-      copy.firstHistoryAt &&
-      copy.firstHistoryAt.getTime() <= row.lastSeenAt.getTime() + CLOCK_SLACK_MS
-    )
+    else if (reportedTogether(copy, row))
       plan.ambiguous.push({ ids, reason: "reported_together" });
     else
       plan.merge.push({
@@ -257,4 +260,85 @@ export function pairCopiedTransactions(
     open.splice(i, 1);
   }
   return pairs;
+}
+
+/** When the latest sync answered: the upsert stamps every account it
+ *  reports with one time, so the newest lastSeenAt is that sync's. */
+export function latestSyncAt(
+  rows: readonly { lastSeenAt: Date }[],
+): Date | null {
+  return rows.reduce<Date | null>(
+    (max, r) => (max === null || r.lastSeenAt > max ? r.lastSeenAt : max),
+    null,
+  );
+}
+
+const reportedAt = (r: { lastSeenAt: Date }, latest: Date | null) =>
+  latest !== null && r.lastSeenAt.getTime() >= latest.getTime();
+
+type MergeFeed = StoredFeedIdentity & {
+  isIncluded: boolean;
+  lastBalance: number;
+};
+
+type MergeRefusal =
+  | "same_row"
+  | "other_institution"
+  | "copy_linked"
+  | "copy_excluded"
+  | "copy_not_reported"
+  | "kept_still_reported"
+  | "reported_together"
+  | "not_a_debt";
+
+/** Why the owner can't merge `copy` into `keep`, or null when they can. The
+ *  names may differ; the rest of the sync's rule holds, with no wait. A
+ *  loan's feed takes only a debt (what the loan picker offers). */
+export function mergeRefusal(
+  copy: MergeFeed,
+  keep: MergeFeed,
+  latest: Date | null,
+): MergeRefusal | null {
+  if (copy.id === keep.id) return "same_row";
+  if (copy.orgName === "" || copy.orgName !== keep.orgName)
+    return "other_institution";
+  if (hasLink(copy)) return "copy_linked";
+  if (!copy.isIncluded) return "copy_excluded";
+  if (!reportedAt(copy, latest)) return "copy_not_reported";
+  if (reportedAt(keep, latest)) return "kept_still_reported";
+  if (reportedTogether(copy, keep)) return "reported_together";
+  if (keep.linkedLoanId != null && copy.lastBalance >= 0) return "not_a_debt";
+  return null;
+}
+
+/** For each account, the rows it could be a re-added copy of (see
+ *  mergeRefusal). Exact name matches first, then by name. */
+export function readdedCandidates(rows: readonly MergeFeed[]): {
+  copyId: number;
+  candidates: {
+    id: number;
+    accountName: string;
+    exactName: boolean;
+    linked: boolean;
+  }[];
+}[] {
+  const latest = latestSyncAt(rows);
+  return rows
+    .map((copy) => ({
+      copyId: copy.id,
+      candidates: rows
+        .filter((k) => mergeRefusal(copy, k, latest) === null)
+        .map((k) => ({
+          id: k.id,
+          accountName: k.accountName,
+          exactName: k.accountName === copy.accountName,
+          linked: hasLink(k),
+        }))
+        .sort(
+          (a, b) =>
+            Number(b.exactName) - Number(a.exactName) ||
+            a.accountName.localeCompare(b.accountName),
+        ),
+    }))
+    .filter((c) => c.candidates.length > 0);
 }

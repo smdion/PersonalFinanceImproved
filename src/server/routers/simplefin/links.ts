@@ -13,8 +13,62 @@ import {
 import { accountDisplayName } from "@/lib/utils/format";
 import { TRPCError } from "@trpc/server";
 import { loadLinkContext } from "@/server/services/sync/simplefin";
+import {
+  latestSyncAt,
+  mergeRefusal,
+  readdedCandidates,
+} from "@/lib/pure/sync/simplefin-reidentify";
+import { loadFeedIdentities, mergeCopyInto } from "@/lib/simplefin/reidentify";
+
+const MERGE_REFUSED = {
+  same_row: "An account can't be merged into itself",
+  other_institution: "Both accounts must be at the same institution",
+  copy_linked: "Unlink the new account before merging it",
+  copy_excluded: "Include the new account before merging it",
+  copy_not_reported: "The new account didn't answer the latest sync",
+  kept_still_reported: "That account still answered the latest sync",
+  reported_together:
+    "Both accounts have history from the same time: they're two accounts",
+  not_a_debt: "A loan's feed can only take an account that owes money",
+} as const;
 
 export const linksProcedures = {
+  /** New unlinked accounts that look like a re-added institution's copy of
+   *  an account absent from the latest sync (readdedCandidates). */
+  listReaddedAccounts: protectedProcedure.query(async ({ ctx }) =>
+    readdedCandidates(await loadFeedIdentities(ctx.db)),
+  ),
+
+  /** Merge a new copy into the account it duplicates, as the owner
+   *  confirmed: no 24-hour wait. */
+  mergeReaddedAccount: syncProcedure
+    .input(z.object({ copyId: z.number().int(), keepId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.transaction(async (tx) => {
+        const rows = await loadFeedIdentities(tx);
+        const copy = rows.find((r) => r.id === input.copyId);
+        const keep = rows.find((r) => r.id === input.keepId);
+        if (!copy || !keep)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "SimpleFIN account not found",
+          });
+        const refusal = mergeRefusal(copy, keep, latestSyncAt(rows));
+        if (refusal)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: MERGE_REFUSED[refusal],
+          });
+        await mergeCopyInto(tx, keep.id, copy.id, "owner");
+        await applyLoanFeedBalances(tx, new Set([copy.externalAccountId]));
+      });
+      await redactStoredCardSpending(ctx.db, input.keepId);
+      return {
+        success: true as const,
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+      };
+    }),
+
   /** Active performance_accounts, for the match-to-existing-account picker. */
   listMatchableAccounts: protectedProcedure.query(async ({ ctx }) => {
     const [accounts, people, subs] = await Promise.all([

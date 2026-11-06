@@ -340,6 +340,8 @@ export const SKIPPED: Record<string, string> = {
     "admin table browser: raw PostgreSQL SQL, echoes rows the seeder wrote",
   "dataBrowser.getRows":
     "admin table browser: raw PostgreSQL SQL, echoes rows the seeder wrote",
+  "simplefin.listReaddedAccounts":
+    "new after the baseline was recorded (recording it would move every baseline file); routers/simplefin-readded.test.ts covers it",
 };
 
 /** Queries deleted in v0.10.0 commits 28–31 (the 30/90-day balance

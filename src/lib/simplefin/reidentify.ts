@@ -145,6 +145,66 @@ async function firstHistoryByAccount(tx: DbOrTx): Promise<Map<number, Date>> {
   return first;
 }
 
+/** Merge the copy into the kept row: its history moves, and the row takes
+ *  its SimpleFIN id and last report. `by`: the sync's rule, or the owner
+ *  confirming a pair in settings. */
+export async function mergeCopyInto(
+  tx: DbOrTx,
+  keepId: number,
+  dropId: number,
+  by: "sync" | "owner",
+): Promise<void> {
+  const f = schema.simplefinAccounts;
+  const [copy] = await tx.select().from(f).where(eq(f.id, dropId));
+  if (!copy) throw new Error(`SimpleFIN account ${dropId} not found`);
+  const { moved, dropped } = await mergeCopy(tx, keepId, dropId);
+  await tx
+    .update(f)
+    .set({
+      externalAccountId: copy.externalAccountId,
+      orgName: copy.orgName,
+      accountName: copy.accountName,
+      lastBalance: copy.lastBalance,
+      lastBalanceDate: copy.lastBalanceDate,
+      lastSeenAt: copy.lastSeenAt,
+      // The owner merged a counted account: it stays counted.
+      ...(by === "owner" ? { isIncluded: copy.isIncluded } : {}),
+    })
+    .where(eq(f.id, keepId));
+  log("info", "simplefin_account_reidentified", {
+    id: keepId,
+    mergedId: dropId,
+    rowsMoved: moved,
+    rowsDropped: dropped,
+    by,
+  });
+}
+
+/** Every stored account as the pairing rules read it. */
+export async function loadFeedIdentities(tx: DbOrTx) {
+  const f = schema.simplefinAccounts;
+  const stored = await tx
+    .select({
+      id: f.id,
+      externalAccountId: f.externalAccountId,
+      orgName: f.orgName,
+      accountName: f.accountName,
+      linkedPerformanceAccountId: f.linkedPerformanceAccountId,
+      linkedSubKey: f.linkedSubKey,
+      linkedLoanId: f.linkedLoanId,
+      lastSeenAt: f.lastSeenAt,
+      isIncluded: f.isIncluded,
+      lastBalance: f.lastBalance,
+    })
+    .from(f);
+  const firstHistory = await firstHistoryByAccount(tx);
+  return stored.map((r) => ({
+    ...r,
+    lastBalance: Number(r.lastBalance),
+    firstHistoryAt: firstHistory.get(r.id) ?? null,
+  }));
+}
+
 /** Apply planReidentify. Returns the rows whose SimpleFIN id changed:
  *  they answered this sync, under their new id. */
 export async function reidentifySimplefinAccounts(
@@ -157,24 +217,8 @@ export async function reidentifySimplefinAccounts(
   now: Date,
 ): Promise<Set<number>> {
   const f = schema.simplefinAccounts;
-  const stored = await tx
-    .select({
-      id: f.id,
-      externalAccountId: f.externalAccountId,
-      orgName: f.orgName,
-      accountName: f.accountName,
-      linkedPerformanceAccountId: f.linkedPerformanceAccountId,
-      linkedSubKey: f.linkedSubKey,
-      linkedLoanId: f.linkedLoanId,
-      lastSeenAt: f.lastSeenAt,
-    })
-    .from(f);
-  const firstHistory = await firstHistoryByAccount(tx);
   const plan = planReidentify({
-    stored: stored.map((r) => ({
-      ...r,
-      firstHistoryAt: firstHistory.get(r.id) ?? null,
-    })),
+    stored: await loadFeedIdentities(tx),
     reported: response.accounts,
     erroredIds: new Set(response.accountIdsWithErrors),
     errorScope: response.errorScope,
@@ -187,21 +231,11 @@ export async function reidentifySimplefinAccounts(
       .set({ externalAccountId: a.externalAccountId })
       .where(eq(f.id, a.rowId));
     changed.add(a.rowId);
-    log("info", "simplefin_account_reidentified", { id: a.rowId });
+    log("info", "simplefin_account_reidentified", { id: a.rowId, by: "sync" });
   }
   for (const m of plan.merge) {
-    const { moved, dropped } = await mergeCopy(tx, m.keepId, m.dropId);
-    await tx
-      .update(f)
-      .set({ externalAccountId: m.externalAccountId })
-      .where(eq(f.id, m.keepId));
+    await mergeCopyInto(tx, m.keepId, m.dropId, "sync");
     changed.add(m.keepId);
-    log("info", "simplefin_account_reidentified", {
-      id: m.keepId,
-      mergedId: m.dropId,
-      rowsMoved: moved,
-      rowsDropped: dropped,
-    });
   }
   for (const a of plan.ambiguous)
     log("warn", "simplefin_account_reidentify_ambiguous", {
