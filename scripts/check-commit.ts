@@ -1445,6 +1445,7 @@ function stageDestination(
   statement: ts.Statement,
   side: DiffSide,
   source: ts.SourceFile,
+  oldNames: Set<string>,
 ):
   | {
       node: ts.FunctionDeclaration & { body: ts.Block };
@@ -1467,7 +1468,8 @@ function stageDestination(
   if (at(start).character !== 0) return undefined;
   if (!BLANK_LINE.test(side.lines[at(end).line]!.slice(at(end).character)))
     return undefined;
-  if (!allChanged(side, source, start, end)) return undefined;
+  // New in this change: no top-level function of its name before it.
+  if (oldNames.has(statement.name.text)) return undefined;
   const params: string[] = [];
   for (const p of statement.parameters) {
     if (p.initializer || p.dotDotDotToken || p.questionToken) return undefined;
@@ -1579,16 +1581,105 @@ function stageProblem(
   return undefined;
 }
 
+/** Lines with each span cut to its text (a whole-line span with no text goes). */
+function cutLines(
+  lines: string[],
+  source: ts.SourceFile,
+  spans: Span[],
+): string[] {
+  const out: string[] = [];
+  const at = (pos: number) => source.getLineAndCharacterOfPosition(pos);
+  let i = 0;
+  for (const span of [...spans].sort((a, b) => a.start - b.start)) {
+    const s = at(span.start);
+    const e = at(span.end);
+    for (; i < s.line; i++) out.push(lines[i]!);
+    const merged =
+      lines[s.line]!.slice(0, s.character) +
+      span.text +
+      lines[e.line]!.slice(e.character);
+    if (span.text !== "" || !BLANK_LINE.test(merged)) out.push(merged);
+    i = e.line + 1;
+  }
+  for (; i < lines.length; i++) out.push(lines[i]!);
+  return out;
+}
+
+/**
+ * Both sides of a file diffed again, line by line (the longest in-order
+ * match, after the common head and tail): each run of unmatched lines
+ * between two matched ones is one change group, numbered from `base`.
+ */
+function rediff(
+  oldLines: string[],
+  newLines: string[],
+  base: number,
+): { old: DiffSide; new: DiffSide } {
+  let head = 0;
+  while (
+    head < oldLines.length &&
+    head < newLines.length &&
+    oldLines[head] === newLines[head]
+  )
+    head += 1;
+  let tail = 0;
+  while (
+    tail < oldLines.length - head &&
+    tail < newLines.length - head &&
+    oldLines[oldLines.length - 1 - tail] ===
+      newLines[newLines.length - 1 - tail]
+  )
+    tail += 1;
+  const pairs: [number, number][] = [];
+  for (let k = 0; k < head; k++) pairs.push([k, k]);
+  for (const [a, b] of inOrder(
+    oldLines.slice(head, oldLines.length - tail),
+    newLines.slice(head, newLines.length - tail),
+  ))
+    pairs.push([a + head, b + head]);
+  for (let k = tail; k > 0; k--)
+    pairs.push([oldLines.length - k, newLines.length - k]);
+  const old: DiffSide = { lines: oldLines, changed: [] };
+  const next: DiffSide = { lines: newLines, changed: [] };
+  let group = base;
+  let [i, j] = [0, 0];
+  const ends: [number, number][] = [
+    ...pairs,
+    [oldLines.length, newLines.length],
+  ];
+  for (const [a, b] of ends) {
+    if (i < a || j < b) {
+      group += 1;
+      for (; i < a; i++) old.changed.push({ at: i, group });
+      for (; j < b; j++) next.changed.push({ at: j, group });
+    }
+    [i, j] = [a + 1, b + 1];
+  }
+  return { old, new: next };
+}
+
+/** How many comment lines stand right above `line`. */
+function commentsAbove(lines: string[], line: number): number {
+  let n = 0;
+  while (line - n > 0 && COMMENT_LINE.test(lines[line - n - 1]!)) n += 1;
+  return n;
+}
+
 /**
  * Finds each stage cut from a long function (owner v0.10.3 Q1) and cuts it
  * out of both sides: the moved statements and the call left in their place
  * become one marker, and the stage goes (its doc comment stays a comment).
  * The statements are contiguous top-level statements of one function's
- * body, every line of them removed, in the stage in the same order, token
- * for token (stageDestination, stageProblem); the call is a top-level
- * statement of the same-named function, in the same change. What is left
- * is read as before. Returns how many statements moved between files, and
- * each stage.
+ * body, in the stage in the same order, token for token (stageDestination,
+ * stageProblem); the call is a top-level statement of the same-named
+ * function; the stage is a function new in this change, in another file or
+ * the same one. The stages are found from the syntax, not from git's line
+ * diff (which may match a `);` or `x,` of the call to one of the run's, or,
+ * in one file, the moved lines to themselves): once cut, each file the cuts
+ * touch is diffed again line by line, so a marker left anywhere but where
+ * the run was, or anything else changed, is read as any other changed
+ * line. Returns how many statements moved (within a file too), and each
+ * stage.
  */
 function cutMovedStages(
   files: FileDiff[],
@@ -1625,8 +1716,13 @@ function cutMovedStages(
       ts.forEachChild(node, visit);
     };
     visit(oldSource);
+    const oldNames = new Set(
+      oldSource.statements.flatMap((s) =>
+        ts.isFunctionDeclaration(s) && s.name ? [s.name.text] : [],
+      ),
+    );
     for (const statement of newSource.statements) {
-      const dest = stageDestination(statement, entry.new, newSource);
+      const dest = stageDestination(statement, entry.new, newSource, oldNames);
       if (dest)
         dests.push({
           f,
@@ -1645,10 +1741,9 @@ function cutMovedStages(
         lineOf(source, e) < lineOf(source, t.start) ||
         lineOf(source, s) > lineOf(source, t.end),
     );
-  const groupOf = (side: DiffSide, line: number) =>
-    side.changed.find((c) => c.at === line)?.group;
+  const claimedCalls = new Set<ts.Statement>();
   const moves: StageMove[] = [];
-  let movedAcross = 0;
+  let moved = 0;
   let marker = 0;
   for (const { f: d, dest, keys } of dests) {
     const to = code[d]!;
@@ -1664,7 +1759,6 @@ function cutMovedStages(
         const first = body[i]!;
         const last = body[i + keys.length - 1]!;
         const e = { start: first.getStart(at.oldSource), end: last.getEnd() };
-        if (!allChanged(at.entry.old, at.oldSource, e.start, e.end)) continue;
         if (
           stageProblem(
             source.node,
@@ -1676,27 +1770,30 @@ function cutMovedStages(
           ) !== undefined
         )
           continue;
-        const group = groupOf(at.entry.old, lineOf(at.oldSource, e.start));
-        if (group === undefined) continue;
-        // The call, in the same change, inside the function of that name.
+        // The call, inside the function of that name: the one with the
+        // run's neighbours around it when there are several.
+        const before = source.keys[i - 1];
+        const after = source.keys[i + keys.length];
         let call: ts.Statement | undefined;
         const look = (node: ts.Node) => {
           if (call) return;
           if (stageSource(node) && functionName(node) === name) {
-            call = node.body.statements.find(
+            const list = node.body.statements;
+            const calls = list.filter(
               (s) =>
-                groupOf(
-                  at.entry.new,
-                  lineOf(at.newSource, s.getStart(at.newSource)),
-                ) === group &&
-                callsStage(s, dest.node, dest.params, dest.returned) &&
-                allChanged(
-                  at.entry.new,
-                  at.newSource,
-                  s.getStart(at.newSource),
-                  s.getEnd(),
-                ),
+                !claimedCalls.has(s) &&
+                callsStage(s, dest.node, dest.params, dest.returned),
             );
+            const fits = (s: ts.Statement) => {
+              const k = list.indexOf(s);
+              const prev = list[k - 1];
+              const next = list[k + 1];
+              return (
+                (prev ? keyOf(prev, at.newSource) : undefined) === before ||
+                (next ? keyOf(next, at.newSource) : undefined) === after
+              );
+            };
+            call = calls.find(fits) ?? calls[0];
             return;
           }
           ts.forEachChild(node, look);
@@ -1724,19 +1821,22 @@ function cutMovedStages(
         spans[source.f]!.old.push({ ...e, text });
         spans[source.f]!.new.push({ ...r, text });
         spans[d]!.new.push({ ...ds, text: "" });
-        if (source.f !== d) movedAcross += keys.length;
+        claimedCalls.add(call);
+        moved += keys.length;
         // The moved lines at each side: in the old file with the comment
-        // lines removed just above them, in the stage from its `{`.
+        // lines above them that no longer stand above the call, in the
+        // stage from its `{`.
         const oldLines = at.entry.old.lines;
-        const removed = new Set(at.entry.old.changed.map((c) => c.at));
-        let top = lineOf(at.oldSource, e.start);
-        while (
-          top > 0 &&
-          removed.has(top - 1) &&
-          COMMENT_LINE.test(oldLines[top - 1]!)
-        )
-          top -= 1;
-        const oldRun = oldLines.slice(top, lineOf(at.oldSource, e.end) + 1);
+        const firstLine = lineOf(at.oldSource, e.start);
+        const left = Math.max(
+          0,
+          commentsAbove(oldLines, firstLine) -
+            commentsAbove(at.entry.new.lines, lineOf(at.newSource, r.start)),
+        );
+        const oldRun = oldLines.slice(
+          firstLine - left,
+          lineOf(at.oldSource, e.end) + 1,
+        );
         const open = lineOf(
           to.newSource,
           dest.node.body.getStart(to.newSource),
@@ -1772,12 +1872,16 @@ function cutMovedStages(
     }
   }
   code.forEach(({ entry, oldSource, newSource }, f) => {
-    if (spans[f]!.old.length > 0)
-      entry.old = collapse(entry.old, oldSource, spans[f]!.old);
-    if (spans[f]!.new.length > 0)
-      entry.new = collapse(entry.new, newSource, spans[f]!.new);
+    if (spans[f]!.old.length + spans[f]!.new.length === 0) return;
+    const sides = rediff(
+      cutLines(entry.old.lines, oldSource, spans[f]!.old),
+      cutLines(entry.new.lines, newSource, spans[f]!.new),
+      1_000_000 * (f + 1),
+    );
+    entry.old = sides.old;
+    entry.new = sides.new;
   });
-  return { movedAcross, moves };
+  return { movedAcross: moved, moves };
 }
 
 /**
@@ -2079,7 +2183,6 @@ export function notAMove(
     const oldKept = kept(entry.old);
     const newKept = kept(entry.new);
     const removedAll = oldKept.map(({ at }) => entry.old.lines[at]!);
-    const addedAll = newKept.map(({ at }) => entry.new.lines[at]!);
     // Prettier re-wraps a line whose path changed length (a long union gains
     // leading pipes, broken call arguments gain trailing commas): the same
     // text once joined.
@@ -2090,8 +2193,21 @@ export function notAMove(
         .replace(/(^|[=(<,:])\s*\|(?!\|)/g, "$1")
         .replace(/\s*([()[\]{},;:<>=|&?+*/.!-])\s*/g, "$1")
         .replace(/,(?=[)\]}])/g, "");
-    if (removedAll.length > 0 && joined(removedAll) === joined(addedAll))
-      continue;
+    // Change group by change group: a line taken out in one place and put
+    // back in another is a reorder, not a re-wrap.
+    const groups = new Set([...oldKept, ...newKept].map((c) => c.group));
+    const sameIn = (g: number) =>
+      joined(
+        oldKept
+          .filter((c) => c.group === g)
+          .map(({ at }) => entry.old.lines[at]!),
+      ) ===
+      joined(
+        newKept
+          .filter((c) => c.group === g)
+          .map(({ at }) => entry.new.lines[at]!),
+      );
+    if (removedAll.length > 0 && [...groups].every(sameIn)) continue;
     const isCode = CODE_FILE.test(file);
     if (isCode) {
       code.push({

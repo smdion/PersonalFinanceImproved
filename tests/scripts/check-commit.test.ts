@@ -267,6 +267,24 @@ describe("notAMove", () => {
     ).toMatch(/2 changed line\(s\) are neither imports nor path rewrites/);
   });
 
+  it("fails a line taken out in one place and put back in another, though the two read alike once joined", () => {
+    // Two lines swapped: git keeps one and moves the other past it, so each
+    // side holds the same one changed line, in different changes.
+    expect(
+      notAMove(
+        renamed,
+        diff([
+          " function f() {",
+          "+  const b = 2;",
+          "   const a = 1;",
+          "-  const b = 2;",
+          "   return a + b;",
+          " }",
+        ]),
+      ),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
   it("makes checkCommit refuse the exemption for a commit that isn't a move", () => {
     const files = [{ file: "src/a.ts", added: 300, deleted: 200 }];
     expect(
@@ -1171,6 +1189,135 @@ describe("notAMove: a stage cut from a long function (owner v0.10.3 Q1)", () => 
         ),
       ),
     ).toMatch(REFUSED);
+  });
+
+  /** A function whose middle statements wrap, so its call shares lines
+   *  with them (`  people,`, `);`), as prettier writes both. */
+  const wrapped = (body: string[], extra: string[] = []) => [
+    'import { sum } from "./lib";',
+    "",
+    "export function runYear(ctx: Context): number {",
+    "  const { people, balances } = ctx;",
+    ...indent(body),
+    "  return total + rest;",
+    "}",
+    ...extra,
+  ];
+  const wrappedRun = [
+    "const total = sum(",
+    "  people,",
+    "  balances,",
+    ");",
+    "const rest = sum(",
+    "  balances,",
+    "  people,",
+    ");",
+  ];
+  const wrappedCall = [
+    "const { total, rest } = totalStage(",
+    "  people,",
+    "  balances,",
+    ");",
+  ];
+  const wrappedStage = (run = wrappedRun) => [
+    "",
+    "function totalStage(people: People, balances: Balances) {",
+    ...indent(run),
+    "",
+    "  return { total, rest };",
+    "}",
+  ];
+
+  it("passes a stage whose call shares lines with what it took (git matches them)", () => {
+    expect(
+      cut(
+        { [YEAR]: wrapped(wrappedRun) },
+        {
+          [YEAR]: wrapped(wrappedCall).map((l) =>
+            l.replace(
+              '"./lib";',
+              '"./lib";\nimport { totalStage } from "./stages/total";',
+            ),
+          ),
+          "src/lib/pure/engine/stages/total.ts": [
+            'import { sum } from "../lib";',
+            ...wrappedStage().map((l) =>
+              l.startsWith("function") ? `export ${l}` : l,
+            ),
+          ],
+        },
+      ),
+    ).toBeUndefined();
+  });
+
+  it("passes a stage cut into a new function in the same file, and holds it to the same rules", () => {
+    const base = { [YEAR]: wrapped(wrappedRun) };
+    expect(
+      cut(base, { [YEAR]: wrapped(wrappedCall, wrappedStage()) }),
+    ).toBeUndefined();
+    const moves = structuralMoves(
+      ...change(base, { [YEAR]: wrapped(wrappedCall, wrappedStage()) }),
+    );
+    expect(moves.stages).toEqual([
+      expect.objectContaining({ from: YEAR, to: YEAR, name: "totalStage" }),
+    ]);
+    // An edited line, a reordered statement, a new branch: no stage, so
+    // nothing moved.
+    const SAME_FILE_REFUSED = new RegExp(
+      `${REFUSED.source}|no code moved between files`,
+    );
+    const edited = wrappedRun.map((l) =>
+      l.replace("  balances,", "  balances!,"),
+    );
+    expect(
+      cut(base, { [YEAR]: wrapped(wrappedCall, wrappedStage(edited)) }),
+    ).toMatch(SAME_FILE_REFUSED);
+    const reordered = [...wrappedRun.slice(4), ...wrappedRun.slice(0, 4)];
+    expect(
+      cut(base, { [YEAR]: wrapped(wrappedCall, wrappedStage(reordered)) }),
+    ).toMatch(SAME_FILE_REFUSED);
+    expect(
+      cut(base, {
+        [YEAR]: wrapped(
+          wrappedCall,
+          wrappedStage(["if (!people) return;", ...wrappedRun]),
+        ),
+      }),
+    ).toMatch(SAME_FILE_REFUSED);
+    // The old statements left in place beside the call.
+    expect(
+      cut(base, {
+        [YEAR]: wrapped(
+          [...wrappedRun.slice(0, 4), ...wrappedCall],
+          wrappedStage(),
+        ),
+      }),
+    ).toMatch(SAME_FILE_REFUSED);
+  });
+
+  it("fails a call left somewhere other than where the statements were", () => {
+    const later = [
+      'import { sum } from "./lib";',
+      "",
+      "export function runYear(ctx: Context): number {",
+      "  const { people, balances } = ctx;",
+      "  const seen = people.length;",
+      ...indent(wrappedRun),
+      "  return total + rest + seen;",
+      "}",
+    ];
+    const moved = [
+      'import { sum } from "./lib";',
+      "",
+      "export function runYear(ctx: Context): number {",
+      "  const { people, balances } = ctx;",
+      ...indent(wrappedCall),
+      "  const seen = people.length;",
+      "  return total + rest + seen;",
+      "}",
+      ...wrappedStage(),
+    ];
+    expect(cut({ [YEAR]: later }, { [YEAR]: moved })).toMatch(REFUSED);
   });
 
   it("fails a stage that would write or capture a copy of the function's own variable", () => {
