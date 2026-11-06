@@ -6,9 +6,9 @@
  * no budget/category/transaction concepts, so it doesn't implement the
  * BudgetAPIClient interface or go through lib/budget-api/factory.ts.
  *
- * Mutations use syncProcedure (same permission domain as YNAB/Actual
- * connection management in sync/connections.ts) since they write shared
- * server-side credentials and trigger external syncs. Queries use
+ * Mutations use syncProcedure (unlike YNAB/Actual's, which are admin-only;
+ * its settings page is admin-only too) since they write shared server-side
+ * credentials and trigger external syncs. Queries use
  * protectedProcedure — read-only, no reason to gate more tightly.
  */
 

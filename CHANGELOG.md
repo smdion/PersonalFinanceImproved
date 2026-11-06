@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
+## [0.10.3] - unreleased
+
+### Changed
+
+- **Permission change: only an admin manages a YNAB or Actual connection.** Saving, testing, deleting and editing a connection, and listing a YNAB token's budgets, now need an admin; in 0.10.2 anyone with the sync permission could, though the Integrations page was already shown to admins only. Actual's Server URL is used as saved, LAN addresses included, so this keeps who can point Ledgr's requests at a host on its network to admins. Running a sync, account and category mappings, and names stay with the sync permission.
+
 ## [0.10.2] - 2026-11-06
 
 v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. The test that records every figure the app shows stays identical through every change in this release. Two behaviours change: Actual uses its Server URL as saved in Settings, and a SimpleFIN account re-added under a new id keeps its row instead of counting twice (below). Two more things change for self-hosters: every outside request is now checked when it is sent, and four data migrations run at start-up.

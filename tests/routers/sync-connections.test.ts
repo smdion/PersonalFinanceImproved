@@ -4,7 +4,8 @@
  * configured, then each procedure with connections present —
  * saveConnection (ynab + actual), fetchYnabBudgets (mocked fetch),
  * deleteConnection (with active API reset), getSyncStatus, getConnection
- * and testConnection (a client that succeeds / throws). Real API calls are
+ * and testConnection (a client that succeeds / throws), and who may manage a
+ * connection (admins; a sync-only viewer is refused). Real API calls are
  * never made: @/lib/budget-api is mocked.
  */
 import "./setup-mocks";
@@ -18,7 +19,11 @@ import {
   beforeEach,
 } from "vitest";
 import { serviceError } from "@/lib/budget-api/errors";
-import { createTestCaller, adminSession } from "./setup";
+import {
+  createTestCaller,
+  adminSession,
+  createViewerSessionWithPermissions,
+} from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -589,4 +594,139 @@ describe("sync.fetchYnabBudgets", () => {
       vi.useRealTimers();
     }
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Who may manage a connection: admins only, YNAB and Actual alike
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("connection management is admin-only", () => {
+  const syncOnly = createViewerSessionWithPermissions(["sync"]);
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    mockGetActiveBudgetApi.mockResolvedValue("none");
+    mockGetApiConnection.mockResolvedValue(null);
+    mockGetClientForService.mockClear().mockResolvedValue(null);
+    mockCacheClear.mockClear();
+  });
+
+  afterAll(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const ynabSave = {
+    service: "ynab" as const,
+    accessToken: "tok-viewer",
+    budgetId: "budget-viewer",
+  };
+  const actualSave = {
+    service: "actual" as const,
+    serverUrl: "http://10.0.0.9:5007",
+    apiKey: "ak-viewer",
+    budgetSyncId: "sync-viewer",
+  };
+
+  it.each([ynabSave, actualSave])(
+    "a sync-only viewer can't save a $service connection, and nothing is written",
+    async (input) => {
+      const { caller, db, cleanup } = await createTestCaller(syncOnly);
+      try {
+        await expect(caller.sync.saveConnection(input)).rejects.toMatchObject({
+          code: "FORBIDDEN",
+        });
+        expect(db.select().from(schema.apiConnections).all()).toEqual([]);
+      } finally {
+        cleanup();
+      }
+    },
+  );
+
+  it.each(["ynab", "actual"] as const)(
+    "a sync-only viewer can't test or delete the %s connection",
+    async (service) => {
+      const { caller, cleanup } = await createTestCaller(syncOnly);
+      try {
+        await expect(
+          caller.sync.testConnection({ service }),
+        ).rejects.toMatchObject({ code: "FORBIDDEN" });
+        await expect(
+          caller.sync.deleteConnection({ service }),
+        ).rejects.toMatchObject({ code: "FORBIDDEN" });
+        expect(mockGetClientForService).not.toHaveBeenCalled();
+        expect(mockCacheClear).not.toHaveBeenCalled();
+      } finally {
+        cleanup();
+      }
+    },
+  );
+
+  it("a sync-only viewer can't change Actual's External URL", async () => {
+    const { caller, cleanup } = await createTestCaller(syncOnly);
+    try {
+      await expect(
+        caller.sync.updateActualExternalUrl({
+          externalUrl: "https://actual.example.com",
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a sync-only viewer can't list a YNAB token's budgets, and YNAB isn't asked", async () => {
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const { caller, cleanup } = await createTestCaller(syncOnly);
+    try {
+      await expect(
+        caller.sync.fetchYnabBudgets({ accessToken: "t" }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a sync-only viewer still reads the connection and sync status", async () => {
+    const { caller, cleanup } = await createTestCaller(syncOnly);
+    try {
+      expect((await caller.sync.getConnection()).activeApi).toBe("none");
+      expect((await caller.sync.getSyncStatus()).connected).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it.each([ynabSave, actualSave])(
+    "an admin saves, tests and deletes a $service connection",
+    async (input) => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        expect(await caller.sync.saveConnection(input)).toEqual({
+          success: true,
+        });
+        expect(
+          db
+            .select()
+            .from(schema.apiConnections)
+            .all()
+            .map((r) => r.service),
+        ).toEqual([input.service]);
+        mockGetClientForService.mockResolvedValueOnce({
+          testConnection: vi.fn().mockResolvedValue(undefined),
+          getBudgetName: vi.fn().mockResolvedValue("Household"),
+        });
+        expect(
+          await caller.sync.testConnection({ service: input.service }),
+        ).toEqual({ success: true, budgetName: "Household" });
+        expect(
+          await caller.sync.deleteConnection({ service: input.service }),
+        ).toEqual({ success: true });
+        expect(db.select().from(schema.apiConnections).all()).toEqual([]);
+      } finally {
+        cleanup();
+      }
+    },
+  );
 });

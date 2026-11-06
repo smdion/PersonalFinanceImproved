@@ -2,8 +2,8 @@
  * Tiingo router — market-data API key management (benchmark price history).
  *
  * Mirrors the SimpleFIN router's permission split: mutations use
- * syncProcedure (same domain as YNAB/Actual/SimpleFIN connection
- * management) since they write shared server-side credentials and call an
+ * syncProcedure (same domain as SimpleFIN connection management) since
+ * they write shared server-side credentials and call an
  * external API; getStatus uses protectedProcedure and never returns the key.
  */
 

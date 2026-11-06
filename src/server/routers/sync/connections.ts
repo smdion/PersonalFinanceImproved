@@ -1,12 +1,14 @@
-/** Sync connections router for CRUD operations on YNAB/Actual budget API credentials and connection status checks. */
+/** Sync connections router for CRUD operations on YNAB/Actual budget API credentials and connection status checks.
+ *  Managing a connection (save, test, edit, delete, list a token's budgets) is admin-only, for both services
+ *  alike, as is the Integrations page that calls it; reading its status stays open to every signed-in user. */
 
 import { clearUnmappedPulledBalances } from "@/server/services/sync/apply-pull-mapping";
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import {
+  adminProcedure,
   createTRPCRouter,
   protectedProcedure,
-  syncProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -54,7 +56,7 @@ export const syncConnectionsRouter = createTRPCRouter({
   }),
 
   /** Save (upsert) a budget API connection */
-  saveConnection: syncProcedure
+  saveConnection: adminProcedure
     .input(
       z.discriminatedUnion("service", [
         z.object({
@@ -76,7 +78,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Refuses an Actual URL with another scheme than http/https or with a
       // user name or password. Its host, private or not, is trusted as
-      // saved by whoever holds the sync permission.
+      // an admin saved it.
       if (input.service === "actual") {
         const safety = checkOutboundUrl(input.serverUrl, "actual");
         if (!safety.ok) {
@@ -133,7 +135,7 @@ export const syncConnectionsRouter = createTRPCRouter({
    *  credential field (apiKey isn't ever sent back to the client to
    *  prefill), which would make editing only this one, non-secret field
    *  unnecessarily require re-entering the API key. */
-  updateActualExternalUrl: syncProcedure
+  updateActualExternalUrl: adminProcedure
     .input(
       z.object({ externalUrl: z.string().url().optional().or(z.literal("")) }),
     )
@@ -161,7 +163,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     }),
 
   /** Fetch YNAB budgets list using a raw token (before saving connection) */
-  fetchYnabBudgets: syncProcedure
+  fetchYnabBudgets: adminProcedure
     .input(z.object({ accessToken: z.string().min(1) }))
     .mutation(async ({ input }) => {
       try {
@@ -183,7 +185,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     }),
 
   /** Test a specific service connection (works before activation) */
-  testConnection: syncProcedure
+  testConnection: adminProcedure
     .input(z.object({ service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const client = await getClientForService(ctx.db, input.service);
@@ -209,7 +211,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     }),
 
   /** Delete a connection and clear its cache */
-  deleteConnection: syncProcedure
+  deleteConnection: adminProcedure
     .input(z.object({ service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       await cacheClear(ctx.db, input.service);
