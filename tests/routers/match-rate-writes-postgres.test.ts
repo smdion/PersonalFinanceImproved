@@ -120,9 +120,13 @@ describe.skipIf(skipWithoutPostgres)("match writes (PostgreSQL)", () => {
     };
   }, 300_000);
 
-  // One database for every case: each gets its own job, as the one-match-
-  // account-per-job index needs.
+  // One database for every case (SQLite gets a fresh one per case): each
+  // gets its own job, as the one-match-account-per-job index needs, and the
+  // cases' profile name is unique, so the last case's profile goes first.
   beforeEach(async () => {
+    await admin.query(
+      "DELETE FROM contribution_profiles WHERE name = 'Invented plan'",
+    );
     h = { ...h, jobId: await newJob() };
   });
 
