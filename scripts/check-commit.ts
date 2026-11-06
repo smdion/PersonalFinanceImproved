@@ -208,10 +208,11 @@ const PATH_TOKEN = /[\w@.~$[\]()-]*\/[\w@.~$[\]()/-]*/g;
 /**
  * Files a move rewrites as its own record, each guarded by its own check
  * (check:ratchets, check:layers and its trailers, check:calculation-register,
- * check:engine-hash), so the move check doesn't read them line by line.
+ * check:engine-hash, docs:verify-api for the router catalog), so the move
+ * check doesn't read them line by line.
  */
 const MOVE_BOOKKEEPING =
-  /^(size-baseline\.json|eslint-suppressions(-typed)?\.json|\.dependency-cruiser-known-violations\.json|scripts\/calculation-register-baseline\.json|src\/lib\/generated\/.*)$/;
+  /^(size-baseline\.json|eslint-suppressions(-typed)?\.json|\.dependency-cruiser-known-violations\.json|scripts\/calculation-register-baseline\.json|docs\/API_ROUTERS\.md|src\/lib\/generated\/.*)$/;
 /** A comment line: a line comment, or a line of a block comment. */
 const COMMENT_LINE = /^\s*(\/\/|\/\*|\*\/|\*(\s|$))/;
 /** The calculation register, whose code-reference cells docs:verify checks. */

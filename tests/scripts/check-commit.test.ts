@@ -952,6 +952,22 @@ describe("notAMove: a move's bookkeeping and bare names", () => {
     expect(notAMove(renamed, diff)).toBeUndefined();
   });
 
+  it("leaves the generated router catalog to docs:verify-api", () => {
+    const catalog = (name: string) =>
+      file(name, [
+        "-**12 procedures across 1 routers.**",
+        "+**12 procedures across 2 routers.**",
+        "-## `perf`",
+        "+## `perf/summary`",
+      ]);
+    expect(
+      notAMove(renamed, catalog("docs/API_ROUTERS.md").join("\n")),
+    ).toBeUndefined();
+    expect(notAMove(renamed, catalog("docs/DESIGN.md").join("\n"))).toMatch(
+      /neither imports nor path rewrites/,
+    );
+  });
+
   it("passes a line prettier re-wrapped because its path changed length", () => {
     const diff = file("docs/DESIGN.md", [
       '-  const x: import("@/lib/pure/types/calculators").T | undefined;',
