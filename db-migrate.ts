@@ -552,11 +552,12 @@ export function schemaLabel(
 }
 
 /** Baseline tables and columns ("table" or "table.column") that a later
- *  journal entry drops: a database past that entry lacks them without being
- *  older than the baseline. */
+ *  journal entry drops; with `actual`, only entries whose every table and
+ *  column the database holds (a database at one lacks them, not older). */
 function droppedAfterBaseline(
   journal: Journal,
   migrationsFolder: string,
+  actual?: Map<string, Set<string>>,
 ): Set<string> {
   const [baseline, ...later] = journal.entries;
   const dropped = new Set<string>();
@@ -564,6 +565,7 @@ function droppedAfterBaseline(
   const base = snapshotColumns(migrationsFolder, baseline.idx);
   for (const entry of later) {
     const at = snapshotColumns(migrationsFolder, entry.idx);
+    if (actual && missingFromSnapshot(at, actual).length > 0) continue;
     for (const [table, cols] of base) {
       const kept = at.get(table);
       if (!kept) dropped.add(table);
@@ -626,11 +628,16 @@ export function assertSupportedUpgradePath(
     `${migrationsFolder}/${baseline.tag}.sql`,
   );
   if (baselineHash && recordedHashes.has(baselineHash)) return;
-  const dropped = droppedAfterBaseline(journal, migrationsFolder);
-  const missing = missingFromSnapshot(
+  const lacking = missingFromSnapshot(
     snapshotColumns(migrationsFolder, baseline.idx),
     actual,
-  ).filter((m) => !dropped.has(m));
+  );
+  const dropped = droppedAfterBaseline(journal, migrationsFolder);
+  const excused = droppedAfterBaseline(journal, migrationsFolder, actual);
+  // Named in the message: what no entry drops, else what this database
+  // holds no dropping entry's shape for.
+  let missing = lacking.filter((m) => !dropped.has(m));
+  if (missing.length === 0) missing = lacking.filter((m) => !excused.has(m));
   if (missing.length === 0) return;
   throw new UpgradePathError(
     `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ` and ${missing.length - 8} more` : ""}.`,

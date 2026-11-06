@@ -305,6 +305,24 @@ describe("assertSupportedUpgradePath on each dialect's journal", () => {
       );
     });
 
+    // 0015 drops holding_observations.performance_account_id; lacking it
+    // excuses a database only when it holds all of 0015's snapshot or a
+    // later one.
+    const withoutPerfAccount = (idx: number) => {
+      const at = asDatabase(snapshotColumns(folder, idx));
+      at.get("holding_observations")!.delete("performance_account_id");
+      return at;
+    };
+    it("a database at no entry that drops a baseline column it lacks is older", () => {
+      expect(() => check(new Set(), withoutPerfAccount(0))).toThrow(
+        /older Ledgr \(schema an invented era\).*Missing: holding_observations\.performance_account_id\.$/,
+      );
+    });
+    it("a database holding every column of the entry that drops it passes", () => {
+      const before = own.entries.at(-2)!.idx;
+      expect(() => check(new Set(), withoutPerfAccount(before))).not.toThrow();
+    });
+
     it("a fresh database passes", () => {
       expect(() => check(new Set(), new Map())).not.toThrow();
     });
