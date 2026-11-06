@@ -31,59 +31,18 @@ import { createTestCaller } from "../routers/setup";
 import { seedHousehold } from "./seed";
 import { HOUSEHOLDS } from "./households";
 import { REGENERATE } from "./router-suite";
-import { NOT_PINNED, tableRows, writtenRows } from "./table-rows";
+import { tableRows, writtenRows } from "./table-rows";
+import {
+  PIN_DIRS,
+  SYNC_DATES,
+  prepareSync,
+  replay,
+  runSyncs,
+  withoutTimestamps,
+  type Service,
+} from "./pin-runs";
 
-type Service = "ynab" | "actual";
-
-interface Recording {
-  responses: Record<string, unknown>;
-}
-
-const SYNC_DIR = path.join(__dirname, "__sync__");
-const SYNC_DATES = ["2026-02-15T18:00:00.000Z", "2026-03-07T18:00:00.000Z"];
-const ACTUAL_SERVER = "https://actual.baseline.example";
-
-function recording(service: Service): Recording {
-  return JSON.parse(
-    fs.readFileSync(path.join(__dirname, "sync", `${service}.json`), "utf8"),
-  ) as Recording;
-}
-
-/** Replays a recording: the request's path after the budget's base URL
- *  (Actual's transaction lists without their query string). A request the
- *  recording doesn't hold fails the sync, naming it. */
-function replay(service: Service) {
-  const { responses } = recording(service);
-  const base =
-    service === "ynab"
-      ? "https://api.ynab.com/v1/budgets/budget-baseline"
-      : `${ACTUAL_SERVER}/v1/budgets/sync-baseline`;
-  return vi.fn(async (url: string | URL, init?: RequestInit) => {
-    const method = init?.method ?? "GET";
-    let rest = String(url).replace(base, "");
-    if (service === "actual" && /\/transactions\?/.test(rest))
-      rest = rest.replace(/\?.*$/, "");
-    const body = responses[`${method} ${rest}`];
-    if (body === undefined)
-      throw new Error(`no recorded response for ${method} ${rest}`);
-    return new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  });
-}
-
-/** A value without its timestamps (the columns tableRows leaves out). */
-function withoutTimestamps(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withoutTimestamps);
-  if (value === null || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([k]) => !NOT_PINNED.test(k))
-      .map(([k, v]) => [k, withoutTimestamps(v)]),
-  );
-}
-
+const SYNC_DIR = PIN_DIRS.sync;
 const household = HOUSEHOLDS.find((h) => h.key === "e2e-b")!;
 
 describe.each<Service>(["ynab", "actual"])("sync writes: %s", (service) => {
@@ -98,112 +57,10 @@ describe.each<Service>(["ynab", "actual"])("sync writes: %s", (service) => {
     ctx = await createTestCaller();
     const { caller } = ctx;
     const ids = await seedHousehold(caller, household);
-    const debt = await caller.debts.create({
-      name: "Car loan",
-      kind: "auto_loan",
-      ownerPersonId: null,
-      balance: "14000",
-      balanceAsOf: "2026-01-31",
-      interestRate: "0.069",
-      monthlyPayment: "435",
-    });
-    const goals = await caller.savings.savingsGoals.list();
-    const goal = (name: string) => goals.find((g) => g.name === name)!.id;
-
-    await caller.sync.saveConnection(
-      service === "ynab"
-        ? {
-            service,
-            accessToken: "token-baseline",
-            budgetId: "budget-baseline",
-          }
-        : {
-            service,
-            serverUrl: ACTUAL_SERVER,
-            apiKey: "key-baseline",
-            budgetSyncId: "sync-baseline",
-          },
-    );
-    await caller.sync.setActiveBudgetApi({ value: service });
-    await caller.savings.linkGoalToApi({
-      goalId: goal("Emergency fund"),
-      service,
-      apiCategoryId: "cat-efund",
-      apiCategoryName: "Emergency fund",
-    });
-    await caller.savings.linkGoalToApi({
-      goalId: goal("New roof"),
-      service,
-      apiCategoryId: "cat-roof",
-      apiCategoryName: "New roof",
-    });
-    const loanId = ids.mortgage!;
-    await caller.sync.updateAccountMappings({
-      service,
-      mappings: [
-        {
-          localId: "cash",
-          localName: "Cash",
-          remoteAccountId: "acct-checking",
-          syncDirection: "pull",
-        },
-        {
-          localId: "cash",
-          localName: "Cash",
-          remoteAccountId: "acct-savings",
-          syncDirection: "pull",
-        },
-        {
-          localId: "creditCard",
-          localName: "Credit cards",
-          remoteAccountId: "acct-visa",
-          syncDirection: "pull",
-        },
-        {
-          localId: `mortgage:${loanId}:loanBalance`,
-          localName: "Home loan",
-          remoteAccountId: "acct-mortgage",
-          syncDirection: "pull",
-          loanId,
-          loanMapType: "loanBalance",
-        },
-        {
-          localId: `mortgage:${loanId}:propertyValue`,
-          localName: "Home value",
-          remoteAccountId: "acct-home",
-          syncDirection: "pull",
-          loanId,
-          loanMapType: "propertyValue",
-        },
-        {
-          localId: `debt:${debt!.id}`,
-          localName: "Car loan",
-          remoteAccountId: "acct-carloan",
-          syncDirection: "pull",
-          debtId: debt!.id,
-        },
-        {
-          localId: `performance:${ids.perf.JBRK}`,
-          localName: "Joint brokerage",
-          remoteAccountId: "acct-brokerage",
-          syncDirection: "push",
-          performanceAccountId: ids.perf.JBRK,
-        },
-      ],
-    });
-    await caller.sync.createAssetAndMap({
-      service,
-      assetName: "Family Car",
-      balance: 21000,
-      remoteAccountId: "acct-car",
-      syncDirection: "pull",
-    });
+    await prepareSync(caller, service, ids);
 
     const before = tableRows(ctx.db);
-    for (const date of SYNC_DATES) {
-      vi.setSystemTime(new Date(date));
-      await caller.sync.syncAll({ service });
-    }
+    await runSyncs(caller, service);
     written = writtenRows(before, tableRows(ctx.db));
     preview = withoutTimestamps(await caller.sync.getPreview({ service }));
   }, 60_000);

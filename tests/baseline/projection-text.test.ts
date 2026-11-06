@@ -24,45 +24,10 @@ import * as path from "node:path";
 import { createTestCaller } from "../routers/setup";
 import { seedHousehold } from "./seed";
 import { HOUSEHOLDS } from "./households";
-import { PROCEDURES, callProcedure } from "./procedures";
 import { BASELINE_NOW, REGENERATE } from "./router-suite";
+import { PIN_DIRS, projectionText, type TextTree } from "./pin-runs";
 
-const DIR = path.join(__dirname, "__text__");
-/** Part c's: ids, timestamps and timings (numbers.ts). */
-const NOT_TEXT = /^id$|Id$|Ids$|At$|Ms$/;
-const NUMBER_TEXT = /^-?\d+(\.\d+)?$/;
-
-type TextTree =
-  string | boolean | null | TextTree[] | { [key: string]: TextTree };
-
-/** The value's text and flags in its own shape; `undefined` when it has
- *  none. An array item with none is kept as null, so indexes stay put. */
-function textTree(value: unknown): TextTree | undefined {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string")
-    return NUMBER_TEXT.test(value) ? undefined : value;
-  if (Array.isArray(value)) {
-    const items = value.map((item) => textTree(item) ?? null);
-    return items.some((item) => item !== null) ? items : undefined;
-  }
-  if (value === null || typeof value !== "object" || value instanceof Date)
-    return undefined;
-  const entries =
-    value instanceof Map
-      ? [...value.entries()].map(([k, v]) => [String(k), v] as const)
-      : Object.entries(value);
-  const out: Record<string, TextTree> = {};
-  for (const [k, v] of entries.sort(([a], [b]) => (a < b ? -1 : 1))) {
-    if (NOT_TEXT.test(k)) continue;
-    const t = textTree(v);
-    if (t !== undefined) out[k] = t;
-  }
-  return Object.keys(out).length > 0 ? out : undefined;
-}
-
-const projection = PROCEDURES.find(
-  (p) => p.path === "projection.computeProjection",
-)!;
+const DIR = PIN_DIRS.text;
 
 beforeAll(() => {
   vi.useFakeTimers({ toFake: ["Date"], now: BASELINE_NOW });
@@ -84,12 +49,7 @@ describe("the engine result's text and flags", () => {
       let text: TextTree;
       try {
         const ids = await seedHousehold(caller, household);
-        const response = (await callProcedure(
-          caller,
-          projection,
-          projection.input?.({ household, ids }),
-        )) as { result?: unknown };
-        text = textTree(response.result) ?? null;
+        text = await projectionText(caller, household, ids);
       } finally {
         await cleanup();
       }
