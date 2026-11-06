@@ -86,3 +86,37 @@ export function computeHomeImpCumulative(
     (hi) => toNumber(hi.cost),
   );
 }
+
+/**
+ * One year-end row's asset figures. A year with line items takes their
+ * totals; a year without keeps the row's stored figure.
+ */
+export function resolveYearAssets(
+  row: { year: number; homeImprovements: number; otherAssets: number },
+  homeImprovements: {
+    id: number;
+    year: number;
+    description: string;
+    cost: string;
+    note: string | null;
+  }[],
+  otherAssets: OtherAssetItem[],
+) {
+  const items = homeImprovements.filter((hi) => hi.year === row.year);
+  const other = resolveOtherAssetsForYear(otherAssets, row.year);
+  return {
+    homeImprovements:
+      items.length > 0
+        ? computeHomeImpCumulative(homeImprovements, row.year)
+        : row.homeImprovements,
+    homeImprovementItems: items.map((i) => ({
+      id: i.id,
+      year: i.year,
+      description: i.description,
+      cost: toNumber(i.cost),
+      note: i.note,
+    })),
+    otherAssets: other.items.length > 0 ? other.total : row.otherAssets,
+    otherAssetItems: other.items,
+  };
+}

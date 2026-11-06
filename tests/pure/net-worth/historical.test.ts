@@ -1,13 +1,14 @@
 /**
  * Tests for pure historical data temporal resolution logic.
  * Covers: resolveCarryForwardAssetValue,
- * resolveOtherAssetsForYear, computeHomeImpCumulative.
+ * resolveOtherAssetsForYear, computeHomeImpCumulative, resolveYearAssets.
  */
 import { describe, it, expect } from "vitest";
 import {
   resolveCarryForwardAssetValue,
   resolveOtherAssetsForYear,
   computeHomeImpCumulative,
+  resolveYearAssets,
 } from "@/lib/pure/net-worth/historical";
 
 describe("resolveCarryForwardAssetValue", () => {
@@ -128,5 +129,44 @@ describe("computeHomeImpCumulative", () => {
         2021,
       ),
     ).toBe(5000);
+  });
+});
+
+describe("resolveYearAssets", () => {
+  const homeImprovements = [
+    { id: 1, year: 2021, description: "Roof", cost: "12000", note: null },
+    { id: 2, year: 2023, description: "Deck", cost: "8000.50", note: "cedar" },
+  ];
+  const otherAssets = [
+    { id: 7, name: "Car", year: 2022, value: "15000", note: null },
+  ];
+
+  it("takes the line items' totals in a year that has them", () => {
+    const row = { year: 2023, homeImprovements: 1, otherAssets: 2 };
+    expect(resolveYearAssets(row, homeImprovements, otherAssets)).toEqual({
+      homeImprovements: 20000.5,
+      homeImprovementItems: [
+        { id: 2, year: 2023, description: "Deck", cost: 8000.5, note: "cedar" },
+      ],
+      otherAssets: 15000,
+      otherAssetItems: [{ id: 7, name: "Car", value: 15000, note: null }],
+    });
+  });
+
+  it("keeps the row's stored figures in a year with no line items", () => {
+    const row = { year: 2020, homeImprovements: 500, otherAssets: 900 };
+    expect(resolveYearAssets(row, homeImprovements, otherAssets)).toEqual({
+      homeImprovements: 500,
+      homeImprovementItems: [],
+      otherAssets: 900,
+      otherAssetItems: [],
+    });
+  });
+
+  it("keeps the stored home improvements in a year with none of its own, while other assets carry forward", () => {
+    const row = { year: 2022, homeImprovements: 300, otherAssets: 0 };
+    const result = resolveYearAssets(row, homeImprovements, otherAssets);
+    expect(result.homeImprovements).toBe(300);
+    expect(result.otherAssets).toBe(15000);
   });
 });

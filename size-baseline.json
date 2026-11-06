@@ -170,7 +170,7 @@
     "src/server/data/retirement-profiles.ts": 19,
     "src/server/data/salaries.ts": 41,
     "src/server/data/snapshots.ts": 107,
-    "src/server/routers/assets.ts": 528,
+    "src/server/routers/assets.ts": 454,
     "src/server/routers/budget/index.ts": 21,
     "src/server/routers/contribution-profiles.ts": 827,
     "src/server/routers/demo.ts": 663,
@@ -885,16 +885,13 @@
       "validateTaxDataFile": 163
     },
     "src/server/routers/assets.ts": {
-      "assetsRouter.computeSummary.query()": 241
+      "assetsRouter.computeSummary.query()": 171
     },
     "src/server/routers/contribution-profiles.ts": {
       "contributionProfileRouter.getById.query()": 186
     },
     "src/server/routers/demo.ts": {
       "seedProfile": 453
-    },
-    "src/server/routers/historical.ts": {
-      "historicalRouter.computeSummary.query()": 175
     },
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 216

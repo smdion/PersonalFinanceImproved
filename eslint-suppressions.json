@@ -5669,9 +5669,6 @@
     }
   },
   "src/server/routers/historical.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     }

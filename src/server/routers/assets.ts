@@ -6,7 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
+import { loadYearAssets } from "@/server/services/net-worth/year-assets";
 import {
   computeMortgageBalance,
   getActiveMortgageLoan,
@@ -15,11 +15,7 @@ import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { toNumber } from "@/lib/utils/numbers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
-import {
-  computeHomeImpCumulative,
-  resolveOtherAssetsForYear,
-  resolveCarryForwardAssetValue,
-} from "@/lib/pure/net-worth/historical";
+import { resolveCarryForwardAssetValue } from "@/lib/pure/net-worth/historical";
 import { dropMappingsTo } from "@/server/data/delete-references";
 
 export const assetsRouter = createTRPCRouter({
@@ -31,28 +27,13 @@ export const assetsRouter = createTRPCRouter({
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {
       const [
-        yearEndHistory,
-        homeImprovements,
-        otherAssets,
-        notes,
+        { years, homeImprovements, otherAssets, notes },
         apiConnections,
         mortgageLoans,
         mortgageExtras,
         allSettings,
       ] = await Promise.all([
-        buildYearEndHistory(ctx.db, ctx.scope.asOf, {
-          budgetProfileId: input?.budgetProfileId,
-          budgetColumn: input?.budgetColumn,
-        }),
-        ctx.db
-          .select()
-          .from(schema.homeImprovementItems)
-          .orderBy(asc(schema.homeImprovementItems.year)),
-        ctx.db
-          .select()
-          .from(schema.otherAssetItems)
-          .orderBy(asc(schema.otherAssetItems.year)),
-        ctx.db.select().from(schema.historicalNotes),
+        loadYearAssets(ctx.db, ctx.scope.asOf, input),
         ctx.db.select().from(schema.apiConnections),
         ctx.db.select().from(schema.mortgageLoans),
         ctx.db
@@ -129,19 +110,7 @@ export const assetsRouter = createTRPCRouter({
             })
           : false);
 
-      const allYears = yearEndHistory.map((r) => r.year);
       const currentYear = ctx.scope.asOf.getFullYear();
-
-      // Build home improvements cumulative by year
-      const homeImpByYear = new Map<
-        number,
-        { items: typeof homeImprovements; cumulative: number }
-      >();
-      for (const year of allYears) {
-        const cumulative = computeHomeImpCumulative(homeImprovements, year);
-        const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
-        homeImpByYear.set(year, { items: itemsThisYear, cumulative });
-      }
 
       // Current year other asset items (carry-forward: latest value per name where year <= target)
       const uniqueAssetNames = Array.from(
@@ -173,62 +142,19 @@ export const assetsRouter = createTRPCRouter({
         }
       }
 
-      // Build other assets by year for history
-      const otherAssetsByYear = new Map<
-        number,
-        {
-          items: {
-            id?: number;
-            name: string;
-            value: number;
-            note: string | null;
-          }[];
-          total: number;
-        }
-      >();
-      for (const year of allYears) {
-        otherAssetsByYear.set(
-          year,
-          resolveOtherAssetsForYear(otherAssets, year),
-        );
-      }
-
-      // Build notes lookup
-      const notesMap: Record<string, string> = {};
-      for (const n of notes) {
-        notesMap[`${n.year}:${n.field}`] = n.note;
-      }
-
       // Year-over-year history rows (compact)
-      const history = yearEndHistory.map((row) => {
-        const hiData = homeImpByYear.get(row.year);
-        const oaData = otherAssetsByYear.get(row.year);
-        const oaTotal =
-          oaData && oaData.items.length > 0 ? oaData.total : row.otherAssets;
-
-        return {
-          year: row.year,
-          isCurrent: row.isCurrent,
-          cash: row.cash,
-          houseValue: row.houseValue,
-          homeImprovements:
-            hiData && hiData.items.length > 0
-              ? hiData.cumulative
-              : row.homeImprovements,
-          homeImprovementItems:
-            hiData?.items.map((i) => ({
-              id: i.id,
-              year: i.year,
-              description: i.description,
-              cost: toNumber(i.cost),
-              note: i.note,
-            })) ?? [],
-          otherAssets: oaTotal,
-          otherAssetItems: oaData?.items ?? [],
-          mortgageBalance: row.mortgageBalance,
-          totalAssets: row.cash + row.houseValue + oaTotal,
-        };
-      });
+      const history = years.map(({ row, assets }) => ({
+        year: row.year,
+        isCurrent: row.isCurrent,
+        cash: row.cash,
+        houseValue: row.houseValue,
+        homeImprovements: assets.homeImprovements,
+        homeImprovementItems: assets.homeImprovementItems,
+        otherAssets: assets.otherAssets,
+        otherAssetItems: assets.otherAssetItems,
+        mortgageBalance: row.mortgageBalance,
+        totalAssets: row.cash + row.houseValue + assets.otherAssets,
+      }));
 
       // Current state summary (top-level)
       const latestHistory =
@@ -267,7 +193,7 @@ export const assetsRouter = createTRPCRouter({
           cost: toNumber(hi.cost),
           note: hi.note,
         })),
-        notes: notesMap,
+        notes,
       };
     }),
 

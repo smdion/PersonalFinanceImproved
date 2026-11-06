@@ -5,48 +5,25 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
+import { loadYearAssets } from "@/server/services/net-worth/year-assets";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";
 import { resolveCompensation } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { findActiveJob } from "@/lib/pure/household/profiles";
-import {
-  computeHomeImpCumulative,
-  resolveOtherAssetsForYear,
-} from "@/lib/pure/net-worth/historical";
 import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {
-      const [
-        yearEndHistory,
-        people,
-        jobs,
-        historicalSalaryRows,
-        homeImprovements,
-        otherAssets,
-        notes,
-      ] = await Promise.all([
-        buildYearEndHistory(ctx.db, ctx.scope.asOf, {
-          budgetProfileId: input?.budgetProfileId,
-          budgetColumn: input?.budgetColumn,
-        }),
-        getAllPeople(ctx.db),
-        ctx.db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
-        ctx.db.select().from(schema.historicalSalaries),
-        ctx.db
-          .select()
-          .from(schema.homeImprovementItems)
-          .orderBy(asc(schema.homeImprovementItems.year)),
-        ctx.db
-          .select()
-          .from(schema.otherAssetItems)
-          .orderBy(asc(schema.otherAssetItems.year)),
-        ctx.db.select().from(schema.historicalNotes),
-      ]);
+      const [{ years, notes }, people, jobs, historicalSalaryRows] =
+        await Promise.all([
+          loadYearAssets(ctx.db, ctx.scope.asOf, input),
+          getAllPeople(ctx.db),
+          ctx.db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
+          ctx.db.select().from(schema.historicalSalaries),
+        ]);
 
       const currentYear = ctx.scope.asOf.getFullYear();
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
@@ -102,46 +79,8 @@ export const historicalRouter = createTRPCRouter({
         });
       }
 
-      // Build home improvements cumulative by year
-      const homeImpByYear = new Map<
-        number,
-        { items: typeof homeImprovements; cumulative: number }
-      >();
-      const allYears = yearEndHistory.map((r) => r.year);
-      for (const year of allYears) {
-        const cumulative = computeHomeImpCumulative(homeImprovements, year);
-        const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
-        homeImpByYear.set(year, { items: itemsThisYear, cumulative });
-      }
-
-      // Build other assets by year (carry-forward: latest value per name where year <= target)
-      const otherAssetsByYear = new Map<
-        number,
-        {
-          items: {
-            id?: number;
-            name: string;
-            value: number;
-            note: string | null;
-          }[];
-          total: number;
-        }
-      >();
-      for (const year of allYears) {
-        otherAssetsByYear.set(
-          year,
-          resolveOtherAssetsForYear(otherAssets, year),
-        );
-      }
-
-      // Build notes lookup: year:field → note
-      const notesMap = new Map<string, string>();
-      for (const n of notes) {
-        notesMap.set(`${n.year}:${n.field}`, n.note);
-      }
-
       // Merge all data into year-end rows
-      const history = yearEndHistory.map((row) => {
+      const history = years.map(({ row, assets }) => {
         const salaries: Record<string, number> = {};
         const yearSalaries = salaryByYear.get(row.year);
         if (yearSalaries) {
@@ -161,39 +100,18 @@ export const historicalRouter = createTRPCRouter({
           }
         }
 
-        const hiData = homeImpByYear.get(row.year);
-        const oaData = otherAssetsByYear.get(row.year);
-
         return {
           ...row,
-          // Override with line-item-computed values if items exist
-          homeImprovements:
-            hiData && hiData.items.length > 0
-              ? hiData.cumulative
-              : row.homeImprovements,
-          homeImprovementItems:
-            hiData?.items.map((i) => ({
-              id: i.id,
-              year: i.year,
-              description: i.description,
-              cost: toNumber(i.cost),
-              note: i.note,
-            })) ?? [],
-          otherAssets:
-            oaData && oaData.items.length > 0 ? oaData.total : row.otherAssets,
-          otherAssetItems: oaData?.items ?? [],
+          homeImprovements: assets.homeImprovements,
+          homeImprovementItems: assets.homeImprovementItems,
+          otherAssets: assets.otherAssets,
+          otherAssetItems: assets.otherAssetItems,
           salaries,
           salaryDetails,
         };
       });
 
-      // Serialize notes as a flat object for the client
-      const notesObj: Record<string, string> = {};
-      for (const [key, value] of Array.from(notesMap.entries())) {
-        notesObj[key] = value;
-      }
-
-      return { history, personIdByName, notes: notesObj };
+      return { history, personIdByName, notes };
     }),
 
   /** Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only). */
