@@ -33,7 +33,6 @@ import {
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
-import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
 import {
@@ -43,7 +42,6 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAllCategories,
-  getAccountTypeConfig,
   categoriesWithTaxPreference,
   getDefaultAccumulationOrder,
   isRetirementMoney,
@@ -58,11 +56,6 @@ import {
 import { log } from "@/lib/logger";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
-import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
-import {
-  capEffectiveContribs,
-  type CapPassHousehold,
-} from "@/lib/pure/contributions/cap-pass";
 import { resolvePhaseExpenses } from "./budget-expenses";
 import {
   buildProfileSwitches,
@@ -76,6 +69,7 @@ import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
 import { budgetSummaries } from "./display";
 import { resolveTaxYear } from "./tax-year";
 import { startingAccounts } from "./accounts";
+import { capContributions } from "./contributions";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
@@ -366,70 +360,26 @@ export async function buildEnginePayload(
     }
   }
 
-  // IRS limits — the `contribution_limits` rows for the resolved tax year
-  // (resolveTaxParams already filtered + coerced to numbers). Same
-  // map shape as the old `for (const l of allLimits)` loop.
-  const limitsMap: Record<string, number> = resolvedTax.limits;
-
-  // Per-person account types for limit aggregation.
-  // A jobless row is "active" if it's tied to a currently-known person, OR
-  // if personId is null — which (per the ownership/personId invariant
-  // enforced in settings/contribution-accounts.ts) only ever means a joint account, not
-  // a data error. Without the null case, joint jobless contributions
-  // (e.g. a joint brokerage account with no linked job) would silently
-  // drop out of activeContribs entirely once their personId is cleared,
-  // excluding their contribution amount from every downstream total this
-  // function computes.
-  // The IRS-limit cap pass runs on every set of effective rows — these and
-  // each profile switch's — so every figure reads the capped value.
-  const irsLimitPeople = people.map((p) => ({
-    id: p.id,
-    birthYear: birthYearByPersonId.get(p.id) ?? null,
-  }));
-  // This year's caps follow this year's return (the household setting),
-  // as the paycheck's do; the projection's brackets keep the profile's.
-  const capFilingStatus = thisYearFiling.status ?? "";
-  const capHousehold: CapPassHousehold = {
-    people: irsLimitPeople,
-    limits: limitsMap,
-    filingStatus: capFilingStatus,
-    taxYear: currentYear,
-  };
-  const activeContribs = capEffectiveContribs(
-    allContribs
-      .filter(
-        (c) =>
-          activeJobs.some((j) => j.id === c.jobId) ||
-          (c.jobId === null &&
-            (c.personId === null || people.some((p) => p.id === c.personId))),
-      )
-      .map((c) => ({ ...c, accountType: c.accountType as AccountCategory })),
-    { ...capHousehold, activeJobs, jobSalaries },
-  );
-  // Who holds which limited account, and each limit group's household
-  // limit from it (every shared limit counted once) — the totals the pages
-  // show, and what the engine sizes limits from without specs.
-  const irsLimitAccounts = activeContribs
-    .filter((c) => getAccountTypeConfig(c.accountType).hasIrsLimit)
-    .map((c) => ({
-      personId: c.personId,
-      accountType: c.accountType,
-      hsaCoverageType: c.hsaCoverageType ?? null,
-    }));
-  const irsGroupLimits = Object.fromEntries(
-    accountGroupLimits(irsLimitAccounts, {
-      taxYear: currentYear,
-      filingStatus: capFilingStatus,
-      limits: limitsMap,
-      people: irsLimitPeople.map((p) => ({ ...p, wages: null })),
-    }),
-  );
-  // Aggregate contributions and employer match by category (shared helper — single pass)
   const {
+    limitsMap,
+    irsLimitPeople,
+    capHousehold,
+    activeContribs,
+    irsLimitAccounts,
+    irsGroupLimits,
     contribByCategory,
     employerMatchByCategory,
-    retirementOnly: retirementContrib,
-  } = aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
+    retirementContrib,
+  } = capContributions(
+    resolvedTax,
+    people,
+    birthYearByPersonId,
+    thisYearFiling,
+    currentYear,
+    allContribs,
+    activeJobs,
+    jobSalaries,
+  );
 
   // Build per-person salary map from job salaries — the engine's compounding
   // baseline, so full-formula bonus (see totalCompFullFormula's docblock
