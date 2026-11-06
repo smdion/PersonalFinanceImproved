@@ -150,11 +150,11 @@ export const ACCOUNT_CASES: AccountCase[] = [
     sqliteOnly: true,
   },
   {
-    name: "SQLite text: an exponent",
+    name: "SQLite text: an exponent reads as parseFloat reads it",
     id: 19,
     type: "percent_of_contribution",
     value: "1e2",
-    after: null,
+    after: "1",
     sqliteOnly: true,
   },
   {
@@ -171,6 +171,30 @@ export const ACCOUNT_CASES: AccountCase[] = [
     type: "percent_of_contribution",
     value: "3.14159",
     after: "0.0314159",
+    sqliteOnly: true,
+  },
+  {
+    name: "SQLite text: a capital exponent",
+    id: 22,
+    type: "percent_of_contribution",
+    value: "5E1",
+    after: "0.5",
+    sqliteOnly: true,
+  },
+  {
+    name: "SQLite text: a percent sign after the number",
+    id: 23,
+    type: "percent_of_contribution",
+    value: "50%",
+    after: "0.5",
+    sqliteOnly: true,
+  },
+  {
+    name: "SQLite text: letters after the number",
+    id: 24,
+    type: "percent_of_contribution",
+    value: " 50abc",
+    after: "0.5",
     sqliteOnly: true,
   },
 ];
@@ -340,6 +364,19 @@ export const PROFILE_CASES: ProfileCase[] = [
       "2": { employerMatchValue: "abc" },
       "3": { employerMatchValue: null },
       "4": { employerMatchValue: true },
+    }),
+  },
+  {
+    name: "JSON numbers String() writes with an exponent, and a trailing sign",
+    before: accounts({
+      [PERCENT]: { employerMatchValue: 1e-7 },
+      "2": { employerMatchValue: 1e21 },
+      "3": { employerMatchValue: "50%" },
+    }),
+    after: accounts({
+      [PERCENT]: { employerMatchValue: 1e-7, employerMatchRate: "0.000000001" },
+      "2": { employerMatchValue: 1e21 },
+      "3": { employerMatchValue: "50%", employerMatchRate: "0.5" },
     }),
   },
   {

@@ -59,13 +59,24 @@ describe("rateFromPercent", () => {
     [50, "0.5"],
     [0.1, "0.001"],
     ["999999", "9999.99"],
+    // What parseFloat reads, exactly (today's readers).
+    ["1e2", "1"],
+    ["5E1", "0.5"],
+    ["2.5e-1", "0.0025"],
+    ["50%", "0.5"],
+    [" 50abc", "0.5"],
+    ["50.5.5", "0.505"],
+    ["1,000", "0.01"],
+    ["0x32", "0"],
+    ["1e-400", "0"],
+    [1e-7, "0.000000001"],
+    [0.1 + 0.2, "0.0030000000000000004"],
   ])("%s → %s", (stored, rate) => expect(rateFromPercent(stored)).toBe(rate));
 
-  it.each([["", "-", ".", "abc", "1e2", "5%", "1,000", "123456789"]].flat())(
-    "%s → null",
-    (stored) => expect(rateFromPercent(stored)).toBeNull(),
-  );
-  it.each([null, undefined, true, {}, Number.NaN, 1e-7])("%s → null", (v) =>
+  it.each(
+    [["", "-", ".", "abc", "e2", "Infinity", "1e400", "123456789"]].flat(),
+  )("%s → null", (stored) => expect(rateFromPercent(stored)).toBeNull());
+  it.each([null, undefined, true, {}, Number.NaN, 1e21])("%s → null", (v) =>
     expect(rateFromPercent(v)).toBeNull(),
   );
 });
@@ -126,11 +137,9 @@ describe("migration 0016's converter on the restore ladder", () => {
 
   it("notes what it filled and names what it left without a rate", () => {
     const r = convertBackup(backup(), MIGRATION_CONVERTERS, MATCH_RATE_TAG)!;
-    expect(r.notes[0]).toBe("10 account rates, 8 entry rates");
-    expect(r.notes[1]).toMatch(
-      /account 17, account 18, account 19, account 20/,
-    );
-    expect(r.notes[1]).toMatch(/profile 13 entry 2/);
+    expect(r.notes[0]).toBe("14 account rates, 10 entry rates");
+    expect(r.notes[1]).toMatch(/account 17, account 18, account 20,/);
+    expect(r.notes[1]).toMatch(/profile 13 entry 4, profile 14 entry 2$/);
   });
 
   it.each([

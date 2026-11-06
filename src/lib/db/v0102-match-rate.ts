@@ -115,7 +115,7 @@ export const MATCH_RATE_CONVERTER = {
     const notes = [`${accountCount} account rates, ${entries} entry rates`];
     if (out.skipped.length > 0)
       notes.push(
-        `left without a rate (not a decimal that fits): ${out.skipped.join(", ")}`,
+        `left without a rate (no number, or too large): ${out.skipped.join(", ")}`,
       );
     return { updates: out.updates, notes };
   },
