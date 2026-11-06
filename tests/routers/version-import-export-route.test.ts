@@ -181,7 +181,7 @@ describe("/api/versions/import settles the first-admin gate", () => {
 });
 
 // Who may import (an admin, or a viewer with the version permission) and
-// how far: anyone but an admin leaves the installation's connections alone.
+// how far: anyone but an admin keeps each integration's credentials.
 describe("/api/versions/import: who imports, and the connections fence", () => {
   const backupFile = () => {
     const body = new FormData();
@@ -198,9 +198,10 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expires: "2099-12-31T23:59:59.999Z",
   });
 
-  async function importAs(session: ReturnType<typeof user>) {
+  async function importAs(session: ReturnType<typeof user>, devFlag = false) {
     vi.stubEnv("NODE_ENV", "production");
-    delete process.env.ALLOW_DEV_MODE;
+    if (devFlag) process.env.ALLOW_DEV_MODE = "true";
+    else delete process.env.ALLOW_DEV_MODE;
     const { auth } = await import("@/server/auth");
     vi.mocked(auth).mockResolvedValueOnce(session as never);
     const { POST } = await import("@/app/api/versions/import/route");
@@ -215,7 +216,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     return { res, importBackup: vi.mocked(importBackup) };
   }
 
-  it("a viewer with the version permission imports, leaving the connections alone", async () => {
+  it("a viewer with the version permission imports, keeping the credentials", async () => {
     const { res, importBackup } = await importAs(user("viewer", ["version"]));
     expect(res.status).toBe(200);
     expect(importBackup).toHaveBeenCalledWith(
@@ -232,6 +233,19 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
       expect.anything(),
       expect.anything(),
       { asAdmin: true },
+    );
+  });
+
+  it("in production ALLOW_DEV_MODE doesn't make a version viewer's import an admin's", async () => {
+    const { res, importBackup } = await importAs(
+      user("viewer", ["version"]),
+      true,
+    );
+    expect(res.status).toBe(200);
+    expect(importBackup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { asAdmin: false },
     );
   });
 

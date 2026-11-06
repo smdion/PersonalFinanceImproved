@@ -1,8 +1,9 @@
 /**
  * version.restore through the router: a viewer with the version permission
- * restores the household's data and leaves the installation's connections
- * as they are; an admin's restore brings the version's connections back.
- * A viewer with only the sync permission can't restore.
+ * restores the household's data and keeps today's connection credentials;
+ * an admin's restore brings the version's connections back.
+ * A viewer with only the sync permission can't restore. The pre-import
+ * data-loss warning names the connections only for an admin.
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
@@ -94,4 +95,24 @@ describe("version.restore and the connections fence", () => {
       cleanup();
     }
   });
+
+  it.each([
+    ["a version viewer", createViewerSessionWithPermissions(["version"]), []],
+    ["an admin", adminSession, ["api_connections"]],
+  ] as const)(
+    "importDataLoss names the connections a backup lacks only for an admin (%s)",
+    async (_who, session, named) => {
+      const { caller, db, cleanup } = await createTestCaller(session);
+      try {
+        connect(db, saved);
+        const lost = await caller.version.importDataLoss({ tableNames: [] });
+        const connections = lost.filter(
+          (t) => t.tableName === "api_connections",
+        );
+        expect(connections.map((t) => t.tableName)).toEqual(named);
+      } finally {
+        cleanup();
+      }
+    },
+  );
 });
