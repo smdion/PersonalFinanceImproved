@@ -3,6 +3,7 @@ import type { DemoProfile } from "@/lib/demo";
 import * as schema from "@/lib/db/schema";
 import type { db as appDb } from "@/lib/db";
 import { getParentCategory } from "@/lib/config/account-types";
+import { accountMatchColumns } from "@/lib/pure/contributions/match-writes";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -125,11 +126,8 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .returning();
   const goalIdByName = new Map(goalRows.map((r) => [r.name, r.id]));
 
-  // Savings funding is per-(goal, budget profile) with no shared default —
-  // the demo fixture only defines one monthlyContribution/allocationPercent
-  // per goal, so apply it to every demo budget profile (closest match to
-  // pre-redesign behavior, where every profile read the same shared value
-  // until customized).
+  // Savings funding is per (goal, budget profile): the fixture's one
+  // monthlyContribution/allocationPercent per goal goes to every profile.
   if (profileRows.length > 0) {
     await db.insert(schema.savingsGoalProfileAllocations).values(
       profile.savingsGoals.flatMap((sg) =>
@@ -196,6 +194,8 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
         taxTreatment: ca.taxTreatment as "pre_tax",
         employerMatchType: ca.employerMatchType as "none",
         employerMatchValue: ca.employerMatchValue,
+        // The rate, through the one writer (the demo seed is its only input).
+        ...accountMatchColumns(ca.employerMatchType, ca, null),
         employerMaxMatchPct: ca.employerMaxMatchPct,
         performanceAccountId: perfId,
         hsaCoverageType: ca.hsaCoverageType ?? null,

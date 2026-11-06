@@ -952,7 +952,7 @@
       "computeContributionSummary.results.map()": 726
     },
     "src/server/services/demo/demo-seed.ts": {
-      "seedProfile": 453
+      "seedProfile": 452
     },
     "src/server/services/investments/current-balances.ts": {
       "computeCurrentBalances": 382

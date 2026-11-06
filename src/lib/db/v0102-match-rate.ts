@@ -2,11 +2,13 @@
  *  fraction, beside the whole-percent value, which stays (DESIGN § Data-
  *  converting migrations). Rules: MATCH_RATE_CONVERTER. */
 // No import from migration-converters.ts, which registers this one.
-import { effectiveMatchType, rateFromPercent } from "../utils/match-rate";
+import {
+  PERCENT_MATCH as PERCENT,
+  effectiveMatchType,
+  rateFromPercent,
+} from "../utils/match-rate";
 
 export const MATCH_RATE_TAG = "0016_v0102_match_rate";
-
-const PERCENT = "percent_of_contribution";
 
 type Row = Record<string, unknown>;
 const isRow = (v: unknown): v is Row =>

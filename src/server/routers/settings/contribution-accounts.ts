@@ -26,6 +26,7 @@ import {
 } from "@/lib/config/enum-values";
 import { zDecimal, zFraction } from "@/lib/utils/zod-fields";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
+import { accountMatchWrite } from "@/server/services/contributions/match-writes";
 
 // contributionMethod/contributionValue are deliberately NOT here — an
 // account is purely structural; the actual contribution amount/method is
@@ -43,6 +44,8 @@ export const contributionAccountInput = z.object({
   taxTreatment: z.enum(TAX_TREATMENT_VALUES),
   employerMatchType: z.enum(EMPLOYER_MATCH_TYPE_VALUES),
   employerMatchValue: zDecimal.nullable().optional(),
+  // A percent match as a fraction (0.5 = 50%); the value follows it.
+  employerMatchRate: zDecimal.nullable().optional(),
   // A fraction of pay (0.06 = 6%); the form converts the percent typed.
   employerMaxMatchPct: zFraction.nullable().optional(),
   employerMatchTaxTreatment: z
@@ -123,9 +126,14 @@ export const contributionAccountsProcedures = {
             resolvedParentCategory = master.parentCategory as
               "Retirement" | "Portfolio";
         }
+        const match = accountMatchWrite(input.employerMatchType, input, null);
         const [created] = await ctx.db
           .insert(schema.contributionAccounts)
-          .values({ ...input, parentCategory: resolvedParentCategory })
+          .values({
+            ...input,
+            ...match,
+            parentCategory: resolvedParentCategory,
+          })
           .returning();
 
         // Auto-create inactive stubs for other supported tax treatments
@@ -195,21 +203,27 @@ export const contributionAccountsProcedures = {
           }
         }
 
-        // Resolve the performanceAccountId — use incoming value, or look up existing row
+        const stored = await ctx.db
+          .select({
+            performanceAccountId:
+              schema.contributionAccounts.performanceAccountId,
+            employerMatchValue: schema.contributionAccounts.employerMatchValue,
+            employerMatchRate: schema.contributionAccounts.employerMatchRate,
+          })
+          .from(schema.contributionAccounts)
+          .where(eq(schema.contributionAccounts.id, id))
+          .then((r) => r[0]);
+        // The incoming performanceAccountId, else the row's.
         const perfAccountId =
           data.performanceAccountId !== undefined
             ? data.performanceAccountId
-            : await ctx.db
-                .select({
-                  performanceAccountId:
-                    schema.contributionAccounts.performanceAccountId,
-                })
-                .from(schema.contributionAccounts)
-                .where(eq(schema.contributionAccounts.id, id))
-                .then((r) => r[0]?.performanceAccountId ?? null);
+            : (stored?.performanceAccountId ?? null);
 
         // When linked to a master account, sync parentCategory from its parentCategory
-        const resolvedData = { ...data };
+        const resolvedData = {
+          ...data,
+          ...accountMatchWrite(data.employerMatchType, data, stored ?? null),
+        };
         if (perfAccountId) {
           const [master] = await ctx.db
             .select({
