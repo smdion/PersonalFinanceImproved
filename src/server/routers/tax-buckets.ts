@@ -31,10 +31,10 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
 
-/** Stamp basis_last_updated in app_settings — mirrors performance.ts's
- *  stampPerformanceUpdated. Called on every real basis write (single or
- *  batch) so the sidebar Data Freshness display and the Performance page
- *  subtitle stay current automatically. */
+/** Stamp basis_last_updated in app_settings — mirrors stampPerformanceUpdated
+ *  (services/performance/last-updated.ts). Called on every real basis write
+ *  (single or batch) so the sidebar Data Freshness display and the
+ *  Performance page subtitle stay current automatically. */
 async function stampBasisUpdated(db: DbOrTx) {
   const now = new Date().toISOString();
   await upsertSetting(db, "basis_last_updated", now);

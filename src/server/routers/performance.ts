@@ -134,12 +134,6 @@ function resolveOwnerName(
  *  procedure itself, never sent to the client. */
 class DryRunRollback extends Error {}
 
-/** Stamp performance_last_updated in app_settings */
-async function stampPerformanceUpdated(db: DbOrTx) {
-  const now = new Date().toISOString();
-  await upsertSetting(db, "performance_last_updated", now);
-}
-
 // --- Zod schemas for input validation ---
 
 import { zDecimal } from "@/lib/utils/zod-fields";
@@ -189,17 +183,9 @@ const accountCreateInput = z.object({
   isActive: z.boolean().default(true),
 });
 
-// --- Shared helpers — canonical implementations live in @/lib/pure/investments/returns ---
-export {
-  computeReturn,
-  sumAccounts,
-  sumAnnualRows,
-} from "@/lib/pure/investments/returns";
 import { dropMappingsTo } from "@/server/data/delete-references";
 import type { DbOrTx } from "@/lib/db";
-import { upsertSetting } from "@/server/data/settings";
-export type { AccountLike } from "@/lib/pure/investments/returns";
-export type { AnnualRowLike } from "@/lib/pure/investments/returns";
+import { stampPerformanceUpdated } from "@/server/services/performance/last-updated";
 
 export const performanceRouter = createTRPCRouter({
   /**

@@ -176,7 +176,7 @@
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 53,
     "src/server/routers/networth.ts": 1485,
-    "src/server/routers/performance.ts": 1893,
+    "src/server/routers/performance.ts": 1879,
     "src/server/routers/projection/_shared.ts": 235,
     "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 539,

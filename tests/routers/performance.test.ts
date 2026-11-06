@@ -2195,7 +2195,7 @@ import {
   sumAnnualRows,
   type AccountLike,
   type AnnualRowLike,
-} from "@/server/routers/performance";
+} from "@/lib/pure/investments/returns";
 
 describe("finalizeYear — pure computation logic", () => {
   describe("computeReturn (Modified Dietz)", () => {
