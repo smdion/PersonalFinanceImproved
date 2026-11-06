@@ -1510,18 +1510,39 @@ function replayStatementsSqlite(
  *  made (ones already there are logged, not blamed on it). */
 function sqliteMigrationTransaction(sqlite: SqliteDb, body: () => void): void {
   type Broken = { table: string; rowid: number; parent: string; fkid: number };
-  const key = (b: Broken) => `${b.table}:${b.rowid}:${b.parent}:${b.fkid}`;
-  const check = () => sqlite.pragma("foreign_key_check") as Broken[];
+  // Named by its key's columns, not fkid (renumbered when a recreate drops a
+  // key; the parent alone can't tell two keys to one parent apart). rowid is
+  // stable for an INTEGER PRIMARY KEY table.
+  const check = () => {
+    const columns = new Map<string, Map<number, string>>();
+    return (sqlite.pragma("foreign_key_check") as Broken[]).map((b) => {
+      let byId = columns.get(b.table);
+      if (!byId) {
+        byId = new Map();
+        for (const f of sqlite
+          .prepare(
+            'SELECT id, "from" AS col FROM pragma_foreign_key_list(?) ORDER BY id, seq',
+          )
+          .all(b.table) as { id: number; col: string }[])
+          byId.set(f.id, [byId.get(f.id), f.col].filter(Boolean).join(","));
+        columns.set(b.table, byId);
+      }
+      return {
+        ...b,
+        key: `${b.table}:${b.rowid}:${b.parent}:${byId.get(b.fkid)}`,
+      };
+    });
+  };
   sqlite.pragma("foreign_keys = OFF");
   try {
     sqlite.transaction(() => {
-      const before = new Set(check().map(key));
+      const before = new Set(check().map((b) => b.key));
       if (before.size > 0)
         log("warn", "sqlite_foreign_keys_already_broken", {
           count: before.size,
         });
       body();
-      const made = check().filter((b) => !before.has(key(b)));
+      const made = check().filter((b) => !before.has(b.key));
       if (made.length > 0)
         throw new Error(
           `Migration would break ${made.length} foreign key reference(s) (first: ${made[0]!.table} row ${made[0]!.rowid} → ${made[0]!.parent}). Nothing was changed.`,
