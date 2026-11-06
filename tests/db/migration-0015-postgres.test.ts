@@ -106,9 +106,13 @@ describe.skipIf(skipWithoutPostgres)("migration 0015 on PostgreSQL", () => {
     expect(
       after.columns.some((c) => c.startsWith("performance_account_id")),
     ).toBe(false);
+    // PostgreSQL keeps 63 bytes of an identifier, so the drizzle name ends early.
     expect(after.constraints).toEqual([
       "holding_observations_pkey",
-      "holding_observations_simplefin_account_id_simplefin_accounts_id_fk",
+      "holding_observations_simplefin_account_id_simplefin_accounts_id_fk".slice(
+        0,
+        63,
+      ),
     ]);
     expect(after.indexes).toEqual([
       "holding_observations_pkey",
