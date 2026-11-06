@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
+## [0.10.2] - unreleased
+
+v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. No figure in the app changes; the test that records every figure the app shows stays identical through every change in this release. Two things do change for self-hosters: every outside request is now checked when it is sent, and three data migrations run at start-up.
+
+### Upgrading
+
+- **If your Actual server URL is a Docker service name, a single-label name or a LAN address, add it to `ALLOWED_ACTUAL_HOSTS` (`host` or `host:port`) before upgrading.** Every request is now checked when it is sent, not only when the URL is saved, so a URL that v0.10.1 accepted (such as the README's `http://actual-http-api:5007`) stops budget sync, snapshot pushes and category links on the first request until it is allowed. The refusal names the host and the setting, is never retried, and changes no data. SimpleFIN and Tiingo now refuse `http` URLs.
+- **Take a database dump before upgrading.** The start still writes its own pre-upgrade backup; the dump is what a rollback restores.
+- **To roll back, restore the pre-upgrade database dump; never swap the image back.** Migration 0015 is the first one the v0.10.1 image can't start past, and an older image started on a newer database rewrites the migration journal shorter, after which the newer image fails on every start. v0.10.2 refuses a database a newer Ledgr upgraded, and says so, instead of rewriting it.
+- **The first Simulation load after upgrading is slow, once.** The engine's code changed, so cached projections and Simulation runs are rebuilt the first time they're opened. This is not a regression; later loads are as fast as before.
+- **Three migrations run at start-up:** 0014 moves a contribution account's custom name from its old stored key (`displayNameActive`) to `displayNameCustom`, 0015 drops the holding history's never-written performance link and ten settings no version of Ledgr used, and 0016 adds the employer match rate as a fraction beside the whole percent it is stored as today. Each runs again cleanly, and restoring an older backup applies the same changes to it.
+- **TODO(57b): the employer-match-rate reader switch and migration 0017 — fill in before release.**
+
+### Safer outside requests
+
+- **One checked fetch** for YNAB, Actual, SimpleFIN, Tiingo and SEC: each URL is checked before it is sent, and the address actually connected is checked too, so a DNS name that points at the LAN, or one that changes between the check and the connection, is refused unless allowed.
+- **Redirects** go at most three hops, and only to the same origin or from `http` to `https` on the same host, so a credential header never reaches another host. No error message includes a response body or a URL's user name and password.
+
+### Migrations and backups
+
+- **The migrator refuses what it can't upgrade safely, with nothing changed:** a database a newer Ledgr upgraded is told to restore its backup or run the newer image, and a database at no known release's schema is told to restore, not to install v0.8.15.
+- **SQLite migrations run with foreign keys off and check them before commit,** so a table rebuild can never delete another table's rows through a cascade; a replayed rebuild runs as one unit and keeps a newer release's column.
+- **Data conversions run inside their migration,** in the normal path, both squash replays and the restore of an older backup, and each writes only where its value is still empty, so it never converts twice.
+- The migrator imports the code it used to carry pasted copies of, and its migration list comes from the journal.
+
+### Under the hood
+
+- **One home per kind of code.** The calculators and the projection engine moved from `lib/calculators/` to `lib/pure/<area>/`, their types beside each calculator; `server/helpers/` is gone, its reads now in `server/data/` and its composition in `server/services/<area>/`. Routers no longer import functions from other routers.
+- **Big routers split by concept:** savings, budget, performance, net worth, retirement, sync, SimpleFIN and the paycheck settings, each into a folder of parts, one concept each.
+- **Shared composition gets one path:** the paycheck, contribution, savings and budget summaries, the milestone inputs, profile create, duplicate, delete and switch, and every projection procedure's run set-up each live in one service that every caller uses, so their figures can't drift apart. Each request shares one read of the people across its summaries.
+- **The dashboard's Retirement tile** reads a small Simulation summary (about 1–5 KB) instead of the full result (up to 360 KB); its figures are the same.
+- **Demo:** the demo schema build accepts only a known demo profile, and every demo profile fills what its pages read.
+- **Guards and CI:** every `src/server/` file belongs to a declared layer; ratchets and the behaviour baseline are checked against the merge base; commit rules run on push; the gate runs the type-aware lint; CI runs in parallel jobs with sharded tests, and a docs-only push skips the heavy steps.
+- **The calculation register** covers `lib/pure` only, and names seven more of its functions, with a new row for other liabilities.
+
 ## [0.10.1] - 2026-11-04
 
 v0.10.1 reshapes how Ledgr's code knows things: each domain fact now has one definition that the rest of the code reads, instead of copies that can drift apart. No figure in the app changes; a test records every figure the app shows and stays identical through every change in this release.
