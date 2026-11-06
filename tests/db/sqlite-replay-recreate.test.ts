@@ -3,7 +3,8 @@
  * drops. Through the real migrator (runSQLite):
  * - a database holding a holding_observations column this journal doesn't
  *   know (a newer release's, or one added by hand) keeps it and its value
- *   when the journal is replayed, cleared or longer than this one;
+ *   when the journal is replayed, cleared or longer than this one; one
+ *   whose journal records all of this one and more is refused first;
  * - every legitimate replay is unchanged: each recreate in the journal,
  *   replayed from the entry before it and from every later entry, keeps
  *   every value of every column it keeps, and drops only its own columns.
@@ -145,8 +146,8 @@ describe("a holding_observations column this journal doesn't know", () => {
   it.each([
     ["a cleared journal", [] as string[]],
     [
-      "a journal longer than this one (an image rollback)",
-      [...allHashes, "a-newer-release"],
+      "a longer journal that doesn't record all of this one",
+      [...allHashes.slice(0, -1), "an-edited-0015", "a-newer-release"],
     ],
   ])(
     "%s: the replay keeps the column and its value, and says so",
@@ -172,6 +173,18 @@ describe("a holding_observations column this journal doesn't know", () => {
       expect(after.hashes).toEqual(allHashes);
     },
   );
+
+  it("a journal that records all of this one and more (an image rollback) is refused with nothing changed", () => {
+    const recorded = [...allHashes, "a-newer-release"];
+    probe(recorded);
+    expect(() => runSQLite()).toThrow(
+      "This database was upgraded by a newer Ledgr: it records 1 migration(s) this release doesn't have. Restore the pre-upgrade backup, or run the newer image. Nothing has been changed.",
+    );
+    const after = rowOf("holding_observations");
+    expect(after.row[0]).toMatchObject({ future_col: "KEEP-ME" });
+    expect(after.hashes).toEqual(recorded);
+    expect(fs.existsSync(process.env.LEDGR_BACKUP_DIR!)).toBe(false);
+  });
 });
 
 // Each recreate in the journal, found from the SQL, with the columns its

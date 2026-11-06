@@ -308,6 +308,34 @@ describe("assertSupportedUpgradePath on each dialect's journal", () => {
     it("a fresh database passes", () => {
       expect(() => check(new Set(), new Map())).not.toThrow();
     });
+
+    // An image swapped back after a newer release migrated the database.
+    const ownHashes = own.entries.map((e) =>
+      crypto
+        .createHash("sha256")
+        .update(fs.readFileSync(path.join(folder, `${e.tag}.sql`), "utf8"))
+        .digest("hex"),
+    );
+    const latest = () =>
+      asDatabase(snapshotColumns(folder, own.entries.at(-1)!.idx));
+    it("a database recording every entry and one more is from a newer release", () => {
+      expect(() =>
+        check(new Set([...ownHashes, "a-newer-release"]), latest()),
+      ).toThrow(
+        /^This database was upgraded by a newer Ledgr: it records 1 migration\(s\) this release doesn't have\./,
+      );
+    });
+    it("a database recording every entry and nothing more passes", () => {
+      expect(() => check(new Set(ownHashes), latest())).not.toThrow();
+    });
+    it("a database short of one entry with others recorded is not refused as newer", () => {
+      expect(() =>
+        check(
+          new Set([...ownHashes.slice(0, -1), "an-edited-entry"]),
+          latest(),
+        ),
+      ).not.toThrow();
+    });
   });
 });
 

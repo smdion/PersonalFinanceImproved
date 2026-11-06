@@ -575,6 +575,29 @@ function droppedAfterBaseline(
   return dropped;
 }
 
+/** Refuse a database a newer Ledgr upgraded: it records every entry of
+ *  this journal plus a migration this journal doesn't have. A replay would
+ *  rewrite its journal and the newer image would then fail on every start. */
+function assertNotFromNewerRelease(
+  journal: Journal,
+  migrationsFolder: string,
+  recordedHashes: Set<string>,
+  crypto: typeof import("crypto"),
+): void {
+  const own = new Set<string>();
+  for (const entry of journal.entries) {
+    const h = fileHash(crypto, `${migrationsFolder}/${entry.tag}.sql`);
+    if (h === null) continue;
+    if (!recordedHashes.has(h)) return;
+    own.add(h);
+  }
+  const unknown = [...recordedHashes].filter((h) => !own.has(h)).length;
+  if (unknown === 0) return;
+  throw new UpgradePathError(
+    `This database was upgraded by a newer Ledgr: it records ${unknown} migration(s) this release doesn't have. Restore the pre-upgrade backup, or run the newer image. Nothing has been changed.`,
+  );
+}
+
 /**
  * Refuse a database older than the baseline. Squashing replays the
  * baseline's CREATE TABLEs, which an existing table silently skips — so an
@@ -583,7 +606,8 @@ function droppedAfterBaseline(
  * that has recorded the baseline, and one with every table and column of
  * the baseline's snapshot that no later entry drops (v0.8.14/v0.8.15, a
  * dev database on any v0.9 migration, a journal cleared by a failed run at
- * any entry). Anything else stops here, before any backup or change.
+ * any entry). Anything else stops here, before any backup or change, and
+ * so does a database from a newer release (assertNotFromNewerRelease).
  */
 export function assertSupportedUpgradePath(
   journal: Journal,
@@ -594,6 +618,7 @@ export function assertSupportedUpgradePath(
   era: () => string,
 ): void {
   if (!actual.has("people")) return;
+  assertNotFromNewerRelease(journal, migrationsFolder, recordedHashes, crypto);
   const baseline = journal.entries[0];
   if (!baseline) return;
   const baselineHash = fileHash(
