@@ -758,9 +758,6 @@
   "src/components/cards/dashboard/linked-balance-card.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/components/cards/dashboard/living-costs-card.tsx": {

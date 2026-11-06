@@ -403,7 +403,7 @@ async function computeCurrentBalances(db: Db) {
   };
   const entryMoves = marketEntries.map((a) => ({
     key: a.key,
-    // Who the card names when this account's move is missing.
+    positions: a.positions,
     name:
       institutionOf((a.feedIds ?? [])[0] ?? -1) ||
       accounts.get((a.feedIds ?? [])[0] ?? -1)?.feedName ||

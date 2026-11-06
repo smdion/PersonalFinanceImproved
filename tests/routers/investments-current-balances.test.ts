@@ -137,6 +137,7 @@ describe("investments.getCurrentBalances", () => {
     const r = await ctx.caller.investments.getCurrentBalances();
     expect(Object.keys(r).sort()).toEqual([
       "balances",
+      "closeReports",
       "feeds",
       "movement",
       "snapshotDate",

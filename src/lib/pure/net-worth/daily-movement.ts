@@ -7,6 +7,7 @@
  * That money is shown beside the move, by the close it landed before.
  */
 import { previousTradingDay } from "../investments/market-calendar";
+import { priceMove, type BalancePosition } from "../accounts/current-balances";
 
 export type EntryMoves = {
   key: string;
@@ -99,5 +100,69 @@ export function dailyMovement(args: {
           ? { amount: cents(gap), names: [...names] }
           : null,
     };
+  });
+}
+
+/** One market account's closes over the card's window: which hold a value
+ *  (every fund priced), and its market move over each run without one. */
+export type CloseReport = {
+  key: string;
+  /** Its institution, as in `CloseMovement.missing`. */
+  name: string;
+  /** Oldest first, from the close before the earliest shown. */
+  closes: readonly { day: string; valued: boolean }[];
+  /** Each run of closes with no value, between two closes with one. */
+  gaps: readonly {
+    before: string;
+    after: string;
+    missing: readonly string[];
+    /** The market move from `before` to `after`, at its funds' own prices. */
+    move: number;
+  }[];
+};
+
+const valuedOn = (positions: readonly BalancePosition[], day: string) =>
+  positions.length > 0 &&
+  positions.every((p) => p.cash || p.closes?.get(day) !== undefined);
+
+/** The accounts missing a value at some close of the window, with where.
+ *  An account with no value at any close is left out: why can't be told
+ *  (nothing priced, or no prices at all). */
+export function closeReports(
+  entries: readonly {
+    key: string;
+    name: string;
+    positions: readonly BalancePosition[];
+  }[],
+  /** The closes shown, latest first. */
+  sessions: readonly string[],
+): CloseReport[] {
+  if (sessions.length === 0) return [];
+  const days = [
+    previousTradingDay(sessions.at(-1)!),
+    ...[...sessions].reverse(),
+  ];
+  return entries.flatMap((e) => {
+    const closes = days.map((day) => ({
+      day,
+      valued: valuedOn(e.positions, day),
+    }));
+    if (closes.every((c) => c.valued) || closes.every((c) => !c.valued))
+      return [];
+    const gaps: CloseReport["gaps"][number][] = [];
+    let run: string[] = [];
+    closes.forEach((c, i) => {
+      if (!c.valued) return void run.push(c.day);
+      const before = closes[i - run.length - 1];
+      if (run.length > 0 && before)
+        gaps.push({
+          before: before.day,
+          after: c.day,
+          missing: run,
+          move: priceMove(e.positions, () => before.day, c.day).amount,
+        });
+      run = [];
+    });
+    return [{ key: e.key, name: e.name, closes, gaps }];
   });
 }

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { dailyMovement } from "@/lib/pure/net-worth/daily-movement";
+import {
+  closeReports,
+  dailyMovement,
+} from "@/lib/pure/net-worth/daily-movement";
 
 describe("dailyMovement", () => {
   const sessions = ["2026-10-30", "2026-10-29"];
@@ -136,5 +139,94 @@ describe("money the balances show before it's reported", () => {
       shareChanges: [],
     });
     expect(fri!.unreported).toBeNull();
+  });
+});
+
+describe("closeReports", () => {
+  const sessions = [
+    "2026-11-05",
+    "2026-11-04",
+    "2026-11-03",
+    "2026-11-02",
+    "2026-10-30",
+  ];
+  /** A fund priced only on these days (no ticker: its price comes from the
+   *  institution's reports). */
+  const fund = (prices: Record<string, number>, shares = 10) => ({
+    shares,
+    closes: new Map(
+      Object.entries(prices).map(([d, p]) => [d, { close: p, adjClose: p }]),
+    ),
+    feedDay: null,
+  });
+  const cash = { shares: 500, closes: null, cash: true, feedDay: null };
+
+  it("a run with no reports: where, and the move across it at its own prices", () => {
+    const [voya] = closeReports(
+      [
+        {
+          key: "401k",
+          name: "Voya",
+          positions: [
+            fund({ "2026-10-29": 99, "2026-10-30": 100, "2026-11-05": 90 }),
+            cash,
+          ],
+        },
+      ],
+      sessions,
+    );
+    expect(voya!.closes.filter((c) => !c.valued).map((c) => c.day)).toEqual([
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+    ]);
+    // 10 shares × 100 × (90 / 100 − 1).
+    expect(voya!.gaps).toEqual([
+      {
+        before: "2026-10-30",
+        after: "2026-11-05",
+        missing: ["2026-11-02", "2026-11-03", "2026-11-04"],
+        move: -100,
+      },
+    ]);
+  });
+
+  it("the latest close still to come is no gap", () => {
+    const [voya] = closeReports(
+      [
+        {
+          key: "401k",
+          name: "Voya",
+          positions: [
+            fund({
+              "2026-10-29": 1,
+              "2026-10-30": 1,
+              "2026-11-02": 1,
+              "2026-11-03": 1,
+              "2026-11-04": 1,
+            }),
+          ],
+        },
+      ],
+      sessions,
+    );
+    expect(voya!.gaps).toEqual([]);
+    expect(voya!.closes.at(-1)).toEqual({ day: "2026-11-05", valued: false });
+  });
+
+  it("leaves out accounts priced at every close, at none, or holding nothing", () => {
+    const every = Object.fromEntries(
+      ["2026-10-29", ...sessions].map((d) => [d, 1]),
+    );
+    expect(
+      closeReports(
+        [
+          { key: "a", name: "A", positions: [fund(every)] },
+          { key: "b", name: "B", positions: [fund({})] },
+          { key: "c", name: "C", positions: [] },
+        ],
+        sessions,
+      ),
+    ).toEqual([]);
   });
 });
