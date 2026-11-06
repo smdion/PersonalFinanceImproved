@@ -158,8 +158,9 @@
     "src/lib/pure/paycheck/paystub-check.ts": 459,
     "src/lib/pure/retirement/relocation.ts": 490,
     "src/lib/pure/simulation/inflation-risk.ts": 26,
-    "src/lib/pure/simulation/monte-carlo.ts": 567,
+    "src/lib/pure/simulation/monte-carlo.ts": 326,
     "src/lib/pure/simulation/stress-test-run.ts": 121,
+    "src/lib/pure/simulation/trial-run.ts": 344,
     "src/lib/pure/simulation/trial-summary.ts": 303,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 472,
@@ -878,8 +879,8 @@
     "src/lib/pure/savings/brokerage-goals.ts": {
       "calculateBrokerageGoals": 206
     },
-    "src/lib/pure/simulation/monte-carlo.ts": {
-      "calculateMonteCarlo": 431
+    "src/lib/pure/simulation/trial-run.ts": {
+      "runTrials": 328
     },
     "src/lib/pure/tax/distribution-tax-rates.ts": {
       "buildDistributionTaxRates": 199

@@ -5136,11 +5136,8 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 3
     }
   },
   "src/lib/pure/simulation/monte-carlo.types.ts": {
@@ -5177,6 +5174,14 @@
   "src/lib/pure/simulation/stress-test.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
+    }
+  },
+  "src/lib/pure/simulation/trial-run.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
     }
   },
   "src/lib/pure/simulation/trial-summary.ts": {
