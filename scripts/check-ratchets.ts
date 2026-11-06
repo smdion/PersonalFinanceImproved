@@ -23,6 +23,8 @@
  * the code lines left rise by exactly the import lines. Every excused rise
  * is printed. A re-recorded baseline file needs
  * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
+ * A known-list entry whose key changes and nothing else is excused by that
+ * commit's `Known-renamed:` trailer (scripts/ratchets/known-renamed.ts).
  *
  *   tsx scripts/check-ratchets.ts --base "$(git merge-base origin/main HEAD)" [--head <ref>]
  */
@@ -45,6 +47,7 @@ import {
   LIST_FILES,
   bundleRises,
   coverageRises,
+  listEntries,
   listRises,
 } from "./ratchets/code-limits";
 import {
@@ -58,6 +61,12 @@ import {
 import { functionEntries } from "./check-size-baseline";
 import { attributeMoves, groupsOf, parseDiff } from "./ratchets/moves";
 import { RAISE, excuse, importLines } from "./ratchets/raise";
+import {
+  KNOWN_RENAMED,
+  knownRenamed,
+  readKnownRenamed,
+  type KnownRename,
+} from "./ratchets/known-renamed";
 import type { Rise, Tree } from "./ratchets/rise";
 
 export { RAISE };
@@ -450,7 +459,12 @@ export function checkRatchets(
   const failures: string[] = [];
   const excused: string[] = [];
 
-  const judge = (sha: string, message: string, rises: Rise[]) => {
+  const judge = (
+    sha: string,
+    message: string,
+    rises: Rise[],
+    renamedKeys = new Map<string, KnownRename>(),
+  ) => {
     const mechanical = trailerValues(message, "Mechanical").length > 0;
     let read: Moves | undefined;
     const moves = () => (read ??= movesOf(git, sha));
@@ -468,6 +482,11 @@ export function checkRatchets(
     }
     for (const rise of rises) {
       const where = `${short(sha)} ${rise.file}: ${rise.text}${plus(rise)}`;
+      const renamedBy = renamedKeys.get(rise.id);
+      if (renamedBy) {
+        excused.push(`${where}, by "${KNOWN_RENAMED}: ${renamedBy.value}"`);
+        continue;
+      }
       if (approved.includes(rise.id)) {
         excused.push(
           `${where}, by the owner's OK (named in check-ratchets.ts)`,
@@ -499,8 +518,27 @@ export function checkRatchets(
     for (const key of [RAISE, RERECORD])
       for (const p of trailerScopes(c.message, key).problems)
         failures.push(`${short(c.sha)}: ${p}`);
-    if (!c.files.some((f) => RATCHET_FILES.includes(f))) continue;
-    judge(c.sha, c.message, risesBetween(git, `${c.sha}^`, c.sha));
+    const known = readKnownRenamed(c.message);
+    const lists = known.renames.filter((r) => LIST_FILES.includes(r.file));
+    for (const r of known.renames)
+      if (!lists.includes(r))
+        known.problems.push(
+          `"${KNOWN_RENAMED}: ${r.value}": ${r.file} holds no known list (${LIST_FILES.join(", ")})`,
+        );
+    const touched = c.files.some((f) => RATCHET_FILES.includes(f));
+    const rises = touched ? risesBetween(git, `${c.sha}^`, c.sha) : [];
+    const renamed = knownRenamed(
+      lists,
+      rises,
+      (file) => ({
+        was: listEntries(file, treeAt(git, `${c.sha}^`)(file) ?? ""),
+        now: listEntries(file, treeAt(git, c.sha)(file) ?? ""),
+      }),
+      renamesIn(git, `${c.sha}^`, c.sha),
+    );
+    for (const p of [...known.problems, ...renamed.problems])
+      failures.push(`${short(c.sha)}: ${p}`);
+    if (touched) judge(c.sha, c.message, rises, renamed.excused);
   }
   for (const sha of merges)
     judge(sha, git("log", "-1", "--format=%B", sha), mergeRises(git, sha));

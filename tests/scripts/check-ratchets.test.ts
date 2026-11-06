@@ -1024,3 +1024,125 @@ describe("checkRatchets: a body or a router split moved whole (owner Q14)", () =
     ]);
   });
 });
+
+describe("checkRatchets: Known-renamed", () => {
+  let dir: string;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" }).trim();
+  const LIST = "tests/lint/violations.test.ts";
+  const list = (built: string[], known: Record<string, number>) =>
+    [
+      `const BUILT_AT_LOAD = [${built.map((e) => JSON.stringify(e)).join(", ")}];`,
+      `const KNOWN_COUNTS = { ${Object.entries(known)
+        .map(([k, n]) => `${JSON.stringify(k)}: { count: ${n} }`)
+        .join(", ")} };`,
+    ].join("\n");
+  const write = (text: string) => fs.writeFileSync(path.join(dir, LIST), text);
+  const commit = (message: string) => {
+    git("add", "-A");
+    git("commit", "-q", "-m", message);
+    return git("rev-parse", "HEAD");
+  };
+  const trailer = (from: string, to: string) =>
+    `Known-renamed: ${LIST} — ${from} => ${to}`;
+  let base: string;
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-known-renamed-"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "Test");
+    fs.mkdirSync(path.join(dir, "tests/lint"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "src/r.ts"), "export const r = 1;\n");
+    write(list(["src/r.ts rRouter", "src/s.ts sInput"], { "src/r.ts k": 2 }));
+    base = commit("chore: base");
+  });
+
+  afterAll(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("passes a renamed entry, on its path or its file's rename", () => {
+    git("checkout", "-q", "-B", "ok", base);
+    write(list(["src/r.ts rInput", "src/s.ts sInput"], { "src/r.ts k": 2 }));
+    commit(
+      `refactor: name it\n\nBecause.\n\n${trailer("src/r.ts rRouter", "src/r.ts rInput")}`,
+    );
+    git("mv", "src/r.ts", "src/q.ts");
+    write(list(["src/q.ts rInput", "src/s.ts sInput"], { "src/q.ts k": 2 }));
+    commit("refactor: r becomes q\n\nMechanical: rename");
+    const report = checkRatchets(base, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining(
+        `BUILT_AT_LOAD › src/r.ts rInput: added, by "Known-renamed:`,
+      ),
+    ]);
+  });
+
+  it("fails a rename that also raises the count", () => {
+    git("checkout", "-q", "-B", "count", base);
+    write(list(["src/r.ts rRouter", "src/s.ts sInput"], { "src/r.ts j": 3 }));
+    commit(
+      `refactor: name it\n\nBecause.\n\n${trailer("src/r.ts k", "src/r.ts j")}`,
+    );
+    const { failures, excused } = checkRatchets(base, "HEAD", dir);
+    expect(excused).toEqual([]);
+    expect(failures).toEqual([
+      expect.stringContaining("the count changed (2 → 3)"),
+      expect.stringContaining("KNOWN_COUNTS › src/r.ts j: added"),
+    ]);
+  });
+
+  it("fails a trailer naming a key that did not disappear", () => {
+    git("checkout", "-q", "-B", "kept", base);
+    write(
+      list(["src/r.ts rRouter", "src/r.ts rInput", "src/s.ts sInput"], {
+        "src/r.ts k": 2,
+      }),
+    );
+    commit(
+      `refactor: name it\n\nBecause.\n\n${trailer("src/r.ts rRouter", "src/r.ts rInput")}`,
+    );
+    const { failures, excused } = checkRatchets(base, "HEAD", dir);
+    expect(excused).toEqual([]);
+    expect(failures).toEqual([
+      expect.stringContaining("src/r.ts rRouter is still in"),
+      expect.stringContaining("BUILT_AT_LOAD › src/r.ts rInput: added"),
+    ]);
+  });
+
+  it("fails a rename beside another rise in its list", () => {
+    git("checkout", "-q", "-B", "other", base);
+    write(
+      list(["src/r.ts rInput", "src/s.ts sInput", "src/t.ts tInput"], {
+        "src/r.ts k": 2,
+      }),
+    );
+    commit(
+      `refactor: name it\n\nBecause.\n\n${trailer("src/r.ts rRouter", "src/r.ts rInput")}`,
+    );
+    const { failures, excused } = checkRatchets(base, "HEAD", dir);
+    expect(excused).toEqual([]);
+    expect(failures).toContainEqual(
+      expect.stringContaining("another entry of BUILT_AT_LOAD rose"),
+    );
+  });
+
+  it("fails a rename whose trailer is in another commit", () => {
+    git("checkout", "-q", "-B", "elsewhere", base);
+    write(list(["src/r.ts rInput", "src/s.ts sInput"], { "src/r.ts k": 2 }));
+    commit("refactor: name it\n\nBecause.");
+    fs.writeFileSync(path.join(dir, "src/r.ts"), "export const r = 2;\n");
+    commit(
+      `chore: other\n\nBecause.\n\n${trailer("src/r.ts rRouter", "src/r.ts rInput")}`,
+    );
+    const { failures, excused } = checkRatchets(base, "HEAD", dir);
+    expect(excused).toEqual([]);
+    expect(failures).toEqual([
+      expect.stringContaining("BUILT_AT_LOAD › src/r.ts rInput: added"),
+      expect.stringContaining("src/r.ts rRouter is not one entry"),
+    ]);
+  });
+});
