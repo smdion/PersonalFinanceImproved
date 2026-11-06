@@ -5726,15 +5726,50 @@
       "count": 1
     }
   },
-  "src/server/routers/networth/index.ts": {
+  "src/server/routers/networth/comparison.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 1
     },
     "max-lines-per-function": {
-      "count": 4
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 1
+    }
+  },
+  "src/server/routers/networth/portfolio-snapshots.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
+  "src/server/routers/networth/snapshot-accounts.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    }
+  },
+  "src/server/routers/networth/snapshots.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/server/routers/networth/summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1

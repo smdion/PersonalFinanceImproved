@@ -175,7 +175,11 @@
     "src/server/routers/contribution-profiles.ts": 827,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 53,
-    "src/server/routers/networth/index.ts": 1485,
+    "src/server/routers/networth/comparison.ts": 246,
+    "src/server/routers/networth/index.ts": 19,
+    "src/server/routers/networth/portfolio-snapshots.ts": 336,
+    "src/server/routers/networth/snapshots.ts": 306,
+    "src/server/routers/networth/summary.ts": 269,
     "src/server/routers/performance/finalize-year.ts": 552,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 744,
@@ -891,11 +895,17 @@
     "src/server/routers/historical.ts": {
       "historicalRouter.computeSummary.query()": 175
     },
-    "src/server/routers/networth/index.ts": {
-      "networthRouter.computeComparison.query()": 216,
-      "networthRouter.computeSummary.query()": 245,
-      "networthRouter.listSnapshots.query()": 216,
-      "networthRouter.portfolioSnapshots.create.mutation()": 273
+    "src/server/routers/networth/comparison.ts": {
+      "comparisonProcedures.computeComparison.query()": 216
+    },
+    "src/server/routers/networth/portfolio-snapshots.ts": {
+      "portfolioSnapshotProcedures.create.mutation()": 265
+    },
+    "src/server/routers/networth/snapshots.ts": {
+      "snapshotProcedures.listSnapshots.query()": 216
+    },
+    "src/server/routers/networth/summary.ts": {
+      "summaryProcedures.computeSummary.query()": 245
     },
     "src/server/routers/performance/finalize-year.ts": {
       "finalizeYearProcedures.finalizeYear.mutation()": 482,

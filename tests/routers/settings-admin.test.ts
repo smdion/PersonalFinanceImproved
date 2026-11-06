@@ -12,7 +12,7 @@
  *
  * savingsGoals, performanceAccounts, portfolioSnapshots, and
  * relocationScenarios CRUD moved out to savings.ts/performance/accounts.ts/
- * networth.ts/projection/relocation.ts respectively — their
+ * networth/portfolio-snapshots.ts/projection/relocation.ts respectively — their
  * tests moved to savings-goals-crud.test.ts / performance.test.ts /
  * networth.test.ts / projection-relocation.test.ts alongside them.
  * Everything remaining in adminProcedures is a genuine cross-cutting
@@ -420,7 +420,7 @@ describe("settings.apiConnections", () => {
 
 // portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
 // delete) moved to networth.test.ts (procedures moved to
-// routers/networth/index.ts).
+// routers/networth/).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET DATA FRESHNESS
@@ -830,7 +830,7 @@ describe("settings.appSettings.list viewer filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // portfolioSnapshots.delete/create additional coverage moved to
-// networth.test.ts (procedures moved to routers/networth/index.ts).
+// networth.test.ts (procedures moved to routers/networth/portfolio-snapshots.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // updateDataFreshness — additional branches
