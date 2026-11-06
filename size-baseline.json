@@ -128,6 +128,7 @@
     "src/lib/pure/contributions/roth-ira.ts": 543,
     "src/lib/pure/contributions/savings-rate.ts": 145,
     "src/lib/pure/contributions/view-metrics.ts": 182,
+    "src/lib/pure/contributions/ytd-actuals.ts": 149,
     "src/lib/pure/debts/debt-balance.ts": 28,
     "src/lib/pure/debts/mortgage.ts": 422,
     "src/lib/pure/engine/contribution-routing.ts": 624,
@@ -217,7 +218,7 @@
     "src/server/services/contributions/live-data.ts": 108,
     "src/server/services/contributions/paycheck-accounts.ts": 157,
     "src/server/services/contributions/profile.ts": 382,
-    "src/server/services/contributions/summary.ts": 1393,
+    "src/server/services/contributions/summary.ts": 1290,
     "src/server/services/debts/other-liabilities.ts": 67,
     "src/server/services/demo/demo-seed.ts": 468,
     "src/server/services/investments/current-balances.ts": 472,
@@ -954,7 +955,7 @@
       "loadContributionMix": 187
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 1180,
+      "computeContributionSummary": 1080,
       "computeContributionSummary.results.map()": 726
     },
     "src/server/services/demo/demo-seed.ts": {
