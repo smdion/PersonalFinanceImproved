@@ -5,6 +5,7 @@ import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { requireBudgetProfile } from "@/server/services/budget/budget-client";
 import type { DbOrTx } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
@@ -93,7 +94,7 @@ export const itemProcedures = {
           sortOrder: maxSort + 1,
         })
         .returning()
-        .then((r) => r[0]);
+        .then(firstRow);
     }),
 
   /** Delete a budget item. */
@@ -120,7 +121,7 @@ export const itemProcedures = {
         .set({ category: input.newCategory })
         .where(eq(schema.budgetItems.id, input.id))
         .returning()
-        .then((r) => r[0]);
+        .then(firstRow);
     }),
 
   /** Swap a category's whole block of items with an adjacent category's
@@ -211,7 +212,7 @@ export const itemProcedures = {
         .set({ isEssential: input.isEssential })
         .where(eq(schema.budgetItems.id, input.id))
         .returning()
-        .then((r) => r[0]);
+        .then(firstRow);
     }),
 
   /** Toggle isEssential for all items in a category. */

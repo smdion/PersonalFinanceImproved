@@ -11,6 +11,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { canDeleteBudgetProfile } from "@/lib/pure/household/profiles";
 import { columnLabelsSchema } from "@/lib/db/json-schemas";
+import { firstRow } from "@/lib/utils/first-row";
 
 export const profileProcedures = {
   /** Create a new budget profile, pre-populated with standard template
@@ -111,7 +112,7 @@ export const profileProcedures = {
           .select()
           .from(schema.budgetProfiles)
           .where(eq(schema.budgetProfiles.id, input.sourceProfileId))
-          .then((r) => r[0]);
+          .then(firstRow);
         if (!source)
           throw new TRPCError({
             code: "NOT_FOUND",

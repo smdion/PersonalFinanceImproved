@@ -13,6 +13,7 @@ import {
   type PayProfileSelection,
 } from "@/lib/pure/household/profile-selection.schema";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
+import { firstRow } from "@/lib/utils/first-row";
 
 /**
  * Which Contribution Profile a budget-linked item edit writes into — the
@@ -55,7 +56,7 @@ export const itemAmountProcedures = {
         .select()
         .from(schema.budgetItems)
         .where(eq(schema.budgetItems.id, input.id))
-        .then((r) => r[0]);
+        .then(firstRow);
       if (!item)
         throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
 
@@ -99,7 +100,7 @@ export const itemAmountProcedures = {
         .set({ amounts })
         .where(eq(schema.budgetItems.id, input.id))
         .returning()
-        .then((r) => r[0]);
+        .then(firstRow);
     }),
 
   /** Batch update multiple amount cells. */
