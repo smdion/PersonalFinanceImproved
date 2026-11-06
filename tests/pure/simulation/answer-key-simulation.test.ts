@@ -346,8 +346,8 @@ describe("answer key: Simulation cases waiting on an item", () => {
   // K6 (decision F2): the portfolio median rate for K5's 60/40 is
   // exp(E ln Σ wᵢRᵢ) − 1 = 7.408% ± 0.005% a year (the skeptic's 4M draws,
   // D5; SP-10); Σ w·G = .6 × 8.5562% + .4 × 4.7674% = 7.041% is the wrong
-  // answer today's baseline compounds at. The function doesn't exist yet
-  // (home in v0.10.3, the switch in v0.11): write against it when added.
+  // answer today's baseline compounds at (weightedGeometricRate). The
+  // function doesn't exist yet (v0.11): write against it when added.
   it.todo(
     'sim/K6: blocked on v0.11 Simulation "Decided: compound at the true median rate" (decision F2: no portfolioMedianRate yet)',
   );

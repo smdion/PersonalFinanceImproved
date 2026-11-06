@@ -93,6 +93,33 @@ export function geometricMean(meanReturn: number, stdDev: number): number {
   return Math.exp(m) - 1;
 }
 
+/** The figures a class needs for the two weighted blends below. */
+type WeightedAssetClass = { id: number; meanReturn: number; stdDev: number };
+
+/** Σ w·G over classes above 0%: the fixed-return line and shown mix return.
+ *  Not the portfolio's median rate (RULES § Known Gaps). */
+export function weightedGeometricRate(
+  assetClasses: readonly WeightedAssetClass[],
+  allocations: Record<number, number>,
+): number {
+  return assetClasses.reduce((sum, ac) => {
+    const w = allocations[ac.id] ?? 0;
+    return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
+  }, 0);
+}
+
+/** The mix's shown volatility, Σ w·σ, correlation left out; what
+ *  a trial draws is blendedReturnStats. */
+export function classWeightedVolatility(
+  assetClasses: readonly WeightedAssetClass[],
+  allocations: Record<number, number>,
+): number {
+  return assetClasses.reduce(
+    (sum, ac) => sum + ac.stdDev * (allocations[ac.id] ?? 0),
+    0,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Cholesky decomposition — for correlated multi-asset sampling
 // ---------------------------------------------------------------------------

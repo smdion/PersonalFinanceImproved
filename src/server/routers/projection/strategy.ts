@@ -49,7 +49,7 @@ import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo
 import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
 import {
   interpolateAllocations,
-  geometricMean,
+  weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
@@ -152,12 +152,7 @@ export const strategyRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = mcAssetClasses.reduce((sum, ac) => {
-          const w = allocations[ac.id] ?? 0;
-          return w > 0
-            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
-            : sum;
-        }, 0);
+        const blended = weightedGeometricRate(mcAssetClasses, allocations);
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
@@ -450,12 +445,7 @@ export const strategyRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = mcAssetClasses.reduce((sum, ac) => {
-          const w = allocations[ac.id] ?? 0;
-          return w > 0
-            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
-            : sum;
-        }, 0);
+        const blended = weightedGeometricRate(mcAssetClasses, allocations);
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
 
