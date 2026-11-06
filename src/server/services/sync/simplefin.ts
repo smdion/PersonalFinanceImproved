@@ -19,7 +19,7 @@ type LinkSuggestionView = {
  * account. Suggestions never take a sub-account (or whole account) the
  * household already linked.
  */
-export async function linkContext(
+export async function loadLinkContext(
   db: Parameters<typeof loadLatestSubAccounts>[0],
   rows: (typeof schema.simplefinAccounts.$inferSelect)[],
 ) {

@@ -81,7 +81,7 @@ import type { ParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
-import { linkContext } from "@/server/services/sync/simplefin";
+import { loadLinkContext } from "@/server/services/sync/simplefin";
 
 export const simplefinRouter = createTRPCRouter({
   /** Claim a one-time setup token and store the resulting access URL. */
@@ -360,7 +360,7 @@ export const simplefinRouter = createTRPCRouter({
     }
 
     const snapshotDate = latest?.snapshot.snapshotDate ?? null;
-    const links = await linkContext(ctx.db, rows);
+    const links = await loadLinkContext(ctx.db, rows);
 
     return rows.map((r) => {
       const lastBalance = Number(r.lastBalance);
@@ -474,7 +474,7 @@ export const simplefinRouter = createTRPCRouter({
     .input(z.object({ ids: z.array(z.number().int()).optional() }))
     .mutation(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.simplefinAccounts);
-      const { suggestions } = await linkContext(ctx.db, rows);
+      const { suggestions } = await loadLinkContext(ctx.db, rows);
       let linked = 0;
       for (const [id, s] of suggestions) {
         if (input.ids && !input.ids.includes(id)) continue;
