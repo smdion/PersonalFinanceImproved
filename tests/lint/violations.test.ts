@@ -552,7 +552,7 @@ function findDisplayNameAccountLabelFallbackViolations(): Violation[] {
 // Rule 6: direct `.accountLabel` read in .tsx (JSX) files — use accountDisplayName().
 // The helper itself (`src/lib/utils/format.ts`) legitimately reads this field,
 // but format.ts is a .ts file so the .tsx filter naturally excludes it.
-// `performance.ts` router writes the column — also excluded by extension filter.
+// `routers/performance/` router writes the column — also excluded by extension filter.
 function findDirectAccountLabelReadViolations(): Violation[] {
   return findPatternViolations(
     /\.accountLabel\b/,
@@ -2076,7 +2076,7 @@ const BUILT_AT_LOAD = [
   "src/lib/pure/household/what-if.schema.ts zSandboxContribAdditions",
   "src/server/routers/networth.ts portfolioSnapshotInput",
   "src/server/routers/networth.ts networthRouter",
-  "src/server/routers/performance.ts performanceAccountInput",
+  "src/server/routers/performance/index.ts performanceAccountInput",
   "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
   "src/server/routers/settings/paycheck.ts contributionAccountInput",

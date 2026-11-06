@@ -187,7 +187,7 @@ export function resolveCompensation(
  * otherwise, for the current year only, fall back to the active Salary
  * Profile's complete entry for the person's active job. `recorded` is
  * false only when neither source has anything — callers (e.g.
- * performance.ts's finalizeYear) use that to avoid persisting a false $0.
+ * routers/performance's finalizeYear) use that to avoid persisting a false $0.
  */
 export function resolvePersonYearIncome(
   year: number,

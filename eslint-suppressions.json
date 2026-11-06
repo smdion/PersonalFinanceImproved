@@ -5743,7 +5743,7 @@
       "count": 2
     }
   },
-  "src/server/routers/performance.ts": {
+  "src/server/routers/performance/index.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },

@@ -759,7 +759,7 @@
       "count": 3
     }
   },
-  "src/server/routers/performance.ts": {
+  "src/server/routers/performance/index.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }

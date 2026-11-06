@@ -1,5 +1,5 @@
 /**
- * Roth basis year-end rollover — called from performance.ts's finalizeYear
+ * Roth basis year-end rollover — called from routers/performance's finalizeYear
  * transaction (one line in the orchestrator; the actual logic is here and
  * in src/lib/pure/accounts/roth-basis-rollover.ts, per RULES.md's thin-orchestrator
  * rule). Mirrors accountPerformance's own finalize-then-seed-next-year

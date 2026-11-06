@@ -11,7 +11,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   performanceProcedure,
-} from "../trpc";
+} from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import {
