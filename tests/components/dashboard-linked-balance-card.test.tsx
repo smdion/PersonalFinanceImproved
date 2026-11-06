@@ -63,6 +63,7 @@ describe("LinkedBalanceCard daily change notes", () => {
         close("2026-11-02", ["Voya"]),
         close("2026-10-30", []),
       ],
+      unpricedMoves: [],
       closeReports: [
         {
           key: "brokerage",
@@ -174,18 +175,53 @@ describe("LinkedBalanceCard daily change notes", () => {
         <LinkedBalanceCard />
       </TooltipProvider>,
     );
-    expect(
-      screen.getByText("balance −$151.08 (market and deposits not split)"),
-    ).toBeInTheDocument();
+    // The balance change is on hover only: no second line.
+    expect(screen.queryByText(/market and deposits not split/)).toBeNull();
     expect(
       screen.getByTitle(
-        "Voya sends no holdings for this account, so its market move can't be shown",
+        "Balance −$151.08; Voya sends no holdings, so market and deposits can't be split",
       ),
     ).toHaveTextContent("—");
     expect(screen.getByText("+$0.00")).toBeInTheDocument();
+    // Out of one line of two: said on that line, not under the list.
     expect(
       screen.getByText("excludes Voya HSA (no holdings)"),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/no holdings reported/)).toBeNull();
+  });
+
+  it("an account out of every line is said once, under the list", () => {
+    setQuery("investments.getCurrentBalances", {
+      target: "2026-11-05",
+      snapshotDate: null,
+      summary: { total: 1000 },
+      feeds: [],
+      balances: [],
+      movement: [close("2026-11-05", []), close("2026-11-04", ["Voya"])],
+      closeReports: [],
+      unpricedMoves: [
+        {
+          key: "hsa",
+          label: "Joanna HSA (Voya)",
+          institution: "Voya Financial",
+          changed: [
+            { day: "2026-11-05", balance: -151.08 },
+            { day: "2026-11-04", balance: 40 },
+          ],
+        },
+      ],
+    });
+    render(
+      <TooltipProvider>
+        <LinkedBalanceCard />
+      </TooltipProvider>,
+    );
+    expect(
+      screen.getByText("Excludes Joanna HSA (Voya): no holdings reported"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\(no holdings\)/)).toBeNull();
+    // What differs by line stays on its line.
+    expect(screen.getByText("excludes Voya")).toBeInTheDocument();
   });
 
   it("names a feed SimpleFIN still lists whose balance stopped", () => {

@@ -37,6 +37,27 @@ const listNames = (names: readonly string[]) =>
  *  full name is in the hover text. */
 const shortName = (name: string) => name.split(/\s+/)[0] ?? name;
 
+/** The no-holdings accounts left out of every close shown (said once,
+ *  under the list), and the rest (said on the closes they're out of). */
+export function splitUnpriced<U extends Unpriced[number]>(
+  closes: readonly { day: string }[],
+  unpriced: readonly U[],
+): { always: U[]; varying: U[] } {
+  const always = unpriced.filter(
+    (u) =>
+      closes.length > 0 &&
+      closes.every((c) => u.changed.some((m) => m.day === c.day)),
+  );
+  return { always, varying: unpriced.filter((u) => !always.includes(u)) };
+}
+
+/** The line under the list for them: "Excludes Joanna HSA (Voya): no
+ *  holdings reported". */
+export function alwaysExcludedLine(always: Unpriced): string | null {
+  if (always.length === 0) return null;
+  return `Excludes ${listNames(always.map((u) => u.label))}: no holdings reported`;
+}
+
 /** The closes without a value next to `day`, itself included. */
 function runAround(closes: CloseReport["closes"], day: string): string[] {
   const i = closes.findIndex((c) => c.day === day);

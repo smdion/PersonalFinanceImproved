@@ -5,13 +5,17 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  balanceOnlyLine,
   groupCurrentBalances,
   noHoldingsInto,
-  noHoldingsNote,
+  noHoldingsTitle,
   unpricedMoves,
 } from "@/lib/pure/accounts/current-balance-groups";
-import { missingNote, missingReason } from "@/lib/pure/net-worth/close-notes";
+import {
+  alwaysExcludedLine,
+  missingNote,
+  missingReason,
+  splitUnpriced,
+} from "@/lib/pure/net-worth/close-notes";
 
 const SESSIONS = ["2026-11-05", "2026-11-04"];
 /** Each feed's balance on each close. */
@@ -90,7 +94,7 @@ describe("groupCurrentBalances with no holdings", () => {
     noHoldings: into.get(key) ?? null,
   });
 
-  it("the row's move is unknown, beside its balance change", () => {
+  it("the row's move is unknown, its balance change on hover", () => {
     const [g] = groupCurrentBalances(
       [balance("hsa", 1048.92, null), balance("ira", 100, -5)],
       () => ({ key: "hsa", label: "HSA" }),
@@ -99,11 +103,13 @@ describe("groupCurrentBalances with no holdings", () => {
       move: null,
       noHoldings: { institutions: ["Voya Financial"], balance: -151.08 },
     });
-    expect(noHoldingsNote(g!.noHoldings!.institutions)).toBe(
-      "Voya sends no holdings for this account, so its market move can't be shown",
+    expect(noHoldingsTitle(g!.noHoldings!)).toBe(
+      "Balance −$151.08; Voya sends no holdings, so market and deposits can't be split",
     );
-    expect(balanceOnlyLine(g!.noHoldings!.balance)).toBe(
-      "balance −$151.08 (market and deposits not split)",
+    expect(
+      noHoldingsTitle({ institutions: ["Voya Financial", "Ally"], balance: 5 }),
+    ).toBe(
+      "Balance +$5.00; Voya and Ally send no holdings, so market and deposits can't be split",
     );
   });
 
@@ -205,5 +211,70 @@ describe("groupCurrentBalances", () => {
       bucket,
     );
     expect(rows[0]!.move).toBe(-5);
+  });
+});
+
+describe("an exclusion on every close shown is said once", () => {
+  const hsa = {
+    label: "Joanna HSA (Voya)",
+    changed: [
+      { day: "2026-11-05", balance: -151.08 },
+      { day: "2026-11-04", balance: 200 },
+    ],
+  };
+  const cash = {
+    label: "Ally Cash",
+    changed: [{ day: "2026-11-04", balance: 12 }],
+  };
+  const closes = [{ day: "2026-11-05" }, { day: "2026-11-04" }];
+
+  it("out of every line: one line under the list, none per line", () => {
+    const { always, varying } = splitUnpriced(closes, [hsa]);
+    expect(alwaysExcludedLine(always)).toBe(
+      "Excludes Joanna HSA (Voya): no holdings reported",
+    );
+    expect(
+      missingNote(
+        { day: "2026-11-05", missing: [] },
+        "2026-11-05",
+        [],
+        varying,
+      ),
+    ).toBeNull();
+  });
+
+  it("several such accounts are joined", () => {
+    const both = { ...cash, changed: hsa.changed };
+    const { always } = splitUnpriced(closes, [hsa, both]);
+    expect(alwaysExcludedLine(always)).toBe(
+      "Excludes Joanna HSA (Voya) and Ally Cash: no holdings reported",
+    );
+  });
+
+  it("out of some lines only: stays on those lines", () => {
+    const { always, varying } = splitUnpriced(closes, [hsa, cash]);
+    expect(always).toEqual([hsa]);
+    expect(varying).toEqual([cash]);
+    expect(
+      missingNote(
+        { day: "2026-11-04", missing: [] },
+        "2026-11-05",
+        [],
+        varying,
+      ),
+    ).toBe("excludes Ally Cash (no holdings)");
+    expect(
+      missingNote(
+        { day: "2026-11-05", missing: [] },
+        "2026-11-05",
+        [],
+        varying,
+      ),
+    ).toBeNull();
+  });
+
+  it("nothing excluded, or no closes: no line", () => {
+    expect(alwaysExcludedLine(splitUnpriced(closes, []).always)).toBeNull();
+    expect(splitUnpriced([], [hsa]).always).toEqual([]);
   });
 });

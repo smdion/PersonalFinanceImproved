@@ -10,9 +10,8 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatCurrency } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
 import {
-  balanceOnlyLine,
   groupCurrentBalances,
-  noHoldingsNote,
+  noHoldingsTitle,
   type CurrentGroup,
 } from "@/lib/pure/accounts/current-balance-groups";
 import { getDisplayConfig } from "@/lib/config/account-types";
@@ -23,6 +22,8 @@ import {
   gapLines,
   missingNote,
   missingReason,
+  alwaysExcludedLine,
+  splitUnpriced,
 } from "@/lib/pure/net-worth/close-notes";
 import { shortDay } from "@/lib/pure/net-worth/short-day";
 import { StaleFeedNotes } from "@/components/settings/simplefin-stale-feeds";
@@ -183,6 +184,7 @@ function DailyChanges({
   unpriced: CurrentData["unpricedMoves"];
 }) {
   if (movement.length === 0) return null;
+  const { always, varying } = splitUnpriced(movement, unpriced);
   return (
     <>
       <p className="text-caption text-faint">
@@ -200,13 +202,13 @@ function DailyChanges({
             <span
               className="text-faint break-words"
               title={[
-                missingReason(c, target, reports, unpriced),
+                missingReason(c, target, reports, varying),
                 unreportedDetail(c),
               ]
                 .filter(Boolean)
                 .join(" ")}
             >
-              {[missingNote(c, target, reports, unpriced), paidLine(c)]
+              {[missingNote(c, target, reports, varying), paidLine(c)]
                 .filter(Boolean)
                 .join(" · ")}
             </span>
@@ -215,6 +217,7 @@ function DailyChanges({
       </div>
       <div className="text-caption text-faint mb-2 empty:hidden">
         <StaleFeedNotes />
+        {always.length > 0 && <p>{alwaysExcludedLine(always)}</p>}
         {gapLines(reports).map((line) => (
           <p key={line}>{line}</p>
         ))}
@@ -224,7 +227,7 @@ function DailyChanges({
 }
 
 /** The total by group: each row's balance and its move into the card's
- *  close; a row with no holdings also shows its balance's change. */
+ *  close; a row with no holdings has its balance's change on hover. */
 function GroupRows({
   groups,
   target,
@@ -242,7 +245,7 @@ function GroupRows({
         className={`text-right whitespace-nowrap tabular-nums ${moveColor(g.move)}`}
         title={
           g.noHoldings
-            ? noHoldingsNote(g.noHoldings.institutions)
+            ? noHoldingsTitle(g.noHoldings)
             : g.move === null && target
               ? `Waiting for a fund's ${shortDay(target)} price from the institution`
               : undefined
@@ -250,11 +253,6 @@ function GroupRows({
       >
         {g.move === null ? "—" : signed(g.move)}
       </span>
-      {g.noHoldings && (
-        <span className="col-span-3 text-right">
-          {balanceOnlyLine(g.noHoldings.balance)}
-        </span>
-      )}
     </div>
   ));
 }

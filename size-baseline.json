@@ -25,7 +25,7 @@
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
     "src/components/cards/dashboard/contributions-card.tsx": 655,
-    "src/components/cards/dashboard/linked-balance-card.tsx": 434,
+    "src/components/cards/dashboard/linked-balance-card.tsx": 432,
     "src/components/cards/dashboard/living-costs-card.tsx": 679,
     "src/components/cards/dashboard/retirement-card.tsx": 443,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,

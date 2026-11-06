@@ -126,16 +126,16 @@ export function noHoldingsInto(
   );
 }
 
-/** Hover text for a row whose move can't be shown. */
-export function noHoldingsNote(institutions: readonly string[]): string {
-  const names = [...new Set(institutions.map((n) => n.split(/\s+/)[0] || n))];
-  if (names.length <= 1)
-    return `${names[0] || "The institution"} sends no holdings for this account, so its market move can't be shown`;
-  const who = `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-  return `${who} send no holdings for these accounts, so their market moves can't be shown`;
-}
-
-/** The figure beside it: "balance −$151.08 (market and deposits not split)". */
-export function balanceOnlyLine(balance: number): string {
-  return `balance ${balance >= 0 ? "+" : "−"}${formatCurrency(Math.abs(balance))} (market and deposits not split)`;
+/** Hover on a row whose move can't be shown: "Balance −$151.08; Voya
+ *  sends no holdings, so market and deposits can't be split". */
+export function noHoldingsTitle(n: {
+  institutions: readonly string[];
+  balance: number;
+}): string {
+  const names = [...new Set(n.institutions.map((x) => x.split(/\s+/)[0] || x))];
+  const who =
+    names.length <= 1
+      ? `${names[0] || "The institution"} sends`
+      : `${names.slice(0, -1).join(", ")} and ${names.at(-1)} send`;
+  return `Balance ${n.balance >= 0 ? "+" : "−"}${formatCurrency(Math.abs(n.balance))}; ${who} no holdings, so market and deposits can't be split`;
 }
