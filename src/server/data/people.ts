@@ -1,6 +1,6 @@
 import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "@/lib/db";
+import type { DbOrTx } from "@/lib/db";
 
 /**
  * Every person, ordered by id — the household roster.
@@ -11,6 +11,6 @@ import type { Db } from "@/lib/db";
  * builder (thenable), so it drops into a `Promise.all([...])` array
  * exactly where the inline expression used to sit.
  */
-export function getAllPeople(db: Db) {
+export function getAllPeople(db: DbOrTx) {
   return db.select().from(schema.people).orderBy(asc(schema.people.id));
 }

@@ -139,7 +139,7 @@ export async function computePaycheckSummary(
     allTaxParams,
     allEarnings,
   ] = await Promise.all([
-    getAllPeople(ctx.db),
+    ctx.scope.load(getAllPeople),
     ctx.db.select().from(schema.jobs),
     ctx.db.select().from(schema.paycheckDeductions),
     ctx.db

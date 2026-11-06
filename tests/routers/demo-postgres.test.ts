@@ -22,6 +22,7 @@ import { cookies } from "next/headers";
 import pg from "pg";
 import type { Session } from "next-auth";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type { ReadMemo } from "@/server/data/request-scope";
 import { runMigrator } from "./fresh-install-cases";
 
 // Not imported from ./setup: that module loads the db module (as SQLite)
@@ -45,7 +46,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   /** A caller with `demoSchema` active. Imported only after DATABASE_URL
    *  points at the test database: the db module picks its dialect when it's
    *  first imported. */
-  async function callerFor(demoSchema: string | null) {
+  async function callerFor(demoSchema: string | null, reads?: ReadMemo) {
     const { appRouter } = await import("@/server/routers");
     const { createCallerFactory } = await import("@/server/trpc");
     const { db } = await import("@/lib/db");
@@ -53,6 +54,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
       db,
       session: adminSession,
       demoSchema,
+      reads,
     });
   }
 
@@ -229,6 +231,30 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
     },
   );
+
+  it("never serves a demo call a public read, or the reverse, under one memo", async () => {
+    const { createReadMemo } = await import("@/server/data/request-scope");
+    const reads = createReadMemo({ freeze: true });
+    const demo = await callerFor(schemaName, reads);
+    const install = await callerFor(null, reads);
+    const names = (s: { people: { person: { name: string } }[] }) =>
+      s.people.map((p) => p.person.name);
+    const [publicFirst, demoSummary, contribution, publicAfter] =
+      await Promise.all([
+        install.paycheck.computeSummary(),
+        demo.paycheck.computeSummary(),
+        demo.contribution.computeSummary(),
+        install.paycheck.computeSummary(),
+      ]);
+    expect(names(publicFirst)).toEqual([]);
+    expect(names(publicAfter)).toEqual([]);
+    const { rows } = await admin.query<{ name: string }>(
+      `SELECT name FROM "${schemaName}".people ORDER BY id`,
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(names(demoSummary)).toEqual(rows.map((r) => r.name));
+    expect(contribution.people.length).toBe(rows.length);
+  });
 
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);

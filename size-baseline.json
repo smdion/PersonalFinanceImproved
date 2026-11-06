@@ -226,7 +226,7 @@
     "src/server/services/savings/summary.ts": 429,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
-    "src/server/trpc.ts": 587
+    "src/server/trpc.ts": 582
   },
   "functions": {
     "src/app/(dashboard)/assets/assets-content.tsx": {

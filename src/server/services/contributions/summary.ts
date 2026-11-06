@@ -229,7 +229,7 @@ export async function computeContributionSummary(
     currentYearPerfActuals,
     perfLastUpdatedRows,
   ] = await Promise.all([
-    getAllPeople(ctx.db),
+    ctx.scope.load(getAllPeople),
     ctx.db.select().from(schema.jobs),
     ctx.db
       .select()
