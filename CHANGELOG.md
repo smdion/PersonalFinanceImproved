@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.10.2] - 2026-11-06
 
-v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. No figure in the app changes; the test that records every figure the app shows stays identical through every change in this release. Two things do change for self-hosters: every outside request is now checked when it is sent, and four data migrations run at start-up.
+v0.10.2 gives every piece of code one home by what it does: pure calculations in `lib/pure/<area>/`, shared database reads in `server/data/`, and composition that needs the database in `server/services/`, with the largest routers split by concept. The test that records every figure the app shows stays identical through every change in this release. Two behaviours change: Actual uses its Server URL as saved in Settings, and a SimpleFIN account re-added under a new id keeps its row instead of counting twice (below). Two more things change for self-hosters: every outside request is now checked when it is sent, and four data migrations run at start-up.
 
 ### Upgrading
 
@@ -20,6 +20,10 @@ v0.10.2 gives every piece of code one home by what it does: pure calculations in
 - **Four migrations run at start-up:** 0014 moves a contribution account's custom name from its old stored key (`displayNameActive`) to `displayNameCustom`; 0015 drops the holding history's never-written performance link and ten settings no version of Ledgr used; 0016 adds the employer match rate as a fraction (50% is stored as 0.5); and 0017 finishes that move: where 0016 stored a rate, the old whole-percent value is cleared, so the rate is the only copy. A dollar or fixed-annual profile override that had no amount of its own first gets the amount it was using, and a value 0016 couldn't convert is kept and read as before. Each runs again cleanly, and restoring an older backup runs them in order.
 - **A profile's own percent match no longer follows a dollar account.** If a Contribution Profile sets its own percent match on an account whose match is in dollars, the profile now keeps the percent it read when you upgraded (or when you last edited that profile): a later change to the account's dollar amount no longer changes the profile's percent, so set the profile's match again if you want it to follow.
 - **API:** contribution accounts and profile entries now return `employerMatchRate`, and `employerMatchValue` is empty on percent matches. A percent match above 200% is refused when it is set.
+
+### Fixed
+
+- **Re-adding an institution in SimpleFIN keeps each account's links and history.** SimpleFIN gives a re-added institution's accounts new ids; Ledgr used to add them as new, unlinked accounts beside the old ones, so their money counted twice. Now an account keeps its row, links and history once its old id has gone unreported for a day, and a duplicate already created is merged on the next sync after that. Anything Ledgr can't pair one to one (two accounts with the same name, a renamed account) is left alone; you can merge it yourself from SimpleFIN settings, right away, where a new account offers "Looks like a re-added account: merge into …?".
 
 ### Safer outside requests
 
