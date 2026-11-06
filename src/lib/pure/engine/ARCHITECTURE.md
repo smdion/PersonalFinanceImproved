@@ -7,6 +7,7 @@ The engine is the projection calculator: one pass, year by year, through accumul
 ```
 index.ts                     public API (the only entry point)
 projection.ts                orchestrator: builds context + state, runs the year loop
+input-validation.ts          validateEngineInputs: balance checks, rate clamps, setup warnings
 projection-year-handlers/    one year of work
   context.ts                 immutable run context (buildProjectionContext)
   state.ts                   mutable run state (buildProjectionState)
@@ -14,6 +15,7 @@ projection-year-handlers/    one year of work
   accumulation-year.ts       runAccumulationYear
   decumulation-year.ts       runDecumulationYear
   lump-sum.ts                one-time lump sums (both phases)
+  stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
 <modules below>              called by the handlers
 ```

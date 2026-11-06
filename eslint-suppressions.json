@@ -4468,7 +4468,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 10
     }
   },
   "src/lib/pure/engine/projection-year-handlers/state.ts": {
@@ -4486,10 +4486,7 @@
   },
   "src/lib/pure/engine/projection.ts": {
     "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 4
+      "count": 3
     }
   },
   "src/lib/pure/engine/qcd.ts": {

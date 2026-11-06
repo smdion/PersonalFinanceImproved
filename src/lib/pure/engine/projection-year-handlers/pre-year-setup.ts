@@ -7,6 +7,7 @@ import { expenseEndingFactor } from "../expense-endings";
 import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
+import { firstYearStatedNeed } from "./stated-need";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
@@ -319,24 +320,23 @@ export function runPreYearSetup(
     (input.decumulationAnnualExpenses != null ||
       input.rateSeededDecumulationYear1 === true);
   if (decumulationExpensesJustSet) {
-    // Rate-Seeded scenario: ignore the stated
-    // budget entirely for year 1 -- seed from the household's Initial
-    // Withdrawal Rate × starting balance instead. Every strategy's ongoing
-    // per-year mechanism (applySpendingStrategy below, unchanged) evolves
-    // this exactly the same way it evolves a budget-seeded year 1 -- this
-    // only changes where the number starts.
+    // Rate-Seeded: year 1 is the Initial Withdrawal Rate × starting balance,
+    // not the budget. Strategies evolve it as they would a budget-seeded
+    // year 1; only the starting number differs.
     state.projectedExpenses = input.rateSeededDecumulationYear1
       ? roundToCents(
           input.decumulationDefaults.withdrawalRate * retirementBalance,
         )
       : input.decumulationAnnualExpenses! * inflation.growth(yearIndex);
-    // budgetOnlyExpenses seeds identically -- a rate-seeded run has no
-    // independent "budget" concept to track (it deliberately ignores the
-    // budget entirely), so both start from the same rate-seed value; for
-    // a normal run this is the same budget-derived number projectedExpenses
-    // just got, before anything downstream can mutate the latter.
+    // budgetOnlyExpenses seeds identically (a rate-seeded run has no budget
+    // to track), before anything downstream changes projectedExpenses.
     state.budgetOnlyExpenses = state.projectedExpenses;
     state.decumulationExpensesSet = true;
+    state.firstDecumulationYearStatedNeed = firstYearStatedNeed(
+      ctx,
+      year,
+      yearIndex,
+    );
   }
 
   // Apply budget override (sticky-forward) or inflate expenses

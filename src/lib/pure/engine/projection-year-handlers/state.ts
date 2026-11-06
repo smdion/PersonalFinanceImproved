@@ -140,6 +140,7 @@ export function buildProjectionState(
     incomeHistory,
     rmdNoOwnerWarned: false,
     decumulationExpensesSet: false,
+    firstDecumulationYearStatedNeed: null,
     firstOverflowYear: null,
     firstOverflowAge: null,
     firstOverflowAmount: null,

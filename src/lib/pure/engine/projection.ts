@@ -22,7 +22,6 @@ import type {
   ProjectionResult,
 } from "./types/projection-result";
 import { roundToCents } from "../../utils/math";
-import { expenseEndingFactor } from "./expense-endings";
 import { validateEngineInputs } from "./input-validation";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { buildProjectionContext } from "./projection-year-handlers/context";
@@ -116,54 +115,6 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
           ).withdrawalRate,
       );
 
-  // Household's stated need, inflated to the first decumulation year's
-  // nominal dollars — same formula pre-year-setup.ts:209-211 uses to seed
-  // year-1 decumulation spending, before any strategy adjusts it. Computed
-  // independently here (post-hoc, like sustainableWithdrawal above) since
-  // the per-strategy dispatch overwrites state.projectedExpenses before the
-  // loop ends, so the pre-strategy "need" value isn't otherwise retained.
-  //
-  // The exponent MUST be the actual first decumulation year's offset from
-  // asOfDate, not `retirementYear` — pre-year-setup.ts's mid-year
-  // retirement handling can defer the first decumulation year by one extra
-  // year (when retirementYear is the first year but the current date isn't
-  // exactly year-start), and a naive age-based exponent silently
-  // under-inflates relative to what the loop actually produced. Reading the
-  // loop's own first decumulation row keeps this a single source of truth
-  // instead of a second, divergence-prone computation of "which year."
-  // A budget override active on
-  // the first decumulation year (pre-year-setup.ts:249-251) replaces
-  // state.projectedExpenses outright, but this computation used to ignore
-  // overrides entirely and always inflate `decumulationAnnualExpenses` --
-  // comparing a pre-override stated need against a post-override actual in
-  // coast-fire.ts's `passes()`. Read the same override the loop actually
-  // applied, with the same Rate-Seeded-year-1 carve-out
-  // pre-year-setup.ts:240-248 uses (that scenario deliberately ignores a
-  // same-year override so the rate seed isn't immediately clobbered).
-  const firstYearOverride =
-    firstDecumYear && input.rateSeededDecumulationYear1 !== true
-      ? ctx.budgetOverrideMap.get(firstDecumYear.year)
-      : undefined;
-  const firstDecumulationYearStatedNeed =
-    input.decumulationAnnualExpenses != null && firstDecumYear
-      ? roundToCents(
-          firstYearOverride ??
-            input.decumulationAnnualExpenses *
-              ctx.inflation.growth(
-                firstDecumYear.year - input.asOfDate.getFullYear(),
-              ) *
-              // A loan paid off by then: the same cut the seed took.
-              (input.rateSeededDecumulationYear1
-                ? 1
-                : expenseEndingFactor({
-                    endings: input.expenseEndings,
-                    phase: "decumulation",
-                    year: firstDecumYear.year,
-                    seeded: true,
-                  })),
-        )
-      : null;
-
   return {
     projectionByYear: state.projectionByYear,
     firstOverflowYear: state.firstOverflowYear,
@@ -172,7 +123,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     retirementDepletionYear: state.retirementDepletionYear,
     retirementDepletionAge: state.retirementDepletionAge,
     sustainableWithdrawal,
-    firstDecumulationYearStatedNeed,
+    firstDecumulationYearStatedNeed: state.firstDecumulationYearStatedNeed,
     accountDepletions: state.accountDepletions,
     warnings,
   };
