@@ -60,7 +60,8 @@ export function ContribCard({
   );
   const matchFigure = matchFigureForForm(
     c.employerMatchType,
-    c.employerMatchValue ?? "0",
+    c.employerMatchValue ?? (c.employerMatchRate == null ? "0" : null),
+    c.employerMatchRate,
   );
   const saveMatchFigure = (v: string) =>
     onUpdateContrib(
@@ -322,9 +323,8 @@ export function ContribCard({
         </div>
       )}
 
-      {/* This account's own Contribution Profile election — the one gate
-          for money taken from bonus checks (bonusCheckContribution).
-          Payroll accounts only: nothing else is on a check. */}
+      {/* The Contribution Profile's bonus-check election (bonusCheckContribution),
+          payroll accounts only: nothing else is on a check. */}
       {isPaidThroughPayroll(c) && (
         <div className="mt-1">
           <Toggle

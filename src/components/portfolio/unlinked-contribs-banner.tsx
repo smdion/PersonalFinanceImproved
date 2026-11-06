@@ -22,6 +22,7 @@ type ContribEntry = {
   taxTreatment: string;
   employerMatchType: string;
   employerMatchValue: string | null;
+  employerMatchRate: string | null;
   employerMaxMatchPct: string | null;
   ownership: string;
 };
@@ -80,6 +81,7 @@ export function UnlinkedContribsBanner({
             c.employerMatchType,
             c.employerMatchValue,
             c.employerMaxMatchPct,
+            c.employerMatchRate,
           );
           const matchDetail = matchText ? `, ${matchText} match` : "";
           const employer = jobLabel(c.jobId);

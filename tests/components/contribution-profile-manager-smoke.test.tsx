@@ -90,6 +90,7 @@ const account = (
   parentCategory: "Retirement",
   liveMatchType: "none",
   liveMatchValue: null,
+  liveMatchRate: null,
   liveMaxMatchPct: null,
   liveIsActive: true,
   liveIsPayroll: true,
@@ -124,6 +125,7 @@ function detail(id: number): ProfileDetail {
       account(11, "Dana 401(k)", {
         liveMatchType: "percent_of_contribution",
         liveMatchValue: "50",
+        liveMatchRate: "0.5",
         liveMaxMatchPct: "0.06",
         activeFields: {
           contributionMethod: "percent_of_salary",

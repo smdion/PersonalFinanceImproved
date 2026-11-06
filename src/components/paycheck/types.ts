@@ -34,6 +34,7 @@ export type RawContrib = {
   othersInGroup?: number;
   employerMatchType: string;
   employerMatchValue: string | null;
+  employerMatchRate?: string | null;
   employerMaxMatchPct: string | null;
   employerMatchTaxTreatment: string;
   hsaCoverageType: string | null;

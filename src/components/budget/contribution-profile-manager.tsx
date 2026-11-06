@@ -451,9 +451,7 @@ function groupSharedMatchAccounts<
   return { sharedMatchSource, combinedGroupIds };
 }
 
-// ---------------------------------------------------------------------------
 // Profile Detail Panel (right side)
-// ---------------------------------------------------------------------------
 
 function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
@@ -509,19 +507,10 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
           </thead>
           <tbody>
             {(() => {
-              // Roth/Traditional splits of the same physical account (same
-              // person + account type) share one employer match — it's
-              // entered on only one of the split rows but applies against
-              // their COMBINED contributions, not each row's own. Show the
-              // SAME match text on every row in the group (rather than
-              // merging the cell via rowSpan) so it's unambiguous per-row
-              // which account it describes — a merged cell visually reads as
-              // belonging to whichever row it starts on, which is
-              // misleading when that happens to be the row WITHOUT the
-              // config. Only do this when exactly one row in the group
-              // actually has match data — if multiple rows carry (possibly
-              // conflicting) match config, that's outside this assumption,
-              // so leave them per-row rather than guess which is authoritative.
+              // A Roth/Traditional split of one account shares one match,
+              // entered on one row and applied to their combined
+              // contributions: every row in the group shows the same match
+              // text (when exactly one row holds the match; else per row).
               const { sharedMatchSource, combinedGroupIds } =
                 groupSharedMatchAccounts(profile.accountDetails);
 
@@ -608,6 +597,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                           matchSource.liveMatchType,
                           matchSource.liveMatchValue,
                           matchSource.liveMaxMatchPct,
+                          matchSource.liveMatchRate,
                         );
                         return matchText ? (
                           <span
@@ -1527,7 +1517,6 @@ function ProfileInlineEditor({
                     af.employerMatchType !== undefined
                       ? String(af.employerMatchType)
                       : "";
-                  // Its <select> commits on change, so no drafts[] lookup.
                   const effectiveMatchType =
                     storedMatchType || ad.liveMatchType || "none";
                   const hasMatch = effectiveMatchType !== "none";
@@ -1554,10 +1543,11 @@ function ProfileInlineEditor({
                           effectiveMatchType,
                           String(af.employerMatchValue),
                         )
-                      : contribHasValue && ad.liveMatchValue != null
+                      : contribHasValue
                         ? matchFigureForForm(
                             ad.liveMatchType,
-                            String(ad.liveMatchValue),
+                            ad.liveMatchValue,
+                            ad.liveMatchRate,
                           )
                         : "";
                   const storedCap =

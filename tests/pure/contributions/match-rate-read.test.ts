@@ -6,10 +6,15 @@ import {
   computeEmployerMatch,
   computeGroupedEmployerMatch,
   entryWithMergedRate,
+  mergedMatchRate,
   storedMatchRate,
   type GroupableMatchRow,
 } from "@/lib/pure/contributions/employer-match";
 import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
+import {
+  formatEmployerMatch,
+  matchFigureForForm,
+} from "@/lib/pure/contributions/match-display";
 
 const PERCENT = "percent_of_contribution";
 
@@ -130,5 +135,35 @@ describe("entryWithMergedRate", () => {
     expect(
       entryWithMergedRate({ id: 1 }, { contributionValue: "6" }),
     ).toMatchObject({ employerMatchRate: null });
+  });
+});
+
+describe("the form and display read the rate", () => {
+  it("formatEmployerMatch shows the rate's percent, else the value", () => {
+    expect(formatEmployerMatch(PERCENT, "50.00", "0.06", "0.500000")).toBe(
+      formatEmployerMatch(PERCENT, "50.00", "0.06"),
+    );
+    expect(formatEmployerMatch(PERCENT, null, "0.06", "0.035")).toBe(
+      formatEmployerMatch(PERCENT, "3.5", "0.06"),
+    );
+    expect(formatEmployerMatch(PERCENT, "50", 0, null)).toBe("50%");
+    expect(formatEmployerMatch("fixed_annual", "1000", 0, "0.5")).toBe(
+      formatEmployerMatch("fixed_annual", "1000", 0),
+    );
+  });
+  it("matchFigureForForm keeps the stored value, and shows the rate's percent with none", () => {
+    expect(matchFigureForForm(PERCENT, "50.00", "0.5")).toBe("50.00");
+    expect(matchFigureForForm(PERCENT, null, "0.035")).toBe("3.5");
+    expect(matchFigureForForm(PERCENT, null, null)).toBe("");
+    expect(matchFigureForForm("fixed_annual", null, "0.5")).toBe("");
+  });
+  it("mergedMatchRate is the rate the merge gives", () => {
+    expect(
+      mergedMatchRate(
+        { employerMatchRate: "0.5" },
+        { employerMatchValue: "60" },
+      ),
+    ).toBeNull();
+    expect(mergedMatchRate({ employerMatchRate: "0.5" }, {})).toBe("0.5");
   });
 });

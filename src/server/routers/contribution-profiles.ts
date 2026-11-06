@@ -345,11 +345,10 @@ export const contributionProfileRouter = createTRPCRouter({
         /** Only a payroll account can be taken from bonus checks. */
         isPayroll: isPaidThroughPayroll(row),
         live: {
-          // No contributionValue/contributionMethod here — accounts carry
-          // no value of their own anymore (see applyContribActiveFields);
-          // every profile's own active field is the only source.
+          // No contribution value or method: only a profile's entry has one.
           employerMatchType: row.employerMatchType,
           employerMatchValue: row.employerMatchValue,
+          employerMatchRate: row.employerMatchRate,
           employerMaxMatchPct: row.employerMaxMatchPct,
           autoMaximize: row.autoMaximize,
           isActive: row.isActive,
@@ -516,11 +515,11 @@ export const contributionProfileRouter = createTRPCRouter({
           personId: row.personId,
           taxTreatment: row.taxTreatment,
           parentCategory: row.parentCategory,
-          // Live values — no liveMethod/liveValue: accounts carry no
-          // contribution value/method of their own anymore, only this
-          // profile's activeFields does (see applyContribActiveFields).
+          // Live values: no method or value (only a profile's entry has
+          // them; see applyContribActiveFields).
           liveMatchType: row.employerMatchType,
           liveMatchValue: row.employerMatchValue,
+          liveMatchRate: row.employerMatchRate,
           liveMaxMatchPct: row.employerMaxMatchPct,
           liveIsActive: row.isActive,
           /** Paid through payroll — only these can be taken from bonus checks. */

@@ -20,7 +20,7 @@
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 954,
     "src/components/budget/budget-summary-table.tsx": 772,
-    "src/components/budget/contribution-profile-manager.tsx": 2057,
+    "src/components/budget/contribution-profile-manager.tsx": 2047,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
@@ -68,7 +68,7 @@
     "src/components/performance/year-row.tsx": 749,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 666,
-    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 637,
+    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 636,
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 835,
     "src/components/portfolio/portfolio-chart.tsx": 476,
@@ -172,7 +172,7 @@
     "src/server/data/snapshots.ts": 107,
     "src/server/routers/assets.ts": 454,
     "src/server/routers/budget/index.ts": 21,
-    "src/server/routers/contribution-profiles.ts": 801,
+    "src/server/routers/contribution-profiles.ts": 800,
     "src/server/routers/demo.ts": 83,
     "src/server/routers/milestones.ts": 53,
     "src/server/routers/networth/comparison.ts": 246,
@@ -351,7 +351,7 @@
     },
     "src/components/budget/contribution-profile-manager.tsx": {
       "ContributionProfileManager": 348,
-      "ProfileDetailPanel": 254,
+      "ProfileDetailPanel": 246,
       "ProfileEditor": 518,
       "ProfileEditor.map()": 212,
       "ProfileInlineEditor": 789,
@@ -600,7 +600,7 @@
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
       "AddContribForm": 170,
-      "ContributionRow": 431
+      "ContributionRow": 429
     },
     "src/components/portfolio/contribution-accounts-create-form.tsx": {
       "CreateAccountForm": 197

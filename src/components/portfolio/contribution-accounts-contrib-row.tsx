@@ -3,6 +3,7 @@
 /** Contribution row UI: displays a single contribution's summary/edit view with tax treatment, method, employer match fields, and an add-contribution form. */
 
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { mergedMatchRate } from "@/lib/pure/contributions/employer-match";
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -83,6 +84,7 @@ export function ContributionRow({
     activeMatchFields?.employerMatchType ?? c.employerMatchType;
   const effectiveMatchValue =
     activeMatchFields?.employerMatchValue ?? c.employerMatchValue;
+  const effectiveMatchRate = mergedMatchRate(c, activeMatchFields ?? {});
   const effectiveMaxMatchPct =
     activeMatchFields?.employerMaxMatchPct ?? c.employerMaxMatchPct;
   const isPercentMatch = effectiveMatchType === "percent_of_contribution";
@@ -91,12 +93,14 @@ export function ContributionRow({
     effectiveMatchType,
     effectiveMatchValue,
     effectiveMaxMatchPct,
+    effectiveMatchRate,
   );
   const sharedMatchText = sharedMatchFrom
     ? formatEmployerMatch(
         sharedMatchFrom.employerMatchType,
         sharedMatchFrom.employerMatchValue,
         sharedMatchFrom.employerMaxMatchPct,
+        sharedMatchFrom.employerMatchRate,
       )
     : null;
   const sharedMatchLabel = sharedMatchFrom
@@ -179,14 +183,8 @@ export function ContributionRow({
                 Not a funding target
               </span>
             )}
-            {/* Restoring only ever changes a flag on the account itself —
-             *  it can never do the thing "restore" implies (make it
-             *  actually funded), since values only ever live in a
-             *  Contribution Profile, not here. That action lives in the
-             *  Profile editor and Compare view instead, next to the value
-             *  field it needs. Removing stays here: it has a real,
-             *  immediate effect on its own (stops counting the account
-             *  toward the dashboard/net-worth totals). */}
+            {/* Removing stops counting the account; restoring (a value in a
+             *  Contribution Profile) lives in the Profile editor and Compare. */}
             {onUpdate && c.isActive && (
               <button
                 onClick={(e) => {
@@ -312,6 +310,7 @@ export function ContributionRow({
                   value={matchFigureForForm(
                     effectiveMatchType,
                     effectiveMatchValue,
+                    effectiveMatchRate,
                   )}
                   placeholder={isPercentMatch ? "e.g. 50" : "e.g. 400"}
                   onSave={(val) =>

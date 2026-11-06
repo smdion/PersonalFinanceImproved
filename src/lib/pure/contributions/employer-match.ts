@@ -55,13 +55,13 @@ export function storedMatchRate(stored: unknown): Fraction | null {
   return Number.isFinite(rate) ? (rate as Fraction) : null;
 }
 
-/** A profile entry as it merges onto a row, its rate the one the merged row
- *  carries: the entry's own; none when the entry has a value of its own but
- *  no rate (that value is read); else the row's. */
-export function entryWithMergedRate(
+/** The rate a row carries once a profile entry merges onto it: the entry's
+ *  own; none when the entry has a value of its own but no rate (that value
+ *  is read); else the row's. */
+export function mergedMatchRate(
   row: object,
   entry: Readonly<Record<string, unknown>>,
-): Record<string, unknown> {
+): string | number | null {
   const rate = Object.hasOwn(entry, "employerMatchRate")
     ? entry["employerMatchRate"]
     : Object.hasOwn(entry, "employerMatchValue")
@@ -69,7 +69,16 @@ export function entryWithMergedRate(
       : "employerMatchRate" in row
         ? row.employerMatchRate
         : null;
-  return { ...entry, employerMatchRate: rate ?? null };
+  return typeof rate === "string" || typeof rate === "number" ? rate : null;
+}
+
+/** A profile entry as it merges onto a row, with the rate the merged row
+ *  carries (mergedMatchRate). */
+export function entryWithMergedRate(
+  row: object,
+  entry: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  return { ...entry, employerMatchRate: mergedMatchRate(row, entry) };
 }
 
 /**
