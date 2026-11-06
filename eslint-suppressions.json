@@ -5140,7 +5140,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 9
     }
   },
   "src/lib/pure/simulation/monte-carlo.types.ts": {
@@ -5177,6 +5177,11 @@
   "src/lib/pure/simulation/stress-test.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
+    }
+  },
+  "src/lib/pure/simulation/trial-summary.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/lib/pure/simulation/year-return-range.ts": {

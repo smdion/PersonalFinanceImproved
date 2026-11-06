@@ -676,7 +676,12 @@
   },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 8
+      "count": 7
+    }
+  },
+  "src/lib/pure/simulation/trial-summary.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/lib/pure/tax/tax.ts": {

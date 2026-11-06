@@ -34,10 +34,8 @@ import {
   choleskyDecomposition,
   createPRNG,
 } from "@/lib/pure/simulation/random";
-import {
-  calculateMonteCarlo,
-  percentile,
-} from "@/lib/pure/simulation/monte-carlo";
+import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
+import { percentile } from "@/lib/pure/simulation/trial-summary";
 import { calculateProjection } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { readSimulationPresetsFile } from "@/lib/db/reference-data";
