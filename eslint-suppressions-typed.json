@@ -799,9 +799,19 @@
       "count": 4
     }
   },
-  "src/server/routers/retirement/index.ts": {
+  "src/server/routers/retirement/overrides.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 1
+    }
+  },
+  "src/server/routers/retirement/profile-people.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/routers/retirement/settings.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/routers/salary-profiles.ts": {
