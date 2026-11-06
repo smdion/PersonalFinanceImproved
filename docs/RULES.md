@@ -65,7 +65,8 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Two MAGI sites in the Roth conversion optimizer keep their own term order,** until `yearMagi` rounds to cents (v0.11).
 - **Calculations are answer-keyed only in part.** [CALCULATIONS.md](CALCULATIONS.md) lists every calculation: its Tested column says which rows have hand-worked answer-key cases, and its Gaps column is where calculation bugs are listed. A row with no case has only its pinned tests, which can move with the code. A figure changes only with its source and its cause in dollars.
 - **Some composition that needs I/O still lives in router procedures,** and some routers call others, until it moves into `src/server/services/`. Don't add more.
-- **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings.
+- **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings (a non-admin's keeps each integration's credentials).
+- **The Integrations page is admin-only, but its sync controls stay on `sync`:** running a sync, the active budget API, account mappings, linked profile and column, skipped categories, name syncs, and SimpleFIN, Tiingo and SEC setup. The UI is stricter than those procedures (§ Permission & Security Gates rule 1), until v0.10.5 makes them match.
 - **Files and functions over the size limit** are recorded in `size-baseline.json`; a recorded size is a ceiling, not a pass to grow.
 - **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/accounts/roth-basis-tracking.ts`).
 - **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
