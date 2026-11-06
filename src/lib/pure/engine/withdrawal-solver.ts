@@ -374,12 +374,10 @@ function withStatus(figures: SolverFigures, shortfall: number) {
 }
 
 /**
- * A fixed gross withdrawal (a portfolio-sized strategy with Social Security
- * on top): no solving — evaluate the cost of W at its own taxable Social
- * Security share (`evaluateAtOwnSS`), and derive the after-tax need from
- * the strategy's FULL amount at that cost rate. Never from what the
- * balance or the router could deliver: a need cut down to what's there
- * would hide running out (no shortfall, plan "funded").
+ * A fixed gross withdrawal (Social Security on top): no solving. W is costed at
+ * its own taxable Social Security share; the after-tax need comes from the FULL
+ * amount (cut to what's there, it would hide running out); the shortfall is
+ * the amount less what left the portfolio, as the year measures it.
  */
 function fixedWithdrawalEstimate(
   input: TaxEstimationInput,
@@ -393,7 +391,6 @@ function fixedWithdrawalEstimate(
   const derivedAfterTaxNeed = roundToCents(
     Math.max(0, amount * (1 - Math.min(1, effectiveTaxRate))),
   );
-  const proceeds = proceedsOf({ W, e: evalResult });
   const figures = {
     taxableSS,
     estTax: evalResult.taxCost,
@@ -405,7 +402,10 @@ function fixedWithdrawalEstimate(
     targetWithdrawal: W,
     derivedAfterTaxNeed,
   };
-  return withStatus(figures, roundToCents(derivedAfterTaxNeed - proceeds));
+  return withStatus(
+    figures,
+    roundToCents(amount - deliveredOf({ W, e: evalResult })),
+  );
 }
 
 /**

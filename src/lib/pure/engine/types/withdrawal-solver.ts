@@ -27,7 +27,8 @@ export interface SolverFigures {
   estPenalty: number;
 }
 
-/** `met`: the accepted trial's after-tax proceeds reach the need. `capped`:
- *  they fall short (the pool, the router or the trial cap), by `shortfall`. */
+/** Estimated before routing; not materiality (pair with `unmetNeedMaterial`). `capped`: over a cent
+ *  short, as need less after-tax proceeds (gross-up), need less money delivered (gross-up off) or
+ *  amount less money delivered (fixed), or the trial cap ran out short. `met` otherwise. */
 export type TaxEstimationResult = SolverFigures &
   ({ status: "met" } | { status: "capped"; shortfall: number });

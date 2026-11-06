@@ -523,3 +523,111 @@ describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Securit
     expect(r.targetWithdrawal).toBeGreaterThan(40000);
   });
 });
+
+describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
+  const taxRates = {
+    grossUpForTaxes: true,
+    traditionalFallbackRate: 0.15,
+    roth: 0,
+    hsa: 0,
+    brokerage: 0.15,
+    taxBrackets: TEST_BRACKETS,
+    ltcgBrackets: shippedTaxTables().ltcgBrackets,
+    rothBracketTarget: 0.22,
+  };
+  const base = {
+    afterTaxNeed: 60000,
+    ssIncome: 0,
+    filingStatus: "MFJ" as const,
+    config: makeDecumulationConfig({
+      withdrawalRoutingMode: "bracket_filling",
+    }),
+    taxRates,
+    balances: makeTaxBuckets(),
+    acctBal: makeAccountBalances(),
+    totalBalance: 1050000,
+  };
+
+  it("a fixed withdrawal costing more than itself, every dollar delivered, is met", () => {
+    // Tax on $80,000 of Social Security exceeds a $1,000 (or $0)
+    // withdrawal; nothing is left behind in the portfolio.
+    for (const amount of [1000, 0]) {
+      const r = estimateWithdrawalTaxCost({
+        ...base,
+        filingStatus: null,
+        ssIncome: 80000,
+        fixedGrossWithdrawal: amount,
+      });
+      expect(r.estTax, `amount ${amount}`).toBeGreaterThan(amount);
+      expect(r.status, `amount ${amount}`).toBe("met");
+    }
+  });
+
+  it("a fixed withdrawal capped by the balance is short by the gross gap", () => {
+    const r = estimateWithdrawalTaxCost({
+      ...base,
+      fixedGrossWithdrawal: 60000,
+      totalBalance: 50000,
+    });
+    expect(r.targetWithdrawal).toBe(50000);
+    expect(r).toMatchObject({ status: "capped", shortfall: 10000 });
+  });
+
+  it("a fixed withdrawal capped by the router is short by the routed gap", () => {
+    // Only the 401(k) holds money, and its cap lets $1,000 out.
+    const acctBal = zeroedBalances();
+    setTraditional(acctBal["401k"], 500000);
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "bracket_filling",
+      withdrawalAccountCaps: {
+        ...makeDecumulationConfig().withdrawalAccountCaps,
+        "401k": 1000,
+      },
+    });
+    const r = estimateWithdrawalTaxCost({
+      ...base,
+      config,
+      acctBal,
+      balances: makeTaxBuckets({
+        preTax: 500000,
+        taxFree: 0,
+        hsa: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+      }),
+      totalBalance: 500000,
+      fixedGrossWithdrawal: 50000,
+    });
+    const routed = routeForMode(50000, config, acctBal, {
+      taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
+      rothBracketTarget: 0.22,
+      taxableSS: 0,
+    });
+    expect(routed.unmetNeed).toBeGreaterThan(0);
+    expect(r).toMatchObject({
+      status: "capped",
+      shortfall: routed.unmetNeed,
+    });
+  });
+
+  it("gross-up off: met with the need in the pool or a cent short, capped beyond", () => {
+    const off = { ...base, taxRates: { ...taxRates, grossUpForTaxes: false } };
+    const at = (totalBalance: number) =>
+      estimateWithdrawalTaxCost({ ...off, totalBalance });
+    expect(at(60000).status).toBe("met");
+    expect(at(59999.99).status).toBe("met");
+    expect(at(59999.98)).toMatchObject({ status: "capped", shortfall: 0.02 });
+    expect(at(59990)).toMatchObject({ status: "capped", shortfall: 10 });
+  });
+
+  it("gross-up on, the pool holding just the need: capped by the tax", () => {
+    const r = estimateWithdrawalTaxCost({ ...base, totalBalance: 60000 });
+    expect(r.targetWithdrawal).toBe(60000);
+    expect(r.estTax).toBeGreaterThan(0);
+    expect(r).toMatchObject({
+      status: "capped",
+      shortfall: Math.round((r.estTax + r.estPenalty) * 100) / 100,
+    });
+  });
+});
