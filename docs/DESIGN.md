@@ -915,7 +915,16 @@ strictly, all in one transaction, and the schema is checked against the
 latest snapshot (every table, column and index) before it commits: a failed
 statement or a missing object rolls everything back and records nothing.
 Only a squash replay skips "already done" errors (a replayed unique
-violation included on PostgreSQL), and it runs the same check.
+violation included on PostgreSQL), and it runs the same check. On SQLite a
+migration's transaction runs with foreign keys off (a file's own
+`PRAGMA foreign_keys` is a no-op inside a transaction), so a table
+recreate's `DROP TABLE` of a parent neither fails nor cascades, and
+`foreign_key_check` refuses any reference it broke before commit; for the
+same reason no cascade or set-null fires in a migration or converter, so
+it deletes children itself. A replay runs a recreate as a unit: skipped
+whole when a statement is already done or moved past, or when the table has
+a column a later migration adds that the recreate would drop (the database
+is past it); any other error stops the replay.
 
 ### Account Categories
 

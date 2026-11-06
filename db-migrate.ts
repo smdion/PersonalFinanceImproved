@@ -1379,32 +1379,131 @@ function sqliteRecordedHashes(sqlite: SqliteDb): Set<string> {
   );
 }
 
-/** Squash replay only: run one migration file's statements inside the
- *  caller's transaction, skipping the ones that are already done (or already
- *  moved past — see IGNORABLE_PG_CODES). The replay checks the whole schema
- *  afterwards. */
-function replayStatementsSqlite(sqlite: SqliteDb, sql: string): void {
+/** Squash replay only: an error meaning the statement is already done (or
+ *  already moved past), the SQLite twin of IGNORABLE_PG_CODES. */
+const isIgnorableSqliteError = (err: unknown): boolean =>
+  [
+    "already exists",
+    "duplicate column",
+    "no such column",
+    "no such table",
+    "no such index",
+  ].some((m) => ((err as Error).message ?? "").includes(m));
+
+const sqliteColumnNames = (sqlite: SqliteDb, table: string): string[] =>
+  (
+    sqlite.prepare(`PRAGMA table_info("${table}")`).all() as { name: string }[]
+  ).map((c) => c.name);
+
+/** Squash replay only: a table recreate (create `__new_X`, copy, drop X,
+ *  rename) runs as a unit under a savepoint. It is skipped whole when one
+ *  of its statements is already done or moved past, or when X has a column
+ *  that a later migration adds and `__new_X` lacks (the database is past
+ *  this recreate; running it would drop that column). Any other error
+ *  stops the replay. */
+function replayRecreateSqlite(
+  sqlite: SqliteDb,
+  table: string,
+  statements: string[],
+  addedLater: ReadonlySet<string>,
+): void {
+  sqlite.exec("SAVEPOINT replay_recreate");
+  let skipped: string | null = null;
+  try {
+    sqlite.exec(statements[0]!);
+    const kept = new Set(sqliteColumnNames(sqlite, `__new_${table}`));
+    const lost = sqliteColumnNames(sqlite, table).filter(
+      (c) => !kept.has(c) && addedLater.has(c),
+    );
+    if (lost.length > 0) skipped = `would drop ${lost.join(", ")}`;
+    else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
+  } catch (err) {
+    if (!isIgnorableSqliteError(err)) throw err; // the replay rolls back
+    skipped = (err as Error).message;
+  }
+  if (skipped !== null) {
+    sqlite.exec("ROLLBACK TO SAVEPOINT replay_recreate");
+    log("info", "squash_recreate_skipped", { table, reason: skipped });
+  }
+  sqlite.exec("RELEASE SAVEPOINT replay_recreate");
+}
+
+/** Squash replay only: run journal entry `idx`'s statements inside the
+ *  caller's transaction, skipping what is already done; a table recreate
+ *  replays as a unit (replayRecreateSqlite). The replay checks the whole
+ *  schema afterwards. */
+function replayStatementsSqlite(
+  sqlite: SqliteDb,
+  sql: string,
+  migrationsFolder: string,
+  idx: number,
+  latestIdx: number,
+): void {
   const statements = sql
     .split("--> statement-breakpoint")
-    .map((s: string) => s.trim())
+    .map((s: string) => s.replace(/^(\s*--[^\n]*\n)*/, "").trim())
     .filter(Boolean);
-  for (const stmt of statements) {
-    try {
-      sqlite.exec(stmt);
-    } catch (stmtErr) {
-      const msg = (stmtErr as Error).message ?? "";
-      if (
-        msg.includes("already exists") ||
-        msg.includes("duplicate column") ||
-        msg.includes("no such column") ||
-        msg.includes("no such table") ||
-        msg.includes("no such index")
-      ) {
-        // idempotent — skip
-      } else {
-        throw stmtErr;
+  for (let i = 0; i < statements.length; i++) {
+    const table = /^CREATE TABLE `__new_([^`]+)`/.exec(statements[i]!)?.[1];
+    const end = table
+      ? statements.findIndex(
+          (s, j) =>
+            j > i &&
+            s.startsWith(
+              `ALTER TABLE \`__new_${table}\` RENAME TO \`${table}\``,
+            ),
+        )
+      : -1;
+    if (table && end > i) {
+      const own = new Set(snapshotColumns(migrationsFolder, idx).get(table));
+      const addedLater = new Set(
+        (snapshotColumns(migrationsFolder, latestIdx).get(table) ?? []).filter(
+          (c) => !own.has(c),
+        ),
+      );
+      replayRecreateSqlite(
+        sqlite,
+        table,
+        statements.slice(i, end + 1),
+        addedLater,
+      );
+      i = end;
+    } else
+      try {
+        sqlite.exec(statements[i]!);
+      } catch (err) {
+        if (!isIgnorableSqliteError(err)) throw err;
       }
-    }
+  }
+}
+
+/** One SQLite migration transaction (pending or replay) with foreign keys
+ *  off: the pragma is a no-op inside a transaction, so a migration file's
+ *  own PRAGMA foreign_keys=OFF does nothing, and a table recreate's DROP
+ *  TABLE of a parent would fail or cascade-delete its children. Before
+ *  commit, foreign_key_check refuses any broken reference the migration
+ *  made (ones already there are logged, not blamed on it). */
+function sqliteMigrationTransaction(sqlite: SqliteDb, body: () => void): void {
+  type Broken = { table: string; rowid: number; parent: string; fkid: number };
+  const key = (b: Broken) => `${b.table}:${b.rowid}:${b.parent}:${b.fkid}`;
+  const check = () => sqlite.pragma("foreign_key_check") as Broken[];
+  sqlite.pragma("foreign_keys = OFF");
+  try {
+    sqlite.transaction(() => {
+      const before = new Set(check().map(key));
+      if (before.size > 0)
+        log("warn", "sqlite_foreign_keys_already_broken", {
+          count: before.size,
+        });
+      body();
+      const made = check().filter((b) => !before.has(key(b)));
+      if (made.length > 0)
+        throw new Error(
+          `Migration would break ${made.length} foreign key reference(s) (first: ${made[0]!.table} row ${made[0]!.rowid} → ${made[0]!.parent}). Nothing was changed.`,
+        );
+    })();
+  } finally {
+    sqlite.pragma("foreign_keys = ON");
   }
 }
 
@@ -1503,14 +1602,20 @@ function handleSQLiteSquashUpgrade(
 
   // 2. Clear, replay, record, check — all or nothing.
   try {
-    sqlite.transaction(() => {
+    sqliteMigrationTransaction(sqlite, () => {
       sqlite.prepare("DELETE FROM __drizzle_migrations").run();
       for (const entry of journal.entries) {
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
         convertSqlite(sqlite, entry.tag, "beforeSql");
-        replayStatementsSqlite(sqlite, sql);
+        replayStatementsSqlite(
+          sqlite,
+          sql,
+          migrationsFolder,
+          entry.idx,
+          journal.entries.at(-1)!.idx,
+        );
         convertSqlite(sqlite, entry.tag, "afterSql");
         sqlite
           .prepare(
@@ -1529,7 +1634,7 @@ function handleSQLiteSquashUpgrade(
         sqliteIndexes(sqlite),
         "Squash replay",
       );
-    })();
+    });
   } catch (err) {
     log("error", "squash_upgrade_failed", {
       error: err instanceof Error ? err.message : String(err),
@@ -1628,7 +1733,7 @@ export function runSQLite() {
     // Same rule as PostgreSQL: every pending migration in one transaction,
     // strictly, with the schema checked before commit.
     if (pending.pendingTags.length > 0)
-      sqlite.transaction(() => {
+      sqliteMigrationTransaction(sqlite, () => {
         for (const entry of journal.entries) {
           const sqlPath = path.resolve(`./drizzle-sqlite/${entry.tag}.sql`);
           if (!fs.existsSync(sqlPath)) continue;
@@ -1655,7 +1760,7 @@ export function runSQLite() {
           sqliteIndexes(sqlite),
           "Migration",
         );
-      })();
+      });
     else
       warnIfSchemaIncomplete(
         journal,
