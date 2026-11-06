@@ -118,50 +118,21 @@ export async function fetchRetirementData(
     asOfDate?: Date;
   },
 ) {
-  const [
-    people,
-    allJobs,
-    retSettings,
-    retProfiles,
-    retProfilePeople,
-    retScenarios,
-    returnRates,
-    allContribsRaw,
-    allLimits,
-    snapshotData,
-    salaryOverrideRows,
-    budgetOverrideRows,
-    allBudgetProfiles,
-    allBudgetItems,
-    perfAccounts,
-    allTaxBrackets,
-    allLtcgBrackets,
-    allIrmaaBrackets,
-    allFplByHousehold,
-    allTaxParams,
-    brokerageGoalRows,
-    allAppSettings,
-    contribProfileRow,
-    salaryProfileRow,
-    jobLinkRows,
-    accountBasisRows,
-    defaultPreset,
-    classBucketRows,
-  ] = await Promise.all([
-    getAllPeople(db),
-    db.select().from(schema.jobs),
-    db.select().from(schema.retirementSettings),
-    db
+  const reads = {
+    people: getAllPeople(db),
+    allJobs: db.select().from(schema.jobs),
+    retSettings: db.select().from(schema.retirementSettings),
+    retProfiles: db
       .select()
       .from(schema.retirementProfiles)
       .orderBy(asc(schema.retirementProfiles.id)),
-    db.select().from(schema.retirementProfilePeople),
-    db.select().from(schema.retirementScenarios),
-    db
+    retProfilePeople: db.select().from(schema.retirementProfilePeople),
+    retScenarios: db.select().from(schema.retirementScenarios),
+    returnRates: db
       .select()
       .from(schema.returnRateTable)
       .orderBy(asc(schema.returnRateTable.age)),
-    db
+    allContribsRaw: db
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
@@ -169,38 +140,38 @@ export async function fetchRetirementData(
     // filtered to asOfDate.getFullYear() here, which — combined with
     // tax_brackets being taken at MAX(tax_year) — was the split-vintage
     // gap. The resolver now anchors every slice on one year.
-    db.select().from(schema.contributionLimits),
-    getLatestSnapshot(db, opts?.snapshotId),
-    db
+    allLimits: db.select().from(schema.contributionLimits),
+    snapshotData: getLatestSnapshot(db, opts?.snapshotId),
+    salaryOverrideRows: db
       .select()
       .from(schema.retirementSalaryOverrides)
       .orderBy(asc(schema.retirementSalaryOverrides.projectionYear)),
-    db
+    budgetOverrideRows: db
       .select()
       .from(schema.retirementBudgetOverrides)
       .orderBy(asc(schema.retirementBudgetOverrides.projectionYear)),
-    db
+    allBudgetProfiles: db
       .select()
       .from(schema.budgetProfiles)
       .orderBy(asc(schema.budgetProfiles.id)),
-    db.select().from(schema.budgetItems),
-    db.select().from(schema.performanceAccounts),
-    db.select().from(schema.taxBrackets),
-    db.select().from(schema.ltcgBrackets),
-    db.select().from(schema.irmaaBrackets),
-    db.select().from(schema.fplByHousehold),
-    db.select().from(schema.taxParams),
-    db
+    allBudgetItems: db.select().from(schema.budgetItems),
+    perfAccounts: db.select().from(schema.performanceAccounts),
+    allTaxBrackets: db.select().from(schema.taxBrackets),
+    allLtcgBrackets: db.select().from(schema.ltcgBrackets),
+    allIrmaaBrackets: db.select().from(schema.irmaaBrackets),
+    allFplByHousehold: db.select().from(schema.fplByHousehold),
+    allTaxParams: db.select().from(schema.taxParams),
+    brokerageGoalRows: db
       .select()
       .from(schema.brokerageGoals)
       .where(eq(schema.brokerageGoals.isActive, true))
       .orderBy(asc(schema.brokerageGoals.targetYear)),
-    db.select().from(schema.appSettings),
+    allAppSettings: db.select().from(schema.appSettings),
     // Batch contribution profile fetch when profileId is known at fetch time.
     // Returns the row (or null = not found) when profileId is provided; undefined when
     // profileId is absent. buildEnginePayload checks for undefined to decide whether to
     // fall back to the async fetch (backward compat for callers that don't pass profileId here).
-    opts?.contributionProfileId
+    contribProfileRow: opts?.contributionProfileId
       ? db
           .select()
           .from(schema.contributionProfiles)
@@ -208,7 +179,7 @@ export async function fetchRetirementData(
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
     // Same batching for the independent Salary Profile axis.
-    opts?.salaryProfileId
+    salaryProfileRow: opts?.salaryProfileId
       ? db
           .select()
           .from(schema.salaryProfiles)
@@ -223,48 +194,26 @@ export async function fetchRetirementData(
     // computeBreakdown procedure uses; kept identical rather than reusing
     // allContribsRaw, which IS isActive-filtered and would silently drop
     // dormant former-employer plans.
-    db
+    jobLinkRows: db
       .select({
         performanceAccountId: schema.contributionAccounts.performanceAccountId,
         jobId: schema.contributionAccounts.jobId,
       })
       .from(schema.contributionAccounts),
-    db.select().from(schema.accountBasis),
+    accountBasisRows: db.select().from(schema.accountBasis),
     // The Default preset's glide path and which classes are stocks — VPW
     // sizes its percentage by the stock share (lib/pure/simulation/stock-share.ts). A
     // Simulation run replaces this with its own preset's.
-    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
-    db.select().from(schema.assetClassBuckets),
-  ]);
-  return {
-    people,
-    allJobs,
-    retSettings,
-    retProfiles,
-    retProfilePeople,
-    retScenarios,
-    returnRates,
-    allContribsRaw,
-    allLimits,
-    snapshotData,
-    salaryOverrideRows,
-    budgetOverrideRows,
-    allBudgetProfiles,
-    allBudgetItems,
-    perfAccounts,
-    allTaxBrackets,
-    allLtcgBrackets,
-    allIrmaaBrackets,
-    allFplByHousehold,
-    allTaxParams,
-    brokerageGoalRows,
-    allAppSettings,
-    contribProfileRow,
-    salaryProfileRow,
-    jobLinkRows,
-    accountBasisRows,
-    defaultPreset,
-    classBucketRows,
+    defaultPreset: loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
+    classBucketRows: db.select().from(schema.assetClassBuckets),
+  };
+  // Every read starts now, together; each is awaited by its name.
+  const settled = await Promise.all(
+    Object.entries(reads).map(async ([name, read]) => [name, await read]),
+  );
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- each entry holds its own read's result, under its own name
+  return Object.fromEntries(settled) as {
+    [K in keyof typeof reads]: Awaited<(typeof reads)[K]>;
   };
 }
 
