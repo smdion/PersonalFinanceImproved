@@ -115,7 +115,7 @@ describe("answer key: the senior deduction in an engine year", () => {
   // read in 2028, the senior deduction's last year, once today's
   // prior-year MAGI has settled. Today's rule: no senior amount in the
   // first retired year (2026), then a pooled 12,000 − 6% × (last year's
-  // MAGI − 150,000) (`obbba-senior-deduction.ts:78`,
+  // MAGI − 150,000) (`return-deductions.ts:78`,
   // `decumulation-year.ts:478`).
 
   describe("tax/MFJ-200k [TAX-22]", () => {

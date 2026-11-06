@@ -4398,11 +4398,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/obbba-senior-deduction.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/lib/pure/engine/override-resolution.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
@@ -5238,6 +5233,11 @@
   "src/lib/pure/tax/filing-status.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/lib/pure/tax/return-deductions.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   },
   "src/lib/pure/tax/roth-distribution-tax.ts": {

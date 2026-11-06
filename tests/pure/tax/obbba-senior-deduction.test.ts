@@ -7,7 +7,7 @@
  * commonly-cited figure).
  */
 import { describe, it, expect } from "vitest";
-import { computeObbbaSeniorDeduction } from "@/lib/pure/engine/obbba-senior-deduction";
+import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
 
 const BASE = {
   perPerson: 6000,

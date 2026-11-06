@@ -25,7 +25,7 @@ import {
 import { addTraditional } from "../../../config/account-balance";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
-import { computeObbbaSeniorDeduction } from "../obbba-senior-deduction";
+import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
 import {
   MAX_BROKERAGE_RAMP_YEARS,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
@@ -458,7 +458,7 @@ export function runDecumulationYear(
       : 0;
   // OBBBA temporary senior deduction (2025-2028) — same injection point as
   // §63(f) above (folded in BEFORE routing/tax estimation runs; see
-  // obbba-senior-deduction.ts's docblock for why it can't be applied later).
+  // return-deductions.ts's docblock for why it can't be applied later).
   // Uses LAST YEAR's MAGI (incomeHistory, not yet pushed for `year` at this
   // point in the function) as the phaseout basis, the same 1-year-lag
   // circularity-breaking pattern IRMAA's 2-year lookback uses further below.

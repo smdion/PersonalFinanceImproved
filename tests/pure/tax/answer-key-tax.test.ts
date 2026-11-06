@@ -57,7 +57,7 @@ import {
   taxableSSFor,
   type WithholdingBracket,
 } from "@/lib/pure/engine/tax-estimation";
-import { computeObbbaSeniorDeduction } from "@/lib/pure/engine/obbba-senior-deduction";
+import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
 import { computeNiit } from "@/lib/config/niit";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
@@ -789,7 +789,7 @@ describe("answer key: senior deduction", () => {
   });
 
   // Today the function reduces the pooled 2 × 6,000 once
-  // (`obbba-senior-deduction.ts:78`): 12,000 − 6% × (MAGI − 150,000),
+  // (`return-deductions.ts:78`): 12,000 − 6% × (MAGI − 150,000),
   // gone at 350,000. Pinned as a feature by
   // `obbba-senior-deduction.test.ts:76`.
   const twoSeniors = (magi: number) => () =>

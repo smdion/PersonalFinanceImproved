@@ -175,7 +175,7 @@ export type DecumulationDefaults = {
      *  $6,000/person 65+, tax years 2025–2028 only, from `contribution_limits`
      *  (`obbba_senior_deduction_per_person`). Undefined ⇒ not seeded for this
      *  tax year ⇒ $0, same convention as every other deduction figure here.
-     *  See `obbba-senior-deduction.ts`'s docblock for the full mechanism
+     *  See `return-deductions.ts`'s docblock for the full mechanism
      *  (folded into `standardDeduction` pre-routing using LAST YEAR's MAGI
      *  as the phaseout basis — same circularity-breaking lag IRMAA's 2-year
      *  lookback already uses). */
