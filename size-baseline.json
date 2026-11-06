@@ -215,7 +215,7 @@
     "src/server/services/contributions/summary.ts": 1393,
     "src/server/services/debts/other-liabilities.ts": 67,
     "src/server/services/demo/demo-seed.ts": 468,
-    "src/server/services/investments/current-balances.ts": 508,
+    "src/server/services/investments/current-balances.ts": 472,
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 1093,
     "src/server/services/paycheck/job-net-pay.ts": 285,

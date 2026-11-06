@@ -4,7 +4,7 @@
  * each feed's data really is from (lib/pure/sync/feed-data-date.ts). Reads only
  * — nothing here is written to a snapshot or to Performance.
  */
-import { and, asc, desc, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { addDays } from "@/lib/utils/date";
 import {
@@ -42,6 +42,10 @@ const SHARE_CHANGING_KINDS = new Set([
 import { impliedUnitPrices } from "@/lib/pure/investments/fund-prices";
 import { CASH_LIKE_SECURITY_KINDS } from "@/lib/config/enum-values";
 import { loadTrackedAccountNames } from "@/server/data/account-names";
+import {
+  loadBalanceReports,
+  loadHoldingHistory,
+} from "@/server/data/balance-reports";
 import { getDailyMarketCloses } from "@/server/services/investments/market-prices";
 import {
   loadAccounts,
@@ -73,19 +77,6 @@ export function loadCurrentBalances(db: Db) {
   const result = computeCurrentBalances(db);
   shared.set(db, { at: Date.now(), result });
   return result;
-}
-
-/** Each feed's balance reports, oldest first. */
-async function loadBalanceReports(db: Db) {
-  const b = schema.simplefinAccountBalances;
-  const rows = await db.select().from(b).orderBy(asc(b.balanceDate));
-  const byFeed = new Map<number, { reportedAt: Date; balance: number }[]>();
-  for (const r of rows) {
-    const list = byFeed.get(r.simplefinAccountId) ?? [];
-    list.push({ reportedAt: r.balanceDate, balance: Number(r.balance) });
-    byFeed.set(r.simplefinAccountId, list);
-  }
-  return byFeed;
 }
 
 async function computeCurrentBalances(db: Db) {
@@ -478,31 +469,4 @@ function sharesByDay(rows: readonly { day: string; shares: number }[]) {
   return [...byDay]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, shares]) => ({ day, shares }));
-}
-
-/** Every stored holdings report since `since`, with fund details. */
-async function loadHoldingHistory(db: Db, since: string) {
-  const h = schema.holdingObservations;
-  const s = schema.securities;
-  const rows = await db
-    .select({
-      simplefinAccountId: h.simplefinAccountId,
-      securityId: h.securityId,
-      asOf: h.asOf,
-      balanceDate: h.balanceDate,
-      shares: h.shares,
-      value: h.reportedMarketValue,
-      ticker: s.ticker,
-      kind: s.kind,
-    })
-    .from(h)
-    .innerJoin(s, eq(s.id, h.securityId))
-    .where(and(isNotNull(h.simplefinAccountId), gte(h.asOf, since)))
-    .orderBy(asc(h.balanceDate));
-  return rows.map((r) => ({
-    ...r,
-    simplefinAccountId: r.simplefinAccountId!,
-    shares: Number(r.shares),
-    reportedMarketValue: r.value === null ? null : Number(r.value),
-  }));
 }
