@@ -197,7 +197,7 @@ export function calculateMonteCarlo(
     glidePath,
     inflationRisk,
   } = input;
-  const seed = input.seed ?? Date.now();
+  const seed = input.seed;
   const clampMin = input.returnClampMin ?? MC_RETURN_CLAMP_MIN;
   const clampMax = input.returnClampMax ?? MC_RETURN_CLAMP_MAX;
 
