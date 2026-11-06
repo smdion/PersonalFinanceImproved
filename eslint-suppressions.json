@@ -5726,7 +5726,7 @@
       "count": 1
     }
   },
-  "src/server/routers/networth.ts": {
+  "src/server/routers/networth/index.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },

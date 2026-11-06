@@ -420,7 +420,7 @@ describe("settings.apiConnections", () => {
 
 // portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
 // delete) moved to networth.test.ts (procedures moved to
-// routers/networth.ts).
+// routers/networth/index.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET DATA FRESHNESS
@@ -830,7 +830,7 @@ describe("settings.appSettings.list viewer filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // portfolioSnapshots.delete/create additional coverage moved to
-// networth.test.ts (procedures moved to routers/networth.ts).
+// networth.test.ts (procedures moved to routers/networth/index.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // updateDataFreshness — additional branches

@@ -175,7 +175,7 @@
     "src/server/routers/contribution-profiles.ts": 827,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/milestones.ts": 53,
-    "src/server/routers/networth.ts": 1485,
+    "src/server/routers/networth/index.ts": 1485,
     "src/server/routers/performance/finalize-year.ts": 552,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 744,
@@ -891,7 +891,7 @@
     "src/server/routers/historical.ts": {
       "historicalRouter.computeSummary.query()": 175
     },
-    "src/server/routers/networth.ts": {
+    "src/server/routers/networth/index.ts": {
       "networthRouter.computeComparison.query()": 216,
       "networthRouter.computeSummary.query()": 245,
       "networthRouter.listSnapshots.query()": 216,

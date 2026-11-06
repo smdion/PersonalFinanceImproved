@@ -9,7 +9,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   portfolioProcedure,
-} from "../trpc";
+} from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { roundToCents, safeDivide, toDecimalColumn } from "@/lib/utils/math";

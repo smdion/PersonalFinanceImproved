@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 76 routers.**
+**383 procedures across 75 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -264,22 +264,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`               | mutation | `adminProcedure`     | (no description) |
 | `update`               | mutation | `adminProcedure`     | (no description) |
 | `update`               | mutation | `adminProcedure`     | (no description) |
-
-## `networth`
-
-| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeComparison`      | query    | `protectedProcedure` | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation).        |
-| `computeDetailedHistory` | query    | `protectedProcedure` | Used by the spreadsheet view; heavier than listHistory (which feeds charts).                                                                                                                             |
-| `computeSummary`         | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `create`                 | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                                                                                                                                            |
-| `createAccount`          | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                                                                                                                     |
-| `delete`                 | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                                                                                                                                            |
-| `getLatest`              | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                         |
-| `listHistory`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `listSnapshots`          | query    | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                                     |
-| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for the portfolio chart — (date, total) pairs, plus each snapshot's amount per tracked account (for the stacked by-account view; rows tied to no account are "Other").       |
-| `updateAccount`          | mutation | `portfolioProcedure` | only allowed on the **most recent** snapshot — it re-derives that year's performance ending balances + annual rollups and re-pushes ("resync") the corrected balances to the budget API. Older snapshots |
 
 ## `paycheck`
 
