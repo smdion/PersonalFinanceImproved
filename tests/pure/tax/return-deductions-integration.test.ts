@@ -1,7 +1,7 @@
 /**
  * OBBBA temporary senior deduction (2025-2028) — end-to-end engine
  * integration. `computeObbbaSeniorDeduction`'s own unit tests
- * (obbba-senior-deduction.test.ts) prove the formula; this proves it
+ * (return-deductions.test.ts) prove the formula; this proves it
  * actually survives the fold-in at decumulation-year.ts's single injection
  * point, using last year's MAGI and gating on the sunset year.
  *

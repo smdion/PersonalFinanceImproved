@@ -789,9 +789,9 @@ describe("answer key: senior deduction", () => {
   });
 
   // Today the function reduces the pooled 2 × 6,000 once
-  // (`return-deductions.ts:78`): 12,000 − 6% × (MAGI − 150,000),
+  // (`return-deductions.ts:79`): 12,000 − 6% × (MAGI − 150,000),
   // gone at 350,000. Pinned as a feature by
-  // `obbba-senior-deduction.test.ts:76`.
+  // `return-deductions.test.ts:76`.
   const twoSeniors = (magi: number) => () =>
     seniorDeduction({ year: 2026, status: "MFJ", seniors: 2, magi });
 
