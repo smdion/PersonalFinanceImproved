@@ -4588,6 +4588,11 @@
       "count": 4
     }
   },
+  "src/lib/pure/engine/types/withdrawal-solver.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/engine/types/year-overrides.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -4645,7 +4650,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 18
+      "count": 16
     },
     "ratchet/no-guarded-division": {
       "count": 1

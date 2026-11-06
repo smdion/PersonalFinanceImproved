@@ -107,6 +107,7 @@ describe("estimateWithdrawalTaxCost", () => {
     expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
     expect(result.grossedUpNeed).toBeGreaterThanOrEqual(60000);
     expect(result.targetWithdrawal).toBeGreaterThanOrEqual(60000);
+    expect(result.status).toBe("met");
   });
 
   it("caps target withdrawal at total balance", () => {
@@ -144,6 +145,11 @@ describe("estimateWithdrawalTaxCost", () => {
       totalBalance: 400,
     });
     expect(result.targetWithdrawal).toBeLessThanOrEqual(400);
+    // $400 in the pool can't deliver a $500,000 need: capped, short by
+    // most of it.
+    expect(result.status).toBe("capped");
+    if (result.status === "capped")
+      expect(result.shortfall).toBeGreaterThan(499_000);
   });
 
   it("disables gross-up when grossUpForTaxes is false", () => {
@@ -169,6 +175,8 @@ describe("estimateWithdrawalTaxCost", () => {
       totalBalance: 1050000,
     });
     expect(result.grossUpFactor).toBe(1);
+    // The need is withdrawn as is and the pool holds it: met.
+    expect(result.status).toBe("met");
   });
 
   it("handles waterfall routing mode", () => {
@@ -497,6 +505,7 @@ describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Securit
       2,
     );
     expect(r.estTax).toBeGreaterThan(0);
+    expect(r.status).toBe("met");
   });
 
   it("never more than the balance", () => {
@@ -505,6 +514,7 @@ describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Securit
       fixedGrossWithdrawal: 5_000_000,
     });
     expect(r.targetWithdrawal).toBe(1050000);
+    expect(r.status).toBe("capped");
   });
 
   it("the normal path is unchanged without it", () => {

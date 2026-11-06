@@ -145,7 +145,7 @@
     "src/lib/pure/engine/types/routing.ts": 136,
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 492,
     "src/lib/pure/engine/withdrawal-routing.ts": 1435,
-    "src/lib/pure/engine/withdrawal-solver.ts": 578,
+    "src/lib/pure/engine/withdrawal-solver.ts": 571,
     "src/lib/pure/household/compensation.ts": 369,
     "src/lib/pure/household/retirement-profile.ts": 104,
     "src/lib/pure/investments/holding-periods.ts": 433,

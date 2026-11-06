@@ -63,6 +63,10 @@ import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax"
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type {
+  SolverFigures,
+  TaxEstimationResult,
+} from "./types/withdrawal-solver";
 
 /** Input for the convergence estimation. */
 interface TaxEstimationInput {
@@ -148,36 +152,6 @@ interface TaxEstimationInput {
   /** Projected calendar year -- required alongside the indAccts/indBal/
    *  indBasis quartet above to compute Roth qualification (age gate). */
   year?: number;
-}
-
-/** Output from the convergence estimation. */
-interface TaxEstimationResult {
-  /** The taxable Social Security the accepted trial ROUTED with (routing's
-   *  bracket caps read it). The real year must route with this same figure
-   *  to reproduce the accepted trial's slots, then prices its own taxable
-   *  share from them, exactly as the trial did. */
-  taxableSS: number;
-  /** Estimated tax cost */
-  estTax: number;
-  /** Effective tax rate */
-  effectiveTaxRate: number;
-  /** Gross-up factor (1 / (1 - effectiveTaxRate)) */
-  grossUpFactor: number;
-  /** Grossed-up withdrawal need */
-  grossedUpNeed: number;
-  /** Target withdrawal (never above `totalBalance`) */
-  targetWithdrawal: number;
-  /** With `fixedGrossWithdrawal`: what it delivers after tax and penalty —
-   *  the year's after-tax need, so every reader of that need (shortfall,
-   *  RMD excess, post-RMD recompute) works unchanged. */
-  derivedAfterTaxNeed?: number;
-  /** Estimated early-withdrawal penalty cost — 0 whenever `hasIndTracking`
-   *  is false or nothing was
-   *  penalized (the overwhelming default case, since `routeForMode` already
-   *  excludes penalty-exposed money when `avoidPenalizedWithdrawals` is
-   *  on). Included in the gross-up cost scalar alongside `estTax` — see
-   *  the loop body. */
-  estPenalty: number;
 }
 
 /** One trial evaluation: cost (tax + penalty) of withdrawing exactly
@@ -385,6 +359,20 @@ function evaluateAtOwnSS(W: number, seedSS: number, input: TaxEstimationInput) {
   return e;
 }
 
+/** Within a cent of the need: the search has converged, and the need is met. */
+const RESIDUAL_TOLERANCE = 0.01;
+
+type Trial = { W: number; e: ReturnType<typeof evaluateAtOwnSS> };
+// What a trial actually delivers: the router can come up short of W.
+const deliveredOf = (t: Trial) => roundToCents(t.W - t.e.routedUnmet);
+const proceedsOf = (t: Trial) => deliveredOf(t) - t.e.netCost;
+
+function withStatus(figures: SolverFigures, shortfall: number) {
+  return shortfall > RESIDUAL_TOLERANCE
+    ? { ...figures, status: "capped" as const, shortfall }
+    : { ...figures, status: "met" as const };
+}
+
 /**
  * A fixed gross withdrawal (a portfolio-sized strategy with Social Security
  * on top): no solving — evaluate the cost of W at its own taxable Social
@@ -405,7 +393,8 @@ function fixedWithdrawalEstimate(
   const derivedAfterTaxNeed = roundToCents(
     Math.max(0, amount * (1 - Math.min(1, effectiveTaxRate))),
   );
-  return {
+  const proceeds = proceedsOf({ W, e: evalResult });
+  const figures = {
     taxableSS,
     estTax: evalResult.taxCost,
     estPenalty: evalResult.penaltyCost,
@@ -416,6 +405,7 @@ function fixedWithdrawalEstimate(
     targetWithdrawal: W,
     derivedAfterTaxNeed,
   };
+  return withStatus(figures, roundToCents(derivedAfterTaxNeed - proceeds));
 }
 
 /**
@@ -470,14 +460,9 @@ export function estimateWithdrawalTaxCost(
   // under $0.10 — inside the $1 of the need a year may stop at. Short of
   // the need, the gap is reported as unmet.
   const MAX_TRIALS = 20;
-  const RESIDUAL_TOLERANCE = 0.01;
   // Below this span, a secant slope between two cent-rounded costs is noise.
   const MIN_SECANT_SPAN = 1;
 
-  type Trial = { W: number; e: ReturnType<typeof evaluateAtOwnSS> };
-  // What a trial actually delivers: the router can come up short of W.
-  const deliveredOf = (t: Trial) => roundToCents(t.W - t.e.routedUnmet);
-  const proceedsOf = (t: Trial) => deliveredOf(t) - t.e.netCost;
   const residualOf = (t: Trial) => roundToCents(afterTaxNeed - proceedsOf(t));
 
   // At W = need the proceeds can't exceed the need (cost is never
@@ -566,7 +551,7 @@ export function estimateWithdrawalTaxCost(
     shouldGrossUp && effectiveTaxRate < 1 ? 1 / (1 - effectiveTaxRate) : 1;
   const grossedUpNeed = roundToCents(afterTaxNeed * grossUpFactor);
 
-  return {
+  const figures = {
     taxableSS: trial.e.routedWithSS,
     estTax: trial.e.taxCost,
     estPenalty: trial.e.penaltyCost,
@@ -575,4 +560,12 @@ export function estimateWithdrawalTaxCost(
     grossedUpNeed,
     targetWithdrawal,
   };
+  // Without gross-up the need is withdrawn as is: short only of what the
+  // pool or the router couldn't deliver.
+  return withStatus(
+    figures,
+    shouldGrossUp
+      ? residualOf(trial)
+      : roundToCents(afterTaxNeed - deliveredOf(trial)),
+  );
 }
