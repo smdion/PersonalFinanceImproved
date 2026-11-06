@@ -35,20 +35,37 @@ function percentTerms(
   };
 }
 
+const sameStored = (a: Stored, b: Stored) =>
+  String(a ?? null) === String(b ?? null);
+
 /** An account row's match columns after a write of `type`: `incoming` is
- *  what the write sends (absent keys unsent), `stored` the row before. */
+ *  what the write sends (absent keys unsent), `stored` the row before. A
+ *  value resent unchanged keeps a stored percent's rate (a full update). */
 export function accountMatchColumns(
   type: string,
   incoming: { employerMatchValue?: Stored; employerMatchRate?: Stored },
-  stored: { employerMatchValue: Stored } | null,
+  stored: {
+    employerMatchType?: string;
+    employerMatchValue: Stored;
+    employerMatchRate?: Stored;
+  } | null,
 ): { employerMatchValue?: string | null; employerMatchRate: string | null } {
   if (type !== PERCENT) return { employerMatchRate: null };
-  const terms = percentTerms(
+  const value =
     incoming.employerMatchValue !== undefined
       ? incoming.employerMatchValue
-      : stored?.employerMatchValue,
-    incoming.employerMatchRate,
-  );
+      : stored?.employerMatchValue;
+  if (
+    incoming.employerMatchRate === undefined &&
+    stored?.employerMatchType === PERCENT &&
+    stored.employerMatchRate != null &&
+    sameStored(value, stored.employerMatchValue)
+  )
+    return {
+      employerMatchValue: value == null ? null : String(value),
+      employerMatchRate: String(stored.employerMatchRate),
+    };
+  const terms = percentTerms(value, incoming.employerMatchRate);
   return { employerMatchValue: terms.value, employerMatchRate: terms.rate };
 }
 

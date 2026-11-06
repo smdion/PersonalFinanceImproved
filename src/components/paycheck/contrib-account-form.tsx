@@ -44,6 +44,7 @@ import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
 import {
   matchFigureForForm,
   matchValueToStore,
+  rowMatchValue,
 } from "@/lib/pure/contributions/match-display";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
@@ -128,8 +129,7 @@ export function ContribAccountForm({
   const [linkedExistingId, setLinkedExistingId] = useState<number | null>(
     initialValues?.id ?? null,
   );
-  // Match cap is stored server-side as a decimal fraction (0.07) but edited
-  // as a percentage (7) — same convention as ContributionRow's edit panel.
+  // The match cap is stored as a fraction (0.07), edited as a percent (7).
   const [matchCapPercent, setMatchCapPercent] = useState(
     v.employerMaxMatchPct
       ? String(parseFloat(v.employerMaxMatchPct) * 100)
@@ -187,7 +187,7 @@ export function ContribAccountForm({
       subType: match.subType,
       taxTreatment: match.taxTreatment as TaxTreatment,
       employerMatchType: match.employerMatchType as EmployerMatchType,
-      employerMatchValue: match.employerMatchValue,
+      employerMatchValue: rowMatchValue(match),
       employerMaxMatchPct: match.employerMaxMatchPct,
       employerMatchTaxTreatment: match.employerMatchTaxTreatment as
         "pre_tax" | "tax_free",

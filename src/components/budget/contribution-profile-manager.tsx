@@ -14,6 +14,7 @@ import {
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
 import {
+  entryMatchFigure,
   formatEmployerMatch,
   matchFigureForForm,
   matchValueToStore,
@@ -1537,19 +1538,16 @@ function ProfileInlineEditor({
                   // No resolved value: the live match isn't in effect, so isn't shown.
                   const { hasValue: contribHasValue } =
                     resolveContribFieldDisplayState(af);
+                  const ownMatch = entryMatchFigure(effectiveMatchType, af);
                   const storedMatch =
-                    af.employerMatchValue !== undefined
+                    ownMatch ??
+                    (contribHasValue
                       ? matchFigureForForm(
-                          effectiveMatchType,
-                          String(af.employerMatchValue),
+                          ad.liveMatchType,
+                          ad.liveMatchValue,
+                          ad.liveMatchRate,
                         )
-                      : contribHasValue
-                        ? matchFigureForForm(
-                            ad.liveMatchType,
-                            ad.liveMatchValue,
-                            ad.liveMatchRate,
-                          )
-                        : "";
+                      : "");
                   const storedCap =
                     af.employerMaxMatchPct !== undefined
                       ? String(Number(af.employerMaxMatchPct) * 100)
@@ -1798,15 +1796,13 @@ function ProfileInlineEditor({
                                 )
                               }
                               title={
-                                af.employerMatchValue === undefined &&
-                                storedMatch !== ""
+                                ownMatch === null && storedMatch !== ""
                                   ? "The account's own match — editing saves a value in this profile only"
                                   : undefined
                               }
                               placeholder="—"
                               className={`bg-surface-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs ${
-                                af.employerMatchValue === undefined &&
-                                storedMatch !== ""
+                                ownMatch === null && storedMatch !== ""
                                   ? "text-faint italic"
                                   : "text-primary"
                               }`}

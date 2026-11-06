@@ -20,7 +20,7 @@
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 954,
     "src/components/budget/budget-summary-table.tsx": 772,
-    "src/components/budget/contribution-profile-manager.tsx": 2047,
+    "src/components/budget/contribution-profile-manager.tsx": 2043,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
@@ -354,9 +354,9 @@
       "ProfileDetailPanel": 246,
       "ProfileEditor": 518,
       "ProfileEditor.map()": 212,
-      "ProfileInlineEditor": 789,
-      "ProfileInlineEditor.iife()": 375,
-      "ProfileInlineEditor.iife().map()": 371
+      "ProfileInlineEditor": 784,
+      "ProfileInlineEditor.iife()": 370,
+      "ProfileInlineEditor.iife().map()": 366
     },
     "src/components/budget/hooks/use-item-mutations.ts": {
       "useItemMutations": 182
@@ -539,7 +539,7 @@
       "OnboardingWizard": 345
     },
     "src/components/paycheck/contrib-account-form.tsx": {
-      "ContribAccountForm": 517
+      "ContribAccountForm": 516
     },
     "src/components/paycheck/contrib-card.tsx": {
       "ContribCard": 503,

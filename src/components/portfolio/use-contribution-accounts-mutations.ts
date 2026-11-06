@@ -15,6 +15,7 @@ import type {
 } from "@/lib/config/enum-values";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { rowMatchValue } from "@/lib/pure/contributions/match-display";
 
 type ContribRecord =
   RouterOutputs["settings"]["contributionAccounts"]["list"][number];
@@ -262,7 +263,7 @@ export function useContributionAccountsMutations({
       employerMatchValue:
         updates.employerMatchValue !== undefined
           ? updates.employerMatchValue
-          : c.employerMatchValue,
+          : rowMatchValue(c),
       employerMaxMatchPct:
         updates.employerMaxMatchPct !== undefined
           ? updates.employerMaxMatchPct

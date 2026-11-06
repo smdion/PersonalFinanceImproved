@@ -19,6 +19,33 @@ export function matchFigureForForm(
     : "";
 }
 
+/** A profile entry's own match as a form figure (its value, else its
+ *  rate's percent); null when it holds neither, so the account's shows. */
+export function entryMatchFigure(
+  type: MatchType,
+  entry: { employerMatchValue?: Stored; employerMatchRate?: Stored },
+): string | null {
+  const { employerMatchValue: value, employerMatchRate: rate } = entry;
+  if (value === undefined && rate === undefined) return null;
+  return matchFigureForForm(type, value, rate);
+}
+
+/** An account row's match value as a form or full update resends it: its
+ *  value, else its rate's whole percent (which writes back the same rate). */
+export function rowMatchValue(row: {
+  employerMatchType: MatchType;
+  employerMatchValue: Stored;
+  employerMatchRate?: Stored;
+}): string | null {
+  if (row.employerMatchValue != null) return String(row.employerMatchValue);
+  const figure = matchFigureForForm(
+    row.employerMatchType,
+    null,
+    row.employerMatchRate,
+  );
+  return figure === "" ? null : figure;
+}
+
 export function matchValueToStore(_type: MatchType, typed: string): string {
   return typed;
 }

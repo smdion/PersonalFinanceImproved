@@ -13,6 +13,8 @@ import {
 import { PERCENT_MATCH, effectiveMatchType } from "@/lib/utils/match-rate";
 
 type Entry = Record<string, unknown>;
+const isObject = (v: unknown): v is Entry =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
 type Stored = string | number | null | undefined;
 
 function assertMatchFits(...args: Parameters<typeof matchRefused>): void {
@@ -136,8 +138,12 @@ export async function refreshEntryRates(
     })
     .from(schema.contributionProfiles);
   for (const p of profiles) {
+    // A hand-edited column can hold JSON null: no entries to refresh.
+    const fields: unknown = p.fields;
+    if (!isObject(fields) || !isObject(fields["contributionAccounts"]))
+      continue;
     const entry = p.fields.contributionAccounts?.[key];
-    if (!entry) continue;
+    if (!isObject(entry)) continue;
     const next = entryWithMatchRate(entry, account, false);
     if (next["employerMatchRate"] === entry["employerMatchRate"]) continue;
     await db

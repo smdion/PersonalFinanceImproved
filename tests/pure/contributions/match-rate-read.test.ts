@@ -12,8 +12,10 @@ import {
 } from "@/lib/pure/contributions/employer-match";
 import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import {
+  entryMatchFigure,
   formatEmployerMatch,
   matchFigureForForm,
+  rowMatchValue,
 } from "@/lib/pure/contributions/match-display";
 import { accountMatchColumns } from "@/lib/pure/contributions/match-writes";
 import { rateFromPercent } from "@/lib/utils/match-rate";
@@ -203,5 +205,44 @@ describe("the form and display read the rate", () => {
       ),
     ).toBeNull();
     expect(mergedMatchRate({ employerMatchRate: "0.5" }, {})).toBe("0.5");
+  });
+});
+
+describe("a match held as a rate alone (0017's percent rows) still shows", () => {
+  it("entryMatchFigure: an entry's own value, else its own rate; null with neither", () => {
+    expect(entryMatchFigure(PERCENT, { employerMatchValue: "40" })).toBe("40");
+    expect(
+      entryMatchFigure(PERCENT, {
+        employerMatchValue: null,
+        employerMatchRate: "0.4",
+      }),
+    ).toBe("40");
+    expect(entryMatchFigure(PERCENT, { employerMatchRate: "50" })).toBe("5000");
+    expect(entryMatchFigure(PERCENT, {})).toBeNull();
+    expect(entryMatchFigure(PERCENT, { employerMatchValue: null })).toBe("");
+  });
+  it("rowMatchValue resends the value, else the rate's whole percent, which writes back the same rate", () => {
+    const row = (value: string | null, rate: string | null) => ({
+      employerMatchType: PERCENT,
+      employerMatchValue: value,
+      employerMatchRate: rate,
+    });
+    expect(rowMatchValue(row("50.00", "0.500000"))).toBe("50.00");
+    expect(rowMatchValue(row(null, "0.666700"))).toBe("66.67");
+    expect(rowMatchValue(row(null, null))).toBeNull();
+    expect(
+      rowMatchValue({
+        ...row("1000", null),
+        employerMatchType: "fixed_annual",
+      }),
+    ).toBe("1000");
+    for (const rate of ["0.6667", "0.035", "1", "0.143"])
+      expect(
+        accountMatchColumns(
+          PERCENT,
+          { employerMatchValue: rowMatchValue(row(null, rate)) },
+          null,
+        ).employerMatchRate,
+      ).toBe(rate);
   });
 });
