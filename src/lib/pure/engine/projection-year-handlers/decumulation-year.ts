@@ -22,11 +22,7 @@ import {
   nonMedicalPenaltyRate,
 } from "../../../config/account-types";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
-import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
-import {
-  MAX_BROKERAGE_RAMP_YEARS,
-  ADDITIONAL_STANDARD_DEDUCTION_AGE,
-} from "../../../constants";
+import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { shortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
@@ -37,7 +33,6 @@ import {
 } from "@/lib/pure/tax/ltcg";
 import { computeNiit } from "../../../config/niit";
 import {
-  growAmount,
   growWithholdingBrackets,
   growLtcgBrackets,
   growIrmaaBrackets,
@@ -86,6 +81,7 @@ import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
+import { yearStandardDeduction } from "./year-deduction";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
@@ -286,66 +282,14 @@ export function runDecumulationYear(
   const grownTaxBrackets = taxRates.taxBrackets
     ? growWithholdingBrackets(taxRates.taxBrackets, bracketGrowth)
     : undefined;
-  // Fold the IRC §63(f)(1) age-65+ additional standard deduction into
-  // the base deduction BEFORE growth, so the senior amount is grown on the
-  // same tax-data vintage as the base (both are CPI-indexed). `seniorCount`
-  // is the number of household members who are 65+ in THIS projection year —
-  // for a real decumulation-phase household that's almost every year, which
-  // is exactly why omitting this systematically understated 0%-LTCG room.
-  // The `perPersonBirthYears`-absent fallback (single senior when the
-  // household representative age is 65+) mirrors the Medicare-age filter's
-  // own fallback further below. Applied only when a base deduction exists —
-  // `undefined` must keep meaning "subtract 0" for the LTCG path, and
-  // `undefined + n*x` would be NaN.
-  const seniorCount =
-    perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.filter(
-          (by) => year - by >= ADDITIONAL_STANDARD_DEDUCTION_AGE,
-        ).length
-      : age >= ADDITIONAL_STANDARD_DEDUCTION_AGE
-        ? 1
-        : 0;
-  const seniorStandardDeductionAddon =
-    taxRates.standardDeduction != null &&
-    taxRates.additionalStdDeduction65PerSenior
-      ? seniorCount * taxRates.additionalStdDeduction65PerSenior
-      : 0;
-  // OBBBA temporary senior deduction (2025-2028) — same injection point as
-  // §63(f) above (folded in BEFORE routing/tax estimation runs; see
-  // return-deductions.ts's docblock for why it can't be applied later).
-  // Phaseout basis: LAST YEAR's MAGI (incomeHistory has no `year` entry yet),
-  // the 1-year lag IRMAA's lookback also uses. Decumulation year 1 has none:
-  // the MAGI is unknown ⇒ $0 that year only, by design.
-  const lastYearIncome = incomeHistory.at(-1);
-  const obbbaAddon = computeObbbaSeniorDeduction({
-    seniorCount,
-    magi: lastYearIncome
-      ? { kind: "known", value: yearMagi(lastYearIncome, "seniorDeduction") }
-      : { kind: "unknown" },
-    perPerson: taxRates.obbbaSeniorDeductionPerPerson,
-    phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
-    phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,
+  const { grownStandardDeduction } = yearStandardDeduction(
+    perPersonBirthYears,
     year,
-    sunsetYear: taxRates.obbbaSeniorSunsetYear,
-  });
-  // obbbaAddon is NOT grown with the rest — it's a fixed, non-indexed
-  // statutory dollar amount ($6,000/senior, phased out and sunset by
-  // computeObbbaSeniorDeduction itself for the CURRENT `year`), unlike the
-  // base standard deduction and §63(f) addon above, which are the
-  // CPI-indexed amounts `taxGrowth` exists to project forward. Folding it
-  // into the pre-growth sum inflated the fixed $6,000 by 1-2 years of CPI
-  // for any projection year past the tax-data vintage — added back in
-  // after growth instead.
-  const grownBaseAndSeniorDeduction = growAmount(
-    taxRates.standardDeduction != null
-      ? taxRates.standardDeduction + seniorStandardDeductionAddon
-      : taxRates.standardDeduction,
+    age,
+    taxRates,
+    incomeHistory,
     taxGrowth,
   );
-  const grownStandardDeduction =
-    grownBaseAndSeniorDeduction != null
-      ? grownBaseAndSeniorDeduction + obbbaAddon
-      : grownBaseAndSeniorDeduction;
   // Phase 2: LTCG brackets, grown from their own year.
   const grownLtcgBrackets = growLtcgBrackets(
     taxRates.ltcgBrackets,
