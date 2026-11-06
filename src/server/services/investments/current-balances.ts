@@ -8,6 +8,7 @@ import { and, desc, eq, gte, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { addDays } from "@/lib/utils/date";
 import {
+  balanceChangeInto,
   currentBalance,
   addedIntoClose,
   moveIntoClose,
@@ -54,6 +55,7 @@ import {
   loadLatestHoldings,
 } from "@/server/data/investments";
 import type { Db } from "@/lib/db";
+import { withNoHoldings } from "./no-holdings";
 
 /** Days of closes before the oldest date in play — enough for a long
  *  weekend and a feed a few sessions behind. */
@@ -73,10 +75,10 @@ const shared = new WeakMap<
 
 export function loadCurrentBalances(db: Db) {
   const hit = shared.get(db);
-  if (hit && Date.now() - hit.at < SHARE_MS) return hit.result;
-  const result = computeCurrentBalances(db);
-  shared.set(db, { at: Date.now(), result });
-  return result;
+  const fresh = hit && Date.now() - hit.at < SHARE_MS;
+  const result = fresh ? hit.result : computeCurrentBalances(db);
+  if (!fresh) shared.set(db, { at: Date.now(), result });
+  return result.then(withNoHoldings);
 }
 
 async function computeCurrentBalances(db: Db) {
@@ -352,8 +354,6 @@ async function computeCurrentBalances(db: Db) {
       !r.voided &&
       (r.kind === "contribution" || r.kind === "withdrawal"),
   );
-  // Market accounts only: a feed reporting no holdings has nothing priced
-  // to move; a part with no feed can't be told.
   const marketEntries = dated.filter(
     (a) => a.positions.length > 0 || (a.feedIds ?? []).length === 0,
   );
@@ -384,13 +384,11 @@ async function computeCurrentBalances(db: Db) {
   const addedInto = (a: (typeof marketEntries)[number], day: string) => {
     const feeds = a.feedIds ?? [];
     const move = moveIntoClose(a.positions, day);
-    if (feeds.length === 1 && move !== null) {
-      const now = balanceAtClose(feeds[0]!, day, true);
-      const before = balanceAtClose(feeds[0]!, previousTradingDay(day), false);
-      if (now !== null && before !== null)
-        return Math.round((now - before - move) * 100) / 100;
-    }
-    return addedIntoClose(a.positions, day);
+    const change =
+      feeds.length === 1 ? balanceChangeInto(feeds, day, balanceAtClose) : null;
+    return move !== null && change !== null
+      ? Math.round((change - move) * 100) / 100
+      : addedIntoClose(a.positions, day);
   };
   const entryMoves = marketEntries.map((a) => ({
     key: a.key,
@@ -445,6 +443,8 @@ async function computeCurrentBalances(db: Db) {
         })),
     }),
     entryMoves,
+    balanceAtClose,
+    institutionOf,
     /** Each feed's data date, for the "as of" detail. */
     feeds: allFeeds.map((x) => {
       const d = feedDates.get(x.id)!;

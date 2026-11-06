@@ -107,4 +107,84 @@ describe("LinkedBalanceCard daily change notes", () => {
         .getAttribute("title"),
     ).toContain("Voya sent no report for Nov 2–4");
   });
+
+  it("an account with no holdings whose balance moved shows its balance change, never +$0.00", () => {
+    setQuery("simplefin.listAccounts", [
+      {
+        id: 13,
+        orgName: "Voya Financial",
+        isIncluded: true,
+        linkedPerformanceAccountId: 4,
+        accountType: "hsa",
+        subType: null,
+      },
+      {
+        id: 14,
+        orgName: "Ally",
+        isIncluded: true,
+        linkedPerformanceAccountId: 5,
+        accountType: "brokerage",
+        subType: null,
+      },
+    ]);
+    const row = {
+      snapshot: 1000,
+      noSnapshot: false,
+      source: "reported" as const,
+      market: false,
+      move: null,
+    };
+    setQuery("investments.getCurrentBalances", {
+      target: "2026-11-05",
+      snapshotDate: null,
+      summary: { total: 1548.92 },
+      feeds: [],
+      balances: [
+        {
+          ...row,
+          key: "hsa",
+          feedIds: [13],
+          performanceAccountId: 4,
+          current: 1048.92,
+          noHoldings: { institution: "Voya Financial", balance: -151.08 },
+        },
+        // Cash whose balance didn't move keeps its zero.
+        {
+          ...row,
+          key: "cash",
+          feedIds: [14],
+          performanceAccountId: 5,
+          current: 500,
+          noHoldings: null,
+        },
+      ],
+      movement: [close("2026-11-05", []), close("2026-11-04", [])],
+      closeReports: [],
+      unpricedMoves: [
+        {
+          key: "hsa",
+          label: "Voya HSA",
+          institution: "Voya Financial",
+          changed: [{ day: "2026-11-05", balance: -151.08 }],
+        },
+      ],
+    });
+    render(
+      <TooltipProvider>
+        <LinkedBalanceCard />
+      </TooltipProvider>,
+    );
+    expect(
+      screen.getByText("balance −$151.08 (market and deposits not split)"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle(
+        "Voya sends no holdings for this account, so its market move can't be shown",
+      ),
+    ).toHaveTextContent("—");
+    expect(screen.getByText("+$0.00")).toBeInTheDocument();
+    expect(
+      screen.getByText("excludes Voya HSA (no holdings)"),
+    ).toBeInTheDocument();
+  });
 });

@@ -4,9 +4,17 @@
 import { formatCurrency } from "@/lib/utils/format";
 import { previousTradingDay } from "../investments/market-calendar";
 import type { CloseReport } from "./daily-movement";
+import type { UnpricedMove } from "../accounts/current-balance-groups";
 
 type Close = { day: string; missing: readonly string[] };
 type Reports = readonly Pick<CloseReport, "name" | "closes" | "gaps">[];
+type Unpriced = readonly Pick<UnpricedMove, "label" | "changed">[];
+
+/** Accounts with no holdings whose balance changed into the close. */
+const unpricedAt = (c: Close, unpriced: Unpriced) =>
+  unpriced
+    .filter((u) => u.changed.some((m) => m.day === c.day))
+    .map((u) => u.label);
 
 /** "Oct 30" from YYYY-MM-DD. */
 export const shortDay = (day: string) =>
@@ -83,14 +91,17 @@ export function missingNote(
   c: Close,
   target: string | undefined,
   reports: Reports,
+  unpriced: Unpriced = [],
 ): string | null {
-  if (c.missing.length === 0) return null;
+  const blind = unpricedAt(c, unpriced);
+  if (c.missing.length === 0 && blind.length === 0) return null;
   const { late, noReport, unknown } = whyMissing(c, target, reports);
   return [
     late.length > 0 &&
       `${short(late)} ${late.length === 1 ? "change" : "changes"} not in yet`,
     ...noReport.map(([run, names]) => `no ${short([...names])} report ${run}`),
     unknown.length > 0 && `excludes ${short(unknown)}`,
+    blind.length > 0 && `excludes ${listNames(blind)} (no holdings)`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -101,8 +112,10 @@ export function missingReason(
   c: Close,
   target: string | undefined,
   reports: Reports,
+  unpriced: Unpriced = [],
 ): string | undefined {
-  if (c.missing.length === 0) return undefined;
+  const blind = unpricedAt(c, unpriced);
+  if (c.missing.length === 0 && blind.length === 0) return undefined;
   const { late, noReport, unknown } = whyMissing(c, target, reports);
   const day = shortDay(c.day);
   const lateText = () => {
@@ -116,6 +129,8 @@ export function missingReason(
     ...noReport.map(noReportText),
     unknown.length > 0 &&
       `${listNames(unknown)} didn't report a price for ${day}, so ${unknown.length === 1 ? "its" : "their"} change isn't in this total.`,
+    blind.length > 0 &&
+      `${listNames(blind)} ${blind.length === 1 ? "sends" : "send"} no holdings, so ${blind.length === 1 ? "its" : "their"} market move can't be told and isn't in this total.`,
   ]
     .filter(Boolean)
     .join(" ");

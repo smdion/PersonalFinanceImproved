@@ -64,11 +64,11 @@ export default defineConfig({
           environment: "node",
           include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
           // tests/components is flat (no subdirectories), so the extglob
-          // negation below excludes every file in it except the three that
+          // negation below excludes every file in it except the two that
           // test exported pure helpers, not rendered components — those
           // don't need jsdom and are handled by this project instead.
           exclude: [
-            "tests/components/!(linked-balance-card|portfolio-quick-look-stats|projection-utils).test.ts*",
+            "tests/components/!(portfolio-quick-look-stats|projection-utils).test.ts*",
             "tests/hooks/**",
             "tests/accessibility/**",
             "tests/benchmarks/**",
@@ -100,7 +100,6 @@ export default defineConfig({
             "tests/accessibility/**/*.test.tsx",
           ],
           exclude: [
-            "tests/components/linked-balance-card.test.ts",
             "tests/components/portfolio-quick-look-stats.test.ts",
             "tests/components/projection-utils.test.ts",
           ],

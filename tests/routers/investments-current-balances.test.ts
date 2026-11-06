@@ -143,6 +143,7 @@ describe("investments.getCurrentBalances", () => {
       "snapshotDate",
       "summary",
       "target",
+      "unpricedMoves",
     ]);
     expect(Object.keys(r.balances[0]!).sort()).toEqual([
       "current",
@@ -150,6 +151,7 @@ describe("investments.getCurrentBalances", () => {
       "key",
       "market",
       "move",
+      "noHoldings",
       "noSnapshot",
       "performanceAccountId",
       "snapshot",

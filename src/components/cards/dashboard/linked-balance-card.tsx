@@ -9,6 +9,12 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatCurrency } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
+import {
+  balanceOnlyLine,
+  groupCurrentBalances,
+  noHoldingsNote,
+  type CurrentGroup,
+} from "@/lib/pure/accounts/current-balance-groups";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
@@ -162,54 +168,18 @@ function rollupBucket(
   };
 }
 
-type CurrentGroup = {
-  key: string;
-  label: string;
-  /** Adds up to the card's total. */
-  current: number;
-  /** Move into the card's close; null when any fund in it can't be told
-   *  (a partial sum would read as the whole). */
-  move: number | null;
-};
-
-/** The card's figures by row: largest first, "Not matched" last. */
-export function groupCurrentBalances(
-  balances: readonly CurrentBalanceRow[],
-  bucket: (b: CurrentBalanceRow) => { key: string; label: string },
-): CurrentGroup[] {
-  const groups = new Map<string, CurrentGroup & { unknown: boolean }>();
-  for (const b of balances) {
-    const { key, label } = bucket(b);
-    const g = groups.get(key) ?? {
-      key,
-      label,
-      current: 0,
-      move: 0,
-      unknown: false,
-    };
-    g.current = roundToCents(g.current + b.current);
-    if (b.market && b.move !== null)
-      g.move = roundToCents((g.move ?? 0) + b.move);
-    else if (b.market) g.unknown = true;
-    groups.set(key, g);
-  }
-  return [...groups.values()]
-    .map(({ unknown, ...g }) => ({ ...g, move: unknown ? null : g.move }))
-    .sort((a, b) =>
-      a.key === "" ? 1 : b.key === "" ? -1 : b.current - a.current,
-    );
-}
-
 /** Each close's market move, latest first, then each account's move over
  *  closes it sent no report for. */
 function DailyChanges({
   movement,
   target,
   reports,
+  unpriced,
 }: {
   movement: CurrentData["movement"];
   target: string | undefined;
   reports: CurrentData["closeReports"];
+  unpriced: CurrentData["unpricedMoves"];
 }) {
   if (movement.length === 0) return null;
   return (
@@ -228,11 +198,14 @@ function DailyChanges({
             </span>
             <span
               className="text-faint break-words"
-              title={[missingReason(c, target, reports), unreportedDetail(c)]
+              title={[
+                missingReason(c, target, reports, unpriced),
+                unreportedDetail(c),
+              ]
                 .filter(Boolean)
                 .join(" ")}
             >
-              {[missingNote(c, target, reports), paidLine(c)]
+              {[missingNote(c, target, reports, unpriced), paidLine(c)]
                 .filter(Boolean)
                 .join(" · ")}
             </span>
@@ -248,6 +221,42 @@ function DailyChanges({
       )}
     </>
   );
+}
+
+/** The total by group: each row's balance and its move into the card's
+ *  close; a row with no holdings also shows its balance's change. */
+function GroupRows({
+  groups,
+  target,
+}: {
+  groups: readonly CurrentGroup[];
+  target: string | undefined;
+}) {
+  return groups.map((g) => (
+    <div key={g.key} className="contents">
+      <span className="break-words">{g.label}</span>
+      <span className="text-right whitespace-nowrap tabular-nums">
+        {formatCurrency(g.current)}
+      </span>
+      <span
+        className={`text-right whitespace-nowrap tabular-nums ${moveColor(g.move)}`}
+        title={
+          g.noHoldings
+            ? noHoldingsNote(g.noHoldings.institutions)
+            : g.move === null && target
+              ? `Waiting for a fund's ${shortDay(target)} price from the institution`
+              : undefined
+        }
+      >
+        {g.move === null ? "—" : signed(g.move)}
+      </span>
+      {g.noHoldings && (
+        <span className="col-span-3 text-right">
+          {balanceOnlyLine(g.noHoldings.balance)}
+        </span>
+      )}
+    </div>
+  ));
 }
 
 function LinkedBalanceCardImpl() {
@@ -375,6 +384,7 @@ function LinkedBalanceCardImpl() {
           movement={current.movement}
           target={target}
           reports={current.closeReports}
+          unpriced={current.unpricedMoves}
         />
       )}
 
@@ -401,24 +411,7 @@ function LinkedBalanceCardImpl() {
             <span className="text-right">
               {target ? sessionLabel(target) : ""}
             </span>
-            {groups.map((g) => (
-              <div key={g.key} className="contents">
-                <span className="break-words">{g.label}</span>
-                <span className="text-right whitespace-nowrap tabular-nums">
-                  {formatCurrency(g.current)}
-                </span>
-                <span
-                  className={`text-right whitespace-nowrap tabular-nums ${moveColor(g.move)}`}
-                  title={
-                    g.move === null && target
-                      ? `Waiting for a fund's ${shortDay(target)} price from the institution`
-                      : undefined
-                  }
-                >
-                  {g.move === null ? "—" : signed(g.move)}
-                </span>
-              </div>
-            ))}
+            <GroupRows groups={groups} target={target} />
           </div>
         </div>
       )}

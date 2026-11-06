@@ -366,3 +366,27 @@ export function pairFeedsWithParts(args: {
   }
   return out;
 }
+
+/** A feed's balance at a close: on it (`exact`), or on or before it. */
+export type BalanceAt = (
+  feedId: number,
+  day: string,
+  exact: boolean,
+) => number | null;
+
+/** The feeds' balance at `day` less at the close before, unrounded; null
+ *  when either can't be told for any of them. */
+export function balanceChangeInto(
+  feedIds: readonly number[],
+  day: string,
+  balanceAt: BalanceAt,
+): number | null {
+  let change = 0;
+  for (const id of feedIds) {
+    const now = balanceAt(id, day, true);
+    const before = balanceAt(id, previousTradingDay(day), false);
+    if (now === null || before === null) return null;
+    change += now - before;
+  }
+  return change;
+}
