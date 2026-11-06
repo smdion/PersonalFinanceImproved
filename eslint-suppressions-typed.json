@@ -786,7 +786,7 @@
   },
   "src/server/routers/projection/scenarios.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/projection/strategy.ts": {
@@ -872,6 +872,11 @@
   "src/server/services/projection/engine-payload/profile-switches.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
+    }
+  },
+  "src/server/services/projection/projection-metadata.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {

@@ -5850,10 +5850,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
+      "count": 4
     }
   },
   "src/server/routers/projection/social-security.ts": {
@@ -6396,6 +6393,14 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
+    }
+  },
+  "src/server/services/projection/projection-metadata.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/services/savings/savings-allocation.ts": {

@@ -183,7 +183,7 @@
     "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 539,
     "src/server/routers/projection/relocation.ts": 664,
-    "src/server/routers/projection/scenarios.ts": 479,
+    "src/server/routers/projection/scenarios.ts": 337,
     "src/server/routers/projection/strategy.ts": 829,
     "src/server/routers/projection/tax-optimization.ts": 527,
     "src/server/routers/retirement.ts": 1420,
@@ -923,7 +923,7 @@
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 487
     },
     "src/server/routers/projection/scenarios.ts": {
-      "scenariosRouter.computeProjection.query()": 378
+      "scenariosRouter.computeProjection.query()": 249
     },
     "src/server/routers/projection/strategy.ts": {
       "strategyRouter.analyzeStrategy.query()": 409,
