@@ -5949,16 +5949,13 @@
   },
   "src/server/routers/retirement.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
-    },
-    "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 18
+      "count": 13
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/salary-profiles.ts": {
@@ -6526,6 +6523,20 @@
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/relocation-analysis.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },

@@ -190,7 +190,7 @@
     "src/server/routers/projection/scenarios.ts": 161,
     "src/server/routers/projection/strategy.ts": 829,
     "src/server/routers/projection/tax-optimization.ts": 527,
-    "src/server/routers/retirement.ts": 1195,
+    "src/server/routers/retirement.ts": 764,
     "src/server/routers/salary-profiles.ts": 599,
     "src/server/routers/savings/api-sync.ts": 243,
     "src/server/routers/savings/index.ts": 28,
@@ -223,6 +223,7 @@
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 1414,
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
+    "src/server/services/projection/relocation-analysis.ts": 481,
     "src/server/services/savings/summary.ts": 429,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
@@ -927,9 +928,6 @@
       "strategyRouter.analyzeStrategy.query()": 409,
       "strategyRouter.computeStrategyComparison.query()": 273
     },
-    "src/server/routers/retirement.ts": {
-      "retirementRouter.computeRelocationAnalysis.query()": 399
-    },
     "src/server/routers/savings/api-sync.ts": {
       "apiSyncProcedures.pushContributionsToApi.mutation()": 201
     },
@@ -982,6 +980,9 @@
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
       "buildProfileSwitches": 334
+    },
+    "src/server/services/projection/relocation-analysis.ts": {
+      "computeRelocationAnalysis": 382
     },
     "src/server/services/savings/summary.ts": {
       "computeSavingsSummary": 349

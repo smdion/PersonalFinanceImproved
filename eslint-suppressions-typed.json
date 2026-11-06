@@ -801,7 +801,7 @@
   },
   "src/server/routers/retirement.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/routers/salary-profiles.ts": {
@@ -890,6 +890,11 @@
     }
   },
   "src/server/services/projection/projection-metadata.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/relocation-analysis.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
