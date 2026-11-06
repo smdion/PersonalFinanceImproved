@@ -29,13 +29,13 @@ export function userHasPermission(
 export function createRequestScope(
   db: Db,
   asOf: Date,
-  viewer: Viewer | undefined,
+  viewer: Viewer | null | undefined,
 ): RequestScope {
   return {
     db,
     asOf,
     today: calendarDateOf(asOf),
     can: (permission) =>
-      viewer !== undefined && userHasPermission(viewer, permission),
+      viewer != null && userHasPermission(viewer, permission),
   };
 }
