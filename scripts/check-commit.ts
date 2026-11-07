@@ -2009,6 +2009,130 @@ function cutMovedStages(
   return { movedAcross: moved, moves };
 }
 
+const isExported = (s: ts.Statement) =>
+  ts.canHaveModifiers(s) &&
+  (ts.getModifiers(s) ?? []).some(
+    (m) => m.kind === ts.SyntaxKind.ExportKeyword,
+  );
+
+/** The comments inside a statement (not the doc comment above it), in order,
+ *  their spacing collapsed. */
+function commentsIn(node: ts.Node, source: ts.SourceFile): string {
+  const text = source.getFullText();
+  const [start, end] = [node.getStart(source), node.getEnd()];
+  const found = new Map<number, string>();
+  const add = (ranges: ts.CommentRange[] | undefined) => {
+    for (const r of ranges ?? [])
+      if (r.pos >= start && r.end <= end)
+        found.set(r.pos, text.slice(r.pos, r.end).replace(/\s+/g, " "));
+  };
+  const visit = (n: ts.Node) => {
+    const children = n.getChildren(source);
+    if (children.length > 0) children.forEach(visit);
+    else {
+      add(ts.getLeadingCommentRanges(text, n.getFullStart()));
+      add(ts.getTrailingCommentRanges(text, n.getEnd()));
+    }
+  };
+  visit(node);
+  return [...found]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, c]) => c)
+    .join("\n");
+}
+
+/**
+ * Owner v0.10.3 Q23: a moved top-level statement that gains `export`, which
+ * prettier may then re-wrap (a signature past the print width), is read at
+ * its old layout. A statement new in its file, every code line of it added,
+ * whose tokens are `export` and then, token for token, those of a statement
+ * that left its own file in this commit (not exported there, with the same
+ * comments inside) is written back in that statement's lines with `export `
+ * in front, in its place in the diff; the moved-line match then holds it to
+ * the rules of any other moved statement (whole, in order). Any other token
+ * added, dropped or changed leaves its lines as they are, read as changed
+ * lines. A statement exported in place, or moved within its file, is not
+ * read this way.
+ */
+function unwrapExported(files: FileDiff[], names?: RegExp): void {
+  const code = files
+    .map((entry) => ({
+      entry,
+      oldSource: parseSide(entry.file, entry.old),
+      newSource: parseSide(entry.file, entry.new),
+    }))
+    .filter(
+      ({ entry }) =>
+        CODE_FILE.test(entry.file) && !MOVE_BOOKKEEPING.test(entry.file),
+    );
+  const keyOf = (s: ts.Statement, source: ts.SourceFile) =>
+    tokensOf(s, source, names).join(" ");
+  const left = new Map<string, { text: string; comments: string }[]>();
+  for (const { oldSource, newSource } of code) {
+    const kept = new Set(newSource.statements.map((s) => keyOf(s, newSource)));
+    for (const s of oldSource.statements) {
+      const key = keyOf(s, oldSource);
+      if (isExported(s) || kept.has(key) || kept.has(`export ${key}`)) continue;
+      left.set(key, [
+        ...(left.get(key) ?? []),
+        { text: s.getText(oldSource), comments: commentsIn(s, oldSource) },
+      ]);
+    }
+  }
+  for (const { entry, oldSource, newSource } of code) {
+    const had = new Set(oldSource.statements.map((s) => keyOf(s, oldSource)));
+    const spans: Span[] = [];
+    for (const s of newSource.statements) {
+      if (!isExported(s)) continue;
+      const tokens = tokensOf(s, newSource, names);
+      if (tokens[0] !== "export") continue;
+      const key = tokens.slice(1).join(" ");
+      if (had.has(key) || had.has(tokens.join(" "))) continue;
+      if (!allChanged(entry.new, newSource, s.getStart(newSource), s.getEnd()))
+        continue;
+      const from = left.get(key) ?? [];
+      const i = from.findIndex((o) => o.comments === commentsIn(s, newSource));
+      if (i < 0) continue;
+      const [old] = from.splice(i, 1);
+      const text = `export ${old!.text}`;
+      if (text !== s.getText(newSource))
+        spans.push({ start: s.getStart(newSource), end: s.getEnd(), text });
+    }
+    if (spans.length === 0) continue;
+    // Spliced into git's own diff: the old layout's lines take the place
+    // of the new ones, in the change group of the statement's first line.
+    const { lines, changed } = entry.new;
+    const groupAt = new Map(changed.map((c) => [c.at, c.group]));
+    const at = (pos: number) => newSource.getLineAndCharacterOfPosition(pos);
+    const next: DiffSide = { lines: [], changed: [] };
+    let l = 0;
+    const keep = (to: number) => {
+      for (; l < to; l++) {
+        const group = groupAt.get(l);
+        if (group !== undefined)
+          next.changed.push({ at: next.lines.length, group });
+        next.lines.push(lines[l]!);
+      }
+    };
+    for (const span of spans) {
+      const [s, e] = [at(span.start), at(span.end)];
+      keep(s.line);
+      const group = groupAt.get(s.line)!;
+      const text =
+        lines[s.line]!.slice(0, s.character) +
+        span.text +
+        lines[e.line]!.slice(e.character);
+      for (const line of text.split("\n")) {
+        next.changed.push({ at: next.lines.length, group });
+        next.lines.push(line);
+      }
+      l = e.line + 1;
+    }
+    keep(lines.length);
+    entry.new = next;
+  }
+}
+
 /**
  * The moves a `Mechanical:` commit makes that aren't whole statements: each
  * body moved whole into a new function (cutMovedBodies), each router split
@@ -2266,7 +2390,8 @@ function matchCode(code: { old: CodeSide; new: CodeSide }[]): {
  * whole router procedures into a new part mounted where they were
  * (cutMovedProcedures), and a run of a function's top-level statements
  * into a new top-level function, called where they were (cutMovedStages).
- * Other
+ * A moved statement that gains `export` and is re-wrapped by prettier is
+ * compared token by token, at its old layout (unwrapExported). Other
  * lines (docs, data, comments) match by path rewrite as a multiset: first in
  * the same file (a moved entry in a sorted list matches too), then in any
  * other file of the commit. A prettier re-wrap of a file's changed lines
@@ -2294,6 +2419,7 @@ export function notAMove(
     cutMovedBodies(files, names).movedAcross +
     cutMovedProcedures(files, names).movedAcross +
     cutMovedStages(files, names).movedAcross;
+  unwrapExported(files, names);
   for (const entry of files) {
     const { file, wholeFile } = entry;
     if (MOVE_BOOKKEEPING.test(file)) continue;

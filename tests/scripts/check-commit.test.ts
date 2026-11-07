@@ -469,6 +469,94 @@ describe("notAMove: a split moves code between files", () => {
     expect(notAMove(numstat, split(oldSide, newSide))).toBeUndefined();
   });
 
+  describe("a moved statement that gains export and is re-wrapped (owner v0.10.3 Q23)", () => {
+    // 80 characters as it was; 87 once exported, so prettier wraps it.
+    const journey = [
+      "function journey(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {",
+      "  const out: MilestoneResult[] = []; // the steps",
+      '  out.push(step("zero", now.netWorth, 0));',
+      "  return out;",
+      "}",
+    ];
+    const rewrapped = [
+      "export function journey(",
+      "  input: MilestoneInput,",
+      "  now: MilestoneYear,",
+      "): MilestoneResult[] {",
+      ...journey.slice(1),
+    ];
+    const moved = (lines: string[], extra: string[] = []) =>
+      notAMove(
+        numstat,
+        split(
+          [...journey, ...extra].map((l) => `-${l}`),
+          [
+            '+import { step } from "@/lib/pure/area/steps";',
+            ...lines.map((l) => `+${l}`),
+          ],
+        ),
+      );
+    const edit = (from: string, to: string) =>
+      rewrapped.map((l) => l.replace(from, to));
+
+    it("passes it, compared token by token", () => {
+      expect(moved(rewrapped)).toBeUndefined();
+    });
+
+    it("fails a changed identifier", () => {
+      expect(moved(edit("now: MilestoneYear", "today: MilestoneYear"))).toMatch(
+        /changed line\(s\)/,
+      );
+      expect(moved(edit("now.netWorth", "now.liquid"))).toMatch(
+        /changed line\(s\)/,
+      );
+    });
+
+    it("fails a changed literal", () => {
+      expect(moved(edit('"zero"', '"one"'))).toMatch(/changed line\(s\)/);
+      expect(moved(edit("now.netWorth, 0", "now.netWorth, 1"))).toMatch(
+        /changed line\(s\)/,
+      );
+    });
+
+    it("fails an added statement", () => {
+      const added = [
+        ...rewrapped.slice(0, 5),
+        "  out.length = 0;",
+        ...rewrapped.slice(5),
+      ];
+      expect(moved(added)).toMatch(/changed line\(s\)/);
+    });
+
+    it("fails any token added beside export, or a comment changed inside", () => {
+      const asAsync = ["export async function journey(", ...rewrapped.slice(1)];
+      expect(moved(asAsync)).toMatch(/changed line\(s\)/);
+      expect(moved(edit("// the steps", "// the milestones"))).toMatch(
+        /changed line\(s\)/,
+      );
+    });
+
+    it("fails a statement exported in place and re-wrapped", () => {
+      const inPlace = [
+        "diff --git a/src/server/helpers/big.ts b/src/server/helpers/big.ts",
+        "--- a/src/server/helpers/big.ts",
+        "+++ b/src/server/helpers/big.ts",
+        "@@ -1,8 +1,8 @@",
+        `-${journey[0]}`,
+        ...rewrapped.slice(0, 4).map((l) => `+${l}`),
+        ...journey.slice(1).map((l) => ` ${l}`),
+        ...body.map((l) => `-${l}`),
+        "diff --git a/src/lib/pure/area/part.ts b/src/lib/pure/area/part.ts",
+        "new file mode 100644",
+        "--- /dev/null",
+        "+++ b/src/lib/pure/area/part.ts",
+        "@@ -0,0 +1,3 @@",
+        ...body.map((l) => `+${l}`),
+      ].join("\n");
+      expect(notAMove(numstat, inPlace)).toMatch(/changed line\(s\)/);
+    });
+  });
+
   it("reads a register row's code cells as paths, and only those", () => {
     const row = (fn: string, gap: string) =>
       `| LIM-20 | Periods per year | ${fn} | Owner design | ${gap} |`;
