@@ -10,6 +10,8 @@ import { journeySummary } from "@/components/networth/journey-to-abundance-chart
 import { costTrendSummary } from "@/components/upkeep/cost-trend-chart.summary";
 import { budgetVsActualSummary } from "@/components/expenses/expenses-charts.summary";
 import type { HistoryRow } from "@/components/networth/types";
+import { fundingBarSummary } from "@/components/paycheck/funding-bar.summary";
+import { riskBandSummary } from "@/components/retirement-projection/report/report-risk-band-chart.summary";
 import { balanceSummary } from "@/components/retirement-projection/projection-chart.summary";
 import { stabilitySummary } from "@/components/retirement-projection/spending-stability-chart.summary";
 import { strategyLinesSummary } from "@/components/retirement-projection/withdrawal-comparison.summary";
@@ -286,6 +288,22 @@ describe("chart summaries", () => {
     );
     expect(strategyLinesSummary(rows, strategies, "withdrawal").label).toBe(
       "Annual withdrawal by strategy",
+    );
+  });
+
+  it("a contribution's funding bar, with and without the match beyond it", () => {
+    expect(fundingBarSummary(0.85, false)).toEqual({
+      label: "Funding toward the IRS limit",
+      text: "Employee contribution: 85% of IRS limit.",
+    });
+    expect(fundingBarSummary(1, true).text).toBe(
+      "Employee contribution: 100% of IRS limit. Employer match shown beyond it (does not count toward IRS limit).",
+    );
+  });
+
+  it("the report's risk band, by its axis labels", () => {
+    expect(riskBandSummary("Balance range", 2040, 2080, 2_100_000).text).toBe(
+      "Balance range, 2040 to 2080, on a scale from $0 to $2.1M.",
     );
   });
 });

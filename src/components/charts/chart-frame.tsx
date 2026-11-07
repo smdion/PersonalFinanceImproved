@@ -8,6 +8,7 @@
 import { cloneElement, useId, type ReactElement } from "react";
 import { ResponsiveContainer } from "recharts";
 import type { ChartSummary } from "./chart-summary";
+import { ChartSummaryText } from "./chart-summary-text";
 
 type ChartRootProps = {
   accessibilityLayer?: boolean;
@@ -38,15 +39,5 @@ export function ChartFrame({
         })}
       </ResponsiveContainer>
     </>
-  );
-}
-
-/** The sr-only sentence a chart's `aria-describedby` points at. Placed
- *  before the chart, out of flow, so no sibling or last-child style moves. */
-function ChartSummaryText({ id, text }: { id: string; text: string }) {
-  return (
-    <span id={id} className="sr-only">
-      {text}
-    </span>
   );
 }
