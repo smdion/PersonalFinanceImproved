@@ -12,17 +12,6 @@ import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
 import { alignPaydayOnOrAfter } from "./pay-periods-in-year";
 
 /**
- * Estimates net bonus pay using the IRS supplemental flat withholding method.
- *
- * Bonus gross = salary × bonus% × (months worked in bonus year / 12).
- * Federal withholding uses the supplemental flat rate (e.g. 22%), NOT the marginal bracket rate.
- * FICA is applied to the bonus's FICA wages; SS only on the wage-base room the year's regular
- * FICA wages leave.
- *
- * The bonus check takes each contribution account's bonus-check amount
- * (bonusCheckContribution) — only accounts set to be taken from bonus checks.
- */
-/**
  * Whether a contribution account is paid through payroll: its own
  * `isPayrollDeducted`, or — when that's unset — whether it belongs to a job.
  * The one definition; everything that asks uses it.
@@ -84,6 +73,17 @@ export function bonusCheckContribution(
     : account.perPeriodContribution;
 }
 
+/**
+ * Estimates net bonus pay using the IRS supplemental flat withholding method.
+ *
+ * Bonus gross = salary × bonus% × (months worked in bonus year / 12).
+ * Federal withholding uses the supplemental flat rate (e.g. 22%), NOT the marginal bracket rate.
+ * FICA is applied to the bonus's FICA wages; SS only on the wage-base room the year's regular
+ * FICA wages leave.
+ *
+ * The bonus check takes each contribution account's bonus-check amount
+ * (bonusCheckContribution) — only accounts set to be taken from bonus checks.
+ */
 export function calculateBonus(
   input: PaycheckInput,
   _marginalRate: number,

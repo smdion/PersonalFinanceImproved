@@ -4979,9 +4979,6 @@
   "src/lib/pure/paycheck/bonus.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/pure/paycheck/budget-periods.ts": {
