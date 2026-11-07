@@ -5070,6 +5070,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/savings/efund-expenses.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/savings/efund.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -6624,13 +6632,13 @@
   },
   "src/server/services/savings/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-history-comment": {
       "count": 1

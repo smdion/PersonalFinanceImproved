@@ -234,7 +234,7 @@
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/projection/relocation-analysis.ts": 481,
-    "src/server/services/savings/summary.ts": 429,
+    "src/server/services/savings/summary.ts": 370,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/services/sync/sync-all.ts": 268,
