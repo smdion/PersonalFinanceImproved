@@ -104,7 +104,7 @@
       "count": 3
     }
   },
-  "src/components/portfolio/hooks/use-snapshot-sync-pending.ts": {
+  "src/components/portfolio/use-snapshot-sync-pending.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

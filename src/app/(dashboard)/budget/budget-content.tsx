@@ -47,10 +47,10 @@ import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
 } from "@/components/budget";
-import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutations";
-import { useColumnMutations } from "@/components/budget/hooks/use-column-mutations";
-import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
-import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
+import { useProfileMutations } from "@/components/budget/use-profile-mutations";
+import { useColumnMutations } from "@/components/budget/use-column-mutations";
+import { useSyncMutations } from "@/components/budget/use-sync-mutations";
+import { useItemMutations } from "@/components/budget/use-item-mutations";
 import { CardBoundary } from "@/components/dashboard/utils";
 import {
   BudgetPageContext,

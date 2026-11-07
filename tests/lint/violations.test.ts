@@ -2197,21 +2197,7 @@ const CLIENT_PAGES_KNOWN: string[] = [];
 
 /** Hook files in a `hooks/` folder outside lib/hooks: a hook lives in one
  *  of three homes (its route, its feature folder, lib/hooks). */
-const HOOK_FOLDERS_KNOWN: string[] = [
-  "src/components/budget/hooks/use-column-mutations.ts",
-  "src/components/budget/hooks/use-invalidate-budget.ts",
-  "src/components/budget/hooks/use-item-mutations.ts",
-  "src/components/budget/hooks/use-profile-mutations.ts",
-  "src/components/budget/hooks/use-sync-mutations.ts",
-  "src/components/portfolio/hooks/use-portfolio-snapshot-mutations.ts",
-  "src/components/portfolio/hooks/use-snapshot-sync-pending.ts",
-  "src/components/settings/integrations/hooks/use-budget-mutations.ts",
-  "src/components/settings/integrations/hooks/use-contrib-mutations.ts",
-  "src/components/settings/integrations/hooks/use-drift-mutations.ts",
-  "src/components/settings/integrations/hooks/use-invalidate-preview.ts",
-  "src/components/settings/integrations/hooks/use-portfolio-mutations.ts",
-  "src/components/settings/integrations/hooks/use-savings-mutations.ts",
-];
+const HOOK_FOLDERS_KNOWN: string[] = [];
 
 /** Skeleton returns on missing data, per file: a failed query shows the
  *  skeleton forever. Each goes to QueryBoundary. */

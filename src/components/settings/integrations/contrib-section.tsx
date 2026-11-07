@@ -10,7 +10,7 @@
  * account and at least one linked or unlinked item to show.
  */
 import type { PreviewData } from "../integrations-types";
-import type { ContribMutations } from "./hooks/use-contrib-mutations";
+import type { ContribMutations } from "./use-contrib-mutations";
 import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,

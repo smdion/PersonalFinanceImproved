@@ -15,7 +15,7 @@
  * re-render any of the other four sections.
  */
 import type { PreviewData, Service } from "../integrations-types";
-import type { DriftMutations } from "./hooks/use-drift-mutations";
+import type { DriftMutations } from "./use-drift-mutations";
 
 type Props = {
   service: Service;

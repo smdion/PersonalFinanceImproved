@@ -417,7 +417,7 @@
       "ProfileInlineEditor.iife()": 370,
       "ProfileInlineEditor.iife().map()": 366
     },
-    "src/components/budget/hooks/use-item-mutations.ts": {
+    "src/components/budget/use-item-mutations.ts": {
       "useItemMutations": 182
     },
     "src/components/budget/salary-profile-manager.tsx": {

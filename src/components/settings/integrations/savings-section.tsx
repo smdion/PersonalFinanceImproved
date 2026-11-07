@@ -21,7 +21,7 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { SavingsMutations } from "./hooks/use-savings-mutations";
+import type { SavingsMutations } from "./use-savings-mutations";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,

@@ -16,7 +16,7 @@ vi.mock("@/lib/hooks/use-toast", () => ({
   toast: { error: toastError, success: vi.fn(), info: vi.fn() },
 }));
 
-import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
+import { useSyncMutations } from "@/components/budget/use-sync-mutations";
 import { useApiSync } from "@/components/savings/api-sync-section";
 
 const stopped = new Error("Pushed 2 of 5 categories, then failed");

@@ -11,7 +11,7 @@
  * duplicating the cache-busting logic across the five section hooks.
  *
  * Mirrors the proven pattern at
- * `src/components/settings/integrations/hooks/use-invalidate-preview.ts`.
+ * `src/components/settings/integrations/use-invalidate-preview.ts`.
  */
 
 import { useCallback } from "react";

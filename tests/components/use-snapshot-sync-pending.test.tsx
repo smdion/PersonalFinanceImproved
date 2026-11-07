@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useSnapshotSyncPending } from "@/components/portfolio/hooks/use-snapshot-sync-pending";
+import { useSnapshotSyncPending } from "@/components/portfolio/use-snapshot-sync-pending";
 
 const KEY = "pf-snapshot-unsynced";
 

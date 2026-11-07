@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PortfolioSection } from "@/components/settings/integrations/portfolio-section";
 import type { PreviewData } from "@/components/settings/integrations-types";
-import type { PortfolioMutations } from "@/components/settings/integrations/hooks/use-portfolio-mutations";
+import type { PortfolioMutations } from "@/components/settings/integrations/use-portfolio-mutations";
 
 // Regression test for a live bug: two people sharing the same
 // performanceAccountId (e.g. both have an IRA at the same institution) —

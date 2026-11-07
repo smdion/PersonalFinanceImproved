@@ -18,7 +18,7 @@ import {
   mappingsWithTypedIds,
 } from "@/lib/pure/sync/account-mapping";
 import type { PreviewData, Service } from "../integrations-types";
-import type { PortfolioMutations } from "./hooks/use-portfolio-mutations";
+import type { PortfolioMutations } from "./use-portfolio-mutations";
 import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,

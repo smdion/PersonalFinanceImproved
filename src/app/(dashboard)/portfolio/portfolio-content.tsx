@@ -34,7 +34,7 @@ import {
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
-import { useSnapshotSyncPending } from "@/components/portfolio/hooks/use-snapshot-sync-pending";
+import { useSnapshotSyncPending } from "@/components/portfolio/use-snapshot-sync-pending";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
 import { CardBoundary } from "@/components/dashboard/utils";
 import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
@@ -42,7 +42,7 @@ import { SlidePanel } from "@/components/ui/slide-panel";
 import { AccountBalanceOverview } from "@/components/portfolio/account-balance-overview";
 import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
-import { usePortfolioSnapshotMutations } from "@/components/portfolio/hooks/use-portfolio-snapshot-mutations";
+import { usePortfolioSnapshotMutations } from "@/components/portfolio/use-portfolio-snapshot-mutations";
 
 // Code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.

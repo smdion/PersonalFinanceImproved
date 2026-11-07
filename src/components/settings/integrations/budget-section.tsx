@@ -30,7 +30,7 @@ import {
   SectionSummaryRow,
 } from "./section-summary-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { BudgetMutations } from "./hooks/use-budget-mutations";
+import type { BudgetMutations } from "./use-budget-mutations";
 
 type Props = {
   service: Service;

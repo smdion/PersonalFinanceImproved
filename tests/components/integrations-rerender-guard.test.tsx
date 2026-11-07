@@ -33,7 +33,7 @@ beforeEach(() => {
 describe("integrations per-section mutation hooks — re-render guard", () => {
   it("useDriftMutations returns the expected 3-mutation shape", async () => {
     const { useDriftMutations } =
-      await import("@/components/settings/integrations/hooks/use-drift-mutations");
+      await import("@/components/settings/integrations/use-drift-mutations");
     const { result } = renderHook(() => useDriftMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
@@ -43,7 +43,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("useBudgetMutations returns the expected 9-mutation shape", async () => {
     const { useBudgetIntegrationsMutations } =
-      await import("@/components/settings/integrations/hooks/use-budget-mutations");
+      await import("@/components/settings/integrations/use-budget-mutations");
     const { result } = renderHook(() => useBudgetIntegrationsMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
@@ -63,7 +63,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("useSavingsMutations returns the expected 6-mutation shape", async () => {
     const { useSavingsMutations } =
-      await import("@/components/settings/integrations/hooks/use-savings-mutations");
+      await import("@/components/settings/integrations/use-savings-mutations");
     const { result } = renderHook(() => useSavingsMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
@@ -80,7 +80,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("useContribMutations returns the expected 2-mutation shape", async () => {
     const { useContribMutations } =
-      await import("@/components/settings/integrations/hooks/use-contrib-mutations");
+      await import("@/components/settings/integrations/use-contrib-mutations");
     const { result } = renderHook(() => useContribMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["linkContrib", "unlinkContrib"].sort());
@@ -88,7 +88,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("usePortfolioMutations returns the expected 2-mutation shape", async () => {
     const { usePortfolioMutations } =
-      await import("@/components/settings/integrations/hooks/use-portfolio-mutations");
+      await import("@/components/settings/integrations/use-portfolio-mutations");
     const { result } = renderHook(() => usePortfolioMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["createAssetAndMap", "updateMappings"].sort());
@@ -96,7 +96,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("useInvalidatePreview returns a stable callback across re-renders", async () => {
     const { useInvalidatePreview } =
-      await import("@/components/settings/integrations/hooks/use-invalidate-preview");
+      await import("@/components/settings/integrations/use-invalidate-preview");
     const { result, rerender } = renderHook(() => useInvalidatePreview());
     const first = result.current;
     rerender();
@@ -112,11 +112,11 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("every section hook returns a flat mutation bundle, not a { mutations, invalidate } wrapper", async () => {
     const [drift, budget, savings, contrib, portfolio] = await Promise.all([
-      import("@/components/settings/integrations/hooks/use-drift-mutations"),
-      import("@/components/settings/integrations/hooks/use-budget-mutations"),
-      import("@/components/settings/integrations/hooks/use-savings-mutations"),
-      import("@/components/settings/integrations/hooks/use-contrib-mutations"),
-      import("@/components/settings/integrations/hooks/use-portfolio-mutations"),
+      import("@/components/settings/integrations/use-drift-mutations"),
+      import("@/components/settings/integrations/use-budget-mutations"),
+      import("@/components/settings/integrations/use-savings-mutations"),
+      import("@/components/settings/integrations/use-contrib-mutations"),
+      import("@/components/settings/integrations/use-portfolio-mutations"),
     ]);
     // Smoke: every hook exports a factory whose return is flat — each value
     // is a mutation object (has `.mutate`), and neither `mutations` nor
