@@ -1164,6 +1164,11 @@
       "count": 4
     }
   },
+  "src/components/retirement-projection/mc-simulation-bar.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/components/retirement-projection/mc-summary-tiles.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -1359,16 +1364,10 @@
     }
   },
   "src/components/retirement-projection/projection-mc-results.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-jsx-iife": {
       "count": 1
     }
   },
