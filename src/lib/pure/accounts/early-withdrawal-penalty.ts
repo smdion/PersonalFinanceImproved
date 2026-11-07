@@ -4,6 +4,7 @@
  * §72(t)) or the type's non-medical penalty (HSA's 20%, IRC §223(f)(4)).
  */
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
+import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 import { nonMedicalPenaltyRate } from "@/lib/config/account-types";
 import { EARLY_WITHDRAWAL_PENALTY_RATE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
@@ -16,7 +17,7 @@ type EarlyWithdrawalPenalty = {
   penalizedAmount: number;
   byKey: Map<
     string,
-    { penalizedAmount: number; penaltyCost: number; reason: string }
+    { penalizedAmount: number; penaltyCost: number; reason: EligibilityReason }
   >;
 };
 
@@ -37,7 +38,7 @@ export function computeEarlyWithdrawalPenalty(input: {
   const { exposure, withdrawnByKey } = input;
   const byKey = new Map<
     string,
-    { penalizedAmount: number; penaltyCost: number; reason: string }
+    { penalizedAmount: number; penaltyCost: number; reason: EligibilityReason }
   >();
   let penaltyCost = 0;
   let penalizedAmount = 0;

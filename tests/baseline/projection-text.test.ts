@@ -2,7 +2,7 @@
  * Behavior baseline: the engine result's text and flags (v0.10.3 plan
  * commit 3, owner Q4: added as pins). Part c keeps numbers only, so the
  * engine's warnings (each year's, and the input's) and each account-year's
- * strings and flags (`eligibilityReason`, `eligibilityLocked`,
+ * strings and flags (`draw.reason`, `draw.eligibilityLocked`,
  * `projectedOnly`, the names and tax types) reach no pinned file there;
  * the engine snapshots keep only a warning count. The stages of v0.10.3
  * move the code that pushes them.

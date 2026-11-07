@@ -3,6 +3,7 @@
 
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
+import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 import type {
   RuleOf55Status,
   RothBasisMeta,
@@ -168,9 +169,9 @@ export type AccountYearDraw = {
    *  `withdrawal-eligibility.ts`'s module docblock). `reason` explains why,
    *  from `AccountEligibility.reason`. Absent when the account has no
    *  resolvable eligibility question for this category (e.g. brokerage —
-   *  though that case still gets a reason string, just never `locked`). */
+   *  though that case still gets a reason, just never `locked`). */
   eligibilityLocked?: boolean;
-  eligibilityReason?: string;
+  reason?: EligibilityReason;
   /** Start-of-year dollars drawable this year without the early-withdrawal
    *  penalty, and those that aren't (before this year's withdrawals and
    *  growth — the numbers routing used). */

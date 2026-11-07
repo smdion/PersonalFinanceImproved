@@ -57,11 +57,11 @@ import type {
   RuleOf55Status,
   RothBasisMeta,
 } from "@/lib/pure/accounts/tax-bucket-analysis";
-import { formatCurrency } from "@/lib/utils/format";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 
 /** The account shape this module needs — a structural subset of
  *  `IndividualAccountInput` (`lib/pure/accounts/account-balances.types.ts`), named
@@ -128,12 +128,9 @@ export type AccountEligibility = {
   penaltyFreeAmount: number;
   /** Balance − penaltyFreeAmount. Every dollar here costs 10% if drawn. */
   penaltyExposedAmount: number;
-  /** Human-readable explanation of the eligibility verdict above — which
-   *  early-access rule decided it, and (for the pro_rata/basis_first
-   *  branches) the concrete age/year that drove the call. Surfaced in the
-   *  UI so a household can see WHY the engine drew from — or excluded — a
-   *  given account, not just that it did. Always present. */
-  reason: string;
+  /** Which early-access rule decided the verdict above, with the age,
+   *  year or basis that drove it. Always present. */
+  reason: EligibilityReason;
   /** Start-of-year tracked Roth basis remaining (contribution + conversion
    *  combined) — present only when `indBasis` was supplied and this is a
    *  taxFree-bucket account. Absent (not zero) when tracked basis isn't
@@ -254,7 +251,7 @@ export function computeWithdrawalEligibility(input: {
     const balance = indBal.get(key) ?? 0;
     const birthYear = ia.ownerBirthYear;
 
-    let reason = "No individual eligibility rule (joint account)";
+    let reason: EligibilityReason = { kind: "no_owner" };
     let basisRemaining: number | undefined;
     let basisUncertain: boolean | undefined;
     let penaltyFreeAmount = balance; // default: joint/no-owner accounts are always fully penalty-free
@@ -310,38 +307,45 @@ export function computeWithdrawalEligibility(input: {
           Math.max(0, balance - penaltyFreeAmount),
         );
         if (currentAge >= PENALTY_FREE_AGE) {
-          reason = "Eligible — age 59½ or older";
+          reason = { kind: "age_reached", gate: "age_59_half" };
         } else if (isRoth && !locked && growthExposed <= 0.005) {
-          reason = `Eligible — ${formatCurrency(basisRemaining ?? 0)} basis remaining, always penalty-free`;
+          reason = { kind: "basis_remaining", basis: basisRemaining ?? 0 };
         } else if (isRoth && !locked) {
-          // Part reachable (basis), part locked until 59½ (growth).
-          reason = `Partially eligible — ${formatCurrency(basisRemaining ?? 0)} basis penalty-free, ${formatCurrency(growthExposed)} growth locked until 59½`;
+          reason = {
+            kind: "basis_partial",
+            basis: basisRemaining ?? 0,
+            growthLocked: growthExposed,
+          };
         } else if (isRoth) {
-          reason = "Locked until age 59½ — no basis remaining";
+          reason = { kind: "no_basis" };
         } else {
-          reason = `Locked until age 59½ (currently ${currentAge})`;
+          reason = { kind: "locked", gate: "age_59_half", currentAge };
         }
       } else if (rule === "employer_plan") {
         if (ruleOf55Met) {
           reason =
             projected?.separationYear != null
-              ? `Eligible — Rule of 55 met (separated ${projected.separationYear})`
-              : "Eligible — Rule of 55 met";
+              ? { kind: "rule_of_55", separationYear: projected.separationYear }
+              : { kind: "rule_of_55" };
         } else if (currentAge >= PENALTY_FREE_AGE) {
-          reason = "Eligible — age 59½ or older";
+          reason = { kind: "age_reached", gate: "age_59_half" };
         } else if (ia.ruleOf55ForceIneligible) {
-          reason = `Locked until age 59½ — Rule of 55 marked unavailable for forecasting (currently ${currentAge})`;
+          reason = {
+            kind: "locked",
+            gate: "rule_of_55_unavailable",
+            currentAge,
+          };
         } else {
-          reason = `Locked until Rule of 55 or age 59½ (currently ${currentAge})`;
+          reason = { kind: "locked", gate: "rule_of_55_or_age", currentAge };
         }
       } else if (rule === "hsa_non_medical" && slices) {
         reason = allSlicesLocked(slices)
-          ? `Locked until age 65 — non-medical withdrawal penalty (currently ${currentAge})`
-          : "Eligible — age 65 or older";
+          ? { kind: "locked", gate: "hsa_age_65", currentAge }
+          : { kind: "age_reached", gate: "hsa_age_65" };
       } else {
         // Rule "none" (brokerage): no age or employer gate, so the whole
         // balance stays penalty-free.
-        reason = "Always accessible — no age or employer restriction";
+        reason = { kind: "always_available" };
       }
     }
 
@@ -360,16 +364,9 @@ export function computeWithdrawalEligibility(input: {
       allowPenalizedWithdrawals: ia.allowPenalizedWithdrawals ?? false,
     });
 
-    // A Portfolio-parented account's penalty exposure is never added
-    // to these category-level aggregates — it's excluded from routing
-    // wholesale via computeNonRetirementExclusion instead (see
-    // parentCategory's docblock above). Without this gate, a hypothetical
-    // Portfolio-parented pre-59½ 401k/IRA would have the same dollars
-    // counted in both exclusion mechanisms, and the two subtractions
-    // applied to `balances` downstream would double-remove them. The
-    // per-account `byKey` entry above is NOT gated — it still gets a
-    // normal, informative reason string for the UI regardless of
-    // parentCategory.
+    // A Portfolio-parented account stays out of these aggregates:
+    // computeNonRetirementExclusion excludes it wholesale, and counting it
+    // here too would remove its dollars twice. Its `byKey` entry stays.
     if (
       isRetirementMoney(ia.parentCategory) &&
       getAccountTypeConfig(ia.category).balanceStructure !== "basis_tracking"

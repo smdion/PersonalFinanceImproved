@@ -889,7 +889,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -901,7 +903,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -916,7 +921,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -928,7 +936,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1034,7 +1044,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1046,7 +1058,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1061,7 +1076,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1073,7 +1091,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1179,7 +1199,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1191,7 +1213,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1206,7 +1231,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1218,7 +1246,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1324,7 +1354,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1336,7 +1368,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1351,7 +1386,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1363,7 +1401,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1469,7 +1509,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1481,7 +1523,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1496,7 +1541,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1508,7 +1556,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1614,7 +1664,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1626,7 +1678,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1641,7 +1696,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1653,7 +1711,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1759,7 +1819,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1771,7 +1833,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1786,7 +1851,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1798,7 +1866,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -1904,7 +1974,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -1916,7 +1988,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -1931,7 +2006,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -1943,7 +2021,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -2049,7 +2129,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -2061,7 +2143,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -2076,7 +2161,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -2088,7 +2176,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -2194,7 +2284,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -2206,7 +2298,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -2221,7 +2316,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -2233,7 +2331,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -2339,7 +2439,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -2351,7 +2453,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -2366,7 +2471,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -2378,7 +2486,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -2390,7 +2500,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -2501,7 +2613,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -2513,7 +2627,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -2528,7 +2645,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -2540,7 +2660,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -2552,7 +2674,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -2663,7 +2787,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
@@ -2675,7 +2801,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
@@ -2690,7 +2819,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
@@ -2702,7 +2834,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
@@ -2714,7 +2848,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",

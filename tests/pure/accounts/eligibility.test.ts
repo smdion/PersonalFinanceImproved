@@ -3,6 +3,7 @@
  * behavior. Not yet wired into the engine —
  * these are pure-function tests against the locked designs.
  */
+import { describeEligibility } from "@/lib/config/eligibility-labels";
 import { describe, it, expect } from "vitest";
 import {
   computeWithdrawalEligibility,
@@ -55,7 +56,7 @@ describe("computeWithdrawalEligibility", () => {
     expect(entry.penaltyFreeAmount).toBe(0);
     expect(record.totalPenaltyExposed).toBe(100000);
     expect(record.penaltyExposedTrad["401k"]).toBe(100000);
-    expect(entry.reason).toBe(
+    expect(describeEligibility(entry.reason)).toBe(
       "Locked until Rule of 55 or age 59½ (currently 36)",
     );
   });
@@ -81,7 +82,9 @@ describe("computeWithdrawalEligibility", () => {
     expect(entry.penaltyExposedAmount).toBe(0);
     expect(entry.penaltyFreeAmount).toBe(100000);
     expect(record.totalPenaltyExposed).toBe(0);
-    expect(entry.reason).toBe("Eligible — Rule of 55 met (separated 2026)");
+    expect(describeEligibility(entry.reason)).toBe(
+      "Eligible — Rule of 55 met (separated 2026)",
+    );
   });
 
   it("does not lock a 401k once the owner turns 59.5 regardless of Rule of 55", () => {
@@ -107,7 +110,9 @@ describe("computeWithdrawalEligibility", () => {
     // resolves Rule of 55 as met by assuming separation in the projected
     // year itself, since source is "active" with no known future date) —
     // Rule of 55 is reported first when both apply.
-    expect(entry.reason).toBe("Eligible — Rule of 55 met (separated 2026)");
+    expect(describeEligibility(entry.reason)).toBe(
+      "Eligible — Rule of 55 met (separated 2026)",
+    );
   });
 
   it("projects a still-employed (source active) worker's Rule of 55 forward to a future year they'd have separated in", () => {
@@ -168,7 +173,9 @@ describe("computeWithdrawalEligibility", () => {
         indKey,
       }).byKey.get(indKey(ia))!;
       expect(entry.penaltyExposedAmount).toBe(80000);
-      expect(entry.reason).toContain("Rule of 55 marked unavailable");
+      expect(describeEligibility(entry.reason)).toContain(
+        "Rule of 55 marked unavailable",
+      );
     });
 
     it("does NOT lock a 63-year-old with the override on -- the 59½ path still applies", () => {
@@ -196,7 +203,9 @@ describe("computeWithdrawalEligibility", () => {
       }).byKey.get(indKey(ia))!;
       expect(entry.penaltyExposedAmount).toBe(0);
       expect(entry.penaltyFreeAmount).toBe(60000);
-      expect(entry.reason).toBe("Eligible — age 59½ or older");
+      expect(describeEligibility(entry.reason)).toBe(
+        "Eligible — age 59½ or older",
+      );
     });
 
     it("omitted (default) leaves Rule of 55 projection unaffected -- byte-identical to no override", () => {
@@ -291,7 +300,7 @@ describe("computeWithdrawalEligibility", () => {
     // Balance ($25k) exceeds basis ($20k) — some growth is penalty-exposed,
     // so the reason text says "Partially eligible", never plain "Eligible"
     // (that would read as a free lunch on the $5k of growth).
-    expect(entry.reason).toBe(
+    expect(describeEligibility(entry.reason)).toBe(
       "Partially eligible — $20,000.00 basis penalty-free, $5,000.00 growth locked until 59½",
     );
     expect(entry.basisRemaining).toBe(20000);
@@ -314,7 +323,9 @@ describe("computeWithdrawalEligibility", () => {
     const entry = record.byKey.get(indKey(ia))!;
     expect(entry.penaltyExposedAmount).toBe(10000);
     expect(record.penaltyExposedRoth["ira"]).toBe(10000);
-    expect(entry.reason).toBe("Locked until age 59½ — no basis remaining");
+    expect(describeEligibility(entry.reason)).toBe(
+      "Locked until age 59½ — no basis remaining",
+    );
     expect(entry.basisRemaining).toBe(0);
   });
 
@@ -332,7 +343,7 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     }).byKey.get(indKey(young))!;
     expect(lockedResult.penaltyExposedAmount).toBe(15000);
-    expect(lockedResult.reason).toBe(
+    expect(describeEligibility(lockedResult.reason)).toBe(
       "Locked until age 65 — non-medical withdrawal penalty (currently 46)",
     );
 
@@ -349,7 +360,9 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     }).byKey.get(indKey(old))!;
     expect(eligibleResult.penaltyExposedAmount).toBe(0);
-    expect(eligibleResult.reason).toBe("Eligible — age 65 or older");
+    expect(describeEligibility(eligibleResult.reason)).toBe(
+      "Eligible — age 65 or older",
+    );
   });
 
   it("never locks brokerage regardless of age", () => {
@@ -367,7 +380,7 @@ describe("computeWithdrawalEligibility", () => {
     });
     expect(record.byKey.get(indKey(ia))!.penaltyExposedAmount).toBe(0);
     expect(record.totalPenaltyExposed).toBe(0);
-    expect(record.byKey.get(indKey(ia))!.reason).toBe(
+    expect(describeEligibility(record.byKey.get(indKey(ia))!.reason)).toBe(
       "Always accessible — no age or employer restriction",
     );
   });
@@ -386,7 +399,7 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     });
     expect(record.byKey.get(indKey(ia))!.penaltyExposedAmount).toBe(0);
-    expect(record.byKey.get(indKey(ia))!.reason).toBe(
+    expect(describeEligibility(record.byKey.get(indKey(ia))!.reason)).toBe(
       "No individual eligibility rule (joint account)",
     );
   });
@@ -500,7 +513,9 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     expect(entry.penaltyExposedAmount).toBe(5000);
     expect(entry.basisRemaining).toBe(15000);
     expect(entry.basisUncertain).toBe(true); // stale source year disclosed
-    expect(entry.reason).toContain("$15,000.00 basis penalty-free");
+    expect(describeEligibility(entry.reason)).toContain(
+      "$15,000.00 basis penalty-free",
+    );
   });
 
   it("is byte-identical to the snapshot path when indBasis is omitted (existing behavior preserved)", () => {
@@ -574,7 +589,7 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
       ]),
     }).byKey.get(key)!;
     expect(basisExhausted.penaltyExposedAmount).toBe(5000);
-    expect(basisExhausted.reason).toBe(
+    expect(describeEligibility(basisExhausted.reason)).toBe(
       "Locked until age 59½ — no basis remaining",
     );
   });
@@ -757,7 +772,7 @@ describe("computeWithdrawalEligibility — Portfolio-parented double-count guard
     });
     const entry = record.byKey.get(indKey(portfolio401k))!;
     expect(entry.penaltyExposedAmount).toBe(500000);
-    expect(entry.reason).toBe(
+    expect(describeEligibility(entry.reason)).toBe(
       "Locked until Rule of 55 or age 59½ (currently 36)",
     );
   });

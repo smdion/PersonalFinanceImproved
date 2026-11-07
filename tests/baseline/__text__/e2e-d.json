@@ -160,7 +160,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 51)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -172,7 +175,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -187,7 +192,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 49)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -199,7 +207,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -214,7 +224,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -225,7 +237,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 51)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -336,7 +351,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 52)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -348,7 +366,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -363,7 +383,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 50)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -375,7 +398,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -390,7 +415,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -401,7 +428,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 52)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -512,7 +542,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 53)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -524,7 +557,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -539,7 +574,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 51)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -551,7 +589,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -566,7 +606,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -577,7 +619,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 53)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -688,7 +733,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 54)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -700,7 +748,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -715,7 +765,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 52)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -727,7 +780,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -742,7 +797,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -753,7 +810,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 54)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -864,7 +924,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 55)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -876,7 +939,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -891,7 +956,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 53)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -903,7 +971,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -918,7 +988,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -929,7 +1001,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 55)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -1040,7 +1115,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 56)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1052,184 +1130,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
-     },
-     "name": "Sam IRA (Schwab)",
-     "ownerName": "Sam",
-     "parentCategory": "Retirement",
-     "roth": {
-      "basisUncertain": false
-     },
-     "taxType": "taxFree"
-    },
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 54)"
-     },
-     "name": "Alex IRA (Schwab)",
-     "ownerName": "Alex",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
-     },
-     "name": "Alex IRA (Schwab)",
-     "ownerName": "Alex",
-     "parentCategory": "Retirement",
-     "roth": {
-      "basisUncertain": false
-     },
-     "taxType": "taxFree"
-    },
-    {
-     "category": "brokerage",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
-     },
-     "name": "Joint Brokerage (Vanguard)",
-     "parentCategory": "Retirement",
-     "taxType": "afterTax"
-    },
-    {
-     "category": "hsa",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 56)"
-     },
-     "name": "Sam HSA (Fidelity)",
-     "ownerName": "Sam",
-     "parentCategory": "Retirement",
-     "taxType": "hsa"
-    }
-   ],
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Sam"
-    },
-    {
-     "personName": "Alex"
-    }
-   ],
-   "strategyAction": "floor_applied",
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
-    {
-     "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "individualAccountBalances": [
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 57)"
-     },
-     "name": "Sam IRA (Schwab)",
-     "ownerName": "Sam",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1244,7 +1147,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 55)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1256,7 +1162,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1271,7 +1179,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -1282,7 +1192,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 57)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -1394,7 +1307,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 58)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1406,7 +1322,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1421,7 +1339,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 56)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1433,7 +1354,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1448,7 +1371,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -1459,7 +1384,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 58)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -1571,7 +1499,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 59)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1583,7 +1514,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1598,7 +1531,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 57)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1610,7 +1546,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1625,7 +1563,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -1636,7 +1576,202 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 59)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -1743,7 +1878,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1755,7 +1893,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1770,7 +1911,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 58)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1782,7 +1926,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1797,7 +1943,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -1808,7 +1956,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 60)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -1915,7 +2066,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1927,7 +2081,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -1942,7 +2099,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 59)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1954,7 +2114,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -1969,7 +2131,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -1980,7 +2144,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 61)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -2087,7 +2254,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2099,7 +2269,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2114,7 +2287,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2126,7 +2302,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2141,7 +2320,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -2152,7 +2333,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 62)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -2259,7 +2443,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2271,7 +2458,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2286,7 +2476,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2298,7 +2491,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2313,7 +2509,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -2324,7 +2522,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 63)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -2431,7 +2632,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2443,7 +2647,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2458,7 +2665,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2470,7 +2680,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2485,7 +2698,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -2496,7 +2711,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 64)"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -2603,7 +2821,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2615,7 +2836,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2630,7 +2854,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2642,7 +2869,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2657,7 +2887,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -2668,7 +2900,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -2780,7 +3015,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2792,7 +3030,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2807,7 +3048,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2819,7 +3063,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2834,7 +3081,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -2845,7 +3094,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -2960,7 +3212,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2972,7 +3227,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -2987,7 +3245,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -2999,7 +3260,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3014,7 +3278,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -3025,7 +3291,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -3137,7 +3406,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3149,7 +3421,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3164,7 +3439,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3176,7 +3454,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3191,7 +3472,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -3202,7 +3485,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -3314,7 +3600,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3326,7 +3615,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3341,7 +3633,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3353,7 +3648,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3368,7 +3666,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -3379,7 +3679,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -3491,7 +3794,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3503,7 +3809,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3518,7 +3827,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3530,7 +3842,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3545,7 +3860,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -3556,7 +3873,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -3668,7 +3988,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3680,7 +4003,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3695,7 +4021,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3707,7 +4036,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3722,7 +4054,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -3733,7 +4067,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -3848,7 +4185,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3860,7 +4200,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -3875,7 +4218,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3887,7 +4233,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -3902,7 +4251,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -3913,7 +4264,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -4020,7 +4374,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4032,7 +4389,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4047,7 +4407,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4059,7 +4422,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4074,7 +4440,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -4085,7 +4453,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -4192,7 +4563,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4204,7 +4578,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4219,7 +4596,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4231,7 +4611,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4246,7 +4629,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -4257,7 +4642,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -4364,7 +4752,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4376,7 +4767,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4391,7 +4785,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4403,7 +4800,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4418,7 +4818,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -4429,7 +4831,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -4536,7 +4941,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4548,7 +4956,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4563,7 +4974,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4575,7 +4989,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4590,7 +5007,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -4601,7 +5020,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -4708,7 +5130,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4720,7 +5145,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4735,7 +5163,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4747,7 +5178,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4762,7 +5196,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -4773,7 +5209,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -4880,7 +5319,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4892,7 +5334,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -4907,7 +5352,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4919,7 +5367,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -4934,7 +5385,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -4945,7 +5398,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -5052,7 +5508,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5064,7 +5523,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5079,7 +5541,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5091,7 +5556,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5106,7 +5574,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -5117,7 +5587,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -5224,7 +5697,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5236,7 +5712,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5251,7 +5730,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5263,7 +5745,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5278,7 +5763,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -5289,7 +5776,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -5396,7 +5886,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5408,7 +5901,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5423,7 +5919,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5435,7 +5934,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5450,7 +5952,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -5461,7 +5965,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -5568,7 +6075,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5580,7 +6090,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5595,7 +6108,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5607,7 +6123,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5622,7 +6141,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -5633,7 +6154,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -5740,7 +6264,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5752,7 +6279,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5767,7 +6297,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5779,7 +6312,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5794,7 +6330,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -5805,7 +6343,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -5912,7 +6453,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5924,7 +6468,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -5939,7 +6486,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5951,7 +6501,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -5966,7 +6519,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -5977,7 +6532,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -6084,7 +6642,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6096,7 +6657,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6111,7 +6675,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6123,7 +6690,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6138,7 +6708,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -6149,7 +6721,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -6256,7 +6831,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6268,7 +6846,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6283,7 +6864,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6295,7 +6879,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6310,7 +6897,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -6321,7 +6910,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -6428,7 +7020,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6440,7 +7035,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6455,7 +7053,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6467,7 +7068,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6482,7 +7086,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -6493,7 +7099,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -6600,7 +7209,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6612,7 +7224,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6627,7 +7242,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6639,7 +7257,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6654,7 +7275,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -6665,7 +7288,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -6772,7 +7398,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6784,7 +7413,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6799,7 +7431,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6811,7 +7446,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6826,7 +7464,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -6837,7 +7477,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -6944,7 +7587,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6956,7 +7602,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -6971,7 +7620,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6983,7 +7635,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -6998,7 +7653,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -7009,7 +7666,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -7116,7 +7776,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7128,7 +7791,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7143,7 +7809,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7155,7 +7824,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7170,7 +7842,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -7181,7 +7855,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -7288,7 +7965,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7300,7 +7980,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7315,7 +7998,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7327,7 +8013,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7342,7 +8031,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -7353,7 +8044,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -7460,7 +8154,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7472,7 +8169,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7487,7 +8187,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7499,7 +8202,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7514,7 +8220,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -7525,7 +8233,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -7632,7 +8343,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7644,7 +8358,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7659,7 +8376,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7671,7 +8391,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7686,7 +8409,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -7697,7 +8422,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -7804,7 +8532,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7816,7 +8547,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7831,7 +8565,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7843,7 +8580,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -7858,7 +8598,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -7869,7 +8611,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",
@@ -7976,7 +8721,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -7988,7 +8736,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam IRA (Schwab)",
      "ownerName": "Sam",
@@ -8003,7 +8754,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -8015,7 +8769,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Alex IRA (Schwab)",
      "ownerName": "Alex",
@@ -8030,7 +8787,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Joint Brokerage (Vanguard)",
      "parentCategory": "Retirement",
@@ -8041,7 +8800,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 65 or older"
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
      },
      "name": "Sam HSA (Fidelity)",
      "ownerName": "Sam",

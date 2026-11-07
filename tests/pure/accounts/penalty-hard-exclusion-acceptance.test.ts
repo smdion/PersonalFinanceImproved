@@ -9,6 +9,7 @@
  * This file covers the criteria provable directly against
  * computeWithdrawalEligibility and getRmdStartAge.
  */
+import { describeEligibility } from "@/lib/config/eligibility-labels";
 import { describe, it, expect } from "vitest";
 import {
   computeWithdrawalEligibility,
@@ -235,6 +236,8 @@ describe("penalty-hard-exclusion acceptance criteria", () => {
     const entry = record.byKey.get(indKey(ia))!;
     expect(entry.penaltyFreeAmount).toBe(60000);
     expect(entry.penaltyExposedAmount).toBe(0);
-    expect(entry.reason).toBe("No individual eligibility rule (joint account)");
+    expect(describeEligibility(entry.reason)).toBe(
+      "No individual eligibility rule (joint account)",
+    );
   });
 });

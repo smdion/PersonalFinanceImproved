@@ -33,7 +33,7 @@ import {
  * Build individual account year balance records for output.
  *
  * `eligibility` (decumulation only) —
- * when provided, each output record's `draw.eligibilityLocked`/`eligibilityReason`
+ * when provided, each output record's `draw.eligibilityLocked`/`reason`
  * are read straight from the matching `AccountEligibility` entry, so the
  * UI can show why the engine did or didn't prefer an account this year.
  * Purely a read/pass-through here — this module never computes eligibility
@@ -82,7 +82,7 @@ export function buildIndividualYearBalances(
             eligibilityLocked:
               acctEligibility.penaltyFreeAmount <= 0.005 &&
               acctEligibility.penaltyExposedAmount > 0,
-            eligibilityReason: acctEligibility.reason,
+            reason: acctEligibility.reason,
             // Start-of-year capacity (before this year's withdrawals and
             // growth) — the same numbers routing used.
             penaltyFreeAmount: acctEligibility.penaltyFreeAmount,

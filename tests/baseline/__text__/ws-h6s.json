@@ -69,7 +69,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -168,7 +171,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -267,7 +273,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -366,7 +375,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -465,7 +477,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -564,7 +579,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -663,7 +681,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -762,7 +783,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -861,7 +885,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -960,7 +987,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1059,7 +1089,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1158,7 +1191,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1257,7 +1293,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1356,7 +1395,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1455,7 +1497,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1554,7 +1599,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1653,7 +1701,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1752,7 +1803,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1851,7 +1905,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
@@ -1950,7 +2007,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { describeEligibility } from "@/lib/config/eligibility-labels";
 import {
   makeIndKey,
   specKeyOf,
@@ -317,7 +318,7 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 20000,
             penaltyExposedAmount: 0,
-            reason: "Eligible — Rule of 55 met",
+            reason: { kind: "rule_of_55" },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -329,7 +330,11 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 100000,
-            reason: "Locked until Rule of 55 or age 59½",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -431,7 +436,11 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 20000,
-            reason: "Locked until Rule of 55 or age 59½",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: true,
           },
         ],
@@ -443,7 +452,11 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 20000,
-            reason: "Locked until Rule of 55 or age 59½",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -546,7 +559,11 @@ describe("distributeWithdrawals", () => {
       taxType: "preTax",
       penaltyFreeAmount: 0,
       penaltyExposedAmount,
-      reason: "Locked until Rule of 55 or age 59½",
+      reason: {
+        kind: "locked" as const,
+        gate: "rule_of_55_or_age" as const,
+        currentAge: 40,
+      },
       allowPenalizedWithdrawals,
     });
     const eligibility: EligibilityRecord = {
@@ -1735,7 +1752,7 @@ describe("buildIndividualYearBalances", () => {
     expect(result[0]!.balance).toBe(85000);
   });
 
-  it("passes eligibilityLocked/eligibilityReason through from the eligibility record (v0.7.8 follow-up)", () => {
+  it("passes eligibilityLocked/reason through from the eligibility record (v0.7.8 follow-up)", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({
         name: "Locked 401k",
@@ -1764,7 +1781,11 @@ describe("buildIndividualYearBalances", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 50000,
-            reason: "Locked until Rule of 55 or age 59½ (currently 40)",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -1805,7 +1826,7 @@ describe("buildIndividualYearBalances", () => {
 
     const locked = result.find((r) => r.name === "Locked 401k")!;
     expect(locked.draw?.eligibilityLocked).toBe(true);
-    expect(locked.draw?.eligibilityReason).toBe(
+    expect(describeEligibility(locked.draw!.reason!)).toBe(
       "Locked until Rule of 55 or age 59½ (currently 40)",
     );
 
@@ -1814,7 +1835,7 @@ describe("buildIndividualYearBalances", () => {
     // stay absent rather than defaulting to a misleading "not locked".
     const noData = result.find((r) => r.name === "No Eligibility Data")!;
     expect(noData.draw?.eligibilityLocked).toBeUndefined();
-    expect(noData.draw?.eligibilityReason).toBeUndefined();
+    expect(noData.draw?.reason).toBeUndefined();
   });
 
   it("zeroes balance below $1 threshold", () => {

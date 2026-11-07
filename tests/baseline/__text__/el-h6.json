@@ -111,7 +111,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 50)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -212,7 +215,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 51)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -313,7 +319,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 52)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -414,7 +423,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 53)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -515,7 +527,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 54)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -616,7 +631,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 55)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -717,7 +735,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 56)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -818,7 +839,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 57)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -919,7 +943,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 58)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1020,7 +1047,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 59)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1121,7 +1151,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1219,7 +1252,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1317,7 +1353,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1415,7 +1454,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1513,7 +1555,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1611,7 +1656,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1709,7 +1757,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1807,7 +1858,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -1905,7 +1959,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2003,7 +2060,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2101,7 +2161,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2199,7 +2262,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2297,7 +2363,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2395,7 +2464,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2493,7 +2565,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2591,7 +2666,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2603,7 +2681,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -2701,7 +2781,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
@@ -2713,7 +2796,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",

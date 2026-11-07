@@ -985,7 +985,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -997,7 +999,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1012,7 +1016,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1110,7 +1116,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1122,7 +1130,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1137,7 +1147,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1235,7 +1247,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1247,7 +1261,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1262,7 +1278,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1360,7 +1378,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1372,7 +1392,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1387,7 +1409,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1485,7 +1509,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1497,7 +1523,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1512,7 +1540,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1610,7 +1640,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1622,7 +1654,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1637,7 +1671,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1735,7 +1771,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1747,7 +1785,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1762,7 +1802,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1860,7 +1902,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1872,7 +1916,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1887,7 +1933,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -1985,7 +2033,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -1997,7 +2047,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2012,7 +2064,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2110,7 +2164,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2122,7 +2178,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2137,7 +2195,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2235,7 +2295,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2247,7 +2309,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2262,7 +2326,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2360,7 +2426,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2372,7 +2440,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2387,7 +2457,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2485,7 +2557,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2497,7 +2571,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2512,7 +2588,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2610,7 +2688,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2622,7 +2702,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2637,7 +2719,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2735,7 +2819,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2747,7 +2833,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2762,7 +2850,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2860,7 +2950,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2872,7 +2964,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2887,7 +2981,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
@@ -2985,7 +3081,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -2997,7 +3095,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
@@ -3012,7 +3112,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",

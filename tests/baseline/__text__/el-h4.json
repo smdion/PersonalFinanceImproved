@@ -125,7 +125,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -137,7 +139,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 49)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -149,7 +154,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -250,7 +257,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -262,7 +271,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 50)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -274,7 +286,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -375,7 +389,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -387,7 +403,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 51)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -399,7 +418,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -500,7 +521,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -512,7 +535,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 52)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -524,7 +550,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -625,7 +653,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -637,7 +667,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 53)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -649,7 +682,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -750,7 +785,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -762,7 +799,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 54)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -774,7 +814,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -875,7 +917,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -887,7 +931,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 55)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -899,7 +946,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1000,7 +1049,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1012,7 +1063,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 56)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1024,7 +1078,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1125,7 +1181,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1137,7 +1195,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 57)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1149,7 +1210,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1250,7 +1313,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1262,7 +1327,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 58)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1274,7 +1342,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1375,7 +1445,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1387,7 +1459,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ (currently 59)"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1399,7 +1474,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": true,
-      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+      "reason": {
+       "kind": "no_basis"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1500,7 +1577,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1512,7 +1591,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1524,7 +1606,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1625,7 +1710,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1637,7 +1724,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1649,7 +1739,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1750,7 +1843,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1762,7 +1857,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1774,7 +1872,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1875,7 +1976,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -1887,7 +1990,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -1899,7 +2005,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2000,7 +2109,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2012,7 +2123,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2024,7 +2138,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2125,7 +2242,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2137,7 +2256,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2149,7 +2271,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2250,7 +2375,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2262,7 +2389,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2274,7 +2404,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2375,7 +2508,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2387,7 +2522,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2399,7 +2537,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2500,7 +2641,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2512,7 +2655,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2524,7 +2670,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2625,7 +2774,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2637,7 +2788,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2649,7 +2803,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2750,7 +2907,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2762,7 +2921,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2774,7 +2936,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2875,7 +3040,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -2887,7 +3054,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -2899,7 +3069,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3000,7 +3173,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -3012,7 +3187,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3024,7 +3202,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3125,7 +3306,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -3137,7 +3320,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3149,7 +3335,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3250,7 +3439,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -3262,7 +3453,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3274,7 +3468,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3375,7 +3572,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
@@ -3387,7 +3586,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
@@ -3399,7 +3601,10 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — age 59½ or older"
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
      },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",

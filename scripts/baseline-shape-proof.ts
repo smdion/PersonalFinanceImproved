@@ -16,6 +16,8 @@
  */
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
+import { describeEligibility } from "../src/lib/config/eligibility-labels";
+import type { EligibilityReason } from "../src/lib/config/eligibility-reason";
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 type JsonObject = { [key: string]: Json };
@@ -56,8 +58,66 @@ function flattenAccountYearGroups(tree: Json): Json {
   });
 }
 
-const SHAPES: Record<string, (tree: Json) => Json> = {
-  "account-year-groups": flattenAccountYearGroups,
+/** One side of the comparison: a baseline file as that side has it. */
+type Side = { file: string; read: (file: string) => Json };
+
+/** Plan commit 11: an account-year row's `draw.reason` (a structured
+ *  fact) goes back to the prose `draw.eligibilityReason` it replaced,
+ *  through `describeEligibility`. A `__text__` pin holds the reason's text
+ *  and flags; its numbers (an age, a year, a basis) are in the same
+ *  side's `computeProjection` file, at the same row under `result`. A
+ *  numbers file keeps no prose, so there the reason just goes. */
+function describeReasons(tree: Json, side: Side): Json {
+  const text = /__text__\/([^/]+)\.json$/.exec(side.file);
+  if (!text) return mapAccountRows(tree, dropReason);
+  const numbers = side.read(
+    `tests/baseline/__baseline__/${text[1]}/projection.computeProjection.json`,
+  );
+  const child = (v: Json | undefined, key: string | number) =>
+    Array.isArray(v) ? v[key as number] : isObject(v) ? v[key] : undefined;
+  if (!isObject(tree) || !Array.isArray(tree.projectionByYear)) return tree;
+  const years = child(child(numbers, "result"), "projectionByYear");
+  return {
+    ...tree,
+    projectionByYear: tree.projectionByYear.map((year, y) => {
+      const rows = child(year, "individualAccountBalances");
+      if (!isObject(year) || !Array.isArray(rows)) return year;
+      const numberRows = child(child(years, y), "individualAccountBalances");
+      return {
+        ...year,
+        individualAccountBalances: rows.map((row, r) => {
+          const draw = child(row, "draw");
+          const reason = child(draw, "reason");
+          if (!isObject(row) || !isObject(draw) || !isObject(reason))
+            return row;
+          const figures = child(child(child(numberRows, r), "draw"), "reason");
+          const whole = {
+            ...(isObject(figures) ? figures : {}),
+            ...reason,
+          } as EligibilityReason;
+          const { reason: _, ...rest } = draw;
+          return {
+            ...row,
+            draw: { ...rest, eligibilityReason: describeEligibility(whole) },
+          };
+        }),
+      };
+    }),
+  };
+}
+
+/** A numbers file's row without `draw.reason` (it kept no prose). */
+function dropReason(row: JsonObject): JsonObject {
+  const { draw } = row;
+  if (!isObject(draw) || !("reason" in draw)) return row;
+  const { reason: _, ...rest } = draw;
+  return { ...row, draw: rest };
+}
+
+const SHAPES: Record<string, (tree: Json, side: Side) => Json> = {
+  "account-year-groups": (tree) => flattenAccountYearGroups(tree),
+  "eligibility-reason": (tree, side) =>
+    flattenAccountYearGroups(describeReasons(tree, side)),
 };
 
 /** The tree with every object's keys in one order, as text. */
@@ -118,7 +178,19 @@ function main() {
       execFileSync("git", ["show", `${base}:${file}`], { encoding: "utf8" }),
     ) as Json;
     const after = JSON.parse(fs.readFileSync(file, "utf8")) as Json;
-    if (canonical(flatten(after)) !== canonical(flatten(before))) {
+    const sides = (rev: string | null): Side => ({
+      file,
+      read: (f) =>
+        JSON.parse(
+          rev
+            ? execFileSync("git", ["show", `${rev}:${f}`], { encoding: "utf8" })
+            : fs.readFileSync(f, "utf8"),
+        ) as Json,
+    });
+    if (
+      canonical(flatten(after, sides(null))) !==
+      canonical(flatten(before, sides(base)))
+    ) {
       failed.push(`values differ: ${file}`);
       continue;
     }

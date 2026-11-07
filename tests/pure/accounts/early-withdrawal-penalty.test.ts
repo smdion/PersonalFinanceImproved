@@ -41,7 +41,7 @@ function makeExposure(
         taxType: "preTax",
         penaltyFreeAmount: e.penaltyFreeAmount,
         penaltyExposedAmount: e.penaltyExposedAmount,
-        reason: "test fixture",
+        reason: { kind: "always_available" },
         allowPenalizedWithdrawals: false,
       },
     ]),

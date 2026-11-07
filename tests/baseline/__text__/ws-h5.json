@@ -115,7 +115,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -213,7 +215,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -311,7 +315,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -409,7 +415,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -507,7 +515,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -605,7 +615,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -703,7 +715,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -801,7 +815,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -899,7 +915,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -997,7 +1015,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1095,7 +1115,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1193,7 +1215,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1291,7 +1315,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1389,7 +1415,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1487,7 +1515,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1585,7 +1615,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1683,7 +1715,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1781,7 +1815,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1879,7 +1915,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -1977,7 +2015,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2075,7 +2115,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2173,7 +2215,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2271,7 +2315,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2369,7 +2415,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2467,7 +2515,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2565,7 +2615,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2663,7 +2715,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2761,7 +2815,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2859,7 +2915,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -2957,7 +3015,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3055,7 +3115,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3153,7 +3215,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3251,7 +3315,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3349,7 +3415,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3447,7 +3515,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3545,7 +3615,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3643,7 +3715,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3741,7 +3815,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3839,7 +3915,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -3937,7 +4015,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -4035,7 +4115,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
@@ -4133,7 +4215,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Always accessible — no age or employer restriction"
+      "reason": {
+       "kind": "always_available"
+      }
      },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",

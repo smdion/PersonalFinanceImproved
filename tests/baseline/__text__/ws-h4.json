@@ -1301,7 +1301,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1313,7 +1315,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -1411,7 +1415,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1423,7 +1429,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -1521,7 +1529,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1533,7 +1543,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -1631,7 +1643,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1643,7 +1657,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -1741,7 +1757,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1753,7 +1771,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -1851,7 +1871,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1863,7 +1885,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -1961,7 +1985,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -1973,7 +1999,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2071,7 +2099,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2083,7 +2113,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2181,7 +2213,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2193,7 +2227,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2291,7 +2327,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2303,7 +2341,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2401,7 +2441,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2413,7 +2455,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2511,7 +2555,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2523,7 +2569,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2621,7 +2669,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2633,7 +2683,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2731,7 +2783,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2743,7 +2797,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2841,7 +2897,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2853,7 +2911,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -2951,7 +3011,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -2963,7 +3025,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3061,7 +3125,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3073,7 +3139,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3171,7 +3239,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3183,7 +3253,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3281,7 +3353,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3293,7 +3367,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3391,7 +3467,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3403,7 +3481,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3501,7 +3581,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3513,7 +3595,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3611,7 +3695,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3623,7 +3709,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3721,7 +3809,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3733,7 +3823,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3831,7 +3923,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3843,7 +3937,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -3941,7 +4037,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -3953,7 +4051,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4051,7 +4151,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4063,7 +4165,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4161,7 +4265,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4173,7 +4279,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4185,7 +4293,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -4283,7 +4393,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4295,7 +4407,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4307,7 +4421,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -4405,7 +4521,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4417,7 +4535,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4429,7 +4549,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -4527,7 +4649,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4539,7 +4663,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4551,7 +4677,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -4649,7 +4777,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4661,7 +4791,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4673,7 +4805,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -4771,7 +4905,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4783,7 +4919,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4795,7 +4933,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -4893,7 +5033,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -4905,7 +5047,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -4917,7 +5061,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5015,7 +5161,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5027,7 +5175,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5039,7 +5189,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5137,7 +5289,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5149,7 +5303,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5161,7 +5317,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5259,7 +5417,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5271,7 +5431,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5283,7 +5445,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5381,7 +5545,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5393,7 +5559,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5405,7 +5573,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5503,7 +5673,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5515,7 +5687,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5527,7 +5701,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5625,7 +5801,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5637,7 +5815,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5649,7 +5829,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
@@ -5747,7 +5929,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Alpine 401(k) plan)",
      "ownerName": "Kai",
@@ -5759,7 +5943,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "Eligible — Rule of 55 met (separated 2048)"
+      "reason": {
+       "kind": "rule_of_55"
+      }
      },
      "name": "Kai 401k (Beacon 401(k) plan)",
      "ownerName": "Kai",
@@ -5771,7 +5957,9 @@
      "draw": {
       "allowPenalizedWithdrawals": false,
       "eligibilityLocked": false,
-      "eligibilityReason": "No individual eligibility rule (joint account)"
+      "reason": {
+       "kind": "no_owner"
+      }
      },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
