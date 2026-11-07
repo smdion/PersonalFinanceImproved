@@ -28,6 +28,7 @@ import { useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/hooks/use-toast";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -153,10 +154,11 @@ export function RetirementProfileTab({
     ],
   );
   const debouncedEngineInput = useDebouncedValue(baseInput, 600);
-  const { data, isLoading, error } =
-    trpc.projection.getProjectionMetadata.useQuery(debouncedEngineInput, {
-      placeholderData: (prev) => prev,
-    });
+  const metadata = trpc.projection.getProjectionMetadata.useQuery(
+    debouncedEngineInput,
+    { placeholderData: (prev) => prev },
+  );
+  const { data } = metadata;
   // Multi-year withdrawal-policy optimizer — queried
   // here (not inside TaxesSection, a documented pure-presentational leaf)
   // so it can be passed down as a plain prop, same pattern as CoastFireCard
@@ -347,24 +349,22 @@ export function RetirementProfileTab({
     [data, upsertPersonRaiseRate],
   );
 
-  if (isLoading) {
+  if (queryPending(metadata)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load retirement profile: {error.message}
-      </p>
+      <QueryBoundary
+        query={metadata}
+        what="retirement profile"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+            </div>
+          </div>
+        }
+      />
     );
   }
 

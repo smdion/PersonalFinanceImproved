@@ -8,6 +8,11 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  QueryBoundary,
+  queryPending,
+  type BoundaryQuery,
+} from "@/components/ui/query-boundary";
 import { toast } from "@/lib/hooks/use-toast";
 
 interface NewGoalForm {
@@ -26,11 +31,27 @@ const emptyGoalForm: NewGoalForm = {
   notes: "",
 };
 
+/** The goals card while its list loads or after it fails. */
+function GoalsQueryBoundary({ query }: { query: BoundaryQuery }) {
+  return (
+    <QueryBoundary
+      query={query}
+      frame={(body) => (
+        <Card title="Long-Term Goals" className="mb-6">
+          {body}
+        </Card>
+      )}
+      fallback={<Skeleton className="h-20" />}
+    />
+  );
+}
+
 export function BrokerageGoalsSection() {
   const user = useUser();
   const canEdit = hasPermission(user, "brokerage");
   const utils = trpc.useUtils();
-  const { data: goals, isLoading } = trpc.brokerage.listGoals.useQuery();
+  const goalsQuery = trpc.brokerage.listGoals.useQuery();
+  const { data: goals } = goalsQuery;
   const invalidateBrokerage = () => {
     utils.brokerage.listGoals.invalidate();
     utils.brokerage.computeSummary.invalidate();
@@ -57,13 +78,8 @@ export function BrokerageGoalsSection() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<NewGoalForm>(emptyGoalForm);
 
-  if (isLoading) {
-    return (
-      <Card title="Long-Term Goals" className="mb-6">
-        <Skeleton className="h-20" />
-      </Card>
-    );
-  }
+  if (queryPending(goalsQuery))
+    return <GoalsQueryBoundary query={goalsQuery} />;
 
   const handleCreate = () => {
     if (!form.name || !form.targetAmount || !form.targetYear) return;

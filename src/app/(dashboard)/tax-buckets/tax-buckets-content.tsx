@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { HelpTip } from "@/components/ui/help-tip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { KpiCard } from "@/components/retirement-projection/projection-hero-kpis";
 import { formatCurrency } from "@/lib/utils/format";
@@ -185,8 +186,8 @@ export function TaxBucketsContent() {
   // (dollarMode "real"/"nominal") and default.
   const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
 
-  const { data, isLoading, error } =
-    trpc.taxBuckets.computeBreakdown.useQuery();
+  const breakdown = trpc.taxBuckets.computeBreakdown.useQuery();
+  const { data } = breakdown;
   // Same Plan-pin → globally-active resolution every other engine-backed
   // page uses (Retirement page, Monte Carlo, Coast FIRE). Omitting these
   // does NOT fall back to "whatever's active" — the server has no default
@@ -277,21 +278,19 @@ export function TaxBucketsContent() {
   const fmt = (amount: number) =>
     formatCurrency(view === "atRetirement" ? deflate(amount) : amount);
 
-  if (isLoading) {
+  // No data and no error: the query is paused (offline), still waiting.
+  if (queryPending(breakdown) || !data) {
     return (
-      <div className="p-4 sm:p-6">
-        <PageHeader title="Tax buckets & basis" />
-        <Skeleton className="h-64" />
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="p-4 sm:p-6">
-        <PageHeader title="Tax buckets & basis" />
-        <EmptyState message="Failed to load" hint="Try refreshing the page." />
-      </div>
+      <QueryBoundary
+        query={breakdown}
+        frame={(body) => (
+          <div className="p-4 sm:p-6">
+            <PageHeader title="Tax buckets & basis" />
+            {body}
+          </div>
+        )}
+        fallback={<Skeleton className="h-64" />}
+      />
     );
   }
 

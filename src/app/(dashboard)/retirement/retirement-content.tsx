@@ -11,6 +11,7 @@ import { useState, useMemo } from "react";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatCurrency } from "@/lib/utils/format";
@@ -117,24 +118,23 @@ export function RetirementContent() {
       placeholderData: (prev) => prev,
     });
 
-  if (isLoading) {
+  // Waiting on the input shows the skeleton too (no Retry: nothing runs).
+  if (isLoading || error) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load retirement data: {error.message}
-      </p>
+      <QueryBoundary
+        query={projectionQuery}
+        what="retirement data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+            </div>
+          </div>
+        }
+      />
     );
   }
 

@@ -1,7 +1,7 @@
 {
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 430,
-    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1061,
+    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1058,
     "src/app/(dashboard)/budget/budget-content.tsx": 663,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
@@ -15,7 +15,7 @@
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 871,
     "src/app/(dashboard)/savings/savings-content.tsx": 930,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1020,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1019,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 522,
     "src/app/(dashboard)/versions/versions-content.tsx": 750,
@@ -307,7 +307,7 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
-      "BrokerageContent": 378,
+      "BrokerageContent": 374,
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
@@ -370,7 +370,7 @@
       "RecommendationsContent": 192
     },
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
-      "RetirementContent": 300
+      "RetirementContent": 299
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
       "SavingsContent": 849
@@ -378,7 +378,7 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 376
+      "TaxBucketsContent": 374
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
       "ToolsContent": 537
@@ -394,7 +394,7 @@
       "LoginForm": 162
     },
     "src/components/brokerage/brokerage-goals.tsx": {
-      "BrokerageGoalsSection": 287
+      "BrokerageGoalsSection": 283
     },
     "src/components/budget/api-category-picker.tsx": {
       "ApiCategoryPicker": 157
@@ -690,7 +690,7 @@
       "RetirementProfileManager": 264
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 481
+      "RetirementProfileTab": 480
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 179

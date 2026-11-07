@@ -2203,7 +2203,6 @@ const HOOK_FOLDERS_KNOWN: string[] = [];
  *  skeleton forever. Each goes to QueryBoundary. */
 const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
   "src/app/(dashboard)/assets/assets-content.tsx": { count: 1 },
-  "src/app/(dashboard)/brokerage/brokerage-content.tsx": { count: 1 },
   "src/app/(dashboard)/budget/budget-content.tsx": { count: 1 },
   "src/app/(dashboard)/contributions/contributions-content.tsx": { count: 1 },
   "src/app/(dashboard)/historical/historical-content.tsx": { count: 1 },
@@ -2213,22 +2212,14 @@ const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
   "src/app/(dashboard)/paycheck/paycheck-content.tsx": { count: 1 },
   "src/app/(dashboard)/performance/performance-content.tsx": { count: 1 },
   "src/app/(dashboard)/portfolio/portfolio-content.tsx": { count: 1 },
-  "src/app/(dashboard)/retirement/retirement-content.tsx": { count: 1 },
   "src/app/(dashboard)/savings/savings-content.tsx": { count: 1 },
-  "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": { count: 1 },
-  "src/app/(dashboard)/tax-optimization/tax-optimization-content.tsx": {
-    count: 1,
-  },
   "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": { count: 1 },
-  "src/components/brokerage/brokerage-goals.tsx": { count: 1 },
-  "src/components/retirement/retirement-profile-tab.tsx": { count: 1 },
   "src/components/settings/bracket-table-editor.tsx": { count: 1 },
   "src/components/settings/contribution-limits.tsx": { count: 1 },
   "src/components/settings/fpl-by-household.tsx": { count: 1 },
   "src/components/settings/rbac-groups.tsx": { count: 1 },
   "src/components/settings/return-rates.tsx": { count: 1 },
   "src/components/settings/tax-brackets.tsx": { count: 1 },
-  "src/components/tax-optimization/withdrawal-comparison.tsx": { count: 1 },
 };
 
 /** Client page.tsx files under app/(dashboard). */

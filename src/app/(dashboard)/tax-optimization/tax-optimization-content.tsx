@@ -24,6 +24,7 @@ import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
@@ -77,13 +78,23 @@ export function TaxOptimizationContent() {
   const bracketYear = taxQuery.data?.meta?.bracketsThroughYear ?? null;
   const rows = taxQuery.data?.rows ?? [];
 
-  if (metaQuery.isLoading || taxQuery.isLoading) {
+  if (queryPending([metaQuery, taxQuery])) {
     return (
-      <div className="space-y-4">
-        <PageHeader title="Roth & conversions" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <QueryBoundary
+        query={[metaQuery, taxQuery]}
+        frame={(body) => (
+          <div className="space-y-4">
+            <PageHeader title="Roth & conversions" />
+            {body}
+          </div>
+        )}
+        fallback={
+          <>
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </>
+        }
+      />
     );
   }
 

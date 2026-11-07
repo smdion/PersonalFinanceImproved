@@ -40,6 +40,7 @@ import {
 import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
+import { QueryBoundary } from "@/components/ui/query-boundary";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
@@ -152,26 +153,22 @@ export function BrokerageContent() {
   const [isGoalsOpen, setIsGoalsOpen] = useState(false);
   const [dollarMode, setDollarMode] = useState<DollarBasis>("nominal");
 
-  if (isLoading) {
+  // Waiting on the saved rows shows the skeleton too (no Retry).
+  if (isLoading || error) {
     return (
-      <div>
-        <PageHeader
-          title="Brokerage Projection"
-          subtitle="Non-retirement investment accounts"
-        />
-        <SkeletonTable rows={12} className="mt-4" />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div>
-        <PageHeader
-          title="Brokerage Projection"
-          subtitle="Non-retirement investment accounts"
-        />
-        <EmptyState message={`Failed to load: ${error.message}`} />
-      </div>
+      <QueryBoundary
+        query={projectionQuery}
+        frame={(body) => (
+          <div>
+            <PageHeader
+              title="Brokerage Projection"
+              subtitle="Non-retirement investment accounts"
+            />
+            {body}
+          </div>
+        )}
+        fallback={<SkeletonTable rows={12} className="mt-4" />}
+      />
     );
   }
   if (!data?.result) {
