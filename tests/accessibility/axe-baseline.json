@@ -1,0 +1,281 @@
+{
+  "e2e-b/brokerage": {
+    "heading-order": {
+      "count": 1
+    },
+    "label": {
+      "count": 2
+    }
+  },
+  "e2e-b/budget": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    },
+    "nested-interactive": {
+      "count": 1
+    }
+  },
+  "e2e-b/contributions": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-b/dashboard": {
+    "heading-order": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 1
+    }
+  },
+  "e2e-b/historical": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-b/house": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-b/liabilities": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-b/networth": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-b/paycheck": {
+    "heading-order": {
+      "count": 2
+    }
+  },
+  "e2e-b/portfolio": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-b/retirement": {
+    "heading-order": {
+      "count": 1
+    },
+    "label-title-only": {
+      "count": 2
+    }
+  },
+  "e2e-b/settings": {
+    "landmark-unique": {
+      "count": 1
+    }
+  },
+  "e2e-b/tools": {
+    "heading-order": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 5
+    }
+  },
+  "e2e-b/versions": {
+    "heading-order": {
+      "count": 1
+    },
+    "label": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 1
+    }
+  },
+  "e2e-d/brokerage": {
+    "heading-order": {
+      "count": 1
+    },
+    "label": {
+      "count": 1
+    }
+  },
+  "e2e-d/budget": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    },
+    "nested-interactive": {
+      "count": 1
+    }
+  },
+  "e2e-d/contributions": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-d/dashboard": {
+    "heading-order": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 1
+    }
+  },
+  "e2e-d/historical": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-d/liabilities": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-d/networth": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-d/portfolio": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "e2e-d/retirement": {
+    "heading-order": {
+      "count": 1
+    },
+    "label-title-only": {
+      "count": 2
+    }
+  },
+  "e2e-d/settings": {
+    "landmark-unique": {
+      "count": 1
+    }
+  },
+  "e2e-d/tools": {
+    "heading-order": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 5
+    }
+  },
+  "e2e-d/versions": {
+    "heading-order": {
+      "count": 1
+    },
+    "label": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 1
+    }
+  },
+  "ws-h2/brokerage": {
+    "heading-order": {
+      "count": 1
+    },
+    "label": {
+      "count": 1
+    }
+  },
+  "ws-h2/budget": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    },
+    "nested-interactive": {
+      "count": 1
+    }
+  },
+  "ws-h2/contributions": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "ws-h2/dashboard": {
+    "heading-order": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 1
+    }
+  },
+  "ws-h2/historical": {
+    "empty-table-header": {
+      "count": 1
+    },
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "ws-h2/liabilities": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "ws-h2/networth": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "ws-h2/paycheck": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "ws-h2/portfolio": {
+    "heading-order": {
+      "count": 1
+    }
+  },
+  "ws-h2/retirement": {
+    "heading-order": {
+      "count": 1
+    },
+    "label-title-only": {
+      "count": 2
+    }
+  },
+  "ws-h2/settings": {
+    "landmark-unique": {
+      "count": 1
+    }
+  },
+  "ws-h2/tools": {
+    "heading-order": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 5
+    }
+  },
+  "ws-h2/versions": {
+    "heading-order": {
+      "count": 1
+    },
+    "label": {
+      "count": 1
+    },
+    "select-name": {
+      "count": 1
+    }
+  }
+}

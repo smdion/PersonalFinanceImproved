@@ -17,12 +17,14 @@
  * Import after ../routers/setup-mocks and ./mocks (the SQLite harness), and
  * mock `@/lib/trpc` with ../components/trpc-mock in the test file.
  */
+import { afterAll, beforeAll, vi } from "vitest";
 import { act, render } from "@testing-library/react";
 import type { ComponentType, ReactNode } from "react";
 import type { Caller, Household, SeededIds } from "./seed";
 import { seedHousehold } from "./seed";
 import { PROCEDURES } from "./procedures";
 import { createTestCaller } from "../routers/setup";
+import { BASELINE_NOW } from "./router-suite";
 import {
   resetTrpcMock,
   setQuery,
@@ -143,6 +145,51 @@ export async function settle(container: HTMLElement): Promise<void> {
     same = now === last ? same + 1 : 0;
     last = now;
   }
+}
+
+/** The router baseline's clock, and no network, for the file's tests. */
+export function freezeScreenClock(): void {
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"], now: BASELINE_NOW });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new Error("network disabled in baseline"))),
+    );
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+}
+
+/** The app's providers (app/providers.tsx, minus the tRPC client the mock
+ *  replaces) and the dashboard layout's: privacy off, an admin. Imported
+ *  late, after the test file's mocks. */
+export async function screenProviders(): Promise<
+  ComponentType<{ children: ReactNode }>
+> {
+  const { PrivacyProvider } = await import("@/lib/context/privacy-context");
+  const { UserProvider } = await import("@/lib/context/user-context");
+  const { ScenarioProvider } = await import("@/lib/context/scenario-context");
+  const { TooltipProvider } = await import("@/components/ui/tooltip");
+  const { QueryClient, QueryClientProvider } =
+    await import("@tanstack/react-query");
+  const client = new QueryClient();
+  return function Providers({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={client}>
+        <TooltipProvider delayDuration={200} skipDelayDuration={100}>
+          <PrivacyProvider initialPrivacy={false}>
+            <UserProvider
+              user={{ name: "Admin", role: "admin", permissions: [] }}
+            >
+              <ScenarioProvider>{children}</ScenarioProvider>
+            </UserProvider>
+          </PrivacyProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  };
 }
 
 /**

@@ -50,10 +50,12 @@ import * as path from "node:path";
 import type { ComponentType, ReactNode } from "react";
 import { cleanup } from "@testing-library/react";
 import { HOUSEHOLDS } from "./households";
-import { BASELINE_NOW, REGENERATE } from "./router-suite";
+import { REGENERATE } from "./router-suite";
 import {
+  freezeScreenClock,
   mountPage,
   openHousehold,
+  screenProviders,
   screenText,
   unrecorded,
   type ScreenHousehold,
@@ -80,44 +82,7 @@ const WRITE = REGENERATE;
 /** Set to print each page's unanswered queries (`@@gaps` lines). */
 const SHOW_GAPS = process.env.LEDGR_SCREENS_GAPS === "1";
 
-async function providers(): Promise<ComponentType<{ children: ReactNode }>> {
-  const { PrivacyProvider } = await import("@/lib/context/privacy-context");
-  const { UserProvider } = await import("@/lib/context/user-context");
-  const { ScenarioProvider } = await import("@/lib/context/scenario-context");
-  const { TooltipProvider } = await import("@/components/ui/tooltip");
-  const { QueryClient, QueryClientProvider } =
-    await import("@tanstack/react-query");
-  const client = new QueryClient();
-  // The app's providers (app/providers.tsx, minus the tRPC client the mock
-  // replaces) and the dashboard layout's: privacy off, an admin.
-  return function Providers({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={client}>
-        <TooltipProvider delayDuration={200} skipDelayDuration={100}>
-          <PrivacyProvider initialPrivacy={false}>
-            <UserProvider
-              user={{ name: "Admin", role: "admin", permissions: [] }}
-            >
-              <ScenarioProvider>{children}</ScenarioProvider>
-            </UserProvider>
-          </PrivacyProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  };
-}
-
-beforeAll(() => {
-  vi.useFakeTimers({ toFake: ["Date"], now: BASELINE_NOW });
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(() => Promise.reject(new Error("network disabled in baseline"))),
-  );
-});
-afterAll(() => {
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-});
+freezeScreenClock();
 
 describe.each(SCREEN_HOUSEHOLDS.map((key) => [key] as const))("%s", (key) => {
   const household = HOUSEHOLDS.find((h) => h.key === key)!;
@@ -126,7 +91,7 @@ describe.each(SCREEN_HOUSEHOLDS.map((key) => [key] as const))("%s", (key) => {
 
   beforeAll(async () => {
     h = await openHousehold(household);
-    Providers = await providers();
+    Providers = await screenProviders();
   }, 120_000);
   afterAll(() => h.close());
 
