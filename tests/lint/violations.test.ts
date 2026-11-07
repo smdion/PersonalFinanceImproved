@@ -2059,7 +2059,7 @@ describe("one config entry adds an account type", () => {
  *  category added later misses them. */
 const BUILT_AT_LOAD = [
   "src/app/(dashboard)/historical/historical-content.tsx ALL_portfolioBreakdownCols",
-  "src/components/retirement-projection/projection-table-decum-row.tsx CATEGORY_ORDER",
+  "src/components/retirement-projection/projection-table-decum-row.model.ts CATEGORY_ORDER",
   "src/components/retirement-projection/types.ts emptyAccumForm",
   "src/components/retirement-projection/types.ts emptyDecumForm",
   "src/components/retirement-projection/utils.ts catDisplayLabel",

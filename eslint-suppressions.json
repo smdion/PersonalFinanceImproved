@@ -1169,6 +1169,14 @@
       "count": 4
     }
   },
+  "src/components/retirement-projection/projection-table-decum-row.model.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/components/retirement/plan-health.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -1361,13 +1369,13 @@
       "count": 13
     },
     "max-lines-per-function": {
-      "count": 6
+      "count": 4
     },
     "ratchet/max-comment-lines": {
-      "count": 13
+      "count": 9
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-jsx-iife": {
       "count": 13

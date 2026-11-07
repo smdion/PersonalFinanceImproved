@@ -67,7 +67,7 @@
     "src/components/retirement-projection/projection-table-accum-balances.model.ts": 229,
     "src/components/retirement-projection/projection-table-accum-contributions.model.ts": 250,
     "src/components/retirement-projection/projection-table-accum-row.tsx": 872,
-    "src/components/retirement-projection/projection-table-decum-row.tsx": 1353,
+    "src/components/retirement-projection/projection-table-decum-row.tsx": 1212,
     "src/components/retirement-projection/projection-table.tsx": 427,
     "src/components/retirement-projection/report/report-assumptions-summary.tsx": 330,
     "src/components/retirement-projection/spending-stability-chart.tsx": 551,
@@ -651,12 +651,10 @@
       "ContribMethodologySection": 266
     },
     "src/components/retirement-projection/projection-table-decum-row.tsx": {
-      "DecumulationRow": 1267,
-      "DecumulationRow.content.iife()": 204,
-      "DecumulationRow.map()": 221,
+      "DecumulationRow": 1127,
+      "DecumulationRow.map()": 161,
       "DecumulationRow.map() #2": 158,
-      "DecumulationRow.map() #3": 181,
-      "DecumulationRow.map().content.iife()": 174
+      "DecumulationRow.map() #3": 181
     },
     "src/components/retirement-projection/projection-table.tsx": {
       "ProjectionTable": 392
