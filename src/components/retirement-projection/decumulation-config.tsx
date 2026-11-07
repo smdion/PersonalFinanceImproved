@@ -20,6 +20,7 @@ import {
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
 } from "@/lib/config/withdrawal-routing";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
+import { renderSplitsTotalWarning } from "./withdrawal-splits-warning";
 
 type RoutingModeLiteral = "bracket_filling" | "waterfall" | "percentage";
 /** Shared small heading for the config sub-sections below. (Formerly lived
@@ -400,18 +401,7 @@ export function DecumulationConfig({
                   </label>
                 ))}
               </div>
-              {(() => {
-                const total = Object.values(displayedSplits).reduce(
-                  (s, v) => s + v,
-                  0,
-                );
-                const off = Math.abs(total - 1) > 0.001;
-                return off ? (
-                  <p className="mt-1 text-xs text-amber-600">
-                    Splits total {formatPercent(total)} — should be 100%.
-                  </p>
-                ) : null;
-              })()}
+              {renderSplitsTotalWarning(displayedSplits)}
               {withdrawalSplitsTouched && (
                 <p className="text-caption text-faint mt-1.5">
                   These splits only change your plan for this session — save

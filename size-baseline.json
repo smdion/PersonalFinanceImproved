@@ -58,11 +58,11 @@
     "src/components/portfolio/portfolio-chart.tsx": 476,
     "src/components/retirement-projection/account-notes.ts": 260,
     "src/components/retirement-projection/coast-fire-card.tsx": 408,
-    "src/components/retirement-projection/decumulation-config.tsx": 478,
+    "src/components/retirement-projection/decumulation-config.tsx": 468,
     "src/components/retirement-projection/index.tsx": 1509,
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": 1071,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
-    "src/components/retirement-projection/projection-chart.tsx": 1145,
+    "src/components/retirement-projection/projection-chart.tsx": 1132,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 504,
     "src/components/retirement-projection/projection-mc-results.tsx": 120,
     "src/components/retirement-projection/projection-table-accum-balances.model.ts": 229,
@@ -618,7 +618,7 @@
       "useContributionAccountsMutations": 279
     },
     "src/components/retirement-projection/decumulation-config.tsx": {
-      "DecumulationConfig": 362
+      "DecumulationConfig": 351
     },
     "src/components/retirement-projection/index.tsx": {
       "ProjectionCard": 1432,
@@ -636,7 +636,7 @@
       "OverridesPanel.renderFields": 229
     },
     "src/components/retirement-projection/projection-chart.tsx": {
-      "ProjectionChart": 1087,
+      "ProjectionChart": 1071,
       "ProjectionChart.chartData.map()": 152,
       "ProjectionChart.content": 356
     },
@@ -696,7 +696,7 @@
       "IncomeSection": 179
     },
     "src/components/retirement/sections/per-phase-budget.tsx": {
-      "PerPhaseBudgetSection": 160
+      "PerPhaseBudgetSection": 156
     },
     "src/components/retirement/sections/rmd-handling.tsx": {
       "RmdHandlingSection": 215

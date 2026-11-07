@@ -40,6 +40,7 @@ import { balanceSummary } from "./projection-chart.summary";
 import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectionState } from "./projection-table-types";
+import { renderRetirementLine } from "./retirement-year-line";
 
 // Skeleton lives in its own file so the parent (retirement-projection/index.tsx)
 // can render it without pulling recharts in via this module's import graph.
@@ -939,23 +940,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             )}
 
             {/* Retirement age reference line */}
-            {(() => {
-              const retDataIdx = chartData.findIndex(
-                (d) => Number(d.year) === retYear,
-              );
-              if (retDataIdx < 0) return null;
-              return (
-                <Line
-                  type="monotone"
-                  yAxisId="balance"
-                  dataKey={() => undefined}
-                  stroke="transparent"
-                  dot={false}
-                  isAnimationActive={false}
-                  label={false}
-                />
-              );
-            })()}
+            {renderRetirementLine(chartData, retYear)}
 
             {/* Social Security start age marker */}
             {chartData.some((d) => Number(d.year) === ssStartYear) && (

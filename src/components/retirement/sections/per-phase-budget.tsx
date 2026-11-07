@@ -86,15 +86,11 @@ export function PerPhaseBudgetSection({
                 ? "your retirement budget"
                 : "a strategy-specific portfolio percentage"
           }.`}
-          {(() => {
-            const dimmed: string[] = [];
-            if (budgetNotUsed) dimmed.push("budget source");
-            if (!usesWithdrawalRate) dimmed.push("initial withdrawal rate");
-            if (!usesPostRetirementRaise) dimmed.push("post-retirement raise");
-            return dimmed.length > 0
-              ? ` Dimmed settings (${dimmed.join(", ")}) are not used by this strategy.`
-              : "";
-          })()}
+          {dimmedSettingsNote(
+            budgetNotUsed,
+            usesWithdrawalRate,
+            usesPostRetirementRaise,
+          )}
         </div>
       )}
       <div
@@ -197,4 +193,19 @@ export function PerPhaseBudgetSection({
       </div>
     </div>
   );
+}
+
+/** Names the settings this strategy doesn't use. */
+function dimmedSettingsNote(
+  budgetNotUsed: boolean,
+  usesWithdrawalRate: boolean,
+  usesPostRetirementRaise: boolean,
+) {
+  const dimmed: string[] = [];
+  if (budgetNotUsed) dimmed.push("budget source");
+  if (!usesWithdrawalRate) dimmed.push("initial withdrawal rate");
+  if (!usesPostRetirementRaise) dimmed.push("post-retirement raise");
+  return dimmed.length > 0
+    ? ` Dimmed settings (${dimmed.join(", ")}) are not used by this strategy.`
+    : "";
 }
