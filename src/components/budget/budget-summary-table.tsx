@@ -8,6 +8,10 @@ import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import type { PayrollBreakdown, ColumnResult, SinkingFundLine } from "./types";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
 import { BudgetSummaryHeader } from "./budget-summary-header";
+import {
+  renderBlendedSavingsCell,
+  renderBlendedUnallocatedCell,
+} from "./budget-summary-savings";
 
 type BudgetSummaryTableProps = {
   cols: string[];
@@ -621,29 +625,13 @@ export function BudgetSummaryTable({
                         );
                       })}
                       {isWeighted &&
-                        (() => {
-                          const blendedSavings = blended(
-                            allColumnResults.map(
-                              (r, i) =>
-                                (payrollBreakdowns[i]?.netMonthly ?? 0) -
-                                r.totalMonthly,
-                            ),
-                          );
-                          const blendedOverage = totalSinking - blendedSavings;
-                          const isOverCapacity = blendedOverage > 0.01;
-                          return (
-                            <td
-                              className={`${blendedCellClass} ${blendedSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
-                            >
-                              {formatCurrency(blendedSavings)}
-                              {isOverCapacity && (
-                                <div className="text-micro mt-0.5 leading-tight font-normal text-red-500">
-                                  ⚠ {formatCurrency(blendedOverage)} over
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })()}
+                        renderBlendedSavingsCell(
+                          blended,
+                          allColumnResults,
+                          payrollBreakdowns,
+                          totalSinking,
+                          blendedCellClass,
+                        )}
                     </tr>
                     {showSavings && hasSinkingFunds && (
                       <>
@@ -690,26 +678,12 @@ export function BudgetSummaryTable({
                             );
                           })}
                           {isWeighted &&
-                            (() => {
-                              const blendedUnallocated = computeUnallocated(
-                                blended(
-                                  payrollBreakdowns.map(
-                                    (b) => b?.netMonthly ?? 0,
-                                  ),
-                                ),
-                                blended(
-                                  allColumnResults.map((r) => r.totalMonthly),
-                                ),
-                                totalSinking,
-                              );
-                              return (
-                                <td
-                                  className={`text-caption bg-surface-sunken/60 px-2 py-0.5 text-right tabular-nums ${blendedUnallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
-                                >
-                                  {formatCurrency(blendedUnallocated)}
-                                </td>
-                              );
-                            })()}
+                            renderBlendedUnallocatedCell(
+                              blended,
+                              payrollBreakdowns,
+                              allColumnResults,
+                              totalSinking,
+                            )}
                         </tr>
                       </>
                     )}
