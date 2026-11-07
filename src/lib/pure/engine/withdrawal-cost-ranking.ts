@@ -178,10 +178,9 @@ export interface RankWithdrawalTiersInput {
    *  affects ONLY the free/free tie-break; the cost-ranked tier below
    *  (Roth growth vs. brokerage's real LTCG+NIIT rate vs. HSA) is
    *  unaffected either way — brokerage beyond the 0% zone is genuinely not
-   *  "free," and unconditionally preferring it there was tried and
-   *  reverted (it would draw a real 15%/20%+NIIT-cost brokerage dollar
-   *  ahead of a cheaper Roth growth dollar). "roth_first" (default,
-   *  undefined ⇒ this) matches all pre-existing behavior. "brokerage_first"
+   *  "free," and unconditionally preferring it there would draw a real
+   *  15%/20%+NIIT-cost brokerage dollar ahead of a cheaper Roth growth
+   *  dollar. "roth_first" is the default (undefined ⇒ this). "brokerage_first"
    *  is an explicit household opt-in — a brokerage LTCG gain still counts
    *  toward MAGI for ACA/IRMAA even at 0% federal tax, so this is a real,
    *  user-accepted tradeoff, not an automatic optimization. */
@@ -196,10 +195,8 @@ export interface RankWithdrawalTiersInput {
  * room existed" even in years where one tier's capacity was never reached
  * by the draw loop — e.g. Roth basis alone covered the year's need, so
  * brokerage's very real 0%-LTCG capacity was never touched, but is still a
- * real number worth surfacing (a household
- * couldn't tell why brokerage wasn't draining when their Traditional
- * bracket target was crowding out the 0%-LTCG room; this is what let them
- * see it). Both capacities are 0, not omitted, when there is none — so
+ * real number worth surfacing (it shows a household when their
+ * Traditional bracket target crowds out the 0%-LTCG room). Both capacities are 0, not omitted, when there is none — so
  * callers can state "$0 room" rather than "no data."
  */
 type RankedWithdrawalTiers = {
@@ -353,7 +350,7 @@ export function rankWithdrawalTiers(
   // HSA, once its balance reaches this ranking, is ordinarily already the
   // penalty-free/penalty-excluded portion (routeForMode's caller runs the
   // penalty exclusion BEFORE this ranking ever sees `hsaAvailable` — see
-  // withdrawal-eligibility.ts's `computeHsaAccess`/`subtractExcluded`) —
+  // early-access.ts's `computeHsaAccess`, balance-utils.ts's `subtractExcluded`) —
   // so it stacks as plain ordinary income on the SAME floor as Roth
   // growth, not an "ordinary rate + 20% penalty, always worst" figure for
   // every household regardless of age. A household that explicitly opted OUT of penalty avoidance

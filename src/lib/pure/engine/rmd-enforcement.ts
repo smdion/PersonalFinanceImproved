@@ -61,10 +61,9 @@ interface RmdEnforcementResult {
    *  exposure, not a display nicety: the same shortfall this function
    *  already prices into the `RMD SHORTFALL` warning string's 25% excise
    *  tax estimate, just also exposed as a number so the UI can show it
-   *  without parsing a warning string. Possible now that the Portfolio-parented
-   *  exclusion can leave
-   *  Retirement-only Traditional capacity genuinely insufficient to cover
-   *  a real RMD requirement. */
+   *  without parsing a warning string. The Portfolio-parented exclusion can
+   *  leave Retirement-only Traditional capacity genuinely insufficient to
+   *  cover a real RMD requirement. */
   rmdShortfallAmount: number;
 }
 
@@ -187,10 +186,9 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
             lastSlot = slot;
             lastCat = cat;
           }
-          // Assign rounding residual to last category -- capped at that
-          // category's own remaining capacity: with Retirement-only scoping
-          // the capacity can be well under rmdShortfall, so the residual
-          // isn't always cents and must not overfill the last account.
+          // Rounding residual to the last category, capped at its remaining
+          // capacity: with Retirement-only scoping the residual isn't always
+          // cents and must not overfill the last account.
           const residual = roundToCents(rmdShortfall - distributed);
           if (residual > 0 && lastSlot && lastCat) {
             const lastCatCapacity =

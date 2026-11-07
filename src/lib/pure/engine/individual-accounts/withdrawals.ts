@@ -194,14 +194,10 @@ export function distributeWithdrawals(
 /**
  * Wraps `distributeProportionally` with a penalty-free-first, penalty-
  * exposed-second two-pass split (Tier A — see `distributeWithdrawals`'s
- * docblock).
- * Previously partitioned accounts by a whole-account "locked" boolean; now
- * partitions PER DOLLAR, using each account's own `penaltyFreeAmount` as a
- * draw ceiling rather than sorting whole accounts into two buckets — the
- * exact fix for the reported bug (a Roth IRA with some contribution basis
- * was never whole-account "locked", so its penalty-exposed growth was
- * reachable by the old partition even though the account was only
- * PARTIALLY penalty-free).
+ * docblock). Partitions PER DOLLAR, using each account's own
+ * `penaltyFreeAmount` as a draw ceiling rather than sorting whole accounts
+ * into two buckets: a Roth IRA with some contribution basis is only
+ * PARTIALLY penalty-free, so its penalty-exposed growth must wait.
  *
  * Tier A has no config lever and always applies — it only decides which
  * INDIVIDUAL ACCOUNT within a category receives a category-level total

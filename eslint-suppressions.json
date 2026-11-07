@@ -4268,9 +4268,6 @@
   "src/lib/pure/engine/bracket-growth.ts": {
     "ratchet/max-comment-lines": {
       "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/brokerage-basis.ts": {
@@ -4295,9 +4292,6 @@
   "src/lib/pure/engine/contribution-projection.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/contribution-routing.ts": {
@@ -4386,9 +4380,6 @@
   "src/lib/pure/engine/individual-accounts/withdrawals.ts": {
     "ratchet/max-comment-lines": {
       "count": 9
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
@@ -4498,7 +4489,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-guarded-division": {
       "count": 1

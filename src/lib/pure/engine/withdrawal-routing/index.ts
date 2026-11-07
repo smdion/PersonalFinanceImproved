@@ -111,12 +111,9 @@ function dispatchOnce(
  *    non-allowed exposure and non-retirement money stay excluded even
  *    though the household is short).
  *
- * Note this is a DIFFERENT, narrower two-pass model than the Tier B one
- * `routeForMode`'s docblock below says was deliberately collapsed to one
- * pass — that collapse was about the DEFAULT (no penalty allowance) case,
- * where "penalty-
- * exposed" and "excluded" were the same set and a second pass was pure
- * dead weight. Here the two sets genuinely differ (allowed vs. not), so a
+ * In the DEFAULT (no penalty allowance) case "penalty-exposed" and
+ * "excluded" are the same set, so `routeForMode` dispatches once. Here the
+ * two sets genuinely differ (allowed vs. not), so a
  * second pass has real work to do only in the narrow case this function is
  * reached at all.
  */

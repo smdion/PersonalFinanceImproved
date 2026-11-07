@@ -3,9 +3,7 @@
  *
  * Used by both individual-accounts/contributions.ts (per-account bookkeeping,
  * prorated by year fraction) and contribution-routing.ts (yr1+ category
- * routing, full-year). Consolidated per audit Batch 2 Finding 5 — the
- * formula was duplicated 3x with already-drifting variable names
- * (`baseSalary` vs `currentSalary` for the same salary-base role).
+ * routing, full-year), so the formula exists once.
  */
 import type { ContributionSpec } from "./types/contribution-spec";
 import { safeDivide } from "../../utils/math";

@@ -344,8 +344,8 @@ export function routeWithdrawalsBracketFilling(
     : 0;
   const baseOrdinaryFloor =
     (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
-  // One base for the seed pass and every refine pass below, so the two
-  // can't rank on different inputs; only `ordinaryIncomeFloor` varies.
+  // One base for the seed pass and every refine pass below; only
+  // `ordinaryIncomeFloor` varies between them.
   const rankingBaseInput = {
     filingStatus: bracketInfo.filingStatus,
     taxBrackets: bracketInfo.taxBrackets ?? [],

@@ -108,9 +108,8 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
  * future drift between `acctBal` and the sum of individual accounts (the
  * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
  * already watches for). Locked design: the penalty-free balance is derived
- * by SUBTRACTION from the real `acctBal`, never by summing `indBal` — see
- * `withdrawal-eligibility.ts`'s module docblock for why the other direction
- * breaks byte-identity.
+ * by SUBTRACTION from the real `acctBal`, never by summing `indBal` (the
+ * other direction breaks byte-identity).
  */
 export function subtractPenaltyExposed(
   balances: AccountBalances,
