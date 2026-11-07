@@ -224,6 +224,45 @@ describe("LinkedBalanceCard daily change notes", () => {
     expect(screen.getByText("excludes Voya")).toBeInTheDocument();
   });
 
+  it("an exclusion is still said once when the latest close is pending", () => {
+    setQuery("investments.getCurrentBalances", {
+      target: "2026-11-06",
+      snapshotDate: null,
+      summary: { total: 1000 },
+      feeds: [],
+      balances: [],
+      movement: [
+        close("2026-11-06", ["Fidelity Investments", "Voya Financial"]),
+        close("2026-11-05", []),
+        close("2026-11-04", []),
+      ],
+      closeReports: [],
+      unpricedMoves: [
+        {
+          key: "hsa",
+          label: "Joanna HSA (Voya)",
+          institution: "Voya Financial",
+          changed: [
+            { day: "2026-11-05", balance: -151.08 },
+            { day: "2026-11-04", balance: 40 },
+          ],
+        },
+      ],
+    });
+    render(
+      <TooltipProvider>
+        <LinkedBalanceCard />
+      </TooltipProvider>,
+    );
+    expect(
+      screen.getByText("Excludes Joanna HSA (Voya): no holdings reported"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\(no holdings\)/)).toBeNull();
+    expect(
+      screen.getByText("Fidelity and Voya changes not in yet"),
+    ).toBeInTheDocument();
+  });
+
   it("names a feed SimpleFIN still lists whose balance stopped", () => {
     setQuery("simplefin.getStatus", {
       connected: true,

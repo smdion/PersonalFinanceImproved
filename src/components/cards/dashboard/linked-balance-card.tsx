@@ -184,7 +184,7 @@ function DailyChanges({
   unpriced: CurrentData["unpricedMoves"];
 }) {
   if (movement.length === 0) return null;
-  const { always, varying } = splitUnpriced(movement, unpriced);
+  const split = splitUnpriced(movement, target, reports, unpriced);
   return (
     <>
       <p className="text-caption text-faint">
@@ -202,13 +202,13 @@ function DailyChanges({
             <span
               className="text-faint break-words"
               title={[
-                missingReason(c, target, reports, varying),
+                missingReason(c, target, reports, split.varying),
                 unreportedDetail(c),
               ]
                 .filter(Boolean)
                 .join(" ")}
             >
-              {[missingNote(c, target, reports, varying), paidLine(c)]
+              {[missingNote(c, target, reports, split.varying), paidLine(c)]
                 .filter(Boolean)
                 .join(" · ")}
             </span>
@@ -217,7 +217,7 @@ function DailyChanges({
       </div>
       <div className="text-caption text-faint mb-2 empty:hidden">
         <StaleFeedNotes />
-        {always.length > 0 && <p>{alwaysExcludedLine(always)}</p>}
+        {split.always.length > 0 && <p>{alwaysExcludedLine(split.always)}</p>}
         {gapLines(reports).map((line) => (
           <p key={line}>{line}</p>
         ))}
