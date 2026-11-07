@@ -1,5 +1,5 @@
 /**
- * Card-level smoke test before the split of cards/projection/index.tsx
+ * Card-level smoke test before the split of retirement-projection/index.tsx
  * (RULES § Refactoring: smoke tests before any split; target-architecture
  * § 8.7: card-level smoke, each panel present). A dated temporary net: the
  * split that replaces the file replaces this test.
@@ -16,12 +16,12 @@ import { UserProvider } from "@/lib/context/user-context";
 import { calculateProjection } from "@/lib/pure/engine";
 import { SK_RETIREMENT_MC_AUTOLOAD } from "@/lib/constants/settings-keys";
 import { formatCurrency } from "@/lib/utils/format";
-import { rowTotal } from "@/components/cards/projection/utils";
-import { annAndBo, engineDataFor, people } from "./projection-household";
-import { resetTrpcMock, setQuery } from "./trpc-mock";
+import { rowTotal } from "@/components/retirement-projection/utils";
+import { annAndBo, engineDataFor, people } from "../projection-household";
+import { resetTrpcMock, setQuery } from "../trpc-mock";
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 vi.mock("recharts", () => {
   const Box = ({ children }: { children?: React.ReactNode }) => (
@@ -50,7 +50,7 @@ vi.mock("recharts", () => {
   };
 });
 
-import { ProjectionCard } from "@/components/cards/projection";
+import { ProjectionCard } from "@/components/retirement-projection";
 
 const engineData = engineDataFor(calculateProjection(annAndBo()));
 

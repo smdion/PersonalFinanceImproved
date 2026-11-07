@@ -47,22 +47,22 @@
   {
     "rule": "no-circular",
     "from": "src/components/cards/coast-fire-card.tsx",
-    "to": "src/components/cards/projection/projection-hero-kpis.tsx"
+    "to": "src/components/retirement-projection/projection-hero-kpis.tsx"
   },
   {
     "rule": "no-circular",
-    "from": "src/components/cards/projection/use-projection-derived.ts",
-    "to": "src/components/cards/projection/use-projection-queries.ts"
+    "from": "src/components/retirement-projection/use-projection-derived.ts",
+    "to": "src/components/retirement-projection/use-projection-queries.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/components/cards/projection/use-projection-derived.ts",
-    "to": "src/components/cards/projection/use-projection-state.ts"
+    "from": "src/components/retirement-projection/use-projection-derived.ts",
+    "to": "src/components/retirement-projection/use-projection-state.ts"
   },
   {
     "rule": "no-circular",
-    "from": "src/components/cards/projection/use-projection-queries.ts",
-    "to": "src/components/cards/projection/use-projection-state.ts"
+    "from": "src/components/retirement-projection/use-projection-queries.ts",
+    "to": "src/components/retirement-projection/use-projection-state.ts"
   },
   {
     "rule": "no-circular",

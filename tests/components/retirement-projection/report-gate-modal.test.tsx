@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ReportGateModal } from "@/components/cards/projection/report/report-gate-modal";
+import { ReportGateModal } from "@/components/retirement-projection/report/report-gate-modal";
 
 describe("ReportGateModal", () => {
   it("offers to run a stale Simulation", () => {

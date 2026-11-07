@@ -22,7 +22,7 @@ import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-pr
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { ProjectionCard } from "@/components/cards/projection";
+import { ProjectionCard } from "@/components/retirement-projection";
 import { AssumptionsBand } from "@/components/retirement/assumptions-band";
 
 // Code-split the recharts-heavy withdrawal comparison card. Loads on

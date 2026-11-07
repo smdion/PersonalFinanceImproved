@@ -18,7 +18,7 @@ import {
   formatPercent,
   formatRelativeTime,
 } from "@/lib/utils/format";
-import { KpiCard } from "./projection/projection-hero-kpis";
+import { KpiCard } from "../retirement-projection/projection-hero-kpis";
 import {
   SIMULATION_NOT_CONFIGURED_MESSAGE,
   type SimulationNotConfigured,

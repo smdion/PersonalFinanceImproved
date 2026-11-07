@@ -379,7 +379,7 @@ Every setting can change by year ("Changes by year", resolved in `override-resol
 
 ### Projection Card
 
-The Retirement page's projection (`components/cards/projection/`) reads `projection.computeProjection` plus the simulation queries (`use-projection-queries.ts`); the dashboard reads the same cached runs through `usePlanEngineInput`.
+The Retirement page's projection (`components/retirement-projection/`) reads `projection.computeProjection` plus the simulation queries (`use-projection-queries.ts`); the dashboard reads the same cached runs through `usePlanEngineInput`.
 
 - **Per-person view:** Joint / per-person toggle scales the chart, table and hero figures by each person's share of the contribution specs.
 - **"How contributions are projected":** per-account specs with employer match inline (`+m`, hover for the breakdown).
@@ -391,7 +391,7 @@ Shared helpers: `getAccountTypeConfig()`, `aggregateContributionsByCategory()` a
 ### Tooltip System
 
 Tooltip rendering for the projection card is data-driven and lives in
-`src/components/cards/projection/tooltip-renderer.tsx`. Call sites build a
+`src/components/retirement-projection/tooltip-renderer.tsx`. Call sites build a
 `TooltipData` object (discriminated union: `kind: 'money' | 'info'`) and pass
 it to `renderTooltip()`. The renderer decides _how_ to render — never _what_
 data to show. Section order is fixed; every section is `{d.field && <render>}`.

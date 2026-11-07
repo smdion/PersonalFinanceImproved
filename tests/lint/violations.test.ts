@@ -355,19 +355,19 @@ const CLOSED_SET_LISTS_KNOWN: Record<
     "reflows a long render chain in a file at its size ceiling: goes when " +
     "the projection table is split";
   return {
-    "src/components/cards/projection/projection-chart.tsx": {
+    "src/components/retirement-projection/projection-chart.tsx": {
       count: 1,
       reason,
     },
-    "src/components/cards/projection/projection-table-accum-row.tsx": {
+    "src/components/retirement-projection/projection-table-accum-row.tsx": {
       count: 3,
       reason,
     },
-    "src/components/cards/projection/projection-table-decum-row.tsx": {
+    "src/components/retirement-projection/projection-table-decum-row.tsx": {
       count: 3,
       reason,
     },
-    "src/components/cards/projection/projection-table.tsx": {
+    "src/components/retirement-projection/projection-table.tsx": {
       count: 4,
       reason,
     },
@@ -2059,12 +2059,12 @@ describe("one config entry adds an account type", () => {
  *  category added later misses them. */
 const BUILT_AT_LOAD = [
   "src/app/(dashboard)/historical/historical-content.tsx ALL_portfolioBreakdownCols",
-  "src/components/cards/projection/projection-table-decum-row.tsx CATEGORY_ORDER",
-  "src/components/cards/projection/types.ts emptyAccumForm",
-  "src/components/cards/projection/types.ts emptyDecumForm",
-  "src/components/cards/projection/utils.ts catDisplayLabel",
-  "src/components/cards/projection/utils.ts bucketSlotMap",
-  "src/components/cards/projection/utils.ts _singleBucketCategories",
+  "src/components/retirement-projection/projection-table-decum-row.tsx CATEGORY_ORDER",
+  "src/components/retirement-projection/types.ts emptyAccumForm",
+  "src/components/retirement-projection/types.ts emptyDecumForm",
+  "src/components/retirement-projection/utils.ts catDisplayLabel",
+  "src/components/retirement-projection/utils.ts bucketSlotMap",
+  "src/components/retirement-projection/utils.ts _singleBucketCategories",
   "src/lib/config/account-types.ts DEFAULT_WITHDRAWAL_SPLITS",
   "src/lib/pure/engine/types/overrides.schema.ts lumpSumSchema",
   "src/lib/pure/engine/types/overrides.schema.ts decumulationDefaultsInputSchema",

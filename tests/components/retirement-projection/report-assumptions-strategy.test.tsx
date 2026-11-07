@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ReportAssumptionsSummary } from "@/components/cards/projection/report/report-assumptions-summary";
+import { ReportAssumptionsSummary } from "@/components/retirement-projection/report/report-assumptions-summary";
 
 describe("ReportAssumptionsSummary — strategy parameters", () => {
   it("Constant Percentage: its percentages, and Social Security from the switch", () => {

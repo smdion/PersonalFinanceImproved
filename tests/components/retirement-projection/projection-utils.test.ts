@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax -- as unknown as casts required to build minimal slot/account fixtures without satisfying every unrelated field of the full engine types */
 /**
  * Unit tests for the pure data-driven helpers in
- * src/components/cards/projection/utils.ts. Uses the real
+ * src/components/retirement-projection/utils.ts. Uses the real
  * @/lib/config/account-types module (as other pure-function tests in this
  * repo do, e.g. tests/pure/engine/balance-utils.test.ts) rather than mocking
  * it — these helpers are config-driven and their correctness depends on
@@ -37,7 +37,7 @@ import {
   catDisplayLabel,
   bucketSlotMap,
   formatDiscretionaryTierBreakdown,
-} from "@/components/cards/projection/utils";
+} from "@/components/retirement-projection/utils";
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";
 import type { EngineYearProjection } from "@/lib/pure/engine/types";

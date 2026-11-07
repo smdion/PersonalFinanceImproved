@@ -31,12 +31,12 @@ import {
 import type {
   AccumOverride,
   TooltipData,
-} from "@/components/cards/projection/types";
-import { renderTooltip } from "@/components/cards/projection/tooltip-renderer";
+} from "@/components/retirement-projection/types";
+import { renderTooltip } from "@/components/retirement-projection/tooltip-renderer";
 import {
   LumpSumForm,
   LumpSumBadge,
-} from "@/components/cards/projection/lump-sum-form";
+} from "@/components/retirement-projection/lump-sum-form";
 import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";

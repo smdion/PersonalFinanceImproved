@@ -1,6 +1,6 @@
 /**
  * Regression guard, 2026-08-30 (UI/UX pass) — every projection tooltip
- * accent color (`tipColorClass` in cards/projection/utils.ts) must be a
+ * accent color (`tipColorClass` in retirement-projection/utils.ts) must be a
  * STATIC shade: one with NO `--c-<color>-<shade>` override in
  * globals.css's `:root` block.
  *
@@ -22,13 +22,13 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { tipColorClass } from "@/components/cards/projection/utils";
+import { tipColorClass } from "@/components/retirement-projection/utils";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
 
 function themedShades(): Set<string> {
   const css = readFileSync(
-    resolve(__dirname, "../../src/app/globals.css"),
+    resolve(__dirname, "../../../src/app/globals.css"),
     "utf-8",
   );
   const rootBlock = css.slice(
@@ -104,7 +104,7 @@ describe("tooltip-renderer.tsx — every color is centralized through tipColorCl
   const source = readFileSync(
     resolve(
       __dirname,
-      "../../src/components/cards/projection/tooltip-renderer.tsx",
+      "../../../src/components/retirement-projection/tooltip-renderer.tsx",
     ),
     "utf-8",
   );
@@ -116,7 +116,7 @@ describe("tooltip-renderer.tsx — every color is centralized through tipColorCl
     expect(
       literals,
       `found raw color literal(s) in tooltip-renderer.tsx: ${JSON.stringify(literals)}. ` +
-        `Route through tipColorClass instead (see its docblock in cards/projection/utils.ts).`,
+        `Route through tipColorClass instead (see its docblock in retirement-projection/utils.ts).`,
     ).toBeNull();
   });
 

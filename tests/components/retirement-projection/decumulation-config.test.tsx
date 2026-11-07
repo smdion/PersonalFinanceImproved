@@ -15,7 +15,7 @@ vi.mock("@/components/ui/help-tip", () => ({
   ),
 }));
 
-import { DecumulationConfig } from "@/components/cards/projection/decumulation-config";
+import { DecumulationConfig } from "@/components/retirement-projection/decumulation-config";
 import {
   getAllCategories,
   getDefaultDecumulationOrder,

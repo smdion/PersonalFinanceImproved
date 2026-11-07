@@ -6,7 +6,7 @@ import {
   IrmaaCliffAlert,
   type TaxYearRow,
 } from "@/components/tax-optimization/irmaa-cliff-alert";
-import { ReportAssumptionsSummary } from "@/components/cards/projection/report/report-assumptions-summary";
+import { ReportAssumptionsSummary } from "@/components/retirement-projection/report/report-assumptions-summary";
 
 // --- trpc mock (RothExplorer / WithdrawalComparison use useQuery) ---
 vi.mock("@/lib/trpc", async () => ({

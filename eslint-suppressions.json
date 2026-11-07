@@ -1135,12 +1135,12 @@
       "count": 2
     }
   },
-  "src/components/cards/projection/balance-cell.tsx": {
+  "src/components/retirement-projection/balance-cell.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/decumulation-config.tsx": {
+  "src/components/retirement-projection/decumulation-config.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 7
     },
@@ -1163,7 +1163,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/index.tsx": {
+  "src/components/retirement-projection/index.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1189,7 +1189,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/lump-sum-form.tsx": {
+  "src/components/retirement-projection/lump-sum-form.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
@@ -1206,7 +1206,7 @@
       "count": 2
     }
   },
-  "src/components/cards/projection/overrides-panel.tsx": {
+  "src/components/retirement-projection/overrides-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
     },
@@ -1223,7 +1223,7 @@
       "count": 8
     }
   },
-  "src/components/cards/projection/pill-btn.tsx": {
+  "src/components/retirement-projection/pill-btn.tsx": {
     "ratchet/max-comment-lines": {
       "count": 5
     },
@@ -1234,12 +1234,12 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-chart-skeleton.tsx": {
+  "src/components/retirement-projection/projection-chart-skeleton.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-chart.tsx": {
+  "src/components/retirement-projection/projection-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -1259,7 +1259,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-hero-kpis.tsx": {
+  "src/components/retirement-projection/projection-hero-kpis.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1276,7 +1276,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-loader.tsx": {
+  "src/components/retirement-projection/projection-loader.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -1284,7 +1284,7 @@
       "count": 3
     }
   },
-  "src/components/cards/projection/projection-mc-results.tsx": {
+  "src/components/retirement-projection/projection-mc-results.tsx": {
     "max-lines-per-function": {
       "count": 2
     },
@@ -1301,7 +1301,7 @@
       "count": 3
     }
   },
-  "src/components/cards/projection/projection-table-accum-row.tsx": {
+  "src/components/retirement-projection/projection-table-accum-row.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
@@ -1312,7 +1312,7 @@
       "count": 12
     }
   },
-  "src/components/cards/projection/projection-table-contrib-methodology.tsx": {
+  "src/components/retirement-projection/projection-table-contrib-methodology.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -1326,7 +1326,7 @@
       "count": 4
     }
   },
-  "src/components/cards/projection/projection-table-decum-row.tsx": {
+  "src/components/retirement-projection/projection-table-decum-row.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 13
     },
@@ -1343,17 +1343,17 @@
       "count": 13
     }
   },
-  "src/components/cards/projection/projection-table-mc-cell.tsx": {
+  "src/components/retirement-projection/projection-table-mc-cell.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     }
   },
-  "src/components/cards/projection/projection-table-skeleton.tsx": {
+  "src/components/retirement-projection/projection-table-skeleton.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-table.tsx": {
+  "src/components/retirement-projection/projection-table.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1361,12 +1361,12 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/report/report-action-items.tsx": {
+  "src/components/retirement-projection/report/report-action-items.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/report/report-assumptions-summary.tsx": {
+  "src/components/retirement-projection/report/report-assumptions-summary.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -1377,12 +1377,12 @@
       "count": 3
     }
   },
-  "src/components/cards/projection/report/report-cover.tsx": {
+  "src/components/retirement-projection/report/report-cover.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/report/report-gate-modal.tsx": {
+  "src/components/retirement-projection/report/report-gate-modal.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -1393,22 +1393,22 @@
       "count": 2
     }
   },
-  "src/components/cards/projection/report/report-header.tsx": {
+  "src/components/retirement-projection/report/report-header.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/report/report-risk-band-chart.tsx": {
+  "src/components/retirement-projection/report/report-risk-band-chart.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/report/report-root.tsx": {
+  "src/components/retirement-projection/report/report-root.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
-  "src/components/cards/projection/spending-stability-chart.tsx": {
+  "src/components/retirement-projection/spending-stability-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -1425,7 +1425,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/tax-summary-card.tsx": {
+  "src/components/retirement-projection/tax-summary-card.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -1436,7 +1436,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/tooltip-renderer.tsx": {
+  "src/components/retirement-projection/tooltip-renderer.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -1447,7 +1447,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/types.ts": {
+  "src/components/retirement-projection/types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
@@ -1461,7 +1461,7 @@
       "count": 3
     }
   },
-  "src/components/cards/projection/use-projection-derived.ts": {
+  "src/components/retirement-projection/use-projection-derived.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 19
     },
@@ -1475,7 +1475,7 @@
       "count": 5
     }
   },
-  "src/components/cards/projection/use-projection-form-state.ts": {
+  "src/components/retirement-projection/use-projection-form-state.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
@@ -1489,7 +1489,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/use-projection-queries.ts": {
+  "src/components/retirement-projection/use-projection-queries.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
@@ -1503,7 +1503,7 @@
       "count": 1
     }
   },
-  "src/components/cards/projection/use-projection-state.ts": {
+  "src/components/retirement-projection/use-projection-state.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 12
     },
@@ -1514,7 +1514,7 @@
       "count": 3
     }
   },
-  "src/components/cards/projection/utils.ts": {
+  "src/components/retirement-projection/utils.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
     },

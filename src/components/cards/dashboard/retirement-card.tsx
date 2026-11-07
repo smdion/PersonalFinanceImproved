@@ -36,7 +36,7 @@ import { simulationRateTone } from "@/lib/config/simulation-tones";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { filterYearByParentCategory } from "@/components/cards/projection/utils";
+import { filterYearByParentCategory } from "@/components/retirement-projection/utils";
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";

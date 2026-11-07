@@ -39,42 +39,42 @@
       "count": 2
     }
   },
-  "src/components/cards/projection/decumulation-config.tsx": {
+  "src/components/retirement-projection/decumulation-config.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-chart.tsx": {
+  "src/components/retirement-projection/projection-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-mc-results.tsx": {
+  "src/components/retirement-projection/projection-mc-results.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-table-accum-row.tsx": {
+  "src/components/retirement-projection/projection-table-accum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 7
     }
   },
-  "src/components/cards/projection/projection-table-decum-row.tsx": {
+  "src/components/retirement-projection/projection-table-decum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 30
     }
   },
-  "src/components/cards/projection/spending-stability-chart.tsx": {
+  "src/components/retirement-projection/spending-stability-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/cards/projection/use-projection-derived.ts": {
+  "src/components/retirement-projection/use-projection-derived.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 8
     }
   },
-  "src/components/cards/projection/utils.ts": {
+  "src/components/retirement-projection/utils.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

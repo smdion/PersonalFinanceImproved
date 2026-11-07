@@ -11,7 +11,7 @@ import {
 // appear (rendered via the mocked ProjectionCard), and tab switching works.
 // Child components are stubbed so we don't pull in recharts or hit the engine.
 
-vi.mock("@/components/cards/projection", () => ({
+vi.mock("@/components/retirement-projection", () => ({
   ProjectionCard: () => <div data-testid="projection-card" />,
 }));
 

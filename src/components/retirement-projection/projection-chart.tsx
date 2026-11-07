@@ -40,7 +40,7 @@ import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectionState } from "./projection-table-types";
 
-// Skeleton lives in its own file so the parent (cards/projection/index.tsx)
+// Skeleton lives in its own file so the parent (retirement-projection/index.tsx)
 // can render it without pulling recharts in via this module's import graph.
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 

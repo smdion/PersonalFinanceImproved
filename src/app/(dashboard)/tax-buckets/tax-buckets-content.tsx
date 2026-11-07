@@ -13,7 +13,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SlidePanel } from "@/components/ui/slide-panel";
-import { KpiCard } from "@/components/cards/projection/projection-hero-kpis";
+import { KpiCard } from "@/components/retirement-projection/projection-hero-kpis";
 import { formatCurrency } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";

@@ -27,14 +27,14 @@ import type {
   ProjectionResult,
 } from "@/lib/pure/engine/types";
 import { formatCurrency } from "@/lib/utils/format";
-import { useProjectionDerived } from "@/components/cards/projection/use-projection-derived";
-import type { ProjectionFormState } from "@/components/cards/projection/use-projection-form-state";
-import type { ProjectionQueries } from "@/components/cards/projection/use-projection-queries";
-import type { ProjectionState } from "@/components/cards/projection/projection-table-types";
-import { AccumulationRow } from "@/components/cards/projection/projection-table-accum-row";
-import { DecumulationRow } from "@/components/cards/projection/projection-table-decum-row";
-import type { RenderMcCellOptions } from "@/components/cards/projection/projection-table-mc-cell";
-import { annAndBo, engineDataFor, people } from "./projection-household";
+import { useProjectionDerived } from "@/components/retirement-projection/use-projection-derived";
+import type { ProjectionFormState } from "@/components/retirement-projection/use-projection-form-state";
+import type { ProjectionQueries } from "@/components/retirement-projection/use-projection-queries";
+import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
+import { AccumulationRow } from "@/components/retirement-projection/projection-table-accum-row";
+import { DecumulationRow } from "@/components/retirement-projection/projection-table-decum-row";
+import type { RenderMcCellOptions } from "@/components/retirement-projection/projection-table-mc-cell";
+import { annAndBo, engineDataFor, people } from "../projection-household";
 
 /** The card's state for one engine result: the real derived-state hook,
  *  plus the view settings the card's form hook would supply. */

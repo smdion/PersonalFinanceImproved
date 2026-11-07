@@ -72,7 +72,7 @@ describe("the shared disclaimer", () => {
 
   it("the report's footer shows it and keeps the risk-analysis note", async () => {
     const { ReportFooter } =
-      await import("@/components/cards/projection/report/report-header");
+      await import("@/components/retirement-projection/report/report-header");
     render(<ReportFooter generatedAt={new Date("2026-11-03T12:00:00Z")} />);
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();
     expect(

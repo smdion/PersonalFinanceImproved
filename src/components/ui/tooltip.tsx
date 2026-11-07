@@ -20,7 +20,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
  * this surface must be legible on both bg-slate-900 AND bg-slate-700 —
  * NOT run through globals.css's `--c-*` page-theme remapping, which
  * assumes a theme-adaptive container and will actively fight this fixed
- * one. See cards/projection/utils.ts's `tipColorClass` for the curated set
+ * one. See retirement-projection/utils.ts's `tipColorClass` for the curated set
  * used by the projection chart/table tooltips specifically.
  */
 export const TOOLTIP_SURFACE_CLASSES =

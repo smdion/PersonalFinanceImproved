@@ -1573,7 +1573,7 @@ export function DecumulationRow({
                 tooltip's always-dark popup content. blue-300 has a real
                 --c-blue-300 override (globals.css) and correctly tracks
                 page theme here, unlike tipColorClass's shades (used for
-                text INSIDE the dark popup, see cards/projection/utils.ts). */}
+                text INSIDE the dark popup, see retirement-projection/utils.ts). */}
             <span className="ml-1 cursor-help text-blue-300">diag</span>
           </Tooltip>
         )}

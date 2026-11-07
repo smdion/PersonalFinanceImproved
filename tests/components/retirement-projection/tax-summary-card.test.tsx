@@ -18,8 +18,8 @@ vi.mock("@/lib/utils/format", () => ({
   formatPercent: (v: number, d = 0) => `${(v * 100).toFixed(d)}%`,
 }));
 
-import { TaxSummaryCard } from "@/components/cards/projection/tax-summary-card";
-import type { ProjectionState } from "@/components/cards/projection/projection-table-types";
+import { TaxSummaryCard } from "@/components/retirement-projection/tax-summary-card";
+import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function makeState(years: any[]): any {

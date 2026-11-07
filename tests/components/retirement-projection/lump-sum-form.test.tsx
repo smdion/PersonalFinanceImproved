@@ -10,7 +10,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   LumpSumForm,
   LumpSumBadge,
-} from "@/components/cards/projection/lump-sum-form";
+} from "@/components/retirement-projection/lump-sum-form";
 
 const accounts = [
   { name: "401k - Alice", category: "401k", taxType: "traditional" },

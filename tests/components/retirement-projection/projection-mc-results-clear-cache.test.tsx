@@ -11,9 +11,9 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { McResultsSection } from "@/components/cards/projection/projection-mc-results";
-import type { ProjectionState } from "@/components/cards/projection/projection-table-types";
-import { resetTrpcMock, utilsCalls } from "./trpc-mock";
+import { McResultsSection } from "@/components/retirement-projection/projection-mc-results";
+import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
+import { resetTrpcMock, utilsCalls } from "../trpc-mock";
 
 vi.mock("@/lib/hooks/use-high-income-line", () => ({
   useHighIncomeLine: () => ({
@@ -25,7 +25,7 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));

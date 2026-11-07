@@ -16,13 +16,13 @@ import type {
   EngineDecumulationYear,
 } from "@/lib/pure/engine/types";
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
-import type { UseProjectionStateProps } from "@/components/cards/projection/use-projection-state";
-import type { ProjectionFormState } from "@/components/cards/projection/use-projection-form-state";
-import type { ProjectionQueries } from "@/components/cards/projection/use-projection-queries";
+import type { UseProjectionStateProps } from "@/components/retirement-projection/use-projection-state";
+import type { ProjectionFormState } from "@/components/retirement-projection/use-projection-form-state";
+import type { ProjectionQueries } from "@/components/retirement-projection/use-projection-queries";
 
 async function importHook() {
   const mod =
-    await import("@/components/cards/projection/use-projection-derived");
+    await import("@/components/retirement-projection/use-projection-derived");
   return mod.useProjectionDerived;
 }
 

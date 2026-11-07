@@ -101,7 +101,7 @@ export default defineConfig({
           ],
           exclude: [
             "tests/components/portfolio-quick-look-stats.test.ts",
-            "tests/components/projection-utils.test.ts",
+            "tests/components/retirement-projection/projection-utils.test.ts",
           ],
         },
       },

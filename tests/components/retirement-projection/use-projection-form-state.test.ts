@@ -9,7 +9,7 @@ import {
   getAllCategories,
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
-import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
+import { resetTrpcMock, setQuery, type MockOutput } from "../trpc-mock";
 
 type Overrides = MockOutput<"retirement.projectionOverrides.get">;
 let accumQueryData: Overrides | undefined;
@@ -20,7 +20,7 @@ vi.mock("@/lib/hooks/use-simulation-preset", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
@@ -45,7 +45,7 @@ beforeEach(() => {
 
 async function importHook() {
   const mod =
-    await import("@/components/cards/projection/use-projection-form-state");
+    await import("@/components/retirement-projection/use-projection-form-state");
   return mod.useProjectionFormState;
 }
 

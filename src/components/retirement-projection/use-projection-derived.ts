@@ -632,7 +632,7 @@ export function useProjectionDerived(
   // destructuring across a union) before reading `state.engineSettings` get
   // it typed as always-defined, no `!` needed. See callers in
   // projection-chart.tsx, projection-hero-kpis.tsx, projection-mc-results.tsx,
-  // and cards/projection/index.tsx.
+  // and retirement-projection/index.tsx.
   if (result && engineSettings) {
     return { ...commonReturn, result, engineSettings };
   }

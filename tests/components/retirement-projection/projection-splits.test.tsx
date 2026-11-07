@@ -38,11 +38,11 @@ vi.mock("@/components/ui/help-tip", () => ({
 
 // McResultsSection's "Clear Cache" button invalidates the client-side
 // query cache directly (2026-08-29 fix — see
-// tests/components/projection-mc-results-clear-cache.test.tsx), which
+// tests/components/retirement-projection/projection-mc-results-clear-cache.test.tsx), which
 // means it now calls trpc.useUtils() unconditionally on every render, not
 // just when the button is reachable.
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 // CoastFireCard uses trpc.projection.computeCoastFire.useQuery internally,
@@ -279,7 +279,7 @@ describe("ProjectionHeroKpis", () => {
 
   it("renders deterministic hero when no MC data", async () => {
     const { ProjectionHeroKpis } =
-      await import("@/components/cards/projection/projection-hero-kpis");
+      await import("@/components/retirement-projection/projection-hero-kpis");
     const s = baseMockState({ result: minResult });
     render(<ProjectionHeroKpis state={s} />);
     expect(screen.getByText("Nest Egg at Retirement")).toBeInTheDocument();
@@ -290,7 +290,7 @@ describe("ProjectionHeroKpis", () => {
 
   it("returns null when result is null", async () => {
     const { ProjectionHeroKpis } =
-      await import("@/components/cards/projection/projection-hero-kpis");
+      await import("@/components/retirement-projection/projection-hero-kpis");
     const { container } = render(
       <ProjectionHeroKpis state={baseMockState()} />,
     );
@@ -299,7 +299,7 @@ describe("ProjectionHeroKpis", () => {
 
   it("renders MC hero when MC data available", async () => {
     const { ProjectionHeroKpis } =
-      await import("@/components/cards/projection/projection-hero-kpis");
+      await import("@/components/retirement-projection/projection-hero-kpis");
     const mcData = {
       result: {
         successRate: 0.92,
@@ -363,7 +363,7 @@ describe("ProjectionHeroKpis", () => {
 describe("ProjectionChartSkeleton", () => {
   it("renders loading state", async () => {
     const { ProjectionChartSkeleton } =
-      await import("@/components/cards/projection/projection-chart");
+      await import("@/components/retirement-projection/projection-chart");
     render(<ProjectionChartSkeleton phase="simulation" />);
     expect(screen.getByText("Balance Projection")).toBeInTheDocument();
     expect(screen.getByText(/Simulating/)).toBeInTheDocument();
@@ -396,14 +396,14 @@ describe("ProjectionChart", () => {
 
   it("returns null when result is null", async () => {
     const { ProjectionChart } =
-      await import("@/components/cards/projection/projection-chart");
+      await import("@/components/retirement-projection/projection-chart");
     const { container } = render(<ProjectionChart state={baseMockState()} />);
     expect(container.innerHTML).toBe("");
   });
 
   it("renders chart with title", async () => {
     const { ProjectionChart } =
-      await import("@/components/cards/projection/projection-chart");
+      await import("@/components/retirement-projection/projection-chart");
     const s = baseMockState({ result: chartResult });
     render(<ProjectionChart state={s} />);
     expect(screen.getByText("Balance Projection")).toBeInTheDocument();
@@ -412,7 +412,7 @@ describe("ProjectionChart", () => {
 
   it("shows person filter name when filtered", async () => {
     const { ProjectionChart } =
-      await import("@/components/cards/projection/projection-chart");
+      await import("@/components/retirement-projection/projection-chart");
     const s = baseMockState({
       result: chartResult,
       isPersonFiltered: true,
@@ -430,7 +430,7 @@ describe("ProjectionChart", () => {
 describe("McResultsSection", () => {
   it("returns null when not in MC mode", async () => {
     const { McResultsSection } =
-      await import("@/components/cards/projection/projection-mc-results");
+      await import("@/components/retirement-projection/projection-mc-results");
     const { container } = render(
       <McResultsSection
         state={baseMockState({ projectionMode: "deterministic" })}
@@ -441,7 +441,7 @@ describe("McResultsSection", () => {
 
   it("renders empty while MC is loading (spinner is in ProjectionLoader)", async () => {
     const { McResultsSection } =
-      await import("@/components/cards/projection/projection-mc-results");
+      await import("@/components/retirement-projection/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       mcLoading: true,
@@ -453,7 +453,7 @@ describe("McResultsSection", () => {
 
   it("shows error message on MC failure", async () => {
     const { McResultsSection } =
-      await import("@/components/cards/projection/projection-mc-results");
+      await import("@/components/retirement-projection/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       mcQuery: { data: null, error: { message: "Timeout" } },
@@ -464,7 +464,7 @@ describe("McResultsSection", () => {
 
   it("shows no-data message when no MC results", async () => {
     const { McResultsSection } =
-      await import("@/components/cards/projection/projection-mc-results");
+      await import("@/components/retirement-projection/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       mcQuery: { data: null, error: null },
