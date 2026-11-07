@@ -769,11 +769,6 @@
       "count": 3
     }
   },
-  "src/server/routers/performance/summary.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/routers/performance/year-records.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
@@ -902,6 +897,11 @@
   "src/server/services/performance/performance-edit.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
+    }
+  },
+  "src/server/services/performance/summary.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/server/services/projection/engine-payload/build-engine-payload.ts": {

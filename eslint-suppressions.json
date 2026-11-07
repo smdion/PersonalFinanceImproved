@@ -5798,17 +5798,6 @@
       "count": 2
     }
   },
-  "src/server/routers/performance/summary.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
   "src/server/routers/performance/year-records.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -6486,6 +6475,17 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/server/services/performance/summary.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
     }
   },
   "src/server/services/profiles/first-retirement-profile.ts": {
