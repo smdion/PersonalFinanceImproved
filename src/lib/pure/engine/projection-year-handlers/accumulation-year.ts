@@ -66,10 +66,8 @@ import type {
 import { shortfallFloor, runGapYearDraw } from "../gap-year-draw";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
-import {
-  contributionStateForYear,
-  retirementRateCeiling,
-} from "@/lib/pure/contributions/contribution-state";
+import { contributionStateForYear } from "@/lib/pure/contributions/contribution-state";
+import { applyRateCeiling } from "./rate-ceiling";
 
 // ---------------------------------------------------------------------------
 // Accumulation year handler
@@ -420,45 +418,17 @@ export function runAccumulationYear(
       specOverflow = roundToCents(specOverflow * proRate);
     }
 
-    // Apply the contributionRate ceiling to per-account spec output.
-    // The rate ceiling is authoritative -- overrides always take effect.
-    // It caps retirement contributions only: Portfolio-parented specs
-    // (slot.portfolioContrib) are savings outside the retirement plan and
-    // keep their amounts, so adding Portfolio savings never shrinks a
-    // 401(k). The rate itself is a retirement rate (build-engine-payload).
-    const portfolioPart = (s: AccumulationSlot) => s.portfolioContrib ?? 0;
-    const retirementTotal = roundToCents(
-      sumBy(slots, (s) => s.employeeContrib - portfolioPart(s)),
-    );
-    const rateCeiling = retirementRateCeiling(
+    // The retirement-rate ceiling on the spec slots.
+    const ceiling = applyRateCeiling(
+      slots,
       contribution,
-      roundToCents(
-        projectedSalary * Math.max(0, config.contributionRate) * proRate,
-      ),
+      projectedSalary,
+      config,
+      proRate,
+      specOverflow,
     );
-    if (rateCeiling.kind === "at" && retirementTotal > rateCeiling.amount) {
-      const scale = rateCeiling.amount / retirementTotal;
-      rateCeilingScale = scale;
-      for (const slot of slots) {
-        const portfolio = portfolioPart(slot);
-        // Retirement part scaled, Portfolio part kept; each tax part scaled
-        // on its own (no Portfolio part: exactly the old arithmetic).
-        const ratio =
-          portfolio > 0 && slot.employeeContrib > 0
-            ? (portfolio + (slot.employeeContrib - portfolio) * scale) /
-              slot.employeeContrib
-            : scale;
-        const newEmployee = roundToCents(slot.employeeContrib * ratio);
-        slot.rothContrib = roundToCents(slot.rothContrib * ratio);
-        slot.traditionalContrib = roundToCents(slot.traditionalContrib * ratio);
-        slot.employeeContrib = newEmployee;
-        slot.remainingSpace = remainingRoom(slot, newEmployee);
-      }
-      // The IRS overflow inside the overflow target's slot scaled with
-      // the rest; it is still overflow — Step 2 leaves it out of the specs'
-      // share and Step 4 routes it to retirement money.
-      specOverflow = roundToCents(specOverflow * scale);
-    }
+    rateCeilingScale = ceiling.scale;
+    specOverflow = ceiling.specOverflow;
   } else {
     // Fallback: Route contributions based on mode (blended rate)
     const routed =
