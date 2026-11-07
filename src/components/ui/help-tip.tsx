@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import Link from "next/link";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { asButton } from "./as-button";
 
 export function HelpTip({
   text,
@@ -17,6 +18,19 @@ export function HelpTip({
   learnMoreHref?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // Inside another control (a button, a link) the tip isn't a tab stop of
+  // its own: that would nest one control in another. It keeps its click.
+  const ref = useRef<HTMLSpanElement>(null);
+  const [nested, setNested] = useState(false);
+  useEffect(() => {
+    const host = ref.current?.parentElement;
+    setNested(!!host?.closest("button, a, [role='button']"));
+  }, []);
+  const toggle = (e: SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen((prev) => !prev);
+  };
   const label =
     text ??
     (lines ? lines.filter((line) => typeof line === "string").join(" ") : "");
@@ -44,12 +58,9 @@ export function HelpTip({
       <TooltipPrimitive.Trigger asChild>
         <span
           className="bg-surface-strong text-muted text-caption ml-1 inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full font-bold"
+          ref={ref}
           aria-label={label}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen((prev) => !prev);
-          }}
+          {...(nested ? { onClick: toggle } : asButton(toggle))}
         >
           ?
         </span>

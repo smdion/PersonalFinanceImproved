@@ -139,7 +139,7 @@ describe("WhatIfTab smoke", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "New Plan name" }), {
       target: { value: "Promotion test" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /save as plan/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save as plan$/i }));
     expect(mutationCalls("settings.scenarios.create")).toEqual([
       {
         name: "Promotion test",

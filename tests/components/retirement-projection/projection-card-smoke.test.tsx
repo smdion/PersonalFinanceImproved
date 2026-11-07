@@ -94,7 +94,7 @@ describe("ProjectionCard smoke", () => {
     ).toBeInTheDocument();
     // Withdrawal routing (decumulation defaults) and the per-year changes
     // panel are mounted.
-    expect(screen.getByRole("button", { name: /configure/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^configure$/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /add a change/i })).toBeTruthy();
   });
 
