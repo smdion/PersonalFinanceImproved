@@ -8,12 +8,10 @@ import {
   getActiveMortgageLoan,
 } from "@/lib/pure/debts/mortgage-balance";
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
-import { resolvePersonYearIncome } from "@/lib/pure/household/compensation";
 import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { toNumber } from "@/lib/utils/numbers";
-import { findActiveJob } from "@/lib/pure/household/profiles";
 import { computeHomeImpCumulative } from "@/lib/pure/net-worth/historical";
 import {
   resolveCategoryValues,
@@ -24,11 +22,7 @@ import {
   computePortfolioTotal,
   type AnnualRowLike,
 } from "@/lib/pure/investments/returns";
-import { isPortfolioParent } from "@/lib/config/account-types";
-import {
-  PERF_CATEGORY_PORTFOLIO,
-  type PerfCategory,
-} from "@/lib/config/display-labels";
+import type { PerfCategory } from "@/lib/config/display-labels";
 import {
   buildPerfAcctLookups,
   getEffectiveCategory,
@@ -37,6 +31,14 @@ import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis"
 import { calendarYear } from "@/lib/utils/date";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 import { stampPerformanceUpdated } from "@/server/services/performance/last-updated";
+import {
+  finalizedAnnualFields,
+  nearestToYearEnd,
+  nextYearAccountRow,
+  nextYearAnnualRow,
+  portfolioByTaxLocationFrom,
+  yearGrossIncome,
+} from "@/lib/pure/investments/finalize-year";
 
 export async function finalizePerformanceYear(
   ctx: { db: Db; scope: RequestScope },
@@ -137,23 +139,7 @@ export async function finalizePerformanceYear(
 
       // Upsert: a category can have account rows but no annual row
       // yet — an update alone would leave the year unfinalized.
-      const catFields = {
-        isFinalized: true,
-        isCurrentYear: false,
-        isImmutable: true,
-        beginningBalance: values.beginningBalance.toFixed(2),
-        totalContributions: values.totalContributions.toFixed(2),
-        yearlyGainLoss: values.yearlyGainLoss.toFixed(2),
-        endingBalance: values.endingBalance.toFixed(2),
-        annualReturnPct: returnPct?.toFixed(6) ?? null,
-        employerContributions: values.employerContributions.toFixed(2),
-        distributions: values.distributions.toFixed(2),
-        fees: values.fees.toFixed(2),
-        rollovers: values.rollovers.toFixed(2),
-        lifetimeGains: values.lifetimeGains.toFixed(2),
-        lifetimeContributions: values.lifetimeContributions.toFixed(2),
-        lifetimeMatch: values.lifetimeMatch.toFixed(2),
-      };
+      const catFields = finalizedAnnualFields(values, returnPct);
       await tx
         .insert(schema.annualPerformance)
         .values({ year, category, ...catFields })
@@ -176,23 +162,7 @@ export async function finalizePerformanceYear(
 
       if (portfolioResult) {
         const { values: pv, returnPct } = portfolioResult;
-        const portfolioFields = {
-          isFinalized: true,
-          isCurrentYear: false,
-          isImmutable: true,
-          beginningBalance: pv.beginningBalance.toFixed(2),
-          totalContributions: pv.totalContributions.toFixed(2),
-          yearlyGainLoss: pv.yearlyGainLoss.toFixed(2),
-          endingBalance: pv.endingBalance.toFixed(2),
-          annualReturnPct: returnPct?.toFixed(6) ?? null,
-          employerContributions: pv.employerContributions.toFixed(2),
-          distributions: pv.distributions.toFixed(2),
-          fees: pv.fees.toFixed(2),
-          rollovers: pv.rollovers.toFixed(2),
-          lifetimeGains: pv.lifetimeGains.toFixed(2),
-          lifetimeContributions: pv.lifetimeContributions.toFixed(2),
-          lifetimeMatch: pv.lifetimeMatch.toFixed(2),
-        };
+        const portfolioFields = finalizedAnnualFields(pv, returnPct);
         await tx
           .insert(schema.annualPerformance)
           .values({ year, category: "Portfolio", ...portfolioFields })
@@ -245,29 +215,13 @@ export async function finalizePerformanceYear(
       );
 
       if (missingAccounts.length > 0) {
-        await tx.insert(schema.accountPerformance).values(
-          missingAccounts.map((a) => {
-            const masterAcct = a.performanceAccountId
-              ? allPerfAccounts.find((m) => m.id === a.performanceAccountId)
-              : null;
-            return {
-              year: nextYear,
-              institution: a.institution,
-              accountLabel: a.accountLabel,
-              ownerPersonId: a.ownerPersonId,
-              parentCategory: masterAcct?.parentCategory ?? a.parentCategory,
-              isActive: true,
-              performanceAccountId: a.performanceAccountId,
-              beginningBalance: a.endingBalance, // prev year ending = next year beginning
-              totalContributions: "0",
-              yearlyGainLoss: "0",
-              endingBalance: a.endingBalance, // start with same as beginning
-              employerContributions: "0",
-              fees: "0",
-              distributions: "0",
-            };
-          }),
-        );
+        await tx
+          .insert(schema.accountPerformance)
+          .values(
+            missingAccounts.map((a) =>
+              nextYearAccountRow(a, allPerfAccounts, nextYear),
+            ),
+          );
       }
 
       // 6. Create next-year annual_performance category rollup rows (skip existing categories)
@@ -296,35 +250,17 @@ export async function finalizePerformanceYear(
       for (const category of nextYearCategories) {
         if (existingAnnualCategories.has(category)) continue;
 
-        const catAccounts =
-          category === PERF_CATEGORY_PORTFOLIO
-            ? activeAccounts
-            : activeAccounts.filter(
-                (a) => getEffectiveCategory(a, finalizeLookups) === category,
-              );
-
-        const beginBal = catAccounts.reduce(
-          (sum, a) => sum + toNumber(a.endingBalance),
-          0,
-        );
-        const prev = finalizedAnnualRows.find((r) => r.category === category);
-
-        await tx.insert(schema.annualPerformance).values({
-          year: nextYear,
-          category,
-          beginningBalance: beginBal.toFixed(2),
-          totalContributions: "0",
-          yearlyGainLoss: "0",
-          endingBalance: beginBal.toFixed(2),
-          employerContributions: "0",
-          fees: "0",
-          distributions: "0",
-          lifetimeGains: prev?.lifetimeGains ?? "0",
-          lifetimeContributions: prev?.lifetimeContributions ?? "0",
-          lifetimeMatch: prev?.lifetimeMatch ?? "0",
-          isCurrentYear: true,
-          isFinalized: false,
-        });
+        await tx
+          .insert(schema.annualPerformance)
+          .values(
+            nextYearAnnualRow(
+              nextYear,
+              category,
+              activeAccounts,
+              finalizeLookups,
+              finalizedAnnualRows,
+            ),
+          );
       }
     }
 
@@ -422,20 +358,15 @@ export async function finalizePerformanceYear(
       year === currentYear
         ? await loadEffectiveSalaryProfile(tx, null)
         : new Map();
-    let grossIncome = 0;
-    let anyIncomeRecorded = false;
-    for (const person of allPeople) {
-      const activeJob = findActiveJob(allJobs, person.id, ctx.scope.asOf);
-      const income = resolvePersonYearIncome(
-        year,
-        currentYear,
-        salaryRowByPerson.get(person.id),
-        activeJob?.id ?? null,
-        salaryProfileActiveMap,
-      );
-      grossIncome += income.salary + income.bonus;
-      if (income.recorded) anyIncomeRecorded = true;
-    }
+    const { grossIncome, anyIncomeRecorded } = yearGrossIncome(
+      year,
+      currentYear,
+      allPeople,
+      allJobs,
+      salaryRowByPerson,
+      salaryProfileActiveMap,
+      ctx.scope.asOf,
+    );
 
     if (allPeople.length > 0 && !anyIncomeRecorded) {
       throw new TRPCError({
@@ -480,33 +411,21 @@ export async function finalizePerformanceYear(
       .where(gte(schema.portfolioSnapshots.snapshotDate, yearEndDate))
       .orderBy(asc(schema.portfolioSnapshots.snapshotDate))
       .limit(1);
-    const daysFromYearEnd = (d: string) =>
-      Math.abs(Date.parse(d) - Date.parse(yearEndDate));
-    const nearestSnapshot = [onOrBefore, onOrAfter]
-      .filter((x) => x !== undefined)
-      .sort(
-        (a, b) =>
-          daysFromYearEnd(a.snapshotDate) - daysFromYearEnd(b.snapshotDate),
-      )
-      .slice(0, 1);
+    const nearestSnapshot = nearestToYearEnd(yearEndDate, [
+      onOrBefore,
+      onOrAfter,
+    ]);
 
-    const portfolioByTaxLocation: {
-      retirement: Record<string, number>;
-      portfolio: Record<string, number>;
-    } = { retirement: {}, portfolio: {} };
-
-    if (nearestSnapshot.length > 0) {
-      const snapAccounts = await tx
-        .select()
-        .from(schema.portfolioAccounts)
-        .where(eq(schema.portfolioAccounts.snapshotId, nearestSnapshot[0]!.id));
-      for (const a of snapAccounts) {
-        const bucket = isPortfolioParent(a.parentCategory)
-          ? portfolioByTaxLocation.portfolio
-          : portfolioByTaxLocation.retirement;
-        bucket[a.taxType] = (bucket[a.taxType] ?? 0) + toNumber(a.amount);
-      }
-    }
+    const snapAccounts =
+      nearestSnapshot.length > 0
+        ? await tx
+            .select()
+            .from(schema.portfolioAccounts)
+            .where(
+              eq(schema.portfolioAccounts.snapshotId, nearestSnapshot[0]!.id),
+            )
+        : [];
+    const portfolioByTaxLocation = portfolioByTaxLocationFrom(snapAccounts);
 
     if (existingRow) {
       // Update existing row — preserve manual fields (AGI, taxes, etc.), update auto fields
