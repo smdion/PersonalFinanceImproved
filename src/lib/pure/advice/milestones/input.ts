@@ -2,7 +2,7 @@
  * Milestones input builders — pure mappings from what the app already
  * computes (year-end history, projection, contribution and holdings
  * summaries) into the MilestoneInput that evaluateMilestones() judges.
- * Split from milestones.ts, which holds the rules themselves.
+ * Split from milestones.ts; the rules are in the rule-family files beside it.
  */
 import type { RaiseYear } from "@/lib/pure/household/raise-history";
 import type {

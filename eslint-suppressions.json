@@ -3909,6 +3909,11 @@
       "count": 2
     }
   },
+  "src/lib/pure/advice/milestones/foo.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/lib/pure/advice/milestones/input.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
@@ -3928,6 +3933,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/advice/milestones/journey.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/advice/milestones/milestones.shared.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -3935,7 +3945,7 @@
   },
   "src/lib/pure/advice/milestones/milestones.ts": {
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 1
     },
     "ratchet/no-guarded-division": {
       "count": 1

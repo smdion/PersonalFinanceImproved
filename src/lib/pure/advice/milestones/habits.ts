@@ -1,6 +1,7 @@
 /** Saving habits and safety: savings rate, raises, always buying, student
- *  loans and the emergency fund. */
+ *  loans, the emergency fund and the car rule. */
 import {
+  CAR_RULE,
   EMERGENCY_FUND_MONTHS,
   MONEY_GUY_SAVINGS_RATE,
   PF_RETIREMENT_RATE,
@@ -15,6 +16,7 @@ import {
 import { safeDivide } from "@/lib/utils/math";
 import { meetsRaiseRule } from "@/lib/pure/household/raise-history";
 import { recentCoveredMonths } from "@/lib/pure/investments/always-buying";
+import { carPaymentShare, checkCarLoan } from "@/lib/pure/debts/debt-rules";
 import {
   meetsMoneyGuyRate,
   meetsRateTarget,
@@ -23,6 +25,7 @@ import {
 import type {
   MilestoneInput,
   MilestoneResult,
+  MilestoneYear,
 } from "@/lib/pure/advice/milestones/milestones.types";
 
 // ---------------------------------------------------------------------------
@@ -312,5 +315,77 @@ export function pfRetirementRate(input: MilestoneInput): MilestoneResult {
           return first ? ` — ${first}` : "";
         })()}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
+  });
+}
+
+/** Money Guy's 20/3/8 on every open car loan in the debts list. */
+export function carRule(
+  input: MilestoneInput,
+  now: MilestoneYear,
+): MilestoneResult {
+  const loans = input.borrowing?.carLoans;
+  if (!loans) {
+    return result("carRule", {
+      status: "unknown",
+      headline: "Needs the debts list",
+    });
+  }
+  if (loans.length === 0) {
+    return result("carRule", { status: "reached", headline: "No car loan" });
+  }
+  const checks = loans.map(checkCarLoan);
+  const pay = input.savings?.compensation ?? now.grossIncome;
+  const share = carPaymentShare(
+    loans.map((l) => l.monthlyPayment),
+    pay,
+  );
+  const paymentOk =
+    share === null ? null : share <= CAR_RULE.maxPaymentShare + 1e-9;
+  const misses: string[] = [];
+  for (const c of checks) {
+    if (c.downOk === false)
+      misses.push(
+        `${c.name}: ${formatPercent(c.downShare ?? 0, 0)} down (${formatPercent(CAR_RULE.minDownShare, 0)} or more)`,
+      );
+    if (c.termOk === false)
+      misses.push(
+        `${c.name}: ${c.termMonths}-month term (${CAR_RULE.maxTermMonths} or fewer)`,
+      );
+  }
+  if (paymentOk === false)
+    misses.push(
+      `car payments are ${formatPercent(share!, 1)} of gross pay (${formatPercent(CAR_RULE.maxPaymentShare, 0)} or less)`,
+    );
+  const unknown =
+    checks.some((c) => c.downOk === null || c.termOk === null) ||
+    paymentOk === null;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  if (misses.length > 0) {
+    return result("carRule", {
+      status: "behind",
+      headline: cap(misses[0]!),
+      short: `${misses.length} part${misses.length === 1 ? "" : "s"} missed`,
+      note: misses.length > 1 ? misses.slice(1).map(cap).join(" · ") : null,
+      nextStep:
+        paymentOk === false
+          ? "Pay the car loan down early, or keep the next car cheaper"
+          : "Next car: put 20% down and borrow for 3 years or less",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  if (unknown) {
+    return result("carRule", {
+      status: "unknown",
+      headline:
+        "Add each car loan's purchase price, original amount, term and payment to judge",
+      short: "Needs loan details",
+      nextStep: "Fill in the car loan's details in the debts list",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  return result("carRule", {
+    status: "reached",
+    headline: `Within 20/3/8 — car payments ${formatPercent(share!, 1)} of gross pay`,
+    short: "Within 20/3/8",
   });
 }

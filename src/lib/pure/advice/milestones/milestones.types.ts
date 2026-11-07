@@ -1,8 +1,8 @@
 /**
  * Milestones — the shapes `evaluateMilestones()` reads and returns, and the
  * stored milestone settings (custom goals, checklist, sources) with their
- * schemas. Split from milestones.ts, which holds the rules themselves and
- * re-exports everything here.
+ * schemas. Split from milestones.ts, the entry file, which re-exports
+ * everything here; the rules are in the rule-family files beside it.
  */
 import { z } from "zod/v4";
 import type { Focus } from "@/lib/config/focus-topics";
