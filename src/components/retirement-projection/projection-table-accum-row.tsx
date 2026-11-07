@@ -24,9 +24,6 @@ import {
   getAllCategories,
   getAccountTypeConfig,
   getDisplayConfig,
-  ACCOUNT_TYPE_CONFIG,
-  isPreTaxType,
-  isTaxFreeBucket,
   isOverflowTarget,
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
@@ -56,11 +53,14 @@ import {
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import { shortfallFloor } from "@/lib/pure/engine";
-import { buildEligibilityNote, ownerAccountLabel } from "./account-notes";
 import {
   renderMcCell,
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
+import {
+  contributionTaxTypeTotals,
+  gapDrawnItems,
+} from "./projection-table-accum-row.model";
 
 type AccumulationRowProps = {
   /** A link landed on this year — scrolled to and ringed. */
@@ -864,114 +864,14 @@ export function AccumulationRow({
               amount: matchAmount,
               color: "green",
             });
-          if (!pt) {
-            const bucketTotals: {
-              label: string;
-              amount: number;
-              color: TipColor;
-            }[] = [];
-            if (yr.totalTraditional > 0)
-              bucketTotals.push({
-                label: taxTypeLabel("preTax"),
-                amount: deflate(yr.totalTraditional, yr.year),
-                color: "blue",
-              });
-            if (yr.totalRoth > 0)
-              bucketTotals.push({
-                label: taxTypeLabel("taxFree"),
-                amount: deflate(yr.totalRoth, yr.year),
-                color: "violet",
-              });
-            // Single-bucket categories (HSA, brokerage, etc.)
-            for (const sbCat of getAllCategories().filter(
-              (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
-            )) {
-              const isOF = isOverflowTarget(sbCat);
-              const sbSlot = yr.slots.find((s) => s.category === sbCat);
-              if (sbSlot && sbSlot.employeeContrib > 0) {
-                bucketTotals.push({
-                  label: getAccountTypeConfig(sbCat).displayLabel,
-                  amount: deflate(sbSlot.employeeContrib, yr.year),
-                  color: isOF ? "amber" : "emerald",
-                });
-              }
-            }
-            inOutItems.push(...bucketTotals);
-          } else {
-            // Person-filtered: build tax-type breakdown from individual accounts
-            const bucketTotals: {
-              label: string;
-              amount: number;
-              color: TipColor;
-            }[] = [];
-            let ptTrad = 0,
-              ptRoth = 0;
-            const ptSingleBucket = new Map<string, number>();
-            for (const ia of mine) {
-              const cfg = ACCOUNT_TYPE_CONFIG[ia.category];
-              if (cfg?.supportsRothSplit) {
-                if (isPreTaxType(ia.taxType)) ptTrad += ia.contribution;
-                else ptRoth += ia.contribution;
-              } else {
-                ptSingleBucket.set(
-                  ia.category,
-                  (ptSingleBucket.get(ia.category) ?? 0) + ia.contribution,
-                );
-              }
-            }
-            if (ptTrad > 0)
-              bucketTotals.push({
-                label: taxTypeLabel("preTax"),
-                amount: deflate(ptTrad, yr.year),
-                color: "blue",
-              });
-            if (ptRoth > 0)
-              bucketTotals.push({
-                label: taxTypeLabel("taxFree"),
-                amount: deflate(ptRoth, yr.year),
-                color: "violet",
-              });
-            Array.from(ptSingleBucket.entries()).forEach(([sbCat, sbAmt]) => {
-              if (sbAmt > 0) {
-                const cfg = getAccountTypeConfig(sbCat as AccountCategory);
-                bucketTotals.push({
-                  label: cfg.displayLabel,
-                  amount: deflate(sbAmt, yr.year),
-                  color: cfg.isOverflowTarget ? "amber" : "emerald",
-                });
-              }
-            });
-            inOutItems.push(...bucketTotals);
-          }
+          inOutItems.push(...contributionTaxTypeTotals(yr, pt, mine, deflate));
           // A year a paycheck is gone: money comes out as well as in. With
           // a person or category filter only the accounts shown count, and
           // the household's figures (tax, the why) are left out.
           const gap = yr.gapDraw;
           const gapScoped = !!gap && drawnTotal(iabs) < gap.withdrawal - 0.5;
           if (gap) {
-            // Each account drawn from, as a retirement year lists them:
-            // owner, tax type, and whether the money is penalty-free.
-            const categoryOrder = getAllCategories();
-            const drawn = scopedIabs(iabs)
-              .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0)
-              .sort(
-                (a, b) =>
-                  categoryOrder.indexOf(a.category) -
-                    categoryOrder.indexOf(b.category) ||
-                  (isTaxFreeBucket(a.taxType) ? 1 : 0) -
-                    (isTaxFreeBucket(b.taxType) ? 1 : 0) ||
-                  (a.ownerName ?? a.name).localeCompare(b.ownerName ?? b.name),
-              );
-            for (const ia of drawn)
-              inOutItems.push({
-                label: ownerAccountLabel(ia),
-                amount: deflate(ia.draw!.withdrawal, yr.year),
-                prefix: "-",
-                taxType: itemTaxType(ia.category, ia.taxType),
-                color: "red",
-                group: `Withdrawn · ${catDisplayLabel[ia.category] ?? ia.category}`,
-                ...buildEligibilityNote(ia, yr, deflate),
-              });
+            inOutItems.push(...gapDrawnItems(yr, scopedIabs(iabs), deflate));
           }
           const money = (v: number) => formatCurrency(deflate(v, yr.year));
           const gapMeta = gap

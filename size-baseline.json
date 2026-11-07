@@ -64,7 +64,7 @@
     "src/components/retirement-projection/projection-chart.tsx": 1145,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 504,
     "src/components/retirement-projection/projection-mc-results.tsx": 406,
-    "src/components/retirement-projection/projection-table-accum-row.tsx": 1444,
+    "src/components/retirement-projection/projection-table-accum-row.tsx": 1344,
     "src/components/retirement-projection/projection-table-decum-row.tsx": 1353,
     "src/components/retirement-projection/projection-table.tsx": 427,
     "src/components/retirement-projection/report/report-assumptions-summary.tsx": 330,
@@ -643,8 +643,7 @@
       "McResultsSection.iife()": 286
     },
     "src/components/retirement-projection/projection-table-accum-row.tsx": {
-      "AccumulationRow": 1342,
-      "AccumulationRow.content.iife()": 211,
+      "AccumulationRow": 1242,
       "AccumulationRow.map()": 151
     },
     "src/components/retirement-projection/projection-table-contrib-methodology.tsx": {
