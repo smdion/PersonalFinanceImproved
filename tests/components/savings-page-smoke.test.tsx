@@ -22,7 +22,7 @@ vi.mock("@/lib/trpc", async () => ({
 const page = seededPage(
   "e2e-b",
   async () =>
-    (await import("@/app/(dashboard)/savings/savings-content")).default,
+    (await import("@/app/(dashboard)/savings/savings-content")).SavingsContent,
 );
 
 describe("Savings page", () => {

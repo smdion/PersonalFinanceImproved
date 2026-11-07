@@ -366,7 +366,7 @@
       "RetirementContent": 300
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
-      "SavingsPage": 849
+      "SavingsContent": 849
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,

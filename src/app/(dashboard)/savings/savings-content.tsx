@@ -79,7 +79,7 @@ const SavingsTrajectoryChart = dynamic(
   { loading: () => <SkeletonChart />, ssr: false },
 );
 
-export default function SavingsPage() {
+export function SavingsContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "savings");
   const utils = trpc.useUtils();
