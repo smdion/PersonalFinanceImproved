@@ -177,9 +177,9 @@ export function VersionsContent() {
     deleteMutation.mutate({ id });
     setDeleteTarget(null);
   };
-
   const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (file) {
       setImportFile(file);
       setShowImportConfirm(true);

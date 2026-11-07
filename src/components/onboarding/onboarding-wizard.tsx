@@ -702,8 +702,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-
     setIsRestoring(true);
     setError(null);
 
