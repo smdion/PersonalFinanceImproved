@@ -1,7 +1,6 @@
 /**
- * Smoke test for the full-report gate (v0.10.4 commit 5b, before 7 moves it
- * onto Modal): the reason shows, Close cancels, and only a stale
- * Simulation offers to run it.
+ * The full-report gate: the reason shows, Close, Escape and the backdrop
+ * cancel, and only a stale Simulation offers to run it.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -52,5 +51,23 @@ describe("ReportGateModal", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Running…" })).toBeDisabled();
+  });
+
+  it("is named by its title, and Escape or the backdrop cancels it", () => {
+    const onCancel = vi.fn();
+    render(
+      <ReportGateModal
+        failure="mc-not-fresh"
+        onRunSimulation={vi.fn()}
+        isRunning={false}
+        onCancel={onCancel}
+      />,
+    );
+    expect(
+      screen.getByRole("alertdialog", { name: "Full report not ready" }),
+    ).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("presentation"));
+    expect(onCancel).toHaveBeenCalledTimes(2);
   });
 });
