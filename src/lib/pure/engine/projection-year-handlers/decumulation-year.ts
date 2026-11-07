@@ -41,7 +41,6 @@ import {
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
-import { estimateWithdrawalTaxCost } from "../withdrawal-solver";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { rmdOwnerOf } from "../rmd-enforcement";
@@ -82,6 +81,7 @@ import { applyLumpSums } from "./lump-sum";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
 import { yearStandardDeduction } from "./year-deduction";
+import { yearNeed } from "./year-need";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
@@ -332,80 +332,33 @@ export function runDecumulationYear(
     "medicare",
     year,
   );
-  // The year's after-tax need: spending less Social Security — or, when
-  // the strategy sized the gross withdrawal (Social Security on top), what
-  // that withdrawal delivers after tax (set from the estimate below).
-  let afterTaxNeed = roundToCents(
-    Math.max(0, state.projectedExpenses - ssIncome),
-  );
-  // Social Security beyond spending pays the year's tax first — only the
-  // rest needs a withdrawal (withdrawal-solver.ts solves with the same credit).
-  // A withdrawal-sized year has Social Security on top by definition.
-  let ssSurplus =
-    state.portfolioWithdrawal === null
-      ? Math.max(0, ssIncome - state.projectedExpenses)
-      : 0;
-
-  // IRMAA paid on top of the budget joins a need-sized year's need, so the
-  // gross-up, shortfall and RMD excess all see it. It's a cost beside the
-  // need: never in projectedExpenses (a strategy would carry it forward)
-  // and never in taxCost (the optimizer already adds irmaaCost to it). The
-  // year-N-2 MAGI is known here. The first two decumulation years have no
-  // lookback yet and fall back to this year's MAGI, which isn't known until
-  // the year is routed, so there the surcharge only lowers what's spent; a
-  // withdrawal-sized year's withdrawal stays the strategy's amount, likewise.
-  if (
-    input.irmaaOnTopOfBudget === true &&
-    state.portfolioWithdrawal === null &&
-    incomeHistory.length >= 2
-  ) {
-    const irmaaInNeed = checkHouseholdIrmaa({
-      enableIrmaaAwareness,
-      filingStatus,
-      personsAge65Plus,
-      projectedMagi: yearMagi(incomeHistory.at(-2)!, "irmaa"),
-      rothConversionAmount: 0,
-      irmaaBrackets: grownIrmaaBracketsForCheck,
-    }).irmaaCost;
-    afterTaxNeed = roundToCents(
-      Math.max(0, state.projectedExpenses + irmaaInNeed - ssIncome),
-    );
-    ssSurplus = Math.max(0, ssIncome - state.projectedExpenses - irmaaInNeed);
-  }
-
-  const taxEst = estimateWithdrawalTaxCost({
-    afterTaxNeed,
-    fixedGrossWithdrawal: state.portfolioWithdrawal ?? undefined,
+  const { afterTaxNeed, ssSurplus, taxEst, targetWithdrawal } = yearNeed(
+    state,
     ssIncome,
-    ssSurplus,
+    input,
+    incomeHistory,
+    enableIrmaaAwareness,
     filingStatus,
+    personsAge65Plus,
+    grownIrmaaBracketsForCheck,
     config,
-    // Grown ordinary tax brackets/standard deduction/LTCG brackets
-    // spliced in — the estimate and the real routing/tax calls below
-    // MUST see the identical grown values, same single-dispatch
-    // invariant as every other field on this object (this file's own
-    // header docblock).
-    taxRates: {
-      ...taxRates,
-      taxBrackets: grownTaxBrackets,
-      standardDeduction: grownStandardDeduction,
-      ltcgBrackets: grownLtcgBrackets,
-    },
+    taxRates,
+    grownTaxBrackets,
+    grownStandardDeduction,
+    grownLtcgBrackets,
     balances,
     acctBal,
     totalBalance,
-    brokerageBasisRatio: retirementBasisRatio,
+    retirementBasisRatio,
     eligibility,
     nonRetirement,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
-    indKey: hasIndividualAccounts ? indKey : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
-    indBasis: hasIndividualAccounts ? indBasis : undefined,
+    hasIndividualAccounts,
+    indAccts,
+    indKey,
+    indBal,
+    indBasis,
     year,
-  });
-  const { targetWithdrawal } = taxEst;
-  if (taxEst.derivedAfterTaxNeed !== undefined)
-    afterTaxNeed = taxEst.derivedAfterTaxNeed;
+  );
 
   // Build per-account, per-tax-type balances for withdrawal routing
   // Uses real per-account balances tracked through accumulation
