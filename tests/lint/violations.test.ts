@@ -2058,7 +2058,7 @@ describe("one config entry adds an account type", () => {
 /** Category lists and schemas still built when their module loads, so a
  *  category added later misses them. */
 const BUILT_AT_LOAD = [
-  "src/app/(dashboard)/historical/page.tsx ALL_portfolioBreakdownCols",
+  "src/app/(dashboard)/historical/historical-content.tsx ALL_portfolioBreakdownCols",
   "src/components/cards/projection/projection-table-decum-row.tsx CATEGORY_ORDER",
   "src/components/cards/projection/types.ts emptyAccumForm",
   "src/components/cards/projection/types.ts emptyDecumForm",
@@ -2194,7 +2194,6 @@ function twoYearHousehold(): ProjectionInput {
 /** Client `page.tsx` files under app/(dashboard): each becomes a thin
  *  server page and a `<route>-content.tsx`. */
 const CLIENT_PAGES_KNOWN: string[] = [
-  "src/app/(dashboard)/historical/page.tsx",
   "src/app/(dashboard)/house/page.tsx",
   "src/app/(dashboard)/liabilities/page.tsx",
   "src/app/(dashboard)/networth/page.tsx",
@@ -2231,7 +2230,7 @@ const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
   "src/app/(dashboard)/brokerage/brokerage-content.tsx": { count: 1 },
   "src/app/(dashboard)/budget/budget-content.tsx": { count: 1 },
   "src/app/(dashboard)/contributions/contributions-content.tsx": { count: 1 },
-  "src/app/(dashboard)/historical/page.tsx": { count: 1 },
+  "src/app/(dashboard)/historical/historical-content.tsx": { count: 1 },
   "src/app/(dashboard)/house/page.tsx": { count: 1 },
   "src/app/(dashboard)/liabilities/page.tsx": { count: 1 },
   "src/app/(dashboard)/networth/page.tsx": { count: 1 },

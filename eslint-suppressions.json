@@ -250,7 +250,7 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/historical/page.tsx": {
+  "src/app/(dashboard)/historical/historical-content.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },

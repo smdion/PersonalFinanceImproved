@@ -59,7 +59,7 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
     route: "/historical",
     file: "historical",
     load: async () =>
-      (await import("@/app/(dashboard)/historical/page")).default,
+      (await import("@/app/(dashboard)/historical/historical-content")).default,
   },
   {
     route: "/house",

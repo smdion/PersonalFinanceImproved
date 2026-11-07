@@ -23,7 +23,8 @@ vi.mock("@/lib/trpc", async () => ({
 
 const page = seededPage(
   "e2e-b",
-  async () => (await import("@/app/(dashboard)/historical/page")).default,
+  async () =>
+    (await import("@/app/(dashboard)/historical/historical-content")).default,
 );
 
 describe("Historical page", () => {
