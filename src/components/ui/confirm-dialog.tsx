@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { Modal } from "./modal";
 
 // ---------------------------------------------------------------------------
 // State types
@@ -113,8 +113,6 @@ export function ConfirmDialog() {
   const [state, setState] = useState<DialogState>(null);
   const actionRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const trapRef = useFocusTrap<HTMLDivElement>(state !== null);
 
   // Register global setter
   useEffect(() => {
@@ -154,95 +152,72 @@ export function ConfirmDialog() {
     }
   }, [state]);
 
-  // Escape key
-  useEffect(() => {
-    if (!state) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        handleCancel();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [state, handleCancel]);
-
   if (!state) return null;
 
   return (
-    <div
-      ref={backdropRef}
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 print:hidden"
-      onClick={(e) => {
-        if (e.target === backdropRef.current) handleCancel();
-      }}
-      role="presentation"
+    <Modal
+      onClose={handleCancel}
+      role="alertdialog"
+      labelledBy="confirm-dialog-message"
+      className={`bg-surface-primary mx-4 w-full rounded-lg border p-5 shadow-xl ${
+        state.mode === "confirmDiff" ? "max-w-md" : "max-w-sm"
+      }`}
     >
-      <div
-        ref={trapRef}
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-message"
-        className={`bg-surface-primary mx-4 w-full rounded-lg border p-5 shadow-xl ${
-          state.mode === "confirmDiff" ? "max-w-md" : "max-w-sm"
-        }`}
-      >
-        <p id="confirm-dialog-message" className="text-secondary mb-4 text-sm">
-          {state.message}
-        </p>
+      <p id="confirm-dialog-message" className="text-secondary mb-4 text-sm">
+        {state.message}
+      </p>
 
-        {state.mode === "confirmDiff" && (
-          <div className="text-caption mb-4 max-h-64 overflow-y-auto rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
-            <ul className="list-inside list-disc space-y-0.5">
-              {state.lines.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {state.mode === "prompt" && (
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={state.defaultValue}
-            placeholder={state.placeholder}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleConfirm();
-              }
-            }}
-            className="border-strong bg-surface-primary text-primary mb-4 w-full rounded-md border px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        )}
-
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={handleCancel}
-            className="text-muted hover:bg-surface-elevated rounded px-3 py-1.5 text-sm transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            ref={actionRef}
-            onClick={handleConfirm}
-            className={`rounded px-3 py-1.5 text-sm transition-colors ${
-              state.mode === "confirm"
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : state.mode === "confirmDiff"
-                  ? "bg-amber-600 text-white hover:bg-amber-700"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-          >
-            {state.mode === "confirm"
-              ? "Confirm"
-              : state.mode === "confirmDiff"
-                ? (state.confirmLabel ?? "Switch anyway")
-                : "OK"}
-          </button>
+      {state.mode === "confirmDiff" && (
+        <div className="text-caption mb-4 max-h-64 overflow-y-auto rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
+          <ul className="list-inside list-disc space-y-0.5">
+            {state.lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
         </div>
+      )}
+
+      {state.mode === "prompt" && (
+        <input
+          ref={inputRef}
+          type="text"
+          defaultValue={state.defaultValue}
+          placeholder={state.placeholder}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleConfirm();
+            }
+          }}
+          className="border-strong bg-surface-primary text-primary mb-4 w-full rounded-md border px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        />
+      )}
+
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={handleCancel}
+          className="text-muted hover:bg-surface-elevated rounded px-3 py-1.5 text-sm transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          ref={actionRef}
+          onClick={handleConfirm}
+          className={`rounded px-3 py-1.5 text-sm transition-colors ${
+            state.mode === "confirm"
+              ? "bg-red-600 text-white hover:bg-red-700"
+              : state.mode === "confirmDiff"
+                ? "bg-amber-600 text-white hover:bg-amber-700"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          {state.mode === "confirm"
+            ? "Confirm"
+            : state.mode === "confirmDiff"
+              ? (state.confirmLabel ?? "Switch anyway")
+              : "OK"}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

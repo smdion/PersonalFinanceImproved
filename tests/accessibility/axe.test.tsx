@@ -42,6 +42,7 @@ import { SCREEN_HOUSEHOLDS, SCREEN_ROUTES } from "../baseline/screen-routes";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormError } from "@/components/ui/form-error";
+import { Modal } from "@/components/ui/modal";
 import { PageHeader } from "@/components/ui/page-header";
 import { Toggle } from "@/components/ui/toggle";
 
@@ -205,6 +206,17 @@ describe("Accessibility — axe-core", () => {
   it("Toggle renders without violations", async () => {
     const { container } = render(
       <Toggle isChecked={false} onChange={() => {}} label="Include taxes" />,
+    );
+    const violations = await getViolations(container);
+    expect(violations, formatViolations(violations)).toHaveLength(0);
+  });
+
+  it("Modal renders without violations", async () => {
+    const { container } = render(
+      <Modal labelledBy="axe-modal-title" className="p-5" onClose={() => {}}>
+        <h2 id="axe-modal-title">Finalize 2026</h2>
+        <button type="button">Cancel</button>
+      </Modal>,
     );
     const violations = await getViolations(container);
     expect(violations, formatViolations(violations)).toHaveLength(0);
