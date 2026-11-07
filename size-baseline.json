@@ -13,7 +13,7 @@
     "src/app/(dashboard)/networth/networth-content.tsx": 461,
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
-    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 878,
+    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 871,
     "src/app/(dashboard)/savings/savings-content.tsx": 930,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1020,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
@@ -356,8 +356,8 @@
       "PerformanceContent": 809
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 724,
-      "PortfolioContent.map()": 263
+      "PortfolioContent": 717,
+      "PortfolioContent.map()": 256
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
       "RecommendationsContent": 192
@@ -396,7 +396,7 @@
       "BudgetCategoryRow": 184
     },
     "src/components/budget/budget-item-row.tsx": {
-      "BudgetItemRow": 271
+      "BudgetItemRow": 266
     },
     "src/components/budget/budget-mode-manager.tsx": {
       "BudgetModeManager": 172
@@ -582,7 +582,7 @@
       "AccountBalanceOverview": 238
     },
     "src/components/portfolio/contribution-accounts-card.tsx": {
-      "AccountCard": 618
+      "AccountCard": 617
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
       "AddContribForm": 170,

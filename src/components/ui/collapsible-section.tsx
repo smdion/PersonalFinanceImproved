@@ -33,6 +33,7 @@ export function CollapsibleSection({
       {/* The whole bar toggles; the title is the keyboard/screen-reader
           button, and the help icon (its own button) sits outside it. */}
       <div
+        role="presentation"
         onClick={onToggle}
         className={`bg-surface-primary hover:bg-surface-sunken flex w-full cursor-pointer items-center justify-between border px-5 py-3 shadow-sm transition-colors ${open ? "rounded-t-lg" : "rounded-lg"}`}
       >
@@ -56,7 +57,11 @@ export function CollapsibleSection({
             </svg>
             <span className="text-primary font-semibold">{title}</span>
           </button>
-          {help && <span onClick={(e) => e.stopPropagation()}>{help}</span>}
+          {help && (
+            <span role="presentation" onClick={(e) => e.stopPropagation()}>
+              {help}
+            </span>
+          )}
           {meta && <span className="text-faint text-xs">{meta}</span>}
         </span>
         <span className="text-faint text-xs" aria-hidden="true">

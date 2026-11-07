@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { asButton } from "@/components/ui/as-button";
 import { ApiCategoryPicker } from "./api-category-picker";
 import type { RawItem } from "./types";
 import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
@@ -74,6 +75,11 @@ export function BudgetItemRow({
 }: BudgetItemRowProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null);
+  const togglePicker = (e: SyntheticEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setPickerAnchor(e.currentTarget.getBoundingClientRect());
+    setShowPicker(!showPicker);
+  };
   const isLinked = !!item.apiCategoryId;
 
   return (
@@ -145,13 +151,7 @@ export function BudgetItemRow({
             <span
               className={`text-caption flex-shrink-0 rounded bg-blue-50 px-0.5 leading-tight font-semibold text-blue-600 ${amountsOnly ? "" : "cursor-pointer"}`}
               title={`Linked to ${item.apiCategoryName} (${item.apiSyncDirection})`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (canEdit && !amountsOnly) {
-                  setPickerAnchor(e.currentTarget.getBoundingClientRect());
-                  setShowPicker(!showPicker);
-                }
-              }}
+              {...(canEdit && !amountsOnly ? asButton(togglePicker) : {})}
             >
               API
             </span>
@@ -160,11 +160,7 @@ export function BudgetItemRow({
             <span
               className="text-caption text-faint hidden flex-shrink-0 cursor-pointer group-hover:inline hover:text-blue-500"
               title="Link to budget API category"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPickerAnchor(e.currentTarget.getBoundingClientRect());
-                setShowPicker(!showPicker);
-              }}
+              onClick={togglePicker}
             >
               +API
             </span>

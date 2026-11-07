@@ -226,10 +226,10 @@ export function RetirementProfileManager({
             }
             meta={
               <span
+                role="presentation"
                 className="flex items-center gap-1"
-                // Interactive control inside ProfileListRow's meta slot —
-                // stop propagation so a click doesn't also fire the row's
-                // own onSelect, matching the pattern the row actions use.
+                // A control in the row's meta slot: its click mustn't also
+                // select the row (as with the row actions).
                 onClick={(e) => e.stopPropagation()}
               >
                 Tax law:{" "}

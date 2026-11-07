@@ -25,6 +25,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { asButton } from "./as-button";
 
 type ProfileListRowProps = {
   name: string;
@@ -78,15 +79,7 @@ export function ProfileListRow({
   const hasRowActions = onActivate || onClone || onDelete;
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
+      {...asButton(() => onSelect())}
       className={`group w-full cursor-pointer rounded-md px-3 py-2 text-left transition-colors ${
         isSelected
           ? "border border-blue-300 bg-blue-50"
@@ -104,6 +97,7 @@ export function ProfileListRow({
             // the name field is used — same guard the row-actions and
             // meta slots use.
             <span
+              role="presentation"
               className="min-w-0 flex-1"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
@@ -131,6 +125,7 @@ export function ProfileListRow({
         </div>
         {hasRowActions && (
           <div
+            role="presentation"
             className="flex shrink-0 gap-2 md:max-w-0 md:overflow-hidden md:opacity-0 md:transition-all md:group-focus-within:max-w-[13rem] md:group-focus-within:opacity-100 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >

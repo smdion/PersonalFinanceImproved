@@ -696,10 +696,7 @@ export function PortfolioContent() {
                             <td colSpan={6} className="px-0 py-0">
                               <div className="bg-surface-sunken px-8 py-2">
                                 {isLatest && canEdit && (
-                                  <div
-                                    className="mb-2 space-y-2"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
+                                  <div className="mb-2 space-y-2">
                                     {/* One padlock for the whole panel — no
                                             per-value pencils. Locked by default. */}
                                     <div className="flex items-center gap-2 text-xs">
@@ -772,11 +769,7 @@ export function PortfolioContent() {
                                             {isLatest &&
                                             canEdit &&
                                             !snapshotEditLocked ? (
-                                              <span
-                                                onClick={(e) =>
-                                                  e.stopPropagation()
-                                                }
-                                              >
+                                              <span>
                                                 <InlineEdit
                                                   value={String(a.amount)}
                                                   type="number"

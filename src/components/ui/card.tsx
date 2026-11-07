@@ -4,6 +4,7 @@ import { useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPercent } from "@/lib/utils/format";
+import { asButton } from "./as-button";
 
 type CardProps = {
   title?: ReactNode;
@@ -91,20 +92,9 @@ export function Card({
       {title && (
         <div
           className={`flex items-start justify-between ${isOpen ? "mb-3" : ""} ${isCollapsible ? "cursor-pointer select-none" : ""}`}
-          onClick={isCollapsible ? () => setIsOpen((prev) => !prev) : undefined}
-          role={isCollapsible ? "button" : undefined}
-          aria-expanded={isCollapsible ? isOpen : undefined}
-          tabIndex={isCollapsible ? 0 : undefined}
-          onKeyDown={
-            isCollapsible
-              ? (e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setIsOpen((prev) => !prev);
-                  }
-                }
-              : undefined
-          }
+          {...(isCollapsible
+            ? asButton(() => setIsOpen((prev) => !prev), isOpen)
+            : {})}
         >
           <div className="flex items-center gap-2">
             {isCollapsible && (
@@ -133,7 +123,9 @@ export function Card({
             </div>
           </div>
           {headerRight && (
-            <div onClick={(e) => e.stopPropagation()}>{headerRight}</div>
+            <div role="presentation" onClick={(e) => e.stopPropagation()}>
+              {headerRight}
+            </div>
           )}
         </div>
       )}
@@ -143,7 +135,10 @@ export function Card({
 
   if (href) {
     return (
+      // The surface click is a mouse shortcut; the title's link is the
+      // keyboard and screen-reader path.
       <div
+        role="presentation"
         className={`${sharedClassName} cursor-pointer`}
         onClick={(e) => {
           if (!isCardSurfaceClick(e)) return;
