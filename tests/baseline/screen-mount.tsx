@@ -22,6 +22,7 @@ import { act, render } from "@testing-library/react";
 import type { ComponentType, ReactNode } from "react";
 import type { Caller, Household, SeededIds } from "./seed";
 import { seedHousehold } from "./seed";
+import { HOUSEHOLDS } from "./households";
 import { PROCEDURES } from "./procedures";
 import { createTestCaller } from "../routers/setup";
 import { BASELINE_NOW } from "./router-suite";
@@ -50,6 +51,9 @@ export function canonical(value: unknown): string {
 /** A seeded household and the answers its pages have asked for. */
 export interface ScreenHousehold {
   caller: Caller;
+  /** The household's database, for a test that adds a row the seeder
+   *  doesn't write. */
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   ids: SeededIds;
   /** `path|input` → the router's response (`undefined`: it threw). */
   answers: Map<string, unknown>;
@@ -62,9 +66,16 @@ export interface ScreenHousehold {
 export async function openHousehold(
   household: Household,
 ): Promise<ScreenHousehold> {
-  const { caller, cleanup } = await createTestCaller();
+  const { caller, db, cleanup } = await createTestCaller();
   const ids = await seedHousehold(caller, household);
-  return { caller, ids, answers: new Map(), gaps: new Set(), close: cleanup };
+  return {
+    caller,
+    db,
+    ids,
+    answers: new Map(),
+    gaps: new Set(),
+    close: cleanup,
+  };
 }
 
 /** The query paths answered: the ones the router baseline calls
@@ -231,6 +242,42 @@ export async function mountPage(
       }
     }
   }
+}
+
+/**
+ * A page smoke test's household: seeds `key` (households.ts) before the
+ * file's tests, and mounts `load()`'s page on it. `fresh()` drops the
+ * answers already fetched, after a test writes rows of its own.
+ */
+export function seededPage(
+  key: string,
+  load: () => Promise<ComponentType>,
+): {
+  household: () => ScreenHousehold;
+  mount: () => Promise<HTMLElement>;
+  fresh: () => void;
+} {
+  let h: ScreenHousehold | undefined;
+  let Page: ComponentType;
+  let Providers: ComponentType<{ children: ReactNode }>;
+  freezeScreenClock();
+  beforeAll(async () => {
+    const household = HOUSEHOLDS.find((x) => x.key === key);
+    if (!household) throw new Error(`no baseline household ${key}`);
+    h = await openHousehold(household);
+    Providers = await screenProviders();
+    Page = await load();
+  }, 120_000);
+  afterAll(() => h?.close());
+  const household = () => {
+    if (!h) throw new Error("the household is seeded in beforeAll");
+    return h;
+  };
+  return {
+    household,
+    mount: () => mountPage(household(), Page, Providers),
+    fresh: () => household().answers.clear(),
+  };
 }
 
 const BLOCK = new Set([
