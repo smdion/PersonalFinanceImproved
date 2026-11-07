@@ -19,7 +19,8 @@ import type {
   DeductionLine,
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
-import { bonusCheckContribution, isPreTax } from "@/lib/pure/paycheck/paycheck";
+import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
+import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
 import type { BonusDestination } from "@/lib/config/enum-values";

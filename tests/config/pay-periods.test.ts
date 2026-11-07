@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { PAY_PERIOD_VALUES } from "@/lib/config/enum-values";
 import { PAY_PERIOD_CONFIG, getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { PERSON_A_PAYCHECK_INPUT } from "../pure/fixtures";
 
 describe("periods per year", () => {

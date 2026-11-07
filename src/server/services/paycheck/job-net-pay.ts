@@ -4,7 +4,7 @@ import { getAllPeople } from "@/server/data/people";
 import { eq, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
-import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
   mergeSalaryProfileJobFields,
   resolveCompensation,

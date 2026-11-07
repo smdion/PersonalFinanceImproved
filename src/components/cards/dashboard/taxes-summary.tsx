@@ -9,7 +9,7 @@
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { householdWithheldSoFar } from "@/lib/pure/paycheck/paycheck";
+import { householdWithheldSoFar } from "@/lib/pure/paycheck/year-schedule";
 import type { RouterOutputs } from "@/lib/trpc";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 

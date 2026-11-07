@@ -18,10 +18,10 @@ import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import type { AccountViewMetrics } from "@/lib/pure/contributions/view-metrics";
 import {
   contribRemainingFraction,
-  isPaidThroughPayroll,
   monthsDoneYtd,
   periodsElapsedYtd,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/pay-periods-in-year";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";

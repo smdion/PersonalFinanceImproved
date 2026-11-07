@@ -23,7 +23,7 @@ import {
   touchedContribAccounts,
 } from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";

@@ -9,7 +9,7 @@
  * doesn't. This computes the human-readable diff shown before that swap.
  */
 
-import { takesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
+import { takesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 
 type ContribFieldSet = {
   contributionValue?: string | number | null;

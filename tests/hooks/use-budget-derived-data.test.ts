@@ -192,7 +192,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
  * "payroll vs. net-level," but jobId only means "tied to this employer" —
  * the canonical signal for whether money actually comes out of THAT
  * paycheck is isPayrollDeducted (falling back to jobId presence only when
- * unset), matching src/lib/pure/paycheck/paycheck.ts and
+ * unset), matching src/lib/pure/paycheck/bonus.ts and
  * src/lib/pure/contributions/contribution-rows.ts. A job-tied account the user
  * explicitly marked "not payroll deducted" (funded manually from take-home
  * despite being associated with a job) was wrongly treated as payroll and

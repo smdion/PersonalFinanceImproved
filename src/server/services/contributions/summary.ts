@@ -20,9 +20,11 @@ import {
   monthsElapsedYtd,
   periodsElapsedYtd,
   checksPaidYtd,
+} from "@/lib/pure/paycheck/pay-periods-in-year";
+import {
   bonusCheckContribution,
   isPaidThroughPayroll,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/bonus";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import { applySandboxSalaryEntries } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";

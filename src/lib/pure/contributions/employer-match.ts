@@ -7,7 +7,7 @@ import type {
   ContributionMethod,
   MatchTaxTreatment,
 } from "@/lib/config/enum-values";
-import { rowTakesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
+import { rowTakesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
 import { percentFromRate } from "@/lib/utils/match-rate";
 import {

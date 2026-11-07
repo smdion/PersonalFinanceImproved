@@ -654,9 +654,19 @@
       "count": 1
     }
   },
-  "src/lib/pure/paycheck/paycheck.ts": {
+  "src/lib/pure/paycheck/bonus.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
+      "count": 2
+    }
+  },
+  "src/lib/pure/paycheck/per-check.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/taxable-wages.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
     }
   },
   "src/lib/pure/retirement/retirement-bridge.ts": {

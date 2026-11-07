@@ -118,7 +118,7 @@ describe("checkCommit", () => {
       "src/lib/tax-data/2027.ts",
       "src/lib/config/tax-tables.ts",
       // Withholding and the IRS limits are tax law too.
-      "src/lib/pure/paycheck/paycheck.ts",
+      "src/lib/pure/paycheck/per-check.ts",
       "src/lib/pure/contributions/irs-limits.ts",
     ]) {
       expect(rules(facts({ files: nine(first) }))).toEqual(["engine-files"]);

@@ -4922,13 +4922,40 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/bonus.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-stacked-docblock": {
+      "count": 1
+    }
+  },
   "src/lib/pure/paycheck/budget-periods.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/extra-paycheck-months.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/lib/pure/paycheck/high-income-line.ts": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/pay-periods-in-year.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 5
+    },
+    "ratchet/no-guarded-division": {
+      "count": 2
+    },
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
@@ -4942,26 +4969,6 @@
       "count": 4
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/paycheck/paycheck.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 26
-    },
-    "ratchet/no-guarded-division": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },
@@ -4981,11 +4988,30 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/per-check.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 13
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/paycheck/withholding.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/year-schedule.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-guarded-division": {
       "count": 1
     }
   },
@@ -6469,6 +6495,11 @@
       "count": 2
     }
   },
+  "src/server/services/paycheck/household-totals.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/services/paycheck/job-net-pay.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -6806,11 +6837,6 @@
   "src/workers/monte-carlo-worker.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    }
-  },
-  "src/server/services/paycheck/household-totals.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   }
 }

@@ -27,7 +27,7 @@ import { focusHref } from "@/lib/config/focus-topics";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/extra-paycheck-months";
 import type {
   ExtraPaycheckRule,
   ExtraPaycheckOverride,

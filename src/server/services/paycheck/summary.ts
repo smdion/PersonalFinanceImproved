@@ -17,13 +17,13 @@ import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
+import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
-  bonusCheckContribution,
-  calculatePaycheck,
   checksPaidYtd,
   countPeriodsElapsed,
-  withheldThroughPeriod,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/pay-periods-in-year";
+import { withheldThroughPeriod } from "@/lib/pure/paycheck/year-schedule";
 import {
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,

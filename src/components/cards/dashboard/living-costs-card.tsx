@@ -27,7 +27,7 @@ import { LoadingCard } from "./utils";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/extra-paycheck-months";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";

@@ -22,7 +22,8 @@ import {
   PAYSTUB_TOLERANCE,
   PAYSTUB_WITHHOLDING_TOLERANCE as WITHHOLDING_TOLERANCE,
 } from "@/lib/constants";
-import { countPeriodsElapsed, isPreTax } from "@/lib/pure/paycheck/paycheck";
+import { countPeriodsElapsed } from "@/lib/pure/paycheck/pay-periods-in-year";
+import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 
 /** What Ledgr figures for the check being compared. */

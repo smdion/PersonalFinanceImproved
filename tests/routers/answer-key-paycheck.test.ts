@@ -49,7 +49,7 @@ import {
   seedPerson,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
-import { withheldThroughPeriod } from "@/lib/pure/paycheck/paycheck";
+import { withheldThroughPeriod } from "@/lib/pure/paycheck/year-schedule";
 import { cents, xfail } from "../fixtures/answer-key";
 
 vi.mock("@/lib/budget-api", () => ({

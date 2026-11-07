@@ -6,7 +6,7 @@ import {
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { checksPaidYtd } from "@/lib/pure/paycheck/paycheck";
+import { checksPaidYtd } from "@/lib/pure/paycheck/pay-periods-in-year";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import {
   computeAnnualContribution,

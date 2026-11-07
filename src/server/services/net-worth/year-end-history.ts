@@ -32,7 +32,7 @@ import {
 import {
   checksPaidYtd,
   periodsBeforeStart,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/pay-periods-in-year";
 import { payPeriodConfig } from "@/lib/config/pay-periods";
 import {
   accountTypeToPerformanceCategory,

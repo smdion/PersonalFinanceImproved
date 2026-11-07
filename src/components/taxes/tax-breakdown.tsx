@@ -15,7 +15,7 @@ import {
   formatPercent,
   maskAmountsInText,
 } from "@/lib/utils/format";
-import { householdWithheldSoFar } from "@/lib/pure/paycheck/paycheck";
+import { householdWithheldSoFar } from "@/lib/pure/paycheck/year-schedule";
 import type { RouterOutputs } from "@/lib/trpc";
 
 type PaycheckSummary = RouterOutputs["paycheck"]["computeSummary"];

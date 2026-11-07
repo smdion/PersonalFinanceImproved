@@ -12,10 +12,12 @@ import {
 import {
   type SalarySegment,
   calculateBlendedAnnual,
-  calculatePaycheck,
+} from "@/lib/pure/paycheck/year-schedule";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
+import {
   checksPaidYtd,
   countPeriodsElapsed,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/pay-periods-in-year";
 import type { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
   BlendedAnnualTotals,

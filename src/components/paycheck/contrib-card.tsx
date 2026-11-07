@@ -7,7 +7,7 @@ import {
   matchFigureForForm,
   matchValueToStore,
 } from "@/lib/pure/contributions/match-display";
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";

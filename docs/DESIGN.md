@@ -812,7 +812,7 @@ wholesale). How much the bonus is is a Salary Profile fact. Whether a
 contribution is also taken from bonus checks is a per-account contribution
 election (`contributionAccounts[id].fromBonus`, absent = no), read only
 through `takesFromBonusCheck()` / `rowTakesFromBonusCheck()`
-(`lib/pure/paycheck/paycheck.ts`: paid through payroll — `isPaidThroughPayroll()`,
+(`lib/pure/paycheck/bonus.ts`: paid through payroll — `isPaidThroughPayroll()`,
 the one definition — and `fromBonus`). `bonusCheckContribution` (what the
 bonus check takes) and the employer match's pay both use it: an account's
 match is figured on base salary, plus the bonus only when its own match

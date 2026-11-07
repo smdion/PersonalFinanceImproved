@@ -178,8 +178,13 @@
     "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/net-worth/year-end-metrics.ts": 135,
     "src/lib/pure/net-worth/year-end-rows.ts": 524,
-    "src/lib/pure/paycheck/paycheck.ts": 1381,
-    "src/lib/pure/paycheck/paystub-check.ts": 459,
+    "src/lib/pure/paycheck/bonus.ts": 255,
+    "src/lib/pure/paycheck/extra-paycheck-months.ts": 133,
+    "src/lib/pure/paycheck/pay-periods-in-year.ts": 273,
+    "src/lib/pure/paycheck/paystub-check.ts": 460,
+    "src/lib/pure/paycheck/per-check.ts": 382,
+    "src/lib/pure/paycheck/taxable-wages.ts": 23,
+    "src/lib/pure/paycheck/year-schedule.ts": 344,
     "src/lib/pure/retirement/relocation.ts": 490,
     "src/lib/pure/simulation/inflation-risk.ts": 26,
     "src/lib/pure/simulation/monte-carlo.ts": 326,
@@ -245,7 +250,7 @@
     "src/server/services/contributions/paycheck-accounts.ts": 157,
     "src/server/services/contributions/person-snapshot.ts": 222,
     "src/server/services/contributions/profile.ts": 382,
-    "src/server/services/contributions/summary.ts": 731,
+    "src/server/services/contributions/summary.ts": 733,
     "src/server/services/contributions/summary.types.ts": 111,
     "src/server/services/debts/other-liabilities.ts": 67,
     "src/server/services/demo/demo-seed.ts": 468,
@@ -254,7 +259,7 @@
     "src/server/services/net-worth/year-end-history.ts": 623,
     "src/server/services/paycheck/household-totals.ts": 128,
     "src/server/services/paycheck/job-net-pay.ts": 285,
-    "src/server/services/paycheck/person-paycheck.ts": 200,
+    "src/server/services/paycheck/person-paycheck.ts": 202,
     "src/server/services/paycheck/summary.ts": 685,
     "src/server/services/performance/finalize-year.ts": 449,
     "src/server/services/performance/summary.ts": 167,
@@ -904,11 +909,11 @@
     "src/lib/pure/investments/performance-annual-rows.ts": {
       "performanceAnnualRows": 325
     },
-    "src/lib/pure/paycheck/paycheck.ts": {
-      "calculatePaycheck": 295
-    },
     "src/lib/pure/paycheck/paystub-check.ts": {
       "checkPaystub": 162
+    },
+    "src/lib/pure/paycheck/per-check.ts": {
+      "calculatePaycheck": 295
     },
     "src/lib/pure/retirement/relocation.ts": {
       "calculateRelocation": 321
