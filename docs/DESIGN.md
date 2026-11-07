@@ -73,7 +73,7 @@ Key concept → directory map:
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->40<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->41<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Domain components       | `src/components/{paycheck,budget,savings,networth,performance,mortgage,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->21<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->20<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->23<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->10<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), mortgage (<!-- AUTO-GEN:mortgageComponents -->10<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->31<!-- /AUTO-GEN -->) |
 | Dashboard cards         | `src/components/dashboard/` (<!-- AUTO-GEN:dashboardCards -->16<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -1156,7 +1156,7 @@ and the status rows on Milestones, Recommendations and Settings.
 
 ### Component Catalog
 
-Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->40<!-- /AUTO-GEN --> components). Each
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->41<!-- /AUTO-GEN --> components). Each
 component exports a `*Props` type with the full prop contract — read the file
 directly rather than maintaining a duplicate table here. Imports are barreled
 via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).
@@ -1166,8 +1166,10 @@ Anchor primitives (covered above): `Button`, `Badge`, `AccountBadge`, `Card`,
 `ErrorBoundary`. Imperative dialogs: `confirm()`, `promptText()`. Toast hook:
 `useToasts()`. Every dialog renders through `Modal` (one backdrop shade, one
 layer above toasts, focus trapped and returned, Escape and backdrop-click per
-prop); a hand-built `fixed inset-0` overlay is counted by
-`ratchet/no-fixed-inset-overlay`.
+prop; the first-run wizard keeps its own shade through `layer`). A popover
+renders through `Popover`, whose click-catcher closes it and swallows the
+outside click. A hand-built `fixed inset-0` overlay is counted by
+`ratchet/no-fixed-inset-overlay`: only the mobile sidebar's drawer backdrop.
 
 ### Layout Patterns
 

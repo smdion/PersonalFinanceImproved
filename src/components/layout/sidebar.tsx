@@ -345,7 +345,7 @@ export function Sidebar({
 
   return (
     <>
-      {/* Mobile backdrop overlay */}
+      {/* Mobile drawer backdrop: a left drawer, which no overlay primitive draws. */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 md:hidden"

@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
+import { Popover } from "@/components/ui/popover";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
@@ -339,124 +340,119 @@ export function FundCard({
         &#8943;
       </button>
       {showMenu && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(false);
-            }}
-          />
-          <div className="bg-surface-primary absolute top-full right-0 z-20 mt-1 min-w-[130px] rounded-md border py-1 shadow-lg">
-            {onLinkToApi && !rawGoal.isApiSyncEnabled && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onLinkToApi(rawGoal.id);
-                }}
-                className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-blue-600 transition-colors"
-              >
-                Link to API
-              </button>
-            )}
-            {onUnlinkFromApi && rawGoal.isApiSyncEnabled && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onUnlinkFromApi(rawGoal.id);
-                }}
-                className="text-faint hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Unlink API
-              </button>
-            )}
-            {rawGoal.targetMode !== "fixed" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onGoalUpdate(projection.goalId, "targetMode", "fixed");
-                }}
-                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Set Fixed Target
-              </button>
-            )}
-            {rawGoal.targetMode !== "ongoing" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  if (onGoalUpdateMulti) {
-                    onGoalUpdateMulti(projection.goalId, {
-                      targetMode: "ongoing",
-                      targetAmount: null,
-                      targetDate: null,
-                    });
-                  } else {
-                    onGoalUpdate(projection.goalId, "targetMode", "ongoing");
-                  }
-                }}
-                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Set Ongoing
-              </button>
-            )}
-            {rawGoal.targetMode !== "bucket" && onGoalUpdateMulti && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
+        <Popover
+          onClose={() => setShowMenu(false)}
+          layer="card"
+          className="bg-surface-primary absolute top-full right-0 mt-1 min-w-[130px] rounded-md border py-1 shadow-lg"
+        >
+          {onLinkToApi && !rawGoal.isApiSyncEnabled && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                onLinkToApi(rawGoal.id);
+              }}
+              className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-blue-600 transition-colors"
+            >
+              Link to API
+            </button>
+          )}
+          {onUnlinkFromApi && rawGoal.isApiSyncEnabled && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                onUnlinkFromApi(rawGoal.id);
+              }}
+              className="text-faint hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
+            >
+              Unlink API
+            </button>
+          )}
+          {rawGoal.targetMode !== "fixed" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                onGoalUpdate(projection.goalId, "targetMode", "fixed");
+              }}
+              className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
+            >
+              Set Fixed Target
+            </button>
+          )}
+          {rawGoal.targetMode !== "ongoing" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                if (onGoalUpdateMulti) {
                   onGoalUpdateMulti(projection.goalId, {
-                    targetMode: "bucket",
+                    targetMode: "ongoing",
                     targetAmount: null,
                     targetDate: null,
-                    monthlyContribution: "0",
-                    allocationPercent: null,
                   });
-                }}
-                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Set as Bucket
-              </button>
-            )}
-            {onConvertToBudgetItem && (
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  const goalMet = isGoalMet({
-                    targetMode: rawGoal.targetMode,
-                    target: savingsGoal.target,
-                    current: savingsGoal.current,
-                  });
-                  if (
-                    await confirm(
-                      `${goalMet ? `"${projection.name}" has met its goal. ` : ""}Convert "${projection.name}" to a budget item? Its monthly funding carries over. This will delete the sinking fund and its history.`,
-                    )
-                  )
-                    onConvertToBudgetItem(rawGoal.id, projection.name, goalMet);
-                }}
-                className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-amber-600 transition-colors"
-              >
-                → Budget Item
-              </button>
-            )}
+                } else {
+                  onGoalUpdate(projection.goalId, "targetMode", "ongoing");
+                }
+              }}
+              className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
+            >
+              Set Ongoing
+            </button>
+          )}
+          {rawGoal.targetMode !== "bucket" && onGoalUpdateMulti && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                onGoalUpdateMulti(projection.goalId, {
+                  targetMode: "bucket",
+                  targetAmount: null,
+                  targetDate: null,
+                  monthlyContribution: "0",
+                  allocationPercent: null,
+                });
+              }}
+              className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
+            >
+              Set as Bucket
+            </button>
+          )}
+          {onConvertToBudgetItem && (
             <button
               onClick={async (e) => {
                 e.stopPropagation();
                 setShowMenu(false);
-                if (await confirm(`Delete "${projection.name}"?`))
-                  onDeleteGoal({ id: rawGoal.id });
+                const goalMet = isGoalMet({
+                  targetMode: rawGoal.targetMode,
+                  target: savingsGoal.target,
+                  current: savingsGoal.current,
+                });
+                if (
+                  await confirm(
+                    `${goalMet ? `"${projection.name}" has met its goal. ` : ""}Convert "${projection.name}" to a budget item? Its monthly funding carries over. This will delete the sinking fund and its history.`,
+                  )
+                )
+                  onConvertToBudgetItem(rawGoal.id, projection.name, goalMet);
               }}
-              className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-red-600 transition-colors"
+              className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-amber-600 transition-colors"
             >
-              Delete Fund
+              → Budget Item
             </button>
-          </div>
-        </>
+          )}
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              if (await confirm(`Delete "${projection.name}"?`))
+                onDeleteGoal({ id: rawGoal.id });
+            }}
+            className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-red-600 transition-colors"
+          >
+            Delete Fund
+          </button>
+        </Popover>
       )}
     </div>
   );
