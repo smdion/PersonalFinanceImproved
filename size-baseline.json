@@ -556,7 +556,7 @@
       "AccountNotesDialog": 195
     },
     "src/components/performance/account-picker.tsx": {
-      "AccountPicker": 192
+      "AccountPicker": 187
     },
     "src/components/performance/finalize-year-modal.tsx": {
       "FinalizeYearModal": 200
@@ -572,7 +572,7 @@
       "UpdatePerformanceForm": 465
     },
     "src/components/performance/year-range-picker.tsx": {
-      "YearRangePicker": 163
+      "YearRangePicker": 156
     },
     "src/components/performance/year-row.tsx": {
       "YearRow": 719,

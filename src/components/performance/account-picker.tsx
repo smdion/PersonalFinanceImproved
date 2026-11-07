@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
 import { accountDisplayName } from "@/lib/utils/format";
 import type { MasterAccount } from "./types";
+import { Popover } from "@/components/ui/popover";
 
 /**
  * Multi-select account picker for the Performance page's custom filtering
@@ -98,108 +99,103 @@ export function AccountPicker({
       {open &&
         anchorRect &&
         createPortal(
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setOpen(false)}
-              role="presentation"
-            />
-            <div
-              className="bg-surface-primary fixed z-50 max-h-96 w-80 overflow-y-auto rounded-lg border p-3 shadow-lg"
-              style={{
-                top: anchorRect.bottom + 4,
-                left: Math.min(anchorRect.left, window.innerWidth - 340),
-              }}
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-muted text-xs font-medium">
-                  Select accounts
-                </span>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="text-faint hover:text-secondary text-xs"
-                >
-                  Close
-                </button>
-              </div>
-
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search accounts..."
-                className="mb-2 w-full rounded border px-2 py-1 text-xs"
-                autoFocus
-              />
-
-              <div className="text-caption mb-2 flex items-center justify-between">
-                <button
-                  onClick={() => onChange(new Set(allIds))}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  Select all
-                </button>
-                <button
-                  onClick={() => onChange(new Set())}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  Select none
-                </button>
-                <label className="text-faint inline-flex cursor-pointer items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={showInactive}
-                    onChange={(e) => setShowInactive(e.target.checked)}
-                  />
-                  Show closed
-                </label>
-              </div>
-
-              {groups.size === 0 && (
-                <p className="text-faint py-4 text-center text-xs">
-                  No accounts match.
-                </p>
-              )}
-
-              {[...groups.entries()].map(([category, accts]) => {
-                const allSelected = accts.every((m) =>
-                  selectedAccountIds.has(m.id),
-                );
-                return (
-                  <div key={category} className="mb-1">
-                    <div className="flex items-center justify-between px-1 py-0.5">
-                      <span className="text-caption text-muted font-semibold tracking-wider uppercase">
-                        {category}
-                      </span>
-                      <button
-                        onClick={() => toggleGroup(accts, !allSelected)}
-                        className="text-micro text-blue-600 hover:text-blue-700"
-                      >
-                        {allSelected ? "Deselect all" : "Select all"}
-                      </button>
-                    </div>
-                    {accts.map((m) => (
-                      <label
-                        key={m.id}
-                        className="text-secondary flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-blue-50"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedAccountIds.has(m.id)}
-                          onChange={() => toggle(m.id)}
-                        />
-                        <span className={m.isActive ? "" : "text-faint"}>
-                          {m.institution} —{" "}
-                          {accountDisplayName(m, m.ownerName ?? undefined)}
-                          {!m.isActive && " (closed)"}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                );
-              })}
+          <Popover
+            onClose={() => setOpen(false)}
+            layer="page"
+            className="bg-surface-primary fixed max-h-96 w-80 overflow-y-auto rounded-lg border p-3 shadow-lg"
+            style={{
+              top: anchorRect.bottom + 4,
+              left: Math.min(anchorRect.left, window.innerWidth - 340),
+            }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-muted text-xs font-medium">
+                Select accounts
+              </span>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-faint hover:text-secondary text-xs"
+              >
+                Close
+              </button>
             </div>
-          </>,
+
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search accounts..."
+              className="mb-2 w-full rounded border px-2 py-1 text-xs"
+              autoFocus
+            />
+
+            <div className="text-caption mb-2 flex items-center justify-between">
+              <button
+                onClick={() => onChange(new Set(allIds))}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Select all
+              </button>
+              <button
+                onClick={() => onChange(new Set())}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Select none
+              </button>
+              <label className="text-faint inline-flex cursor-pointer items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                Show closed
+              </label>
+            </div>
+
+            {groups.size === 0 && (
+              <p className="text-faint py-4 text-center text-xs">
+                No accounts match.
+              </p>
+            )}
+
+            {[...groups.entries()].map(([category, accts]) => {
+              const allSelected = accts.every((m) =>
+                selectedAccountIds.has(m.id),
+              );
+              return (
+                <div key={category} className="mb-1">
+                  <div className="flex items-center justify-between px-1 py-0.5">
+                    <span className="text-caption text-muted font-semibold tracking-wider uppercase">
+                      {category}
+                    </span>
+                    <button
+                      onClick={() => toggleGroup(accts, !allSelected)}
+                      className="text-micro text-blue-600 hover:text-blue-700"
+                    >
+                      {allSelected ? "Deselect all" : "Select all"}
+                    </button>
+                  </div>
+                  {accts.map((m) => (
+                    <label
+                      key={m.id}
+                      className="text-secondary flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-blue-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAccountIds.has(m.id)}
+                        onChange={() => toggle(m.id)}
+                      />
+                      <span className={m.isActive ? "" : "text-faint"}>
+                        {m.institution} —{" "}
+                        {accountDisplayName(m, m.ownerName ?? undefined)}
+                        {!m.isActive && " (closed)"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              );
+            })}
+          </Popover>,
           document.body,
         )}
     </>

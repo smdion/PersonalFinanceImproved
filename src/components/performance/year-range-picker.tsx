@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { Popover } from "@/components/ui/popover";
 
 export type YearRange = { start: number; end: number };
 
@@ -94,80 +95,73 @@ export function YearRangePicker({
       {open &&
         anchorRect &&
         createPortal(
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setOpen(false)}
-              role="presentation"
-            />
-            <div
-              className="bg-surface-primary fixed z-50 w-56 rounded-lg border p-2 shadow-lg"
-              style={{
-                top: anchorRect.bottom + 4,
-                left: Math.min(anchorRect.left, window.innerWidth - 240),
-              }}
-            >
-              {presetButton("Since Inception", isSinceInception, () =>
-                onChange(null),
-              )}
-              {presetButton("YTD", isYtd, () =>
-                onChange({ start: currentYear, end: currentYear }),
-              )}
-              {[1, 3, 5, 10].map((n) =>
-                presetButton(
-                  `Last ${n} Year${n !== 1 ? "s" : ""}`,
-                  isLastN(n),
-                  () =>
-                    onChange({
-                      start: Math.max(currentYear - (n - 1), minYear),
-                      end: currentYear,
-                    }),
-                ),
-              )}
+          <Popover
+            onClose={() => setOpen(false)}
+            layer="page"
+            className="bg-surface-primary fixed w-56 rounded-lg border p-2 shadow-lg"
+            style={{
+              top: anchorRect.bottom + 4,
+              left: Math.min(anchorRect.left, window.innerWidth - 240),
+            }}
+          >
+            {presetButton("Since Inception", isSinceInception, () =>
+              onChange(null),
+            )}
+            {presetButton("YTD", isYtd, () =>
+              onChange({ start: currentYear, end: currentYear }),
+            )}
+            {[1, 3, 5, 10].map((n) =>
+              presetButton(
+                `Last ${n} Year${n !== 1 ? "s" : ""}`,
+                isLastN(n),
+                () =>
+                  onChange({
+                    start: Math.max(currentYear - (n - 1), minYear),
+                    end: currentYear,
+                  }),
+              ),
+            )}
 
-              <div className="border-subtle mt-1 border-t pt-2">
-                <span className="text-caption text-muted px-2">
-                  Custom range
-                </span>
-                <div className="flex items-center gap-1 px-2 py-1">
-                  <select
-                    value={customStart}
-                    onChange={(e) => setCustomStart(Number(e.target.value))}
-                    className="flex-1 rounded border px-1 py-0.5 text-xs"
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-faint text-xs">–</span>
-                  <select
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(Number(e.target.value))}
-                    className="flex-1 rounded border px-1 py-0.5 text-xs"
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={() => {
-                    const start = Math.min(customStart, customEnd);
-                    const end = Math.max(customStart, customEnd);
-                    onChange({ start, end });
-                    setOpen(false);
-                  }}
-                  className="mt-1 w-full rounded bg-blue-600 px-2 py-1 text-center text-xs text-white transition-colors hover:bg-blue-700"
+            <div className="border-subtle mt-1 border-t pt-2">
+              <span className="text-caption text-muted px-2">Custom range</span>
+              <div className="flex items-center gap-1 px-2 py-1">
+                <select
+                  value={customStart}
+                  onChange={(e) => setCustomStart(Number(e.target.value))}
+                  className="flex-1 rounded border px-1 py-0.5 text-xs"
                 >
-                  Apply
-                </button>
+                  {years.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-faint text-xs">–</span>
+                <select
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(Number(e.target.value))}
+                  className="flex-1 rounded border px-1 py-0.5 text-xs"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <button
+                onClick={() => {
+                  const start = Math.min(customStart, customEnd);
+                  const end = Math.max(customStart, customEnd);
+                  onChange({ start, end });
+                  setOpen(false);
+                }}
+                className="mt-1 w-full rounded bg-blue-600 px-2 py-1 text-center text-xs text-white transition-colors hover:bg-blue-700"
+              >
+                Apply
+              </button>
             </div>
-          </>,
+          </Popover>,
           document.body,
         )}
     </>

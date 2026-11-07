@@ -2242,9 +2242,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 5
     },
@@ -2382,9 +2379,6 @@
   },
   "src/components/performance/year-range-picker.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
     "ratchet/no-raw-button": {
