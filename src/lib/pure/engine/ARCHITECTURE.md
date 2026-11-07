@@ -13,10 +13,18 @@ projection-year-handlers/    one year of work
   state.ts                   mutable run state (buildProjectionState)
   pre-year-setup.ts          return rate, profile switches, spending strategy
   accumulation-year.ts       runAccumulationYear
-  decumulation-year.ts       runDecumulationYear
+  decumulation-year.ts       runDecumulationYear: calls the stages below in order
   decumulation-income.ts     the year's income before any draw: each owner's RMD
   rmd-step.ts                the QCD, then each RMD enforced on the routed draw (UD-04)
+  year-tax-tables.ts         the year's tax tables, each grown from its own table year
   year-deduction.ts          the year's standard deduction, grown, with the senior add-ons
+  year-need.ts               the after-tax need and the withdrawal that meets it
+  year-draws.ts              the draw routed by mode, then followed to each account
+  tax-year-settlement.ts     the tax priced and settled in today's order (UD-04, UD-08)
+  funding-shortfall.ts       the unmet need (raw) and whether it's material
+  year-cliffs.ts             IRMAA and ACA cliff checks
+  portfolio-contributions.ts Portfolio contributions after retirement, reported only
+  year-end.ts                growth, year-end state, account rows, reconciliation
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
