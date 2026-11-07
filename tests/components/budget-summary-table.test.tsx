@@ -10,6 +10,7 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BudgetSummaryTable } from "@/components/budget/budget-summary-table";
 import type { PayrollBreakdown } from "@/components/budget/types";
+import { pressKey } from "./keyboard";
 
 const payroll: PayrollBreakdown = {
   grossMonthly: 9000,
@@ -78,6 +79,18 @@ describe("BudgetSummaryTable", () => {
     expect(within(table).getByText("401k")).toBeTruthy();
     expect(within(table).getByText("HSA")).toBeTruthy();
   });
+
+  it.each([["Enter" as const], [" " as const]])(
+    "%j on a row's toggle expands it, as a click does",
+    (key) => {
+      mount();
+      const toggle = screen.getByRole("button", { name: "Pre-Tax Deductions" });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      pressKey(toggle, key);
+      expect(screen.getByText("401k")).toBeTruthy();
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+    },
+  );
 
   it("makes a mode active from its header", () => {
     const onSetActiveColumn = mount();

@@ -7,7 +7,7 @@
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
-    "src/app/(dashboard)/expenses/expenses-content.tsx": 819,
+    "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
     "src/app/(dashboard)/historical/historical-content.tsx": 1026,
     "src/app/(dashboard)/house/house-content.tsx": 746,
     "src/app/(dashboard)/networth/networth-content.tsx": 461,
@@ -356,7 +356,7 @@
       "PerformanceContent": 809
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 725,
+      "PortfolioContent": 724,
       "PortfolioContent.map()": 263
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {

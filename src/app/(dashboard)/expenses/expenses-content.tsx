@@ -8,6 +8,7 @@ import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProgressBar } from "@/components/ui/card";
+import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -713,20 +714,7 @@ function GroupRows({
       >
         <td className="text-primary py-1.5 pr-3 font-semibold">
           <span className="flex items-center gap-1.5">
-            <svg
-              aria-hidden="true"
-              className={`text-faint h-2.5 w-2.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <ExpandRowButton expanded={isExpanded} label={group.name} />
             <span
               className={`h-2 w-2 flex-shrink-0 rounded-full ${group.isEssential ? essentialColor() : discretionaryColor()}`}
             />

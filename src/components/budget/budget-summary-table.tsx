@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge, StatusDot } from "@/components/ui/badge";
+import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import type { PayrollBreakdown, ColumnResult, SinkingFundLine } from "./types";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
 
@@ -23,19 +24,18 @@ type BudgetSummaryTableProps = {
   savingsProfileName?: string;
 };
 
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      className={`text-faint h-2.5 w-2.5 transition-transform ${expanded ? "rotate-90" : ""}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
+/** The summary rows that open, by name; each one's toggle is labelled so. */
+const ROW_NAMES = {
+  gross: "Gross Income",
+  taxes: "Taxes",
+  preTax: "Pre-Tax Deductions",
+  postTax: "After-Tax Deductions",
+  takeHome: "Take-Home Pay",
+  savings: "Savings",
+} as const;
+
+function RowToggle(p: { open: boolean; row: keyof typeof ROW_NAMES }) {
+  return <ExpandRowButton expanded={p.open} label={ROW_NAMES[p.row]} />;
 }
 
 /** Union line items across per-column breakdowns by name. */
@@ -210,7 +210,7 @@ export function BudgetSummaryTable({
                 <td className="py-1 pr-3 font-medium text-green-800">
                   <span className="flex items-center gap-1.5">
                     {grossDetailLines.length > 1 ? (
-                      <ChevronIcon expanded={showGross} />
+                      <RowToggle open={showGross} row="gross" />
                     ) : (
                       <span className="h-2 w-2 rounded-full bg-green-600" />
                     )}
@@ -267,7 +267,7 @@ export function BudgetSummaryTable({
               >
                 <td className="py-1 pr-3 font-medium text-red-600">
                   <span className="flex items-center gap-1.5">
-                    <ChevronIcon expanded={showTaxes} />
+                    <RowToggle open={showTaxes} row="taxes" />
                     Taxes
                   </span>
                 </td>
@@ -377,7 +377,7 @@ export function BudgetSummaryTable({
                   >
                     <td className="py-1 pr-3 font-medium text-red-600">
                       <span className="flex items-center gap-1.5">
-                        <ChevronIcon expanded={showPreTax} />
+                        <RowToggle open={showPreTax} row="preTax" />
                         Pre-Tax Deductions
                         <HelpTip text="Deducted from your paycheck before taxes, like 401(k), HSA, and health insurance premiums." />
                       </span>
@@ -438,7 +438,7 @@ export function BudgetSummaryTable({
                   >
                     <td className="py-1 pr-3 font-medium text-red-600">
                       <span className="flex items-center gap-1.5">
-                        <ChevronIcon expanded={showPostTax} />
+                        <RowToggle open={showPostTax} row="postTax" />
                         After-Tax Deductions
                         <HelpTip text="Deducted from your paycheck after taxes, like Roth 401(k) contributions." />
                       </span>
@@ -504,7 +504,7 @@ export function BudgetSummaryTable({
                 <td className="py-1 pr-3 font-semibold text-green-700">
                   <span className="flex items-center gap-1.5">
                     {takeHomeDetailLines.length > 1 ? (
-                      <ChevronIcon expanded={showTakeHome} />
+                      <RowToggle open={showTakeHome} row="takeHome" />
                     ) : (
                       <StatusDot color="green" />
                     )}
@@ -626,7 +626,7 @@ export function BudgetSummaryTable({
                       <td className="py-1.5 pr-3 text-emerald-700">
                         <span className="flex items-center gap-1.5">
                           {hasSinkingFunds ? (
-                            <ChevronIcon expanded={showSavings} />
+                            <RowToggle open={showSavings} row="savings" />
                           ) : (
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                           )}

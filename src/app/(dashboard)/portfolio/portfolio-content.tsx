@@ -29,6 +29,7 @@ import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import {
   EditLockToggle,
   EDIT_LOCK_KEYS,
@@ -308,7 +309,6 @@ export function PortfolioContent() {
     () => paginatedSnapshots?.snapshots ?? [],
     [paginatedSnapshots?.snapshots],
   );
-  const sortedSnapshots = rawSnapshots;
 
   const sortOf = (col: NonNullable<typeof sortCol>) =>
     sortCol !== col ? "none" : sortDir === "asc" ? "ascending" : "descending";
@@ -553,7 +553,7 @@ export function PortfolioContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedSnapshots.map((snap, _i) => {
+                  {rawSnapshots.map((snap, _i) => {
                     const delta = snap.delta;
                     const isExpanded = expandedSnapshot === snap.id;
                     // Compare against the globally-latest snapshot date
@@ -572,11 +572,11 @@ export function PortfolioContent() {
                         >
                           <td className="py-2 pr-4 font-medium">
                             <span className="inline-flex items-center gap-1">
-                              <span
-                                className={`text-caption text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                              >
-                                &#9654;
-                              </span>
+                              <ExpandRowButton
+                                expanded={isExpanded}
+                                label={`Snapshot ${formatDate(snap.snapshotDate, "medium")}`}
+                                glyph="triangle"
+                              />
                               {formatDate(snap.snapshotDate, "medium")}
                               {syncPending?.snapshotId === snap.id && (
                                 <span
