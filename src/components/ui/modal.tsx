@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { focusInto, useFocusTrap } from "@/lib/hooks/use-focus-trap";
 
 /** Open modals by render order: Escape closes only the newest. */
 const openModals = new Set<number>();
@@ -70,9 +70,16 @@ export function Modal({
   useEffect(() => {
     openModals.add(order);
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (Math.max(...openModals) !== order) return;
-      if (!latest.current.closeOnEscape) return;
+      if (e.defaultPrevented || Math.max(...openModals) !== order) return;
+      const panel = trapRef.current;
+      // Focus outside the newest dialog (a focused button disabled itself
+      // mid-write, and focus fell to body): Tab goes back in.
+      if (e.key === "Tab" && panel && !panel.contains(document.activeElement)) {
+        e.preventDefault();
+        focusInto(panel, e.shiftKey);
+        return;
+      }
+      if (e.key !== "Escape" || !latest.current.closeOnEscape) return;
       e.preventDefault();
       latest.current.onClose();
     };
@@ -81,7 +88,7 @@ export function Modal({
       document.removeEventListener("keydown", handler);
       openModals.delete(order);
     };
-  }, [order]);
+  }, [order, trapRef]);
 
   useEffect(() => {
     const panel = trapRef.current;

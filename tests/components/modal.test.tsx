@@ -1,7 +1,7 @@
 /**
  * Modal: the one dialog backdrop. Escape closes the top dialog only, the
- * backdrop closes it unless told not to, focus moves in, stays in, and goes
- * back to whatever opened it.
+ * backdrop closes it unless told not to, focus moves in, stays in (a Tab
+ * from outside goes back in), and goes back to whatever opened it.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { useState } from "react";
@@ -99,6 +99,41 @@ describe("Modal", () => {
     expect(document.activeElement).toBe(first);
     fireEvent.keyDown(first, { key: "Tab", shiftKey: true });
     expect(document.activeElement).toBe(last);
+  });
+
+  it.each([
+    ["Tab", false, "First"],
+    ["Shift+Tab", true, "Last"],
+  ])(
+    "sends %s from outside the dialog back in (a focused button disabled itself)",
+    (_, shiftKey, name) => {
+      render(<Opener />);
+      openWithClick();
+      const first = screen.getByRole("button", { name: "First" });
+      first.focus();
+      first.blur();
+      expect(document.activeElement).toBe(document.body);
+      fireEvent.keyDown(document.body, { key: "Tab", shiftKey });
+      expect(document.activeElement).toBe(screen.getByRole("button", { name }));
+    },
+  );
+
+  it("leaves Tab outside alone for all but the newest dialog", () => {
+    render(
+      <>
+        <Modal label="Outer" className="" onClose={() => {}}>
+          <button type="button">Outer button</button>
+        </Modal>
+        <Modal label="Inner" className="" onClose={() => {}}>
+          <button type="button">Inner button</button>
+        </Modal>
+      </>,
+    );
+    document.body.focus();
+    fireEvent.keyDown(document.body, { key: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Inner button" }),
+    );
   });
 
   it("closes on Escape unless closeOnEscape is false", () => {
