@@ -2912,9 +2912,6 @@
     }
   },
   "src/components/savings/api-category-link-dialog.tsx": {
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     }
@@ -2936,17 +2933,8 @@
     }
   },
   "src/components/savings/contribution-grid.tsx": {
-    "jsx-a11y/click-events-have-key-events": {
-      "count": 2
-    },
-    "jsx-a11y/no-static-element-interactions": {
-      "count": 2
-    },
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 9

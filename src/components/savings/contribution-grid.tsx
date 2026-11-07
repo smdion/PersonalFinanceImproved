@@ -1,7 +1,8 @@
 "use client";
 
 import { isGoalMet } from "@/lib/pure/savings/savings-goal-met";
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
+import { Modal } from "@/components/ui/modal";
 import {
   formatCurrency,
   formatPercent,
@@ -47,6 +48,7 @@ function DefaultContributionCell({
   canEdit?: boolean;
 }) {
   const [editing, setEditing] = useState<"dollar" | "percent" | null>(null);
+  const nameId = useId();
   const [dollarValue, setDollarValue] = useState("");
   const [percentValue, setPercentValue] = useState("");
 
@@ -110,75 +112,73 @@ function DefaultContributionCell({
         <div className="text-center text-xs font-semibold text-green-600/30 tabular-nums select-none">
           {formatCurrency(gp.monthlyAllocation)}
         </div>
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setEditing(null)}
+        <Modal
+          onClose={() => setEditing(null)}
+          labelledBy={nameId}
+          className="bg-surface-primary border-default w-64 space-y-4 rounded-xl border p-5 shadow-2xl"
         >
-          <div
-            className="bg-surface-primary border-default w-64 space-y-4 rounded-xl border p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <p className="text-primary text-sm font-semibold">{gp.name}</p>
-              <p className="text-caption text-faint mt-0.5">
-                Default monthly contribution
-              </p>
+          <div>
+            <p id={nameId} className="text-primary text-sm font-semibold">
+              {gp.name}
+            </p>
+            <p className="text-caption text-faint mt-0.5">
+              Default monthly contribution
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="text-muted w-4 shrink-0 text-xs">$</span>
+              <input
+                type="number"
+                autoFocus={editing === "dollar"}
+                value={dollarValue}
+                onChange={(e) => handleDollarChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit();
+                  if (e.key === "Escape") setEditing(null);
+                }}
+                className={inputCls}
+              />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-muted w-4 shrink-0 text-xs">$</span>
-                <input
-                  type="number"
-                  autoFocus={editing === "dollar"}
-                  value={dollarValue}
-                  onChange={(e) => handleDollarChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") setEditing(null);
-                  }}
-                  className={inputCls}
-                />
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-4 shrink-0" />
-                <div className="flex flex-1 items-center gap-2">
-                  <div className="border-subtle/40 flex-1 border-t" />
-                  <span className="text-caption text-faint/60">or</span>
-                  <div className="border-subtle/40 flex-1 border-t" />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-muted w-4 shrink-0 text-xs">%</span>
-                <input
-                  type="number"
-                  autoFocus={editing === "percent"}
-                  value={percentValue}
-                  onChange={(e) => handlePercentChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") setEditing(null);
-                  }}
-                  step="0.1"
-                  className={inputCls}
-                />
+            <div className="flex items-center gap-3">
+              <span className="w-4 shrink-0" />
+              <div className="flex flex-1 items-center gap-2">
+                <div className="border-subtle/40 flex-1 border-t" />
+                <span className="text-caption text-faint/60">or</span>
+                <div className="border-subtle/40 flex-1 border-t" />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEditing(null)}
-                className="border-default text-muted hover:text-primary flex-1 rounded-lg border px-3 py-1.5 text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={commit}
-                className="flex-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-              >
-                Save
-              </button>
+            <div className="flex items-center gap-3">
+              <span className="text-muted w-4 shrink-0 text-xs">%</span>
+              <input
+                type="number"
+                autoFocus={editing === "percent"}
+                value={percentValue}
+                onChange={(e) => handlePercentChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit();
+                  if (e.key === "Escape") setEditing(null);
+                }}
+                step="0.1"
+                className={inputCls}
+              />
             </div>
           </div>
-        </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setEditing(null)}
+              className="border-default text-muted hover:text-primary flex-1 rounded-lg border px-3 py-1.5 text-sm transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={commit}
+              className="flex-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Save
+            </button>
+          </div>
+        </Modal>
       </>
     );
   }

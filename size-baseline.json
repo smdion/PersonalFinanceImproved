@@ -722,7 +722,7 @@
     },
     "src/components/savings/contribution-grid.tsx": {
       "ContributionGrid": 221,
-      "DefaultContributionCell": 212
+      "DefaultContributionCell": 211
     },
     "src/components/savings/emergency-fund-detail.tsx": {
       "EmergencyFundDetail": 184
