@@ -346,7 +346,7 @@
       "MilestonesContent": 223
     },
     "src/app/(dashboard)/networth/networth-content.tsx": {
-      "NetWorthPage": 396
+      "NetWorthContent": 396
     },
     "src/app/(dashboard)/paycheck/page.tsx": {
       "PaycheckPage": 645,

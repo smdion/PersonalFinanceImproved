@@ -63,7 +63,7 @@ import {
 } from "@/lib/constants/settings-keys";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 
-export default function NetWorthPage() {
+export function NetWorthContent() {
   const utils = trpc.useUtils();
   const targeting = useYearEndTargetingInput();
   const { data, isLoading, error } =
