@@ -7785,9 +7785,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/trpc-server.ts": {

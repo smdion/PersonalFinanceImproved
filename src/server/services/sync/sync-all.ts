@@ -80,12 +80,10 @@ export async function syncAll(
     const driftReport = detectDrift(cachedAccountsBefore, accounts, mappings);
 
     // ── Phase 2: Single-transaction commit ──
-    // Cache writes + lastSyncedAt + asset-pull loop now share one
+    // Cache writes + lastSyncedAt + asset-pull loop share one
     // transaction. If ANY asset write fails (unmapped type, DB
     // constraint, missing row), the entire sync rolls back and the
-    // sync returns failure to the user. Previously: cache writes ran
-    // via Promise.all and the asset loop swallowed errors via inner
-    // try/catch and returned success: true with stale-mixed state.
+    // sync returns failure to the user.
     const assetsPulled = await ctx.db.transaction(async (tx) => {
       await cacheSet(tx, service, "accounts", accounts);
       await cacheSet(tx, service, "categories", categories);
