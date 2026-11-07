@@ -6,6 +6,7 @@ import { auth } from "@/server/auth";
 import { importBackup, type BackupData } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
+import { ClosedSetRefusal } from "@/lib/db/closed-set-columns";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_STRING_LENGTH = 10_000; // guard against oversized string values in imported data
@@ -123,6 +124,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, ...importResult });
   } catch (error) {
+    if (error instanceof ClosedSetRefusal)
+      return NextResponse.json({ error: error.message }, { status: 400 });
     log("error", "import_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

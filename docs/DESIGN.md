@@ -934,6 +934,19 @@ whole when a statement is already done or moved past, or when the table has
 a column a later migration adds that the recreate would drop (the database
 is past it); any other error stops the replay.
 
+### A backup's closed-set values
+
+A restore or import checks a backup's rows after the transforms and the
+credentials fence, before anything is written (`checkClosedSetValues`,
+`src/lib/db/closed-set-columns.ts`). The table there lists every text column
+of a versioned table that holds a set the config defines (a test walks the
+schema's union-typed columns). A value outside its set takes the column's
+default where the owner named one (withdrawal strategy, routing mode,
+savings target mode, two parent-category columns), with a note in the
+restore or import result. In any other column it refuses the whole restore or
+import, naming each table, column and value, and today's data stays. A row
+without the column is left to the insert.
+
 ### Account Categories
 
 Two `parentCategory` values classify all investment accounts by their goal:

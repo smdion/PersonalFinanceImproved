@@ -28,9 +28,9 @@ import {
   exportBackup,
   importBackup,
   restoreVersion,
-  tablesLostOnRestore,
   type BackupData,
 } from "@/lib/db/version-logic";
+import { tablesLostOnRestore } from "@/lib/db/restore-data-loss";
 
 type TestCtx = Awaited<ReturnType<typeof createTestCaller>>;
 

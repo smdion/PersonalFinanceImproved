@@ -255,3 +255,44 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).not.toHaveBeenCalled();
   });
 });
+
+describe("/api/versions/import: a backup refused over its closed-set values", () => {
+  it("answers 400 with the refusal's message, and settles nothing", async () => {
+    process.env.ALLOW_DEV_MODE = "true";
+    vi.stubEnv("NODE_ENV", "development");
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/version-logic");
+    const { settleFirstRunGate } = await import("@/server/data/first-run");
+    const { ClosedSetRefusal } = await import("@/lib/db/closed-set-columns");
+    vi.mocked(settleFirstRunGate).mockClear();
+    vi.mocked(importBackup).mockRejectedValueOnce(
+      new ClosedSetRefusal([
+        {
+          table: "performance_accounts",
+          column: "account_type",
+          value: "solo401k",
+          rows: 1,
+        },
+      ]),
+    );
+    const body = new FormData();
+    const backup = {
+      schemaVersion: "0001",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      tables: {},
+    };
+    body.append("file", new File([JSON.stringify(backup)], "backup.json"));
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as { error: string };
+    expect(json.error).toContain(
+      'performance_accounts.account_type = "solo401k" (1 row)',
+    );
+    expect(settleFirstRunGate).not.toHaveBeenCalled();
+  });
+});

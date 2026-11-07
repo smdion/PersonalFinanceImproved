@@ -1,22 +1,30 @@
 /**
- * The connections fence on SQLite (the cases are in ./backup-fence-cases,
- * shared with PostgreSQL): each case runs on a fresh migrated database.
+ * The connections fence and the closed-set check on SQLite (the cases are in
+ * ./backup-fence-cases and ./closed-set-import-cases, shared with
+ * PostgreSQL): each case runs on a fresh migrated database.
  */
 import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
+import { closedSetImportCases } from "./closed-set-import-cases";
+
+async function fresh() {
+  const { rawDb, sqlite, cleanup } = await createTestCaller();
+  const columns = async (table: string) =>
+    sqlite
+      .prepare(`PRAGMA table_info("${table}")`)
+      .all()
+      .map((c) => (c as { name: string }).name);
+  return { db: rawDb, columns, done: cleanup };
+}
 
 describe("backup connections fence (SQLite)", () => {
-  backupFenceCases(async () => {
-    const { rawDb, sqlite, cleanup } = await createTestCaller();
-    const columns = async (table: string) =>
-      sqlite
-        .prepare(`PRAGMA table_info("${table}")`)
-        .all()
-        .map((c) => (c as { name: string }).name);
-    return { db: rawDb, columns, done: cleanup };
-  });
+  backupFenceCases(fresh);
+});
+
+describe("closed-set values on import and restore (SQLite)", () => {
+  closedSetImportCases(fresh);
 });
 
 describe("an installation table with no column lists", () => {

@@ -1,5 +1,6 @@
 /** Version router for creating, listing, restoring, and deleting full database state versions used for undo/backup. */
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { eq, sql, desc, inArray } from "drizzle-orm";
 import { DATA_SETTING_KEYS } from "@/lib/constants/settings-keys";
 import {
@@ -10,11 +11,9 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { settleFirstRunGate } from "@/server/data/first-run";
-import {
-  createVersion,
-  restoreVersion,
-  tablesLostOnRestore,
-} from "@/lib/db/version-logic";
+import { createVersion, restoreVersion } from "@/lib/db/version-logic";
+import { tablesLostOnRestore } from "@/lib/db/restore-data-loss";
+import { ClosedSetRefusal } from "@/lib/db/closed-set-columns";
 import {
   VERSION_PREVIEW_WITHHELD_TABLES,
   VERSION_TABLE_NAMES,
@@ -142,6 +141,9 @@ export const versionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const restored = await restoreVersion(ctx.db, input.id, {
         asAdmin: ctx.session.user.role === "admin",
+      }).catch((err: unknown) => {
+        if (!(err instanceof ClosedSetRefusal)) throw err;
+        throw new TRPCError({ code: "BAD_REQUEST", message: err.message });
       });
       await settleFirstRunGate(ctx.db, "restore");
       return restored;
