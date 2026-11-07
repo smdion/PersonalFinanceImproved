@@ -13,6 +13,8 @@ export function asButton(onPress: (e: PressEvent) => void, expanded?: boolean) {
     "aria-expanded": expanded,
     onClick: onPress,
     onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+      // A key on a control inside (a button, a select) is that control's.
+      if (e.target !== e.currentTarget) return;
       if (e.key !== "Enter" && e.key !== " ") return;
       e.preventDefault();
       onPress(e);

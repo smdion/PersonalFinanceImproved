@@ -42,4 +42,17 @@ describe("asButton", () => {
     expect(notPrevented).toBe(true);
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  it("a key on a control inside it is that control's: not pressed, not prevented", () => {
+    const onPress = vi.fn();
+    render(
+      <div {...asButton(onPress)}>
+        Row <button type="button">Clone</button>
+      </div>,
+    );
+    const inner = screen.getByRole("button", { name: "Clone" });
+    expect(fireEvent.keyDown(inner, { key: "Enter" })).toBe(true);
+    expect(fireEvent.keyDown(inner, { key: " " })).toBe(true);
+    expect(onPress).not.toHaveBeenCalled();
+  });
 });
