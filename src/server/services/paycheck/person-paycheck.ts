@@ -99,8 +99,8 @@ export function yearEarnings(
   // Blended annual computation. Salary is a flat number under the
   // active Salary Profile — no mid-year timeline to blend across
   // any more (see resolveCompensation's docblock), so this is
-  // always a single segment spanning the whole year; what's left of
-  // "blended" is folding in actual YTD performance data below.
+  // always a single segment: the job's checks this year, from its
+  // start to its last day.
   // A last day later this year (the job is still current): its
   // checks inside the year stop there.
   const lastDay =

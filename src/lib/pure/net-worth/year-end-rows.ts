@@ -238,7 +238,7 @@ export function yearEndPerformance(
       employerMatch: toNumber(row.employerContributions),
       gainLoss: toNumber(row.yearlyGainLoss),
       distributions: toNumber(row.distributions),
-      employerMatchDiscount: 0, // backfilled below from account_performance rows
+      employerMatchDiscount: 0, // backfilled by buildYearEndHistory's step 3
     };
     perfByCategoryByYear.set(row.year, yearMap);
   }
@@ -257,7 +257,7 @@ export function yearEndPerformance(
         employerMatch: 0,
         gainLoss: 0,
         distributions: 0,
-        employerMatchDiscount: 0, // backfilled below from account_performance rows
+        employerMatchDiscount: 0, // backfilled by buildYearEndHistory's step 3
       };
       existing.endingBalance += toNumber(acct.endingBalance);
       existing.contributions += toNumber(acct.totalContributions);
@@ -502,7 +502,7 @@ export function storedYearEndRows(
       performanceByParentCategory: perfByParentCategoryByYear.get(year) ?? {},
       portfolioByTaxLocation: r.portfolioByTaxLocation as TaxLocationBreakdown,
       ytdRatio: 1, // finalized year — full year
-      // Placeholders — computed in final pass after all rows are built
+      // Placeholders — set by yearEndWealthMetrics once all rows are built
       wealthScoreMarket: 0,
       wealthScoreCostBasis: 0,
       aawScoreMarket: 0,
@@ -510,8 +510,8 @@ export function storedYearEndRows(
       fiProgress: 0,
       fiTarget: 0,
       netWorthMarket: netWorth,
-      netWorthCostBasis: netWorth, // overwritten in final pass
-      houseValueCostBasis: 0, // overwritten in final pass
+      netWorthCostBasis: netWorth, // overwritten by yearEndWealthMetrics
+      houseValueCostBasis: 0, // overwritten by yearEndWealthMetrics
       averageAge: 0,
       effectiveIncome: 0,
       lifetimeEarnings: 0,

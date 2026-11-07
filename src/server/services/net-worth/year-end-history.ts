@@ -232,8 +232,8 @@ export async function buildYearEndHistory(
   } = yearEndPerformance(accountPerfRows, annualPerfRows, resolveHistoryMaster);
 
   // 3. Backfill employerMatchDiscount onto perfByCategoryByYear for every
-  // year, regardless of whether it was populated by branch 1 (finalized) or
-  // branch 2 (fallback) above — a finalized annual_performance row has no
+  // year, whether yearEndPerformance (year-end-rows.ts) filled it from its
+  // branch 1 (finalized) or branch 2 (fallback) — a finalized row has no
   // per-account breakdown to derive this from, so it's always recomputed
   // fresh from account_performance rows here instead. Every other field
   // (contributions, employerMatch, gainLoss, endingBalance) keeps reading
@@ -243,8 +243,8 @@ export async function buildYearEndHistory(
   // never creates a new partial CategoryPerformance object (which would be
   // missing gainLoss/endingBalance and produce NaN downstream). Note: a
   // partially-finalized year can already drop an entire non-finalized
-  // category from this map (see the year-level `.has(year)` check in branch
-  // 2 above) — this backfill doesn't fix that pre-existing gap, just avoids
+  // category from this map (see yearEndPerformance's year-level `.has(year)`
+  // check in its branch 2) — this backfill doesn't fix that gap, just avoids
   // making it worse.
   for (const [year, yearMap] of perfByCategoryByYear.entries()) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);

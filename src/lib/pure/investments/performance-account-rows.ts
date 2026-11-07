@@ -26,7 +26,7 @@ export function resolveOwnerName(
   if (name == null) {
     // Data-integrity invariant, not a user error — left as a plain Error so
     // it lands as INTERNAL_SERVER_ERROR (logged, generic toast). Same for
-    // the two resolveMaster() throws below.
+    // resolveMaster()'s two throws (annual-rollups.ts).
     throw new Error(`people.id=${ownerPersonId} not found (orphan FK)`);
   }
   return name;
