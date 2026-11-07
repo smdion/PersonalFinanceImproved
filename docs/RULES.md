@@ -148,6 +148,7 @@ Where year-level data, shared state and Salary Profile figures come from: DESIGN
 The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 
 - **New shared primitives ship with a real consumer.** A component/hook/util introduced specifically to replace duplicated logic (a new `lib/pure/` function, a `lib/hooks/` hook, a `components/ui/` primitive) must migrate at least one genuine call site in the same PR — never merge one with zero adopters "for later." `FormField`, `useOptimisticMutation`, and `safeDivide()` all shipped unused and the duplication they were meant to kill kept spreading for months until a dedicated audit rediscovered them.
+- **A hook lives in one of three homes, picked by who uses it.** Beside `<route>-content.tsx` when one route uses it, in `components/<feature>/` when one feature shares it, in `lib/hooks/` when two or more features do. No `hooks/` subfolders (`tests/lint/violations.test.ts` holds that list at zero).
 
 ### Refactoring: LOC vs per-file size
 
