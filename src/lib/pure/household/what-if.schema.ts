@@ -31,7 +31,7 @@ export const zSandboxSalaryEntries = z
       monthsInBonusYear: z.number().int().optional(),
     }),
   )
-  .refine((v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_PEOPLE, {
+  .refine((v) => Object.keys(v).length <= MAX_SANDBOX_PEOPLE, {
     message: `At most ${MAX_SANDBOX_PEOPLE} people may be edited at once`,
   })
   .optional();
@@ -137,12 +137,9 @@ const MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS = 30;
  */
 export const zSandboxContribActiveFields = z
   .record(z.string(), z.object({ contributionValue: z.string() }))
-  .refine(
-    (v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS,
-    {
-      message: `At most ${MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS} accounts may be edited at once`,
-    },
-  )
+  .refine((v) => Object.keys(v).length <= MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS, {
+    message: `At most ${MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS} accounts may be edited at once`,
+  })
   .optional();
 
 /**

@@ -115,7 +115,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // Other pay on each check: cash lines are paid (gross, net); non-cash
   // lines (imputed income) are only taxed. Each line says which taxes
   // apply, so a cash line exempt from a tax comes back out of that base.
-  const earnings = input.earnings ?? [];
+  const earnings = input.earnings;
   const cashEarnings = sumBy(
     earnings.filter((e) => e.isCash),
     (e) => e.amount,

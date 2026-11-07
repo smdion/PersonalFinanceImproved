@@ -87,7 +87,7 @@ export function computeAnnualEarnings(args: {
     ) * checks;
 
   // Other pay on the checks, by its own tax flags.
-  const lines = paycheck.earnings ?? [];
+  const lines = paycheck.earnings;
   const perYear = (pick: (e: (typeof lines)[number]) => boolean) =>
     sumBy(lines.filter(pick), (e) => e.amount) * checks;
   const otherCashPay = perYear((e) => e.isCash);

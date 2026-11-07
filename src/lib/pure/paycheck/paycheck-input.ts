@@ -68,9 +68,8 @@ export interface ResolvedPaycheckInputs {
 /**
  * Maps already-resolved job/salary/contribution/deduction values onto a
  * PaycheckInput. `bonusMultiplier` treats a genuinely unset (null) value as
- * 1× (not 0×) — see calculatePaycheck's `(input.bonusMultiplier ?? 1)` and
- * computeBonusGross's identical distinction between "0 = no bonus this
- * cycle" and "null = unset".
+ * 1× (not 0×) — computeBonusGross draws the same distinction between
+ * "0 = no bonus this cycle" and "null = unset".
  */
 export function buildPaycheckInputForJob(
   job: JobForPaycheckInput,

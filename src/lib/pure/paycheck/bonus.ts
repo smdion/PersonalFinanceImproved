@@ -111,7 +111,7 @@ export function calculateBonus(
       : roundToCents(
           input.annualSalary *
             input.bonusPercent *
-            (input.bonusMultiplier ?? 1) *
+            input.bonusMultiplier *
             (input.monthsInBonusYear / 12),
         );
 
@@ -159,7 +159,7 @@ export function calculateBonus(
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
   const bonusFicaExempt = sumBy(input.contributionAccounts, (ca) => {
     const cap = ca.ficaExemptAnnualCap;
-    if (cap === null || cap === undefined) return 0;
+    if (cap === null) return 0;
     if (!isPreTax(ca.taxTreatment)) return 0;
     const capLeft =
       cap - regularFicaExemptPerPeriod(ca, periodsPerYear) * periodsPerYear;

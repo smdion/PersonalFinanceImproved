@@ -9,7 +9,7 @@ export function regularFicaExemptPerPeriod(
   periodsPerYear: number,
 ): number {
   const cap = ca.ficaExemptAnnualCap;
-  if (!ca.isPayrollDeducted || cap === null || cap === undefined) return 0;
+  if (!ca.isPayrollDeducted || cap === null) return 0;
   // Only pre-tax money skips FICA — an after-tax row (bad data, an old
   // backup) is FICA wages, the same read-time rule as deductions.
   if (!isPreTax(ca.taxTreatment)) return 0;

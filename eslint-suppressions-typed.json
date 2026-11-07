@@ -574,32 +574,7 @@
       "count": 3
     }
   },
-  "src/lib/pure/household/household-income.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/household/what-if.schema.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/lib/pure/net-worth/snapshot-series.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/paycheck/bonus.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/paycheck/per-check.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/paycheck/taxable-wages.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
