@@ -489,10 +489,16 @@ export const ratchetConfig = [
   {
     // The primitives themselves.
     files: ["src/components/forms/**", "src/components/ui/**"],
-    rules: {
-      "ratchet/no-raw-input": "off",
-      "ratchet/no-fixed-inset-overlay": "off",
-    },
+    rules: { "ratchet/no-raw-input": "off" },
+  },
+  {
+    // The overlay primitives themselves.
+    files: [
+      "src/components/ui/modal.tsx",
+      "src/components/ui/slide-panel.tsx",
+      "src/components/ui/popover.tsx",
+    ],
+    rules: { "ratchet/no-fixed-inset-overlay": "off" },
   },
   {
     // The button, tab and segment primitives themselves.
