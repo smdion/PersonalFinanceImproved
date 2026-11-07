@@ -188,7 +188,7 @@
     "src/server/routers/networth/portfolio-snapshots.ts": 336,
     "src/server/routers/networth/snapshots.ts": 306,
     "src/server/routers/networth/summary.ts": 269,
-    "src/server/routers/performance/finalize-year.ts": 552,
+    "src/server/routers/performance/finalize-year.ts": 36,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 12,
     "src/server/routers/projection/_shared.ts": 235,
@@ -228,6 +228,7 @@
     "src/server/services/net-worth/year-end-history.ts": 1093,
     "src/server/services/paycheck/job-net-pay.ts": 285,
     "src/server/services/paycheck/summary.ts": 862,
+    "src/server/services/performance/finalize-year.ts": 530,
     "src/server/services/performance/summary.ts": 167,
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
@@ -919,10 +920,6 @@
     "src/server/routers/networth/summary.ts": {
       "summaryProcedures.computeSummary.query()": 245
     },
-    "src/server/routers/performance/finalize-year.ts": {
-      "finalizeYearProcedures.finalizeYear.mutation()": 482,
-      "finalizeYearProcedures.finalizeYear.mutation().transaction()": 477
-    },
     "src/server/routers/projection/coast-fire.ts": {
       "coastFireRouter.computeCoastFireMC.query()": 248
     },
@@ -979,6 +976,10 @@
     "src/server/services/paycheck/summary.ts": {
       "computePaycheckSummary": 738,
       "computePaycheckSummary.results.map()": 306
+    },
+    "src/server/services/performance/finalize-year.ts": {
+      "finalizePerformanceYear": 490,
+      "finalizePerformanceYear.transaction()": 466
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
       "buildEnginePayload": 840

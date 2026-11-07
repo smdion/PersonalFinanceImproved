@@ -5803,14 +5803,6 @@
       "count": 1
     }
   },
-  "src/server/routers/performance/finalize-year.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
   "src/server/routers/performance/year-records.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -6469,6 +6461,14 @@
     },
     "ratchet/max-comment-lines": {
       "count": 14
+    }
+  },
+  "src/server/services/performance/finalize-year.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 2
     }
   },
   "src/server/services/performance/performance-edit.ts": {
