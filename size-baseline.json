@@ -136,9 +136,10 @@
     "src/lib/pure/engine/post-withdrawal-optimizer.ts": 727,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 852,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 68,
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 1271,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 1249,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 245,
+    "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 66,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 62,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 117,
     "src/lib/pure/engine/rmd-enforcement.ts": 468,
@@ -859,7 +860,7 @@
       "buildProjectionContext": 188
     },
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 1175
+      "runDecumulationYear": 1153
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 437

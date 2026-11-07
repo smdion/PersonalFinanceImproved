@@ -40,7 +40,6 @@ import {
 } from "../bracket-growth";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
-import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { rmdOwnerOf } from "../rmd-enforcement";
@@ -81,6 +80,7 @@ import { applyLumpSums } from "./lump-sum";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
 import { yearStandardDeduction } from "./year-deduction";
+import { priceYearTax } from "./tax-year-settlement";
 import { yearNeed } from "./year-need";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
@@ -545,44 +545,22 @@ export function runDecumulationYear(
         })
       : { penaltyCost: 0, penalizedAmount: 0, byKey: new Map() };
 
-  // Calculate tax cost per withdrawal type -- single source of truth shared
-  // with withdrawal-solver.ts's estimate. One pricing call, used again for the
-  // post-conversion recompute below (never a hand copy of its formula).
-  const priceTax = (ss: number, brokerageTaxCostOverride?: number) =>
-    computeTaxFromSlots({
-      slots,
-      taxableSS: ss,
-      balances,
-      taxRates: {
-        ...taxRates,
-        taxBrackets: grownTaxBrackets,
-        standardDeduction: grownStandardDeduction,
-        ltcgBrackets: grownLtcgBrackets,
-      },
-      filingStatus,
-      // Pass the authoritative post-RMD totals rather than letting this
-      // re-derive from slots: rmd-enforcement.ts tracks
-      // totalTraditionalWithdrawal incrementally (running += then
-      // roundToCents), which isn't bit-for-bit identical to a fresh
-      // roundToCents(sumBy(slots, ...)) over the same mutated slots.
-      totalTraditionalWithdrawal,
-      totalRothWithdrawal,
-      rothTaxableGrowth: rothTaxSplit.taxableGrowth,
-      penaltyCost: earlyWithdrawalPenalty.penaltyCost,
-      brokerageBasisRatio,
-      brokerageTaxCostOverride,
-    });
-  // Social Security's taxable share from this year's actual (post-RMD)
-  // income — Traditional, non-qualified Roth growth and brokerage gains
-  // (taxableSSFor) — then the year priced with it. The first pass only
-  // supplies those amounts, which don't depend on taxable SS.
-  // TODO: If muni bond income tracking is added, pass taxExemptInterest.
-  let { taxableSS } = taxEst;
-  let taxFromSlots = priceTax(taxableSS);
-  if (filingStatus && ssIncome > 0) {
-    taxableSS = taxableSSFor(ssIncome, taxFromSlots, filingStatus);
-    taxFromSlots = priceTax(taxableSS);
-  }
+  const { priceTax, taxableSS, taxFromSlots } = priceYearTax(
+    slots,
+    balances,
+    taxRates,
+    grownTaxBrackets,
+    grownStandardDeduction,
+    grownLtcgBrackets,
+    filingStatus,
+    totalTraditionalWithdrawal,
+    totalRothWithdrawal,
+    rothTaxSplit,
+    earlyWithdrawalPenalty,
+    brokerageBasisRatio,
+    taxEst,
+    ssIncome,
+  );
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
