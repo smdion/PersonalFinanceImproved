@@ -14,13 +14,13 @@
     "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
-    "src/app/(dashboard)/savings/page.tsx": 935,
+    "src/app/(dashboard)/savings/page.tsx": 930,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1022,
     "src/app/(dashboard)/tools/page.tsx": 585,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 952,
     "src/components/budget/budget-summary-table.tsx": 772,
-    "src/components/budget/contribution-profile-manager.tsx": 2043,
+    "src/components/budget/contribution-profile-manager.tsx": 2042,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
@@ -284,7 +284,7 @@
     "src/server/services/projection/engine-payload/load.ts": 159,
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
-    "src/server/services/projection/relocation-analysis.ts": 481,
+    "src/server/services/projection/relocation-analysis.ts": 480,
     "src/server/services/savings/summary.ts": 370,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
@@ -366,7 +366,7 @@
       "RetirementContent": 300
     },
     "src/app/(dashboard)/savings/page.tsx": {
-      "SavingsPage": 854
+      "SavingsPage": 849
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
@@ -409,7 +409,7 @@
       "BudgetSummaryTable.iife()": 153
     },
     "src/components/budget/contribution-profile-manager.tsx": {
-      "ContributionProfileManager": 348,
+      "ContributionProfileManager": 347,
       "ProfileDetailPanel": 246,
       "ProfileEditor": 518,
       "ProfileEditor.map()": 212,
@@ -1040,7 +1040,7 @@
       "buildProfileSwitches": 334
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 382
+      "computeRelocationAnalysis": 381
     },
     "src/server/services/savings/summary.ts": {
       "computeSavingsSummary": 349

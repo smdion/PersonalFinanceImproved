@@ -115,20 +115,19 @@ export function ContributionProfileManager({
 
   // Post-migration the active-profile setting always points at a real row;
   // useActiveContribProfile repairs it if that row ever goes missing.
-  const globalActiveContribId = activeContribId;
   // local selection -> active profile (single computation path)
   const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
     useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
       localSelection: selectedProfileId,
-      activeProfileId: globalActiveContribId,
+      activeProfileId: activeContribId,
     });
   const activeProfileName = profiles?.find(
-    (p) => p.id === globalActiveContribId,
+    (p) => p.id === activeContribId,
   )?.name;
   const isViewingNonActive =
     effectiveSelectedSource === "user-selection" &&
-    effectiveSelectedId !== globalActiveContribId;
+    effectiveSelectedId !== activeContribId;
 
   if (isLoading) {
     return (
@@ -234,7 +233,7 @@ export function ContributionProfileManager({
 
       {viewMode === "profiles" && (
         <>
-          {/* Viewing/Active/Pinned summary bar — same visual language as Budget/Savings Profiles */}
+          {/* Viewing/active summary bar — same visual language as Budget/Savings Profiles */}
           {displayedProfile && (
             <div className="bg-surface-sunken mb-4 flex items-center justify-between rounded-lg px-4 py-3">
               <div className="flex items-center gap-6">
@@ -304,7 +303,7 @@ export function ContributionProfileManager({
                   key={p.id}
                   name={p.name}
                   isSelected={!creatingNew && effectiveSelectedId === p.id}
-                  isActive={globalActiveContribId === p.id}
+                  isActive={activeContribId === p.id}
                   onSelect={() => {
                     setCreatingNew(false);
                     setSelectedProfileId(p.id);
@@ -472,7 +471,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
 
   return (
     <div>
-      {/* Profile header — Viewing/Active/Pinned state is already shown in the
+      {/* Profile header — the viewing/active state is already shown in the
           summary bar above; this just names which profile's detail this is. */}
       <div className="mb-4 flex items-center gap-2">
         <h3 className="text-primary text-sm font-semibold">{profile.name}</h3>

@@ -102,15 +102,13 @@ export default function SavingsPage() {
     SK_SAVINGS_PROJECTION_YEARS,
     3,
   );
-  const [rawActiveContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContribProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   // Fetch contribution profiles list for subtitle display.
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
-  // The active contribution profile (single computation path — matches
-  // expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
 
   // ── Shared queries ──
   const efundTierInput =
@@ -125,11 +123,11 @@ export default function SavingsPage() {
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
   // Independent Salary Profile axis — the active one.
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const [activeSalaryProfileId] = useActiveSalaryProfile();
   // The active ids, sent explicitly (null while loading = none).
   const paySelection = {
-    contribution: rawActiveContribProfileId,
-    salary: rawActiveSalaryProfileId,
+    contribution: activeContribProfileId,
+    salary: activeSalaryProfileId,
   };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
@@ -140,15 +138,12 @@ export default function SavingsPage() {
   // The active profiles — the same ones computeActiveSummary and the Budget
   // page use, so budget item $ amounts, this page's pool and the payroll
   // breakdown never disagree.
-  const effectiveContribProfileId = rawActiveContribProfileId;
-  const effectiveSalaryProfileId = rawActiveSalaryProfileId;
-
   const paycheckInput = {
-    ...(effectiveContribProfileId != null
-      ? { contributionProfileId: effectiveContribProfileId }
+    ...(activeContribProfileId != null
+      ? { contributionProfileId: activeContribProfileId }
       : {}),
-    ...(effectiveSalaryProfileId != null
-      ? { salaryProfileId: effectiveSalaryProfileId }
+    ...(activeSalaryProfileId != null
+      ? { salaryProfileId: activeSalaryProfileId }
       : {}),
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
@@ -174,11 +169,11 @@ export default function SavingsPage() {
   // The profiles this preview used, threaded into the recalculate and
   // lock-in mutations so their live pool matches it.
   const recalcIncomeParams = {
-    ...(effectiveContribProfileId != null
-      ? { contributionProfileId: effectiveContribProfileId }
+    ...(activeContribProfileId != null
+      ? { contributionProfileId: activeContribProfileId }
       : {}),
-    ...(effectiveSalaryProfileId != null
-      ? { salaryProfileId: effectiveSalaryProfileId }
+    ...(activeSalaryProfileId != null
+      ? { salaryProfileId: activeSalaryProfileId }
       : {}),
     selection: paySelection,
   };
@@ -479,9 +474,9 @@ export default function SavingsPage() {
           const budgetLabel = budgetData?.columnLabels?.[budgetColumn];
           if (!budgetLabel) return undefined;
           const profileName =
-            effectiveContribProfileId != null
+            activeContribProfileId != null
               ? (contribProfilesList?.find(
-                  (p) => p.id === effectiveContribProfileId,
+                  (p) => p.id === activeContribProfileId,
                 )?.name ?? null)
               : null;
           return profileName
