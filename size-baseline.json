@@ -18,7 +18,7 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1020,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 522,
-    "src/app/(dashboard)/versions/versions-content.tsx": 835,
+    "src/app/(dashboard)/versions/versions-content.tsx": 763,
     "src/components/budget/budget-summary-table.tsx": 772,
     "src/components/budget/contribution-profile-manager.tsx": 2041,
     "src/components/budget/salary-profile-manager.tsx": 954,
@@ -381,7 +381,7 @@
       "UtilityCard.map()": 184
     },
     "src/app/(dashboard)/versions/versions-content.tsx": {
-      "VersionsContent": 775
+      "VersionsContent": 701
     },
     "src/app/login/login-form.tsx": {
       "LoginForm": 162

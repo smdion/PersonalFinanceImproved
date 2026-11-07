@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CreateVersionDialog } from "@/components/versions/create-version-dialog";
+import { DeleteVersionDialog } from "@/components/versions/delete-version-dialog";
 import { RestoreDialog } from "@/components/versions/restore-dialog";
 import { ImportDialog } from "@/components/versions/import-dialog";
 import {
@@ -289,67 +291,16 @@ export function VersionsContent() {
       )}
 
       {/* Create form modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-primary mx-4 w-full max-w-md rounded-lg p-6 shadow-xl">
-            <h3 className="text-primary mb-4 text-lg font-semibold">
-              Create Version
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-secondary mb-1 block text-sm font-medium">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="e.g. Before budget restructure"
-                  className="border-strong bg-surface-primary text-primary w-full rounded border px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-secondary mb-1 block text-sm font-medium">
-                  Description{" "}
-                  <span className="text-faint font-normal">(optional)</span>
-                </label>
-                <textarea
-                  value={createDescription}
-                  onChange={(e) => setCreateDescription(e.target.value)}
-                  placeholder="What changes are you about to make?"
-                  rows={2}
-                  className="border-strong bg-surface-primary text-primary w-full rounded border px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div className="border-subtle mt-4 flex gap-2 border-t pt-3">
-              <Button
-                size="xs"
-                onClick={handleCreate}
-                disabled={!createName.trim() || createMutation.isPending}
-              >
-                {createMutation.isPending ? "Creating..." : "Create"}
-              </Button>
-              <button
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setCreateName("");
-                  setCreateDescription("");
-                }}
-                className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-            {createMutation.isError && (
-              <p className="mt-2 text-xs text-red-600">
-                {createMutation.error.message}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <CreateVersionDialog
+        showCreateForm={showCreateForm}
+        createName={createName}
+        setCreateName={setCreateName}
+        createDescription={createDescription}
+        setCreateDescription={setCreateDescription}
+        handleCreate={handleCreate}
+        createMutation={createMutation}
+        setShowCreateForm={setShowCreateForm}
+      />
 
       {/* Settings row: schedule + retention + backup/restore */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -786,35 +737,12 @@ export function VersionsContent() {
       />
 
       {/* Delete confirmation modal */}
-      {deleteTarget !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-primary mx-4 w-full max-w-sm rounded-lg p-6 shadow-xl">
-            <h3 className="text-primary mb-2 text-lg font-semibold">
-              Delete Version
-            </h3>
-            <p className="text-muted mb-4 text-sm">
-              Are you sure you want to permanently delete this version? This
-              cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="danger"
-                size="xs"
-                onClick={() => handleDelete(deleteTarget)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
-              </Button>
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteVersionDialog
+        deleteTarget={deleteTarget}
+        handleDelete={handleDelete}
+        deleteMutation={deleteMutation}
+        setDeleteTarget={setDeleteTarget}
+      />
 
       {/* Import confirmation modal */}
       <ImportDialog
