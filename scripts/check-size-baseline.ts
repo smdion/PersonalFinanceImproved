@@ -16,7 +16,10 @@
  * and what the parts held before (bodyCarry). A stage cut from a function
  * into a part (owner v0.10.3 Q1, the function now calls it and reads back
  * what it returns) carries that function's entry, and the total may also
- * hold the stage's signature, return and brace and the call.
+ * hold the stage's signature, return and brace and the call. A UI cut
+ * (owner v0.10.4 Q3: an IIFE's body into a function, a JSX run into a
+ * component) carries the same way, with its function's lines around what
+ * it took.
  */
 import { execFileSync } from "child_process";
 import * as fs from "fs";
@@ -520,6 +523,38 @@ export function bodyCarry(
     ts.forEachChild(node, visitStages);
   };
   visitStages(fromSource);
+  // Each UI cut's call (owner v0.10.4 Q3): `<Part … />`, or `fn(…)` inside
+  // JSX, and the function it sits in.
+  const uiCalls = new Map<
+    string,
+    { key: string; lines: number; kind: "jsx" | "iife" }
+  >();
+  const inJsx = (node: ts.Node) => {
+    for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+      if (ts.isJsxExpression(up)) return true;
+    return false;
+  };
+  const visitUi = (node: ts.Node, fn: ts.Node | undefined) => {
+    const here = isFunctionNode(node) ? node : fn;
+    let called: { name: string; kind: "jsx" | "iife" } | undefined;
+    if (ts.isJsxSelfClosingElement(node) && ts.isIdentifier(node.tagName))
+      called = { name: node.tagName.text, kind: "jsx" };
+    else if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      inJsx(node)
+    )
+      called = { name: node.expression.text, kind: "iife" };
+    if (called && here && !uiCalls.has(called.name))
+      uiCalls.set(called.name, {
+        key: keyOf(here),
+        kind: called.kind,
+        lines:
+          fromLine(node.getEnd()) - fromLine(node.getStart(fromSource)) + 1,
+      });
+    ts.forEachChild(node, (child) => visitUi(child, here));
+  };
+  visitUi(fromSource, undefined);
   for (const part of parts) {
     const text = now(part);
     if (text === undefined) continue;
@@ -546,6 +581,16 @@ export function bodyCarry(
         carry.total += all - inner + stage.lines;
         continue;
       }
+      const ui = name === undefined ? undefined : uiCalls.get(name);
+      const took = ui && uiCutLines(statement, statement.body, ui.kind, line);
+      if (name !== undefined && key === undefined && ui && took) {
+        // Its lines around what it took: the signature and `}`, and a
+        // component's `return (`, fragment and `);`.
+        const all = line(statement.getEnd()) - line(statement.getStart(sf)) + 1;
+        carry.stages = { ...carry.stages, [name]: ui.key };
+        carry.total += all - took + ui.lines;
+        continue;
+      }
       if (name === undefined || key === undefined) continue;
       const signature =
         line(statement.body.getStart(sf)) - line(statement.getStart(sf)) + 1;
@@ -569,6 +614,36 @@ export function bodyCarry(
     if (file !== from && held !== undefined) carry.total += countLines(held);
   }
   return carry;
+}
+
+/**
+ * The lines a UI cut's function took (owner v0.10.4 Q3): an IIFE's body
+ * between its braces, or the JSX a component returns (a fragment's
+ * children); undefined when a component returns anything else.
+ */
+function uiCutLines(
+  fn: ts.FunctionDeclaration,
+  body: ts.Block,
+  kind: "jsx" | "iife",
+  line: (pos: number) => number,
+): number | undefined {
+  const sf = fn.getSourceFile();
+  if (kind === "iife")
+    return Math.max(0, line(body.getEnd()) - line(body.getStart(sf)) - 1);
+  const [only, ...rest] = body.statements;
+  if (!only || rest.length > 0 || !ts.isReturnStatement(only)) return undefined;
+  let e = only.expression;
+  while (e && ts.isParenthesizedExpression(e)) e = e.expression;
+  if (!e) return undefined;
+  let run: readonly ts.Node[] = [e];
+  if (ts.isJsxFragment(e))
+    run = e.children.filter(
+      (c) => !ts.isJsxText(c) || !c.containsOnlyTriviaWhiteSpaces,
+    );
+  else if (!ts.isJsxElement(e) && !ts.isJsxSelfClosingElement(e))
+    return undefined;
+  if (run.length === 0) return undefined;
+  return line(run[run.length - 1]!.getEnd()) - line(run[0]!.getStart(sf)) + 1;
 }
 
 function gitShowHead(file: string): string | undefined {

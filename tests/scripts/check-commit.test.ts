@@ -1587,6 +1587,425 @@ describe("notAMove: a stage cut from a long function (owner v0.10.3 Q1)", () => 
   });
 });
 
+describe("notAMove: a UI cut (owner v0.10.4 Q3)", () => {
+  let dir: string;
+  let cases = 0;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+  const write = (files: Record<string, string[]>) => {
+    for (const [file, lines] of Object.entries(files)) {
+      const full = path.join(dir, file);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, `${lines.join("\n")}\n`);
+    }
+  };
+  /** The staged change from `base` (committed alone) to `after`. */
+  const change = (
+    base: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ) => {
+    cases += 1;
+    git("checkout", "-q", "-f", "--orphan", `ui-${cases}`);
+    git("read-tree", "--empty");
+    git("clean", "-qfdx");
+    write(base);
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    write(after);
+    git("add", "-A");
+    return [
+      parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+      git("diff", "--cached", "-M", "-U1000000"),
+    ] as const;
+  };
+  const cut = (
+    base: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ) => notAMove(...change(base, after));
+  const REFUSED =
+    /changed line\(s\)|not whole top-level statements|no code moved between files/;
+  const indent = (lines: string[], by = "  ") =>
+    lines.map((l) => (l === "" ? l : by + l));
+
+  const ROW = "src/components/row.tsx";
+  const PART = "src/components/row-parts.tsx";
+  const IMPORTS = [
+    'import { formatCurrency } from "@/lib/format";',
+    'import { Tip } from "./tip";',
+  ];
+  /** A row component: `head` above its return, `tip` the Tip's content
+   *  expression, `cell` the second cell's children. */
+  const row = ({
+    head = ["const label = yr.label;"],
+    tip = iife(),
+    cell = cellRun(),
+    imports = IMPORTS,
+    extra = [] as string[],
+  } = {}) => [
+    ...imports,
+    "",
+    "export function Row({ yr, people, onPick }: RowProps) {",
+    ...indent(head),
+    "  return (",
+    "    <tr>",
+    "      <td>{label}</td>",
+    "      <Tip",
+    ...indent(tip, "        "),
+    "      />",
+    "      <td>",
+    ...indent(cell, "        "),
+    "      </td>",
+    "    </tr>",
+    "  );",
+    "}",
+    ...extra,
+  ];
+  const tipBody = [
+    "const names = people.map((p) => p.name);",
+    "if (names.length === 0) return undefined;",
+    "return names.join(', ') + formatCurrency(yr.total);",
+  ];
+  const iife = (body = tipBody) => [
+    "content={(() => {",
+    ...indent(body),
+    "})()}",
+  ];
+  const tipFn = (body = tipBody, params = "people: Person[], yr: Year") => [
+    "",
+    `function peopleTip(${params}) {`,
+    ...indent(body),
+    "}",
+  ];
+  const tipCall = ["content={peopleTip(people, yr)}"];
+  const cellRun = (span = '<span className="a">{label}</span>') => [
+    span,
+    '<button type="button" onClick={() => onPick(yr.year)}>',
+    "  Pick",
+    "</button>",
+  ];
+  const cellCall = ["<PickCell label={label} onPick={onPick} yr={yr} />"];
+  const cellPart = (
+    run = cellRun(),
+    props = "{ label, onPick, yr }",
+    lead = [
+      "",
+      "type PickCellProps = { label: string; onPick: Pick; yr: Year };",
+      "",
+    ],
+    type = "PickCellProps",
+  ) => [
+    ...lead,
+    `export function PickCell(${props}: ${type}) {`,
+    "  return (",
+    "    <>",
+    ...indent(run, "      "),
+    "    </>",
+    "  );",
+    "}",
+  ];
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-ui-cut-"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "Test");
+  });
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  const base = { [ROW]: row() };
+
+  describe("an IIFE's body into a named function", () => {
+    it("passes the body moved unchanged, called in its place with what it captures", () => {
+      const after = { [ROW]: row({ tip: tipCall, extra: tipFn() }) };
+      expect(cut(base, after)).toBeUndefined();
+      expect(structuralMoves(...change(base, after)).ui).toEqual([
+        {
+          from: ROW,
+          to: ROW,
+          start: { line: 9, character: 18 },
+          name: "peopleTip",
+          // The call; the signature and `}`.
+          wrapper: { old: 1, new: 2 },
+          body: { old: 3, new: 3 },
+          bodyCode: { old: 3, new: 3 },
+          kind: "iife",
+          params: ["people", "yr"],
+        },
+      ]);
+    });
+
+    it("passes the function in a model file beside the component", () => {
+      const MODEL = "src/components/row.model.ts";
+      expect(
+        cut(base, {
+          [ROW]: row({
+            tip: tipCall,
+            imports: [...IMPORTS, 'import { peopleTip } from "./row.model";'],
+          }),
+          [MODEL]: [
+            'import { formatCurrency } from "@/lib/format";',
+            ...tipFn().map((l) => l.replace(/^function/, "export function")),
+          ],
+        }),
+      ).toBeUndefined();
+    });
+
+    it("fails a line edited on the way", () => {
+      const edited = tipBody.map((l) => l.replace("', '", "'; '"));
+      expect(
+        cut(base, { [ROW]: row({ tip: tipCall, extra: tipFn(edited) }) }),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a captured name not passed, or one passed that it doesn't read", () => {
+      expect(
+        cut(base, {
+          [ROW]: row({
+            tip: ["content={peopleTip(people)}"],
+            extra: tipFn(tipBody, "people: Person[]"),
+          }),
+        }),
+      ).toMatch(REFUSED);
+      expect(
+        cut(base, {
+          [ROW]: row({
+            tip: ["content={peopleTip(people, yr, label)}"],
+            extra: tipFn(tipBody, "people: Person[], yr: Year, label: string"),
+          }),
+        }),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a call that passes another name, or stands elsewhere", () => {
+      expect(
+        cut(base, {
+          [ROW]: row({
+            tip: ["content={peopleTip(yr, people)}"],
+            extra: tipFn(),
+          }),
+        }),
+      ).toMatch(REFUSED);
+      expect(
+        cut(base, {
+          [ROW]: row({
+            head: [
+              "const label = yr.label;",
+              "const tip = peopleTip(people, yr);",
+            ],
+            tip: ["content={tip}"],
+            extra: tipFn(),
+          }),
+        }),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a body that reassigns a captured name", () => {
+      const head = ["let label = yr.label;"];
+      const body = ["label = label.trim();", "return label;"];
+      expect(
+        cut(
+          { [ROW]: row({ head, tip: iife(body) }) },
+          {
+            [ROW]: row({
+              head,
+              tip: ["content={trimmed(label)}"],
+              extra: [
+                "",
+                "function trimmed(label: string) {",
+                ...indent(body),
+                "}",
+              ],
+            }),
+          },
+        ),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a body that calls a hook, or returns an element with a key", () => {
+      const hooked = ["const theme = useTheme();", ...tipBody];
+      expect(
+        cut(
+          { [ROW]: row({ tip: iife(hooked) }) },
+          { [ROW]: row({ tip: tipCall, extra: tipFn(hooked) }) },
+        ),
+      ).toMatch(REFUSED);
+      const keyed = ['return <b key="tip">{people.length}</b>;'];
+      expect(
+        cut(
+          { [ROW]: row({ tip: iife(keyed) }) },
+          {
+            [ROW]: row({
+              tip: ["content={peopleTip(people)}"],
+              extra: tipFn(keyed, "people: Person[]"),
+            }),
+          },
+        ),
+      ).toMatch(REFUSED);
+    });
+  });
+
+  describe("a JSX run into a component", () => {
+    it("passes a run moved unchanged into a component with same-named props", () => {
+      const after = {
+        [ROW]: row({
+          cell: cellCall,
+          imports: [...IMPORTS, 'import { PickCell } from "./row-parts";'],
+        }),
+        [PART]: cellPart(),
+      };
+      expect(cut(base, after)).toBeUndefined();
+      expect(structuralMoves(...change(base, after)).ui).toEqual([
+        {
+          from: ROW,
+          to: PART,
+          start: { line: 16, character: 8 },
+          name: "PickCell",
+          // The call; the signature, `return (`, `<>`, `</>`, `);` and `}`.
+          wrapper: { old: 1, new: 6 },
+          body: { old: 4, new: 4 },
+          bodyCode: { old: 4, new: 4 },
+          kind: "jsx",
+          params: ["label", "onPick", "yr"],
+        },
+      ]);
+    });
+
+    it("passes a single element returned without a fragment, in the same file", () => {
+      const one = ['<span className="a">{label}</span>'];
+      expect(
+        cut(
+          { [ROW]: row({ cell: one }) },
+          {
+            [ROW]: row({
+              cell: ["<Label label={label} />"],
+              extra: [
+                "",
+                "function Label({ label }: { label: string }) {",
+                '  return <span className="a">{label}</span>;',
+                "}",
+              ],
+            }),
+          },
+        ),
+      ).toBeUndefined();
+    });
+
+    const after = (part: string[], call = cellCall) => ({
+      [ROW]: row({
+        cell: call,
+        imports: [...IMPORTS, 'import { PickCell } from "./row-parts";'],
+      }),
+      [PART]: part,
+    });
+
+    it("fails a line edited on the way", () => {
+      expect(
+        cut(
+          base,
+          after(cellPart(cellRun('<span className="b">{label}</span>'))),
+        ),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a child reordered on the way", () => {
+      const [span, ...button] = cellRun();
+      expect(cut(base, after(cellPart([...button, span!])))).toMatch(REFUSED);
+    });
+
+    it("fails a renamed prop, at the call or in the component", () => {
+      expect(
+        cut(
+          base,
+          after(cellPart(), [
+            "<PickCell label={yr.label} onPick={onPick} yr={yr} />",
+          ]),
+        ),
+      ).toMatch(REFUSED);
+      expect(
+        cut(
+          base,
+          after(
+            cellPart(
+              cellRun('<span className="a">{text}</span>'),
+              "{ text, onPick, yr }",
+            ),
+            ["<PickCell text={label} onPick={onPick} yr={yr} />"],
+          ),
+        ),
+      ).toMatch(REFUSED);
+      expect(
+        cut(base, after(cellPart(cellRun(), "{ label: text, onPick, yr }"))),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a prop left out or one too many", () => {
+      expect(
+        cut(
+          base,
+          after(cellPart(cellRun(), "{ onPick, yr }"), [
+            "<PickCell onPick={onPick} yr={yr} />",
+          ]),
+        ),
+      ).toMatch(REFUSED);
+      expect(
+        cut(
+          base,
+          after(cellPart(cellRun(), "{ label, onPick, people, yr }"), [
+            "<PickCell label={label} onPick={onPick} people={people} yr={yr} />",
+          ]),
+        ),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a run that holds a hook call", () => {
+      const hooked = cellRun('<span className="a">{useLabel(yr)}</span>');
+      expect(
+        cut(
+          { [ROW]: row({ cell: hooked }) },
+          after(cellPart(hooked, "{ onPick, yr }"), [
+            "<PickCell onPick={onPick} yr={yr} />",
+          ]),
+        ),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a key on the run's root", () => {
+      const keyed = cellRun('<span key="label" className="a">{label}</span>');
+      expect(
+        cut({ [ROW]: row({ cell: keyed }) }, after(cellPart(keyed))),
+      ).toMatch(REFUSED);
+    });
+
+    it("fails a run that reassigns a captured name", () => {
+      const head = ["let label = yr.label;"];
+      const run = [
+        '<button type="button" onClick={() => (label = "")}>',
+        "  {label}",
+        "</button>",
+      ];
+      expect(
+        cut(
+          { [ROW]: row({ head, cell: run }) },
+          {
+            [ROW]: row({
+              head,
+              cell: ["<Clear label={label} />"],
+              extra: [
+                "",
+                "function Clear({ label }: { label: string }) {",
+                "  return (",
+                ...indent(run, "    "),
+                "  );",
+                "}",
+              ],
+            }),
+          },
+        ),
+      ).toMatch(REFUSED);
+    });
+  });
+});
+
 describe("notAMove: a move's bookkeeping and bare names", () => {
   const renamed = parseNumstat(
     "1\t1\tsrc/lib/{calculators/engine/tax-gross-up.ts => pure/engine/withdrawal-solver.ts}\n1\t1\tdocs/DESIGN.md\n2\t2\tsize-baseline.json\n1\t1\tsrc/lib/generated/engine-hash.ts",

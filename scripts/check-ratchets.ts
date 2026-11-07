@@ -19,8 +19,9 @@
  * (scripts/ratchets/raise.ts has the format), or the commit reverts the one
  * that lowered it. In a `Mechanical:` commit a size entry rises by exactly
  * the import lines the commit adds to the files it joins, or (owner Q14) by
- * those plus a body moved whole's signature, brace and call, or a router
- * split's part wrapper and mount: once check-commit's moves are cut out,
+ * those plus a body moved whole's signature, brace and call, a router
+ * split's part wrapper and mount, or a stage's or UI cut's function lines
+ * around what it took and its call: once check-commit's moves are cut out,
  * the code lines left rise by exactly the import lines. Every excused rise
  * is printed. A re-recorded baseline file needs
  * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
@@ -282,7 +283,7 @@ function notImportLines(
 
 type Moves = ReturnType<typeof structuralMoves>;
 
-/** A Mechanical commit's moved bodies, router splits and stages (check-commit's own reading). */
+/** A Mechanical commit's moved bodies, router splits, stages and UI cuts (check-commit's own reading). */
 function movesOf(git: Git, sha: string): Moves {
   return structuralMoves(
     parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
@@ -299,7 +300,9 @@ const codeLines = (lines: string[]) =>
  * router's one-line call; a router split (plan 42) by its imports plus the
  * new part's `export const … = createTRPCRouter({` / `});` and its one mount;
  * a stage cut from a function (owner v0.10.3 Q1) by its imports, its
- * signature, return and brace, and the call left in its place.
+ * signature, return and brace, and the call left in its place, and a UI cut
+ * (owner v0.10.4 Q3) by its imports, its function's lines around what it
+ * took (a component's props type too) and the call.
  * check-commit's own reading finds those moves (structuralMoves). Once they
  * are cut out of the joined files, what is left may rise by exactly its
  * import lines, counted in code lines (blank lines are layout); the moved
@@ -321,9 +324,11 @@ function structuralLines(
     joined.has(m.from) && joined.has(m.to);
   const bodies = moves.bodies.filter(inside);
   const routers = moves.routers.filter(inside);
-  const stages = moves.stages.filter(inside);
+  // A UI cut (owner v0.10.4 Q3) is held as a stage is: its function to
+  // the lines it took and those it adds around them.
+  const stages = [...moves.stages, ...moves.ui].filter(inside);
   if (bodies.length + routers.length + stages.length === 0) return "";
-  const what = `${bodies.length} moved bod${bodies.length === 1 ? "y" : "ies"}, ${routers.length} router part(s) and ${stages.length} stage(s)`;
+  const what = `${bodies.length} moved bod${bodies.length === 1 ? "y" : "ies"}, ${routers.length} router part(s) and ${stages.length} stage(s) or UI cut(s)`;
   const grew = [
     ...[...bodies, ...stages]
       .filter((b) => b.bodyCode.new > b.bodyCode.old)
@@ -359,7 +364,7 @@ function functionsTakenOver(
   rise: Rise,
   bodies: Moves["bodies"],
   what: string,
-  stages: Moves["stages"],
+  stages: Moves["bodies"],
 ): string | undefined {
   const empty: SizeBaseline = { files: {}, functions: {} };
   const read = (ref: string): SizeBaseline => {

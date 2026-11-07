@@ -373,3 +373,73 @@ describe("--record --from: stages cut from a long function (owner v0.10.3 Q1)", 
     ]);
   });
 });
+
+describe("--record --from: a UI cut (owner v0.10.4 Q3)", () => {
+  const ROW = "src/components/row.tsx";
+  const PARTS = "src/components/row-parts.tsx";
+  const was = [
+    'import { Tip } from "./tip";',
+    "",
+    "export function Row({ yr }: Props) {",
+    "  return (",
+    "    <tr>",
+    "      <Tip",
+    "        content={(() => {",
+    "          const n = yr.n;",
+    "          return n * 2;",
+    "        })()}",
+    "      />",
+    "      <td>{yr.a}</td>",
+    "      <td>{yr.b}</td>",
+    "    </tr>",
+    "  );",
+    "}",
+  ].join("\n");
+  const now = [
+    'import { Tip } from "./tip";',
+    'import { Cells, doubled } from "./row-parts";',
+    "",
+    "export function Row({ yr }: Props) {",
+    "  return (",
+    "    <tr>",
+    "      <Tip content={doubled(yr)} />",
+    "      <Cells yr={yr} />",
+    "    </tr>",
+    "  );",
+    "}",
+  ].join("\n");
+  const parts = [
+    "export function doubled(yr: Year) {",
+    "  const n = yr.n;",
+    "  return n * 2;",
+    "}",
+    "",
+    "export function Cells({ yr }: { yr: Year }) {",
+    "  return (",
+    "    <>",
+    "      <td>{yr.a}</td>",
+    "      <td>{yr.b}</td>",
+    "    </>",
+    "  );",
+    "}",
+  ].join("\n");
+  const tree = (files: Record<string, string>) => (f: string) => files[f];
+
+  it("names the component each cut left, and what its function and call add", () => {
+    // doubled: signature and brace (2), its call (1); Cells: signature,
+    // `return (`, `<>`, `</>`, `);` and brace (6), its call (1); one import.
+    expect(
+      bodyCarry(
+        ROW,
+        [PARTS],
+        tree({ [ROW]: now, [PARTS]: parts }),
+        tree({ [ROW]: was }),
+      ),
+    ).toEqual({
+      renames: {},
+      wrapper: {},
+      stages: { doubled: "Row", Cells: "Row" },
+      total: 2 + 1 + 6 + 1 + 1,
+    });
+  });
+});
