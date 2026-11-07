@@ -4,7 +4,7 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/savings/page.tsx": {
+  "src/app/(dashboard)/savings/savings-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

@@ -106,7 +106,8 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
   {
     route: "/savings",
     file: "savings",
-    load: async () => (await import("@/app/(dashboard)/savings/page")).default,
+    load: async () =>
+      (await import("@/app/(dashboard)/savings/savings-content")).default,
   },
   {
     route: "/settings",

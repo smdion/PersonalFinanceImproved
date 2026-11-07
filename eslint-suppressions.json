@@ -424,7 +424,7 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/savings/page.tsx": {
+  "src/app/(dashboard)/savings/savings-content.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },

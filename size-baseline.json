@@ -14,7 +14,7 @@
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
-    "src/app/(dashboard)/savings/page.tsx": 930,
+    "src/app/(dashboard)/savings/savings-content.tsx": 930,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1020,
     "src/app/(dashboard)/tools/page.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
@@ -365,7 +365,7 @@
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
       "RetirementContent": 300
     },
-    "src/app/(dashboard)/savings/page.tsx": {
+    "src/app/(dashboard)/savings/savings-content.tsx": {
       "SavingsPage": 849
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
