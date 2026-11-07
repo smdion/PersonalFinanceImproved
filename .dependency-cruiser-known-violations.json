@@ -161,12 +161,12 @@
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/app/(dashboard)/paycheck/page.tsx",
+    "from": "src/app/(dashboard)/paycheck/paycheck-content.tsx",
     "to": "src/lib/db/profile-fields.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/app/(dashboard)/paycheck/page.tsx",
+    "from": "src/app/(dashboard)/paycheck/paycheck-content.tsx",
     "to": "src/lib/db/salary-entry-edit.ts"
   },
   {

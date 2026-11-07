@@ -325,7 +325,7 @@
       "count": 2
     }
   },
-  "src/app/(dashboard)/paycheck/page.tsx": {
+  "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 9
     },

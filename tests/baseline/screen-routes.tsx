@@ -85,7 +85,8 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
   {
     route: "/paycheck",
     file: "paycheck",
-    load: async () => (await import("@/app/(dashboard)/paycheck/page")).default,
+    load: async () =>
+      (await import("@/app/(dashboard)/paycheck/paycheck-content")).default,
   },
   {
     route: "/portfolio",
