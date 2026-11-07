@@ -21,7 +21,7 @@ vi.mock("@/lib/trpc", async () => ({
 
 const page = seededPage(
   "e2e-b",
-  async () => (await import("@/app/(dashboard)/house/page")).default,
+  async () => (await import("@/app/(dashboard)/house/house-content")).default,
 );
 
 describe("House page", () => {

@@ -270,7 +270,7 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/house/page.tsx": {
+  "src/app/(dashboard)/house/house-content.tsx": {
     "jsx-a11y/click-events-have-key-events": {
       "count": 1
     },

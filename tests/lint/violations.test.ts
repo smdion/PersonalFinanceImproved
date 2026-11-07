@@ -2194,7 +2194,6 @@ function twoYearHousehold(): ProjectionInput {
 /** Client `page.tsx` files under app/(dashboard): each becomes a thin
  *  server page and a `<route>-content.tsx`. */
 const CLIENT_PAGES_KNOWN: string[] = [
-  "src/app/(dashboard)/house/page.tsx",
   "src/app/(dashboard)/liabilities/page.tsx",
   "src/app/(dashboard)/networth/page.tsx",
   "src/app/(dashboard)/paycheck/page.tsx",
@@ -2231,7 +2230,7 @@ const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
   "src/app/(dashboard)/budget/budget-content.tsx": { count: 1 },
   "src/app/(dashboard)/contributions/contributions-content.tsx": { count: 1 },
   "src/app/(dashboard)/historical/historical-content.tsx": { count: 1 },
-  "src/app/(dashboard)/house/page.tsx": { count: 1 },
+  "src/app/(dashboard)/house/house-content.tsx": { count: 1 },
   "src/app/(dashboard)/liabilities/page.tsx": { count: 1 },
   "src/app/(dashboard)/networth/page.tsx": { count: 1 },
   "src/app/(dashboard)/paycheck/page.tsx": { count: 1 },

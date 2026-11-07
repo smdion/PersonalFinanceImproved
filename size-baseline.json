@@ -9,7 +9,7 @@
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 819,
     "src/app/(dashboard)/historical/historical-content.tsx": 1026,
-    "src/app/(dashboard)/house/page.tsx": 746,
+    "src/app/(dashboard)/house/house-content.tsx": 746,
     "src/app/(dashboard)/networth/page.tsx": 461,
     "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
@@ -336,7 +336,7 @@
       "HistoricalTable": 712,
       "HistoricalTable.map()": 362
     },
-    "src/app/(dashboard)/house/page.tsx": {
+    "src/app/(dashboard)/house/house-content.tsx": {
       "HousePage": 721
     },
     "src/app/(dashboard)/liabilities/page.tsx": {
