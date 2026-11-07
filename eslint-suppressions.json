@@ -444,7 +444,7 @@
       "count": 7
     }
   },
-  "src/app/(dashboard)/settings/page.tsx": {
+  "src/app/(dashboard)/settings/settings-content.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
     }
