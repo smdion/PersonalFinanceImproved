@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { Modal } from "@/components/ui/modal";
 import {
   accountDisplayName,
   formatCurrency,
@@ -78,107 +79,96 @@ export function PastYearEditDialog({
   const after = p?.checks[account.id] ?? [];
 
   return (
-    <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 print:hidden"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="presentation"
+    <Modal
+      onClose={onClose}
+      label={`Change ${account.year}`}
+      className="bg-surface-primary mx-4 max-h-[85vh] w-full max-w-xl overflow-auto rounded-lg border p-5 shadow-xl"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Change ${account.year}`}
-        className="bg-surface-primary mx-4 max-h-[85vh] w-full max-w-xl overflow-auto rounded-lg border p-5 shadow-xl"
-      >
-        <h2 className="text-primary text-lg font-semibold">
-          Change {name} — {account.year}
-        </h2>
-        {preview.isPending && !p && (
-          <p className="text-muted mt-3 text-sm">Working out what changes…</p>
-        )}
-        {preview.isError && (
-          <p className="mt-3 text-sm text-red-600">{preview.error.message}</p>
-        )}
-        {p && (
-          <div className="mt-3 space-y-3 text-sm">
-            {p.chainable && (
-              <label className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  checked={chain}
-                  onChange={(e) => setChain(e.target.checked)}
-                  className="mt-1 accent-blue-600"
-                />
-                <span>
-                  {p.chainable.nextYear} started at this year&apos;s old ending
-                  — start it at the new one too (keeps the years continuous).
-                </span>
-              </label>
-            )}
-            {p.accounts
-              .filter((a) => a.changes.length > 0)
-              .map((a) => (
-                <div key={a.id}>
-                  <div className="font-medium">
-                    {a.id === account.id
-                      ? `${account.year} (this row)`
-                      : a.year}
+      <h2 className="text-primary text-lg font-semibold">
+        Change {name} — {account.year}
+      </h2>
+      {preview.isPending && !p && (
+        <p className="text-muted mt-3 text-sm">Working out what changes…</p>
+      )}
+      {preview.isError && (
+        <p className="mt-3 text-sm text-red-600">{preview.error.message}</p>
+      )}
+      {p && (
+        <div className="mt-3 space-y-3 text-sm">
+          {p.chainable && (
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={chain}
+                onChange={(e) => setChain(e.target.checked)}
+                className="mt-1 accent-blue-600"
+              />
+              <span>
+                {p.chainable.nextYear} started at this year&apos;s old ending —
+                start it at the new one too (keeps the years continuous).
+              </span>
+            </label>
+          )}
+          {p.accounts
+            .filter((a) => a.changes.length > 0)
+            .map((a) => (
+              <div key={a.id}>
+                <div className="font-medium">
+                  {a.id === account.id ? `${account.year} (this row)` : a.year}
+                </div>
+                <ChangeList changes={a.changes} />
+              </div>
+            ))}
+          {p.rollups.length > 0 && (
+            <div>
+              <div className="font-medium">Totals that move with it</div>
+              {p.rollups.map((r) => (
+                <div key={`${r.year}-${r.category}`} className="mt-1">
+                  <div className="text-xs font-medium">
+                    {r.year} {r.category}
                   </div>
-                  <ChangeList changes={a.changes} />
+                  <ChangeList changes={r.changes} />
                 </div>
               ))}
-            {p.rollups.length > 0 && (
-              <div>
-                <div className="font-medium">Totals that move with it</div>
-                {p.rollups.map((r) => (
-                  <div key={`${r.year}-${r.category}`} className="mt-1">
-                    <div className="text-xs font-medium">
-                      {r.year} {r.category}
-                    </div>
-                    <ChangeList changes={r.changes} />
-                  </div>
-                ))}
-              </div>
-            )}
-            {after.filter((c) => !c.accepted).length > 0 && (
-              <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                After this change:{" "}
-                {after
-                  .filter((c) => !c.accepted)
-                  .map((c) => describeCheck(c).title)
-                  .join("; ")}
-              </div>
-            )}
-          </div>
-        )}
-        {save.isError && (
-          <p className="mt-2 text-sm text-red-600">{save.error.message}</p>
-        )}
-        <div className="mt-4 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-primary border-strong rounded border px-3 py-1.5 text-sm"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!p || save.isPending}
-            onClick={() =>
-              save.mutate({
-                id: account.id,
-                [field]: value,
-                chainNextYear: chain,
-              })
-            }
-            className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {save.isPending ? "Saving…" : "Save change"}
-          </button>
+            </div>
+          )}
+          {after.filter((c) => !c.accepted).length > 0 && (
+            <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              After this change:{" "}
+              {after
+                .filter((c) => !c.accepted)
+                .map((c) => describeCheck(c).title)
+                .join("; ")}
+            </div>
+          )}
         </div>
+      )}
+      {save.isError && (
+        <p className="mt-2 text-sm text-red-600">{save.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted hover:text-primary border-strong rounded border px-3 py-1.5 text-sm"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          disabled={!p || save.isPending}
+          onClick={() =>
+            save.mutate({
+              id: account.id,
+              [field]: value,
+              chainNextYear: chain,
+            })
+          }
+          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {save.isPending ? "Saving…" : "Save change"}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

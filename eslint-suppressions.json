@@ -2313,9 +2313,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
