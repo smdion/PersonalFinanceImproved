@@ -36,7 +36,7 @@
   },
   "src/app/(dashboard)/performance/performance-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 10
+      "count": 9
     }
   },
   "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
