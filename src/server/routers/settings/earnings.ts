@@ -73,7 +73,7 @@ export const earningsProcedures = {
                 return [jobId, { ...entry, otherEarnings: rest }];
               }),
             );
-            if (changed)
+            if (changed /* set inside the map callback above */)
               await tx
                 .update(schema.salaryProfiles)
                 .set({ salaries })

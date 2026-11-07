@@ -232,9 +232,7 @@ export const settingsProcedures = {
           // people within one profile.
           const HOUSEHOLD_FANOUT_FIELDS = ["endAge"] as const;
           const fanout = Object.fromEntries(
-            HOUSEHOLD_FANOUT_FIELDS.filter(
-              (f) => resolvedInput[f] !== undefined,
-            ).map((f) => [f, resolvedInput[f]]),
+            HOUSEHOLD_FANOUT_FIELDS.map((f) => [f, resolvedInput[f]]),
           );
           if (Object.keys(fanout).length > 0) {
             // Existing rows only — a person with no row already inherits the

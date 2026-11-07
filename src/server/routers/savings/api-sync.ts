@@ -87,7 +87,7 @@ export const apiSyncProcedures = {
       const efundTierIndex = resolveEfundTierIndex(
         appSettings,
         undefined,
-        activeProfile?.columnLabels?.length,
+        activeProfile?.columnLabels.length,
       );
       const essentialExpenses = activeProfile
         ? getEssentialExpenses(

@@ -108,7 +108,7 @@ export const versionRouter = createTRPCRouter({
         name: input.name,
         description: input.description,
         type: "manual",
-        createdBy: ctx.session.user.name ?? ctx.session.user.email ?? "unknown",
+        createdBy: ctx.session.user.name ?? ctx.session.user.email ?? "unknown", // OIDC may send neither
       });
     }),
 

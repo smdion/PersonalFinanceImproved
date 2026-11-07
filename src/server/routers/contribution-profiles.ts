@@ -441,10 +441,10 @@ export const contributionProfileRouter = createTRPCRouter({
         if (!perfAccount) {
           const display = getDisplayConfig(row.accountType, row.subType);
           const typeLabel = display.displayLabel.toLowerCase();
-          const personName = person?.name?.toLowerCase() ?? "";
+          const personName = person?.name.toLowerCase() ?? "";
           suggestedPerfAccount =
             allPerfAccounts.find((pa) => {
-              const labelLower = (pa.accountLabel ?? "").toLowerCase();
+              const labelLower = pa.accountLabel.toLowerCase();
               return (
                 labelLower.includes(typeLabel) &&
                 (pa.ownerPersonId === row.personId ||
@@ -655,7 +655,7 @@ export const contributionProfileRouter = createTRPCRouter({
           before,
         ));
       if (incoming) {
-        const after = incoming.contributionAccounts ?? {};
+        const after = incoming.contributionAccounts;
         const check = {
           profileId: input.id,
           before,

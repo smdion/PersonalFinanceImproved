@@ -98,7 +98,7 @@ export const summaryProcedures = {
 
     for (const p of profiles) {
       const items = allItems.filter((i) => i.profileId === p.id);
-      const labels = (p.columnLabels as string[]) ?? [];
+      const labels = p.columnLabels;
       const months = (p.columnMonths as number[] | null) ?? null;
       const numColumns = labels.length;
       // Resolved through the same chain computeActiveSummary uses (see

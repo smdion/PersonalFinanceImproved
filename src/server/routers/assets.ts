@@ -222,7 +222,7 @@ export const assetsRouter = createTRPCRouter({
 
       const updates: Record<string, string> = {};
       for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined) {
+        if (value !== undefined /* superjson keeps a key sent as undefined */) {
           updates[key] = String(value);
         }
       }

@@ -52,7 +52,7 @@ async function writeJobExtraPaycheckRouting(
       message: "The active Salary Profile no longer exists.",
     });
   }
-  const salaries = (row.salaries ?? {}) as SalaryEntryMap;
+  const salaries = row.salaries as SalaryEntryMap;
   const key = String(jobId);
   const entry = salaries[key];
   if (!entry) {

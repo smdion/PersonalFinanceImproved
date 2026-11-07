@@ -82,7 +82,7 @@ export const yearRecordProcedures = {
       const { id, ...fields } = input;
       const updates: Record<string, string | null> = {};
       for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined) {
+        if (value !== undefined /* superjson keeps a key sent as undefined */) {
           updates[key] = value;
         }
       }
@@ -141,7 +141,7 @@ export const yearRecordProcedures = {
     .mutation(async ({ ctx, input }) => {
       const { id, chainNextYear, dryRun, annualReturnPct, ...fields } = input;
       const edit = Object.fromEntries(
-        Object.entries(fields).filter(([, v]) => v !== undefined),
+        Object.entries(fields).filter(([, v]) => v !== undefined), // see above
       ) as AccountEdit;
       if (Object.keys(edit).length === 0 && annualReturnPct === undefined)
         return { success: true, preview: null };

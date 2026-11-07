@@ -146,7 +146,7 @@ export const historicalRouter = createTRPCRouter({
       // Build update object — only include fields that were provided
       const updates: Record<string, string> = {};
       for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined) {
+        if (value !== undefined /* superjson keeps a key sent as undefined */) {
           updates[key] = String(value);
         }
       }

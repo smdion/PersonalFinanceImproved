@@ -59,7 +59,7 @@ import {
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
-  const entries = Object.values(salaries ?? {});
+  const entries = Object.values(salaries);
   return {
     pinnedCount: entries.length,
     pinnedSalaryTotal: entries.reduce((s, e) => s + e.salary, 0),
@@ -113,7 +113,7 @@ async function refreshExtraPaycheckRoutingIfActive(
       let anyRefreshed = false;
       for (const [jobIdStr, entry] of Object.entries(salaries)) {
         const routing = entry.extraPaycheckRouting;
-        if (!routing?.rules?.length) continue;
+        if (!routing?.rules?.length) continue; // a stored entry is cast, not parsed
         const jobId = Number(jobIdStr);
         const refreshed = await computeJobNetPayPerCheck(tx, jobId);
         salaries[jobIdStr] = {
@@ -213,7 +213,7 @@ export const salaryProfileRouter = createTRPCRouter({
       .orderBy(schema.salaryProfiles.createdAt);
 
     return profiles.map((p) => {
-      const salaries = (p.salaries ?? {}) as SalaryEntryMap;
+      const salaries = p.salaries as SalaryEntryMap;
       const { pinnedCount, pinnedSalaryTotal } = summarizeEntries(salaries);
       return {
         id: p.id,
@@ -241,7 +241,7 @@ export const salaryProfileRouter = createTRPCRouter({
       const profile = rows[0];
       if (!profile) return null;
 
-      const salaries = (profile.salaries ?? {}) as SalaryEntryMap;
+      const salaries = profile.salaries as SalaryEntryMap;
       const salaryProfileActiveMap = new Map(
         Object.entries(salaries).map(([jobId, entry]) => [
           Number(jobId),

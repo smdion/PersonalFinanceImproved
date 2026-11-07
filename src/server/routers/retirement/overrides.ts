@@ -130,7 +130,7 @@ export const overrideProcedures = {
           .where(
             eq(schema.projectionOverrides.overrideType, input.overrideType),
           )
-          .then((r) => (r[0]?.overrides as Record<string, unknown>[]) ?? []),
+          .then((r) => r[0]?.overrides ?? []),
       ),
     save: brokerageProcedure
       .input(

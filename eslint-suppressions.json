@@ -5750,7 +5750,7 @@
   },
   "src/server/routers/budget/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 3
@@ -6029,11 +6029,6 @@
       "count": 2
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/retirement/overrides.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },

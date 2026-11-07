@@ -129,8 +129,8 @@ export const adminProcedures = {
       .where(eq(schema.appSettings.key, "basis_last_updated"));
     return {
       balanceDate: latestSnapshot[0]?.snapshotDate ?? null,
-      performanceDate: (perfSetting[0]?.value as string) ?? null,
-      basisDate: (basisSetting[0]?.value as string) ?? null,
+      performanceDate: (perfSetting[0]?.value as string | undefined) ?? null,
+      basisDate: (basisSetting[0]?.value as string | undefined) ?? null,
     };
   }),
 
@@ -199,7 +199,7 @@ export const adminProcedures = {
         .from(schema.appSettings)
         .orderBy(asc(schema.appSettings.key));
       // Non-admin users shouldn't see RBAC configuration
-      if (ctx.session?.user?.role !== "admin") {
+      if (ctx.session.user.role !== "admin") {
         return rows.filter(
           (r) =>
             !r.key.startsWith(RBAC_SETTINGS_PREFIX) &&
@@ -244,7 +244,7 @@ export const adminProcedures = {
             });
         }
         // value column is NOT NULL — when null, delete the row so the default applies
-        if (input.value === null || input.value === undefined) {
+        if (input.value === null) {
           await ctx.db
             .delete(schema.appSettings)
             .where(eq(schema.appSettings.key, input.key));
