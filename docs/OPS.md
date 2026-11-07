@@ -36,7 +36,7 @@ A version is deployed before it is released, so a deploy problem is fixed on the
 2. Dump the database if a migration is pending (§ Backups), then `pnpm deploy X.Y.Z` (§ Deploy gate).
 3. Push the branch and open a pull request into `main`; wait for CI.
 4. Merge only with the owner's explicit OK.
-5. On `main`, at the merged commit: `pnpm release X.Y.Z --dry-run`, then `pnpm release X.Y.Z` (`scripts/release.sh`): refuses unless `package.json` is already at X.Y.Z (the bump is a commit in the release PR, step 1), checks the CHANGELOG entry, tests and docs, tags `vX.Y.Z`, pushes the tag only (never a branch: `main` takes changes through a PR) and creates the GitHub release from the CHANGELOG section.
+5. On `main`, at the merged commit: `pnpm release X.Y.Z --dry-run`, then `pnpm release X.Y.Z` (`scripts/release.sh`): refuses unless `package.json` is already at X.Y.Z (the bump is a commit in the release PR, step 1), checks the CHANGELOG entry, that CI is green for the merged commit (`scripts/ci-gate.ts`, as `pnpm deploy` does) and docs, tags `vX.Y.Z`, pushes the tag only (never a branch: `main` takes changes through a PR) and creates the GitHub release from the CHANGELOG section.
 
 ## Rollback
 

@@ -14,7 +14,8 @@
 #   2. HEAD must be origin/main's tip (the merged release)
 #   3. Verify CHANGELOG.md has entry for this version
 #   4. Verify lockfile is up to date
-#   5. Run full test suite, lint and docs verification
+#   5. CI is green for HEAD (its push run on main ran the full suite, lint,
+#      PostgreSQL and E2E; scripts/ci-gate.ts), then docs verification
 #   6. Tag vX.Y.Z on HEAD and push the tag only
 #   7. Create GitHub release from CHANGELOG section
 #
@@ -123,15 +124,20 @@ if ! pnpm install --frozen-lockfile --silent 2>/dev/null; then
 fi
 echo -e "${GREEN}  Lockfile is up to date${NC}"
 
-# Step 4: Run tests
-echo -e "\n${BOLD}[4/7] Running test suite...${NC}"
-pnpm test
-echo -e "${GREEN}  All tests passed${NC}"
+# Step 4: CI must be green for the merged commit. Its push run on main ran
+# the full suite, lint, PostgreSQL and E2E on CI's Node; running the suite
+# here would load the host prod runs on, and dev's Node fails the undici
+# tests by design (tests/http/connect-check.test.ts).
+echo -e "\n${BOLD}[4/7] Checking CI for ${HEAD_SHA:0:8}...${NC}"
+if ! npx tsx scripts/ci-gate.ts "$HEAD_SHA"; then
+  echo -e "${RED}  No green CI run for ${HEAD_SHA:0:8} (reason above).${NC}"
+  echo "  Wait for main's CI run on the merged commit, then release."
+  exit 1
+fi
+echo -e "${GREEN}  CI green${NC}"
 
-# Step 5: Run lint
-echo -e "\n${BOLD}[5/7] Running lint...${NC}"
-pnpm lint
-echo -e "${GREEN}  Lint passed${NC}"
+# Step 5: Lint ran in CI (step 4); nothing to run here.
+echo -e "\n${BOLD}[5/7] Lint: covered by CI${NC}"
 
 # Step 6: Run docs verification
 echo -e "\n${BOLD}[6/7] Verifying docs freshness...${NC}"
