@@ -32,10 +32,12 @@ export function useFocusTrap<T extends HTMLElement>(active: boolean) {
       const first = focusable[0]!;
       const last = focusable[focusable.length - 1]!;
 
-      if (e.shiftKey && document.activeElement === first) {
+      // The container itself (focused on open) counts as before the first.
+      const focused = document.activeElement;
+      if (e.shiftKey && (focused === first || focused === container)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (focused === last || focused === container)) {
         e.preventDefault();
         first.focus();
       }
