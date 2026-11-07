@@ -21,23 +21,13 @@ import {
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { countReachingAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
-import {
-  growWithholdingBrackets,
-  growLtcgBrackets,
-  growIrmaaBrackets,
-  taxTableYears,
-} from "../bracket-growth";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
-import { routeForMode } from "../withdrawal-routing";
-import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { checkAca } from "../post-withdrawal-optimizer";
 import { checkHouseholdIrmaa } from "../household-irmaa";
 import {
-  distributeWithdrawals,
   applyIndividualGrowth,
   buildIndividualYearBalances,
-  depleteIndividualBasis,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
   specKeyOf,
@@ -47,9 +37,6 @@ import {
   computeNonRetirementExclusion,
   computeWithdrawalEligibility,
 } from "@/lib/pure/accounts/eligibility";
-import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
-import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
-import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import { cleanupDust } from "../balance-deduction";
 import type {
   PreYearSetup,
@@ -59,7 +46,6 @@ import type {
 import { updatePerPersonTradBalance } from "./helpers";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
-import { yearStandardDeduction } from "./year-deduction";
 import {
   priceYearTax,
   pricedYearParts,
@@ -68,7 +54,9 @@ import {
   yearRothConversion,
 } from "./tax-year-settlement";
 import { fundingShortfallForYear } from "./funding-shortfall";
+import { distributeYearDraws, routeYearDraw } from "./year-draws";
 import { yearNeed } from "./year-need";
+import { growYearTaxTables } from "./year-tax-tables";
 import { yearMagi } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
@@ -227,90 +215,20 @@ export function runDecumulationYear(
       ? Math.max(0, retirementPreTax) / retirementBalance
       : 0;
 
-  // Grow the ordinary tax brackets + standard deduction forward from their
-  // own DB vintage:
-  // both are legally inflation-indexed but were being held flat in NOMINAL
-  // dollars for the whole projection while nominal income/spending
-  // correctly grows, silently overstating tax burden in later years. See
-  // `bracket-growth.ts`'s header for the full account, including why this
-  // is NOT the same mistake as the (reverted) NIIT threshold change —
-  // NIIT/SS-taxation thresholds are genuinely flat-nominal by law and are
-  // deliberately NOT touched here.
-  //
-  // One factor per table per year, each from that table's own year
-  // (taxTableYears — the table and its year come together). The standard
-  // deduction grows from the limits year; withholding brackets from
-  // theirs. When the two share a year they share the factor; when they
-  // don't, each still estimates year y, so `toOrdinaryBracketIncome`'s
-  // residual stays correct (bracket-growth.ts).
-  const tableYears = taxTableYears(taxRates);
-  const taxGrowth = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.standardDeduction,
-  );
-  const bracketGrowth = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.brackets,
-  );
-  const grownTaxBrackets = taxRates.taxBrackets
-    ? growWithholdingBrackets(taxRates.taxBrackets, bracketGrowth)
-    : undefined;
-  const { grownStandardDeduction } = yearStandardDeduction(
-    perPersonBirthYears,
-    year,
-    age,
+  const {
+    grownTaxBrackets,
+    grownStandardDeduction,
+    grownLtcgBrackets,
+    grownIrmaaBracketsForCheck,
+    grownIrmaaBracketsForCap,
+    fplGrowthFactor,
+  } = growYearTaxTables(
     taxRates,
+    ctx,
+    year,
+    perPersonBirthYears,
+    age,
     incomeHistory,
-    taxGrowth,
-  );
-  // Phase 2: LTCG brackets, grown from their own year.
-  const grownLtcgBrackets = growLtcgBrackets(
-    taxRates.ltcgBrackets,
-    ctx.inflation.growthSinceVintage(year, tableYears.ltcg),
-  );
-
-  // Phase 3: IRMAA brackets, grown from their own year (tableYears.irmaa).
-  //
-  // TWO different growth factors, not one -- this is not a copy-paste
-  // duplication, it answers two different questions:
-  //  - grownIrmaaBracketsForCheck (checkHouseholdIrmaa, below): "what
-  //    surcharge schedule applies THIS calendar year" -- anchored on `year`.
-  //  - grownIrmaaBracketsForCap (performRothConversion, above -- passed
-  //    in via rothResult's call below): "what surcharge schedule will
-  //    apply when THIS year's MAGI is looked back at" -- IRMAA has a
-  //    2-year lookback (year N's MAGI sets year N+2's premium), so the
-  //    cap must compare this year's MAGI against the N+2 vintage of the
-  //    threshold, not N's -- anchored on `year + 2`. Using the same
-  //    factor for both would silently UNDER-cap every conversion by two
-  //    years of real threshold growth.
-  const irmaaGrowthCheck = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.irmaa,
-  );
-  const irmaaGrowthCap = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.irmaa,
-    2,
-  );
-  const grownIrmaaBracketsForCheck = growIrmaaBrackets(
-    taxRates.irmaaBrackets,
-    irmaaGrowthCheck,
-  );
-  const grownIrmaaBracketsForCap = growIrmaaBrackets(
-    taxRates.irmaaBrackets,
-    irmaaGrowthCap,
-  );
-
-  // Phase 4: ACA subsidy cliff (400% FPL), grown from its own coverage
-  // year (tableYears.fpl). One factor (unlike IRMAA's two): ACA premium
-  // tax credits are computed on the coverage
-  // year's OWN income, no multi-year MAGI lookback the way Medicare's
-  // IRMAA has, so `checkAca` (single call site, no conversion-capping
-  // analog to IRMAA's `irmaaAwareRothConversions`) just needs "this
-  // year's" vintage.
-  const fplGrowthFactor = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.fpl,
   );
 
   const personsAge65Plus = countReachingAgeRule(
@@ -347,96 +265,38 @@ export function runDecumulationYear(
     year,
   );
 
-  // Build per-account, per-tax-type balances for withdrawal routing
-  // Uses real per-account balances tracked through accumulation
-  const acctBalances = acctBal;
-  const preWithdrawalAcctBal = cloneAccountBalances(acctBal);
-
-  // Route withdrawals based on configured mode -- single dispatch point
-  // shared with withdrawal-solver.ts's estimate (routeForMode in
-  // withdrawal-routing.ts), so a routing-mode-specific rule (like the Roth
-  // bracket overlay below) can't diverge between the estimate and real
-  // execution.
-  // bracket_filling: tax-optimal -- fills traditional up to bracket cap, Roth for rest
-  // waterfall: sequential drain in priority order (legacy behavior)
-  // percentage: fixed % split across accounts
-  //
-  // For waterfall, Roth bracket optimization can still overlay via
-  // rothBracketTarget (a Traditional cap that yields to spending once the
-  // other accounts are done). Percentage mode has no overlay.
-  // Cost-aware post-bracket-cap ranking inputs
-  // (bracket_filling mode only; ignored by waterfall/percentage). See
-  // deriveBasisRankingInputs's docblock for why the basis-derived fields
-  // are shared with withdrawal-solver.ts's estimate.
-  //
-  // magiBeforeThisDraw is omitted: NIIT's MAGI has no lookback, so the
-  // router's `?? baseOrdinaryFloor` (this year's pre-draw figure) applies,
-  // as in withdrawal-solver.ts's estimate.
-  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
-    balances,
-    brokerageBasisRatio: retirementBasisRatio,
-    indBasis: hasIndividualAccounts ? indBasis : undefined,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
-    indKey: hasIndividualAccounts ? indKey : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
-    year,
-  });
-
-  // Resolved ONCE, here, and reused both for the routing reservation below
-  // AND for performRothConversion's own target further down (replacing
-  // that call's separate re-derivation of the identical fallback chain) —
-  // conversionReservedRoom used to reserve
-  // room up to `traditionalCap` (derived from bracketInfo.rothBracketTarget,
-  // the WITHDRAWAL target) even though the conversion that actually runs
-  // later this same year targets this resolved value instead, which can
-  // differ (an explicit plan-level rothConversionTarget below the
-  // household's rothBracketTarget). Two names for one quantity, resolved
-  // by two different chains, biased the discretionary-tier ranking away
-  // from brokerage in that configuration — not a wrong final dollar
-  // amount (routing degrades to the next tier when a reservation can't be
-  // filled), but a real ordering bug for the exact household shape
-  // roth-conversion-target-priority.test.ts already covers.
-  const resolvedConversionTarget =
-    taxRates.rothConversionTarget ??
-    config.rothBracketTarget ??
-    taxRates.rothBracketTarget;
-  const routeResult = routeForMode(
-    targetWithdrawal,
-    config,
-    acctBalances,
-    {
-      taxBrackets: grownTaxBrackets,
-      // Read the resolved (possibly per-year-overridden)
-      // value first, falling back to the plan's fixed default — was
-      // previously always the fixed default, with no override path at all.
-      // rothBracketTarget is a RATE (e.g. 0.12), not a dollar figure —
-      // growth-invariant, deliberately not grown.
-      rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
-      // The rate performRothConversion will ACTUALLY convert up to, when
-      // it differs from the withdrawal target above — see this const's
-      // own comment. Only meaningful when conversionsEnabled.
-      conversionTarget: resolvedConversionTarget,
-      taxableSS: taxEst.taxableSS,
-      filingStatus,
-      ltcgBrackets: grownLtcgBrackets,
-      rothBasisAvailable,
-      brokerageBasisRatio,
-      conversionsEnabled: taxRates.enableRothConversions,
-      standardDeduction: grownStandardDeduction,
-      discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
-    },
-    eligibility,
-    nonRetirement,
-  );
-
   const {
+    preWithdrawalAcctBal,
+    brokerageBasisRatio,
+    resolvedConversionTarget,
+    routeResult,
     slots,
-    warnings: routeWarnings,
-    unmetNeed: routedUnmetNeed,
+    routeWarnings,
+    routedUnmetNeed,
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
-  } = routeResult;
-  if (rothDivergence) routeWarnings.push(rothDivergence);
+  } = routeYearDraw(
+    acctBal,
+    balances,
+    retirementBasisRatio,
+    hasIndividualAccounts,
+    indBasis,
+    indAccts,
+    indKey,
+    indBal,
+    year,
+    taxRates,
+    config,
+    targetWithdrawal,
+    grownTaxBrackets,
+    taxEst,
+    filingStatus,
+    grownLtcgBrackets,
+    grownStandardDeduction,
+    eligibility,
+    nonRetirement,
+    rothDivergence,
+  );
 
   const {
     totalWithdrawal,
@@ -466,71 +326,20 @@ export function runDecumulationYear(
     perPersonRmdTotal,
   );
 
-  // Distribute withdrawals to individual accounts -- extracted to individual-account-tracking.ts
-  // Moved ABOVE computeTaxFromSlots: tax computation needs
-  // this year's BasisDraws to know how much of each Roth withdrawal was
-  // growth (taxable, if non-qualified) vs. basis (always tax-free). Safe
-  // to hoist: distributeWithdrawals/depleteIndividualBasis mutate only
-  // indBal/indBasis, never balances/acctBal, which is all
-  // computeTaxFromSlots reads. deductWithdrawals (which DOES mutate
-  // balances/acctBal) stays below, after tax, unchanged.
-  // Snapshot indBal BEFORE distributeWithdrawals mutates it in place --
-  // depleteIndividualBasis needs the pre-withdrawal balance for its
-  // pro-rata ratio.
-  const preWithdrawalIndBal = new Map(indBal);
-  const distributeResult = hasIndividualAccounts
-    ? followDraws(indAccts, indKey, indBal, brokBasis, () =>
-        distributeWithdrawals(
-          slots,
-          indAccts,
-          indKey,
-          indBal,
-          eligibility,
-          ownerRmd?.pins,
-        ),
-      )
-    : { decIndWithdrawal: new Map<string, number>(), warnings: [] };
-  const decIndWithdrawal = distributeResult.decIndWithdrawal;
-  routeWarnings.push(...distributeResult.warnings);
-  const basisDraws = hasIndividualAccounts
-    ? depleteIndividualBasis({
-        indAccts,
-        indKey,
-        indBasis,
-        preWithdrawalBal: preWithdrawalIndBal,
-        withdrawals: decIndWithdrawal,
-      })
-    : new Map<string, BasisDraw>();
-
-  // Roth growth-vs-basis taxability -- consumes this year's
-  // BasisDraws (never re-slices), decides per-account whether the
-  // already-sliced growth portion is taxable (non-qualified distribution:
-  // owner under 59 1/2). Undefined ownerBirthYear (joint accounts) is
-  // treated as qualified, matching withdrawal-eligibility.ts.
-  const rothTaxSplit = hasIndividualAccounts
-    ? splitRothWithdrawalForTax({
-        accounts: indAccts.map((ia) => ({
-          indKey: indKey(ia),
-          ownerBirthYear: ia.ownerBirthYear,
-        })),
-        draws: basisDraws,
-        year,
-      })
-    : { taxableGrowth: 0, taxFreeAmount: 0, byKey: new Map() };
-
-  // Early-withdrawal penalty cost -- consumes this
-  // year's real per-account withdrawal map (never re-slices). Under the
-  // default avoidPenalizedWithdrawals: true, routeForMode already excluded
-  // penalty-exposed money from routing, so this should compute exactly 0 in
-  // the common case -- it prices whatever was actually withdrawn, whatever
-  // the reason (including the lever being off).
-  const earlyWithdrawalPenalty =
-    hasIndividualAccounts && eligibility
-      ? computeEarlyWithdrawalPenalty({
-          exposure: eligibility,
-          withdrawnByKey: decIndWithdrawal,
-        })
-      : { penaltyCost: 0, penalizedAmount: 0, byKey: new Map() };
+  const { decIndWithdrawal, basisDraws, rothTaxSplit, earlyWithdrawalPenalty } =
+    distributeYearDraws(
+      indBal,
+      hasIndividualAccounts,
+      indAccts,
+      indKey,
+      brokBasis,
+      slots,
+      eligibility,
+      ownerRmd,
+      routeWarnings,
+      indBasis,
+      year,
+    );
 
   const { priceTax, taxableSS, taxFromSlots } = priceYearTax(
     slots,

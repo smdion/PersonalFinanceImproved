@@ -136,13 +136,15 @@
     "src/lib/pure/engine/post-withdrawal-optimizer.ts": 727,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 852,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 68,
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 980,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 789,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 245,
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 444,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 62,
+    "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 189,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 117,
+    "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
     "src/lib/pure/engine/rmd-enforcement.ts": 468,
     "src/lib/pure/engine/tax-estimation.ts": 511,
     "src/lib/pure/engine/types/accumulation.ts": 163,
@@ -861,7 +863,7 @@
       "buildProjectionContext": 188
     },
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 897
+      "runDecumulationYear": 718
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 437
