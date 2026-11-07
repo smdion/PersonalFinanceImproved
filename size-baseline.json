@@ -339,7 +339,7 @@
     "src/app/(dashboard)/house/house-content.tsx": {
       "HouseContent": 721
     },
-    "src/app/(dashboard)/liabilities/page.tsx": {
+    "src/app/(dashboard)/liabilities/liabilities-content.tsx": {
       "LiabilitiesPage": 207
     },
     "src/app/(dashboard)/milestones/milestones-content.tsx": {

@@ -290,7 +290,7 @@
       "count": 12
     }
   },
-  "src/app/(dashboard)/liabilities/page.tsx": {
+  "src/app/(dashboard)/liabilities/liabilities-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
