@@ -20,7 +20,9 @@ vi.mock("@/lib/trpc", async () => ({
 
 const page = seededPage(
   "e2e-b",
-  async () => (await import("@/app/(dashboard)/upkeep/utilities/page")).default,
+  async () =>
+    (await import("@/app/(dashboard)/upkeep/utilities/utilities-content"))
+      .default,
 );
 
 describe("Utilities page", () => {

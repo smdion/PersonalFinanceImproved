@@ -2193,10 +2193,7 @@ function twoYearHousehold(): ProjectionInput {
 
 /** Client `page.tsx` files under app/(dashboard): each becomes a thin
  *  server page and a `<route>-content.tsx`. */
-const CLIENT_PAGES_KNOWN: string[] = [
-  "src/app/(dashboard)/upkeep/utilities/page.tsx",
-  "src/app/(dashboard)/versions/page.tsx",
-];
+const CLIENT_PAGES_KNOWN: string[] = ["src/app/(dashboard)/versions/page.tsx"];
 
 /** Hook files in a `hooks/` folder outside lib/hooks: a hook lives in one
  *  of three homes (its route, its feature folder, lib/hooks). */
@@ -2236,7 +2233,7 @@ const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
   "src/app/(dashboard)/tax-optimization/tax-optimization-content.tsx": {
     count: 1,
   },
-  "src/app/(dashboard)/upkeep/utilities/page.tsx": { count: 1 },
+  "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": { count: 1 },
   "src/components/cards/brokerage-goals.tsx": { count: 1 },
   "src/components/retirement/retirement-profile-tab.tsx": { count: 1 },
   "src/components/settings/bracket-table-editor.tsx": { count: 1 },
