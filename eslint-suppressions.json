@@ -4797,12 +4797,25 @@
       "count": 2
     }
   },
+  "src/lib/pure/investments/performance-account-rows.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
   "src/lib/pure/investments/performance-annotations.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/lib/pure/investments/performance-annual-rows.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   },
   "src/lib/pure/investments/performance-checks.ts": {
@@ -6481,11 +6494,8 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 2
     }
   },
   "src/server/services/profiles/first-retirement-profile.ts": {
