@@ -3,47 +3,22 @@
  * place and pushes a year projection to `state.projectionByYear`.
  */
 import { socialSecurityForYear } from "../social-security-income";
-import {
-  followDraws,
-  followReconciliation,
-  retirementBrokerageBasisRatio,
-  syncAggregateBasis,
-} from "../brokerage-basis";
+import { retirementBrokerageBasisRatio } from "../brokerage-basis";
 import type { EngineDecumulationYear } from "../types/projection-result";
-import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { roundToCents, sumBy } from "../../../utils/math";
 import {
   getAllCategories,
-  isOverflowTarget,
-  isRetirementMoney,
   nonMedicalPenaltyRate,
 } from "../../../config/account-types";
-import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { countReachingAgeRule } from "@/lib/pure/household/age";
-import { cloneAccountBalances, scopedBalances } from "../balance-utils";
+import { cloneAccountBalances } from "../balance-utils";
 import { resolveDecumulationConfig } from "../override-resolution";
-import { applyGrowth } from "../growth-application";
-import { checkAca } from "../post-withdrawal-optimizer";
-import { checkHouseholdIrmaa } from "../household-irmaa";
-import {
-  applyIndividualGrowth,
-  buildIndividualYearBalances,
-  clampIndividualBasis,
-  reconcileIndividualToAggregate,
-  specKeyOf,
-  portfolioFirst,
-} from "../individual-account-tracking";
-import {
-  computeNonRetirementExclusion,
-  computeWithdrawalEligibility,
-} from "@/lib/pure/accounts/eligibility";
-import { cleanupDust } from "../balance-deduction";
+import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import type {
   PreYearSetup,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
-import { updatePerPersonTradBalance } from "./helpers";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
 import {
@@ -57,7 +32,9 @@ import { fundingShortfallForYear } from "./funding-shortfall";
 import { distributeYearDraws, routeYearDraw } from "./year-draws";
 import { yearNeed } from "./year-need";
 import { growYearTaxTables } from "./year-tax-tables";
-import { yearMagi } from "@/lib/pure/tax/year-income";
+import { decumulationPortfolioContributions } from "./portfolio-contributions";
+import { yearCliffChecks } from "./year-cliffs";
+import { closeDecumulationYear } from "./year-end";
 
 // ---------------------------------------------------------------------------
 // Decumulation year handler
@@ -466,236 +443,56 @@ export function runDecumulationYear(
     taxRates,
   );
 
-  // --- IRMAA Awareness (Phase 6) ---
-  // This year's income, for next years' lookbacks.
-  incomeHistory.push(income);
-  // IRMAA uses year N-2 MAGI per IRS rules; fall back to current year for first 2 years.
-  const irmaaLookbackMagi = yearMagi(
-    incomeHistory.length > 2 ? incomeHistory.at(-3)! : income,
-    "irmaa",
-  );
-  const irmaaResult = checkHouseholdIrmaa({
-    enableIrmaaAwareness,
-    filingStatus,
-    personsAge65Plus,
-    projectedMagi: irmaaLookbackMagi,
-    rothConversionAmount,
-    irmaaBrackets: grownIrmaaBracketsForCheck,
-  });
-  const irmaaCost = irmaaResult.irmaaCost;
-  const irmaaPaid = input.irmaaOnTopOfBudget === true ? irmaaCost : 0;
-  routeWarnings.push(...irmaaResult.warnings);
-
-  // --- ACA Subsidy Awareness (Phase 7) ---
-  // Under-65 is the ACA marketplace-subsidy eligibility criterion this
-  // checks — it's the same real-world Medicare-eligibility event the IRMAA
-  // block above tests, not an independent regulatory threshold, so it
-  // shares AGE_RULES.medicare.
-  const allPersonsUnder65 = personsAge65Plus === 0;
-  const acaResult = checkAca({
-    enableAcaAwareness,
-    allPersonsUnder65,
-    householdSize: householdSize ?? 2,
-    income,
-    fplGrowthFactor,
-    fplByHousehold: taxRates.fplByHousehold,
-  });
-  const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
-  routeWarnings.push(...acaResult.warnings);
-
-  // Compute post-retirement Portfolio-category contributions for REPORTING ONLY.
-  // The Portfolio page reads brokerageContribution from the engine output.
-  // These amounts must NOT be added to balances — Portfolio-category accounts
-  // are read-only balance inputs in the retirement engine.
-  // parentCategory (user-editable) controls the boundary, not account type.
-  const { brokerageContributionRamp, limitGrowthRate } = input;
-  const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
-  let decumBrokerageContrib = 0;
-  const decumContribByAccount = new Map<string, number>();
-  if (state.contributionSpecs) {
-    const portfolioSpecs = state.contributionSpecs.filter(
-      (s) =>
-        !isRetirementMoney(s.parentCategory) &&
-        s.retirementBehavior === "continues_after_retirement" &&
-        s.method !== "percent_of_salary",
-    );
-    for (const spec of portfolioSpecs) {
-      const amount = roundToCents(spec.baseAnnual * lgf);
-      if (amount <= 0) continue;
-      decumBrokerageContrib += amount;
-      if (spec.accountName) {
-        // This used to match by
-        // `ia.name === spec.accountName` alone — two household members with
-        // identically-named accounts (e.g. both "Traditional 401(k)") would
-        // silently collide, with whichever account `indAccts` happened to
-        // list first absorbing every match regardless of whose contribution
-        // spec it actually was. `state.specToAccount` (built once per year
-        // by `buildSpecToAccountMapping`, individual-account-tracking.ts —
-        // the SAME owner-aware category+owner+taxType+parentCategory
-        // cascade `accumulation-year.ts` already uses for this exact
-        // spec-to-account question) is the single computation path for
-        // "which individual account does this spec belong to" — reusing it
-        // here instead of re-deriving a second, weaker match avoids
-        // RULES.md's single-computation-path trap. Falls back to the old
-        // name-only match only when the spec has no entry in the map at
-        // all (shouldn't happen for a spec with a resolved accountName, but
-        // keeps this from going from "matches something" to "matches
-        // nothing" for an edge case buildSpecToAccountMapping doesn't cover).
-        const matchedKey = state.specToAccount.get(specKeyOf(spec));
-        const matchingAccount = matchedKey
-          ? ctx.indAccts.find((ia) => indKey(ia) === matchedKey)
-          : ctx.indAccts.find((ia) => ia.name === spec.accountName);
-        if (matchingAccount) {
-          const k = indKey(matchingAccount);
-          decumContribByAccount.set(
-            k,
-            (decumContribByAccount.get(k) ?? 0) + amount,
-          );
-        }
-      }
-    }
-  }
-  // Portfolio contribution ramp (report-only — not applied to balances)
-  const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
-  const decumRampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0
-      ? roundToCents(brokerageContributionRamp! * rampYear)
-      : 0;
-  if (decumRampAmount > 0) {
-    decumBrokerageContrib += decumRampAmount;
-    // Attribute the ramp to individual overflow-target (brokerage) accounts,
-    // weighted by balance, so the per-account breakdown sums to the total.
-    // Mirrors accumulation-year.ts's ramp attribution — report-only here,
-    // matching the rest of this block (must NOT affect balances).
-    // Same parent rule as the accumulation ramp: Portfolio brokerages
-    // first; the projection-only one only with no real brokerage.
-    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
-    const realBrokerages = brokerages.filter((ia) => !ia.projectedOnly);
-    const rampAccts =
-      realBrokerages.length > 0
-        ? portfolioFirst(realBrokerages, (ia) => ia.parentCategory)
-        : brokerages;
-    const rampTotal = rampAccts.reduce(
-      (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
-      0,
-    );
-    for (const ia of rampAccts) {
-      const k = indKey(ia);
-      const weight =
-        rampTotal > 0 ? (indBal.get(k) ?? 0) / rampTotal : 1 / rampAccts.length;
-      const portion = roundToCents(decumRampAmount * weight);
-      decumContribByAccount.set(
-        k,
-        (decumContribByAccount.get(k) ?? 0) + portion,
-      );
-    }
-  }
-
-  // Apply growth -- extracted to growth-application.ts
-  applyGrowth({ effectiveReturn: returnRate, balances, acctBal });
-
-  // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
-  state.priorYearEndTradBalance = balances.preTax;
-  // Update spending strategy state: prior year return + spending
-  spendingState.priorYearReturn = returnRate;
-  spendingState.priorYearSpending = state.projectedExpenses;
-  // Per-individual-account growth (decumulation) -- extracted to individual-account-tracking.ts
-  const decIndGrowth = hasIndividualAccounts
-    ? applyIndividualGrowth(indAccts, indKey, indBal, returnRate, true)
-    : new Map<string, number>();
-  // Each owner's RMD base is year-end, after growth — like the household's
-  // above and accumulation's.
-  updatePerPersonTradBalance(ctx, state);
-
-  // Use the contribution map built during the brokerage contribution block above
-  const decIndContribs =
-    decumContribByAccount.size > 0 ? decumContribByAccount : undefined;
-
-  // Tracked Roth basis: clamp to this year's balance
-  // before building output -- market losses (or a shrunk-to-near-zero
-  // account) could otherwise leave tracked basis exceeding what the
-  // account actually holds. Mirrors early-access.ts's own balance clamp
-  // (clampBasisToBalance's docblock).
-  if (hasIndividualAccounts) {
-    clampIndividualBasis(indAccts, indKey, indBasis, indBal);
-  }
-
-  // Build individual account year balances (decumulation) -- extracted to individual-account-tracking.ts
-  const decIndYearBalances: IndividualAccountYearBalance[] =
-    hasIndividualAccounts
-      ? buildIndividualYearBalances(
-          indAccts,
-          indKey,
-          indBal,
-          indParentCat,
-          "decumulation",
-          {
-            contribs: decIndContribs,
-            growth: decIndGrowth,
-            withdrawal: decIndWithdrawal,
-            basis: indBasis,
-            draws: basisDraws,
-            brokerageBasis: brokBasis,
-          },
-          eligibility,
-        )
-      : [];
-
-  // Zero out rounding dust -- extracted to balance-deduction.ts
-  followDraws(indAccts, indKey, indBal, brokBasis, () =>
-    cleanupDust(balances, acctBal, indAccts, indKey, indBal),
-  );
-
-  // Reconcile indBal to acctBal once per year -- the two tracks are
-  // "known to drift" (see withdrawal-eligibility.ts's module docblock);
-  // left unreconciled, next year's
-  // eligibility gate can see a nonzero "eligible" balance for a category
-  // that's actually 100% locked. Runs AFTER cleanupDust so it reads final
-  // aggregate state for the year, and BEFORE the basis re-clamp below so
-  // tracked basis clamps to the reconciled (not pre-reconciliation) balance.
-  if (hasIndividualAccounts) {
-    routeWarnings.push(
-      ...followReconciliation(
-        indAccts,
-        indKey,
-        indBal,
-        brokBasis,
-        balances.afterTaxBasis,
-        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
-      ),
-    );
-    // The aggregate basis is the accounts' sum.
-    syncAggregateBasis(
-      indAccts,
-      indKey,
-      indBal,
-      brokBasis,
-      balances,
-      acctBal,
+  const { irmaaCost, irmaaPaid, acaSubsidyPreserved, acaMagiHeadroom } =
+    yearCliffChecks(
+      incomeHistory,
+      income,
+      enableIrmaaAwareness,
+      filingStatus,
+      personsAge65Plus,
+      rothConversionAmount,
+      grownIrmaaBracketsForCheck,
+      input,
       routeWarnings,
+      enableAcaAwareness,
+      householdSize,
+      fplGrowthFactor,
+      taxRates,
     );
-  }
 
-  // Re-clamp basis after dust cleanup -- a balance dust-cleaned to exactly
-  // $0 must carry $0 basis into next year's state, even though this
-  // year's already-built output row reflects the pre-dust-cleanup figure
-  // (the dust amount is by definition negligible).
-  if (hasIndividualAccounts) {
-    clampIndividualBasis(indAccts, indKey, indBasis, indBal);
-  }
-  const yearEnd = scopedBalances(
+  const { decumBrokerageContrib, decumContribByAccount, decumRampAmount } =
+    decumulationPortfolioContributions(
+      input,
+      yearIndex,
+      state,
+      ctx,
+      indKey,
+      indAccts,
+      indBal,
+    );
+
+  const { decIndYearBalances, yearEnd } = closeDecumulationYear(
+    returnRate,
     balances,
-    hasIndividualAccounts
-      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
-      : undefined,
+    acctBal,
+    state,
+    spendingState,
+    hasIndividualAccounts,
+    indAccts,
+    indKey,
+    indBal,
+    ctx,
+    decumContribByAccount,
+    indBasis,
+    indParentCat,
+    decIndWithdrawal,
+    basisDraws,
+    brokBasis,
+    eligibility,
+    routeWarnings,
+    year,
+    age,
   );
-
-  // Track depletion: retirement money running out (Portfolio money is
-  // never spent in retirement, so it can't keep a plan alive).
-  if (yearEnd.retirementBalance < 1 && state.retirementDepletionYear === null) {
-    state.retirementDepletionYear = year;
-    state.retirementDepletionAge = age;
-  }
 
   const yearProjection: EngineDecumulationYear = {
     year,
