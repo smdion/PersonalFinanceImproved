@@ -13,7 +13,7 @@ import type {
   ProjectionLoopState,
 } from "./types";
 
-/** Year 0's basis: paycheck amounts or specs, its share and late-year cut. */
+/** Year 0's basis (UD-01): paycheck amounts or specs, share, late-year cut. */
 export function yearZeroBasis(
   yearIndex: number,
   setup: PreYearSetup,

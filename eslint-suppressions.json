@@ -4463,9 +4463,6 @@
   "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
@@ -4561,9 +4558,6 @@
   "src/lib/pure/engine/tax-estimation.ts": {
     "ratchet/max-comment-lines": {
       "count": 17
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/types/accumulation.ts": {

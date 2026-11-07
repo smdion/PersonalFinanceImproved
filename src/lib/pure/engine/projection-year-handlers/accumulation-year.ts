@@ -221,7 +221,7 @@ export function runAccumulationYear(
     routeWarnings,
   );
 
-  // The year's growth, pro-rated in year 0.
+  // The year's growth, pro-rated in year 0 (UD-01).
   const effectiveReturn =
     yearIndex === 0
       ? Math.pow(1 + returnRate, firstYearFraction) - 1

@@ -154,7 +154,7 @@
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
     "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 156,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 91,
-    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 506,
+    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 505,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 245,
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 444,
@@ -167,7 +167,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
     "src/lib/pure/engine/rmd-enforcement.ts": 468,
     "src/lib/pure/engine/roth-conversion.ts": 528,
-    "src/lib/pure/engine/tax-estimation.ts": 511,
+    "src/lib/pure/engine/tax-estimation.ts": 506,
     "src/lib/pure/engine/types/accumulation.ts": 163,
     "src/lib/pure/engine/types/contribution-spec.ts": 96,
     "src/lib/pure/engine/types/decumulation.ts": 396,
@@ -181,7 +181,7 @@
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 70,
     "src/lib/pure/engine/withdrawal-routing/types.ts": 120,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
-    "src/lib/pure/engine/withdrawal-solver.ts": 569,
+    "src/lib/pure/engine/withdrawal-solver.ts": 554,
     "src/lib/pure/household/compensation.ts": 369,
     "src/lib/pure/household/retirement-profile.ts": 104,
     "src/lib/pure/investments/finalize-year.ts": 198,
@@ -900,7 +900,7 @@
       "runDecumulationYear": 516
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
-      "runPreYearSetup": 413
+      "runPreYearSetup": 412
     },
     "src/lib/pure/engine/rmd-enforcement.ts": {
       "enforceOwnerRmds": 151,

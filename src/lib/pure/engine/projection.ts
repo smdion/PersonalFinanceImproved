@@ -13,9 +13,9 @@
  * All settings support per-year sticky-forward overrides.
  * See types.ts for detailed documentation of each type.
  *
- * Year-level logic is extracted to projection-year-handlers.ts for
- * maintainability. This file owns orchestration and result building; input
- * validation is in input-validation.ts.
+ * Year-level logic lives in projection-year-handlers/. This file owns
+ * orchestration and result building; input validation is in
+ * input-validation.ts.
  */
 import type {
   ProjectionInput,

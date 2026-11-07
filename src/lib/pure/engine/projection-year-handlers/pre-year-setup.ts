@@ -284,9 +284,8 @@ export function runPreYearSetup(
       (w) => w.start === year || w.end === year,
     );
 
-  // Hoisted above the expenses block (was originally computed just before
-  // the strategy dispatch below) — the Rate-Seeded year-1 seed needs the
-  // starting balance available at seed time, not after. Retirement money
+  // Computed before the expenses block: the Rate-Seeded year-1 seed needs
+  // the starting balance at seed time. Retirement money
   // only: Portfolio-parented accounts never fund retirement spending, so a
   // balance-sized strategy (Guyton-Klinger, Constant %, Endowment, …) or the
   // rate seed must not size spending from them.
@@ -464,9 +463,9 @@ function yearPhase(
   return { isAccumulation };
 }
 
-/** The first retirement year's spending, set once. UD-01 (pending decision
- *  D2), today's behaviour: only a working year 0 is pro-rated (contributions,
- *  match, growth); spending, and a retirement year 0, run whole. */
+/** The first retirement year's spending, set once. UD-01 (pending D2): only
+ *  a working year 0 is pro-rated (contributions, match, growth, and a gap
+ *  year's draw: budget × its share, goal-draws.ts); a retirement year 0 runs whole. */
 function seedRetirementSpending(
   isAccumulation: boolean,
   state: ProjectionLoopState,

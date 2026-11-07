@@ -1,7 +1,6 @@
 /**
  * applyLumpSums — apply one-time lump-sum injections to balances and per-account
- * tracking. Shared by the accumulation-year and decumulation-year handlers,
- * which previously carried byte-identical copies.
+ * tracking. Shared by the accumulation-year and decumulation-year handlers.
  */
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { LumpSum } from "../types/year-overrides";

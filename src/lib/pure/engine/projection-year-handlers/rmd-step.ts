@@ -123,8 +123,8 @@ export function qcdStep(
 }
 
 /** The routed draw's totals with each RMD enforced on them. UD-04 (pending
- *  decision D1), today's behaviour: a short RMD adds Traditional on top of
- *  the routed draw, and any excess past the need is reinvested later. */
+ *  D1), today's behaviour: a short RMD adds Traditional on top of the routed
+ *  draw; excess past the need is reinvested or spent (`rmdExcessHandling`). */
 export function enforceYearRmd(
   slots: ReturnType<typeof routeForMode>["slots"],
   perOwnerRmd: boolean,
@@ -164,7 +164,7 @@ export function enforceYearRmd(
       ? (getRmdFactor(age) ?? undefined)
       : undefined;
 
-  // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
+  // Each RMD's minimum Traditional withdrawal, enforced (rmd-enforcement.ts).
   const ownerRmd = perOwnerRmd
     ? enforceOwnerRmds({
         owners: (rmdByPerson ?? []).map(({ personId, personName, amount }) => ({

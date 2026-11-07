@@ -7,10 +7,9 @@
  *   - computeTaxableSS: IRS provisional income formula (3-tier)
  *   - computeTaxFromSlots: tax cost of a completed withdrawal routing result
  *
- * The SS-convergence gross-up loop that used to live here moved to
- * withdrawal-solver.ts — it needs to call withdrawal-routing/,
- * which imports incomeCapForMarginalRate from this file, so it couldn't stay
- * here without creating an import cycle. See that file's header for why.
+ * The SS-convergence gross-up loop is in withdrawal-solver.ts: it calls
+ * withdrawal-routing/, which imports incomeCapForMarginalRate from this
+ * file, so it can't live here without an import cycle.
  *
  * Used by the orchestrator (via withdrawal-solver.ts) and withdrawal-routing
  * (bracket-filling needs incomeCapForMarginalRate).
@@ -164,20 +163,16 @@ export function marginalRateAboveTarget(
  * the rate on the bracket `income` currently sits in. Same bracket walk as
  * `estimateEffectiveTaxRate` (highest threshold <= income), but returns
  * `.rate` for that bracket directly instead of computing a total tax
- * amount (`marginalRateAboveTarget` answers
- * a DIFFERENT question, "what's the rate on the bracket above a given
- * RATE," and was being misused to price a withdrawal stacking on top of
- * `ordinaryIncomeFloor`'s real DOLLAR income level. That's only correct
- * when Phase 1 actually filled Traditional up to the bracket-filling
- * target — routing also reaches this ranking when Traditional simply ran
- * out below the target, where `ordinaryIncomeFloor` sits in a LOWER
- * bracket than `targetRate` implies, and pricing off `targetRate`
- * systematically overprices the withdrawal). Returns 0 for `income <= 0`
+ * amount (`marginalRateAboveTarget` answers a DIFFERENT question, "what's
+ * the rate on the bracket above a given RATE," which can't price a
+ * withdrawal stacking on `ordinaryIncomeFloor`'s real DOLLAR income: when
+ * Traditional ran out below the bracket-filling target, that floor sits in
+ * a LOWER bracket than `targetRate` implies). Returns 0 for `income <= 0`
  * or an empty bracket list, matching `estimateEffectiveTaxRate`'s
  * "nothing taxable" convention. Pass `standardDeduction` for the Worksheet
  * 1A residual — a household whose gross sits between the table's
- * first threshold and the full standard deduction now correctly returns
- * 0% here instead of the first nonzero bracket's rate.
+ * first threshold and the full standard deduction gets 0% here, not the
+ * first nonzero bracket's rate.
  */
 export function marginalRateAtIncome(
   income: number,
@@ -350,8 +345,8 @@ interface ComputeTaxFromSlotsResult {
    *  single source of truth for "real ordinary income this year," BEFORE
    *  LTCG/bracket stacking. Callers must read this rather than
    *  re-deriving their own copy (e.g. `totalTraditionalWithdrawal +
-   *  taxableSS` alone silently drops non-qualified Roth growth income —
-   *  exactly the bug this field was added to prevent). Feeds
+   *  taxableSS` alone silently drops non-qualified Roth growth income).
+   *  Feeds
    *  `revisedOrdinary`/MAGI/LTCG-bracket calculations
    *  downstream in decumulation-year.ts. */
   actualTaxableIncome: number;

@@ -4,30 +4,17 @@
  * withdrawn depends on the tax cost of withdrawing it, and the tax cost
  * depends on the withdrawal amount.
  *
- * Lives in its own file (split out of tax-estimation.ts)
- * because it needs to call withdrawal-routing/index.ts's routeForMode — and
- * withdrawal-routing/caps.ts imports incomeCapForMarginalRate from
- * tax-estimation.ts, so estimateWithdrawalTaxCost living in tax-estimation.ts
- * would create an import cycle. This file sits above both: it imports the
- * pure tax math from tax-estimation.ts and the real router from
- * withdrawal-routing/, and neither of those needs to import this file back.
+ * Lives in its own file because it calls withdrawal-routing/index.ts's
+ * routeForMode — and withdrawal-routing/caps.ts imports
+ * incomeCapForMarginalRate from tax-estimation.ts, so estimateWithdrawalTaxCost
+ * living in tax-estimation.ts would create an import cycle. This file sits
+ * above both: it imports the pure tax math from tax-estimation.ts and the
+ * real router from withdrawal-routing/, and neither imports this file back.
  *
- * Before this split, the convergence loop hand-simulated bracket-filling and
- * waterfall routing separately from the real router — and had silently
- * drifted from it in three ways:
- *   1. Percentage mode estimated tax using portfolio-balance weights; the
- *      real router uses config.withdrawalSplits.
- *   2. Waterfall + a configured rothBracketTarget: the real router applies a
- *      Roth-bracket-optimization overlay to the config (forced traditional
- *      preference, adjusted caps) before routing; the estimate simulated the
- *      unmodified config.
- *   3. Bracket-filling ignored withdrawalAccountCaps, which the real router
- *      enforces per category.
- * Each produced a wrong grossUpFactor → wrong targetWithdrawal → wrong money
- * movement for real users in those configurations. Now both the estimate and
- * the real execution call the same routeForMode + computeTaxFromSlots, so
- * they cannot diverge on the routing or tax math — only on what's genuinely
- * unknowable pre-routing: RMD enforcement and Roth conversions, both of
+ * The estimate and the real execution call the same routeForMode +
+ * computeTaxFromSlots (splits, the Roth-bracket overlay and account caps
+ * included), so they differ only on what's genuinely unknowable
+ * pre-routing: RMD enforcement and Roth conversions, both of
  * which happen strictly after routing and are re-applied to taxCost/
  * grossUpFactor post-hoc in decumulation-year.ts (see its "post-RMD"
  * recompute). That residual gap is accepted, not fixed — RMD amount and
@@ -157,12 +144,10 @@ interface TaxEstimationInput {
  *  will (routeForMode -> distributeWithdrawals -> depleteIndividualBasis ->
  *  splitRothWithdrawalForTax -> computeEarlyWithdrawalPenalty ->
  *  computeTaxFromSlots), against CLONED balances so this never mutates real
- *  state. Extracted to a single closure so the convergence loop
- *  below can call it repeatedly without a second hand-copy of this
- *  pipeline drifting from the first the way the earlier hand-
- *  simulated router drifted from the real one (see this file's header
- *  docblock) — RULES.md's single-computation-path rule applies within a
- *  function's own retries, not just across files. */
+ *  state. One closure, so the convergence loop below repeats this exact
+ *  pipeline rather than a second hand-copy of it — RULES.md's
+ *  single-computation-path rule applies within a function's own retries,
+ *  not just across files. */
 function evaluateCost(
   trialWithdrawal: number,
   laggedTaxableSS: number,
