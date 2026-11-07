@@ -7,7 +7,13 @@ import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 const openModals = new Set<number>();
 let rendered = 0;
 
-const OVERLAY = "fixed inset-0 z-[110] flex bg-black/40 print:hidden";
+const OVERLAY = "fixed inset-0 flex print:hidden";
+
+/** Every dialog's shade, above toasts; the first-run wizard keeps its own. */
+const LAYER = {
+  dialog: "z-[110] bg-black/40",
+  firstRun: "z-50 bg-black/60 backdrop-blur-sm",
+} as const;
 
 const PLACEMENT = {
   center: "items-center justify-center",
@@ -31,6 +37,7 @@ export type ModalProps = ModalName & {
   placement?: keyof typeof PLACEMENT;
   /** Keeps a 1rem gap between the panel and the viewport's edges. */
   gutter?: boolean;
+  layer?: keyof typeof LAYER;
 };
 
 /**
@@ -46,6 +53,7 @@ export function Modal({
   closeOnBackdrop = true,
   placement = "center",
   gutter = false,
+  layer = "dialog",
   labelledBy,
   label,
 }: ModalProps) {
@@ -85,7 +93,7 @@ export function Modal({
 
   return (
     <div
-      className={`${OVERLAY} ${PLACEMENT[placement]} ${gutter ? "p-4" : ""}`}
+      className={`${OVERLAY} ${LAYER[layer]} ${PLACEMENT[placement]} ${gutter ? "p-4" : ""}`}
       onClick={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onClose();
       }}

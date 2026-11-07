@@ -2002,17 +2002,19 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
-      "count": 11
+      "count": 9
     },
     "ratchet/no-raw-input": {
       "count": 10
     },
     "ratchet/no-unlabeled-control": {
       "count": 11
+    }
+  },
+  "src/components/onboarding/welcome-step.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/paycheck/add-deduction-form.tsx": {

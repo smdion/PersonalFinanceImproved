@@ -8,6 +8,9 @@ import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
 import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
+import { WelcomeStep } from "@/components/onboarding/welcome-step";
+import { StepIndicator } from "@/components/onboarding/step-indicator";
 import { localDateStr } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/format";
 
@@ -41,41 +44,6 @@ const STEPS = ["Welcome", "Admin", "OIDC", "People", "Income", "Done"] as const;
 type Step = (typeof STEPS)[number];
 
 // --- Step components ---
-
-function WelcomeStep({
-  onNext,
-  onRestore,
-}: {
-  onNext: () => void;
-  onRestore: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-6 py-8 text-center">
-      <div className="text-primary text-4xl font-bold">Welcome to Ledgr!</div>
-      <p className="text-muted max-w-md text-lg">
-        Let&apos;s set up your financial dashboard. We&apos;ll walk you through
-        a few quick steps to get your household configured.
-      </p>
-      <button
-        onClick={onNext}
-        className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
-      >
-        Get Started
-      </button>
-      <div className="flex w-full max-w-xs items-center gap-3">
-        <div className="bg-surface-strong h-px flex-1" />
-        <span className="text-muted text-sm">or</span>
-        <div className="bg-surface-strong h-px flex-1" />
-      </div>
-      <button
-        onClick={onRestore}
-        className="border-default text-muted hover:text-primary hover:bg-surface-elevated rounded-lg border px-6 py-3 transition-colors"
-      >
-        Restore from Backup
-      </button>
-    </div>
-  );
-}
 
 function AdminStep({
   admin,
@@ -629,45 +597,69 @@ function DoneStep({
   );
 }
 
-// --- Step indicator (which wizard step you are on) ---
+type WizardNavProps = {
+  currentStep: Step;
+  goBack: () => void;
+  step: number;
+  isSaving: boolean;
+  skipOidc: () => void;
+  skipIncome: () => void;
+  goNext: () => void;
+};
 
-function StepIndicator({
+/** Back, the step's skip, and Next (Welcome has its own buttons). */
+function WizardNav({
   currentStep,
-  steps,
-}: {
-  currentStep: number;
-  steps: readonly string[];
-}) {
+  goBack,
+  step,
+  isSaving,
+  skipOidc,
+  skipIncome,
+  goNext,
+}: WizardNavProps) {
   return (
-    <div className="mb-8 flex items-center justify-center gap-2">
-      {steps.map((label, i) => (
-        <div key={label} className="flex items-center gap-2">
-          <div className="flex flex-col items-center">
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                i < currentStep
-                  ? "bg-blue-600 text-white"
-                  : i === currentStep
-                    ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                    : "bg-surface-strong text-muted"
-              }`}
+    <>
+      {currentStep !== "Welcome" && (
+        <div className="border-default mt-8 flex items-center justify-between border-t pt-4">
+          <button
+            onClick={goBack}
+            disabled={step === 0 || isSaving}
+            className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            Back
+          </button>
+          <div className="flex gap-3">
+            {currentStep === "OIDC" && (
+              <button
+                onClick={skipOidc}
+                className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
+              >
+                Configure Later
+              </button>
+            )}
+            {currentStep === "Income" && (
+              <button
+                onClick={skipIncome}
+                className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
+              >
+                Skip
+              </button>
+            )}
+            <button
+              onClick={goNext}
+              disabled={isSaving}
+              className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {i < currentStep ? "\u2713" : i + 1}
-            </div>
-            <span className="text-muted mt-1 hidden text-xs sm:block">
-              {label}
-            </span>
+              {currentStep === "Done"
+                ? isSaving
+                  ? "Saving..."
+                  : "Go to Dashboard"
+                : "Next"}
+            </button>
           </div>
-          {i < steps.length - 1 && (
-            <div
-              className={`h-0.5 w-8 sm:w-12 ${
-                i < currentStep ? "bg-blue-600" : "bg-surface-strong"
-              }`}
-            />
-          )}
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }
 
@@ -908,113 +900,87 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const skipOidc = () => setCurrentStep("People");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8">
-        <StepIndicator currentStep={step} steps={steps} />
-        <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
-          Step {step + 1} of {steps.length}
-        </div>
-
-        {/* Hidden file input for restore */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          className="hidden"
-          onChange={handleFileSelected}
-        />
-
-        {/* Step content */}
-        {currentStep === "Welcome" && (
-          <WelcomeStep onNext={goNext} onRestore={handleRestore} />
-        )}
-        {currentStep === "Admin" && (
-          <AdminStep admin={admin} setAdmin={setAdmin} />
-        )}
-        {currentStep === "OIDC" && <OidcStep />}
-        {currentStep === "People" && (
-          <PeopleStep people={people} setPeople={setPeople} />
-        )}
-        {currentStep === "Income" && (
-          <IncomeStep people={people} jobs={jobs} setJobs={setJobs} />
-        )}
-        {currentStep === "Done" && (
-          <DoneStep
-            isSaving={isSaving}
-            taxDataSync={taxDataSync}
-            setTaxDataSync={setTaxDataSync}
-          />
-        )}
-
-        {/* Restoring overlay */}
-        {isRestoring && (
-          <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-            <div className="text-primary text-lg font-medium">
-              Restoring backup...
-            </div>
-            <p className="text-muted text-sm">
-              This may take a moment. Please don&apos;t close this page.
-            </p>
-          </div>
-        )}
-
-        {/* Error display */}
-        {error && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-        {stepError && (
-          <div
-            className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
-            role="alert"
-          >
-            {stepError}
-          </div>
-        )}
-
-        {/* Navigation buttons (Welcome has its own CTA) */}
-        {currentStep !== "Welcome" && (
-          <div className="border-default mt-8 flex items-center justify-between border-t pt-4">
-            <button
-              onClick={goBack}
-              disabled={step === 0 || isSaving}
-              className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              Back
-            </button>
-            <div className="flex gap-3">
-              {currentStep === "OIDC" && (
-                <button
-                  onClick={skipOidc}
-                  className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
-                >
-                  Configure Later
-                </button>
-              )}
-              {currentStep === "Income" && (
-                <button
-                  onClick={skipIncome}
-                  className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
-                >
-                  Skip
-                </button>
-              )}
-              <button
-                onClick={goNext}
-                disabled={isSaving}
-                className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {currentStep === "Done"
-                  ? isSaving
-                    ? "Saving..."
-                    : "Go to Dashboard"
-                  : "Next"}
-              </button>
-            </div>
-          </div>
-        )}
+    <Modal
+      onClose={() => {}}
+      label="Set up Ledgr"
+      closeOnEscape={false}
+      closeOnBackdrop={false}
+      layer="firstRun"
+      className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8"
+    >
+      <StepIndicator currentStep={step} steps={steps} />
+      <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
+        Step {step + 1} of {steps.length}
       </div>
-    </div>
+
+      {/* Hidden file input for restore */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
+      {/* Step content */}
+      {currentStep === "Welcome" && (
+        <WelcomeStep onNext={goNext} onRestore={handleRestore} />
+      )}
+      {currentStep === "Admin" && (
+        <AdminStep admin={admin} setAdmin={setAdmin} />
+      )}
+      {currentStep === "OIDC" && <OidcStep />}
+      {currentStep === "People" && (
+        <PeopleStep people={people} setPeople={setPeople} />
+      )}
+      {currentStep === "Income" && (
+        <IncomeStep people={people} jobs={jobs} setJobs={setJobs} />
+      )}
+      {currentStep === "Done" && (
+        <DoneStep
+          isSaving={isSaving}
+          taxDataSync={taxDataSync}
+          setTaxDataSync={setTaxDataSync}
+        />
+      )}
+
+      {/* Restoring overlay */}
+      {isRestoring && (
+        <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
+          <div className="text-primary text-lg font-medium">
+            Restoring backup...
+          </div>
+          <p className="text-muted text-sm">
+            This may take a moment. Please don&apos;t close this page.
+          </p>
+        </div>
+      )}
+
+      {/* Error display */}
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+      {stepError && (
+        <div
+          className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+          role="alert"
+        >
+          {stepError}
+        </div>
+      )}
+
+      {/* Navigation buttons (Welcome has its own CTA) */}
+      <WizardNav
+        currentStep={currentStep}
+        goBack={goBack}
+        step={step}
+        isSaving={isSaving}
+        skipOidc={skipOidc}
+        skipIncome={skipIncome}
+        goNext={goNext}
+      />
+    </Modal>
   );
 }

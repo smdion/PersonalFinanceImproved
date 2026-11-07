@@ -41,7 +41,7 @@
     "src/components/methodology/methodology-content.tsx": 555,
     "src/components/methodology/validation-content.tsx": 552,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
-    "src/components/onboarding/onboarding-wizard.tsx": 1020,
+    "src/components/onboarding/onboarding-wizard.tsx": 986,
     "src/components/paycheck/contrib-account-form.tsx": 624,
     "src/components/paycheck/contrib-card.tsx": 539,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
@@ -522,7 +522,7 @@
     },
     "src/components/onboarding/onboarding-wizard.tsx": {
       "IncomeStep": 162,
-      "OnboardingWizard": 345
+      "OnboardingWizard": 319
     },
     "src/components/paycheck/contrib-account-form.tsx": {
       "ContribAccountForm": 516
