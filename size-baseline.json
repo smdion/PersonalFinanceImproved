@@ -243,7 +243,8 @@
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 623,
     "src/server/services/paycheck/job-net-pay.ts": 285,
-    "src/server/services/paycheck/summary.ts": 862,
+    "src/server/services/paycheck/person-paycheck.ts": 200,
+    "src/server/services/paycheck/summary.ts": 770,
     "src/server/services/performance/finalize-year.ts": 449,
     "src/server/services/performance/summary.ts": 167,
     "src/server/services/profiles/first-retirement-profile.ts": 129,
@@ -988,8 +989,8 @@
       "computeJobNetPayPerCheck": 224
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 738,
-      "computePaycheckSummary.results.map()": 306
+      "computePaycheckSummary": 645,
+      "computePaycheckSummary.results.map()": 213
     },
     "src/server/services/performance/finalize-year.ts": {
       "finalizePerformanceYear": 407,

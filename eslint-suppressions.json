@@ -6470,6 +6470,11 @@
       "count": 1
     }
   },
+  "src/server/services/paycheck/person-paycheck.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/server/services/paycheck/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -6478,7 +6483,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 12
     }
   },
   "src/server/services/performance/finalize-year.ts": {

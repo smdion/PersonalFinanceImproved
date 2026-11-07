@@ -23,10 +23,8 @@ import {
   calculatePaycheck,
   checksPaidYtd,
   countPeriodsElapsed,
-  calculateBlendedAnnual,
   withheldThroughPeriod,
 } from "@/lib/pure/paycheck/paycheck";
-import type { SalarySegment } from "@/lib/pure/paycheck/paycheck";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import {
@@ -55,7 +53,6 @@ import type {
   DeductionLine,
   TaxBracketInput,
 } from "@/lib/pure/paycheck/paycheck.types";
-import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
 import {
   computeAnnualEarnings,
   sumHouseholdIncome,
@@ -75,6 +72,10 @@ import { findActiveJob } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
+import {
+  checkPaychecks,
+  yearEarnings,
+} from "@/server/services/paycheck/person-paycheck";
 
 export const zPaycheckSummaryInput = z
   .object({
@@ -550,130 +551,37 @@ export async function computePaycheckSummary(
         contribAccounts,
         paycheckInput,
       } = setup;
-      const paycheck = calculatePaycheck(paycheckInput);
-      // The pay-stub check compares one real check — what payroll
-      // actually deducts, the configured amounts — so a person over an
-      // IRS limit gets that check figured on the configured rows.
-      const configured = <T extends { cappedValue?: number }>(rows: T[]) =>
-        rows.map(({ cappedValue: _capped, ...r }) => r);
-      const paystubPaycheck = [...jobContribs, ...personalContribs].some(
-        (c) => (c.cap?.overBy ?? 0) > 0,
-      )
-        ? calculatePaycheck({
-            ...paycheckInput,
-            contributionAccounts: buildContribAccounts(
-              configured(jobContribs),
-              configured(personalContribs),
-              salary,
-              periodsPerYear,
-              ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
-              contributionPay(salary, bonusTerms, comp.bonusOverride)
-                .bonusGross,
-            ),
-          })
-        : null;
-      // The nominal formula figure, ignoring any current-year pin — lets
-      // the UI show "target" (formula) alongside "actual" (resolved)
-      // instead of only ever showing the resolved value.
-      const fullFormulaBonusEstimate =
-        paycheckInput.bonusOverride !== null
-          ? calculatePaycheck({ ...paycheckInput, bonusOverride: null })
-              .bonusEstimate
-          : paycheck.bonusEstimate;
-
-      // Blended annual computation. Salary is a flat number under the
-      // active Salary Profile — no mid-year timeline to blend across
-      // any more (see resolveCompensation's docblock), so this is
-      // always a single segment spanning the whole year; what's left of
-      // "blended" is folding in actual YTD performance data below.
-      // A last day later this year (the job is still current): its
-      // checks inside the year stop there.
-      const lastDay =
-        activeJob.endDate != null &&
-        Number(String(activeJob.endDate).slice(0, 4)) === taxYear
-          ? new Date(`${String(activeJob.endDate).slice(0, 10)}T12:00:00Z`)
-          : null;
-      const anchor = activeJob.anchorPayDate ?? activeJob.startDate;
-      let blendedAnnual: BlendedAnnualTotals | null = null;
-      {
-        // The checks it pays this year: from its start, to its last day.
-        const salarySegments: SalarySegment[] = [
-          {
-            salary,
-            effectiveDate: null,
-            startPeriod: 1 + paycheck.periodsBeforeStart,
-            endPeriod: lastDay
-              ? Math.min(
-                  periodsPerYear,
-                  countPeriodsElapsed(
-                    lastDay,
-                    activeJob.payPeriod!,
-                    new Date(anchor),
-                  ),
-                )
-              : periodsPerYear,
-            paycheck,
-          },
-        ];
-
-        blendedAnnual = calculateBlendedAnnual(salarySegments, taxBracketInput);
-      }
-
-      // This person's year: salary + the resolved bonus, pre-tax money
-      // and FICA wages — what the household tax and every income
-      // figure read (household annual income, DESIGN.md).
-      // This person's year: every job they had in it, each for the
-      // checks it pays inside the year — the current job from its
-      // start (to its last day when that's later this year), plus any
-      // job that ended this year (household-income.ts).
-      const currentJobYear = computeAnnualEarnings({
-        salary,
-        periodsPerYear,
+      const { paycheck, paystubPaycheck, fullFormulaBonusEstimate } =
+        checkPaychecks(
+          paycheckInput,
+          jobContribs,
+          personalContribs,
+          salary,
+          periodsPerYear,
+          limitsRecord,
+          person,
+          taxYear,
+          bonusTerms,
+          comp,
+        );
+      const {
+        blendedAnnual,
+        earnings,
+        endedWithheld,
+        bonusNotCounted,
+        yearPayNote,
+      } = yearEarnings(
+        activeJob,
+        taxYear,
         paycheck,
-        contributionAccounts: contribAccounts,
+        periodsPerYear,
+        salary,
+        taxBracketInput,
+        contribAccounts,
         deductions,
-        checks: lastDay
-          ? checksPaidYtd(
-              lastDay,
-              activeJob.payPeriod!,
-              anchor,
-              periodsPerYear,
-              activeJob.startDate,
-            )
-          : periodsPerYear - paycheck.periodsBeforeStart,
-        bonusPaid:
-          !paycheck.bonusBeforeStart &&
-          (lastDay === null ||
-            (paycheck.bonusPeriod !== null &&
-              paycheck.bonusPeriod <=
-                countPeriodsElapsed(
-                  lastDay,
-                  activeJob.payPeriod!,
-                  new Date(anchor),
-                ))),
-      });
-      const { endedJobs, endedYears, endedWithheld, undatedBonusEmployers } =
-        endedJobYears(person, activeJob.id);
-      // A job leaving this year whose bonus has no date: whether it's
-      // paid before the last day isn't known, so it isn't counted.
-      const bonusNotCounted = [
-        ...(lastDay && paycheck.bonusUndated ? [activeJob.employerName] : []),
-        ...undatedBonusEmployers,
-      ];
-      const earnings =
-        endedYears.length > 0
-          ? sumHouseholdIncome([currentJobYear, ...endedYears])
-          : currentJobYear;
-      // A job started this year with no earlier job counted: its pay
-      // before the start isn't in Ledgr.
-      const start = String(activeJob.startDate).slice(0, 10);
-      const yearPayNote =
-        paycheck.periodsBeforeStart > 0 && endedYears.length === 0
-          ? {
-              startDate: start,
-              missingEndedJob: endedJobs.length > 0,
-            }
-          : null;
+        endedJobYears,
+        person,
+      );
 
       const rawContribs = [...jobContribs, ...personalContribs];
       const budgetOverride = activeJob.budgetPeriodsPerMonth ?? null;
