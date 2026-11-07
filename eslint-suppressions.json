@@ -4252,7 +4252,7 @@
   },
   "src/lib/pure/engine/aca-check.ts": {
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     }
   },
   "src/lib/pure/engine/balance-deduction.ts": {
@@ -4501,7 +4501,7 @@
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 6
@@ -4586,7 +4586,7 @@
       "count": 31
     },
     "ratchet/no-history-comment": {
-      "count": 5
+      "count": 3
     },
     "ratchet/no-stacked-docblock": {
       "count": 2
@@ -4648,10 +4648,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
+      "count": 7
     }
   },
   "src/lib/pure/engine/withdrawal-routing/caps.ts": {
@@ -4665,9 +4662,6 @@
   "src/lib/pure/engine/withdrawal-routing/index.ts": {
     "ratchet/max-comment-lines": {
       "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
     }
   },
   "src/lib/pure/engine/withdrawal-routing/percentage.ts": {

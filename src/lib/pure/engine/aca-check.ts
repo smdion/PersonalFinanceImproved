@@ -83,10 +83,9 @@ export function checkAca(input: AcaInput): AcaResult {
       ? ` — sourcing $${overage.toFixed(0)} less from brokerage (and more from Roth) would keep MAGI under the cliff`
       : "";
     warnings.push(
-      // Phase 4: acaCliff is now a grown (non-integer) float -- round
-      // before formatting so this sentence doesn't mix cents (from a
-      // grown cliff) with the whole-dollar MAGI/overage figures either
-      // side of it.
+      // acaCliff is a grown (non-integer) float: round it so this sentence
+      // doesn't mix cents with the whole-dollar MAGI/overage figures
+      // either side of it.
       `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${Math.round(acaCliff).toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
     );
   }

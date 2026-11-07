@@ -3,20 +3,18 @@
  * bracket cap.
  *
  * `routeWithdrawalsBracketFilling`'s Phase 1 fills Traditional up to a
- * target ordinary-income bracket. Historically Phases 2-4 then drained
- * Roth, then brokerage, then HSA in a FIXED order regardless of actual
- * cost. That was harmless while Roth withdrawals were flat-0% tax; now a
- * non-qualified Roth growth withdrawal is real ordinary-rate
- * income, so the fixed order can pick the more expensive of two sources
- * purely because of sequencing — e.g. draining Roth growth at 22% in a
- * year brokerage sits in the real, bracket-based 0% LTCG zone.
+ * target ordinary-income bracket. A non-qualified Roth growth withdrawal
+ * is real ordinary-rate income, so a fixed Roth → brokerage → HSA order
+ * could pick the more expensive of two sources purely because of
+ * sequencing — e.g. draining Roth growth at 22% in a year brokerage sits
+ * in the real, bracket-based 0% LTCG zone.
  *
  * This module ranks the remaining-need sources by actual marginal cost —
  * Roth basis (free) and brokerage-in-0%-LTCG-room (free) first, then
  * whichever of {Roth growth at the ordinary rate above the bracket cap} or
  * {brokerage in the 15%/20% LTCG tier, plus NIIT above its MAGI threshold}
  * is genuinely cheaper, then HSA last (its ordinary-rate + 20%-penalty cost
- * is realistically always worst, unchanged from today).
+ * is realistically always worst).
  *
  * Single-year, need-driven only — does not model IRMAA, does not look
  * ahead to future brackets/RMDs (that's the roadmap's explicitly separate
@@ -357,9 +355,8 @@ export function rankWithdrawalTiers(
   // penalty exclusion BEFORE this ranking ever sees `hsaAvailable` — see
   // withdrawal-eligibility.ts's `computeHsaAccess`/`subtractExcluded`) —
   // so it stacks as plain ordinary income on the SAME floor as Roth
-  // growth, not the "ordinary rate + 20% penalty, always worst" figure
-  // design decision #8 originally assumed for every household regardless
-  // of age. A household that explicitly opted OUT of penalty avoidance
+  // growth, not an "ordinary rate + 20% penalty, always worst" figure for
+  // every household regardless of age. A household that explicitly opted OUT of penalty avoidance
   // and still has genuinely penalty-exposed HSA money reaching this
   // ranking gets a sub-optimal (not incorrect — the real penalty is still
   // priced correctly downstream by computeEarlyWithdrawalPenalty
@@ -454,9 +451,7 @@ export function rankWithdrawalTiers(
   // and {HSA} by actual cost — unaffected by `discretionaryWithdrawalOrder`
   // either way (see this field's docblock: verified against the user's own
   // spreadsheet that brokerage beyond the free 0%-LTCG zone is genuinely
-  // priced, not "chosen" unconditionally — this also replaced what was a
-  // Roth-vs-brokerage-only 2-way comparison with
-  // HSA hardcoded last regardless of cost).
+  // priced, not "chosen" unconditionally).
   const priced = [
     rothGrowthTier,
     brokeragePreNiitTier,

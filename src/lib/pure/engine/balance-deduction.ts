@@ -140,8 +140,7 @@ export function clampBalances(
  * When RMD forces withdrawal above spending need + tax cost, the excess is
  * real after-tax cash the household didn't ask for. What happens to it
  * depends on `mode`:
- * - "reinvest" (default, matches prior behavior): credited to
- *   brokerage as basis.
+ * - "reinvest" (default): credited to brokerage as basis.
  * - "spend": NOT credited anywhere — the household is modeled as consuming
  *   it. Net worth ends up genuinely lower than "reinvest", by design.
  *

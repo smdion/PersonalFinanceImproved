@@ -29,8 +29,7 @@ import type { RouteBracketInfo, RouteResult } from "./types";
  *
  * 1. Fill traditional withdrawals (401k/403b/IRA traditional) up to a tax
  *    bracket cap, in the household's own configured account order
- *    (previously a hardcoded 401k→403b→IRA order regardless of
- *    what the user configured; see `phase1Order` below). This uses the
+ *    (see `phase1Order` below). This uses the
  *    cheap bracket space without overfilling into expensive brackets.
  * 2-4. Rank the remainder (Roth growth, brokerage LTCG, HSA) by real
  *    marginal cost each year instead of a fixed order
@@ -135,7 +134,7 @@ export function routeWithdrawalsBracketFilling(
   }
 
   // --- Phases 2-4: cost-ranked sources ---
-  // Roth, brokerage, and HSA no longer drain in a fixed order — a
+  // Roth, brokerage, and HSA don't drain in a fixed order — a
   // non-qualified Roth growth withdrawal is real ordinary-rate income,
   // so draining it before brokerage sitting in the real 0%/15%
   // LTCG zone can pick the more expensive source purely from sequencing.
@@ -345,12 +344,8 @@ export function routeWithdrawalsBracketFilling(
     : 0;
   const baseOrdinaryFloor =
     (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
-  // Hoisted: this 9-field object used to be
-  // written out twice (seed pass + every refine pass below), differing
-  // only in `ordinaryIncomeFloor` — a field added to one copy and not the
-  // other would silently change ranking behavior between the seed and
-  // refine passes with nothing to catch it. One shared base, one field
-  // that actually varies.
+  // One base for the seed pass and every refine pass below, so the two
+  // can't rank on different inputs; only `ordinaryIncomeFloor` varies.
   const rankingBaseInput = {
     filingStatus: bracketInfo.filingStatus,
     taxBrackets: bracketInfo.taxBrackets ?? [],

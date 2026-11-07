@@ -572,7 +572,7 @@ export type EngineDecumulationYear = {
   returnRate: number;
   /** The annualized return rate (same as returnRate in decumulation — no pro-rating). */
   annualizedReturnRate: number;
-  // --- RMD fields (Phase 1) ---
+  // --- RMD fields ---
   /** Required Minimum Distribution amount for this year (0 if not applicable). */
   rmdAmount: number;
   /** Per-person RMD breakdown (populated when per-person RMD tracking is
@@ -610,9 +610,9 @@ export type EngineDecumulationYear = {
   /** Dollars of `rmdAmount` that could NOT be forced through as a real
    *  taxable distribution — 0 in the overwhelmingly common case. Real IRS
    *  exposure (a 25% excise tax applies to the shortfall), not a display
-   *  nicety: possible now that Retirement-only Traditional capacity can be
-   *  genuinely insufficient to cover a real RMD requirement (Portfolio-
-   *  parented balances no longer count). See `rmd-enforcement.ts`'s
+   *  nicety: Retirement-only Traditional capacity can be genuinely
+   *  insufficient to cover a real RMD requirement (Portfolio-parented
+   *  balances don't count). See `rmd-enforcement.ts`'s
    *  `RmdEnforcementResult.rmdShortfallAmount` docblock. */
   rmdShortfallAmount: number;
   /** Dollars of RMD-forced excess (beyond the strategy's stated need +
@@ -621,10 +621,8 @@ export type EngineDecumulationYear = {
    *  happened to it depends on the household's `rmdExcessHandling`
    *  setting (see `ResolvedDecumulationConfig`) — reinvested into
    *  brokerage (default) or spent; this field is the dollar amount either
-   *  way, not a statement of which. Previously computed and silently
-   *  discarded — this money is real, forced out of Traditional by the RMD
-   *  floor regardless of what the strategy needed, with no prior UI
-   *  trace. */
+   *  way, not a statement of which. This money is real, forced out of
+   *  Traditional by the RMD floor regardless of what the strategy needed. */
   rmdExcessAmount: number;
   /** Portion of this year's combined household RMD-smoothing target
    *  (see `rmd-smoothing.ts`) that did NOT end up converted — undefined
@@ -642,13 +640,13 @@ export type EngineDecumulationYear = {
   qcdAmount: number;
   /** Per-person QCD breakdown, when nonzero. */
   qcdByPerson?: { personId: number; qcdAmount: number }[];
-  // --- SS Tax fields (Phase 2) ---
+  // --- SS Tax fields ---
   /** Taxable portion of Social Security income (IRS provisional income formula). */
   taxableSS: number;
-  // --- LTCG fields (Phase 3) ---
+  // --- LTCG fields ---
   /** Effective LTCG tax rate used for brokerage withdrawals this year (0%, 15%, or 20%). */
   ltcgRate: number;
-  // --- Roth Conversion fields (Phase 4) ---
+  // --- Roth Conversion fields ---
   /** Amount converted from Traditional → Roth this year. */
   rothConversionAmount: number;
   /** Tax cost of the Roth conversion (paid from portfolio). */
@@ -658,20 +656,20 @@ export type EngineDecumulationYear = {
    *  Undefined when the clamp never applied. Every numeric field is
    *  unchanged by it. */
   rothConversionIrmaaCapped?: boolean;
-  // --- Spending strategy fields (Phase 5) ---
+  // --- Spending strategy fields ---
   /** Strategy action taken this year (e.g. 'increase', 'decrease', 'skip_inflation', 'floor_applied'). */
   strategyAction: string | null;
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
   /** NIIT amount: 3.8% × min(net investment income, MAGI - threshold). 0 if below threshold. */
   niitAmount: number;
-  // --- IRMAA fields (Phase 6) ---
+  // --- IRMAA fields ---
   /** Annual IRMAA surcharge, for everyone 65+ together (already multiplied
    *  by that count). 0 if below threshold or awareness disabled. */
   irmaaCost: number;
   /** The part of `irmaaCost` paid on top of the budget
    *  (`irmaaOnTopOfBudget`). Absent when none is. */
   irmaaPaid?: number;
-  // --- ACA fields (Phase 7) ---
+  // --- ACA fields ---
   /** Whether ACA subsidy was preserved this year (MAGI kept below cliff). */
   acaSubsidyPreserved: boolean;
   /** MAGI headroom below ACA cliff ($0 if not applicable). */

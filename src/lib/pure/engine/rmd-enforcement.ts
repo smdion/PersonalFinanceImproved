@@ -188,15 +188,9 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
             lastCat = cat;
           }
           // Assign rounding residual to last category -- capped at that
-          // category's own remaining capacity (`residual` here used
-          // to always be rounding-cents-scale, since totalTradBal covered
-          // the full blended balance and could always absorb the whole
-          // shortfall; now that capacity can be genuinely, non-trivially
-          // less than rmdShortfall (Retirement-only scoping), blindly
-          // force-feeding the full residual into the last touched account
-          // would silently exceed its capacity and defeat the cap this
-          // function exists to enforce -- a real bug caught by a direct
-          // repro during this session, not a hypothetical).
+          // category's own remaining capacity: with Retirement-only scoping
+          // the capacity can be well under rmdShortfall, so the residual
+          // isn't always cents and must not overfill the last account.
           const residual = roundToCents(rmdShortfall - distributed);
           if (residual > 0 && lastSlot && lastCat) {
             const lastCatCapacity =

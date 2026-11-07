@@ -23,8 +23,7 @@ import type { RouteBracketInfo, RouteResult } from "./types";
 import { applyRothBracketOverlay } from "./roth-bracket-overlay";
 
 /**
- * One dispatch to whichever mode config.withdrawalRoutingMode selects —
- * extracted verbatim from the earlier `routeForMode` body. No mode
+ * One dispatch to whichever mode config.withdrawalRoutingMode selects. No mode
  * function mutates `balances`, so `routeForMode`'s two-pass eligibility
  * gate (below) works by substituting which `balances`/`config` object this
  * receives, never by editing any of the three mode functions themselves.
@@ -70,11 +69,9 @@ function dispatchOnce(
     };
   }
   // Surface the same bracket ceiling `routeWithdrawalsBracketFilling` reports
-  // as `traditionalCap` — previously
-  // only bracket_filling mode populated this field, so waterfall + Roth-
-  // bracket-overlay households never got a `bracketTraditionalCap` even
-  // though the overlay was actively capping their withdrawals at exactly
-  // this figure. `applyRothBracketOverlay` computes the identical
+  // as `traditionalCap` for waterfall + Roth-bracket-overlay households too:
+  // the overlay caps their withdrawals at exactly this figure.
+  // `applyRothBracketOverlay` computes the identical
   // `computeBracketTraditionalCap(bracketInfo)` bracket_filling uses, AND
   // resets `withdrawalOrder` to force Traditional-first up to that cap
   // (see its own docblock) — the report narrative / table tooltip that cite
@@ -161,7 +158,7 @@ function routeWithLastResortAllowance(
   // function exists to make reachable as a last resort. subtractExcluded
   // below is what re-applies the (narrower, real) exclusion for pass 2 —
   // still holding back genuinely non-allowed exposure and non-retirement
-  // money, but no longer the allowed account.
+  // money, but not the allowed account.
   const pass1ResultBalances = applySlotsToBalances(balances, pass1.slots);
   const pass2Balances = subtractExcluded(
     pass1ResultBalances,
@@ -250,8 +247,7 @@ function mergeDecumulationSlots(
  * rule (like the Roth-bracket overlay) can't be applied in one path and
  * forgotten in the other.
  *
- * `exposure` (supersedes the
- * Tier B two-pass model this function used to implement) — when provided,
+ * `exposure` — when provided,
  * `config.avoidPenalizedWithdrawals` is on, and something is actually
  * penalty-exposed, dispatches against balances with every penalty-exposed
  * dollar subtracted out. `nonRetirement` is the

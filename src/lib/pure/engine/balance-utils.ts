@@ -101,9 +101,7 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
 
 /** @internal Only tests import it (knip --production).
  * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
- * balances, per category (supersedes the
- * Tier B two-pass model this function was originally written for; renamed
- * from `subtractLocked`). Floors at 0 —
+ * balances, per category. Floors at 0 —
  * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
  * of individual-account penalty-exposed amounts, which can't exceed the
  * category total they're within, but flooring keeps this safe against any

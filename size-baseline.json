@@ -138,7 +138,7 @@
     "src/lib/pure/contributions/ytd-actuals.ts": 149,
     "src/lib/pure/debts/debt-balance.ts": 28,
     "src/lib/pure/debts/mortgage.ts": 422,
-    "src/lib/pure/engine/aca-check.ts": 95,
+    "src/lib/pure/engine/aca-check.ts": 94,
     "src/lib/pure/engine/contribution-routing.ts": 624,
     "src/lib/pure/engine/individual-accounts/contributions.ts": 430,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 164,
@@ -165,18 +165,18 @@
     "src/lib/pure/engine/projection-year-handlers/year-end.ts": 148,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 117,
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
-    "src/lib/pure/engine/rmd-enforcement.ts": 468,
+    "src/lib/pure/engine/rmd-enforcement.ts": 462,
     "src/lib/pure/engine/roth-conversion.ts": 528,
     "src/lib/pure/engine/tax-estimation.ts": 506,
     "src/lib/pure/engine/types/accumulation.ts": 163,
     "src/lib/pure/engine/types/contribution-spec.ts": 96,
     "src/lib/pure/engine/types/decumulation.ts": 396,
-    "src/lib/pure/engine/types/projection-result.ts": 720,
+    "src/lib/pure/engine/types/projection-result.ts": 718,
     "src/lib/pure/engine/types/routing.ts": 136,
-    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 492,
-    "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 506,
+    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 487,
+    "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 501,
     "src/lib/pure/engine/withdrawal-routing/caps.ts": 73,
-    "src/lib/pure/engine/withdrawal-routing/index.ts": 350,
+    "src/lib/pure/engine/withdrawal-routing/index.ts": 346,
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": 209,
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 70,
     "src/lib/pure/engine/withdrawal-routing/types.ts": 120,
@@ -903,17 +903,16 @@
       "runPreYearSetup": 412
     },
     "src/lib/pure/engine/rmd-enforcement.ts": {
-      "enforceOwnerRmds": 151,
-      "enforceRmd": 155
+      "enforceOwnerRmds": 151
     },
     "src/lib/pure/engine/roth-conversion.ts": {
       "performRothConversion": 375
     },
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
-      "rankWithdrawalTiers": 265
+      "rankWithdrawalTiers": 262
     },
     "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
-      "routeWithdrawalsBracketFilling": 465
+      "routeWithdrawalsBracketFilling": 461
     },
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": {
       "routeWithdrawalsPercentage": 189
