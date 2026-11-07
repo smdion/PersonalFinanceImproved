@@ -8,14 +8,21 @@ import type { ReactNode } from "react";
  */
 export function CellButton({
   enabled = true,
+  pressed,
   children,
 }: {
   enabled?: boolean;
+  /** A switch's state (`aria-pressed`): the cell picks a mode. */
+  pressed?: boolean;
   children: ReactNode;
 }) {
   if (!enabled) return <>{children}</>;
   return (
-    <button type="button" className="cursor-[inherit] [text-align:inherit]">
+    <button
+      type="button"
+      aria-pressed={pressed}
+      className="cursor-[inherit] [text-align:inherit]"
+    >
       {children}
     </button>
   );

@@ -1,6 +1,8 @@
-/** The budget summary's header row: one column per budget mode. */
+/** The budget summary's header row: one column per budget mode, each a
+ *  switch that makes its mode the active one. */
 
 import { Badge } from "@/components/ui/badge";
+import { CellButton } from "@/components/ui/cell-button";
 
 type BudgetSummaryHeaderProps = {
   nameColWidth: number | undefined;
@@ -53,17 +55,19 @@ export function BudgetSummaryHeader({
                   : `Set ${label} as active mode`
             }
           >
-            {label}
-            {!isWeighted && colIdx === activeColumn && (
-              <span className="text-caption ml-1 align-super text-blue-500">
-                ●
-              </span>
-            )}
-            {apiService && apiLinkedColumnIndex === colIdx && (
-              <Badge color="blue" case="normal" className="ml-1 align-middle">
-                ⇄ {apiService.toUpperCase()}
-              </Badge>
-            )}
+            <CellButton enabled={!isWeighted} pressed={colIdx === activeColumn}>
+              {label}
+              {!isWeighted && colIdx === activeColumn && (
+                <span className="text-caption ml-1 align-super text-blue-500">
+                  ●
+                </span>
+              )}
+              {apiService && apiLinkedColumnIndex === colIdx && (
+                <Badge color="blue" case="normal" className="ml-1 align-middle">
+                  ⇄ {apiService.toUpperCase()}
+                </Badge>
+              )}
+            </CellButton>
           </th>
         ))}
         {isWeighted && (

@@ -97,4 +97,18 @@ describe("BudgetSummaryTable", () => {
     fireEvent.click(screen.getByTitle("Set Lean as active mode"));
     expect(onSetActiveColumn).toHaveBeenCalledWith(1);
   });
+
+  it.each([["Enter" as const], [" " as const]])(
+    "%j on a mode's header switch makes it active, as a click does",
+    (key) => {
+      const onSetActiveColumn = mount();
+      const standard = screen.getByRole("button", { name: /^Standard/ });
+      const lean = screen.getByRole("button", { name: "Lean" });
+      expect(standard).toHaveAttribute("aria-pressed", "true");
+      expect(lean).toHaveAttribute("aria-pressed", "false");
+      pressKey(lean, key);
+      expect(onSetActiveColumn).toHaveBeenCalledTimes(1);
+      expect(onSetActiveColumn).toHaveBeenCalledWith(1);
+    },
+  );
 });
