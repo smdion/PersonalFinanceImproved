@@ -7,10 +7,10 @@ import {
   setQuery,
   setQueryState,
   type MockOutput,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
-// Direct smoke test for src/components/cards/dashboard/contributions-card.tsx.
-// tests/components/dashboard.test.tsx mocks out all dashboard cards at the
+// Direct smoke test for src/components/dashboard/contributions-card.tsx.
+// tests/components/dashboard/dashboard.test.tsx mocks out all dashboard cards at the
 // page level, so individual cards (including this one) have zero direct
 // coverage. This card is the most complex of the dashboard cards (per-account
 // funding bars, joint accounts, ESPP-style discount bars, household totals).
@@ -65,10 +65,10 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
-import { ContributionsCard } from "@/components/cards/dashboard/contributions-card";
+import { ContributionsCard } from "@/components/dashboard/contributions-card";
 
 const view = (
   employeeContrib: number,

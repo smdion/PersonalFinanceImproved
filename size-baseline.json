@@ -24,11 +24,11 @@
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
-    "src/components/cards/dashboard/contributions-card.tsx": 654,
-    "src/components/cards/dashboard/linked-balance-card.tsx": 432,
-    "src/components/cards/dashboard/living-costs-card.tsx": 677,
-    "src/components/cards/dashboard/retirement-card.tsx": 437,
-    "src/components/cards/dashboard/savings-goals-card.tsx": 427,
+    "src/components/dashboard/contributions-card.tsx": 654,
+    "src/components/dashboard/linked-balance-card.tsx": 432,
+    "src/components/dashboard/living-costs-card.tsx": 677,
+    "src/components/dashboard/retirement-card.tsx": 437,
+    "src/components/dashboard/savings-goals-card.tsx": 427,
     "src/components/cards/mc-simulation-assumptions.tsx": 1071,
     "src/components/retirement-projection/decumulation-config.tsx": 478,
     "src/components/retirement-projection/index.tsx": 1509,
@@ -431,24 +431,24 @@
     "src/components/cards/brokerage-goals.tsx": {
       "BrokerageGoalsSection": 287
     },
-    "src/components/cards/dashboard/contributions-card.tsx": {
+    "src/components/dashboard/contributions-card.tsx": {
       "ContributionsCardImpl": 530,
       "ContributionsCardImpl.map()": 266,
       "ContributionsCardImpl.map().map()": 251
     },
-    "src/components/cards/dashboard/household-income-card.tsx": {
+    "src/components/dashboard/household-income-card.tsx": {
       "HouseholdIncomeCardImpl": 175
     },
-    "src/components/cards/dashboard/linked-balance-card.tsx": {
+    "src/components/dashboard/linked-balance-card.tsx": {
       "LinkedBalanceCardImpl": 171
     },
-    "src/components/cards/dashboard/living-costs-card.tsx": {
+    "src/components/dashboard/living-costs-card.tsx": {
       "LivingCostsCardImpl": 581
     },
-    "src/components/cards/dashboard/retirement-card.tsx": {
+    "src/components/dashboard/retirement-card.tsx": {
       "RetirementCardImpl": 391
     },
-    "src/components/cards/dashboard/savings-goals-card.tsx": {
+    "src/components/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 407
     },
     "src/components/cards/mc-simulation-assumptions.tsx": {

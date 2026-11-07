@@ -121,9 +121,9 @@ const rothInputs = {
 };
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
-import { holdMutation, resetTrpcMock, setQuery } from "./trpc-mock";
+import { holdMutation, resetTrpcMock, setQuery } from "../trpc-mock";
 
 beforeEach(() => {
   resetTrpcMock();
@@ -139,7 +139,7 @@ beforeEach(() => {
   holdMutation("contributionProfile.setActive");
 });
 
-import { HouseholdIncomeCard } from "@/components/cards/dashboard/household-income-card";
+import { HouseholdIncomeCard } from "@/components/dashboard/household-income-card";
 import { TaxesContent } from "@/app/(dashboard)/taxes/taxes-content";
 
 describe("HouseholdIncomeCard", () => {

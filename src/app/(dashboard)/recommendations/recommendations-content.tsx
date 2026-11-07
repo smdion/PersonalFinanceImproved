@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Disclaimer } from "@/components/ui/disclaimer";
-import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
+import { LoadingCard, ErrorCard } from "@/components/dashboard/utils";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { RECOMMENDATION_AREAS } from "@/lib/config/recommendations";
 import Link from "next/link";

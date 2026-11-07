@@ -35,7 +35,7 @@ const WithdrawalComparisonCard = dynamic(
     })),
   { loading: () => <SkeletonChart />, ssr: false },
 );
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 import { PlanHealthCard } from "@/components/cards/plan-health";
 import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
 

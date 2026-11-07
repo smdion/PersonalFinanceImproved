@@ -9,7 +9,7 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { PageHeader } from "@/components/ui/page-header";
 import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
-import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
+import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

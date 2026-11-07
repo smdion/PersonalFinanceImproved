@@ -5,16 +5,16 @@ import {
   type MilestoneInput,
   type MilestoneResult,
 } from "@/lib/pure/advice/milestones/milestones";
-import { makeInput } from "../fixtures/milestones";
+import { makeInput } from "../../fixtures/milestones";
 import {
   holdMutation,
   resetTrpcMock,
   setQuery,
   type MockOutput,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
 // Direct smoke test for
-// src/components/cards/dashboard/financial-checkup-card.tsx: milestone rows
+// src/components/dashboard/financial-checkup-card.tsx: milestone rows
 // come from the Milestones engine (run for real on a synthetic input), the
 // savings-rate row from the contribution summary and the shared switches.
 
@@ -81,10 +81,10 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
-import { FinancialCheckupCard } from "@/components/cards/dashboard/financial-checkup-card";
+import { FinancialCheckupCard } from "@/components/dashboard/financial-checkup-card";
 
 /** What contribution.computeSummary answers (loaded, no error). */
 const contribsAre = (data: MockOutput<"contribution.computeSummary">) =>

@@ -3,7 +3,7 @@
 /** Taxes page body: the year's tax line by line, then the Roth IRA check. */
 import { FocusTarget } from "@/components/ui/focus-target";
 import { PageHeader } from "@/components/ui/page-header";
-import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
+import { LoadingCard, ErrorCard } from "@/components/dashboard/utils";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { TaxBreakdown } from "@/components/taxes/tax-breakdown";
 import { RothIraSection } from "@/components/taxes/roth-ira-section";

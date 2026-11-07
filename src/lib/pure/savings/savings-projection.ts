@@ -4,7 +4,7 @@
  *
  * Previously this walk was implemented independently in two places
  * (src/app/(dashboard)/savings/savings-content.tsx and
- * src/components/cards/dashboard/savings-goals-card.tsx), which had already
+ * src/components/dashboard/savings-goals-card.tsx), which had already
  * diverged: the dashboard card's copy never applied the "don't double-count
  * this month's contribution for YNAB-linked goals" guard the page's copy
  * has. Both now call this module instead of reimplementing the walk.

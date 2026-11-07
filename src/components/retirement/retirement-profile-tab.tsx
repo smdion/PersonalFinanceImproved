@@ -66,7 +66,7 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 export function RetirementProfileTab({

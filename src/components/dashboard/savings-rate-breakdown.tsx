@@ -2,7 +2,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { ChipToggle } from "@/components/ui/chip-toggle";
-import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
+import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import {
   formatCurrency,
   formatPercent,

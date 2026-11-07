@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { resetTrpcMock, setQuery } from "./trpc-mock";
+import { resetTrpcMock, setQuery } from "../trpc-mock";
 
 let saved: number | null = null;
 const setSaved = vi.fn();
@@ -18,10 +18,10 @@ vi.mock("@/lib/context/user-context", () => ({
 }));
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
-import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
+import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 
 describe("HighIncomeLineEdit", () => {
   beforeEach(() => {

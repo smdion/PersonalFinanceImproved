@@ -34,7 +34,7 @@
       "count": 2
     }
   },
-  "src/components/cards/dashboard/financial-checkup-card.tsx": {
+  "src/components/dashboard/financial-checkup-card.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }

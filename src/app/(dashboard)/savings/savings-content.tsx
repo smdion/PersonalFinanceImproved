@@ -43,7 +43,7 @@ import {
   useApiSync,
 } from "@/components/savings/api-sync-section";
 import { ProjectionImpactBar } from "@/components/savings/projection-impact-bar";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,

@@ -1,40 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { resetTrpcMock, setQuery } from "./trpc-mock";
+import { resetTrpcMock, setQuery } from "../trpc-mock";
 
 // Mock all dashboard card components to isolate the page test
-vi.mock("@/components/cards/dashboard/household-income-card", () => ({
+vi.mock("@/components/dashboard/household-income-card", () => ({
   HouseholdIncomeCard: () => (
     <div data-testid="household-income">HouseholdIncome</div>
   ),
 }));
-vi.mock("@/components/cards/dashboard/savings-goals-card", () => ({
+vi.mock("@/components/dashboard/savings-goals-card", () => ({
   SavingsGoalsCard: () => <div data-testid="savings-goals">SavingsGoals</div>,
 }));
-vi.mock("@/components/cards/dashboard/retirement-card", () => ({
+vi.mock("@/components/dashboard/retirement-card", () => ({
   RetirementCard: () => <div data-testid="retirement">Retirement</div>,
 }));
-vi.mock("@/components/cards/dashboard/net-worth-card", () => ({
+vi.mock("@/components/dashboard/net-worth-card", () => ({
   NetWorthCard: () => <div data-testid="net-worth">NetWorth</div>,
 }));
-vi.mock("@/components/cards/dashboard/linked-balance-card", () => ({
+vi.mock("@/components/dashboard/linked-balance-card", () => ({
   LinkedBalanceCard: () => (
     <div data-testid="linked-balance">LinkedBalance</div>
   ),
 }));
-vi.mock("@/components/cards/dashboard/contributions-card", () => ({
+vi.mock("@/components/dashboard/contributions-card", () => ({
   ContributionsCard: () => <div data-testid="contributions">Contributions</div>,
 }));
-vi.mock("@/components/cards/dashboard/financial-checkup-card", () => ({
+vi.mock("@/components/dashboard/financial-checkup-card", () => ({
   FinancialCheckupCard: () => (
     <div data-testid="financial-checkup">FinancialCheckup</div>
   ),
 }));
-vi.mock("@/components/cards/dashboard/living-costs-card", () => ({
+vi.mock("@/components/dashboard/living-costs-card", () => ({
   LivingCostsCard: () => <div data-testid="living-costs">LivingCosts</div>,
 }));
 
-vi.mock("@/components/cards/dashboard/utils", () => ({
+vi.mock("@/components/dashboard/utils", () => ({
   ErrorCard: ({ title, message }: { title: string; message: string }) => (
     <div data-testid="error-card">
       {title}: {message}
@@ -60,7 +60,7 @@ vi.mock("@/components/onboarding/onboarding-wizard", () => ({
 
 // Mock tRPC
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 describe("DashboardPage", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { RetirementBridge } from "@/components/cards/dashboard/retirement-bridge";
+import { RetirementBridge } from "@/components/dashboard/retirement-bridge";
 
 // The help tip carries the bridge's detail — render its lines to check them.
 vi.mock("@/components/ui/help-tip", () => ({

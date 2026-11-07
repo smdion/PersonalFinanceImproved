@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Direct smoke test for src/components/cards/dashboard/net-worth-card.tsx.
-// tests/components/dashboard.test.tsx mocks out all dashboard cards at the
+// Direct smoke test for src/components/dashboard/net-worth-card.tsx.
+// tests/components/dashboard/dashboard.test.tsx mocks out all dashboard cards at the
 // page level, so individual cards (including this one) have zero direct
 // coverage. Follows the leaf-component tRPC-mock pattern from
 // tests/components/portfolio-content-smoke.test.tsx.
@@ -19,14 +19,14 @@ vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 import {
   resetTrpcMock,
   setQuery,
   setQueryState,
   type MockOutput,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
 const SUMMARY = "networth.computeSummary";
 /** The summary query: its data, loading and error. */
@@ -45,7 +45,7 @@ function networth({
 
 beforeEach(() => resetTrpcMock());
 
-import { NetWorthCard } from "@/components/cards/dashboard/net-worth-card";
+import { NetWorthCard } from "@/components/dashboard/net-worth-card";
 
 const mockData = {
   result: { netWorthMarket: 670000, netWorthCostBasis: 620000 },

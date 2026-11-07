@@ -51,7 +51,7 @@ import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutat
 import { useColumnMutations } from "@/components/budget/hooks/use-column-mutations";
 import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
 import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 import {
   BudgetPageContext,
   type BudgetPageContextValue,

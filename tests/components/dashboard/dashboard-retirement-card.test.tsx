@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
+import { resetTrpcMock, setQuery, type MockOutput } from "../trpc-mock";
 
-// Direct smoke test for src/components/cards/dashboard/retirement-card.tsx.
-// tests/components/dashboard.test.tsx mocks out all dashboard cards at the
+// Direct smoke test for src/components/dashboard/retirement-card.tsx.
+// tests/components/dashboard/dashboard.test.tsx mocks out all dashboard cards at the
 // page level, so individual cards (including this one) have zero direct
 // coverage. Follows the leaf-component tRPC-mock pattern from
-// tests/components/dashboard-net-worth-card.test.tsx. Focused on the new
+// tests/components/dashboard/dashboard-net-worth-card.test.tsx. Focused on the new
 // peek-only MC confidence badge / simulated Coast FIRE / freshness label —
 // not a full re-test of every existing metric on this card.
 
@@ -102,10 +102,10 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
-import { RetirementCard } from "@/components/cards/dashboard/retirement-card";
+import { RetirementCard } from "@/components/dashboard/retirement-card";
 
 beforeEach(() => {
   resetTrpcMock();

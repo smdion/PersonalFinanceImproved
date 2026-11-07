@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 // Direct smoke test for
-// src/components/cards/dashboard/savings-goals-card.tsx — e-fund progress
+// src/components/dashboard/savings-goals-card.tsx — e-fund progress
 // + per-goal funded/on-track/shortfall/accumulating status derivation.
-// No direct coverage before this (tests/components/dashboard.test.tsx mocks
+// No direct coverage before this (tests/components/dashboard/dashboard.test.tsx mocks
 // the whole card out at the page level).
 
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
@@ -15,16 +15,16 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
-import { SavingsGoalsCard } from "@/components/cards/dashboard/savings-goals-card";
+import { SavingsGoalsCard } from "@/components/dashboard/savings-goals-card";
 import {
   resetTrpcMock,
   setQuery,
   setQueryState,
   type MockOutput,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
 const SUMMARY = "savings.computeSummary";
 const REIMB = "savings.listEfundReimbursements";

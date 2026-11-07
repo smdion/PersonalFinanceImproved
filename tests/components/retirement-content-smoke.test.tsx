@@ -47,7 +47,7 @@ vi.mock("@/lib/hooks/use-active-retirement-profile", () => ({
   useActiveRetirementProfile: () => [null, vi.fn()],
 }));
 
-vi.mock("@/components/cards/dashboard/utils", () => ({
+vi.mock("@/components/dashboard/utils", () => ({
   CardBoundary: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),

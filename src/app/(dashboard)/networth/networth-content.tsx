@@ -55,7 +55,7 @@ const TaxLocationPie = dynamic(
   { loading: () => <SkeletonChart />, ssr: false },
 );
 import { SpreadsheetView } from "@/components/networth/spreadsheet/spreadsheet-view";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,

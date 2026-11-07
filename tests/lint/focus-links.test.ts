@@ -25,7 +25,7 @@ const isComment = (line: string) => /^\s*(\/\/|\*|\/\*|\{\/\*)/.test(line);
 
 /** Where links to other pages are built. */
 const SENDERS = [
-  "components/cards/dashboard",
+  "components/dashboard",
   "lib/pure",
   "lib/config/milestones.ts",
   "lib/config/data-sources.ts",

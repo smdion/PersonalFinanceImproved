@@ -236,7 +236,7 @@ const config = [
     ignores: [
       "src/lib/pure/engine/**",
       "src/lib/pure/advice/milestones/input.ts",
-      "src/components/cards/dashboard/retirement-benchmarks.tsx",
+      "src/components/dashboard/retirement-benchmarks.tsx",
       // Money Guy's Goldilocks rule sizes a lump sum against all invested money.
       "src/lib/pure/advice/goldilocks.ts",
     ],

@@ -13,10 +13,10 @@ vi.mock("@/lib/context/user-context", () => ({
   hasPermission: () => true,
 }));
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
-import { resetTrpcMock, setQuery } from "./trpc-mock";
-import { LinkedBalanceCard } from "@/components/cards/dashboard/linked-balance-card";
+import { resetTrpcMock, setQuery } from "../trpc-mock";
+import { LinkedBalanceCard } from "@/components/dashboard/linked-balance-card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const DAYS = [

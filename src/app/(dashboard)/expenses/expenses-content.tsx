@@ -12,7 +12,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 // From config, never @/lib/budget-api: the barrel and the YNAB client are
 // server-only (DB, node:crypto) and once shipped ~430 KB to this page.
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/config/ynab";

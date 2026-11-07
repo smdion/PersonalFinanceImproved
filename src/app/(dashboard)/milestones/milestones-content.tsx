@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Disclaimer } from "@/components/ui/disclaimer";
-import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
+import { LoadingCard, ErrorCard } from "@/components/dashboard/utils";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useMilestones } from "@/lib/hooks/use-milestones";
 import {
@@ -25,7 +25,7 @@ import {
   type ColumnItem,
 } from "@/components/ui/balanced-columns";
 import { ChipToggle } from "@/components/ui/chip-toggle";
-import { SavingsRateBreakdown } from "@/components/cards/dashboard/savings-rate-breakdown";
+import { SavingsRateBreakdown } from "@/components/dashboard/savings-rate-breakdown";
 import { FooLadder } from "@/components/milestones/foo-ladder";
 import { MilestonesHero } from "@/components/milestones/milestones-hero";
 import {

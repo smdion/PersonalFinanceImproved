@@ -6,10 +6,10 @@ import {
   resetTrpcMock,
   setQuery,
   type MockOutput,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
 // Direct math-verification test for
-// src/components/cards/dashboard/living-costs-card.tsx — until now this card
+// src/components/dashboard/living-costs-card.tsx — until now this card
 // had zero direct coverage (only tests/config/living-costs.test.ts, which
 // just checks the Ramsey range/mapping config, not the card's percentage
 // arithmetic). Every dollar figure below is hand-picked so the expected
@@ -107,7 +107,7 @@ const savingsQuery = {
 const extraPaycheckQuery = { isLoading: false, data: [] };
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 // Registered by reference: a test that edits a fixture's data in place
@@ -132,7 +132,7 @@ beforeEach(() => {
   setQuery("savings.extraPaycheckRouting.list", extraPaycheckQuery.data);
 });
 
-import { LivingCostsCard } from "@/components/cards/dashboard/living-costs-card";
+import { LivingCostsCard } from "@/components/dashboard/living-costs-card";
 
 describe("LivingCostsCard math", () => {
   it("Net mode: Housing/Food at Ramsey's low edge, Retirement/Savings/Unallocated correct", () => {
