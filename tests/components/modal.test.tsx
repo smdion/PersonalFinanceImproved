@@ -169,4 +169,13 @@ describe("Modal", () => {
     expect(overlay.className).toContain("justify-end");
     expect(overlay.className).not.toContain("items-center");
   });
+
+  it("keeps a 1rem gap to the viewport with gutter", () => {
+    render(
+      <Modal label="x" className="" onClose={() => {}} gutter>
+        <p>x</p>
+      </Modal>,
+    );
+    expect(screen.getByRole("presentation").className).toContain("p-4");
+  });
 });

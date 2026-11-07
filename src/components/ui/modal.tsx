@@ -27,6 +27,8 @@ export type ModalProps = ModalName & {
   closeOnBackdrop?: boolean;
   /** `right` docks a full-height panel to the right edge. */
   placement?: keyof typeof PLACEMENT;
+  /** Keeps a 1rem gap between the panel and the viewport's edges. */
+  gutter?: boolean;
 };
 
 /**
@@ -41,6 +43,7 @@ export function Modal({
   closeOnEscape = true,
   closeOnBackdrop = true,
   placement = "center",
+  gutter = false,
   labelledBy,
   label,
 }: ModalProps) {
@@ -80,7 +83,7 @@ export function Modal({
 
   return (
     <div
-      className={`${OVERLAY} ${PLACEMENT[placement]}`}
+      className={`${OVERLAY} ${PLACEMENT[placement]} ${gutter ? "p-4" : ""}`}
       onClick={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onClose();
       }}

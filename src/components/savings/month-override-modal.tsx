@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useId } from "react";
+import { Modal } from "@/components/ui/modal";
 import {
   PoolDistributionEditor,
   type FundAllocation,
@@ -59,6 +60,7 @@ export function MonthOverrideModal({
   onDeleteMonthOverrides,
   onClose,
 }: MonthOverrideModalProps) {
+  const titleId = useId();
   const monthIndex = monthDates.findIndex(
     (d) => monthKey(d) === monthKey(monthDate),
   );
@@ -221,167 +223,163 @@ export function MonthOverrideModal({
   const monthLabel = `${MONTH_NAMES[monthDate.getMonth()]} 1, ${monthDate.getFullYear()}`;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/60" onClick={onClose} />
+    <Modal
+      onClose={onClose}
+      labelledBy={titleId}
+      closeOnBackdrop={false}
+      gutter
+      className="bg-surface-primary flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl border shadow-2xl"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between border-b px-5 py-4">
+        <div>
+          <h2 id={titleId} className="text-primary text-base font-semibold">
+            Edit Month &mdash; {monthLabel}
+          </h2>
+          <p className="text-muted mt-0.5 text-xs">
+            Distribute the savings pool across funds. Allocations can be less
+            than the pool — any unallocated amount is treated as going
+            elsewhere.
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-faint hover:text-secondary -mr-2 px-2 text-xl"
+          title="Close"
+        >
+          &times;
+        </button>
+      </div>
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-surface-primary flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl border shadow-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-5 py-4">
-            <div>
-              <h2 className="text-primary text-base font-semibold">
-                Edit Month &mdash; {monthLabel}
-              </h2>
-              <p className="text-muted mt-0.5 text-xs">
-                Distribute the savings pool across funds. Allocations can be
-                less than the pool — any unallocated amount is treated as going
-                elsewhere.
-              </p>
-            </div>
+      {/* Body — scrollable */}
+      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        <PoolDistributionEditor
+          pool={localPool}
+          funds={visibleFunds}
+          onChange={handleFundsChange}
+          poolEditable
+          onPoolChange={handlePoolChange}
+        />
+
+        {/* Hidden (zero-allocation) funds — expandable */}
+        {hiddenFunds.length > 0 && (
+          <div>
             <button
-              onClick={onClose}
-              className="text-faint hover:text-secondary -mr-2 px-2 text-xl"
-              title="Close"
+              onClick={() => setShowAddFunds((v) => !v)}
+              className="text-muted hover:text-secondary flex items-center gap-1 text-xs transition-colors"
             >
-              &times;
+              <span>{showAddFunds ? "▾" : "▸"}</span>
+              <span>
+                {showAddFunds ? "Hide" : "Add fund"} ({hiddenFunds.length} with
+                $0 allocation)
+              </span>
             </button>
-          </div>
 
-          {/* Body — scrollable */}
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            <PoolDistributionEditor
-              pool={localPool}
-              funds={visibleFunds}
-              onChange={handleFundsChange}
-              poolEditable
-              onPoolChange={handlePoolChange}
-            />
-
-            {/* Hidden (zero-allocation) funds — expandable */}
-            {hiddenFunds.length > 0 && (
-              <div>
-                <button
-                  onClick={() => setShowAddFunds((v) => !v)}
-                  className="text-muted hover:text-secondary flex items-center gap-1 text-xs transition-colors"
-                >
-                  <span>{showAddFunds ? "▾" : "▸"}</span>
-                  <span>
-                    {showAddFunds ? "Hide" : "Add fund"} ({hiddenFunds.length}{" "}
-                    with $0 allocation)
-                  </span>
-                </button>
-
-                {showAddFunds && (
-                  <div className="mt-2 space-y-1.5 pl-1">
-                    {hiddenFunds.map((f) => (
-                      <div
-                        key={f.goalId}
-                        className="border-strong flex items-center justify-between rounded-lg border border-dashed px-3 py-2"
-                      >
-                        <span className="text-muted text-sm">{f.name}</span>
-                        <button
-                          onClick={() => {
-                            setVisibleFundIds(
-                              (prev) => new Set([...prev, f.goalId]),
-                            );
-                            setShowAddFunds(false);
-                          }}
-                          className="text-xs font-medium text-blue-600 hover:text-blue-700"
-                        >
-                          + Add
-                        </button>
-                      </div>
-                    ))}
+            {showAddFunds && (
+              <div className="mt-2 space-y-1.5 pl-1">
+                {hiddenFunds.map((f) => (
+                  <div
+                    key={f.goalId}
+                    className="border-strong flex items-center justify-between rounded-lg border border-dashed px-3 py-2"
+                  >
+                    <span className="text-muted text-sm">{f.name}</span>
+                    <button
+                      onClick={() => {
+                        setVisibleFundIds(
+                          (prev) => new Set([...prev, f.goalId]),
+                        );
+                        setShowAddFunds(false);
+                      }}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      + Add
+                    </button>
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
+        )}
+      </div>
 
-          {/* Footer */}
-          <div className="flex flex-col gap-2 border-t px-5 py-3">
-            {/* Under-allocation confirmation panel */}
-            {(pendingApply || pendingFillForward) && (
-              <div className="bg-surface-elevated border-strong flex flex-col gap-2 rounded-lg border border-l-2 border-l-amber-500 px-3 py-2.5">
-                <p className="text-secondary text-xs">
-                  <span className="font-semibold text-amber-400">
-                    {formatCurrency(localPool - total)}
-                  </span>{" "}
-                  of the {formatCurrency(localPool)}/mo pool is unallocated.{" "}
-                  {pendingFillForward
-                    ? `Fill forward will apply this to all months from ${monthLabel} onward.`
-                    : `This applies to ${monthLabel} only.`}
-                </p>
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    onClick={() => {
-                      setPendingApply(false);
-                      setPendingFillForward(false);
-                    }}
-                    className="border-strong text-muted hover:bg-surface-sunken rounded-lg border px-3 py-1.5 text-xs"
-                  >
-                    Go back
-                  </button>
-                  <button
-                    onClick={pendingFillForward ? doFillForward : doApply}
-                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-black hover:bg-amber-400"
-                  >
-                    {pendingFillForward
-                      ? "Fill forward anyway"
-                      : "Apply anyway"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Reset row */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleReset}
-                disabled={!thisMonthHasOverrides}
-                className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
-                title="Remove this month's changes"
-              >
-                Reset this month
-              </button>
-              <button
-                onClick={handleResetForward}
-                disabled={!hasOverridesFromHere}
-                className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
-                title="Remove the changes from this month on"
-              >
-                Reset this month forward
-              </button>
-            </div>
-            {/* Action row */}
+      {/* Footer */}
+      <div className="flex flex-col gap-2 border-t px-5 py-3">
+        {/* Under-allocation confirmation panel */}
+        {(pendingApply || pendingFillForward) && (
+          <div className="bg-surface-elevated border-strong flex flex-col gap-2 rounded-lg border border-l-2 border-l-amber-500 px-3 py-2.5">
+            <p className="text-secondary text-xs">
+              <span className="font-semibold text-amber-400">
+                {formatCurrency(localPool - total)}
+              </span>{" "}
+              of the {formatCurrency(localPool)}/mo pool is unallocated.{" "}
+              {pendingFillForward
+                ? `Fill forward will apply this to all months from ${monthLabel} onward.`
+                : `This applies to ${monthLabel} only.`}
+            </p>
             <div className="flex items-center justify-end gap-2">
               <button
-                onClick={onClose}
+                onClick={() => {
+                  setPendingApply(false);
+                  setPendingFillForward(false);
+                }}
                 className="border-strong text-muted hover:bg-surface-sunken rounded-lg border px-3 py-1.5 text-xs"
               >
-                Cancel
+                Go back
               </button>
               <button
-                onClick={handleFillForward}
-                disabled={isOverAllocated || !hasChanges}
-                className="bg-surface-strong text-secondary hover:bg-surface-strong rounded-lg px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                title="Apply this distribution from this month to the end of projections"
+                onClick={pendingFillForward ? doFillForward : doApply}
+                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-black hover:bg-amber-400"
               >
-                Fill forward
-              </button>
-              <button
-                onClick={handleApply}
-                disabled={isOverAllocated || !hasChanges}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Apply this month
+                {pendingFillForward ? "Fill forward anyway" : "Apply anyway"}
               </button>
             </div>
           </div>
+        )}
+
+        {/* Reset row */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleReset}
+            disabled={!thisMonthHasOverrides}
+            className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
+            title="Remove this month's changes"
+          >
+            Reset this month
+          </button>
+          <button
+            onClick={handleResetForward}
+            disabled={!hasOverridesFromHere}
+            className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
+            title="Remove the changes from this month on"
+          >
+            Reset this month forward
+          </button>
+        </div>
+        {/* Action row */}
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="border-strong text-muted hover:bg-surface-sunken rounded-lg border px-3 py-1.5 text-xs"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleFillForward}
+            disabled={isOverAllocated || !hasChanges}
+            className="bg-surface-strong text-secondary hover:bg-surface-strong rounded-lg px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+            title="Apply this distribution from this month to the end of projections"
+          >
+            Fill forward
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={isOverAllocated || !hasChanges}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Apply this month
+          </button>
         </div>
       </div>
-    </>
+    </Modal>
   );
 }

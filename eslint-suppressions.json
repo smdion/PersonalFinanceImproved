@@ -3084,17 +3084,8 @@
     }
   },
   "src/components/savings/month-override-modal.tsx": {
-    "jsx-a11y/click-events-have-key-events": {
-      "count": 1
-    },
-    "jsx-a11y/no-static-element-interactions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 2
     },
     "ratchet/no-raw-button": {
       "count": 10
