@@ -77,8 +77,8 @@ export function buildIndividualYearBalances(
             // every dollar in the account is penalty-exposed. A PARTIALLY
             // exposed account (some penalty-free capacity remaining) is
             // NOT locked under this definition, even though it now has a
-            // nonzero penaltyExposedAmount — see withdrawal-eligibility.ts's
-            // module docblock § Q2.
+            // nonzero penaltyExposedAmount (eligibility.ts's module docblock:
+            // `locked` vs `penalty-exposed`).
             eligibilityLocked:
               acctEligibility.penaltyFreeAmount <= 0.005 &&
               acctEligibility.penaltyExposedAmount > 0,
@@ -211,21 +211,19 @@ export function clampIndividualBalances(
  * computation runs.
  *
  * The two tracks are deliberately separate (different granularity, lifecycle,
- * consumers — see the design doc's Q2) but drift accumulates from per-account
+ * consumers) but drift accumulates from per-account
  * `roundToCents` vs. one aggregate rounding at several pipeline stages, and
  * that drift compounds across years via growth. Left unreconciled, a
  * category that `computeWithdrawalEligibility` (summing over `indBal`)
  * reports as 100% locked can still show a nonzero "eligible" balance to
- * `subtractPenaltyExposed` (which reads `acctBal`) — the exact live bug this
- * function exists to close.
+ * `subtractPenaltyExposed` (which reads `acctBal`).
  *
  * `acctBal` is the authoritative track (it feeds Tax Buckets, routing, tax,
  * and every aggregate the UI shows) — this pushes `indBal` onto it, never
  * the reverse. Zero writes when a group already matches, which is what
- * keeps a non-drifting household's projection byte-identical (Q3 of the
- * ORIGINAL Group 0 design doc forbade deriving eligibility from a sum of
- * `indBal`; this does not do that — it corrects `indBal` itself, off the
- * authoritative track, before eligibility ever reads it).
+ * keeps a non-drifting household's projection byte-identical. It corrects
+ * `indBal` itself, off the authoritative track, before eligibility ever
+ * reads it.
  *
  * Call at END of year, after `clampIndividualBalances` (itself a drift
  * source — it zeroes negatives on the individual track only) and before

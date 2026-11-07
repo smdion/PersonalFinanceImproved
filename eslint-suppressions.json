@@ -3776,10 +3776,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 17
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 16
     },
     "ratchet/no-string-closed-set-field": {
       "count": 5
@@ -3787,7 +3784,7 @@
   },
   "src/lib/pure/accounts/portfolio-labels.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -3811,13 +3808,10 @@
   },
   "src/lib/pure/accounts/roth-basis-tracking.ts": {
     "ratchet/max-comment-lines": {
-      "count": 8
+      "count": 7
     },
     "ratchet/no-guarded-division": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/accounts/snapshot-row-label.ts": {

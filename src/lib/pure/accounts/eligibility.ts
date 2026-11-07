@@ -4,35 +4,28 @@
  * withdrawal routing exactly which dollars, in each individual account,
  * would incur the 10% early-withdrawal penalty this year (Rule of 55, 59½,
  * HSA 65, Roth ordering) — the same rules the Tax Buckets analysis tool
- * already displays, now wired into actual withdrawal routing.
+ * displays.
  *
- * Key decisions this
- * module implements (supersedes an earlier "soft/penalized-but-available"
- * design, Group 0 § Q0):
+ * Key decisions this module implements:
  *
- * - Group 0 § Q0 ("soft/penalized-but-available") is SUPERSEDED. A
- *   penalty-exposed dollar is no longer treated as reachable-but-
- *   disfavored — by explicit user direction, the router (see
- *   `withdrawal-routing/`) now excludes it by default
- *   (`config.avoidPenalizedWithdrawals`, default true). This module still
- *   only computes the per-dollar partition; it does not itself gate
- *   anything — the router decides what to do with the partition.
- * - Penalty-hard-exclusion § Q1 (per-dollar partition, one rule for every
- *   account type): penalty-free capacity is the LEADING, CONTIGUOUSLY
+ * - A penalty-exposed dollar is not reachable-but-disfavored: the router
+ *   (see `withdrawal-routing/`) excludes it by default
+ *   (`config.avoidPenalizedWithdrawals`, default true). This module only
+ *   computes the per-dollar partition; it does not itself gate anything —
+ *   the router decides what to do with the partition.
+ * - Per-dollar partition, one rule for every account type: penalty-free
+ *   capacity is the LEADING, CONTIGUOUSLY
  *   penalty-free PREFIX of an account's `early-access.ts` slices, in the
  *   order that account's own ordering rules release them — not the sum of
  *   every penalty-free slice regardless of position. See
  *   `penaltyFreePrefixAmount`'s docblock.
- * - Penalty-hard-exclusion § Q2: `locked` (old, whole-account concept) and
- *   `penalty-exposed` (this pass) are NOT parallel ideas — every dollar in
- *   an old-style "locked" account is penalty-exposed, but a partially
- *   penalty-exposed account (the case that motivated this whole pass — a
- *   pre-59½ Roth IRA with contribution basis) was never "locked" under the
- *   old whole-account boolean. `eligibilityLocked` in
- *   `IndividualAccountYearBalance` (consumed by the UI) keeps meaning
- *   "every dollar in this account is penalty-exposed" for backward
- *   compatibility with existing reason-string wording; `penaltyExposedAmount`
- *   is the number that actually matters for routing.
+ * - `locked` (whole-account) and `penalty-exposed` (per dollar) are NOT
+ *   parallel ideas — every dollar in a "locked" account is penalty-exposed,
+ *   but a partially penalty-exposed account (e.g. a pre-59½ Roth IRA with
+ *   contribution basis) isn't "locked". `draw.eligibilityLocked` means
+ *   "every dollar in this account is penalty-exposed", and `draw.reason` is
+ *   a structured `EligibilityReason` (worded by `describeEligibility`);
+ *   `penaltyExposedAmount` is the number that matters for routing.
  *
  * Leaf predicates (`early-access.ts`) and `projectRuleOf55`
  * (`tax-bucket-projection.ts`) are called verbatim — never reimplemented
@@ -83,9 +76,8 @@ export type EligibilityAccountInput = {
    *  `projectRuleOf55`'s `opts.forceIneligible` docblock
    *  (`tax-bucket-projection.ts`) for the full contract. Passed straight
    *  through to that function; this module never inspects or short-circuits
-   *  on it directly — doing so was a real bug, since Rule-of-55-ineligible is
-   *  not the same as locked (the pro_rata
-   *  branch below is "Rule of 55 OR 59½"). */
+   *  on it directly: Rule-of-55-ineligible is not the same as locked (the
+   *  pro_rata branch below is "Rule of 55 OR 59½"). */
   ruleOf55ForceIneligible?: boolean;
   /** The owner's planned retirement year — caps when a still-active job is
    *  assumed to end (see `projectRuleOf55`'s `opts.ownerRetirementYear`). */
@@ -94,8 +86,8 @@ export type EligibilityAccountInput = {
    *  otherwise-real shortfall. Only ever `true` when set — see
    *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
    *  (`lib/pure/accounts/account-balances.types.ts`) for the full contract. This
-   *  module doesn't gate on it directly (same "compute the partition,
-   *  don't decide policy" boundary as the module docblock's § Q0 note) —
+   *  module doesn't gate on it directly (it computes the partition; the
+   *  router decides policy) —
    *  it just carries the flag onto `AccountEligibility` and folds it into
    *  the record's "still excluded" aggregates below, which
    *  `subtractPenaltyExposed` (`engine/balance-utils.ts`) is the one that
@@ -189,17 +181,9 @@ function zeroByCategory(): Record<AccountCategory, number> {
   >;
 }
 
-/** Whether every DOLLAR-BEARING slice `early-access.ts` returns for this
- *  account has `penaltyFree === false` — every dollar in the account is
- *  penalty-exposed. Zero-amount slices are excluded: `computeRothIraAccess`
- *  always emits a "Contribution basis" slice with `penaltyFree: true` even
- *  when `contributionBasis` is 0 (there's genuinely no basis to report a
- *  false status for) — counting that empty slice would make a pure-growth
- *  Roth IRA with $0 basis look "not fully exposed" for an owner of any age,
- *  silently defeating the 59½ gate for exactly the account shape it exists
- *  to gate. Used only for the UI's `eligibilityLocked` flag and reason-text
- *  branching now — routing uses `penaltyFreePrefixAmount` instead (see
- *  module docblock's § Q2 note: these are not the same question). */
+/** Whether every dollar-bearing slice is penalty-exposed ($0 slices skipped: a $0
+ *  "Contribution basis" slice must not unlock a pure-growth Roth IRA). Picks
+ *  `eligibilityLocked` and the reason's kind; routing uses `penaltyFreePrefixAmount`. */
 function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
   const dollarBearing = slices.filter((s) => s.amount > 0);
   return dollarBearing.length > 0 && dollarBearing.every((s) => !s.penaltyFree);
@@ -211,7 +195,7 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
  * `indBal` supplies each account's *current* projected balance (not its
  * `startingBalance` — that's an accumulation-phase input, stale by the time
  * decumulation runs). Each account's own `ownerBirthYear` and `ruleOf55`
- * ("now" resolution, threaded by `build-engine-payload.ts` Group 1.1) are
+ * ("now" resolution, threaded by `engine-payload/individual-accounts.ts`) are
  * external inputs; every eligibility question is re-derived from them
  * fresh for `year` via the same leaf predicates `early-access.ts` and the
  * Tax Buckets tool already use.

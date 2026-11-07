@@ -68,12 +68,10 @@ export type IndividualAccountInput = {
    *  resolvable owner. The engine re-evaluates this for a future projected
    *  year itself via `projectRuleOf55`
    *  (`src/lib/pure/accounts/tax-bucket-projection.ts`) rather than trusting a
-   *  precomputed "now" answer for a different year. Not yet consumed by
-   *  the engine (Group 2 wires the withdrawal-ordering eligibility gate) —
-   *  purely additive data threading in this pass. */
+   *  precomputed "now" answer for a different year (`eligibility.ts`). */
   ruleOf55?: RuleOf55Status | null;
   /** Companion to `ruleOf55` — Roth contribution/conversion basis "now",
-   *  same scope/caveats. Not yet consumed (see above). */
+   *  same scope/caveats; seeds tracked Roth basis. */
   rothBasisMeta?: RothBasisMeta | null;
   /** `ownerPersonId`'s birth year — carried directly on
    *  the account rather than requiring a separate personId→birthYear
@@ -82,7 +80,7 @@ export type IndividualAccountInput = {
    *  `perPersonBirthYears` is a positional array (no personId link), and
    *  `socialSecurityEntries`/`rmdStartAgeByPerson` are only populated for
    *  multi-person households. Attaching it here means the withdrawal-
-   *  eligibility gate (Group 2) never depends on which of those partial
+   *  eligibility gate never depends on which of those partial
    *  sources happened to cover a given owner. */
   ownerBirthYear?: number;
   /** The owner's planned retirement year (birth year + retirement age) —
@@ -163,10 +161,8 @@ export type AccountYearDraw = {
   withdrawal: number;
   /** Withdrawal-ordering eligibility for this account, this year. `true` =
    *  the full balance was treated as locked (penalty-preferred-against)
-   *  when withdrawal routing ran this year — never "inaccessible", the
-   *  engine's soft/penalized-but-available model always allows drawing from
-   *  a locked account once eligible sources run out (see
-   *  `withdrawal-eligibility.ts`'s module docblock). `reason` explains why,
+   *  when withdrawal routing ran this year (see `eligibility.ts`'s module
+   *  docblock for when routing may still draw it). `reason` explains why,
    *  from `AccountEligibility.reason`. Absent when the account has no
    *  resolvable eligibility question for this category (e.g. brokerage —
    *  though that case still gets a reason, just never `locked`). */

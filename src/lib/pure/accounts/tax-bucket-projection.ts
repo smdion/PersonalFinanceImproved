@@ -191,14 +191,10 @@ function projectCostBasis(
  *  genuinely no data) is reused unchanged — the future can't move a real
  *  past separation, and can't manufacture data that doesn't exist.
  *
- *  Exported — the retirement projection
- *  engine's decumulation-year handler reuses this verbatim as its
- *  "will this person have separated by projected year N" resolver, rather
- *  than duplicating the logic. Originally written for this module's own
- *  "at retirement" transition-year question (`assumedYear` was always
- *  `transitionYear`); the parameter name reflects that it now answers the
- *  same question for any assumed future year, not only the household's
- *  retirement transition. */
+ *  Exported — the retirement projection engine's withdrawal eligibility
+ *  reuses this as its "will this person have separated by projected year
+ *  N" resolver. `assumedYear` is any assumed future year, not only the
+ *  household's retirement transition. */
 export function projectRuleOf55(
   now: RuleOf55Status | null,
   assumedYear: number,
@@ -213,7 +209,7 @@ export function projectRuleOf55(
      *  One-directional by construction — this can only ever push `eligible`
      *  from true to false, never the reverse. `separationYear`/`source`/
      *  `knownFutureSeparationYear` are preserved, so the UI can still show
-     *  "separates 2034" alongside "ineligible". Both call sites (withdrawal-eligibility.ts,
+     *  "separates 2034" alongside "ineligible". Both call sites (eligibility.ts,
      *  computeTaxBucketProjection below) must pass this identically or the
      *  Tax Buckets page and the retirement engine would disagree about the
      *  same account (Single Computation Path). Never applied to the "now"

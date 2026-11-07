@@ -1,10 +1,7 @@
 /**
- * Shared label resolution for a portfolio snapshot account row. Extracted
- * after the identical block drifted three independent ways across
- * sync/preview.ts, sync/mappings.ts, and lib/db/backfill-local-ids.ts — one
- * of the three didn't even pass ownershipType, so a jointly-tracked
- * account's per-owner rows rendered inconsistently between them (see
- * RULES.md Single Computation Path).
+ * Shared label resolution for a portfolio snapshot account row, so every
+ * reader labels a jointly-tracked account's per-owner rows the same way
+ * (RULES.md Single Computation Path).
  */
 import { accountDisplayName } from "@/lib/utils/format";
 
