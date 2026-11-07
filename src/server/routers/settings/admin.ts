@@ -57,6 +57,7 @@ import { firstReachedSchema } from "@/lib/pure/advice/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
 import { mergeSettingAtomically, upsertSetting } from "@/server/data/settings";
+import { firstRow } from "@/lib/utils/first-row";
 
 // --- Zod schemas ---
 
@@ -146,7 +147,6 @@ export const adminProcedures = {
     )
     .mutation(async ({ ctx, input }) => {
       if (input.balanceDate) {
-        // Update the most recent portfolio snapshot date
         const [latest, previous] = await ctx.db
           .select({
             id: schema.portfolioSnapshots.id,
@@ -259,7 +259,7 @@ export const adminProcedures = {
             set: { value: input.value },
           })
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
         // Server date math moves to the new zone right away.
         if (isTimeZone) applyHouseholdTimeZone(input.value);
         // Invalidate year-end cache when settings change (e.g. salary averaging toggle)
@@ -340,7 +340,7 @@ export const adminProcedures = {
           .insert(schema.scenarios)
           .values(input)
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     /** Rename a Plan or change which profiles it holds. */
     update: scenarioProcedure
@@ -360,7 +360,7 @@ export const adminProcedures = {
           .set({ ...data, updatedAt: new Date() })
           .where(eq(schema.scenarios.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     /** Make this Plan's profiles the active ones, household-wide (applyPlan). */
     activate: protectedProcedure

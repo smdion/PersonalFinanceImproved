@@ -39,6 +39,7 @@ import type {
 } from "@/lib/pure/engine/types";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
+import { firstRow } from "@/lib/utils/first-row";
 
 /** Router's large-purchase input is zod-nullable, not optional-undefined like
  *  `RelocationPurchaseInput` — convert once so every call site shares the
@@ -161,7 +162,6 @@ export const relocationProjectionRouter = createTRPCRouter({
         ?.overrides as Record<string, unknown>[]) ??
         []) as DecumulationOverride[];
 
-      // Resolve annual expenses from budget profiles.
       const currentProfile = data.allBudgetProfiles.find(
         (p) => p.id === input.currentProfileId,
       );
@@ -643,13 +643,13 @@ export const relocationProjectionRouter = createTRPCRouter({
             })
             .where(eq(schema.relocationScenarios.id, input.id))
             .returning()
-            .then((r) => r[0]);
+            .then(firstRow);
         }
         return ctx.db
           .insert(schema.relocationScenarios)
           .values({ name: input.name, params: input.params })
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

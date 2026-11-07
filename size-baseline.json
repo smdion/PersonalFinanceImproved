@@ -227,7 +227,7 @@
     "src/server/routers/savings/profile-allocations.ts": 407,
     "src/server/routers/settings/admin.ts": 412,
     "src/server/routers/settings/paycheck.ts": 13,
-    "src/server/routers/settings/tax-limits.ts": 784,
+    "src/server/routers/settings/tax-limits.ts": 783,
     "src/server/routers/simplefin/accounts.ts": 254,
     "src/server/routers/simplefin/index.ts": 24,
     "src/server/routers/sync/core.ts": 12,
@@ -956,7 +956,7 @@
       "monteCarloRouter.computeMonteCarloProjection.query()": 304
     },
     "src/server/routers/projection/relocation.ts": {
-      "relocationProjectionRouter.computeRelocationFiProjection.query()": 487
+      "relocationProjectionRouter.computeRelocationFiProjection.query()": 486
     },
     "src/server/routers/projection/strategy.ts": {
       "strategyRouter.analyzeStrategy.query()": 404,
