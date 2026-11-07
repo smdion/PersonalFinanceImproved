@@ -4,6 +4,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import {
   formatCurrency,
@@ -66,8 +67,8 @@ import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 export function NetWorthContent() {
   const utils = trpc.useUtils();
   const targeting = useYearEndTargetingInput();
-  const { data, isLoading, error } =
-    trpc.networth.computeSummary.useQuery(targeting);
+  const summary = trpc.networth.computeSummary.useQuery(targeting);
+  const { data } = summary;
   const { data: historyData } = trpc.networth.listHistory.useQuery(targeting);
   // Today's estimate from live balances — hidden (no error) without the
   // portfolio permission it needs.
@@ -159,24 +160,22 @@ export function NetWorthContent() {
     [upsertSetting],
   );
 
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load net worth data: {error.message}
-      </p>
+      <QueryBoundary
+        query={summary}
+        what="net worth data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+            </div>
+          </div>
+        }
+      />
     );
   }
 

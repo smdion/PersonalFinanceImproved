@@ -1,6 +1,6 @@
 {
   "files": {
-    "src/app/(dashboard)/assets/assets-content.tsx": 430,
+    "src/app/(dashboard)/assets/assets-content.tsx": 429,
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1058,
     "src/app/(dashboard)/budget/budget-content.tsx": 663,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
@@ -8,16 +8,16 @@
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 979,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
-    "src/app/(dashboard)/historical/historical-content.tsx": 1026,
-    "src/app/(dashboard)/house/house-content.tsx": 746,
-    "src/app/(dashboard)/networth/networth-content.tsx": 461,
+    "src/app/(dashboard)/historical/historical-content.tsx": 1025,
+    "src/app/(dashboard)/house/house-content.tsx": 733,
+    "src/app/(dashboard)/networth/networth-content.tsx": 460,
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 684,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
-    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 871,
+    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 870,
     "src/app/(dashboard)/savings/savings-content.tsx": 930,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1019,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
-    "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 522,
+    "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 515,
     "src/app/(dashboard)/versions/versions-content.tsx": 750,
     "src/components/budget/budget-summary-table.tsx": 570,
     "src/components/budget/contribution-profile-manager.tsx": 2041,
@@ -301,7 +301,7 @@
   },
   "functions": {
     "src/app/(dashboard)/assets/assets-content.tsx": {
-      "AssetsContent": 387
+      "AssetsContent": 385
     },
     "src/app/(dashboard)/benchmarks/methodology/page.tsx": {
       "MethodologyPage": 200
@@ -339,31 +339,31 @@
       "ExpensesContent": 583
     },
     "src/app/(dashboard)/historical/historical-content.tsx": {
-      "HistoricalContent": 191,
+      "HistoricalContent": 189,
       "HistoricalTable": 712,
       "HistoricalTable.map()": 362
     },
     "src/app/(dashboard)/house/house-content.tsx": {
-      "HouseContent": 721
+      "HouseContent": 708
     },
     "src/app/(dashboard)/liabilities/liabilities-content.tsx": {
-      "LiabilitiesContent": 207
+      "LiabilitiesContent": 205
     },
     "src/app/(dashboard)/milestones/milestones-content.tsx": {
       "MilestonesContent": 223
     },
     "src/app/(dashboard)/networth/networth-content.tsx": {
-      "NetWorthContent": 396
+      "NetWorthContent": 394
     },
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
       "PaycheckContent": 643,
       "PaycheckContent.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
-      "PerformanceContent": 809
+      "PerformanceContent": 808
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 717,
+      "PortfolioContent": 715,
       "PortfolioContent.map()": 256
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {

@@ -5,6 +5,7 @@
 import { FocusTarget } from "@/components/ui/focus-target";
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -27,32 +28,30 @@ export function LiabilitiesContent() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);
   const [showHistSchedule, setShowHistSchedule] = useState<number | null>(null);
   const [showManageLoans, setShowManageLoans] = useState(false);
-  const { data, isLoading, error } =
-    trpc.mortgage.computeActiveSummary.useQuery();
+  const summary = trpc.mortgage.computeActiveSummary.useQuery();
+  const { data } = summary;
   const { data: other } = trpc.debts.summary.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const serviceLabel = budgetApiServiceLabel(syncStatus?.service);
   const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
 
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <SkeletonChart key={i} height={112} />
-          ))}
-        </div>
-        <SkeletonChart height={256} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load liability data: {error.message}
-      </p>
+      <QueryBoundary
+        query={summary}
+        what="liability data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <SkeletonChart key={i} height={112} />
+              ))}
+            </div>
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
 

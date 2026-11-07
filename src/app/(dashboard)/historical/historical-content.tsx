@@ -5,6 +5,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -79,8 +80,8 @@ export function HistoricalContent() {
   const [showJobHistory, setShowJobHistory] = useState(false);
   const [hiddenGroups, setHiddenGroups] = useState<Set<ColumnGroup>>(new Set());
   const targeting = useYearEndTargetingInput();
-  const { data, isLoading, error } =
-    trpc.historical.computeSummary.useQuery(targeting);
+  const summary = trpc.historical.computeSummary.useQuery(targeting);
+  const { data } = summary;
   const utils = trpc.useUtils();
 
   const invalidateAll = () => {
@@ -113,20 +114,18 @@ export function HistoricalContent() {
     });
   };
 
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <SkeletonChart height={256} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load historical data: {error.message}
-      </p>
+      <QueryBoundary
+        query={summary}
+        what="historical data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
 

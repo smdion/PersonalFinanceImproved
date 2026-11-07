@@ -8,7 +8,11 @@ import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { CellButton } from "@/components/ui/cell-button";
-import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { SkeletonChart } from "@/components/ui/skeleton";
+import {
+  UtilitiesQueryBoundary,
+  queryPending,
+} from "./utilities-query-boundary";
 import dynamic from "next/dynamic";
 import {
   budgetApiServiceLabel,
@@ -415,7 +419,8 @@ function UtilityCard({
 }
 
 export function UtilitiesContent() {
-  const { data, isLoading } = trpc.utilities.computeSummary.useQuery();
+  const summary = trpc.utilities.computeSummary.useQuery();
+  const { data } = summary;
   const summaries: UtilitySummary[] = data?.summaries ?? [];
 
   // We track only the years the user has *toggled* away from their default.
@@ -431,19 +436,7 @@ export function UtilitiesContent() {
       return next;
     });
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <SkeletonChart key={i} height={112} />
-          ))}
-        </div>
-        <SkeletonChart height={256} />
-      </div>
-    );
-  }
+  if (queryPending(summary)) return <UtilitiesQueryBoundary query={summary} />;
 
   return (
     <div className="space-y-6">

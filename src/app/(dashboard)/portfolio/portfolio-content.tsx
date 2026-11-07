@@ -7,6 +7,7 @@
 import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -156,8 +157,8 @@ export function PortfolioContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
   const targeting = useYearEndTargetingInput();
-  const { data, isLoading, error } =
-    trpc.networth.computeSummary.useQuery(targeting);
+  const summary = trpc.networth.computeSummary.useQuery(targeting);
+  const { data } = summary;
   const [snapshotPage, setSnapshotPage] = useState(1);
   const [snapshotDateFrom, setSnapshotDateFrom] = useState("");
   const [snapshotDateTo, setSnapshotDateTo] = useState("");
@@ -313,20 +314,18 @@ export function PortfolioContent() {
   const sortOf = (col: NonNullable<typeof sortCol>) =>
     sortCol !== col ? "none" : sortDir === "asc" ? "ascending" : "descending";
 
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <SkeletonChart height={128} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load portfolio data: {error.message}
-      </p>
+      <QueryBoundary
+        query={summary}
+        what="portfolio data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <SkeletonChart height={128} />
+          </div>
+        }
+      />
     );
   }
 

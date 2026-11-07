@@ -2202,14 +2202,6 @@ const HOOK_FOLDERS_KNOWN: string[] = [];
 /** Skeleton returns on missing data, per file: a failed query shows the
  *  skeleton forever. Each goes to QueryBoundary. */
 const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
-  "src/app/(dashboard)/assets/assets-content.tsx": { count: 1 },
-  "src/app/(dashboard)/historical/historical-content.tsx": { count: 1 },
-  "src/app/(dashboard)/house/house-content.tsx": { count: 1 },
-  "src/app/(dashboard)/liabilities/liabilities-content.tsx": { count: 1 },
-  "src/app/(dashboard)/networth/networth-content.tsx": { count: 1 },
-  "src/app/(dashboard)/performance/performance-content.tsx": { count: 1 },
-  "src/app/(dashboard)/portfolio/portfolio-content.tsx": { count: 1 },
-  "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": { count: 1 },
   "src/components/settings/bracket-table-editor.tsx": { count: 1 },
   "src/components/settings/contribution-limits.tsx": { count: 1 },
   "src/components/settings/fpl-by-household.tsx": { count: 1 },

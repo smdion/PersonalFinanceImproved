@@ -4,7 +4,7 @@
 
 import { loanFeedIsStale } from "@/lib/pure/sync/simplefin-feeds";
 import { useState } from "react";
-import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { HouseQueryBoundary, queryPending } from "./house-query-boundary";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
@@ -25,14 +25,14 @@ import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 
 export function HouseContent() {
   const targeting = useYearEndTargetingInput();
-  const { data: assetData, isLoading: assetsLoading } =
-    trpc.assets.computeSummary.useQuery(targeting);
-  const { data: mortgageData, isLoading: mortgageLoading } =
-    trpc.mortgage.computeActiveSummary.useQuery();
+  const assets = trpc.assets.computeSummary.useQuery(targeting);
+  const { data: assetData } = assets;
+  const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
+  const { data: mortgageData } = mortgage;
   const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
   const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
-  const { data: propTaxes, isLoading: taxesLoading } =
-    trpc.assets.listPropertyTaxes.useQuery();
+  const taxes = trpc.assets.listPropertyTaxes.useQuery();
+  const { data: propTaxes } = taxes;
   const utils = trpc.useUtils();
 
   // Home improvement form state
@@ -91,21 +91,8 @@ export function HouseContent() {
     onSuccess: invalidateAll,
   });
 
-  const isLoading = assetsLoading || mortgageLoading || taxesLoading;
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <SkeletonChart key={i} height={112} />
-          ))}
-        </div>
-        <SkeletonChart height={256} />
-      </div>
-    );
-  }
+  const queries = [assets, mortgage, taxes];
+  if (queryPending(queries)) return <HouseQueryBoundary query={queries} />;
 
   const current = assetData?.current;
   const activeLoan = mortgageData?.loans.find(
