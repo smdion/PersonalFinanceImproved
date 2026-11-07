@@ -332,7 +332,7 @@
       "ExpensesContent": 583
     },
     "src/app/(dashboard)/historical/historical-content.tsx": {
-      "HistoricalPage": 191,
+      "HistoricalContent": 191,
       "HistoricalTable": 712,
       "HistoricalTable.map()": 362
     },

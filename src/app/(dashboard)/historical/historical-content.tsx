@@ -75,7 +75,7 @@ const EDITABLE_FIELDS = new Set([
   "otherLiabilities",
 ]);
 
-export default function HistoricalPage() {
+export function HistoricalContent() {
   const [showJobHistory, setShowJobHistory] = useState(false);
   const [hiddenGroups, setHiddenGroups] = useState<Set<ColumnGroup>>(new Set());
   const targeting = useYearEndTargetingInput();
