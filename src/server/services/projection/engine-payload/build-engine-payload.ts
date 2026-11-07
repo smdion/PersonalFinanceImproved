@@ -235,10 +235,6 @@ export async function buildEnginePayload(
     opts,
   );
 
-  // Salary comes from the Salary Profile (salaryProfileActiveMap, resolved
-  // above); the Contribution Profile contributes no salary — the two are
-  // independent.
-
   // Each person's current job, or the next one they start; its dates bound
   // the years it's worked (workingYearsByPerson, below).
   const activeJobs = projectionJobs(patchedJobs, asOfDate);

@@ -23,8 +23,8 @@ export async function fetchRetirementData(
     snapshotId?: number;
     contributionProfileId?: number;
     salaryProfileId?: number;
-    /** Reference date for the IRS-limits-by-tax-year lookup. A snapshot's
-     *  own date isn't known until these reads resolve. */
+    /** Unused: no read here depends on a date (resolveTaxParams picks the
+     *  tax year later). */
     asOfDate?: Date;
   },
 ) {
