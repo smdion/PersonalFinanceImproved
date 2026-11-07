@@ -574,31 +574,6 @@
       "count": 3
     }
   },
-  "src/lib/pure/net-worth/snapshot-series.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/retirement/retirement-bridge.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/pure/savings/brokerage-goals.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/savings/savings-capacity.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3

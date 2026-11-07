@@ -174,14 +174,14 @@ function scoreCandidate(
   const lifetimeTax = decumYears.reduce(
     (sum, y) =>
       sum +
-      (y.taxCost ?? 0) +
-      (y.rothConversionTaxCost ?? 0) +
+      y.taxCost +
+      y.rothConversionTaxCost +
       (y.penaltyCost ?? 0) +
-      (y.irmaaCost ?? 0),
+      y.irmaaCost,
     0,
   );
   const finalYear = result.projectionByYear[result.projectionByYear.length - 1];
-  const traditionalEnd = finalYear?.balanceByTaxType?.preTax ?? 0;
+  const traditionalEnd = finalYear?.balanceByTaxType.preTax ?? 0;
   const netCost = lifetimeTax + ASSUMED_TERMINAL_RATE * traditionalEnd;
 
   // Ranking signal: floored `unmetNeed`, keyed off the canonical
