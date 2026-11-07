@@ -28,6 +28,7 @@ import { snapshotRowLabel } from "@/lib/pure/accounts/snapshot-row-label";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { SortableHeader } from "@/components/ui/sortable-header";
 import {
   EditLockToggle,
   EDIT_LOCK_KEYS,
@@ -140,6 +141,15 @@ function subRowLabel(a: SnapshotAccountWithPerf, group: AccountGroup) {
 }
 
 // ---------------------------------------------------------------------------
+
+/** The snapshot table's sortable columns, in order. */
+const SNAPSHOT_SORT_COLUMNS = [
+  ["date", "Date"],
+  ["total", "Total"],
+  ["accounts", "Accounts"],
+  ["change", "Change"],
+  ["changePct", "Change %"],
+] as const;
 
 export function PortfolioContent() {
   const user = useUser();
@@ -300,13 +310,8 @@ export function PortfolioContent() {
   );
   const sortedSnapshots = rawSnapshots;
 
-  const sortIndicator = useCallback(
-    (col: string) => {
-      if (sortCol !== col) return " ↕";
-      return sortDir === "asc" ? " ↑" : " ↓";
-    },
-    [sortCol, sortDir],
-  );
+  const sortOf = (col: NonNullable<typeof sortCol>) =>
+    sortCol !== col ? "none" : sortDir === "asc" ? "ascending" : "descending";
 
   if (isLoading) {
     return (
@@ -528,36 +533,16 @@ export function PortfolioContent() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th
-                      className="text-muted hover:text-primary cursor-pointer py-2 pr-4 text-left font-medium select-none"
-                      onClick={() => toggleSort("date")}
-                    >
-                      Date{sortIndicator("date")}
-                    </th>
-                    <th
-                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                      onClick={() => toggleSort("total")}
-                    >
-                      Total{sortIndicator("total")}
-                    </th>
-                    <th
-                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                      onClick={() => toggleSort("accounts")}
-                    >
-                      Accounts{sortIndicator("accounts")}
-                    </th>
-                    <th
-                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                      onClick={() => toggleSort("change")}
-                    >
-                      Change{sortIndicator("change")}
-                    </th>
-                    <th
-                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                      onClick={() => toggleSort("changePct")}
-                    >
-                      Change %{sortIndicator("changePct")}
-                    </th>
+                    {SNAPSHOT_SORT_COLUMNS.map(([col, label]) => (
+                      <SortableHeader
+                        key={col}
+                        className={`text-muted hover:text-primary cursor-pointer ${col === "date" ? "py-2 pr-4 text-left" : "px-4 py-2 text-right"} font-medium select-none`}
+                        sort={sortOf(col)}
+                        onSort={() => toggleSort(col)}
+                      >
+                        {label}
+                      </SortableHeader>
+                    ))}
                     <th className="text-muted px-4 py-2 text-right font-medium">
                       Gap
                     </th>
