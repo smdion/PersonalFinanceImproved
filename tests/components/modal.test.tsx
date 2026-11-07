@@ -158,4 +158,15 @@ describe("Modal", () => {
     expect(inner).toHaveBeenCalledTimes(1);
     expect(outer).not.toHaveBeenCalled();
   });
+
+  it("docks to the right edge with placement right", () => {
+    render(
+      <Modal label="x" className="" onClose={() => {}} placement="right">
+        <p>x</p>
+      </Modal>,
+    );
+    const overlay = screen.getByRole("presentation");
+    expect(overlay.className).toContain("justify-end");
+    expect(overlay.className).not.toContain("items-center");
+  });
 });

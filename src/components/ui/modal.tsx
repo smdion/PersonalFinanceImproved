@@ -7,8 +7,12 @@ import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 const openModals = new Set<number>();
 let rendered = 0;
 
-const OVERLAY =
-  "fixed inset-0 z-[110] flex items-center justify-center bg-black/40 print:hidden";
+const OVERLAY = "fixed inset-0 z-[110] flex bg-black/40 print:hidden";
+
+const PLACEMENT = {
+  center: "items-center justify-center",
+  right: "justify-end",
+} as const;
 
 type ModalName =
   { labelledBy: string; label?: never } | { label: string; labelledBy?: never };
@@ -21,6 +25,8 @@ export type ModalProps = ModalName & {
   role?: "dialog" | "alertdialog";
   closeOnEscape?: boolean;
   closeOnBackdrop?: boolean;
+  /** `right` docks a full-height panel to the right edge. */
+  placement?: keyof typeof PLACEMENT;
 };
 
 /**
@@ -34,6 +40,7 @@ export function Modal({
   role = "dialog",
   closeOnEscape = true,
   closeOnBackdrop = true,
+  placement = "center",
   labelledBy,
   label,
 }: ModalProps) {
@@ -73,7 +80,7 @@ export function Modal({
 
   return (
     <div
-      className={OVERLAY}
+      className={`${OVERLAY} ${PLACEMENT[placement]}`}
       onClick={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onClose();
       }}
