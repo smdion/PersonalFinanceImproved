@@ -157,7 +157,6 @@ export function calculateMonteCarlo(
     sustainableWithdrawalsPV,
     spendingStableCount,
     budgetStableCount,
-    retirementBudget,
     gkAnchorRates,
     priceLevelsByYear,
     yearsToRetirement,
@@ -225,7 +224,6 @@ export function calculateMonteCarlo(
     penaltyAvoidedShortfallAmountsPV,
     spendingStableCount,
     numTrials,
-    retirementBudget,
     budgetStableCount,
     terminalBalances,
     failureAges,
@@ -284,9 +282,10 @@ function trialSetup(input: MonteCarloInput, warnings: string[]) {
 
   // Strategy config — determines whether stability baseline uses post-retirement
   // raise (from engine's projectedExpenses) or MC inflation (computed baseline).
-  const activeStrategy = (engineInput.decumulationDefaults
-    ?.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType;
+  const activeStrategy = (engineInput.decumulationDefaults.withdrawalStrategy ??
+    "fixed") as WithdrawalStrategyType;
   const strategyUsesRaise =
+    // The stored strategy is a varchar, cast here: an unknown key reads undefined.
     WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.usesPostRetirementRaise ?? true;
 
   // Nothing to draw returns from. (A mix off 100% is refused by the

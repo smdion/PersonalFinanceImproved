@@ -83,13 +83,6 @@ export function runTrials(
   let spendingStableCount = 0;
   let budgetStableCount = 0;
 
-  // Budget baseline for budget stability metric (user's stated retirement expenses).
-  // Falls back to annualExpenses when decumulationAnnualExpenses is omitted
-  // (the server omits it when the decumulation budget matches accumulation).
-  const retirementBudget =
-    engineInput.decumulationAnnualExpenses ??
-    engineInput.annualExpenses ??
-    null;
   // Each trial's price level by year, for the assumptions on the bands.
   const tracksGkAnchor =
     engineInput.decumulationDefaults.withdrawalStrategy === "guyton_klinger";
@@ -278,16 +271,14 @@ export function runTrials(
       // Compared with what the strategy has the household spend
       // (strategySpending) — the budget is spending, while the gross
       // withdrawal is net of Social Security and gross of tax.
-      if (retirementBudget !== null) {
-        const isBudgetStable = decYears.every((y) => {
-          const baseline = y.budgetOnlyExpenses;
-          return (
-            baseline === 0 ||
-            strategySpending(y) >= MC_SPENDING_STABILITY_THRESHOLD * baseline
-          );
-        });
-        if (isBudgetStable) budgetStableCount++;
-      }
+      const isBudgetStable = decYears.every((y) => {
+        const baseline = y.budgetOnlyExpenses;
+        return (
+          baseline === 0 ||
+          strategySpending(y) >= MC_SPENDING_STABILITY_THRESHOLD * baseline
+        );
+      });
+      if (isBudgetStable) budgetStableCount++;
       // Per-year spending ratios for stability chart bands.
       for (let di = 0; di < decYears.length && di < numDecYears; di++) {
         const yr = decYears[di]!;
@@ -297,15 +288,13 @@ export function runTrials(
         stratRatiosByDecYear[di]!.push(
           safeDivide(yr.totalWithdrawal, stratBase, 0),
         );
-        if (retirementBudget !== null) {
-          budgetRatiosByDecYear[di]!.push(
-            safeDivide(strategySpending(yr), yr.budgetOnlyExpenses, 0),
-          );
-        }
+        budgetRatiosByDecYear[di]!.push(
+          safeDivide(strategySpending(yr), yr.budgetOnlyExpenses, 0),
+        );
       }
     } else {
       spendingStableCount++; // no decumulation = vacuously stable
-      if (retirementBudget !== null) budgetStableCount++;
+      budgetStableCount++;
     }
 
     // Sustainable withdrawal (nominal and present value)
@@ -336,7 +325,6 @@ export function runTrials(
     sustainableWithdrawalsPV,
     spendingStableCount,
     budgetStableCount,
-    retirementBudget,
     gkAnchorRates,
     priceLevelsByYear,
     yearsToRetirement,

@@ -236,7 +236,6 @@ export function trialOutcomes(
   penaltyAvoidedShortfallAmountsPV: number[],
   spendingStableCount: number,
   numTrials: number,
-  retirementBudget: number,
   budgetStableCount: number,
   terminalBalances: number[],
   failureAges: number[],
@@ -259,10 +258,7 @@ export function trialOutcomes(
   const spendingStabilityRate = safeDivide(spendingStableCount, numTrials, 0);
 
   // Budget stability: same metric but against user's retirement budget
-  const budgetStabilityRate =
-    retirementBudget !== null
-      ? safeDivide(budgetStableCount, numTrials, null)
-      : null;
+  const budgetStabilityRate = safeDivide(budgetStableCount, numTrials, null);
 
   // Terminal balance stats
   const sortedTerminal = [...terminalBalances].sort((a, b) => a - b);

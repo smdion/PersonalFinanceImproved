@@ -576,17 +576,7 @@
   },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/simulation/trial-run.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/lib/pure/simulation/trial-summary.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
+      "count": 2
     }
   },
   "src/lib/pure/sync/budget-preview.ts": {
