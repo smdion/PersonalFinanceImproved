@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
 import { Badge } from "@/components/ui/badge";
+import { CellButton } from "@/components/ui/cell-button";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -91,8 +92,9 @@ export function AllTransactionsTab({
     field: ActiveCellField;
   } | null>(null);
 
-  // Prevents double-mutation when Enter fires blur immediately after
-  const committingRef = useRef(false);
+  // An inline edit ends once: Enter's save records the edit it ended (each
+  // activation is a new activeCell), so that edit's blur doesn't save again.
+  const committed = useRef<typeof activeCell>(null);
 
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
     onSuccess: () => {
@@ -365,16 +367,13 @@ export function AllTransactionsTab({
   // Shared blur/keydown handlers for inline inputs
   const makeInputHandlers = (tx: PlannedTransaction) => ({
     onBlur: () => {
-      if (committingRef.current) {
-        committingRef.current = false;
-        return;
-      }
+      if (committed.current === activeCell) return;
       commitEdit(tx);
       setActiveCell(null);
     },
     onKeyDown: (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
-        committingRef.current = true;
+        committed.current = activeCell;
         commitEdit(tx);
         setActiveCell(null);
       }
@@ -1149,6 +1148,8 @@ export function AllTransactionsTab({
                   !isRuleRow &&
                   canEdit !== false;
                 const handlers = makeInputHandlers(tx);
+                const edit = (field: ActiveCellField) =>
+                  editable ? () => activateCell(tx, field) : undefined;
 
                 return (
                   <tr
@@ -1158,9 +1159,7 @@ export function AllTransactionsTab({
                     {/* Fund */}
                     <td
                       className={`px-3 py-2 whitespace-nowrap${editable ? "cursor-pointer" : ""}`}
-                      onClick={
-                        editable ? () => activateCell(tx, "goalId") : undefined
-                      }
+                      onClick={edit("goalId")}
                     >
                       {isCellActive(tx.id, "goalId") && editForm ? (
                         <div className="inline-flex items-center gap-1.5">
@@ -1219,26 +1218,24 @@ export function AllTransactionsTab({
                           </span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="text-secondary font-medium">
-                            {name}
+                        <CellButton enabled={editable}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="text-secondary font-medium">
+                              {name}
+                            </span>
                           </span>
-                        </span>
+                        </CellButton>
                       )}
                     </td>
 
                     {/* Date */}
                     <td
                       className={`text-muted px-3 py-2 whitespace-nowrap tabular-nums${editable ? "cursor-pointer" : ""}`}
-                      onClick={
-                        editable
-                          ? () => activateCell(tx, "transactionDate")
-                          : undefined
-                      }
+                      onClick={edit("transactionDate")}
                     >
                       {isCellActive(tx.id, "transactionDate") && editForm ? (
                         <input
@@ -1256,21 +1253,19 @@ export function AllTransactionsTab({
                           className="border-default bg-surface-primary text-primary rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                         />
                       ) : (
-                        formatDate(
-                          new Date(tx.transactionDate + "T00:00:00"),
-                          "short",
-                        )
+                        <CellButton enabled={editable}>
+                          {formatDate(
+                            new Date(tx.transactionDate + "T00:00:00"),
+                            "short",
+                          )}
+                        </CellButton>
                       )}
                     </td>
 
                     {/* Description */}
                     <td
                       className={`px-3 py-2 text-muted${editable ? "cursor-pointer" : ""}`}
-                      onClick={
-                        editable
-                          ? () => activateCell(tx, "description")
-                          : undefined
-                      }
+                      onClick={edit("description")}
                     >
                       {isCellActive(tx.id, "description") && editForm ? (
                         <input
@@ -1288,7 +1283,7 @@ export function AllTransactionsTab({
                           className="border-default bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                         />
                       ) : (
-                        <>
+                        <CellButton enabled={editable}>
                           {isTransfer && (
                             <Badge
                               color="blue"
@@ -1308,7 +1303,7 @@ export function AllTransactionsTab({
                             </Badge>
                           )}
                           {tx.description}
-                        </>
+                        </CellButton>
                       )}
                     </td>
 
@@ -1321,9 +1316,7 @@ export function AllTransactionsTab({
                             ? "text-red-500"
                             : "text-green-600"
                       }`}
-                      onClick={
-                        editable ? () => activateCell(tx, "amount") : undefined
-                      }
+                      onClick={edit("amount")}
                     >
                       {isCellActive(tx.id, "amount") && editForm ? (
                         <input
@@ -1342,7 +1335,9 @@ export function AllTransactionsTab({
                       ) : isTransfer ? (
                         formatCurrency(Math.abs(tx.amount))
                       ) : (
-                        `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`
+                        <CellButton enabled={editable}>
+                          {`${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
+                        </CellButton>
                       )}
                     </td>
 

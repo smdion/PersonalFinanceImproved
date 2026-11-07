@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
+import { CellButton } from "@/components/ui/cell-button";
 import type { EditableCellProps } from "./types";
 
 export function EditableCell({
@@ -46,7 +47,7 @@ export function EditableCell({
       onClick={onStartEdit}
       title="Click to edit"
     >
-      {formatter(value)}
+      <CellButton>{formatter(value)}</CellButton>
       {annotation}
     </td>
   );
