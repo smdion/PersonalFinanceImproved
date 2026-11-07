@@ -689,6 +689,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/sync/budget-preview.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 12
+    }
+  },
   "src/lib/pure/tax/tax.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -932,11 +937,6 @@
   "src/server/services/sync/fill-ledger.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
-    }
-  },
-  "src/server/services/sync/preview.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 12
     }
   },
   "src/server/services/sync/sync-all.ts": {

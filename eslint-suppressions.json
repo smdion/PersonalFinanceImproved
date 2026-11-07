@@ -5220,6 +5220,11 @@
       "count": 2
     }
   },
+  "src/lib/pure/sync/budget-preview.ts": {
+    "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
   "src/lib/pure/sync/feed-data-date.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -6706,10 +6711,10 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1

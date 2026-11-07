@@ -166,6 +166,7 @@
     "src/lib/pure/simulation/stress-test-run.ts": 121,
     "src/lib/pure/simulation/trial-run.ts": 344,
     "src/lib/pure/simulation/trial-summary.ts": 303,
+    "src/lib/pure/sync/budget-preview.ts": 359,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 472,
     "src/lib/simplefin/ingest.ts": 531,
@@ -242,7 +243,7 @@
     "src/server/services/savings/summary.ts": 370,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
-    "src/server/services/sync/preview.ts": 709,
+    "src/server/services/sync/preview.ts": 455,
     "src/server/services/sync/sync-all.ts": 268,
     "src/server/trpc.ts": 581
   },
@@ -999,7 +1000,7 @@
       "pushSnapshotToBudgetApi": 237
     },
     "src/server/services/sync/preview.ts": {
-      "computeSyncPreview": 683
+      "computeSyncPreview": 422
     },
     "src/server/services/sync/sync-all.ts": {
       "syncAll": 245,
