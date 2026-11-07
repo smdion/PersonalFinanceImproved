@@ -31,11 +31,12 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
-  ResponsiveContainer,
 } from "recharts";
 import { getAccountSegments } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { balanceSummary } from "./projection-chart.summary";
 import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectionState } from "./projection-table-types";
@@ -44,12 +45,9 @@ import type { ProjectionState } from "./projection-table-types";
 // can render it without pulling recharts in via this module's import graph.
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 
-// Recognized sporadic per-strategy spending-adjustment events — shared
-// between the early chart-data pinning pass and the
-// later marker-style/tooltip build, so the two can't drift on which action
-// strings are "an event worth marking" vs. background noise. RMD-Based and
-// Spending-Decline fire an action every year (not an event) and are
-// deliberately excluded.
+// The sporadic per-strategy spending adjustments worth marking, read by both
+// the chart-data pinning pass and the marker/tooltip build. RMD-Based and
+// Spending-Decline act every year, so they are not events.
 const STRATEGY_EVENT_KEYS = [
   "increase",
   "decrease",
@@ -407,7 +405,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         </div>
       )}
       <div className="h-[320px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartFrame summary={balanceSummary(chartData, segmentKeys)}>
           <ComposedChart
             data={chartData}
             margin={{ top: 5, right: 15, left: 5, bottom: 5 }}
@@ -1043,7 +1041,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 ),
             )}
           </ComposedChart>
-        </ResponsiveContainer>
+        </ChartFrame>
       </div>
       {/* Legend */}
       <div className="text-caption text-faint mt-2 flex flex-wrap items-center gap-3">

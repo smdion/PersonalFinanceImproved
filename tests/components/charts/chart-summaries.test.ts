@@ -10,6 +10,8 @@ import { journeySummary } from "@/components/networth/journey-to-abundance-chart
 import { costTrendSummary } from "@/components/upkeep/cost-trend-chart.summary";
 import { budgetVsActualSummary } from "@/components/expenses/expenses-charts.summary";
 import type { HistoryRow } from "@/components/networth/types";
+import { balanceSummary } from "@/components/retirement-projection/projection-chart.summary";
+import { stabilitySummary } from "@/components/retirement-projection/spending-stability-chart.summary";
 import { trajectorySummary } from "@/components/savings/savings-trajectory-chart.summary";
 import { fundMiniSummary } from "@/components/savings/fund-mini-chart.summary";
 import { glidePathSummary } from "@/components/investments/glide-path-chart.summary";
@@ -219,6 +221,51 @@ describe("chart summaries", () => {
       ).text,
     ).toBe(
       "Portfolio value by account, Jan 5, 26 to Feb 5, 26. Feb 5, 26: 401k $61,000.00; IRA $39,500.00.",
+    );
+  });
+
+  it("balance projection: shown segments, typical outcome and income", () => {
+    const segments = [
+      { key: "preTax", label: "Traditional" },
+      { key: "taxFree", label: "Roth" },
+    ];
+    expect(
+      balanceSummary(
+        [
+          { year: 2030, preTax: 500_000, taxFree: 100_000 },
+          {
+            year: 2060,
+            preTax: 0,
+            taxFree: 250_000,
+            mc_p50: 240_000,
+            _totalWithdrawal: 40_000,
+            _ssIncome: 0,
+          },
+        ],
+        segments,
+      ).text,
+    ).toBe(
+      "Balance projection, 2030 to 2060. 2060: Roth $250,000.00; Typical outcome $240,000.00; Portfolio withdrawal $40,000.00/yr.",
+    );
+  });
+
+  it("yearly income stability, with the Simulation lines", () => {
+    expect(
+      stabilitySummary(
+        [
+          { year: 2040, ratio: 100 },
+          { year: 2070, ratio: 92.5, mc_p50: 98.1, mc_breach: 4.2 },
+        ],
+        "Budget",
+      ).text,
+    ).toBe(
+      "Yearly income stability vs Budget, 2040 to 2070. 2070: vs Budget 92.5%; Sim. median 98.1%; Breached floor 4.2% of sims.",
+    );
+    expect(
+      stabilitySummary([{ year: 2040, ratio: 100, mc_breach: 0 }], "Strategy")
+        .text,
+    ).toBe(
+      "Yearly income stability vs Strategy, 2040. 2040: vs Strategy 100.0%.",
     );
   });
 });

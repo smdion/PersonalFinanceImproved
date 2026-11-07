@@ -1276,16 +1276,13 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 21
+      "count": 20
     },
     "ratchet/no-history-comment": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-jsx-iife": {
       "count": 2
-    },
-    "ratchet/no-raw-chart-container": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/projection-hero-kpis.tsx": {
@@ -1439,13 +1436,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-raw-chart-container": {
-      "count": 1
+      "count": 7
     }
   },
   "src/components/retirement-projection/tax-summary-card.tsx": {

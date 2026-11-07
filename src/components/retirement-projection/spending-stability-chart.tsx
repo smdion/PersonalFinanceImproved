@@ -30,10 +30,11 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
-  ResponsiveContainer,
   Legend,
 } from "recharts";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { stabilitySummary } from "./spending-stability-chart.summary";
 import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
 import type { ProjectionState } from "./projection-table-types";
@@ -106,14 +107,9 @@ export function SpendingStabilityChart({
   const isStrategy = view === "strategy";
   const baselineLabel = isStrategy ? "Strategy" : "Budget";
 
-  // monte-carlo.ts's own "vs strategy" KPI (Lifetime Income Stability card) uses
-  // each year's real, guardrail/raise-adjusted `targetWithdrawal` for any
-  // strategy with usesPostRetirementRaise — NOT a flat CPI-inflated line
-  // off year 1. This chart used to always use the flat line regardless,
-  // which converges toward the "Budget" view for budget-based strategies
-  // (Fixed, Forgo, G-K) since their year-1 spending IS the budget, making
-  // "Strategy" and "Budget" look like near-duplicates. Mirroring the same
-  // flag here keeps the chart honest about what "vs Strategy" means.
+  // As monte-carlo.ts's "vs strategy" KPI does: a strategy with
+  // usesPostRetirementRaise is measured against each year's raise-adjusted
+  // `targetWithdrawal`, not a flat CPI-inflated line off year 1.
   const activeStrategy =
     engineSettings.withdrawalStrategy as WithdrawalStrategyType;
   const usesPostRetirementRaise =
@@ -282,7 +278,10 @@ export function SpendingStabilityChart({
           </>
         )}
       </div>
-      <ResponsiveContainer width="100%" height={320}>
+      <ChartFrame
+        summary={stabilitySummary(chartData, baselineLabel)}
+        height={320}
+      >
         <ComposedChart
           data={chartData}
           margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
@@ -546,7 +545,7 @@ export function SpendingStabilityChart({
             />
           )}
         </ComposedChart>
-      </ResponsiveContainer>
+      </ChartFrame>
     </div>
   );
 }
