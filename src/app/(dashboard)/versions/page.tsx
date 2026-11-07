@@ -409,9 +409,7 @@ export default function VersionsPage() {
                 <input
                   type="text"
                   value={
-                    cronExpression ||
-                    scheduleData?.cronExpression ||
-                    "0 2 * * *"
+                    cronExpression || scheduleData.cronExpression || "0 2 * * *"
                   }
                   onChange={(e) => setCronExpression(e.target.value)}
                   placeholder="0 2 * * *"
@@ -701,7 +699,7 @@ export default function VersionsPage() {
                 className="border-strong bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
               >
                 <option value="">Select a table...</option>
-                {versionDetail.tables?.map((t) => (
+                {versionDetail.tables.map((t) => (
                   <option key={t.tableName} value={t.tableName}>
                     {t.tableName} ({t.rowCount} rows)
                   </option>
@@ -711,7 +709,7 @@ export default function VersionsPage() {
 
             {/* Per-table row count summary */}
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
-              {versionDetail.tables?.map((t) => (
+              {versionDetail.tables.map((t) => (
                 <div
                   key={t.tableName}
                   className={`cursor-pointer rounded px-2 py-1 text-xs transition-colors ${

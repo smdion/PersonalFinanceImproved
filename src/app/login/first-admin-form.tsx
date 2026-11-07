@@ -57,7 +57,7 @@ export function FirstAdminForm({
     const result = await signIn("local-admin", {
       email,
       password,
-      redirect: false,
+      redirect: false, // signIn can still resolve undefined: result stays guarded
       callbackUrl,
     });
     if (result?.url && !result.error) {

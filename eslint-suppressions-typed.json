@@ -1,80 +1,15 @@
 {
-  "src/app/(dashboard)/assets/assets-content.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 10
-    }
-  },
-  "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/app/(dashboard)/budget/what-if-tab.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/app/(dashboard)/contributions/contributions-content.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
-  "src/app/(dashboard)/house/page.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/app/(dashboard)/networth/page.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/app/(dashboard)/performance/performance-content.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 9
-    }
-  },
-  "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/app/(dashboard)/retirement/retirement-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 8
+      "count": 1
     }
   },
   "src/app/(dashboard)/savings/page.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 1
     }
   },
   "src/app/(dashboard)/tools/page.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/app/(dashboard)/versions/page.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/app/api/versions/export/route.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/app/api/versions/import/route.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }

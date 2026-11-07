@@ -90,7 +90,7 @@ export function LoginForm({
     const result = await signIn("local-admin", {
       email,
       password,
-      redirect: false,
+      redirect: false, // signIn can still resolve undefined: result stays guarded
       callbackUrl,
     });
 

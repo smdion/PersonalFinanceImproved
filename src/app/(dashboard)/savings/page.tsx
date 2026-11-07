@@ -329,7 +329,7 @@ export default function SavingsPage() {
                 p.job as {
                   extraPaycheckRouting?: ExtraPaycheckRoutingData | null;
                 }
-              )?.extraPaycheckRouting;
+              ).extraPaycheckRouting;
               return {
                 netPay: pc.netPay,
                 periodsPerYear: pc.periodsPerYear,
@@ -421,7 +421,7 @@ export default function SavingsPage() {
   const netPayByPersonId = new Map<number, number>();
   if (paycheckData) {
     for (const p of paycheckData.people) {
-      if (p.paycheck && p.job) {
+      if (p.paycheck) {
         netPayByPersonId.set(p.person.id, p.paycheck.netPay);
       }
     }
@@ -471,7 +471,7 @@ export default function SavingsPage() {
       <PageHeader
         title="Savings"
         subtitle={(() => {
-          const budgetLabel = budgetData?.columnLabels?.[budgetColumn];
+          const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
           if (!budgetLabel) return undefined;
           const profileName =
             activeContribProfileId != null
@@ -729,7 +729,7 @@ export default function SavingsPage() {
                       hiddenGoalIds={hiddenGoalIds}
                       ruleMonthKeys={
                         new Set(
-                          (allocationOverrides ?? [])
+                          allocationOverrides
                             .filter((o) => o.source === "rule")
                             .map((o) => o.monthDate.slice(0, 7)),
                         )

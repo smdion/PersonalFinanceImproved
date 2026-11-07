@@ -680,7 +680,7 @@ export function PortfolioContent() {
                                   className="text-muted hover:text-primary text-xs disabled:opacity-50"
                                 >
                                   {resyncPush.isPending &&
-                                  resyncPush.variables?.snapshotId === snap.id
+                                  resyncPush.variables.snapshotId === snap.id
                                     ? "Resyncing…"
                                     : "Resync"}
                                 </button>
@@ -706,7 +706,7 @@ export function PortfolioContent() {
                             </div>
                           </td>
                         </tr>
-                        {isExpanded && snap.accounts && (
+                        {isExpanded && (
                           <tr>
                             <td colSpan={6} className="px-0 py-0">
                               <div className="bg-surface-sunken px-8 py-2">

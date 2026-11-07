@@ -147,14 +147,14 @@ export function RetirementContent() {
 
   const { settings, people: peopleLookup, perPersonSettings } = data;
   // Resolve active budget column label for subtitle
-  const accProfileSummary = data.budgetProfileSummaries?.find(
+  const accProfileSummary = data.budgetProfileSummaries.find(
     (p: { id: number; isActive: boolean }) =>
       data.accumulationBudgetProfileId
         ? p.id === data.accumulationBudgetProfileId
         : p.isActive,
   );
   const accColumnLabel =
-    accProfileSummary?.columnLabels?.[data.accumulationBudgetColumn ?? 0];
+    accProfileSummary?.columnLabels?.[data.accumulationBudgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
 
   return (
     <div>
@@ -242,7 +242,7 @@ export function RetirementContent() {
         </div>
       )}
 
-      {isFetching && !isLoading && (
+      {isFetching && (
         <div className="text-faint mb-2 animate-pulse text-xs">
           Updating projection...
         </div>
@@ -259,10 +259,10 @@ export function RetirementContent() {
           retirementHorizonYears={settings.endAge - settings.retirementAge}
           hasBudgetLink={!!data.accumulationBudgetProfileId}
           hasSocialSecurity={Number(settings.socialSecurityMonthly) > 0}
-          accumulationOrder={data.planHealth?.accumulationOrder}
-          currentAge={data.planHealth?.currentAge}
+          accumulationOrder={data.planHealth.accumulationOrder}
+          currentAge={data.planHealth.currentAge}
           stockAllocationPercent={
-            data.planHealth?.currentStockAllocationPercent ?? undefined
+            data.planHealth.currentStockAllocationPercent ?? undefined
           }
         />
       ) : pageTab === "comparison" ? (
@@ -288,7 +288,7 @@ export function RetirementContent() {
             dollarMode={dollarMode}
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
-            analyzerInput={comparisonInput ?? undefined}
+            analyzerInput={comparisonInput}
           />
         ) : (
           <div className="text-muted p-4 text-center text-xs">

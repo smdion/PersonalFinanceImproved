@@ -1,9 +1,9 @@
 {
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 430,
-    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1067,
+    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1061,
     "src/app/(dashboard)/budget/budget-content.tsx": 663,
-    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 390,
+    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
@@ -12,13 +12,13 @@
     "src/app/(dashboard)/house/page.tsx": 746,
     "src/app/(dashboard)/networth/page.tsx": 461,
     "src/app/(dashboard)/paycheck/page.tsx": 685,
-    "src/app/(dashboard)/performance/performance-content.tsx": 873,
+    "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
     "src/app/(dashboard)/savings/page.tsx": 930,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1022,
-    "src/app/(dashboard)/tools/page.tsx": 585,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1020,
+    "src/app/(dashboard)/tools/page.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
-    "src/app/(dashboard)/versions/page.tsx": 952,
+    "src/app/(dashboard)/versions/page.tsx": 950,
     "src/components/budget/budget-summary-table.tsx": 772,
     "src/components/budget/contribution-profile-manager.tsx": 2042,
     "src/components/budget/salary-profile-manager.tsx": 954,
@@ -300,14 +300,14 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
-      "BrokerageContent": 383,
+      "BrokerageContent": 378,
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
       "BudgetContent": 585
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-      "useBudgetDerivedData": 322
+      "useBudgetDerivedData": 320
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
       "useBudgetPageState": 207
@@ -353,7 +353,7 @@
       "PaycheckPage.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
-      "PerformanceContent": 811
+      "PerformanceContent": 809
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
       "PortfolioContent": 750,
@@ -371,17 +371,17 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 378
+      "TaxBucketsContent": 376
     },
     "src/app/(dashboard)/tools/page.tsx": {
-      "ToolsPage": 542
+      "ToolsPage": 537
     },
     "src/app/(dashboard)/upkeep/utilities/page.tsx": {
       "UtilityCard": 338,
       "UtilityCard.map()": 184
     },
     "src/app/(dashboard)/versions/page.tsx": {
-      "VersionsPage": 893
+      "VersionsPage": 891
     },
     "src/app/login/login-form.tsx": {
       "LoginForm": 162

@@ -311,7 +311,7 @@ export function AssetsContent() {
 
             {current.otherAssetItems.map((item) => (
               <div
-                key={item.id ?? item.name}
+                key={item.id}
                 className="group border-subtle flex items-center justify-between border-b py-1.5"
               >
                 <div className="min-w-0 flex-1">

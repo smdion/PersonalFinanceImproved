@@ -166,29 +166,27 @@ export function useBudgetDerivedData({
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
-      if (pData.jointContribs) {
-        for (const c of pData.jointContribs as Array<{
-          id: number;
-          accountType: string;
-          contributionMethod: string;
-          contributionValue: string | number;
-          cappedValue?: number;
-        }>) {
-          if (linkedContributionAccountIds.has(c.id)) continue;
-          const val = computeValue(c) || 0;
-          // Joint money has no pay schedule of its own: the first paycheck's.
-          const periods = (
-            pData.people as { paycheck: { periodsPerYear: number } | null }[]
-          ).find((p) => p.paycheck)?.paycheck?.periodsPerYear;
-          const monthly =
-            c.contributionMethod === "fixed_per_period" && periods
-              ? fixedContributionMonthly(c.contributionMethod, val, periods)
-              : c.contributionMethod === "fixed_monthly"
-                ? val
-                : val / 12;
-          const key = normalizeContribKey(c.accountType);
-          if (key) map.set(key, (map.get(key) ?? 0) + monthly);
-        }
+      for (const c of pData.jointContribs as Array<{
+        id: number;
+        accountType: string;
+        contributionMethod: string;
+        contributionValue: string | number;
+        cappedValue?: number;
+      }>) {
+        if (linkedContributionAccountIds.has(c.id)) continue;
+        const val = computeValue(c) || 0;
+        // Joint money has no pay schedule of its own: the first paycheck's.
+        const periods = (
+          pData.people as { paycheck: { periodsPerYear: number } | null }[]
+        ).find((p) => p.paycheck)?.paycheck?.periodsPerYear;
+        const monthly =
+          c.contributionMethod === "fixed_per_period" && periods
+            ? fixedContributionMonthly(c.contributionMethod, val, periods)
+            : c.contributionMethod === "fixed_monthly"
+              ? val
+              : val / 12;
+        const key = normalizeContribKey(c.accountType);
+        if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
       return map;

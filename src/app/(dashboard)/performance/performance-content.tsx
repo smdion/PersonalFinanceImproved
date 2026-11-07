@@ -343,7 +343,7 @@ export function PerformanceContent() {
     );
     if (selectionThisYear.size === 0) return null;
 
-    for (const cat of accountTypeCategories ?? []) {
+    for (const cat of accountTypeCategories) {
       const catIds = new Set(
         yearAccounts
           .filter(
@@ -354,7 +354,7 @@ export function PerformanceContent() {
       );
       if (catIds.size > 0 && setsEqual(catIds, selectionThisYear)) return cat;
     }
-    if ((parentCategories ?? []).includes("Retirement")) {
+    if (parentCategories.includes("Retirement")) {
       const retIds = new Set(
         yearAccounts
           .filter((r) =>
@@ -367,7 +367,7 @@ export function PerformanceContent() {
         return "Retirement";
       }
     }
-    if ((parentCategories ?? []).includes("Portfolio")) {
+    if (parentCategories.includes("Portfolio")) {
       const allIds = new Set(
         yearAccounts
           .map((r) => r.performanceAccountId)
@@ -423,9 +423,7 @@ export function PerformanceContent() {
   // ── Quick-select toggle buttons — reuses CategoryTabs' own TabGroup
   // component so this looks and behaves exactly like the category page's
   // "By Account" / "Rollup" split, instead of plain unstateful links.
-  const accountTypeQuickSelects: { label: string; ids: Set<number> }[] = (
-    accountTypeCategories ?? []
-  ).map((cat) => ({
+  const accountTypeQuickSelects = accountTypeCategories.map((cat) => ({
     label: cat,
     ids: new Set(
       typedMasterAccounts
@@ -461,7 +459,7 @@ export function PerformanceContent() {
     accountRows.flatMap((a) =>
       a.performanceAccountId === null
         ? []
-        : (a.basisByOwner ?? []).map((b) => ({
+        : a.basisByOwner.map((b) => ({
             performanceAccountId: a.performanceAccountId!,
             ownerPersonId: b.ownerPersonId,
             year: a.year,
@@ -494,7 +492,7 @@ export function PerformanceContent() {
     const a = accountRows.find(
       (r) => r.performanceAccountId === g.performanceAccountId,
     );
-    const owner = a?.basisByOwner?.find(
+    const owner = a?.basisByOwner.find(
       (b) => b.ownerPersonId === g.ownerPersonId,
     )?.ownerName;
     return a
@@ -502,7 +500,7 @@ export function PerformanceContent() {
           institution: a.institution,
           // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
           accountLabel: a.accountLabel,
-          accountType: a.accountType ?? undefined,
+          accountType: a.accountType,
           ownershipType: a.ownershipType,
         })}`
       : "An account";
@@ -666,8 +664,8 @@ export function PerformanceContent() {
         <>
           <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
             <CategoryTabs
-              accountTypeCategories={accountTypeCategories ?? []}
-              parentCategories={parentCategories ?? []}
+              accountTypeCategories={accountTypeCategories}
+              parentCategories={parentCategories}
               activeCategory={activeCategory}
               onCategoryChange={setActiveCategory}
               showBasis={showBasisColumn}

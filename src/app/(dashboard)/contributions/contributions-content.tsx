@@ -100,7 +100,7 @@ export function ContributionsContent() {
       isHighIncomeHousehold(
         (data?.people ?? [])
           .filter((p) => p.salary > 0)
-          .reduce((s, p) => s + (p.totalCompensation ?? p.salary), 0),
+          .reduce((s, p) => s + p.totalCompensation, 0),
         highIncomeThreshold,
       ),
     );
@@ -171,7 +171,7 @@ export function ContributionsContent() {
   const activePeople = people.filter((p) => p.salary > 0);
   // Use totalCompensation (always includes bonus) for savings rate — matches projection page
   const combinedSalary = activePeople.reduce(
-    (s, p) => s + (p.totalCompensation ?? p.salary),
+    (s, p) => s + p.totalCompensation,
     0,
   );
 
@@ -184,7 +184,7 @@ export function ContributionsContent() {
   // Household totals and rates: the same calculation as the Financial
   // Checkup (householdSavings — joint accounts per view; YTD divides by pay
   // earned so far), with and without the match so each card shows both.
-  const jointAccountTypes = data?.jointAccountTypes ?? [];
+  const jointAccountTypes = data.jointAccountTypes;
   const jointTotals = {
     totalWithoutMatch: jointAccountTypes.reduce(
       (t, a) => t + a.views[viewMode].employeeContrib,
@@ -879,7 +879,7 @@ export function ContributionsContent() {
                 const profile = savingsOf(
                   {
                     people: profileData.people.filter((p) => p.salary > 0),
-                    joint: profileData.jointAccountTypes ?? [],
+                    joint: profileData.jointAccountTypes,
                   },
                   excludeMatch,
                 );
