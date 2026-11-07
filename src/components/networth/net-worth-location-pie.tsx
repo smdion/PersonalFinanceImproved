@@ -6,15 +6,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { sumBy } from "@/lib/utils/math";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { pieSummary } from "@/components/charts/pie.summary";
 
 export function NetWorthLocationPie({
   portfolioTotal,
@@ -63,7 +59,10 @@ export function NetWorthLocationPie({
     >
       <div className="flex flex-col items-center gap-4 sm:flex-row">
         <div className="w-full sm:w-1/2">
-          <ResponsiveContainer width="100%" height={200}>
+          <ChartFrame
+            summary={pieSummary("Net worth location", data)}
+            height={200}
+          >
             <PieChart>
               <Pie
                 isAnimationActive={false}
@@ -85,7 +84,7 @@ export function NetWorthLocationPie({
                 contentStyle={{ fontSize: CHART_FONT.tooltip }}
               />
             </PieChart>
-          </ResponsiveContainer>
+          </ChartFrame>
         </div>
         <div className="flex-1 space-y-1.5">
           {data.map((d) => (

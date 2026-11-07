@@ -1583,11 +1583,6 @@
       "count": 1
     }
   },
-  "src/components/expenses/expenses-charts.tsx": {
-    "ratchet/no-raw-chart-container": {
-      "count": 2
-    }
-  },
   "src/components/forms/form-field.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -1933,23 +1928,8 @@
       "count": 1
     }
   },
-  "src/components/networth/journey-to-abundance-chart.tsx": {
-    "ratchet/no-raw-chart-container": {
-      "count": 1
-    }
-  },
   "src/components/networth/net-worth-composition.tsx": {
     "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/networth/net-worth-line-chart.tsx": {
-    "ratchet/no-raw-chart-container": {
-      "count": 1
-    }
-  },
-  "src/components/networth/net-worth-location-pie.tsx": {
-    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },
@@ -1987,11 +1967,6 @@
       "count": 2
     },
     "ratchet/no-hand-date-format": {
-      "count": 1
-    }
-  },
-  "src/components/networth/tax-location-pie.tsx": {
-    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },
@@ -3717,9 +3692,6 @@
   },
   "src/components/upkeep/cost-trend-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },

@@ -12,8 +12,8 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
-  ResponsiveContainer,
 } from "recharts";
+import { ChartFrame } from "@/components/charts/chart-frame";
 import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
@@ -23,6 +23,7 @@ import {
   WEALTH_FORMULA_MULTIPLIER,
 } from "@/lib/constants";
 import { compactCurrency, type HistoryRow } from "./types";
+import { journeySummary } from "./journey-to-abundance-chart.summary";
 
 import type { ChartXAxisMode } from "./net-worth-line-chart";
 
@@ -81,7 +82,10 @@ export function JourneyToAbundanceChart({
       }
       className="mb-8"
     >
-      <ResponsiveContainer width="100%" height={350}>
+      <ChartFrame
+        summary={journeySummary(chartData, xAxisMode === "year", hasIncome)}
+        height={350}
+      >
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -163,7 +167,7 @@ export function JourneyToAbundanceChart({
             activeDot={{ r: 6 }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      </ChartFrame>
       {!hasIncome && (
         <p className="text-faint mt-2 text-xs">
           Add gross income to annual net worth records to see wealth benchmark
