@@ -9,7 +9,8 @@
  * can't regrow to the limit; a part over the limit is refused. With
  * `--from <old>`, the parts' long functions carry the old file's entries, a
  * part of a recorded file may be over the limit, and the parts (with what
- * is left of the old file) together never exceed its entry. A body moved
+ * is left of the old file) together never exceed its entry and the import
+ * lines the split adds (owner Q13). A body moved
  * whole into a part's function (the router now only calls it) hands that
  * function the router arrow's entry, plus its signature lines (owner Q14),
  * and the total may also hold the import, signature, brace and call lines
@@ -421,10 +422,18 @@ export function recorded(
     const allowed = oldEntry + (carry?.total ?? 0);
     if (total > allowed)
       problems.push(
-        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${carry?.total ? ` and +${carry.total} for the moved bodies` : ""} — ${GROW}`,
+        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${allowance(carry)} — ${GROW}`,
       );
   }
   return { baseline: { files, functions }, problems };
+}
+
+/** What a split's total may hold over the old entry, as the refusal names it. */
+function allowance(carry: BodyCarry | undefined): string {
+  if (!carry?.total) return "";
+  const moved =
+    Object.keys(carry.renames).length + Object.keys(carry.stages ?? {}).length;
+  return ` and +${carry.total} for ${moved > 0 ? "the moved bodies" : "the import lines it adds"}`;
 }
 
 /** A function node's key, as functionEntries names it (unnumbered). */
@@ -599,20 +608,22 @@ export function bodyCarry(
       carry.total += signature + 1 + 1;
     }
   }
-  if (
-    Object.keys(carry.renames).length === 0 &&
-    Object.keys(carry.stages ?? {}).length === 0
-  )
-    return carry;
+  // Owner Q13: the files a split joins may also hold the import lines it
+  // adds, net across them (a plain split never less than its entry), and
+  // what a part already held.
+  let imports = 0;
   for (const file of [from, ...parts]) {
     const [was, is] = [
       importLines(file, before(file)),
       importLines(file, now(file)),
     ];
-    carry.total += is.statements + is.types - was.statements - was.types;
+    imports += is.statements + is.types - was.statements - was.types;
     const held = before(file);
     if (file !== from && held !== undefined) carry.total += countLines(held);
   }
+  const moves =
+    Object.keys(carry.renames).length + Object.keys(carry.stages ?? {}).length;
+  carry.total += moves > 0 ? imports : Math.max(0, imports);
   return carry;
 }
 
