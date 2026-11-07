@@ -626,7 +626,7 @@
       "PersonPaycheck": 358
     },
     "src/components/performance/account-notes-dialog.tsx": {
-      "AccountNotesDialog": 206
+      "AccountNotesDialog": 195
     },
     "src/components/performance/account-picker.tsx": {
       "AccountPicker": 192
