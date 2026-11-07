@@ -202,7 +202,8 @@ describe("ContributionsCard smoke", () => {
       error: new Error("x"),
     });
     render(<ContributionsCard />);
-    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("renders per-person account types with funding bars and household totals", () => {

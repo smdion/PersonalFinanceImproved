@@ -2252,6 +2252,7 @@ function hookFolderFiles(root: string): string[] {
  * `if (<missing>) return <…Skeleton…>;` per file: the test reads a loading
  * flag (`isLoading`, `isPending`) or a negation (`!data`), alone or in an
  * `||`, and the one statement returns JSX holding a `*Skeleton*` element.
+ * A return through QueryBoundary is the fix, not a site.
  */
 function skeletonReturns(file: string, text: string): number {
   const sf = ts.createSourceFile(
@@ -2275,6 +2276,14 @@ function skeletonReturns(file: string, text: string): number {
       return true;
     return /(^|\.)(isLoading|isPending)$/.test(e.getText(sf));
   };
+  const boundary = (e: ts.Expression): boolean => {
+    const inner = ts.isParenthesizedExpression(e) ? e.expression : e;
+    const open = ts.isJsxElement(inner) ? inner.openingElement : inner;
+    return (
+      (ts.isJsxOpeningElement(open) || ts.isJsxSelfClosingElement(open)) &&
+      open.tagName.getText(sf) === "QueryBoundary"
+    );
+  };
   const skeleton = (n: ts.Node): boolean =>
     ((ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) &&
       /Skeleton/.test(n.tagName.getText(sf))) ||
@@ -2290,6 +2299,7 @@ function skeletonReturns(file: string, text: string): number {
         ret &&
         ts.isReturnStatement(ret) &&
         ret.expression &&
+        !boundary(ret.expression) &&
         skeleton(ret.expression)
       )
         count += 1;
@@ -2386,6 +2396,8 @@ describe("UI structure known lists (owner Q4, v0.10.4)", () => {
           "    return (<div><Skeleton /></div>);",
           "  }",
           "  if (q.error) return <Skeleton />;",
+          "  if (q.isLoading) return <QueryBoundary query={q} fallback={<Skeleton />} />;",
+          "  if (!q.data) return (<QueryBoundary query={q} fallback={<Skeleton />} />);",
           "  if (!q.data) return null;",
           "  return <p />;",
           "}",

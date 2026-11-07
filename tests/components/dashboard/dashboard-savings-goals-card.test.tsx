@@ -115,7 +115,8 @@ describe("SavingsGoalsCard smoke", () => {
     setQueryState(SUMMARY, { error: new Error("x") });
     setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
-    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("renders the emergency fund progress section with tier toggle and needed amount", () => {

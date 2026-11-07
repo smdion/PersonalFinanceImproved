@@ -43,6 +43,8 @@ export function useMilestones(): {
   /** Expected dates are still coming (the projection is computing). */
   projectionLoading: boolean;
   error: boolean;
+  /** Fetches the failed queries again (a failed load's Retry). */
+  refetch: () => void;
   input: MilestoneInput | null;
   results: MilestoneResult[];
 } {
@@ -54,8 +56,8 @@ export function useMilestones(): {
     SK_EFUND_BUDGET_COLUMN,
     -1,
   );
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncome = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } = highIncome;
   const yearEndTargeting = useYearEndTargetingInput();
 
   const inputs = trpc.milestones.computeInputs.useQuery(yearEndTargeting);
@@ -96,8 +98,20 @@ export function useMilestones(): {
       mortgage.isLoading ||
       highIncomeThreshold === undefined);
   const projectionLoading = projection.isLoading;
+  const refetch = () => {
+    for (const q of [inputs, contribs, savings, mortgage])
+      if (q.error) void q.refetch();
+    if (highIncomeError) highIncome.refetch();
+  };
   if (isLoading || error || !inputs.data || highIncomeThreshold === undefined)
-    return { isLoading, projectionLoading, error, input: null, results: [] };
+    return {
+      isLoading,
+      projectionLoading,
+      error,
+      refetch,
+      input: null,
+      results: [],
+    };
 
   const efund = savings.data?.efund;
   const projectionData = projection.data?.result ? projection.data : null;
@@ -132,6 +146,7 @@ export function useMilestones(): {
     isLoading,
     projectionLoading,
     error,
+    refetch,
     input,
     results: evaluateMilestones(input),
   };

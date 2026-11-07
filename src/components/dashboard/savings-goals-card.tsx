@@ -13,7 +13,7 @@ import {
   projectGoalBalances,
   buildSettledOccurrencesSet,
 } from "@/lib/pure/savings/savings-projection";
-import { LoadingCard, ErrorCard } from "./utils";
+import { CardQueryBoundary, queryPending } from "./utils";
 import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
 
 function SavingsGoalsCardImpl() {
@@ -25,13 +25,12 @@ function SavingsGoalsCardImpl() {
     efundBudgetColumn >= 0
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
-  const { data, isLoading, error } =
-    trpc.savings.computeSummary.useQuery(efundTierInput);
+  const summary = trpc.savings.computeSummary.useQuery(efundTierInput);
+  const { data } = summary;
   const { data: reimbursementsData } =
     trpc.savings.listEfundReimbursements.useQuery();
-  if (isLoading) return <LoadingCard title="Savings Goals" />;
-  if (error)
-    return <ErrorCard title="Savings Goals" message="Failed to load" />;
+  if (queryPending(summary))
+    return <CardQueryBoundary title="Savings Goals" query={summary} />;
   if (!data) return null;
 
   const {

@@ -73,7 +73,7 @@ Key concept → directory map:
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->41<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->42<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Domain components       | `src/components/{paycheck,budget,savings,networth,performance,mortgage,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->21<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->23<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->23<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->10<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), mortgage (<!-- AUTO-GEN:mortgageComponents -->10<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->31<!-- /AUTO-GEN -->) |
 | Dashboard cards         | `src/components/dashboard/` (<!-- AUTO-GEN:dashboardCards -->17<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -1157,14 +1157,15 @@ and the status rows on Milestones, Recommendations and Settings.
 
 ### Component Catalog
 
-Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->41<!-- /AUTO-GEN --> components). Each
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->42<!-- /AUTO-GEN --> components). Each
 component exports a `*Props` type with the full prop contract — read the file
 directly rather than maintaining a duplicate table here. Imports are barreled
 via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).
 
 Anchor primitives (covered above): `Button`, `Badge`, `AccountBadge`, `Card`,
 `Skeleton*`, `EmptyState`, `Tooltip`, `HelpTip`, `DataTable`, `PageHeader`,
-`ErrorBoundary`. Imperative dialogs: `confirm()`, `promptText()`. Toast hook:
+`ErrorBoundary`, `QueryBoundary` (a page's loading and failed states,
+§ Layout Patterns). Imperative dialogs: `confirm()`, `promptText()`. Toast hook:
 `useToasts()`. Every dialog renders through `Modal` (one backdrop shade, one
 layer above toasts, focus trapped and returned, Escape and backdrop-click per
 prop; the first-run wizard keeps its own shade through `layer`). A popover
@@ -1183,21 +1184,42 @@ grid-cols-2 sm:grid-cols-4 gap-4      -- Stat grids
 grid-cols-1 sm:grid-cols-2 gap-x-4    -- Data grids inside cards
 ```
 
-**Page loading:**
+**Page loading** (`components/ui/query-boundary.tsx`):
 
 ```tsx
-if (isLoading)
+const summary = trpc.assets.computeSummary.useQuery(targeting);
+if (queryPending(summary))
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-8 w-1/3" />
-      <SkeletonChart />
-    </div>
-  );
-if (error)
-  return (
-    <p className="text-sm text-red-600">Failed to load: {error.message}</p>
+    <QueryBoundary
+      query={summary}
+      what="asset data"
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-1/3" />
+          <SkeletonChart />
+        </div>
+      }
+    />
   );
 ```
+
+- `queryPending` is true while a query loads or after it fails. A disabled
+  query is neither, so the page renders its no-data branch.
+- While loading, the boundary shows the `fallback` unchanged. After 20 s
+  (`SLOW_LOAD_MS`) it adds a "Still loading…" line, with no Retry: a
+  second request would only repeat the running one.
+- A failure shows "Failed to load <what>: <message>" (`errorText`: a
+  failed service's own sentence when the server wrote one) and a Retry
+  that refetches the failed queries; while they run it is disabled and
+  says "Retrying…". A refused demo profile shows its own message without
+  Retry; Providers then swap the page for the demo picker.
+- `query` takes one query or a list. A hook that combines queries passes
+  `error`, `isLoading` and a `refetch` for the failed ones.
+- A card passes `frame` to keep both states inside the card
+  (`CardQueryBoundary` in `components/dashboard/utils.tsx`).
+- Never `if (isLoading || !data) return <Skeleton />`: a failed query has no
+  data either, and its skeleton never ends (`SKELETON_RETURNS_KNOWN` in
+  `tests/lint/violations.test.ts` holds the sites left).
 
 ### File Organization
 

@@ -74,7 +74,8 @@ describe("NetWorthCard smoke", () => {
       error: new Error("x"),
     });
     render(<NetWorthCard />);
-    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("renders the empty-state prompt when there is no data", () => {

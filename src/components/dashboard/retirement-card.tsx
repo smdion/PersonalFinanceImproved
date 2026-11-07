@@ -32,7 +32,7 @@ import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { filterYearByParentCategory } from "@/components/retirement-projection/utils";
-import { LoadingCard, ErrorCard } from "./utils";
+import { CardQueryBoundary, queryPending } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
 import {
   renderWithdrawalRow,
@@ -43,8 +43,8 @@ import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
 function RetirementCardImpl() {
-  const { engineInput, ready, data, isLoading, error } =
-    useDashboardProjection();
+  const projection = useDashboardProjection();
+  const { engineInput, ready, data } = projection;
   // The household's checkpoint table and today's figures for Readiness —
   // the same query (and input) the Milestones engine reads.
   const milestoneInputs = trpc.milestones.computeInputs.useQuery(
@@ -76,8 +76,8 @@ function RetirementCardImpl() {
     { ...engineInput, peekOnly: true },
     { staleTime: 0, enabled: ready },
   );
-  if (isLoading) return <LoadingCard title="Retirement" />;
-  if (error) return <ErrorCard title="Retirement" message="Failed to load" />;
+  if (queryPending(projection))
+    return <CardQueryBoundary title="Retirement" query={projection} />;
   if (data && "notConfigured" in data)
     return (
       <Card title="Retirement" href="/retirement">

@@ -6,7 +6,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
-import { LoadingCard, ErrorCard } from "./utils";
+import { CardQueryBoundary, queryPending } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { RothIraLine } from "@/components/taxes/roth-ira-section";
@@ -16,15 +16,10 @@ function HouseholdIncomeCardImpl() {
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  const {
-    data,
-    isLoading,
-    error,
-    contributionProfileId: activeContribProfileId,
-  } = useHouseholdIncomeSummary();
-  if (isLoading) return <LoadingCard title="Household Income" />;
-  if (error)
-    return <ErrorCard title="Household Income" message="Failed to load" />;
+  const summary = useHouseholdIncomeSummary();
+  const { data, contributionProfileId: activeContribProfileId } = summary;
+  if (queryPending(summary))
+    return <CardQueryBoundary title="Household Income" query={summary} />;
 
   const activeProfileName =
     activeContribProfileId != null

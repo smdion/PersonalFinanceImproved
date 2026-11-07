@@ -40,7 +40,7 @@ import {
 } from "@/lib/pure/contributions/savings-rate";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { PaceStatusText } from "./pace-status";
-import { LoadingCard, ErrorCard } from "./utils";
+import { CardQueryBoundary, queryPending } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
@@ -129,8 +129,8 @@ function ContributionsCardImpl() {
     ...contribProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
-  const { data, isLoading, error } =
-    trpc.contribution.computeSummary.useQuery(contribInput);
+  const summary = trpc.contribution.computeSummary.useQuery(contribInput);
+  const { data } = summary;
   // Live status per tracked account (needs the portfolio permission; the
   // card works without it).
   const { data: pace } = trpc.investments.getSavingsThisYear.useQuery(
@@ -148,18 +148,17 @@ function ContributionsCardImpl() {
     ) : null;
   };
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncome = useHighIncomeLine();
+  const { threshold: highIncomeThreshold } = highIncome;
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
       highIncomeThreshold,
     ),
   );
-  if (error || highIncomeError)
-    return <ErrorCard title="Contributions" message="Failed to load" />;
-  if (isLoading || highIncomeThreshold === undefined)
-    return <LoadingCard title="Contributions" />;
+  const queries = [summary, highIncome];
+  if (queryPending(queries))
+    return <CardQueryBoundary title="Contributions" query={queries} />;
 
   const people = data?.people.filter((d) => d.accountTypes.length > 0) ?? [];
 

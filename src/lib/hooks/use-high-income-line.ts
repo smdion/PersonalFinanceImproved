@@ -24,14 +24,20 @@ export function useHighIncomeLine(): {
   defaultThreshold: number | undefined;
   setSaved: (value: number | null) => void;
   error: boolean;
+  /** The line isn't known yet (QueryBoundary reads these three). */
+  isLoading: boolean;
+  refetch: () => void;
 } {
   const [saved, setSaved, loaded] = usePersistedSetting<number | null>(
     SK_HIGH_INCOME_THRESHOLD,
     null,
   );
-  const { data, error } = trpc.contribution.highIncomeLine.useQuery(undefined, {
-    staleTime: 60_000,
-  });
+  const { data, error, refetch } = trpc.contribution.highIncomeLine.useQuery(
+    undefined,
+    {
+      staleTime: 60_000,
+    },
+  );
   const threshold = loaded
     ? effectiveHighIncomeLine(saved, data?.threshold)
     : undefined;
@@ -42,5 +48,7 @@ export function useHighIncomeLine(): {
     defaultThreshold: data?.threshold,
     setSaved,
     error: threshold === undefined && Boolean(error),
+    isLoading: threshold === undefined,
+    refetch: () => void refetch(),
   };
 }

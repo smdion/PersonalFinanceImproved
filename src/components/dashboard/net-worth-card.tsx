@@ -7,15 +7,15 @@ import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
-import { LoadingCard, ErrorCard } from "./utils";
+import { CardQueryBoundary, queryPending } from "./utils";
 import { MortgagePayoff } from "./mortgage-payoff";
 import { PlanPaceLine } from "./plan-pace-line";
 import { localDateStr } from "@/lib/utils/date";
 
 function NetWorthCardImpl() {
   const targeting = useYearEndTargetingInput();
-  const { data, isLoading, error } =
-    trpc.networth.computeSummary.useQuery(targeting);
+  const summary = trpc.networth.computeSummary.useQuery(targeting);
+  const { data } = summary;
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   // The snapshot plus what's changed since — the Current Balances card's
   // figures (hidden, no error, without the portfolio permission).
@@ -24,8 +24,8 @@ function NetWorthCardImpl() {
       retry: false,
     });
   const [useMarket, setUseMarket] = useState(true);
-  if (isLoading) return <LoadingCard title="Net Worth" />;
-  if (error) return <ErrorCard title="Net Worth" message="Failed to load" />;
+  if (queryPending(summary))
+    return <CardQueryBoundary title="Net Worth" query={summary} />;
   if (!data)
     return (
       <Card title="Net Worth" href="/networth">

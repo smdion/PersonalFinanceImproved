@@ -23,7 +23,7 @@ import {
 import { useScenario } from "@/lib/context/scenario-context";
 import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
-import { LoadingCard, ErrorCard } from "./utils";
+import { CardQueryBoundary, queryPending } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { SK_SAVINGS_RATE_THRESHOLDS } from "@/lib/constants/settings-keys";
@@ -175,8 +175,8 @@ function checkupStatus(r: MilestoneResult): CheckupStep["status"] {
 function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
   const contribInput = useContributionSummaryInput();
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncomeLine = useHighIncomeLine();
+  const { threshold: highIncomeThreshold } = highIncomeLine;
   const [savingsRateThresholds] = usePersistedSetting<string>(
     SK_SAVINGS_RATE_THRESHOLDS,
     `[${DEFAULT_SAVINGS_RATE_BARS.join(", ")}]`,
@@ -192,14 +192,9 @@ function FinancialCheckupCardImpl() {
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(highIncome);
 
-  if (milestones.error || contribs.error || highIncomeError)
-    return <ErrorCard title="Financial Checkup" message="Failed to load" />;
-  if (
-    milestones.isLoading ||
-    contribs.isLoading ||
-    highIncomeThreshold === undefined
-  )
-    return <LoadingCard title="Financial Checkup" />;
+  const queries = [milestones, contribs, highIncomeLine];
+  if (queryPending(queries) || highIncomeThreshold === undefined)
+    return <CardQueryBoundary title="Financial Checkup" query={queries} />;
 
   const byId = new Map(milestones.results.map((r) => [r.id, r]));
   const milestoneStep = (id: string, label: string): CheckupStep[] => {
