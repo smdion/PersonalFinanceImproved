@@ -429,17 +429,7 @@
       "count": 3
     }
   },
-  "src/lib/budget-api/cache.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/config/account-types.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 9
-    }
-  },
-  "src/lib/db/backfill-perf-ids.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }

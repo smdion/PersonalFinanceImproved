@@ -50,6 +50,7 @@ export function verifyTaxDataSignature(
   if (!Array.isArray(sigs)) return false;
   const data = signed(fileBytes);
   return sigs.some((s) => {
+    // Parsed signature text: an element can be any JSON, even null.
     const key = keys.find((k) => k.keyId === s?.keyId);
     if (!key || typeof s.sig !== "string") return false;
     try {

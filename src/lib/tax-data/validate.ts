@@ -1,8 +1,8 @@
 /**
- * The checks every tax-data file must pass — CI runs them on the shipped
- * file (tests/config/tax-data-file.test.ts) and the app runs them on a
- * community update before offering it, so a validly signed but wrong file
- * is still refused.
+ * The checks every tax-data file must pass: CI on the shipped file
+ * (tests/config/tax-data-file.test.ts), the app on a community update, so a
+ * validly signed but wrong file is refused. A file comes as parsed JSON cast
+ * to TaxDataFile: each `?.`/`??` keeps a malformed one a problem, not a throw.
  */
 import {
   TAX_DATA_FORMAT_VERSION,

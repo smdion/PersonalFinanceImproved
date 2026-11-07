@@ -2929,7 +2929,7 @@
   },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 16
+      "count": 9
     },
     "ratchet/max-comment-lines": {
       "count": 2

@@ -34,7 +34,7 @@ export async function cacheGet<T>(
   const row = rows[0];
   if (!row) return null;
 
-  if (maxAgeMs && row.fetchedAt) {
+  if (maxAgeMs) {
     const age = Date.now() - row.fetchedAt.getTime();
     if (age > maxAgeMs) return null;
   }

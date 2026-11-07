@@ -92,7 +92,7 @@
     "src/components/validation-content.tsx": 552,
     "src/lib/budget-api/actual-client.ts": 820,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/config/account-types.ts": 860,
+    "src/lib/config/account-types.ts": 858,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 779,
     "src/lib/constants.ts": 370,
