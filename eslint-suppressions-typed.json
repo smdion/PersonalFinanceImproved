@@ -641,7 +641,7 @@
   },
   "src/lib/pure/sync/budget-preview.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 12
+      "count": 1
     }
   },
   "src/lib/sec/connection.ts": {
@@ -886,7 +886,7 @@
   },
   "src/server/services/sync/sync-all.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 1
     }
   },
   "src/server/trpc.ts": {

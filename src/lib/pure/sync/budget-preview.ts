@@ -20,7 +20,7 @@ export function previewCash(
     balance: number;
   }[],
 ) {
-  const cashMappings = (conn?.accountMappings ?? []).filter(
+  const cashMappings = (conn.accountMappings ?? []).filter(
     (m) =>
       m.localId === "cash" &&
       (m.syncDirection === "pull" || m.syncDirection === "both"),
@@ -55,6 +55,7 @@ export function previewApiCategories(
     categories: { id: string; name: string; hidden: boolean }[];
   }[],
 ) {
+  // A cached month from any version is cast, not parsed; it may hold none.
   const monthCategories = monthCache?.data?.categories ?? [];
   const monthMap = new Map(monthCategories.map((c) => [c.id, c]));
 
@@ -162,14 +163,13 @@ export function matchBudgetItems(
         status: "linked",
         apiCategoryId: item.apiCategoryId,
         apiCategoryName: currentApiName,
-        apiGroupName: apiCat?.groupName ?? null,
-        apiBudgeted: apiCat?.budgeted ?? null,
-        apiActivity: apiCat?.activity ?? null,
+        apiGroupName: apiCat.groupName,
+        apiBudgeted: apiCat.budgeted,
+        apiActivity: apiCat.activity,
         syncDirection: item.apiSyncDirection,
         nameDrifted:
           currentApiName != null && item.subcategory !== currentApiName,
-        categoryDrifted:
-          apiCat?.groupName != null && item.category !== apiCat.groupName,
+        categoryDrifted: item.category !== apiCat.groupName,
         contributionAccountId: item.contributionAccountId,
       });
     }
@@ -274,7 +274,7 @@ export function matchSavingsGoals(
         status: "linked",
         apiCategoryId: goal.apiCategoryId,
         apiCategoryName: currentApiName,
-        apiBalance: apiCat?.balance ?? null,
+        apiBalance: apiCat.balance,
         nameDrifted: currentApiName != null && goal.name !== currentApiName,
         isEmergencyFund: goal.isEmergencyFund,
         reimbursementApiCategoryId: goal.reimbursementApiCategoryId ?? null,

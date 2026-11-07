@@ -122,9 +122,7 @@ export async function syncAll(
 
         // Build categoryId → balance map from this sync's month detail.
         const catBalanceMap = new Map<string, number>(
-          (monthDetail.categories ?? [])
-            .filter((c) => c.id != null)
-            .map((c) => [c.id, c.balance]),
+          monthDetail.categories.map((c) => [c.id, c.balance]),
         );
 
         // Step 1: upsert current month balance for each linked goal.
@@ -184,6 +182,7 @@ export async function syncAll(
           };
           const priorCatMap = new Map<string, number>(
             (detail.categories ?? [])
+              // A cached month from any version is cast, not parsed.
               .filter((c) => c.id != null)
               .map((c) => [c.id, c.balance]),
           );
