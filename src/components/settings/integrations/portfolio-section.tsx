@@ -101,7 +101,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                 portfolio.trackingAccounts.find(
                   (a) => a.id === m.remoteAccountId,
                 ) ??
-                portfolio.allAccounts?.find((a) => a.id === m.remoteAccountId);
+                portfolio.allAccounts.find((a) => a.id === m.remoteAccountId);
               return (
                 <div
                   // remoteAccountId included: many Cash/Credit Card rows
@@ -124,7 +124,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       const dm = lid.match(/^debt:(\d+)$/);
                       if (dm) {
                         return (
-                          portfolio.debtAccounts?.find(
+                          portfolio.debtAccounts.find(
                             (d) => d.id === Number(dm[1]),
                           )?.label ?? m.localName
                         );
@@ -132,7 +132,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       const mm = lid.match(/^mortgage:(\d+):(\w+)$/);
                       if (mm) {
                         return (
-                          portfolio.mortgageAccounts?.find(
+                          portfolio.mortgageAccounts.find(
                             (ma) =>
                               ma.id === Number(mm[1]) && ma.type === mm[2],
                           )?.label ?? m.localName
@@ -255,15 +255,15 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       (a) => a.label === n,
                     );
                     if (localAcct) return sum + localAcct.balance;
-                    const assetAcct = portfolio.assetAccounts?.find(
+                    const assetAcct = portfolio.assetAccounts.find(
                       (a) => a.label === n,
                     );
                     if (assetAcct) return sum + assetAcct.balance;
-                    const mortgageAcct = portfolio.mortgageAccounts?.find(
+                    const mortgageAcct = portfolio.mortgageAccounts.find(
                       (a) => a.label === n,
                     );
                     if (mortgageAcct) return sum + mortgageAcct.value;
-                    const debtAcct = portfolio.debtAccounts?.find(
+                    const debtAcct = portfolio.debtAccounts.find(
                       (a) => a.label === n,
                     );
                     if (debtAcct) return sum + debtAcct.value;
@@ -275,7 +275,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       {tracking?.name ?? "Unknown"}
                       {names.some(
                         (n) =>
-                          portfolio.mortgageAccounts?.find((a) => a.label === n)
+                          portfolio.mortgageAccounts.find((a) => a.label === n)
                             ?.fedBySimplefin,
                       ) && " (paused: SimpleFIN reports this loan)"}
                     </div>
@@ -300,18 +300,18 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                 localId: `performance:${a.performanceAccountId}`,
                 localName: a.label,
               })),
-            ...(portfolio.assetAccounts ?? []).map((a) => ({
+            ...portfolio.assetAccounts.map((a) => ({
               localId: `asset:${a.id}`,
               localName: a.label,
             })),
             // A loan SimpleFIN reports can't also be pulled from here.
-            ...(portfolio.mortgageAccounts ?? [])
+            ...portfolio.mortgageAccounts
               .filter((m) => !m.fedBySimplefin)
               .map((m) => ({
                 localId: `mortgage:${m.id}:${m.type}`,
                 localName: m.label,
               })),
-            ...(portfolio.debtAccounts ?? []).map((d) => ({
+            ...portfolio.debtAccounts.map((d) => ({
               localId: `debt:${d.id}`,
               localName: d.label,
             })),
@@ -448,16 +448,14 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       `performance:${a.performanceAccountId}|${a.label}`,
                     ),
                 );
-                const unmappedAssets = (portfolio.assetAccounts ?? []).filter(
+                const unmappedAssets = portfolio.assetAccounts.filter(
                   (a) => !mappedKeys.has(`asset:${a.id}|${a.label}`),
                 );
-                const unmappedMortgages = (
-                  portfolio.mortgageAccounts ?? []
-                ).filter(
+                const unmappedMortgages = portfolio.mortgageAccounts.filter(
                   (m) =>
                     !mappedKeys.has(`mortgage:${m.id}:${m.type}|${m.label}`),
                 );
-                const unmappedDebts = (portfolio.debtAccounts ?? []).filter(
+                const unmappedDebts = portfolio.debtAccounts.filter(
                   (d) => !mappedKeys.has(`debt:${d.id}|${d.label}`),
                 );
                 return (
@@ -574,7 +572,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                     .filter((m) => m.localId === bucketLocalId)
                     .map((m) => m.remoteAccountId),
                 );
-                return (portfolio.allAccounts ?? portfolio.trackingAccounts)
+                return portfolio.allAccounts
                   .filter((a) => !alreadyInBucket.has(a.id))
                   .map((a) => (
                     <option key={a.id} value={a.id}>

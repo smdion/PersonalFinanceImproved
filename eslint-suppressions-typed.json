@@ -394,11 +394,6 @@
       "count": 3
     }
   },
-  "src/components/settings/integrations-preview-panel.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 10
-    }
-  },
   "src/components/settings/integrations-sec.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
@@ -417,21 +412,6 @@
   "src/components/settings/integrations.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
-    }
-  },
-  "src/components/settings/integrations/budget-section.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 8
-    }
-  },
-  "src/components/settings/integrations/drift-banner.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/settings/integrations/portfolio-section.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 14
     }
   },
   "src/components/tax-optimization/roth-explorer.tsx": {

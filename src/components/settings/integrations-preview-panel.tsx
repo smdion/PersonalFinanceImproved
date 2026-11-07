@@ -61,7 +61,7 @@ export function PreviewPanel({
     trpc.budget.listContribAccountsForLinking.useQuery();
   const contribAccounts = contribAccountsQuery.data ?? [];
 
-  const allApiCats = apiCategories ?? [];
+  const allApiCats = apiCategories;
 
   // Cross-section linking helper: BudgetSection lets the user link an
   // unmatched API category to either a budget item or a sinking-fund goal.
@@ -88,14 +88,12 @@ export function PreviewPanel({
         targetMode: "ongoing",
         isActive: true,
       });
-      if (created) {
-        await savingsMutations.linkSavings.mutateAsync({
-          goalId: created.id,
-          service,
-          apiCategoryId: apiCat.id,
-          apiCategoryName: apiCat.name,
-        });
-      }
+      await savingsMutations.linkSavings.mutateAsync({
+        goalId: created.id,
+        service,
+        apiCategoryId: apiCat.id,
+        apiCategoryName: apiCat.name,
+      });
     } catch (err) {
       console.warn("Failed to create savings goal from API category:", err);
     }
@@ -104,11 +102,12 @@ export function PreviewPanel({
   // Count drifted items (name or category) — pure derived state, kept in
   // the orchestrator so both the dashboard header and the DriftBanner
   // component can read the same number.
-  const driftedBudgetCount =
-    budget?.matches.filter((m) => m.nameDrifted || m.categoryDrifted).length ??
-    0;
-  const driftedSavingsCount =
-    savings?.matches.filter((m) => m.nameDrifted).length ?? 0;
+  const driftedBudgetCount = budget.matches.filter(
+    (m) => m.nameDrifted || m.categoryDrifted,
+  ).length;
+  const driftedSavingsCount = savings.matches.filter(
+    (m) => m.nameDrifted,
+  ).length;
   const totalDrifted = driftedBudgetCount + driftedSavingsCount;
 
   return (
@@ -215,45 +214,37 @@ export function PreviewPanel({
         </div>
       </div>
 
-      {budget && (
-        <BudgetSection
-          service={service}
-          budget={budget}
-          savings={savings}
-          allApiCats={allApiCats}
-          mutations={budgetMutations}
-          onLinkSavings={handleLinkSavingsFromBudget}
-          onCreateSavingsGoalFromApi={handleCreateSavingsGoalFromApi}
-          savingsOverrideCount={savingsOverrideCount}
-        />
-      )}
+      <BudgetSection
+        service={service}
+        budget={budget}
+        savings={savings}
+        allApiCats={allApiCats}
+        mutations={budgetMutations}
+        onLinkSavings={handleLinkSavingsFromBudget}
+        onCreateSavingsGoalFromApi={handleCreateSavingsGoalFromApi}
+        savingsOverrideCount={savingsOverrideCount}
+      />
 
-      {savings && (
-        <SavingsSection
-          service={service}
-          savings={savings}
-          allApiCats={allApiCats}
-          mutations={savingsMutations}
-          savingsOverrides={savingsOverrides}
-          setSavingsOverrides={setSavingsOverrides}
-        />
-      )}
+      <SavingsSection
+        service={service}
+        savings={savings}
+        allApiCats={allApiCats}
+        mutations={savingsMutations}
+        savingsOverrides={savingsOverrides}
+        setSavingsOverrides={setSavingsOverrides}
+      />
 
-      {budget && (
-        <ContribSection
-          budget={budget}
-          contribAccounts={contribAccounts}
-          mutations={contribMutations}
-        />
-      )}
+      <ContribSection
+        budget={budget}
+        contribAccounts={contribAccounts}
+        mutations={contribMutations}
+      />
 
-      {portfolio && (
-        <PortfolioSection
-          service={service}
-          portfolio={portfolio}
-          mutations={portfolioMutations}
-        />
-      )}
+      <PortfolioSection
+        service={service}
+        portfolio={portfolio}
+        mutations={portfolioMutations}
+      />
     </div>
   );
 }

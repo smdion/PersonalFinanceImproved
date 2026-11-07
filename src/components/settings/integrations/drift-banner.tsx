@@ -68,7 +68,7 @@ export function DriftBanner({
         </div>
       )}
 
-      {profile && profile.availableProfiles.length > 0 && (
+      {profile.availableProfiles.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted whitespace-nowrap">Profile:</span>
           <select

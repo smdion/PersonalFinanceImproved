@@ -194,8 +194,7 @@ export function BudgetSection({
     }, {}),
   ).sort(([a], [b]) => a.localeCompare(b));
 
-  const suggestedCount =
-    budget.summary.suggested + (savings?.summary.suggested ?? 0);
+  const suggestedCount = budget.summary.suggested + savings.summary.suggested;
   const overrideCount =
     Object.values(budgetOverrides).filter(Boolean).length +
     savingsOverrideCount;
@@ -449,57 +448,44 @@ export function BudgetSection({
                             >
                               {m.apiCategoryName}
                             </span>
-                            {expandedBudget && (
-                              <button
-                                onClick={() =>
-                                  applyBudgetLink(
-                                    m.budgetItemId,
-                                    m.apiCategoryId!,
-                                  )
-                                }
-                                disabled={linkBudgetMut.isPending}
-                                className="text-caption whitespace-nowrap text-blue-500 hover:text-blue-700"
-                              >
-                                Link
-                              </button>
-                            )}
+                            <button
+                              onClick={() =>
+                                applyBudgetLink(
+                                  m.budgetItemId,
+                                  m.apiCategoryId!,
+                                )
+                              }
+                              disabled={linkBudgetMut.isPending}
+                              className="text-caption whitespace-nowrap text-blue-500 hover:text-blue-700"
+                            >
+                              Link
+                            </button>
                           </>
                         )}
 
                         {(m.status === "unmatched" ||
-                          m.status === "orphaned") &&
-                          expandedBudget && (
-                            <div className="flex-1">
-                              {m.status === "orphaned" && m.apiCategoryName && (
-                                <span
-                                  className="text-caption mr-1 text-red-600 italic"
-                                  title={`Was linked to "${m.apiCategoryName}" (id ${m.apiCategoryId}), which no longer exists`}
-                                >
-                                  was &ldquo;{m.apiCategoryName}&rdquo; —
-                                </span>
-                              )}
-                              <ApiCategorySelect
-                                value={budgetOverrides[m.budgetItemId] ?? ""}
-                                options={allApiCats}
-                                onChange={(v) =>
-                                  setBudgetOverrides((prev) => ({
-                                    ...prev,
-                                    [m.budgetItemId]: v,
-                                  }))
-                                }
-                              />
-                            </div>
-                          )}
-
-                        {(m.status === "unmatched" ||
-                          m.status === "orphaned") &&
-                          !expandedBudget && (
-                            <span className="text-faint text-caption flex-1 italic">
-                              {m.status === "orphaned"
-                                ? "orphaned"
-                                : "unmapped"}
-                            </span>
-                          )}
+                          m.status === "orphaned") && (
+                          <div className="flex-1">
+                            {m.status === "orphaned" && m.apiCategoryName && (
+                              <span
+                                className="text-caption mr-1 text-red-600 italic"
+                                title={`Was linked to "${m.apiCategoryName}" (id ${m.apiCategoryId}), which no longer exists`}
+                              >
+                                was &ldquo;{m.apiCategoryName}&rdquo; —
+                              </span>
+                            )}
+                            <ApiCategorySelect
+                              value={budgetOverrides[m.budgetItemId] ?? ""}
+                              options={allApiCats}
+                              onChange={(v) =>
+                                setBudgetOverrides((prev) => ({
+                                  ...prev,
+                                  [m.budgetItemId]: v,
+                                }))
+                              }
+                            />
+                          </div>
+                        )}
 
                         {m.apiBudgeted != null && (
                           <span className="text-faint text-caption whitespace-nowrap tabular-nums">
@@ -584,11 +570,10 @@ export function BudgetSection({
                   </div>
                   {/* Link to existing budget item or savings goal */}
                   {(unlinkedLedgrItems.length > 0 ||
-                    (savings &&
-                      savings.matches.some(
-                        (m) =>
-                          m.status === "unmatched" || m.status === "orphaned",
-                      ))) && (
+                    savings.matches.some(
+                      (m) =>
+                        m.status === "unmatched" || m.status === "orphaned",
+                    )) && (
                     <div className="flex items-center gap-1 pl-14">
                       <select
                         value={apiToExisting[c.id] ?? ""}
@@ -613,29 +598,27 @@ export function BudgetSection({
                             ))}
                           </optgroup>
                         )}
-                        {savings &&
-                          savings.matches.filter(
-                            (m) =>
-                              m.status === "unmatched" ||
-                              m.status === "orphaned",
-                          ).length > 0 && (
-                            <optgroup label="Sinking Funds">
-                              {savings.matches
-                                .filter(
-                                  (m) =>
-                                    m.status === "unmatched" ||
-                                    m.status === "orphaned",
-                                )
-                                .map((m) => (
-                                  <option
-                                    key={`s:${m.goalId}`}
-                                    value={`savings:${m.goalId}`}
-                                  >
-                                    {m.goalName}
-                                  </option>
-                                ))}
-                            </optgroup>
-                          )}
+                        {savings.matches.filter(
+                          (m) =>
+                            m.status === "unmatched" || m.status === "orphaned",
+                        ).length > 0 && (
+                          <optgroup label="Sinking Funds">
+                            {savings.matches
+                              .filter(
+                                (m) =>
+                                  m.status === "unmatched" ||
+                                  m.status === "orphaned",
+                              )
+                              .map((m) => (
+                                <option
+                                  key={`s:${m.goalId}`}
+                                  value={`savings:${m.goalId}`}
+                                >
+                                  {m.goalName}
+                                </option>
+                              ))}
+                          </optgroup>
+                        )}
                       </select>
                       {apiToExisting[c.id] && (
                         <button
@@ -666,46 +649,42 @@ export function BudgetSection({
         )}
 
         {/* Skipped API categories */}
-        {budget.skippedApiCategories &&
-          budget.skippedApiCategories.length > 0 && (
-            <div className="border-subtle border-t pt-2">
-              <details className="group">
-                <summary className="text-caption text-faint hover:text-secondary cursor-pointer font-medium">
-                  Skipped ({budget.skippedApiCategories.length})
-                </summary>
-                <div className="mt-1 space-y-1">
-                  {budget.skippedApiCategories.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center gap-1.5 text-xs"
+        {budget.skippedApiCategories.length > 0 && (
+          <div className="border-subtle border-t pt-2">
+            <details className="group">
+              <summary className="text-caption text-faint hover:text-secondary cursor-pointer font-medium">
+                Skipped ({budget.skippedApiCategories.length})
+              </summary>
+              <div className="mt-1 space-y-1">
+                {budget.skippedApiCategories.map((c) => (
+                  <div key={c.id} className="flex items-center gap-1.5 text-xs">
+                    <span className="text-caption bg-surface-sunken text-faint rounded px-1.5 py-0.5 whitespace-nowrap">
+                      Skipped
+                    </span>
+                    <span
+                      className="text-faint flex-1 truncate"
+                      title={`${c.groupName} > ${c.name}`}
                     >
-                      <span className="text-caption bg-surface-sunken text-faint rounded px-1.5 py-0.5 whitespace-nowrap">
-                        Skipped
-                      </span>
-                      <span
-                        className="text-faint flex-1 truncate"
-                        title={`${c.groupName} > ${c.name}`}
-                      >
-                        {c.groupName} &rsaquo; {c.name}
-                      </span>
-                      <button
-                        onClick={() =>
-                          unskipCategoryMut.mutate({
-                            service,
-                            categoryId: c.id,
-                          })
-                        }
-                        disabled={unskipCategoryMut.isPending}
-                        className="text-caption rounded bg-amber-50 px-1.5 py-0.5 whitespace-nowrap text-amber-600 hover:bg-amber-100 disabled:opacity-50"
-                      >
-                        Restore
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            </div>
-          )}
+                      {c.groupName} &rsaquo; {c.name}
+                    </span>
+                    <button
+                      onClick={() =>
+                        unskipCategoryMut.mutate({
+                          service,
+                          categoryId: c.id,
+                        })
+                      }
+                      disabled={unskipCategoryMut.isPending}
+                      className="text-caption rounded bg-amber-50 px-1.5 py-0.5 whitespace-nowrap text-amber-600 hover:bg-amber-100 disabled:opacity-50"
+                    >
+                      Restore
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )}
       </div>
     </details>
   );
