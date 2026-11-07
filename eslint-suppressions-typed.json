@@ -334,11 +334,6 @@
       "count": 7
     }
   },
-  "src/components/portfolio/use-contribution-accounts-mutations.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/components/retirement/retirement-profile-manager.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
