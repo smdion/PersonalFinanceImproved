@@ -376,8 +376,8 @@ export function SimulationAssumptions({
                 tip="Weighted average standard deviation of returns. Higher = wider range of outcomes. Typical range: 8-16% (diversified to all-equity)."
               />
               {(() => {
-                const strategy = (inputs.withdrawalStrategy ??
-                  "fixed") as WithdrawalStrategyType;
+                const strategy =
+                  inputs.withdrawalStrategy as WithdrawalStrategyType;
                 const cfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
                 const isDynamic = strategy !== "fixed";
                 // None of the 8 strategies actually
@@ -400,11 +400,11 @@ export function SimulationAssumptions({
                 // `usesWithdrawalRate` correctly groups GK with the other 3
                 // budget-continuation strategies; only RMD/Constant %/
                 // Endowment/Vanguard Dynamic are truly balance-derived.
-                const isBudgetSeeded = cfg?.usesWithdrawalRate === true;
+                const isBudgetSeeded = cfg.usesWithdrawalRate === true;
                 const rateTip =
-                  cfg?.incomeSource === "formula"
+                  cfg.incomeSource === "formula"
                     ? `Reference rate only — ${cfg.label} computes withdrawals from the IRS RMD factor, not this rate.`
-                    : !isBudgetSeeded && cfg
+                    : !isBudgetSeeded
                       ? `Reference rate only — ${cfg.label} computes withdrawals as a percentage of your portfolio balance directly (see Strategy Params for its actual rate), not this field.`
                       : `Reference rate only — used to estimate the "years to FI" figure elsewhere. Your actual spending is driven by the Retirement Budget${strategy === "guyton_klinger" ? ", adjusted by guardrails" : strategy === "spending_decline" ? " and its own annual decline schedule" : ""}, not this rate.`;
                 return (
@@ -421,8 +421,8 @@ export function SimulationAssumptions({
                     {isDynamic && (
                       <AssumptionRow
                         label="Spending Strategy"
-                        value={cfg?.label ?? strategy}
-                        tip={`${cfg?.label ?? strategy}: withdrawal amount adjusts each year based on portfolio performance, guardrails, or IRS factors. See Strategy Params for this strategy's own parameters — not the rate above.`}
+                        value={cfg.label}
+                        tip={`${cfg.label}: withdrawal amount adjusts each year based on portfolio performance, guardrails, or IRS factors. See Strategy Params for this strategy's own parameters — not the rate above.`}
                         highlight
                       />
                     )}
@@ -436,9 +436,9 @@ export function SimulationAssumptions({
                         value={`${formatCurrency(inputs.decumulationExpenseOverride)}/yr`}
                         tip={
                           isDynamic
-                            ? isBudgetSeeded && cfg
+                            ? isBudgetSeeded
                               ? `Starting retirement budget — your ${cfg.label} strategy adjusts actual spending from this figure each year.`
-                              : `Starting retirement budget — ${cfg?.label ?? strategy} doesn't read this figure once it takes over (spending is computed from your portfolio balance instead); only used before that strategy fully applies, if at all.`
+                              : `Starting retirement budget — ${cfg.label} doesn't read this figure once it takes over (spending is computed from your portfolio balance instead); only used before that strategy fully applies, if at all.`
                             : undefined
                         }
                         highlight

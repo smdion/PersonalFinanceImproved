@@ -184,7 +184,7 @@ function FinancialCheckupCardImpl() {
   const milestones = useRecommendations();
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
 
-  const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
+  const contribPeople = contribs.data?.people.filter((d) => d.result) ?? [];
   const highIncome = isHighIncomeHousehold(
     householdTotalCompensation(contribPeople),
     highIncomeThreshold,
@@ -253,6 +253,7 @@ function FinancialCheckupCardImpl() {
       return DEFAULT_SAVINGS_RATE_BARS;
     }
   })();
+  // The stored setting is any JSON array: a null element falls back.
   const greenThreshold = parsedThresholds[0] ?? DEFAULT_SAVINGS_RATE_BARS[0];
   const yellowThreshold = parsedThresholds[1] ?? DEFAULT_SAVINGS_RATE_BARS[1];
 
