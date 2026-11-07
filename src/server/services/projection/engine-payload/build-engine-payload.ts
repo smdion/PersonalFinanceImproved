@@ -491,16 +491,10 @@ export async function buildEnginePayload(
 
   // Shared context for spec building (used by both default profile and profile switches)
   const perfRetirementBehaviorMap = new Map(
-    perfAccounts.map((p) => [
-      p.id,
-      p.retirementBehavior ?? "stops_at_owner_retirement",
-    ]),
+    perfAccounts.map((p) => [p.id, p.retirementBehavior]),
   );
   const perfContributionScalingMap = new Map(
-    perfAccounts.map((p) => [
-      p.id,
-      p.contributionScaling ?? "scales_with_salary",
-    ]),
+    perfAccounts.map((p) => [p.id, p.contributionScaling]),
   );
   const profileContribCtx = {
     perfCategoryMap,
@@ -517,7 +511,7 @@ export async function buildEnginePayload(
     accountType: c.accountType as AccountCategory,
     subType: c.subType,
     label: c.label ?? null,
-    parentCategory: c.parentCategory ?? null,
+    parentCategory: c.parentCategory,
     contributionMethod: c.contributionMethod,
     contributionValue: c.contributionValue,
     taxTreatment: c.taxTreatment,

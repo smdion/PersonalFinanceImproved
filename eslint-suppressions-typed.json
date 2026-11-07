@@ -614,14 +614,9 @@
       "count": 1
     }
   },
-  "src/server/auth.config.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/auth.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 1
     }
   },
   "src/server/data/investments.ts": {
@@ -749,31 +744,6 @@
       "count": 2
     }
   },
-  "src/server/services/contributions/account-edits.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/server/services/contributions/joint-accounts.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/services/contributions/live-data.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/services/contributions/summary.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/server/services/investments/current-balances.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/server/services/net-worth/year-end-history.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 4
@@ -784,37 +754,7 @@
       "count": 2
     }
   },
-  "src/server/services/performance/summary.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/server/services/projection/engine-payload/profile-switches.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
-  "src/server/services/projection/projection-metadata.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/services/projection/relocation-analysis.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/services/savings/summary.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/server/services/simulation/monte-carlo-worker-client.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

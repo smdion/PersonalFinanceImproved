@@ -144,9 +144,9 @@ export function buildProfileSwitches<
   const liveContribRows = allContribsRaw.map((c) => ({
     ...c,
     accountType: c.accountType as AccountCategory,
-    parentCategory: c.parentCategory ?? "",
-    taxTreatment: c.taxTreatment ?? "pre_tax",
-    employerMatchType: c.employerMatchType ?? null,
+    parentCategory: c.parentCategory,
+    taxTreatment: c.taxTreatment,
+    employerMatchType: c.employerMatchType,
     employerMatchValue: c.employerMatchValue
       ? String(c.employerMatchValue)
       : null,

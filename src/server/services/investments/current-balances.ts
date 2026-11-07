@@ -348,7 +348,6 @@ async function computeCurrentBalances(db: Db) {
   });
   const flows = flowRows.filter(
     (r) =>
-      r.simplefinAccountId !== null &&
       sendsTransactions.has(r.simplefinAccountId) &&
       !r.pending &&
       !r.voided &&
@@ -430,11 +429,7 @@ async function computeCurrentBalances(db: Db) {
       ),
       shareChanges: flowRows
         .filter(
-          (r) =>
-            r.simplefinAccountId !== null &&
-            !r.pending &&
-            !r.voided &&
-            SHARE_CHANGING_KINDS.has(r.kind),
+          (r) => !r.pending && !r.voided && SHARE_CHANGING_KINDS.has(r.kind),
         )
         .map((r) => ({
           feedId: r.simplefinAccountId!,

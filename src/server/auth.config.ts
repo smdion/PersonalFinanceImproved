@@ -28,7 +28,7 @@ if (isDemoOnly) {
           name: { label: "Name", type: "text", placeholder: "Admin" },
         },
         async authorize(credentials) {
-          const name = (credentials?.name as string) || "Admin";
+          const name = (credentials.name as string) || "Admin";
           return { id: "1", name, email: `${name.toLowerCase()}@dev.local` };
         },
       }),

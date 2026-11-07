@@ -173,7 +173,7 @@ export function jointAccountRows(
       hasDiscountBar: jDisplay.hasDiscountBar,
       employerMatchLabel: jDisplay.employerMatchLabel,
       targetAnnual: c.targetAnnual ? Number(c.targetAnnual) : null,
-      allocationPriority: c.allocationPriority ?? 0,
+      allocationPriority: c.allocationPriority,
     });
   }
 }

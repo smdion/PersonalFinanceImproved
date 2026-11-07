@@ -137,8 +137,7 @@ export function projectionSettings(payload: Payload) {
     // into the engine payload — surfaced so the assumptions report can
     // state it (it compounds into projected brokerage balance). Read
     // from the server-resolved payload, never recomputed client-side.
-    brokerageContributionIncrease:
-      baseEngineInput.brokerageContributionRamp ?? 0,
+    brokerageContributionIncrease: baseEngineInput.brokerageContributionRamp,
     personId: settings.personId,
     // Retirement Profiles phase 4 (the assumptions band) — client
     // writes must scope back to the profile these values came from,

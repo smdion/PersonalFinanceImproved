@@ -125,7 +125,7 @@ export async function computePerformanceSummary(ctx: { db: Db }) {
     accountType: pa.accountType,
     isActive: pa.isActive,
     displayOrder: pa.displayOrder,
-    costBasis: String(pa.costBasis ?? "0"),
+    costBasis: String(pa.costBasis),
   }));
 
   // Compute lifetime fees and distributions from all Portfolio annual rows

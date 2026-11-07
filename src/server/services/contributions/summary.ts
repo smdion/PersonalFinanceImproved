@@ -168,7 +168,6 @@ export async function computeContributionSummary(
   );
   // total_contributions includes employer match — split into employee-only + match
   for (const row of currentYearPerfActuals) {
-    if (row.performanceAccountId == null) continue;
     const total = toNumber(row.totalContributions);
     const match = toNumber(row.employerContributions);
     const employeeOnly = total - match;
@@ -442,7 +441,7 @@ export async function computeContributionSummary(
           targetAnnual: rawContrib.targetAnnual
             ? Number(rawContrib.targetAnnual)
             : null,
-          allocationPriority: rawContrib.allocationPriority ?? 0,
+          allocationPriority: rawContrib.allocationPriority,
           priorYearAmount: 0,
           priorYearContribs: [],
           ytdContributions: 0,

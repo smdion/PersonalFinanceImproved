@@ -312,7 +312,7 @@ export async function computeSavingsSummary(
     isRecurring: t.isRecurring,
     recurrenceMonths: t.recurrenceMonths,
     transferPairId: t.transferPairId,
-    source: t.source ?? "manual",
+    source: t.source,
     settledOccurrences: settledByTxId.get(t.id) ?? [],
   }));
 
@@ -322,7 +322,7 @@ export async function computeSavingsSummary(
     goalId: o.goalId,
     monthDate: o.monthDate,
     amount: toNumber(o.amount),
-    source: o.source ?? "manual",
+    source: o.source,
   }));
 
   // goals sent to the client carry the RESOLVED funding for the active

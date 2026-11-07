@@ -73,7 +73,7 @@ function ensureSweepTimer() {
       if (entry.updatedAt < cutoff) progressMap.delete(runId);
     }
   }, 60 * 1000);
-  sweepTimer.unref?.(); // never keep the process alive for this alone
+  sweepTimer.unref(); // never keep the process alive for this alone
 }
 
 /** Read current progress for a runId. Null if unknown/already finished. */

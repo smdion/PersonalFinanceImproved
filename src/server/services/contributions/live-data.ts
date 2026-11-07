@@ -1,8 +1,5 @@
 import * as schema from "@/lib/db/schema";
-import {
-  type AccountCategory,
-  getParentCategory,
-} from "@/lib/config/account-types";
+import { type AccountCategory } from "@/lib/config/account-types";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import {
   mergeSalaryProfileJobFields,
@@ -81,8 +78,6 @@ export async function loadLiveContribData(db: Db) {
   const contribs: LiveContribRow[] = activeContribs.map((c) => ({
     ...c,
     accountType: c.accountType as AccountCategory,
-    parentCategory:
-      c.parentCategory ?? getParentCategory(c.accountType as AccountCategory),
   }));
 
   return {

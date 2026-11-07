@@ -83,7 +83,7 @@ function mergeContributionAccountEdit(
   // No account-level method to fall back to — a not-yet-valued account
   // defaults to fixed_monthly, the exact unit this edit is already in.
   const method =
-    (accountFields.contributionMethod as string) ?? "fixed_monthly";
+    (accountFields.contributionMethod as string | undefined) ?? "fixed_monthly";
 
   // No active job anywhere to resolve a pay schedule from. This is a
   // budget-linked (jobId === null) account whose method needs periodsPerYear
@@ -154,8 +154,7 @@ export async function applyContributionAccountEdit(
     .where(eq(schema.contributionProfiles.id, contributionProfileId));
   if (!profile) return; // stale FK — nothing to update
 
-  const activeFields = (profile.contributionActiveFields ??
-    {}) as EntityFieldMap;
+  const activeFields = profile.contributionActiveFields as EntityFieldMap;
   const nextActiveFields = mergeContributionAccountEdit(
     activeFields,
     contributionAccountId,
@@ -224,7 +223,7 @@ export async function applyContributionAccountEditsBatch(
       .where(eq(schema.contributionProfiles.id, contributionProfileId));
     if (!profile) continue; // stale FK — nothing to update
 
-    const original = (profile.contributionActiveFields ?? {}) as EntityFieldMap;
+    const original = profile.contributionActiveFields as EntityFieldMap;
     let activeFields = original;
     let changed = false;
     for (const edit of profileEdits) {
