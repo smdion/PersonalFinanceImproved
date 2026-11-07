@@ -340,7 +340,7 @@
       "HouseContent": 721
     },
     "src/app/(dashboard)/liabilities/liabilities-content.tsx": {
-      "LiabilitiesPage": 207
+      "LiabilitiesContent": 207
     },
     "src/app/(dashboard)/milestones/milestones-content.tsx": {
       "MilestonesContent": 223

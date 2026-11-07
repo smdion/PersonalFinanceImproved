@@ -23,7 +23,7 @@ import { RefinanceImpact } from "@/components/mortgage/refinance-impact";
 import { WhatIfSection } from "@/components/mortgage/what-if-section";
 import { SyncBadge } from "@/components/ui/sync-badge";
 
-export default function LiabilitiesPage() {
+export function LiabilitiesContent() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);
   const [showHistSchedule, setShowHistSchedule] = useState<number | null>(null);
   const [showManageLoans, setShowManageLoans] = useState(false);

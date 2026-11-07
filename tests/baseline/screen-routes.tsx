@@ -73,7 +73,7 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
     file: "liabilities",
     load: async () =>
       (await import("@/app/(dashboard)/liabilities/liabilities-content"))
-        .default,
+        .LiabilitiesContent,
   },
   {
     route: "/networth",
