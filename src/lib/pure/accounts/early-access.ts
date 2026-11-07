@@ -101,13 +101,9 @@ export type EarlyAccessSlice = {
  * of that coincidence, because summing would be wrong the moment a shape
  * existed where it mattered.
  *
- * Lives here (next to `EarlyAccessSlice`), not inside
- * `withdrawal-eligibility.ts`, specifically so the Tax Buckets UI can
- * import it directly rather than re-deriving "accessible now" with its own
- * sum-every-penalty-free-slice loop — a real second definition of this
- * quantity that happened to agree with the prefix rule for every shape
- * shipped so far only by the same coincidence this docblock already warns
- * about.
+ * Lives here (next to `EarlyAccessSlice`), not inside `eligibility.ts`, so
+ * the Tax Buckets UI imports it directly rather than re-deriving
+ * "accessible now" with its own sum-every-penalty-free-slice loop.
  */
 export function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
   let sum = 0;

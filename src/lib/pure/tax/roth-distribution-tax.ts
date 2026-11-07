@@ -12,14 +12,11 @@
  *
  * "Qualified" here means the same thing `early-access.ts`'s
  * `computeRothIraAccess` already means by it: `age >= PENALTY_FREE_AGE`.
- * Deliberately NOT the full IRS 5-year-rule test — see the design doc's Q2
- * for why a stricter local definition would create a second, conflicting
- * definition of "qualified" elsewhere in the app (a Single Computation Path
- * violation), and for the three documented limitations (L1-L3) this
- * approximation carries. Rule of 55 does NOT make a distribution qualified
- * for tax purposes — it only ever exempts the 10% penalty (a separate,
- * still-unmodeled cost — see the design doc's Q1) — so it plays no role
- * here.
+ * Deliberately NOT the full IRS 5-year-rule test: a stricter local
+ * definition would be a second, conflicting definition of "qualified" (a
+ * Single Computation Path violation). Rule of 55 does NOT make a
+ * distribution qualified for tax purposes — it only ever exempts the 10%
+ * penalty, priced separately — so it plays no role here.
  */
 import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { ageInYear } from "@/lib/utils/date";
@@ -53,7 +50,7 @@ export function isQualifiedRothOwner(
  * taxable-growth vs. tax-free, per account and in aggregate.
  *
  * An account with no resolvable `ownerBirthYear` (joint account) is treated
- * as qualified — matching `withdrawal-eligibility.ts`'s identical "no age to
+ * as qualified — matching `eligibility.ts`'s identical "no age to
  * gate on" handling for the same accounts, so the two modules never
  * disagree about the same account.
  */

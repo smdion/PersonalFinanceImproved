@@ -192,11 +192,11 @@ function mapTransaction(
 
 // -- Client --
 
-/** The `until_date` every transaction list sends. The wrapper's lists end at
- *  its own today unless told otherwise, which dropped every transaction
- *  dated after that (a future-dated snapshot adjustment among them) from
- *  sync, the snapshot scan and the read-back. The last day Actual's
- *  YYYYMMDD dates can hold. */
+/** The `until_date` every transaction list sends: the last day Actual's
+ *  YYYYMMDD dates can hold. The wrapper's lists end at its own today unless
+ *  told otherwise, which would leave every later-dated transaction (a
+ *  future-dated snapshot adjustment among them) out of sync, the snapshot
+ *  scan and the read-back. */
 const ACTUAL_LIST_UNTIL = "9999-12-31";
 
 /** At most this many requests to the wrapper at once: it reloads the
