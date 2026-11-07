@@ -3,7 +3,7 @@
  * this goal's balance be N months from now."
  *
  * Previously this walk was implemented independently in two places
- * (src/app/(dashboard)/savings/page.tsx and
+ * (src/app/(dashboard)/savings/savings-content.tsx and
  * src/components/cards/dashboard/savings-goals-card.tsx), which had already
  * diverged: the dashboard card's copy never applied the "don't double-count
  * this month's contribution for YNAB-linked goals" guard the page's copy
@@ -299,7 +299,7 @@ export interface PoolGrowthEarner {
 /**
  * Projects the monthly savings pool forward across years by applying each
  * earner's stored raise rates to their current net pay, holding budget
- * expenses flat. Was implemented inline in savings/page.tsx, right next to
+ * expenses flat. Was implemented inline in savings/savings-content.tsx, right next to
  * projectGoalBalances — the one calculation on this page that hadn't
  * followed the same "pure function, not page-local" pattern.
  *

@@ -1285,7 +1285,7 @@ function ProfileInlineEditor({
         utils.contributionProfile.invalidate();
       },
     });
-  /** Same generic-field-patch pattern as paycheck/page.tsx's onUpdateDeduction
+  /** Same generic-field-patch pattern as paycheck/paycheck-content.tsx's onUpdateDeduction
    *  — one call site builds the full record from the current row plus the
    *  one field being changed, instead of each editable cell hand-writing
    *  its own copy of the other four fields. */

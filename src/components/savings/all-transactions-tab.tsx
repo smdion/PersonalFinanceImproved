@@ -201,7 +201,7 @@ export function AllTransactionsTab({
   // Map from goalId for O(1) lookup.
   const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
   // GoalProjection.balances[0] is always the current calendar month — must match
-  // src/app/(dashboard)/savings/page.tsx's monthDates construction exactly (that
+  // src/app/(dashboard)/savings/savings-content.tsx's monthDates construction exactly (that
   // file previously skipped the current month once the 1st had passed, which
   // silently dropped current-month planned transactions from the trajectory —
   // this index math has to stay in lockstep with it).

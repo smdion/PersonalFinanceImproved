@@ -223,7 +223,7 @@ export function usePaycheckPersonViews({
   // fields used to be re-applied here client-side via `getOverride("jobs" |
   // "deductions" | "contributionAccounts", ...)`. That was dead code: the
   // only writer of a session-scenario override anywhere in the app writes
-  // entity "people", field "salary" (paycheck/page.tsx's toggleSalaryOverride)
+  // entity "people", field "salary" (paycheck/paycheck-content.tsx's toggleSalaryOverride)
   // — a different entity than any of the keys this block ever read, so
   // every `getOverride` call here always returned its fallback. Removed
   // rather than kept as a misleading no-op.

@@ -139,7 +139,7 @@ export function PersonPaycheck({
      *  (the same pattern use-paycheck-person-views.ts's `job: any` and
      *  household-income-card.tsx already rely on), so they're read the
      *  same way here as before the migration — only their write path
-     *  changed (paycheck/page.tsx saves them with salaryProfile.patchEntry). */
+     *  changed (paycheck/paycheck-content.tsx saves them with salaryProfile.patchEntry). */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     personId: number;
