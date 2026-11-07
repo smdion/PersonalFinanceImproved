@@ -17,17 +17,12 @@ import type { Db } from "@/lib/db";
 // Contribution profile resolution
 // ---------------------------------------------------------------------------
 
-/**
- * Row shape returned by loadLiveContribData for aggregation. No
- * contributionMethod/contributionValue here — those are never carried by
- * the account row itself (see applyContribActiveFields); resolveProfile
- * adds them from a specific profile's active fields, and only for accounts
- * that have an entry there.
- */
-/** A live contribution account row: the full row (so every consumer — the
- *  cap's HSA coverage, payroll vs. manual, ownership, the match's tax
- *  treatment — reads the real fact), with its type narrowed and its parent
- *  category resolved. */
+/** A live contribution account row, as loadLiveContribData returns it: the
+ *  full row (so every consumer — the cap's HSA coverage, payroll vs. manual,
+ *  ownership, the match's tax treatment — reads the real fact), with its type
+ *  narrowed and its parent category resolved. It carries no
+ *  contributionMethod/contributionValue (see applyContribActiveFields):
+ *  resolveProfile adds them from a profile's active fields. */
 type LiveContribRow = Omit<
   typeof schema.contributionAccounts.$inferSelect,
   "accountType" | "parentCategory"

@@ -327,21 +327,6 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 // ── contribution_profiles ───────────────────────────────────────
 
 /**
- * Detailed contribution account active-field set (write-path). An entry
- * existing at all does NOT by itself mean this profile has a value —
- * an entry can legitimately exist to set only `isActive`/`displayNameCustom`/
- * a match field. `contributionValue`/`contributionMethod` are the only
- * pair required TOGETHER (both or neither, enforced below) whenever either
- * is present, because the account row itself carries no value to fall back
- * to (see applyContribActiveFields — there is no base-value fallback). An
- * account with no `contributionValue` set in the current profile has no
- * resolvable contribution at all, which is the "incomplete profile" state
- * surfaced by getIncompleteContribAccountIds. Every other field here stays
- * genuinely optional — those describe account behavior a profile MAY
- * customize, not "the" value. These are the leaves of the EntityFieldMap
- * contribution_profiles.contribution_active_fields (schema-pg.ts).
- */
-/**
  * Base shape, all fields optional — used directly (without the refine
  * below) to validate a single-field PATCH, where a caller legitimately
  * sends just `{ isActive: false }` without touching contributionValue/
@@ -372,6 +357,21 @@ export const contribAccountActiveFieldsPatchSchema = z
   })
   .strict();
 
+/**
+ * Detailed contribution account active-field set (write-path). An entry
+ * existing at all does NOT by itself mean this profile has a value —
+ * an entry can legitimately exist to set only `isActive`/`displayNameCustom`/
+ * a match field. `contributionValue`/`contributionMethod` are the only
+ * pair required TOGETHER (both or neither, enforced below) whenever either
+ * is present, because the account row itself carries no value to fall back
+ * to (see applyContribActiveFields — there is no base-value fallback). An
+ * account with no `contributionValue` set in the current profile has no
+ * resolvable contribution at all, which is the "incomplete profile" state
+ * surfaced by getIncompleteContribAccountIds. Every other field here stays
+ * genuinely optional — those describe account behavior a profile MAY
+ * customize, not "the" value. These are the leaves of the EntityFieldMap
+ * contribution_profiles.contribution_active_fields (schema-pg.ts).
+ */
 export const contribAccountActiveFieldsSchema =
   contribAccountActiveFieldsPatchSchema.refine(
     (f) =>

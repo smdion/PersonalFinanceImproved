@@ -2857,13 +2857,10 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 13
+      "count": 12
     },
     "ratchet/no-history-comment": {
       "count": 3
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 2
     }
   },
   "src/lib/budget-api/actual-goal-notes.ts": {
@@ -2905,9 +2902,6 @@
   "src/lib/budget-api/types.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/budget-api/ynab-client.ts": {
@@ -3183,9 +3177,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 32
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/db/compat.ts": {
@@ -3194,9 +3185,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/db/demo-schema-marker.ts": {
@@ -3214,9 +3202,6 @@
       "count": 9
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },
@@ -3270,10 +3255,7 @@
   },
   "src/lib/db/pg/performance.ts": {
     "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
+      "count": 6
     }
   },
   "src/lib/db/pg/retirement.ts": {
@@ -3412,10 +3394,7 @@
   },
   "src/lib/db/sqlite/performance.ts": {
     "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
+      "count": 6
     }
   },
   "src/lib/db/sqlite/retirement.ts": {
@@ -4195,9 +4174,6 @@
     "ratchet/no-history-comment": {
       "count": 1
     },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 4
     }
@@ -4956,9 +4932,6 @@
   "src/lib/pure/net-worth/net-worth.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/pure/net-worth/snapshot-flows.ts": {
@@ -5185,9 +5158,6 @@
       "count": 12
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
       "count": 1
     }
   },
@@ -5482,9 +5452,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/simplefin/request-log.ts": {
@@ -5769,9 +5736,6 @@
   "src/server/routers/budget/item-links.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/server/routers/budget/items.ts": {
@@ -5847,9 +5811,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 2
     }
   },
   "src/server/routers/investments/holding-periods.ts": {
@@ -6423,10 +6384,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1

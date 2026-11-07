@@ -36,11 +36,6 @@ import {
 } from "../../constants";
 
 /**
- * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase
- * "how big does my portfolio need to be" figure.
- * Single computation path: this is the only place the formula is written.
- */
-/**
  * The income the wealth formula (and lifetime earnings) counts for a year:
  * gross pretax income, as The Millionaire Next Door and The Money Guy Show
  * define it. AGI is used only where gross income wasn't recorded — AGI is
@@ -54,6 +49,11 @@ export function wealthFormulaIncome(row: {
   return row.grossIncome > 0 ? row.grossIncome : Math.max(0, row.combinedAgi);
 }
 
+/**
+ * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase
+ * "how big does my portfolio need to be" figure.
+ * Single computation path: this is the only place the formula is written.
+ */
 function computeFiTarget(
   annualExpenses: number,
   withdrawalRate: number,

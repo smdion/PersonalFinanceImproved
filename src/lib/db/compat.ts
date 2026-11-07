@@ -177,11 +177,6 @@ function buildValidColumnsCache(): Map<string, Set<string>> {
 }
 
 /**
- * Validate that all column names from external data are real columns in the schema.
- * Throws if any column name is not in the whitelist — prevents SQL injection via
- * crafted backup files that contain malicious column names.
- */
-/**
  * The tables (of `tableNames`) keyed by an auto-numbered `id` — the ones
  * whose sequence needs resetting after a bulk insert. A table keyed by
  * something else (e.g. asset_class_buckets, keyed by bucket) has none.
@@ -191,6 +186,11 @@ export function tablesWithIdColumn(tableNames: readonly string[]): string[] {
   return tableNames.filter((t) => cache.get(t)?.has("id"));
 }
 
+/**
+ * Validate that all column names from external data are real columns in the schema.
+ * Throws if any column name is not in the whitelist — prevents SQL injection via
+ * crafted backup files that contain malicious column names.
+ */
 export function validateColumns(tableName: string, columns: string[]): void {
   const cache = buildValidColumnsCache();
   const valid = cache.get(tableName);

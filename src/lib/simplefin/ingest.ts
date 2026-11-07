@@ -347,11 +347,6 @@ async function ingestTransactions(
 }
 
 /**
- * Store balances, holdings and transactions for the investment accounts in
- * one SimpleFIN response. `registry` maps SimpleFIN external account ids to
- * their simplefin_accounts rows (already upserted by the caller).
- */
-/**
  * Card spending is redacted unless the account is linked to a non-HSA type:
  * an unlinked account might be an HSA, so it is treated as one.
  */
@@ -439,6 +434,11 @@ export async function redactStoredCardSpending(
   return ids.length;
 }
 
+/**
+ * Store balances, holdings and transactions for the investment accounts in
+ * one SimpleFIN response. `registry` maps SimpleFIN external account ids to
+ * their simplefin_accounts rows (already upserted by the caller).
+ */
 export async function ingestInvestmentData(
   db: Db,
   args: {

@@ -206,21 +206,6 @@ function scoreCandidate(
 }
 
 /**
- * Lexicographic rank: `depleted` first (any candidate whose portfolio
- * actually runs out is a hard exclusion, never ranked in on `netCost`
- * alone — depletion isn't the kind of small residual this ranking is
- * meant to tolerate), then `shortfallScore` ascending, then `netCost`
- * ascending.
- *
- * Not a binary pass/fail filter: a hard "any shortfall excludes the
- * candidate" gate rejected every non-depleted candidate on the design
- * doc's round-4 test household because of an unrelated, target-
- * independent residual — a real household can very plausibly carry at
- * least one small shortfall year somewhere across a 30+ year horizon, and
- * a binary gate would return nothing for exactly the households most
- * likely to need this.
- */
-/**
  * `shortfallScore` isn't bit-identical across candidates even when the
  * underlying shortfall is genuinely target-independent (the design doc's
  * "known limitation" — a withdrawal-solver convergence artifact, not something
@@ -238,6 +223,18 @@ function scoreCandidate(
  */
 const SHORTFALL_TIE_TOLERANCE = 50;
 
+/**
+ * Lexicographic rank: `depleted` first (any candidate whose portfolio
+ * actually runs out is a hard exclusion, never ranked in on `netCost`
+ * alone — depletion isn't the kind of small residual this ranking is
+ * meant to tolerate), then `shortfallScore` ascending, then `netCost`
+ * ascending.
+ *
+ * Not a binary pass/fail filter on shortfall: a real household can carry
+ * a small shortfall year somewhere across a 30+ year horizon, and a binary
+ * gate would return nothing for exactly the households most likely to
+ * need this.
+ */
 function compareCandidates(
   a: BracketOptimizerCandidate,
   b: BracketOptimizerCandidate,

@@ -192,26 +192,6 @@ function mapTransaction(
 
 // -- Client --
 
-/**
- * `BudgetAPIClient.getMonthDetail`'s `month` param has no format documented
- * on the shared interface (interface.ts) -- every caller (sync/preview.ts,
- * services/sync/sync-all.ts, budget-api/cache.ts) has always passed YNAB's own native month format,
- * `YYYY-MM-01` (a full ISO date, first of the month -- YNAB's real API
- * requires exactly this). Actual's `actual-http-api` wrapper's `/months/:id`
- * route wants the SHORTER `YYYY-MM` (no day) -- confirmed via a real
- * "Invalid month format, use YYYY-MM: 2026-08-01" error from a // lint-violation-ok
- * live sync attempt. Never worked for Actual before this fix; nothing
- * in this codebase had ever exercised the mismatch until this specific
- * error surfaced.
- *
- * `slice(0, 7)` is idempotent regardless of which format arrives --
- * `"2026-08-01".slice(0, 7)` and `"2026-08".slice(0, 7)` both produce // lint-violation-ok
- * `"2026-08"` -- so this is safe against getMonths()'s own internal
- * getMonthDetail(id) calls, which already pass bare YYYY-MM ids straight
- * from Actual's own `/months` list.
- */
-/** At most this many requests to the wrapper at once: it reloads the
- *  budget per request and struggles when many run together. */
 /** The `until_date` every transaction list sends. The wrapper's lists end at
  *  its own today unless told otherwise, which dropped every transaction
  *  dated after that (a future-dated snapshot adjustment among them) from
@@ -219,6 +199,8 @@ function mapTransaction(
  *  YYYYMMDD dates can hold. */
 const ACTUAL_LIST_UNTIL = "9999-12-31";
 
+/** At most this many requests to the wrapper at once: it reloads the
+ *  budget per request and struggles when many run together. */
 const WRAPPER_BATCH_SIZE = 10;
 
 /** The import id Ledgr writes to `imported_id`, prefixed so it's
@@ -246,6 +228,9 @@ async function inBatches<T>(
     await Promise.all(items.slice(i, i + size).map(fn));
 }
 
+/** Actual's month id. The wrapper's `/months/:id` wants `YYYY-MM`; callers pass
+ *  YNAB's `YYYY-MM-01`, and getMonths passes Actual's own bare ids: the slice
+ *  takes both. */
 function toActualMonthId(month: string): string {
   return month.slice(0, 7);
 }

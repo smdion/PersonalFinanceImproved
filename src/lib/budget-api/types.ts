@@ -71,7 +71,6 @@ export type BudgetMonthDetail = {
   categories: BudgetCategory[];
 };
 
-/** A transaction from the budget API */
 /** One part of a split transaction. */
 type BudgetSubTransaction = {
   categoryId: string | null;
@@ -81,6 +80,7 @@ type BudgetSubTransaction = {
   memo: string | null;
 };
 
+/** A transaction from the budget API */
 export type BudgetTransaction = {
   id: string;
   accountId: string;

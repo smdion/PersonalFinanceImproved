@@ -112,8 +112,9 @@ export const performanceAccounts = pgTable(
  *  Named `account_basis` (not `roth_basis`) since it's the intended future
  *  home for other basis kinds (e.g. brokerage cost basis) — currently holds
  *  Roth fields only; brokerage cost basis still lives as a single live
- *  column on performanceAccounts (see tracksCostBasis()), unmigrated. */
-/** Year-scoped to mirror accountPerformance/annualPerformance's
+ *  column on performanceAccounts (see tracksCostBasis()), unmigrated.
+ *
+ *  Year-scoped to mirror accountPerformance/annualPerformance's
  *  live-then-finalized lifecycle: one row per (account, owner, year),
  *  mutable while current, locked by finalizeRothBasisForYear() when
  *  performance.finalizeYear runs. */

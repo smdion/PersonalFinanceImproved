@@ -39,8 +39,6 @@ const userFactsInput = z.object({
 const CHECK_STANDIN_COOLDOWN_MS = 60 * 60 * 1000;
 
 export const investmentFundFactsRouter = createTRPCRouter({
-  /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
-  /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   /** Each Simulation preset's glide path — what the Retirement page's
    *  Simulation runs on — so Benchmarks can show it beside your target mix.
    *  Allocations by age only; no balances. */
@@ -53,6 +51,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
       .filter((p) => p.found && p.glidePath.length > 0)
       .map((p) => ({ key: p.key, label: p.label, glidePath: p.glidePath })),
   ),
+  /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   getHoldingsOverview: portfolioProcedure.query(({ ctx }) =>
     loadHoldingsOverview(ctx.db),
   ),

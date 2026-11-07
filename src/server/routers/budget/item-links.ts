@@ -14,7 +14,6 @@ import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
 export const itemLinkProcedures = {
   // ── Contribution Account Linking ──
 
-  /** Link a budget item to a specific contribution account. */
   /** The budget lines that could be a loan's payment, on the active budget
    *  profile, and which one is. */
   mortgageItemChoices: protectedProcedure
@@ -99,6 +98,7 @@ export const itemLinkProcedures = {
       return { ok: true };
     }),
 
+  /** Link a budget item to a specific contribution account. */
   linkContributionAccount: budgetProcedure
     .input(
       z.object({
