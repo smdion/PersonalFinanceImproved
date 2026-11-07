@@ -529,19 +529,47 @@
       "count": 1
     },
     "ratchet/no-fixed-inset-overlay": {
-      "count": 4
+      "count": 2
     },
     "ratchet/no-hand-date-format": {
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 18
+      "count": 14
     },
     "ratchet/no-raw-input": {
-      "count": 8
+      "count": 5
     },
     "ratchet/no-unlabeled-control": {
-      "count": 10
+      "count": 8
+    }
+  },
+  "src/components/versions/restore-dialog.tsx": {
+    "ratchet/no-fixed-inset-overlay": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
+    }
+  },
+  "src/components/versions/import-dialog.tsx": {
+    "ratchet/no-fixed-inset-overlay": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/app/api/health/detailed/route.ts": {
