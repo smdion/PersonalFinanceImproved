@@ -67,9 +67,10 @@ export function distributeGoalWithdrawal(
 }
 
 /**
- * Distribute slot-level withdrawals to individual accounts proportionally.
- * For roth_traditional categories, routes traditional and roth withdrawals
- * separately to the correct tax-type accounts.
+ * Distributes each slot's withdrawal across the individual accounts in its
+ * category/tax-slice, proportionally. For roth_traditional categories,
+ * routes traditional and roth withdrawals separately to the correct
+ * tax-type accounts.
  *
  * `eligibility` — when provided,
  * prefers eligible (not-yet-penalty-exposed) accounts within each
@@ -80,17 +81,11 @@ export function distributeGoalWithdrawal(
  * WHICH account inside an already-decided category/slot supplies a given
  * dollar, never the slot totals themselves.
  *
- * Mutates `indBal` in place. Returns per-account withdrawal amounts.
- */
-/**
- * Distributes each slot's withdrawal across the individual accounts in its
- * category/tax-slice. Returns the per-account amounts plus any shortfall
- * warnings — a warning means
- * `Σ decIndWithdrawal` for that slot came up short of `slot.withdrawal`
- * because the individual-account track's balance was genuinely exhausted,
- * not silently discarded as it was before this pass. With
- * `reconcileIndividualToAggregate` running at end of year, this should be
- * an empty array for every fixture; a non-empty one is a real finding.
+ * Mutates `indBal` in place. Returns the per-account amounts plus any
+ * shortfall warnings — a warning means `Σ decIndWithdrawal` for that slot
+ * came up short of `slot.withdrawal` because the individual-account track's
+ * balance was genuinely exhausted. With `reconcileIndividualToAggregate`
+ * running at end of year, the warnings are empty for every fixture.
  */
 export function distributeWithdrawals(
   slots: DecumulationSlot[],

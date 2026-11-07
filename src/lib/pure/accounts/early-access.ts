@@ -253,12 +253,6 @@ export function computeRothIraAccess(input: {
   return slices;
 }
 
-/** HSA: modeled as general retirement spending money, not qualified medical
- *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
- *  even though that's real and available. Under that assumption, an HSA
- *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
- *  account's own age gate, not the 59½ IRA one), always ordinary income
- *  tax. No basis concept, so no split — the whole balance moves together. */
 /**
  * How a projection treats an HSA withdrawal, in one sentence for every
  * surface that shows it. The engine doesn't model medical spending, so it
@@ -268,6 +262,12 @@ export function computeRothIraAccess(input: {
  */
 export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty before age ${HSA_NON_MEDICAL_PENALTY_AGE}. Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
 
+/** HSA: modeled as general retirement spending money, not qualified medical
+ *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
+ *  even though that's real and available. Under that assumption, an HSA
+ *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
+ *  account's own age gate, not the 59½ IRA one), always ordinary income
+ *  tax. No basis concept, so no split — the whole balance moves together. */
 export function computeHsaAccess(
   balance: number,
   currentAge: number,

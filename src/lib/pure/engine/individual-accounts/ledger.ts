@@ -15,15 +15,6 @@ import {
   type BasisDraw,
 } from "@/lib/pure/accounts/roth-basis-tracking";
 
-/** Composite key function for individual accounts. */
-
-/**
- * Retirement money first: the items that aren't Portfolio-parented, or every
- * item when there are none. Money the retirement plan routes (IRS overflow,
- * the contribution ramp, lump sums with no named account) must land where
- * retirement can spend it — Portfolio-parented accounts are never withdrawn
- * from for retirement spending.
- */
 /** The inverse of retirementFirst: Portfolio-parented items first, every
  *  item when there are none — for Portfolio money (the Brokerage page's
  *  contribution ramp and lump sums). */
@@ -35,6 +26,13 @@ export function portfolioFirst<T>(
   return portfolio.length > 0 ? portfolio : [...items];
 }
 
+/**
+ * Retirement money first: the items that aren't Portfolio-parented, or every
+ * item when there are none. Money the retirement plan routes (IRS overflow,
+ * the contribution ramp, lump sums with no named account) must land where
+ * retirement can spend it — Portfolio-parented accounts are never withdrawn
+ * from for retirement spending.
+ */
 export function retirementFirst<T>(
   items: readonly T[],
   parentOf: (item: T) => string | undefined,

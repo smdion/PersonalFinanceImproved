@@ -47,14 +47,14 @@ export type ProjectionInput = {
   accumulationDefaults: AccumulationDefaults;
   decumulationDefaults: DecumulationDefaults;
 
+  /** Spending that ends: a loan paid off (expense-endings.ts). */
+  expenseEndings?: ExpenseEnding[];
   // --- Per-year overrides ---
   /**
    * Accumulation overrides, sorted by year. Each entry's fields are
    * sticky-forward (persist until the next override for that field).
    * Used during years where age < retirementAge.
    */
-  /** Spending that ends: a loan paid off (expense-endings.ts). */
-  expenseEndings?: ExpenseEnding[];
   accumulationOverrides: AccumulationOverride[];
 
   /**
@@ -302,9 +302,6 @@ export type ProjectionInput = {
 
 // --- Engine Output ---
 
-/**
- * Year projection for the accumulation phase (pre-retirement).
- */
 /** A budget line that stops: its share of each phase's budget, from `year`
  *  on. Zero for a phase whose spending was typed in, not built from lines. */
 export type ExpenseEnding = {
@@ -313,6 +310,9 @@ export type ExpenseEnding = {
   decumulation: number;
 };
 
+/**
+ * Year projection for the accumulation phase (pre-retirement).
+ */
 export type EngineAccumulationYear = {
   year: number;
   age: number;

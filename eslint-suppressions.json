@@ -3758,9 +3758,6 @@
   "src/lib/pure/accounts/early-access.ts": {
     "ratchet/max-comment-lines": {
       "count": 11
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/pure/accounts/early-withdrawal-penalty.ts": {
@@ -4365,9 +4362,6 @@
     "ratchet/max-comment-lines": {
       "count": 5
     },
-    "ratchet/no-stacked-docblock": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -4379,10 +4373,7 @@
   },
   "src/lib/pure/engine/individual-accounts/withdrawals.ts": {
     "ratchet/max-comment-lines": {
-      "count": 9
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
+      "count": 8
     }
   },
   "src/lib/pure/engine/inflation-path.ts": {
@@ -4493,9 +4484,6 @@
     },
     "ratchet/no-guarded-division": {
       "count": 1
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/rmd-smoothing.ts": {
@@ -4572,9 +4560,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
-    },
-    "ratchet/no-stacked-docblock": {
-      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2

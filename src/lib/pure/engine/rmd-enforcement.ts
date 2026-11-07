@@ -71,12 +71,6 @@ interface RmdEnforcementResult {
 // Main
 // ---------------------------------------------------------------------------
 
-/**
- * Enforce IRS Required Minimum Distribution on Traditional withdrawals.
- *
- * Mutates `slots` in place (adds RMD shortfall to existing slots or creates
- * new ones). Returns updated totals and diagnostic info.
- */
 /** What routing drew from Traditional money itself: the total's slots
  *  less any single-bucket (HSA) draw, which isn't Traditional for an RMD. */
 function routedTraditionalDraw(slots: DecumulationSlot[]): number {
@@ -92,6 +86,12 @@ function routedTraditionalDraw(slots: DecumulationSlot[]): number {
   );
 }
 
+/**
+ * Enforce IRS Required Minimum Distribution on Traditional withdrawals.
+ *
+ * Mutates `slots` in place (adds RMD shortfall to existing slots or creates
+ * new ones). Returns updated totals and diagnostic info.
+ */
 export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
   const { age, rmdStartAge, priorYearEndTradBalance, slots, acctBal } = input;
   let { totalTraditionalWithdrawal, totalWithdrawal } = input;
