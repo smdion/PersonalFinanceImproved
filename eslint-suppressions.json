@@ -521,7 +521,7 @@
       "count": 8
     }
   },
-  "src/app/(dashboard)/versions/page.tsx": {
+  "src/app/(dashboard)/versions/versions-content.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
     },

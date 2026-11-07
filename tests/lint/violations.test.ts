@@ -2193,7 +2193,7 @@ function twoYearHousehold(): ProjectionInput {
 
 /** Client `page.tsx` files under app/(dashboard): each becomes a thin
  *  server page and a `<route>-content.tsx`. */
-const CLIENT_PAGES_KNOWN: string[] = ["src/app/(dashboard)/versions/page.tsx"];
+const CLIENT_PAGES_KNOWN: string[] = [];
 
 /** Hook files in a `hooks/` folder outside lib/hooks: a hook lives in one
  *  of three homes (its route, its feature folder, lib/hooks). */
