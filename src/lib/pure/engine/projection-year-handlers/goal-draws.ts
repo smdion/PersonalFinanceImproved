@@ -11,7 +11,7 @@ import {
   distributeGoalWithdrawal,
   goalFundingAccounts,
   goalFundingBalance,
-} from "../individual-account-tracking";
+} from "../individual-accounts/withdrawals";
 import { shortfallFloor, runGapYearDraw } from "../gap-year-draw";
 import type {
   PreYearSetup,

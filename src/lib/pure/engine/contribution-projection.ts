@@ -1,7 +1,7 @@
 /**
  * Contribution Projection — shared per-spec projection formula.
  *
- * Used by both individual-account-tracking.ts (per-account bookkeeping,
+ * Used by both individual-accounts/contributions.ts (per-account bookkeeping,
  * prorated by year fraction) and contribution-routing.ts (yr1+ category
  * routing, full-year). Consolidated per audit Batch 2 Finding 5 — the
  * formula was duplicated 3x with already-drifting variable names
@@ -14,7 +14,7 @@ import { getAccountTypeConfig } from "../../config/account-types";
 interface ProjectSpecAmountParams {
   projectedSalary: number;
   /** Salary the growth factor is measured against — `currentSalary` in
-   *  individual-account-tracking.ts, `baseSalary` in contribution-routing.ts. */
+   *  individual-accounts/contributions.ts, `baseSalary` in contribution-routing.ts. */
   salaryBase: number;
   limitGrowthFactor: number;
   /** Each person's pay this year and in the base year, when the household
@@ -24,7 +24,7 @@ interface ProjectSpecAmountParams {
     base: Readonly<Record<number, number>>;
   };
   /** Year-fraction proration. Defaults to 1 (full year) — contribution-routing.ts's
-   *  routeFromSpecs doesn't prorate; individual-account-tracking.ts always passes
+   *  routeFromSpecs doesn't prorate; individual-accounts/contributions.ts always passes
    *  its own proRate explicitly. */
   proRate?: number;
 }

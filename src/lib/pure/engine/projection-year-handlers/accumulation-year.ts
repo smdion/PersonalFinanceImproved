@@ -3,7 +3,7 @@ import type { EngineAccumulationYear } from "../types/projection-result";
 import { roundToCents } from "../../../utils/math";
 import { resolveAccumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
-import { applyIndividualGrowth } from "../individual-account-tracking";
+import { applyIndividualGrowth } from "../individual-accounts/ledger";
 import { cloneAccountBalances } from "../balance-utils";
 import type {
   PreYearSetup,

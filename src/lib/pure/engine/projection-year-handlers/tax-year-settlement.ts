@@ -20,7 +20,7 @@ import {
   reinvestRmdExcess,
   trackDepletions,
 } from "../balance-deduction";
-import { clampIndividualBalances } from "../individual-account-tracking";
+import { clampIndividualBalances } from "../individual-accounts/reconcile";
 import { performRothConversion } from "../roth-conversion";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";

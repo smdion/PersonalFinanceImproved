@@ -13,12 +13,12 @@ import {
   syncAggregateBasis,
 } from "../brokerage-basis";
 import { applyGrowth } from "../growth-application";
+import { applyIndividualGrowth } from "../individual-accounts/ledger";
 import {
-  applyIndividualGrowth,
   buildIndividualYearBalances,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
-} from "../individual-account-tracking";
+} from "../individual-accounts/reconcile";
 import { updatePerPersonTradBalance } from "./helpers";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 

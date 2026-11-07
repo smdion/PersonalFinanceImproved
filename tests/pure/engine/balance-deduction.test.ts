@@ -13,7 +13,7 @@ import {
   reinvestRmdExcess,
   trackDepletions,
 } from "@/lib/pure/engine/balance-deduction";
-import { makeIndKey } from "@/lib/pure/engine/individual-account-tracking";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type {
   AccountBalances,
   IndividualAccountInput,

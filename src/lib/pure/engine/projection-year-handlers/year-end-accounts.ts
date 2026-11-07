@@ -4,7 +4,7 @@ import { getAllCategories } from "../../../config/account-types";
 import {
   buildIndividualYearBalances,
   reconcileIndividualToAggregate,
-} from "../individual-account-tracking";
+} from "../individual-accounts/reconcile";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { yearGapDraw } from "./goal-draws";

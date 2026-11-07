@@ -10,7 +10,7 @@ import { roundToCents } from "../../../utils/math";
 import { firstYearStatedNeed } from "./stated-need";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
-import { buildSpecToAccountMapping } from "../individual-account-tracking";
+import { buildSpecToAccountMapping } from "../individual-accounts/contributions";
 import { resolveReturnRateForAge } from "../growth-application";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";

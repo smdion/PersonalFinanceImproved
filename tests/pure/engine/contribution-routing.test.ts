@@ -252,7 +252,7 @@ describe("routePercentage", () => {
 //
 // Pinned-value tests for the per-spec projection formula, ahead of a planned
 // consolidation with the identical formula duplicated in
-// individual-account-tracking.ts. These pin
+// individual-accounts/contributions.ts. These pin
 // TODAY's output for each of the formula's 4 branches so the refactor can be
 // verified to produce byte-identical results.
 // ---------------------------------------------------------------------------

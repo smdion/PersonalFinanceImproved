@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
-import { distributeWithdrawals } from "@/lib/pure/engine/individual-account-tracking";
+import { distributeWithdrawals } from "@/lib/pure/engine/individual-accounts/withdrawals";
 import {
   enforceOwnerRmds,
   rmdOwnerOf,

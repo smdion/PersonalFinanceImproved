@@ -8,7 +8,7 @@ import {
   syncAggregateBasis,
 } from "@/lib/pure/engine/brokerage-basis";
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
-import { makeIndKey } from "@/lib/pure/engine/individual-account-tracking";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type {
   IndividualAccountInput,
   TaxBuckets,

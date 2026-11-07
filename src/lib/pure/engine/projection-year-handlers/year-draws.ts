@@ -3,10 +3,8 @@ import { cloneAccountBalances } from "../balance-utils";
 import { followDraws } from "../brokerage-basis";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
-import {
-  depleteIndividualBasis,
-  distributeWithdrawals,
-} from "../individual-account-tracking";
+import { depleteIndividualBasis } from "../individual-accounts/ledger";
+import { distributeWithdrawals } from "../individual-accounts/withdrawals";
 import type { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";

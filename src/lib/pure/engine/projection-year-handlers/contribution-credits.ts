@@ -16,10 +16,8 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
 } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
-import {
-  distributeContributions,
-  accrueIndividualBasis,
-} from "../individual-account-tracking";
+import { distributeContributions } from "../individual-accounts/contributions";
+import { accrueIndividualBasis } from "../individual-accounts/ledger";
 import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
 import { applyLumpSums } from "./lump-sum";
 import type {

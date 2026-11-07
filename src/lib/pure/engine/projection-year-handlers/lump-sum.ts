@@ -17,10 +17,7 @@ import {
   addBasis,
 } from "../../../config/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
-import {
-  portfolioFirst,
-  retirementFirst,
-} from "../individual-account-tracking";
+import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
 
 /**
  * Apply one-time lump-sum injections for the current year.

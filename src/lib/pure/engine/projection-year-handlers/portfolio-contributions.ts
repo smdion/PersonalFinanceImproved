@@ -5,7 +5,7 @@ import {
   isRetirementMoney,
 } from "../../../config/account-types";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
-import { portfolioFirst, specKeyOf } from "../individual-account-tracking";
+import { portfolioFirst, specKeyOf } from "../individual-accounts/ledger";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** Contributions that continue into retirement and the brokerage ramp, per

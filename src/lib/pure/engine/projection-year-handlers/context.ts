@@ -12,7 +12,7 @@ import {
 import { MONTHS_PER_YEAR } from "../../../constants";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { getStrategyDefaults } from "@/lib/config/withdrawal-strategies";
-import { makeIndKey } from "../individual-account-tracking";
+import { makeIndKey } from "../individual-accounts/ledger";
 import { getRmdStartAge } from "../../../config/rmd-tables";
 import type { BrokerageGoal, ProjectionContext } from "./types";
 

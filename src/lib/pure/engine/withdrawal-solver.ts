@@ -54,10 +54,8 @@ import type {
   EligibilityRecord,
   NonRetirementExclusion,
 } from "@/lib/pure/accounts/eligibility";
-import {
-  distributeWithdrawals,
-  depleteIndividualBasis,
-} from "./individual-account-tracking";
+import { distributeWithdrawals } from "./individual-accounts/withdrawals";
+import { depleteIndividualBasis } from "./individual-accounts/ledger";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";

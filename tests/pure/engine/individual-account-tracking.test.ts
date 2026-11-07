@@ -2,18 +2,24 @@ import { describe, it, expect } from "vitest";
 import {
   makeIndKey,
   specKeyOf,
-  buildSpecToAccountMapping,
-  distributeContributions,
-  distributeWithdrawals,
-  distributeGoalWithdrawal,
   applyIndividualGrowth,
-  clampIndividualBalances,
-  buildIndividualYearBalances,
   accrueIndividualBasis,
   depleteIndividualBasis,
+} from "@/lib/pure/engine/individual-accounts/ledger";
+import {
+  buildSpecToAccountMapping,
+  distributeContributions,
+} from "@/lib/pure/engine/individual-accounts/contributions";
+import {
+  distributeWithdrawals,
+  distributeGoalWithdrawal,
+} from "@/lib/pure/engine/individual-accounts/withdrawals";
+import {
+  clampIndividualBalances,
+  buildIndividualYearBalances,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
-} from "@/lib/pure/engine/individual-account-tracking";
+} from "@/lib/pure/engine/individual-accounts/reconcile";
 import type {
   IndividualAccountInput,
   AccountBalances,

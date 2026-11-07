@@ -41,11 +41,9 @@ import {
   estimateEffectiveTaxRate,
 } from "./tax-estimation";
 import { clampBalances, deductWithdrawals } from "./balance-deduction";
-import {
-  clampIndividualBalances,
-  depleteIndividualBasis,
-  distributeWithdrawals,
-} from "./individual-account-tracking";
+import { clampIndividualBalances } from "./individual-accounts/reconcile";
+import { depleteIndividualBasis } from "./individual-accounts/ledger";
+import { distributeWithdrawals } from "./individual-accounts/withdrawals";
 import { followDraws, retirementBrokerageBasisRatio } from "./brokerage-basis";
 import {
   computeNonRetirementExclusion,

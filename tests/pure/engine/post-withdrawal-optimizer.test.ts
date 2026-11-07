@@ -12,7 +12,7 @@ import {
   makeIndividualAccount,
   TEST_BRACKETS,
 } from "../fixtures/engine-fixtures";
-import { makeIndKey } from "@/lib/pure/engine/individual-account-tracking";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
