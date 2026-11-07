@@ -169,7 +169,6 @@ export function IncomeSection({
                   : ""
               }
               onSave={(v) => {
-                if (!settings) return;
                 const val = v.replace(/[^0-9]/g, "");
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {

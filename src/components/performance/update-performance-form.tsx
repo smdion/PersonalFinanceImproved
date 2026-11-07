@@ -355,7 +355,7 @@ export function UpdatePerformanceForm({
     return sum + gl;
   }, 0);
 
-  const snapshotDate = latestSnap?.snapshot?.snapshotDate ?? null;
+  const snapshotDate = latestSnap?.snapshot.snapshotDate ?? null;
 
   if (loadingSnap) {
     return <p className="text-muted text-sm">Loading snapshot data...</p>;

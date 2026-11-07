@@ -651,7 +651,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
             </thead>
             <tbody>
               {deductionRows.map((d: DeductionRow, rowIdx: number) => {
-                const activeFieldsRoot = (profile.contributionActiveFields ??
+                const activeFieldsRoot = (profile.contributionActiveFields ?? // Stored jsonb, typed by $type only: kept guarded.
                   {}) as ActiveFieldsRoot;
                 const af = activeFieldsRoot.deductions?.[String(d.id)] as
                   Record<string, unknown> | undefined;
@@ -935,8 +935,7 @@ function ProfileEditor({
               <tbody>
                 {baseData.accountDetails.map((ad) => {
                   const mVal = matchValues[String(ad.id)] ?? {};
-                  const effectiveMatchType =
-                    mVal.matchType ?? ad.liveMatchType ?? "none";
+                  const effectiveMatchType = mVal.matchType ?? ad.liveMatchType;
                   const hasMatch = effectiveMatchType !== "none";
                   const isPercentMatch =
                     effectiveMatchType === "percent_of_contribution";
@@ -982,7 +981,7 @@ function ProfileEditor({
                       </td>
                       <td className="text-secondary py-1.5">
                         <div className={isDisabled ? "line-through" : ""}>
-                          {ad.liveAccountName ?? ad.accountName}
+                          {ad.liveAccountName}
                         </div>
                         {!ad.liveIsActive && (
                           <div
@@ -1309,7 +1308,7 @@ function ProfileInlineEditor({
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: (row) => {
-      if (row.limitWarning !== undefined) setLimitWarning(row.limitWarning);
+      setLimitWarning(row.limitWarning);
       onSaved();
     },
   });
@@ -1345,7 +1344,7 @@ function ProfileInlineEditor({
 
   if (!profile) return null;
 
-  const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot;
+  const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot; // Stored jsonb, typed by $type only: kept guarded.
   const accountActiveFields = (id: number) =>
     root.contributionAccounts?.[String(id)] ?? {};
   const deductionActiveFields = (id: number) =>
@@ -1525,7 +1524,7 @@ function ProfileInlineEditor({
                   const isDisabled = af.isActive === false;
                   const isSaving =
                     setAccountFields.isPending &&
-                    setAccountFields.variables?.accountId === ad.id;
+                    setAccountFields.variables.accountId === ad.id;
                   const storedValue =
                     af.contributionValue !== undefined
                       ? String(af.contributionValue)
@@ -1592,7 +1591,7 @@ function ProfileInlineEditor({
                       </td>
                       <td className="text-secondary px-3 py-1.5">
                         <div className={isDisabled ? "line-through" : ""}>
-                          {ad.liveAccountName ?? ad.accountName}
+                          {ad.liveAccountName}
                         </div>
                         {!ad.liveIsActive && (
                           <div className="flex items-center gap-1.5">
@@ -1931,7 +1930,7 @@ function ProfileInlineEditor({
                 const storedName = d.deductionName;
                 const isSaving =
                   setDeductionFields.isPending &&
-                  setDeductionFields.variables?.deductionId === d.id;
+                  setDeductionFields.variables.deductionId === d.id;
                 return (
                   <tr
                     key={d.id}

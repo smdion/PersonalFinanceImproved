@@ -244,12 +244,13 @@ export function RetirementProfileTab({
     onMutate: async (newSettings) => {
       await utils.projection.getProjectionMetadata.cancel();
       const defined = Object.fromEntries(
+        // Callers reach this through a cast (UpsertSettingsMutation): a patch may carry an explicit undefined, which must not overwrite.
         Object.entries(newSettings).filter(([, v]) => v !== undefined),
       );
       utils.projection.getProjectionMetadata.setData(
         debouncedEngineInput,
         (old) => {
-          if (!old || !("settings" in old) || !old.settings) return old;
+          if (!old || !("settings" in old)) return old;
           return {
             ...old,
             settings: { ...old.settings, ...defined },
@@ -447,9 +448,8 @@ export function RetirementProfileTab({
                   </span>
                   <div className="font-medium">
                     <select
-                      value={settings?.withdrawalStrategy ?? "fixed"}
+                      value={settings.withdrawalStrategy}
                       onChange={(e) => {
-                        if (!settings) return;
                         upsertSettingsMutation.mutate(
                           buildSettingsPatch(settings, {
                             withdrawalStrategy: e.target
@@ -487,8 +487,8 @@ export function RetirementProfileTab({
                 <div>
                   <span className="text-muted text-caption">
                     {(() => {
-                      const key = (settings?.withdrawalStrategy ??
-                        "fixed") as WithdrawalStrategyType;
+                      const key =
+                        settings.withdrawalStrategy as WithdrawalStrategyType;
                       const meta = getStrategyMeta(key);
                       return meta.description;
                     })()}

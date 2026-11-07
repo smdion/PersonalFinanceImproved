@@ -825,7 +825,7 @@ function ExtraPaycheckJobPanel({
                   <label className="block space-y-0.5">
                     <span className="text-caption text-muted">Month</span>
                     <select
-                      value={overrideMonth ?? ""}
+                      value={overrideMonth}
                       onChange={(e) => setOverrideMonth(e.target.value)}
                       className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     >

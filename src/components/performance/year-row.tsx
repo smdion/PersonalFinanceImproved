@@ -85,7 +85,7 @@ export function YearRow({
     tracksCostBasis(a.accountType ?? ""),
   );
   const yearCostBasis = sumBy(costBasisAccountsForYear, (a) => {
-    const master = masterAccounts?.find((m) => m.id === a.performanceAccountId);
+    const master = masterAccounts.find((m) => m.id === a.performanceAccountId);
     return Number(master?.costBasis ?? 0);
   });
   const yearCostBasisEnding = sumBy(
@@ -621,7 +621,7 @@ export function YearRow({
                 )}
                 {(() => {
                   const costTracked = tracksCostBasis(a.accountType ?? "");
-                  const master = masterAccounts?.find(
+                  const master = masterAccounts.find(
                     (m) => m.id === a.performanceAccountId,
                   );
                   const basis = Number(master?.costBasis ?? 0);
@@ -643,8 +643,8 @@ export function YearRow({
                               formatter={formatCurrency}
                               isEditing={
                                 editingCell?.type === "master" &&
-                                editingCell?.id === master.id &&
-                                editingCell?.field === "costBasis"
+                                editingCell.id === master.id &&
+                                editingCell.field === "costBasis"
                               }
                               editValue={editValue}
                               onStartEdit={() =>

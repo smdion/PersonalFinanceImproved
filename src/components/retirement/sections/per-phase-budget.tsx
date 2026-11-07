@@ -52,8 +52,7 @@ export function PerPhaseBudgetSection({
   setDecBudgetCol,
   isEditable,
 }: Props) {
-  const activeStrategy = (settings?.withdrawalStrategy ??
-    "fixed") as WithdrawalStrategyType;
+  const activeStrategy = settings.withdrawalStrategy as WithdrawalStrategyType;
   const strategyMeta = getStrategyMeta(activeStrategy);
   const { incomeSource } = strategyMeta;
   const { usesWithdrawalRate, usesPostRetirementRaise } = strategyMeta;
@@ -67,7 +66,7 @@ export function PerPhaseBudgetSection({
   // Constant %, Endowment, Vanguard Dynamic) -- same fix already applied
   // in mc-simulation-assumptions.tsx for this exact distinction.
   const budgetNotUsed = !usesWithdrawalRate;
-  const profiles = budgetProfileSummaries ?? [];
+  const profiles = budgetProfileSummaries;
   if (profiles.length === 0) return null;
 
   const decProfile =
@@ -185,7 +184,7 @@ export function PerPhaseBudgetSection({
               parseInput={(v) => v.replace(/[^0-9]/g, "")}
               type="number"
               className="text-sm"
-              isEditable={isEditable && !!settings && !budgetNotUsed}
+              isEditable={isEditable && !budgetNotUsed}
             />
             {decExpenseOverride && (
               <button

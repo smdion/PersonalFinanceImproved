@@ -26,6 +26,7 @@ function read(): SnapshotSyncPending | null {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
     const p = JSON.parse(raw) as SnapshotSyncPending;
+    // Parsed browser storage: any JSON, even null.
     return typeof p?.snapshotId === "number" ? p : null;
   } catch {
     return null;

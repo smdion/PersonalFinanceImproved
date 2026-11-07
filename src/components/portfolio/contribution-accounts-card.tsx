@@ -157,7 +157,7 @@ export function AccountCard({
   // own still earns a real, proportional share of that match; ContributionRow
   // uses this to say so instead of showing nothing.
   const matchConfigContrib = activeContribs.find(
-    (c) => c.employerMatchType && c.employerMatchType !== "none",
+    (c) => c.employerMatchType && c.employerMatchType !== "none", // stored text: "" = no match
   );
   const activeSubs = portfolioSubs.filter((s) => s.isActive);
   const inactiveSubs = portfolioSubs.filter((s) => !s.isActive);
@@ -568,7 +568,7 @@ export function AccountCard({
                           activeProfileFields[String(c.id)] ?? null
                         }
                         sharedMatchFrom={
-                          (!c.employerMatchType ||
+                          (!c.employerMatchType || // stored text: "" = no match
                             c.employerMatchType === "none") &&
                           matchConfigContrib &&
                           matchConfigContrib.id !== c.id

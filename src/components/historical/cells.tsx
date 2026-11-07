@@ -252,7 +252,7 @@ export function NumCell({
         border ? "border-l" : ""
       } ${red && value ? "text-red-600" : ""}`}
     >
-      {value !== null && value !== undefined ? formatCurrency(value) : "\u2014"}
+      {value !== null ? formatCurrency(value) : "\u2014"}
     </td>
   );
 }
@@ -471,17 +471,11 @@ export function EditableCell({
         {tooltipLines && tooltipLines.length > 0 ? (
           <Tooltip lines={tooltipLines} side="bottom" maxWidth={400}>
             <span className="border-strong cursor-help border-b border-dotted">
-              {value !== null && value !== undefined
-                ? formatCurrency(value)
-                : "\u2014"}
+              {value !== null ? formatCurrency(value) : "\u2014"}
             </span>
           </Tooltip>
         ) : (
-          <span>
-            {value !== null && value !== undefined
-              ? formatCurrency(value)
-              : "\u2014"}
-          </span>
+          <span>{value !== null ? formatCurrency(value) : "\u2014"}</span>
         )}
         {existingNote && <NoteIndicator note={existingNote} />}
         {!isCurrent && (

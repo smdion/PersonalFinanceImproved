@@ -20,7 +20,7 @@
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 950,
     "src/components/budget/budget-summary-table.tsx": 772,
-    "src/components/budget/contribution-profile-manager.tsx": 2042,
+    "src/components/budget/contribution-profile-manager.tsx": 2041,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
@@ -48,7 +48,7 @@
     "src/components/cards/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
-    "src/components/historical/cells.tsx": 683,
+    "src/components/historical/cells.tsx": 677,
     "src/components/investments/fund-holding-row.tsx": 498,
     "src/components/investments/holding-history-section.tsx": 522,
     "src/components/investments/holdings-section.tsx": 793,
@@ -79,7 +79,7 @@
     "src/components/savings/api-sync-section.tsx": 637,
     "src/components/savings/contribution-grid.tsx": 471,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1260,
-    "src/components/savings/fund-card.tsx": 1042,
+    "src/components/savings/fund-card.tsx": 1040,
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 413,
     "src/components/savings/savings-trajectory-table.tsx": 550,
@@ -402,7 +402,7 @@
       "BudgetModeManager": 172
     },
     "src/components/budget/budget-summary-bar.tsx": {
-      "BudgetSummaryBar": 176
+      "BudgetSummaryBar": 174
     },
     "src/components/budget/budget-summary-table.tsx": {
       "BudgetSummaryTable": 706,
@@ -411,8 +411,8 @@
     "src/components/budget/contribution-profile-manager.tsx": {
       "ContributionProfileManager": 347,
       "ProfileDetailPanel": 246,
-      "ProfileEditor": 518,
-      "ProfileEditor.map()": 212,
+      "ProfileEditor": 517,
+      "ProfileEditor.map()": 211,
       "ProfileInlineEditor": 784,
       "ProfileInlineEditor.iife()": 370,
       "ProfileInlineEditor.iife().map()": 366
@@ -688,16 +688,16 @@
       "AssumptionsBand": 343
     },
     "src/components/retirement/retirement-profile-manager.tsx": {
-      "RetirementProfileManager": 266
+      "RetirementProfileManager": 264
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
       "RetirementProfileTab": 530
     },
     "src/components/retirement/sections/income.tsx": {
-      "IncomeSection": 180
+      "IncomeSection": 179
     },
     "src/components/retirement/sections/per-phase-budget.tsx": {
-      "PerPhaseBudgetSection": 161
+      "PerPhaseBudgetSection": 160
     },
     "src/components/retirement/sections/rmd-handling.tsx": {
       "RmdHandlingSection": 215
@@ -706,8 +706,8 @@
       "SocialSecuritySection": 242
     },
     "src/components/retirement/sections/strategy-params.tsx": {
-      "StrategyParamsSection": 221,
-      "StrategyParamsSection.renderField": 171
+      "StrategyParamsSection": 219,
+      "StrategyParamsSection.renderField": 170
     },
     "src/components/retirement/sections/taxes.tsx": {
       "TaxesSection": 470
@@ -731,7 +731,7 @@
       "ExtraPaycheckJobPanel": 776
     },
     "src/components/savings/fund-card.tsx": {
-      "FundCard": 860
+      "FundCard": 858
     },
     "src/components/savings/fund-management-section.tsx": {
       "FundManagementSection": 498
@@ -830,7 +830,7 @@
       "RelocationLargePurchases": 345
     },
     "src/components/tools/relocation/metrics-and-banner.tsx": {
-      "RelocationMetricsAndBanner": 180
+      "RelocationMetricsAndBanner": 170
     },
     "src/components/tools/relocation/projection-table.tsx": {
       "ComparisonTable": 217

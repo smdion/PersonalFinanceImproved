@@ -111,6 +111,7 @@ export function BudgetProfileSidebar({
             metaTag={
               apiService && apiLinkedProfileId === p.id
                 ? (() => {
+                    // columnLabels is stored jsonb, typed by a cast here.
                     const mode =
                       (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
                       `Mode ${apiLinkedColumnIndex}`;

@@ -539,7 +539,7 @@ type GlideChoice = "target" | SimulationPresetKey;
 function GlidePathCard({ data }: { data: Overview }) {
   const projection = useDashboardProjection();
   const retirementAge =
-    projection.data && "settings" in projection.data && projection.data.settings
+    projection.data && "settings" in projection.data
       ? Number(projection.data.settings.retirementAge) || null
       : null;
   const { data: presets } = trpc.investments.getSimulationGlidePaths.useQuery();

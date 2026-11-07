@@ -544,7 +544,7 @@ export function FundManagementSection({
             const fundTxs = plannedTransactions.filter(
               (tx) => tx.goalId === raw.id,
             );
-            const fundOverrides = (allocationOverrides ?? []).filter(
+            const fundOverrides = allocationOverrides.filter(
               (o) => o.goalId === raw.id,
             );
             const children = childGoalsByParent.get(raw.id) ?? [];
@@ -609,7 +609,7 @@ export function FundManagementSection({
                   onCreateFund={handleCreateFund}
                   createGoalPending={createGoalPending}
                   canEdit={canEdit}
-                  efundResult={raw.isEmergencyFund ? efund : null}
+                  efundResult={null}
                   apiBalance={apiBalanceMap.get(raw.id) ?? null}
                   apiServiceName={apiServiceName}
                   onLinkToApi={onLinkToApi}

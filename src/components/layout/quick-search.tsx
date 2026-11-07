@@ -54,6 +54,7 @@ export function QuickSearch() {
       returnFocus.current = document.activeElement as HTMLElement | null;
       inputRef.current?.focus();
     } else {
+      // activeElement is any Element, cast: kept guarded.
       returnFocus.current?.focus?.();
       returnFocus.current = null;
     }

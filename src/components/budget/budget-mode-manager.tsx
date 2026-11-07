@@ -131,9 +131,9 @@ export function BudgetModeManager({
                       ? 12 - even * (cols.length - 1)
                       : even,
                   );
-                  onUpdateColumnMonths?.(months);
+                  onUpdateColumnMonths(months);
                 } else {
-                  onUpdateColumnMonths?.(null);
+                  onUpdateColumnMonths(null);
                 }
               }}
             />

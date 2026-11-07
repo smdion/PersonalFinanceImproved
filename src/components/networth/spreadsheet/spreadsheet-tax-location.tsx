@@ -120,15 +120,13 @@ export function SpreadsheetTaxLocation({
   return (
     <Card title="Tax Location - YTD" className="mb-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {hasRetirementData && (
-          <TaxLocationMiniTable
-            title="Retirement"
-            yearAData={a.retirement}
-            yearBData={b.retirement}
-            yearALabel={yearALabel}
-            yearBLabel={yearBLabel}
-          />
-        )}
+        <TaxLocationMiniTable
+          title="Retirement"
+          yearAData={a.retirement}
+          yearBData={b.retirement}
+          yearALabel={yearALabel}
+          yearBLabel={yearBLabel}
+        />
         {/* Portfolio = total (all accounts = retirement + portfolio parent categories merged) */}
         <TaxLocationMiniTable
           title="Portfolio"

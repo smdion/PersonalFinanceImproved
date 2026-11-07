@@ -37,7 +37,7 @@ export function RaiseAndRateSection({
   handleSettingPercentUpdate,
   isEditable,
 }: Props) {
-  const s = (settings?.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType;
+  const s = settings.withdrawalStrategy as WithdrawalStrategyType;
   const meta = getStrategyMeta(s);
   return (
     <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">

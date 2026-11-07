@@ -64,7 +64,7 @@ export function ContributionRow({
   onUpdate?: (updates: Record<string, unknown>) => void;
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const cfg = ACCOUNT_TYPE_CONFIG[c.accountType as AccountCategory];
+  const cfg = ACCOUNT_TYPE_CONFIG[c.accountType as AccountCategory]; // A stored account type this version doesn't know has no config.
   const hasCoverage =
     cfg?.irsLimitKeys && "coverageVariant" in cfg.irsLimitKeys;
 
@@ -422,7 +422,7 @@ export function ContributionRow({
                 </div>
                 <InlineText
                   label=""
-                  value={String(c.allocationPriority ?? 0)}
+                  value={String(c.allocationPriority)}
                   placeholder="0"
                   onSave={(val) =>
                     onUpdate?.({ allocationPriority: parseInt(val, 10) || 0 })

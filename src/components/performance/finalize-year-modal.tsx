@@ -201,7 +201,7 @@ export function FinalizeYearModal({
                   {categories.map((cat) => {
                     const val = values[cat]?.[key] ?? "0";
                     const isEditing =
-                      editingCell?.cat === cat && editingCell?.field === key;
+                      editingCell?.cat === cat && editingCell.field === key;
                     const numVal = parseFloat(val) || 0;
 
                     return (

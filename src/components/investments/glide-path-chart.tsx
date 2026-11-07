@@ -89,7 +89,7 @@ export function GlidePathChart({
           />
           <RechartsTooltip
             content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
+              if (!active || !payload?.length) return null; // Recharts' runtime props, not our types: kept guarded.
               const p = payload[0]!.payload as (typeof data)[number];
               const stocks = classes
                 .filter((c) => c.isStock)
