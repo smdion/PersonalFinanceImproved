@@ -10,7 +10,6 @@ import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import {
   loadLiveContributions,
   liveYearToDate,
@@ -25,65 +24,45 @@ import {
   isPaidThroughPayroll,
 } from "@/lib/pure/paycheck/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
-import {
-  contributionPay,
-  getTotalCompensation,
-  resolveCompensation,
-  applyActiveSalary,
-  applyActiveBonusTerms,
-  applySandboxSalaryEntries,
-} from "@/lib/pure/household/compensation";
+import { applySandboxSalaryEntries } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/data/people";
-import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import type {
   AccountTypeSnapshot,
-  PerContribData,
   PersonSnapshot,
 } from "@/server/services/contributions/summary.types";
 import { jointAccountRows } from "@/server/services/contributions/joint-accounts";
+import {
+  contribAccountsFor,
+  perContribRows,
+  personPay,
+} from "@/server/services/contributions/person-snapshot";
+import {
+  accountTypeSnapshots,
+  contributionTotals,
+  newCategoryMap,
+} from "@/server/services/contributions/account-type-snapshots";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContribWindow } from "@/lib/utils/date";
 import { ageOnDate } from "@/lib/pure/household/age";
-import {
-  ficaCapContext,
-  resolveIrsLimit,
-  resolvePriorYearLimit,
-  computeSiblingTotal,
-  isEligibleForPriorYear,
-} from "@/lib/pure/contributions/irs-limits";
-import {
-  computeViewAwareAccountMetrics,
-  computeViewAwareTotals,
-} from "@/lib/pure/contributions/view-metrics";
+import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
 import { findActiveJob } from "@/lib/pure/household/profiles";
-import {
-  capMessage,
-  combinedCoverage,
-} from "@/lib/pure/contributions/contribution-caps";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";
-import type { ContributionInput } from "@/lib/pure/contributions/contribution.types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   isOverflowTarget,
-  getAccountTypeConfig,
   getDisplayConfig,
-  getLimitGroup,
-  getDefaultAccumulationOrder,
-  categoriesWithIrsLimit,
   isRetirementCategory,
   isTaxFree,
   isAfterTaxTreatment,
   isHsaTreatment,
-  isRetirementParent,
-  isPortfolioParent,
 } from "@/lib/config/account-types";
 import { splitYtdActuals } from "@/lib/pure/contributions/ytd-actuals";
 
@@ -339,29 +318,12 @@ export async function computeContributionSummary(
         };
       }
 
-      const comp = resolveCompensation(salaryProfileActiveMap, activeJob.id);
-      // The What-If sandbox can override salary and/or bonus terms
-      // independently of the Salary Profile's own resolved values.
-      const personEntry = effectiveSalaryMap.get(person.id);
-      const dbSalary = applyActiveSalary(
-        person.id,
-        comp.salary,
+      const { dbSalary, pay, salary, totalCompensation } = personPay(
+        salaryProfileActiveMap,
+        activeJob,
         effectiveSalaryMap,
+        person,
       );
-      const bonusTerms = applyActiveBonusTerms(personEntry, comp.terms);
-      // Base salary + the bonus (each account takes from it only when
-      // set to, fromBonus) —
-      // the paycheck's way (contributionPay / bonusCheckContribution).
-      // This year's figures: the pinned bonus when there is one, like
-      // the paycheck (SalaryEntry.bonusOverride).
-      const pay = contributionPay(dbSalary, bonusTerms, comp.bonusOverride);
-      const salary = pay.salary;
-      // Total compensation this year (salary + this year's bonus) — the
-      // savings rate denominator.
-      const totalCompensation =
-        comp.bonusOverride != null
-          ? dbSalary + comp.bonusOverride
-          : getTotalCompensation(dbSalary, bonusTerms);
       const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
       const periodsElapsed = periodsElapsedYtd(
         asOfDate,
@@ -371,164 +333,41 @@ export async function computeContributionSummary(
       );
       const age = ageOnDate(person.dateOfBirth, asOfDate);
 
-      const jobContribs = effectiveContribs.filter(
-        (c) => c.jobId === activeJob.id,
-      );
-      const personalContribs = effectiveContribs.filter(
-        (c) =>
-          c.jobId === null &&
-          c.personId === person.id &&
-          c.ownership !== "joint",
-      );
-
-      // The day this year's bonus check is paid (null: no bonus date set).
-      const bonusDate =
-        pay.bonusGross > 0 && activeJob.bonusMonth != null
-          ? new Date(
-              asOfDate.getFullYear(),
-              activeJob.bonusMonth - 1,
-              activeJob.bonusDayOfMonth ?? 1,
-            )
-          : null;
-      const accounts = buildContribAccounts(
-        jobContribs,
-        personalContribs,
+      const {
+        bonusDate,
+        accounts,
+        rawContribs,
+        result,
+        resolveContribLimit,
+        resolveContribPriorYearLimit,
+      } = contribAccountsFor(
+        effectiveContribs,
+        activeJob,
+        person,
+        pay,
+        asOfDate,
         salary,
         periodsPerYear,
-        ficaCapContext(
-          limitsRecord,
-          person.dateOfBirth,
-          asOfDate.getFullYear(),
-        ),
-        pay.bonusGross,
-      );
-      const rawContribs = [...jobContribs, ...personalContribs];
-
-      const input: ContributionInput = {
-        annualSalary: salary,
+        limitsRecord,
         totalCompensation,
-        contributionAccounts: accounts,
-        limits: limitsRecord,
-        asOfDate,
-      };
-
-      const result = calculateContributions(input);
-
-      // Resolve IRS limit for an account type (with coverage variant + catchup)
-      const resolveContribLimit = (
-        accountType: string,
-        hsaCoverageType: string | null,
-      ): number =>
-        resolveIrsLimit(accountType, age, hsaCoverageType, limitsRecord);
-
-      // Resolve prior-year IRS limit for an account type
-      const resolveContribPriorYearLimit = (
-        accountType: string,
-        hsaCoverageType: string | null,
-      ): number =>
-        resolvePriorYearLimit(
-          accountType,
-          age,
-          hsaCoverageType,
-          priorYearLimitsRecord,
-        );
+        age,
+        priorYearLimitsRecord,
+      );
 
       // Build per-raw-contrib computed data for consumers (Paycheck page)
-      const perContribData: PerContribData[] = rawContribs.map((rc, i) => {
-        const annual = accounts[i]!.annualContribution;
-        const matchAnnual = accounts[i]!.employerMatch;
-        const group = getLimitGroup(rc.accountType as AccountCategory);
-        const limit = resolveContribLimit(rc.accountType, rc.hsaCoverageType);
-        // Sibling total: other contribs in same limit group for this person
-        // When matchCountsTowardLimit, include sibling employer matches too (e.g. HSA)
-        const cfg = categoriesWithIrsLimit().includes(
-          rc.accountType as AccountCategory,
-        )
-          ? getAccountTypeConfig(rc.accountType as AccountCategory)
-          : null;
-        const siblingAnnualTotal = group
-          ? computeSiblingTotal(
-              rawContribs.map((rc, idx) => ({
-                accountType: rc.accountType,
-                annualContribution: accounts[idx]!.annualContribution,
-                employerMatch: accounts[idx]!.employerMatch,
-              })),
-              i,
-              cfg?.matchCountsTowardLimit ?? false,
-            )
-          : 0;
-
-        // Prior-year contribution tracking — only use amount if it's tagged for the correct year
-        const rawPyAmount = toNumber(rc.priorYearContribAmount);
-        const priorYearAmount =
-          rc.priorYearContribYear === priorYear ? rawPyAmount : 0;
-        let priorYearData: PerContribData["priorYear"];
-        if (
-          isEligibleForPriorYear(
-            inPriorYearWindow,
-            rc.accountType,
-            priorYearAmount,
-          )
-        ) {
-          const pyLimit = resolveContribPriorYearLimit(
-            rc.accountType,
-            rc.hsaCoverageType,
-          );
-          priorYearData = {
-            amount: priorYearAmount,
-            limit: pyLimit,
-            remaining: Math.max(0, pyLimit - priorYearAmount),
-          };
-        }
-
-        return {
-          contribId: rc.id,
-          annualAmount: roundToCents(annual),
-          employerMatchAnnual: roundToCents(matchAnnual),
-          limit,
-          siblingAnnualTotal: roundToCents(siblingAnnualTotal),
-          limitGroup: group,
-          ytdActual: contribActualMap.get(rc.id) ?? null,
-          priorYear: priorYearData,
-        };
-      });
+      const { perContribData } = perContribRows(
+        rawContribs,
+        accounts,
+        resolveContribLimit,
+        inPriorYearWindow,
+        priorYear,
+        resolveContribPriorYearLimit,
+        contribActualMap,
+      );
 
       // Build per-account-type snapshots
       // Group accounts by display category derived from DB columns
-      const categoryMap = new Map<
-        string,
-        {
-          employee: number;
-          match: number;
-          matchAvailable: number;
-          trad: number;
-          taxFree: number;
-          afterTax: number;
-          hsa: number;
-          nonPayroll: number;
-          payrollDeducted: number;
-          isJoint: boolean;
-          parentCategory: string;
-          hasDiscountBar: boolean;
-          employerMatchLabel: string;
-          categoryKey: string;
-          targetAnnual: number | null;
-          allocationPriority: number;
-          priorYearAmount: number;
-          priorYearContribs: { id: number; amount: number }[];
-          ytdContributions: number;
-          ytdEmployerMatch: number;
-          blendedEmployee: number;
-          blendedMatch: number;
-          ytdDataStale: boolean;
-          performanceAccountIds: Set<number>;
-          /** Sum of this account's percent-of-pay elections; null once any of its contributions is a fixed amount. */
-          electedPct: number | null;
-          /** What the bonus check takes for it (bonusCheckContribution). */
-          bonus: number;
-          fullMatchShareOfPay: number | null;
-        }
-      >();
+      const { categoryMap } = newCategoryMap();
 
       // Compute method-aware remaining fraction for blended estimates.
       // Each contribution method has a different delivery cadence.
@@ -747,204 +586,35 @@ export async function computeContributionSummary(
       // Takes the raw DB category key (categoryKey), not the display label
       // Coverage across every row of the type — family if any row is
       // family — the same rule the label and the cap use.
-      const coverageFor = (rawCat: string) =>
-        combinedCoverage(
-          rawContribs
-            .filter((c) => c.accountType === rawCat)
-            .map((c) => c.hsaCoverageType ?? null),
-        );
-      const getLimitForCategory = (rawCat: string): number =>
-        resolveContribLimit(rawCat, coverageFor(rawCat));
-
-      const accountTypes: AccountTypeSnapshot[] = [];
-      for (const [cat, data] of Array.from(categoryMap)) {
-        const limit = getLimitForCategory(data.categoryKey);
-        const employeeContrib = roundToCents(data.employee);
-        const employerMatch = roundToCents(data.match);
-        const bonusAdd = roundToCents(data.bonus);
-        const totalEmployee = employeeContrib + bonusAdd;
-        const cfg = categoriesWithIrsLimit().includes(
-          data.categoryKey as AccountCategory,
-        )
-          ? getAccountTypeConfig(data.categoryKey as AccountCategory)
-          : null;
-        // The payroll election as set up ("15% of pay"), not dollars ÷
-        // salary — that ratio mixed in bonus-check money and differed
-        // from what the household actually elects.
-        const currentPctOfSalary = data.electedPct;
-
-        const ytdActualForCategory =
-          data.ytdContributions > 0 || data.ytdEmployerMatch > 0
-            ? {
-                contributions: data.ytdContributions,
-                employerMatch: data.ytdEmployerMatch,
-              }
-            : null;
-        const blendedEmployee = roundToCents(data.blendedEmployee);
-        const blendedMatch = roundToCents(data.blendedMatch);
-        const views = computeViewAwareAccountMetrics({
-          projected: {
-            employeeContrib: totalEmployee,
-            employerMatch,
-          },
-          blended: {
-            employeeContrib: blendedEmployee,
-            employerMatch: blendedMatch,
-          },
-          ytdActual: ytdActualForCategory,
-          limit,
-          salary,
-          matchCountsTowardLimit: cfg?.matchCountsTowardLimit ?? false,
-        });
-
-        // Prior-year contribution data (only during IRS window for eligible types)
-        let priorYearSnapshot: AccountTypeSnapshot["priorYear"];
-        if (inPriorYearWindow && cfg?.supportsPriorYearContrib) {
-          const pyLimit = resolveContribPriorYearLimit(
-            data.categoryKey,
-            coverageFor(data.categoryKey),
-          );
-          if (pyLimit > 0) {
-            priorYearSnapshot = {
-              amount: roundToCents(data.priorYearAmount),
-              limit: pyLimit,
-              remaining: Math.max(
-                0,
-                pyLimit - roundToCents(data.priorYearAmount),
-              ),
-              contribs: data.priorYearContribs,
-            };
-          }
-        }
-
-        const typeRows = rawContribs.filter(
-          (c) => c.accountType === data.categoryKey,
-        );
-        accountTypes.push({
-          accountType: cat,
-          categoryKey: data.categoryKey,
-          performanceAccountIds: [...data.performanceAccountIds],
-          parentCategory: data.parentCategory,
-          limit,
-          hsaCoverageType: combinedCoverage(
-            typeRows.map((c) => c.hsaCoverageType ?? null),
-          ),
-          overBy: roundToCents(sumBy(typeRows, (c) => c.cap?.overBy ?? 0)),
-          capMessages: typeRows.flatMap((c) => {
-            const m = capMessage(c);
-            return m ? [m] : [];
-          }),
-          employeeContrib: totalEmployee,
-          employerMatch,
-          employerMatchAvailable: Math.max(
-            employerMatch,
-            roundToCents(data.matchAvailable),
-          ),
-          totalContrib: totalEmployee + employerMatch,
-          views,
-          ytdDataStale: data.ytdDataStale,
-          currentPctOfSalary,
-          fullMatchPctOfSalary:
-            data.fullMatchShareOfPay === null
-              ? null
-              : roundToCents(data.fullMatchShareOfPay * 100),
-          tradContrib: roundToCents(data.trad),
-          taxFreeContrib: roundToCents(data.taxFree),
-          afterTaxContrib: roundToCents(data.afterTax),
-          hsaContrib: roundToCents(data.hsa),
-          nonPayrollContrib: roundToCents(data.nonPayroll),
-          payrollDeductedContrib: roundToCents(data.payrollDeducted),
-          bonusContrib: bonusAdd,
-          isJoint: data.isJoint,
-          hasDiscountBar: data.hasDiscountBar,
-          employerMatchLabel: data.employerMatchLabel,
-          targetAnnual: data.targetAnnual,
-          allocationPriority: data.allocationPriority,
-          priorYear: priorYearSnapshot,
-        });
-      }
-
-      // Sort: config-defined accumulation order (using categoryKey for lookup), then others
-      const order = getDefaultAccumulationOrder() as string[];
-      accountTypes.sort((a, b) => {
-        const ai = order.indexOf(a.categoryKey);
-        const bi = order.indexOf(b.categoryKey);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
+      const { accountTypes } = accountTypeSnapshots(
+        rawContribs,
+        resolveContribLimit,
+        categoryMap,
+        salary,
+        inPriorYearWindow,
+        resolveContribPriorYearLimit,
+      );
 
       // Compute totals — use DB parentCategory (not config lookup) so sub-types
       // like ESPP (categoryKey "espp") are correctly grouped by their stored category
-      const retirement = accountTypes.filter((a) =>
-        isRetirementParent(a.parentCategory),
-      );
-      const portfolio = accountTypes.filter((a) =>
-        isPortfolioParent(a.parentCategory),
-      );
-      const retirementWithoutMatch = roundToCents(
-        retirement.reduce((s, a) => s + a.employeeContrib, 0),
-      );
-      const retirementWithMatch = roundToCents(
-        retirement.reduce((s, a) => s + a.totalContrib, 0),
-      );
-      const portfolioWithoutMatch = roundToCents(
-        portfolio.reduce((s, a) => s + a.employeeContrib, 0),
-      );
-      const portfolioWithMatch = roundToCents(
-        portfolio.reduce((s, a) => s + a.totalContrib, 0),
-      );
-
-      // YTD actuals from performance data — sum by parent category
-      const ytdActualRetirement = roundToCents(
-        perContribData
-          .filter((_pcd, idx) =>
-            isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
-          )
-          .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
-      );
-      const ytdActualPortfolio = roundToCents(
-        perContribData
-          .filter((_pcd, idx) =>
-            isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
-          )
-          .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
-      );
-      const ytdActualRetirementMatch = roundToCents(
-        perContribData
-          .filter((_pcd, idx) =>
-            isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
-          )
-          .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
-      );
-      const ytdActualPortfolioMatch = roundToCents(
-        perContribData
-          .filter((_pcd, idx) =>
-            isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
-          )
-          .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
-      );
-
-      // Blended totals: sum per-category blended amounts (method-aware remaining fractions)
-      const catEntries = Array.from(categoryMap.entries());
-      const retCats = catEntries.filter(([, d]) =>
-        isRetirementParent(d.parentCategory),
-      );
-      const portCats = catEntries.filter(([, d]) =>
-        isPortfolioParent(d.parentCategory),
-      );
-      const blendedRetWithoutMatch = roundToCents(
-        retCats.reduce((s, [, d]) => s + d.blendedEmployee, 0),
-      );
-      const blendedRetWithMatch = roundToCents(
-        retCats.reduce((s, [, d]) => s + d.blendedEmployee + d.blendedMatch, 0),
-      );
-      const blendedPortWithoutMatch = roundToCents(
-        portCats.reduce((s, [, d]) => s + d.blendedEmployee, 0),
-      );
-      const blendedPortWithMatch = roundToCents(
-        portCats.reduce(
-          (s, [, d]) => s + d.blendedEmployee + d.blendedMatch,
-          0,
-        ),
+      const {
+        retirementWithoutMatch,
+        retirementWithMatch,
+        portfolioWithoutMatch,
+        portfolioWithMatch,
+        ytdActualRetirement,
+        ytdActualPortfolio,
+        ytdActualRetirementMatch,
+        ytdActualPortfolioMatch,
+        blendedRetWithoutMatch,
+        blendedRetWithMatch,
+        blendedPortWithoutMatch,
+        blendedPortWithMatch,
+      } = contributionTotals(
+        accountTypes,
+        perContribData,
+        rawContribs,
+        categoryMap,
       );
 
       // Year-to-date share of a FULL year (checks paid ÷ checks a
