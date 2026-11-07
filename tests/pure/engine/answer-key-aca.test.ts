@@ -27,7 +27,7 @@
  * - IRC 36B(c)(2)(B); Reg. 1.36B-2(c)(2): Medicare ends the credit for the
  *   person on it, not for the spouse (ACA-11, ACA-12).
  *
- * Under test: `checkAca` (`engine/post-withdrawal-optimizer.ts`), the
+ * Under test: `checkAca` (`engine/aca-check.ts`), the
  * engine's cliff check, `getAcaSubsidyCliff`
  * (`src/lib/config/aca-tables.ts`) and `yearMagi`'s `aca` rule
  * (`src/lib/pure/tax/year-income.ts`), on the shipped 2026 poverty levels
@@ -48,7 +48,7 @@
  */
 import { describe, it } from "vitest";
 import { cents, runOneYear, xfail } from "../../fixtures/answer-key";
-import { checkAca } from "@/lib/pure/engine/post-withdrawal-optimizer";
+import { checkAca } from "@/lib/pure/engine/aca-check";
 import { getAcaSubsidyCliff } from "@/lib/config/aca-tables";
 import { yearMagi } from "@/lib/pure/tax/year-income";
 import { engineHousehold } from "../../fixtures/answer-key-household";

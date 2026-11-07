@@ -937,7 +937,7 @@ interface RouteBracketInfo {
    *  (slightly conservative when other MAGI add-ins exist). */
   magiBeforeThisDraw?: number;
   /** Whether this year's Roth conversion optimizer
-   *  (`performRothConversion`, post-withdrawal-optimizer.ts) is enabled —
+   *  (`performRothConversion`, roth-conversion.ts) is enabled —
    *  when true, `routeWithdrawalsBracketFilling` reserves any Traditional
    *  bracket room Phase 1 left unused (`traditionalCap - totalTradWithdrawn`)
    *  from the LTCG-room floor, since the conversion is unconditional and

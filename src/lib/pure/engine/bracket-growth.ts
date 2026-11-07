@@ -3,7 +3,7 @@
  * ordinary tax brackets, the standard deduction, LTCG brackets, IRMAA
  * brackets. (ACA's 400%-FPL cliff is inflation-indexed too and gets the
  * same fix, but grown at its own single call site —
- * `checkAca`, `post-withdrawal-optimizer.ts` — via a `fplGrowthFactor`
+ * `checkAca`, `aca-check.ts` — via a `fplGrowthFactor`
  * multiplier rather than a `grow*` helper here.) An "outside the box" review
  * of engine-wide tax assumptions found that every one of these is resolved
  * once from a

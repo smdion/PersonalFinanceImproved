@@ -4270,6 +4270,11 @@
       "count": 3
     }
   },
+  "src/lib/pure/engine/aca-check.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
   "src/lib/pure/engine/balance-deduction.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -4410,20 +4415,17 @@
       "count": 1
     }
   },
+  "src/lib/pure/engine/irmaa-check.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
   "src/lib/pure/engine/override-resolution.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
     "ratchet/max-comment-lines": {
       "count": 5
-    }
-  },
-  "src/lib/pure/engine/post-withdrawal-optimizer.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 22
     }
   },
   "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
@@ -4527,6 +4529,14 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
+    }
+  },
+  "src/lib/pure/engine/roth-conversion.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 16
     }
   },
   "src/lib/pure/engine/social-security-income.ts": {

@@ -2,7 +2,7 @@
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 import type { growIrmaaBrackets } from "../bracket-growth";
 import { checkHouseholdIrmaa } from "../household-irmaa";
-import { checkAca } from "../post-withdrawal-optimizer";
+import { checkAca } from "../aca-check";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** This year's income recorded for later lookbacks, then IRMAA from the

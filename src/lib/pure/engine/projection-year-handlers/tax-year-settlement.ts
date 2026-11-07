@@ -21,7 +21,7 @@ import {
   trackDepletions,
 } from "../balance-deduction";
 import { clampIndividualBalances } from "../individual-account-tracking";
-import { performRothConversion } from "../post-withdrawal-optimizer";
+import { performRothConversion } from "../roth-conversion";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
@@ -310,7 +310,7 @@ export function yearRothConversion(
     }
   }
 
-  // The Roth conversion (post-withdrawal-optimizer.ts); its tax is paid from
+  // The Roth conversion (roth-conversion.ts); its tax is paid from
   // retirement brokerage money (basis leaves at the account's own ratio).
   const rothResult = followDraws(indAccts, indKey, indBal, brokBasis, () =>
     performRothConversion({

@@ -1,15 +1,10 @@
 /**
- * Post-Withdrawal Optimizer — Roth conversions + IRMAA + ACA checks.
- *
- * Runs after withdrawal routing and RMD enforcement, before growth.
- * These three features share MAGI calculations and form a feedback chain
- * (Roth conversions affect MAGI → IRMAA/ACA cliff checks), so they're
- * co-located in a single module.
- *
  * Roth conversions: moves Traditional → Roth to fill remaining bracket room.
- *   Tax on the conversion is paid from brokerage (after-tax).
- * IRMAA: checks if MAGI crosses a Medicare surcharge cliff (age 65+).
- * ACA: checks if MAGI crosses the ACA subsidy cliff (pre-65 retirees).
+ * Tax on the conversion is paid from brokerage (after-tax).
+ *
+ * Runs after withdrawal routing and RMD enforcement, before growth. The
+ * conversion feeds MAGI, which the IRMAA and ACA cliff checks
+ * (irmaa-check.ts, aca-check.ts) then read.
  */
 import type { AccountCategory } from "../../config/account-types";
 import type {
@@ -32,12 +27,9 @@ import {
   setBasis,
 } from "../../config/account-balance";
 import {
-  getIrmaaCost,
   getNextIrmaaCliff,
   type IrmaaBracket,
 } from "../../config/irmaa-tables";
-import { getAcaSubsidyCliff } from "../../config/aca-tables";
-import type { MagiIncome } from "@/lib/pure/tax/year-income";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
@@ -46,10 +38,6 @@ import type { WithholdingBracket } from "./tax-estimation";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface RothConversionInput {
   enableRothConversions: boolean | undefined;
@@ -82,7 +70,7 @@ export interface RothConversionInput {
   irmaaAwareRothConversions?: boolean;
   /**
    * IRMAA brackets grown to the vintage that actually applies here —
-   * NOT the same growth as `checkIrmaa`'s `irmaaBrackets` (below). This
+   * NOT the same growth as `checkIrmaa`'s `irmaaBrackets` (irmaa-check.ts). This
    * cap compares a year-N MAGI against the threshold that will apply
    * TWO YEARS LATER (IRMAA's own 2-year lookback: year-N income sets
    * year-(N+2)'s premium), so the caller must grow this table to year
@@ -156,65 +144,6 @@ interface RothConversionResult {
    *  effect. */
   rothConversionIrmaaCapped?: boolean;
 }
-
-export interface IrmaaInput {
-  enableIrmaaAwareness: boolean | undefined;
-  filingStatus: ReturnFilingStatus | null | undefined;
-  /** Whether ANY household member is ≥65. */
-  anyPersonAge65: boolean;
-  /**
-   * MAGI for IRMAA determination. Per IRS rules, year N IRMAA is based on
-   * year N-2 MAGI. The orchestrator should pass the 2-year-lookback MAGI
-   * when available, or current-year MAGI as a fallback for the first 2 years.
-   */
-  projectedMagi: number;
-  /** Current-year Roth conversion amount (for cliff warning logic). */
-  rothConversionAmount: number;
-  /**
-   * IRMAA brackets grown to year N's vintage (the surcharge SCHEDULE
-   * that applies this year, regardless of which year's MAGI it's
-   * evaluated against — see `decumulation-year.ts`'s
-   * `grownIrmaaBracketsForCheck`). NOT the same growth vintage as `RothConversionInput.irmaaBrackets` —
-   * see that field's docblock for why the two differ. */
-  irmaaBrackets: Record<string, IrmaaBracket[]>;
-}
-
-interface IrmaaResult {
-  irmaaCost: number;
-  warnings: string[];
-}
-
-export interface AcaInput {
-  enableAcaAwareness: boolean | undefined;
-  /** Whether ALL household members are <65. */
-  allPersonsUnder65: boolean;
-  householdSize: number;
-  /** The year's income; ACA's MAGI adds the whole Social Security benefit. */
-  income: MagiIncome<"aca">;
-  /**
-   * `(1 + inflationRate) ^ (year - fplYear)` (the poverty levels'
-   * coverage year, bracket-growth.ts `taxTableYears`) — grows the ACA
-   * subsidy cliff (400% FPL) forward instead of holding it flat nominal.
-   * REQUIRED, not optional: making this required rather than defaulting to
-   * 1 means a future caller can't silently skip growth by omission. Growth
-   * is applied at the single point of use
-   * (`getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor`)
-   * — mathematically identical to growing each FPL cell first
-   * (fpl*4*k === (fpl*k)*4). */
-  fplGrowthFactor: number;
-  /** The coverage year's poverty levels (`fpl_by_household`). */
-  fplByHousehold: Record<number, number>;
-}
-
-interface AcaResult {
-  acaSubsidyPreserved: boolean;
-  acaMagiHeadroom: number;
-  warnings: string[];
-}
-
-// ---------------------------------------------------------------------------
-// Roth Conversions (Phase 4)
-// ---------------------------------------------------------------------------
 
 /**
  * Perform Roth conversions: move Traditional → Roth to fill remaining
@@ -596,132 +525,4 @@ export function performRothConversion(
       : {}),
     ...(irmaaCapped ? { rothConversionIrmaaCapped: true } : {}),
   };
-}
-
-// ---------------------------------------------------------------------------
-// IRMAA Awareness (Phase 6)
-// ---------------------------------------------------------------------------
-
-/**
- * Check if projected MAGI crosses an IRMAA cliff (Medicare surcharge).
- * Reports cost and warns if Roth conversion pushed MAGI over a cliff.
- */
-export function checkIrmaa(input: IrmaaInput): IrmaaResult {
-  const {
-    enableIrmaaAwareness,
-    filingStatus,
-    anyPersonAge65,
-    projectedMagi,
-    rothConversionAmount,
-    irmaaBrackets,
-  } = input;
-
-  const warnings: string[] = [];
-
-  if (!enableIrmaaAwareness || !filingStatus || !anyPersonAge65) {
-    return { irmaaCost: 0, warnings };
-  }
-
-  // projectedMagi is the 2-year-lookback MAGI per IRS rules (or current-year fallback).
-  const irmaaCost = getIrmaaCost(projectedMagi, filingStatus, irmaaBrackets);
-
-  // If Roth conversion pushed us over a cliff, check if reducing it helps.
-  // Note: this warning uses the lookback MAGI which already includes the conversion
-  // from 2 years ago. For the first 2 years we use current-year MAGI as fallback,
-  // so the warning is still meaningful.
-  if (rothConversionAmount > 0 && irmaaCost > 0) {
-    const magiWithoutConversion = projectedMagi - rothConversionAmount;
-    const irmaaCostWithout = getIrmaaCost(
-      magiWithoutConversion,
-      filingStatus,
-      irmaaBrackets,
-    );
-    if (irmaaCostWithout < irmaaCost) {
-      const nextCliff = getNextIrmaaCliff(
-        magiWithoutConversion,
-        filingStatus,
-        irmaaBrackets,
-      );
-      if (nextCliff != null) {
-        const maxConversionForCliff = Math.max(
-          0,
-          nextCliff - magiWithoutConversion,
-        );
-        if (maxConversionForCliff < rothConversionAmount) {
-          warnings.push(
-            `IRMAA: Roth conversion of $${rothConversionAmount.toFixed(0)} pushes MAGI over $${nextCliff.toLocaleString()} cliff — $${irmaaCost.toLocaleString()}/yr surcharge`,
-          );
-        }
-      }
-    }
-  }
-
-  return { irmaaCost, warnings };
-}
-
-// ---------------------------------------------------------------------------
-// ACA Subsidy Awareness (Phase 7)
-// ---------------------------------------------------------------------------
-
-/**
- * Check if projected MAGI stays below the ACA subsidy cliff.
- * Reports headroom and warns if cliff is exceeded.
- */
-export function checkAca(input: AcaInput): AcaResult {
-  const {
-    enableAcaAwareness,
-    allPersonsUnder65,
-    householdSize,
-    income,
-    fplGrowthFactor,
-    fplByHousehold,
-  } = input;
-
-  const warnings: string[] = [];
-
-  if (!enableAcaAwareness || !allPersonsUnder65) {
-    return { acaSubsidyPreserved: false, acaMagiHeadroom: 0, warnings };
-  }
-
-  // Grow the 400%-FPL cliff forward instead of holding it flat nominal —
-  // mathematically identical to growing each FPL cell first and
-  // multiplying by 4 after (fpl*4*k === (fpl*k)*4). `fplByHousehold` is
-  // the coverage year's poverty levels.
-  const acaCliff =
-    getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
-  // Today's term order (float ties at the cliff); yearMagi once it rounds to cents.
-  const projectedMagi =
-    income.traditionalDraws +
-    income.rothConversions +
-    income.realizedGains +
-    income.rothTaxableGrowth +
-    income.socialSecurity.gross;
-  const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
-  const acaSubsidyPreserved = projectedMagi < acaCliff;
-
-  if (!acaSubsidyPreserved) {
-    const overage = roundToCents(projectedMagi - acaCliff);
-    // A ranking change to avoid this was
-    // considered and rejected — brokerage gains aren't actually "free" MAGI
-    // below the cliff either (the premium tax credit phases out
-    // continuously as MAGI rises toward 400% FPL), so preferring brokerage
-    // over Roth basis would cost more than it saves. This warning instead
-    // reports whether re-sourcing the overage from Roth (which doesn't
-    // touch MAGI at all) would have kept the household under the cliff —
-    // actionable information without the engine silently re-ordering
-    // withdrawals against a value it can't fully price.
-    const brokerageCouldCoverOverage = income.realizedGains >= overage;
-    const attribution = brokerageCouldCoverOverage
-      ? ` — sourcing $${overage.toFixed(0)} less from brokerage (and more from Roth) would keep MAGI under the cliff`
-      : "";
-    warnings.push(
-      // Phase 4: acaCliff is now a grown (non-integer) float -- round
-      // before formatting so this sentence doesn't mix cents (from a
-      // grown cliff) with the whole-dollar MAGI/overage figures either
-      // side of it.
-      `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${Math.round(acaCliff).toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
-    );
-  }
-
-  return { acaSubsidyPreserved, acaMagiHeadroom, warnings };
 }

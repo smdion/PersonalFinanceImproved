@@ -28,7 +28,7 @@
  * `tests/pure/accounts/roth-basis-tracking.test.ts`.
  *
  * Conversion basis is DECREMENT-ONLY this pass: `performRothConversion`
- * (engine/post-withdrawal-optimizer.ts) moves money at the aggregate/
+ * (engine/roth-conversion.ts) moves money at the aggregate/
  * category level only and never touches individual account balances, so
  * there is no per-account conversion number to accrue from yet. See the
  * design doc's Q2b for why this is a separate, pre-existing engine gap

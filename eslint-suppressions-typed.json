@@ -594,11 +594,6 @@
       "count": 3
     }
   },
-  "src/lib/pure/engine/post-withdrawal-optimizer.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
   "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -622,6 +617,11 @@
   "src/lib/pure/engine/projection.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
+    }
+  },
+  "src/lib/pure/engine/roth-conversion.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
     }
   },
   "src/lib/pure/engine/tax-estimation.ts": {
