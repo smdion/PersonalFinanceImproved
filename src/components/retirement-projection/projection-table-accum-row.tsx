@@ -56,10 +56,7 @@ import {
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import { shortfallFloor } from "@/lib/pure/engine";
-import {
-  buildEligibilityNote,
-  ownerAccountLabel,
-} from "./projection-table-decum-row";
+import { buildEligibilityNote, ownerAccountLabel } from "./account-notes";
 import {
   renderMcCell,
   type RenderMcCellOptions,

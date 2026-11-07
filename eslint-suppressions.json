@@ -966,6 +966,11 @@
       "count": 10
     }
   },
+  "src/components/retirement-projection/account-notes.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 9
+    }
+  },
   "src/components/retirement-projection/coast-fire-card.tsx": {
     "ratchet/max-comment-lines": {
       "count": 7
@@ -1360,7 +1365,7 @@
       "count": 6
     },
     "ratchet/max-comment-lines": {
-      "count": 22
+      "count": 13
     },
     "ratchet/no-history-comment": {
       "count": 3

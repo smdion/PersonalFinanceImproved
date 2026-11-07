@@ -1,7 +1,7 @@
 /** The retirement table's per-account eligibility note branches on the
  *  reason's kind (v0.10.3 plan commit 11b); the words are as before. */
 import { describe, it, expect } from "vitest";
-import { buildEligibilityNote } from "@/components/retirement-projection/projection-table-decum-row";
+import { buildEligibilityNote } from "@/components/retirement-projection/account-notes";
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 

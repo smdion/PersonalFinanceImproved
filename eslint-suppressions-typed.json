@@ -39,6 +39,11 @@
       "count": 2
     }
   },
+  "src/components/retirement-projection/account-notes.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
   "src/components/retirement-projection/decumulation-config.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -61,7 +66,7 @@
   },
   "src/components/retirement-projection/projection-table-decum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 30
+      "count": 27
     }
   },
   "src/components/retirement-projection/spending-stability-chart.tsx": {
