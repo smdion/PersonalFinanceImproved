@@ -5,7 +5,6 @@
 import { socialSecurityForYear } from "../social-security-income";
 import {
   followDraws,
-  followInflows,
   followReconciliation,
   retirementBrokerageBasisRatio,
   syncAggregateBasis,
@@ -13,25 +12,16 @@ import {
 import type { EngineDecumulationYear } from "../types/projection-result";
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { roundToCents, sumBy } from "../../../utils/math";
-import { ageInYear } from "../../../utils/date";
 import {
   getAllCategories,
   isOverflowTarget,
   isRetirementMoney,
-  isPreTaxType,
   nonMedicalPenaltyRate,
 } from "../../../config/account-types";
-import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { shortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
-import {
-  getLtcgRate,
-  computeLtcgTax,
-  toLtcgTaxableIncome,
-} from "@/lib/pure/tax/ltcg";
-import { computeNiit } from "../../../config/niit";
 import {
   growWithholdingBrackets,
   growLtcgBrackets,
@@ -42,14 +32,12 @@ import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
-import { rmdOwnerOf } from "../rmd-enforcement";
-import { performRothConversion, checkAca } from "../post-withdrawal-optimizer";
+import { checkAca } from "../post-withdrawal-optimizer";
 import { checkHouseholdIrmaa } from "../household-irmaa";
 import {
   distributeWithdrawals,
   applyIndividualGrowth,
   buildIndividualYearBalances,
-  clampIndividualBalances,
   depleteIndividualBasis,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
@@ -63,26 +51,25 @@ import {
 import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
-import {
-  deductWithdrawals,
-  clampBalances,
-  reinvestRmdExcess,
-  trackDepletions,
-  cleanupDust,
-} from "../balance-deduction";
+import { cleanupDust } from "../balance-deduction";
 import type {
   PreYearSetup,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
 import { updatePerPersonTradBalance } from "./helpers";
-import { applyLumpSums } from "./lump-sum";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
 import { yearStandardDeduction } from "./year-deduction";
-import { priceYearTax } from "./tax-year-settlement";
+import {
+  priceYearTax,
+  pricedYearParts,
+  repriceConversionYear,
+  settleYearDraws,
+  yearRothConversion,
+} from "./tax-year-settlement";
 import { yearNeed } from "./year-need";
-import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
+import { yearMagi } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
 // Decumulation year handler
@@ -561,300 +548,98 @@ export function runDecumulationYear(
     taxEst,
     ssIncome,
   );
-  const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
-  const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
-  // This year's taxable income, non-qualified Roth growth included, as
-  // computeTaxFromSlots computed it (LTCG bracket selection and MAGI read it).
-  const actualTaxableIncome = taxFromSlots.actualTaxableIncome;
-  // Annotate the brokerage slot with its basis/gains breakdown -- same gate
-  // computeTaxFromSlots uses internally to decide whether there's a real
-  // split to report (leaves the slot's basisPortion/gainsPortion undefined
-  // otherwise, matching the original inline logic, rather than annotating
-  // with 0/0).
-  const brokerageSlot = slots.find((s) => isOverflowTarget(s.category));
-  if (
-    brokerageSlot &&
-    taxFromSlots.brokerageWithdrawal > 0 &&
-    balances.afterTax > 0
-  ) {
-    brokerageSlot.basisPortion = brokerageBasisPortion;
-    brokerageSlot.gainsPortion = brokerageGainsPortion;
-  }
-
-  const penaltyCost = taxFromSlots.penaltyCost;
-  const ssTaxCost = taxFromSlots.ssTaxCost;
-  // Never more than the tax: the surplus isn't banked.
-  const surplusCredit = (tax: number) =>
-    roundToCents(Math.min(ssSurplus, Math.max(0, tax)));
-
-  let { grossUpFactor } = taxEst;
-  // Recompute grossUpFactor post-RMD for accurate diagnostics (#45).
-  // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.
-  // Includes penaltyCost in the cost scalar alongside taxCost -- RMD dollars are never
-  // penalty-exposed by construction (see this module's RMD-exempt note),
-  // so RMD enforcement itself never changes penaltyCost, but this recompute
-  // must still reflect whatever penaltyCost already was (nonzero only when
-  // avoidPenalizedWithdrawals is off).
-  // (Nothing is grossed up when the strategy fixed the gross withdrawal.)
-  if (
-    rmdOverrodeRouting &&
-    afterTaxNeed > 0 &&
-    state.portfolioWithdrawal === null
-  ) {
-    const postRmdTotalCost = roundToCents(taxFromSlots.taxCost + penaltyCost);
-    const postRmdEffRate = postRmdTotalCost / (afterTaxNeed + postRmdTotalCost);
-    // Not a safeDivide candidate: the guard
-    // is `< 1`, not a zero-denominator check — postRmdEffRate exceeding 1 is
-    // a real, semantically distinct case (over-withheld/clawback) from it
-    // being exactly 1, and safeDivide only special-cases denominator === 0.
-    grossUpFactor =
-      postRmdEffRate < 1 ? 1 / (1 - postRmdEffRate) : grossUpFactor;
-  }
-
-  // Deduct withdrawals from tax buckets and per-account balances -- extracted to balance-deduction.ts
-  deductWithdrawals({ slots, balances, acctBal, brokerageBasisPortion });
-
-  // Ensure no negative balances -- extracted to balance-deduction.ts
-  clampBalances(balances, acctBal);
-
-  // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
-  // Lump sums are cash in: new basis in the brokerage account they land in.
-  followInflows(indAccts, indKey, indBal, brokBasis, () =>
-    applyLumpSums(config.lumpSums, ctx, state),
+  const {
+    brokerageBasisPortion,
+    brokerageGainsPortion,
+    actualTaxableIncome,
+    penaltyCost,
+    ssTaxCost,
+    surplusCredit,
+    grossUpFactor,
+  } = pricedYearParts(
+    taxFromSlots,
+    slots,
+    balances,
+    ssSurplus,
+    taxEst,
+    rmdOverrodeRouting,
+    afterTaxNeed,
+    state,
   );
 
-  // Handle RMD-forced excess (mode-aware) -- extracted to balance-deduction.ts
-  // Capture the excess amount (previously discarded) so it can
-  // be surfaced in the UI — this money is real, forced out of Traditional
-  // by the RMD floor regardless of what the strategy needed, with no prior
-  // UI trace. What happens to it depends on the household's
-  // rmdExcessHandling setting (reinvest into brokerage, or spend it).
-  // Reinvested RMD money is cash in: new basis where it lands.
-  // The tax the withdrawal pays — Social Security's surplus pays the rest.
-  const withdrawalTax = roundToCents(
-    taxFromSlots.taxCost - surplusCredit(taxFromSlots.taxCost),
-  );
-  const rmdExcessAmount = followInflows(
+  const { rmdExcessAmount } = settleYearDraws(
+    slots,
+    balances,
+    acctBal,
+    brokerageBasisPortion,
     indAccts,
     indKey,
     indBal,
     brokBasis,
-    () =>
-      reinvestRmdExcess(
-        config.rmdExcessHandling,
-        rmdOverrodeRouting,
-        totalWithdrawal,
-        afterTaxNeed,
-        withdrawalTax,
-        balances,
-        acctBal,
-        hasIndividualAccounts ? indAccts : undefined,
-        hasIndividualAccounts ? indBal : undefined,
-        hasIndividualAccounts ? indKey : undefined,
-      ),
+    config,
+    ctx,
+    state,
+    taxFromSlots,
+    surplusCredit,
+    rmdOverrodeRouting,
+    totalWithdrawal,
+    afterTaxNeed,
+    hasIndividualAccounts,
+    depletionTracked,
+    accountDepletions,
+    year,
+    age,
   );
 
-  // Clamp individual account balances -- extracted to individual-account-tracking.ts
-  if (hasIndividualAccounts) {
-    followDraws(indAccts, indKey, indBal, brokBasis, () =>
-      clampIndividualBalances(indAccts, indKey, indBal),
-    );
-  }
-
-  // Track per-account depletions -- extracted to balance-deduction.ts
-  trackDepletions(acctBal, depletionTracked, accountDepletions, year, age);
-
-  // --- RMD-aware Roth conversion smoothing ---
-  // Computed fresh every year (adaptive, not a one-time plan) from each
-  // person's CURRENT Traditional balance (post this year's withdrawal/
-  // RMD/QCD, via indBal -- more accurate than the stale
-  // priorYearEndTradByPerson snapshot). See rmd-smoothing.ts. Requires
-  // individual-account tracking -- entirely per-person by design, same
-  // precondition the per-person RMD/QCD path already has.
-  let rmdSmoothingTarget: number | undefined;
-  if (
-    config.rmdSmoothingEnabled &&
-    hasIndividualAccounts &&
-    rmdStartAgeByPerson.size > 0
-  ) {
-    const smoothingPeople = Array.from(rmdStartAgeByPerson.entries()).map(
-      ([personId, { startAge, birthYear }]) => {
-        const personTraditionalBalance = indAccts
-          .filter(
-            (ia) =>
-              rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
-              isPreTaxType(ia.taxType),
-          )
-          .reduce((s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0), 0);
-        return {
-          personId,
-          currentAge: ageInYear(birthYear, year),
-          rmdStartAge: startAge,
-          personTraditionalBalance,
-        };
-      },
-    );
-    const smoothingResult = computeRmdSmoothingTargets({
-      enabled: true,
-      people: smoothingPeople,
-      householdTraditionalBalance: balances.preTax,
-      returnRateMap: ctx.returnRateMap,
-      totalTraditionalWithdrawal,
-      totalWithdrawal,
-      // What leaves the portfolio this year — not spending, which Social
-      // Security partly covers (and which a portfolio-sized strategy with
-      // Social Security on top doesn't size at all).
-      currentProjectedAnnualSpendingNeed: targetWithdrawal,
-      postRetirementInflationRate: ctx.validatedPostRetirementInflation,
-    });
-    if (smoothingResult.householdSmoothingTarget > 0) {
-      rmdSmoothingTarget = smoothingResult.householdSmoothingTarget;
-    }
-  }
-
-  // --- Roth Conversions (Phase 4) ---
-  // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
-  // The conversion's tax is paid from retirement brokerage money (money
-  // out: basis leaves at the account's own ratio).
-  const rothResult = followDraws(indAccts, indKey, indBal, brokBasis, () =>
-    performRothConversion({
-      // The conversion's tax comes out of retirement brokerage money.
-      brokerageBasisRatio: hasIndividualAccounts
-        ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
-        : undefined,
-      enableRothConversions: taxRates.enableRothConversions,
-      taxBrackets: grownTaxBrackets,
-      taxMultiplier: taxRates.taxMultiplier,
-      standardDeduction: grownStandardDeduction,
-      rothConversionTarget: config.rothConversionTarget,
-      // This param is performRothConversion's fallback, consulted ONLY when
-      // config.rothConversionTarget (above) is undefined. Priority (most to
-      // least specific):
-      //   1. taxRates.rothConversionTarget -- an explicit plan-level
-      //      conversion target the household set deliberately, separate
-      //      from (and possibly more conservative than) their withdrawal
-      //      bracket target.
-      //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
-      //      override. An earlier version put
-      //      this FIRST, ahead of taxRates.rothConversionTarget -- a
-      //      household with an explicit plan-level rothConversionTarget
-      //      (say 12%, deliberately below their rothBracketTarget) whose
-      //      per-year override bumps rothBracketTarget to 32% for one year
-      //      would have had that override silently retarget CONVERSIONS to
-      //      32% too, even though nothing about a withdrawal-routing
-      //      override should touch the conversion target. Never shipped
-      //      wrong numbers (buildCandidateInput always pairs an explicit
-      //      rothConversionTarget when conversions are on, bypassing this
-      //      fallback), but was a real, reachable bug for any household
-      //      that later creates that override combination by hand.
-      //   3. taxRates.rothBracketTarget -- final fallback when nothing else
-      //      is set, same as before.
-      // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
-      // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
-      // taxRates.rothConversionTarget can't simply be dropped from this
-      // chain -- and the priority-ordering regression test alongside them
-      // for why it can't come second either.
-      //
-      // Reuses resolvedConversionTarget (computed once, above, before
-      // routeForMode) instead of re-deriving the identical chain a second
-      // time here -- the routing reservation and the conversion that
-      // actually runs must agree on this value, or the two silently drift
-      // (see resolvedConversionTarget's own
-      // comment).
-      rothBracketTarget: resolvedConversionTarget,
-      totalTraditionalWithdrawal,
-      taxableSS,
-      rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-      brokerageGainsPortion,
-      irmaaAwareRothConversions:
-        input.irmaaAwareRothConversions ??
-        (enableIrmaaAwareness ? true : undefined),
-      irmaaBrackets: grownIrmaaBracketsForCap,
-      filingStatus,
-      balances,
-      acctBal,
-      // Without this, performRothConversion's own
-      // fixes above are fully implemented and fully unit-tested but never
-      // execute in production, since "params omitted" is deliberately the
-      // unchanged-behavior fallback.
-      nonRetirement,
-      indAccts: hasIndividualAccounts ? indAccts : undefined,
-      indBal: hasIndividualAccounts ? indBal : undefined,
-      indKey: hasIndividualAccounts ? indKey : undefined,
-      rmdSmoothingTarget,
-      rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
-    }),
-  );
   const {
     rothConversionAmount,
     rothConversionTaxCost,
     rmdSmoothingShortfall,
     rothConversionIrmaaCapped,
-  } = rothResult;
-
-  let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
-  let taxCost = taxFromSlots.taxCost;
-  // Roth conversions are ordinary income and can push the gains into a higher
-  // LTCG bracket: recompute on the revised ordinary income, converted once to
-  // the taxable income the LTCG calls below use (they're its only readers).
-  let postConversionLtcgRate: number;
-  const revisedOrdinary = toLtcgTaxableIncome(
-    actualTaxableIncome + rothConversionAmount,
+  } = yearRothConversion(
+    config,
+    hasIndividualAccounts,
+    rmdStartAgeByPerson,
+    indAccts,
+    ctx,
+    indBal,
+    indKey,
+    year,
+    balances,
+    totalTraditionalWithdrawal,
+    totalWithdrawal,
+    targetWithdrawal,
+    brokBasis,
+    taxRates,
+    grownTaxBrackets,
     grownStandardDeduction,
+    resolvedConversionTarget,
+    taxableSS,
+    taxFromSlots,
+    brokerageGainsPortion,
+    input,
+    enableIrmaaAwareness,
+    grownIrmaaBracketsForCap,
+    filingStatus,
+    acctBal,
+    nonRetirement,
   );
-  if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
-    brokerageTaxCost = roundToCents(
-      computeLtcgTax(
-        revisedOrdinary,
-        brokerageGainsPortion,
-        filingStatus,
-        grownLtcgBrackets,
-      ),
-    );
-    // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
-    postConversionLtcgRate = getLtcgRate(
-      revisedOrdinary + brokerageGainsPortion,
-      filingStatus,
-      grownLtcgBrackets,
-    );
-    // Re-price the year with the revised brokerage tax through the same
-    // computeTaxFromSlots call — a hand copy of its formula here once
-    // dropped non-qualified Roth growth, and then taxable Social Security.
-    taxCost = priceTax(taxableSS, brokerageTaxCost).taxCost;
-  } else {
-    // Display-only: marginal bracket at the ceiling of the gains stack.
-    // No tax is actually computed from this value.
-    postConversionLtcgRate =
-      brokerageGainsPortion > 0 && filingStatus
-        ? getLtcgRate(
-            revisedOrdinary + brokerageGainsPortion,
-            filingStatus,
-            grownLtcgBrackets,
-          )
-        : brokerageGainsPortion > 0
-          ? taxRates.brokerage
-          : filingStatus
-            ? getLtcgRate(revisedOrdinary, filingStatus, grownLtcgBrackets)
-            : taxRates.brokerage;
-  }
 
-  const income: YearIncome = {
-    traditionalDraws: totalTraditionalWithdrawal,
-    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-    rothConversions: rothConversionAmount,
-    realizedGains: brokerageGainsPortion,
-    socialSecurity: { gross: ssIncome, taxable: taxableSS },
-  };
-  // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
-  // Applies to lesser of net investment income or MAGI exceeding threshold.
-  // Roth conversions raise MAGI but are NOT net investment income.
-  const currentYearMagi = yearMagi(income, "niit");
-  const niitAmount = filingStatus
-    ? computeNiit(currentYearMagi, brokerageGainsPortion, filingStatus)
-    : 0;
-  if (niitAmount > 0) {
-    taxCost = roundToCents(taxCost + niitAmount);
-  }
+  const { taxCost, postConversionLtcgRate, income, niitAmount } =
+    repriceConversionYear(
+      taxFromSlots,
+      actualTaxableIncome,
+      rothConversionAmount,
+      grownStandardDeduction,
+      filingStatus,
+      brokerageGainsPortion,
+      grownLtcgBrackets,
+      priceTax,
+      taxableSS,
+      taxRates,
+      totalTraditionalWithdrawal,
+      ssIncome,
+    );
 
   // Funding-shortfall reconciliation (alongside
   // the withdrawal-solver.ts secant-convergence fix). routedUnmetNeed only fires
