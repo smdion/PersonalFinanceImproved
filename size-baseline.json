@@ -76,7 +76,7 @@
     "src/components/retirement/retirement-profile-tab.tsx": 552,
     "src/components/retirement/sections/taxes.tsx": 551,
     "src/components/savings/all-transactions-tab.tsx": 1457,
-    "src/components/savings/api-sync-section.tsx": 637,
+    "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 471,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1260,
     "src/components/savings/fund-card.tsx": 1040,
@@ -717,7 +717,7 @@
       "AllTransactionsTab.map()": 329
     },
     "src/components/savings/api-sync-section.tsx": {
-      "ApiSyncSection": 198,
+      "ApiSyncSection": 166,
       "useApiSync": 335
     },
     "src/components/savings/contribution-grid.tsx": {

@@ -2911,6 +2911,14 @@
       "count": 15
     }
   },
+  "src/components/savings/api-category-link-dialog.tsx": {
+    "ratchet/no-fixed-inset-overlay": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    }
+  },
   "src/components/savings/api-sync-section.tsx": {
     "max-lines-per-function": {
       "count": 2
@@ -2918,14 +2926,8 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-history-comment": {
       "count": 3
-    },
-    "ratchet/no-raw-button": {
-      "count": 2
     }
   },
   "src/components/savings/budget-capacity-bar.tsx": {
