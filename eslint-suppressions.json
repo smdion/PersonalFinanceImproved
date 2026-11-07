@@ -788,7 +788,7 @@
   },
   "src/components/cards/dashboard/retirement-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
@@ -988,9 +988,6 @@
     }
   },
   "src/components/cards/projection/projection-mc-results.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 2
     },
@@ -1107,7 +1104,7 @@
   },
   "src/components/cards/projection/spending-stability-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
@@ -3107,7 +3104,7 @@
   },
   "src/lib/config/withdrawal-strategies.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "ratchet/max-comment-lines": {
       "count": 3

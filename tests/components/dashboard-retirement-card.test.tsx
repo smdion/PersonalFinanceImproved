@@ -72,6 +72,9 @@ const engineData = {
   realDefaults: { annualByCategory: {}, employerMatchByCategory: {} },
   portfolioByTaxTypeByParentCat: {},
   decumulationExpenses: 40000,
+  contributionSpecs: [],
+  people: [],
+  primaryPersonId: null,
   returnRateSummary: { avgAccumulation: 0.07 },
 };
 

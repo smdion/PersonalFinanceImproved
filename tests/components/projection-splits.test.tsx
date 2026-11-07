@@ -147,6 +147,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
       endAge: 95,
       salaryAnnualIncrease: 0.03,
       annualInflation: 0.025,
+      withdrawalStrategy: "fixed",
     },
 
     // Queries

@@ -53,6 +53,8 @@ function baseState(overrides: Partial<ProjectionState> = {}): ProjectionState {
           withdrawalRate: 0.04,
           withdrawalStrategy: "fixed",
           inflationRisk: { meanRate: 0.025, stdDev: 0.01 },
+          assetClasses: [],
+          currentAllocation: {},
           computedAt: null,
         },
       },

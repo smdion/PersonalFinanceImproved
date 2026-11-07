@@ -49,84 +49,29 @@
       "count": 2
     }
   },
-  "src/components/cards/dashboard/contributions-card.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
   "src/components/cards/dashboard/financial-checkup-card.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
   },
-  "src/components/cards/dashboard/household-income-card.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/cards/dashboard/living-costs-card.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 10
-    }
-  },
-  "src/components/cards/dashboard/net-worth-card.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/cards/dashboard/retirement-benchmarks.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/components/cards/dashboard/retirement-card.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
-  "src/components/cards/dashboard/taxes-summary.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/components/cards/projection/decumulation-config.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
-    }
-  },
-  "src/components/cards/projection/index.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
-  "src/components/cards/projection/overrides-panel.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/cards/projection/projection-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
-  "src/components/cards/projection/projection-hero-kpis.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 17
+      "count": 1
     }
   },
   "src/components/cards/projection/projection-mc-results.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
+      "count": 1
     }
   },
   "src/components/cards/projection/projection-table-accum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 7
-    }
-  },
-  "src/components/cards/projection/projection-table-contrib-methodology.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
     }
   },
   "src/components/cards/projection/projection-table-decum-row.tsx": {
@@ -136,7 +81,7 @@
   },
   "src/components/cards/projection/spending-stability-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 11
+      "count": 1
     }
   },
   "src/components/cards/projection/use-projection-derived.ts": {
@@ -144,27 +89,7 @@
       "count": 8
     }
   },
-  "src/components/cards/projection/use-projection-queries.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
-  "src/components/cards/projection/use-projection-state.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/components/cards/projection/utils.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/cards/strategy-guide-panel.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/contributions/coast-fire-note.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

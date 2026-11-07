@@ -255,19 +255,19 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // `_rmdStart` (which only flags the single year RMDs begin), this can
       // be nonzero in ANY decumulation year, so it's shown on hover
       // whenever it happens, not just at the milestone.
-      datum._rmdExcessAmount = deflate(yr.rmdExcessAmount ?? 0, yr.year);
+      datum._rmdExcessAmount = deflate(yr.rmdExcessAmount, yr.year);
       // QCD amount — money sent directly to charity, satisfying part
       // of the RMD without counting as taxable income. Same "invisible
       // unless surfaced explicitly" issue as the excess line above; QCD
       // bypasses withdrawal routing entirely, so there's no slot/
       // withdrawal line item that would show it otherwise.
-      datum._qcdAmount = deflate(yr.qcdAmount ?? 0, yr.year);
+      datum._qcdAmount = deflate(yr.qcdAmount, yr.year);
       // Dollars of this year's RMD that could NOT be forced through as
       // a real taxable distribution — 0 in the overwhelmingly common case.
       // See rmd-enforcement.ts's rmdShortfallAmount docblock for why this
       // is now possible (Retirement-only capacity can be genuinely
       // insufficient once Portfolio-parented balances no longer count).
-      datum._rmdShortfallAmount = deflate(yr.rmdShortfallAmount ?? 0, yr.year);
+      datum._rmdShortfallAmount = deflate(yr.rmdShortfallAmount, yr.year);
       // Real, material unmet-need shortfall —
       // threaded through the same way SS/RMD milestones are so hovering
       // this exact year shows WHY it's marked, not just that it is.
@@ -443,7 +443,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             )}
             <RechartsTooltip
               content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
+                if (!active || !payload?.length) return null; // Recharts' runtime props, not our types: kept guarded.
                 const d = payload[0]?.payload;
                 if (!d) return null;
                 const totalBal = segmentKeys.reduce(
@@ -748,12 +748,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             className={`flex justify-between gap-4 ${tipColorClass.amber}/70 text-caption`}
                           >
                             <span>
-                              {engineSettings?.rmdExcessHandling === "spend"
+                              {engineSettings.rmdExcessHandling === "spend"
                                 ? "RMD excess spent"
                                 : "RMD excess reinvested"}
                             </span>
                             <span className="tabular-nums">
-                              {engineSettings?.rmdExcessHandling === "spend"
+                              {engineSettings.rmdExcessHandling === "spend"
                                 ? ""
                                 : "+"}
                               {formatCurrency(Number(d._rmdExcessAmount))}

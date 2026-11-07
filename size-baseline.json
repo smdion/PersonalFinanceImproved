@@ -24,23 +24,23 @@
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/cards/coast-fire-card.tsx": 408,
-    "src/components/cards/dashboard/contributions-card.tsx": 655,
+    "src/components/cards/dashboard/contributions-card.tsx": 654,
     "src/components/cards/dashboard/linked-balance-card.tsx": 432,
-    "src/components/cards/dashboard/living-costs-card.tsx": 679,
-    "src/components/cards/dashboard/retirement-card.tsx": 443,
+    "src/components/cards/dashboard/living-costs-card.tsx": 677,
+    "src/components/cards/dashboard/retirement-card.tsx": 437,
     "src/components/cards/dashboard/savings-goals-card.tsx": 427,
     "src/components/cards/mc-simulation-assumptions.tsx": 1071,
-    "src/components/cards/projection/decumulation-config.tsx": 480,
-    "src/components/cards/projection/index.tsx": 1520,
+    "src/components/cards/projection/decumulation-config.tsx": 478,
+    "src/components/cards/projection/index.tsx": 1509,
     "src/components/cards/projection/overrides-panel.tsx": 1132,
     "src/components/cards/projection/projection-chart.tsx": 1147,
-    "src/components/cards/projection/projection-hero-kpis.tsx": 507,
+    "src/components/cards/projection/projection-hero-kpis.tsx": 504,
     "src/components/cards/projection/projection-mc-results.tsx": 406,
     "src/components/cards/projection/projection-table-accum-row.tsx": 1447,
     "src/components/cards/projection/projection-table-decum-row.tsx": 1600,
     "src/components/cards/projection/projection-table.tsx": 427,
     "src/components/cards/projection/report/report-assumptions-summary.tsx": 330,
-    "src/components/cards/projection/spending-stability-chart.tsx": 557,
+    "src/components/cards/projection/spending-stability-chart.tsx": 552,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 640,
     "src/components/cards/projection/use-projection-queries.ts": 977,
@@ -94,7 +94,7 @@
     "src/lib/budget-api/ynab-client.ts": 540,
     "src/lib/config/account-types.ts": 858,
     "src/lib/config/milestones.ts": 691,
-    "src/lib/config/withdrawal-strategies.ts": 779,
+    "src/lib/config/withdrawal-strategies.ts": 771,
     "src/lib/constants.ts": 370,
     "src/lib/db/backup-transforms.ts": 1114,
     "src/lib/db/json-schemas.ts": 452,
@@ -432,9 +432,9 @@
       "BrokerageGoalsSection": 287
     },
     "src/components/cards/dashboard/contributions-card.tsx": {
-      "ContributionsCardImpl": 531,
-      "ContributionsCardImpl.map()": 267,
-      "ContributionsCardImpl.map().map()": 252
+      "ContributionsCardImpl": 530,
+      "ContributionsCardImpl.map()": 266,
+      "ContributionsCardImpl.map().map()": 251
     },
     "src/components/cards/dashboard/household-income-card.tsx": {
       "HouseholdIncomeCardImpl": 175
@@ -443,10 +443,10 @@
       "LinkedBalanceCardImpl": 171
     },
     "src/components/cards/dashboard/living-costs-card.tsx": {
-      "LivingCostsCardImpl": 583
+      "LivingCostsCardImpl": 581
     },
     "src/components/cards/dashboard/retirement-card.tsx": {
-      "RetirementCardImpl": 396
+      "RetirementCardImpl": 391
     },
     "src/components/cards/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 407
@@ -461,7 +461,7 @@
       "DecumulationConfig": 362
     },
     "src/components/cards/projection/index.tsx": {
-      "ProjectionCard": 1443,
+      "ProjectionCard": 1432,
       "ProjectionCard.iife()": 719
     },
     "src/components/cards/projection/lump-sum-form.tsx": {
@@ -478,7 +478,7 @@
       "ProjectionChart.content": 356
     },
     "src/components/cards/projection/projection-hero-kpis.tsx": {
-      "ProjectionHeroKpis": 386
+      "ProjectionHeroKpis": 383
     },
     "src/components/cards/projection/projection-mc-results.tsx": {
       "McResultsSection": 384,
@@ -490,7 +490,7 @@
       "AccumulationRow.map()": 151
     },
     "src/components/cards/projection/projection-table-contrib-methodology.tsx": {
-      "ContribMethodologySection": 267
+      "ContribMethodologySection": 266
     },
     "src/components/cards/projection/projection-table-decum-row.tsx": {
       "DecumulationRow": 1267,
@@ -507,7 +507,7 @@
       "ReportAssumptionsSummary": 269
     },
     "src/components/cards/projection/spending-stability-chart.tsx": {
-      "SpendingStabilityChart": 514
+      "SpendingStabilityChart": 512
     },
     "src/components/cards/projection/tooltip-renderer.tsx": {
       "renderTooltip": 328

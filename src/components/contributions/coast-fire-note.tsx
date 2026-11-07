@@ -25,7 +25,7 @@ export function CoastFireNote() {
     first && r.coastFireAge !== null
       ? planAgeLabel(
           first,
-          projection && "people" in projection
+          "people" in projection
             ? projection.people.find((p) => p.id === projection.primaryPersonId)
                 ?.name
             : undefined,

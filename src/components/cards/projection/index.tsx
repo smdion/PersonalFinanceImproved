@@ -464,46 +464,39 @@ export function ProjectionCard(props: {
               hidden on screen, print-visible. Only reached when the gate
               already passed, so `result`/`mcQuery.data`/`engineSettings`
               are all guaranteed present here. */}
-          {reportMode === "advisor" &&
-            result &&
-            mcQuery.data?.result &&
-            engineSettings && (
-              <div className="hidden print:block">
-                <ReportRoot
-                  projectionResult={result}
-                  mcResult={mcQuery.data.result}
-                  deflate={deflate}
-                  coastFireAge={deterministicCoastFireAge}
-                  peopleNames={(people ?? enginePeople ?? []).map(
-                    (p) => p.name,
-                  )}
-                  generatedAt={new Date()}
-                  engineSettings={engineSettings}
-                  perPersonSettings={enginePerPersonSettings}
-                  rmdExcessYears={
-                    result.projectionByYear.filter(
-                      (y) =>
-                        y.phase === "decumulation" &&
-                        (y.rmdExcessAmount ?? 0) > 0.01,
-                    ).length
-                  }
-                  qcdYears={
-                    result.projectionByYear.filter(
-                      (y) =>
-                        y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
-                    ).length
-                  }
-                  irmaaCappedRothYears={
-                    result.projectionByYear.filter(
-                      (y) =>
-                        y.phase === "decumulation" &&
-                        y.rothConversionIrmaaCapped === true,
-                    ).length
-                  }
-                  bracketOptimizerResult={bracketOptimizerResult}
-                />
-              </div>
-            )}
+          {reportMode === "advisor" && result && mcQuery.data?.result && (
+            <div className="hidden print:block">
+              <ReportRoot
+                projectionResult={result}
+                mcResult={mcQuery.data.result}
+                deflate={deflate}
+                coastFireAge={deterministicCoastFireAge}
+                peopleNames={(people ?? enginePeople ?? []).map((p) => p.name)}
+                generatedAt={new Date()}
+                engineSettings={engineSettings}
+                perPersonSettings={enginePerPersonSettings}
+                rmdExcessYears={
+                  result.projectionByYear.filter(
+                    (y) =>
+                      y.phase === "decumulation" && y.rmdExcessAmount > 0.01,
+                  ).length
+                }
+                qcdYears={
+                  result.projectionByYear.filter(
+                    (y) => y.phase === "decumulation" && y.qcdAmount > 0.01,
+                  ).length
+                }
+                irmaaCappedRothYears={
+                  result.projectionByYear.filter(
+                    (y) =>
+                      y.phase === "decumulation" &&
+                      y.rothConversionIrmaaCapped === true,
+                  ).length
+                }
+                bracketOptimizerResult={bracketOptimizerResult}
+              />
+            </div>
+          )}
 
           {/* ── CONTENT BLOCK ────────────────────────────────────────────────
                Every section renders a skeleton or real content at the SAME
@@ -715,7 +708,7 @@ export function ProjectionCard(props: {
                         {scenarioView === "coastFireCustom" &&
                           (() => {
                             const currentAge =
-                              result?.projectionByYear[0]?.age ?? 0;
+                              result.projectionByYear[0]?.age ?? 0;
                             const maxAge = engineSettings.retirementAge - 1;
                             const committedAge =
                               coastFireCustomAge ?? currentAge;
@@ -1312,7 +1305,7 @@ export function ProjectionCard(props: {
                   <ProjectionChartSkeleton phase="engine" />
                 ) : chartView === "strategy" || chartView === "budget" ? (
                   <SpendingStabilityChart state={state} view={chartView} />
-                ) : mcChartPending && chartView === "balance" ? (
+                ) : mcChartPending ? (
                   <ProjectionChartSkeleton phase="simulation" />
                 ) : (
                   <ProjectionChart state={state} />
@@ -1478,42 +1471,38 @@ export function ProjectionCard(props: {
         onClose={() => setShowAssumptions(false)}
         title="Simulation Assumptions"
       >
-        {mcQuery.data?.result &&
-          "simulationInputs" in mcQuery.data &&
-          mcQuery.data.simulationInputs && (
-            <SimulationAssumptions
-              inputs={mcQuery.data.simulationInputs}
-              numTrials={mcQuery.data.result.numTrials}
-              onAssetClassOverridesChange={(overrides) => {
-                setMcAssetClassOverrides(overrides);
-                updateAssetClassOverrides.mutate(overrides);
-              }}
-              assetClassOverrides={mcAssetClassOverrides}
-              fanBandRange={fanBandRange}
-              onGlidePathChange={(entries) =>
-                updateGlidePath.mutate({ entries })
-              }
-              onInflationRiskChange={(stdDev) =>
-                updateInflationOverrides.mutate({ stdDev })
-              }
-              onClampBoundsChange={(min, max) =>
-                updateClampBounds.mutate({
-                  preset: "custom",
-                  returnClampMin: min,
-                  returnClampMax: max,
-                })
-              }
-              outcomeDistribution={{
-                successRate: mcQuery.data.result.successRate,
-                ...simulationDollars(mcQuery.data.result, dollarMode),
-                sustainableWithdrawalPV:
-                  mcQuery.data.result.distributions.sustainableWithdrawalPV,
-                failureAge:
-                  mcQuery.data.result.distributions.failureAge ?? undefined,
-                computeTimeMs: mcQuery.data.result.computeTimeMs,
-              }}
-            />
-          )}
+        {mcQuery.data?.result && "simulationInputs" in mcQuery.data && (
+          <SimulationAssumptions
+            inputs={mcQuery.data.simulationInputs}
+            numTrials={mcQuery.data.result.numTrials}
+            onAssetClassOverridesChange={(overrides) => {
+              setMcAssetClassOverrides(overrides);
+              updateAssetClassOverrides.mutate(overrides);
+            }}
+            assetClassOverrides={mcAssetClassOverrides}
+            fanBandRange={fanBandRange}
+            onGlidePathChange={(entries) => updateGlidePath.mutate({ entries })}
+            onInflationRiskChange={(stdDev) =>
+              updateInflationOverrides.mutate({ stdDev })
+            }
+            onClampBoundsChange={(min, max) =>
+              updateClampBounds.mutate({
+                preset: "custom",
+                returnClampMin: min,
+                returnClampMax: max,
+              })
+            }
+            outcomeDistribution={{
+              successRate: mcQuery.data.result.successRate,
+              ...simulationDollars(mcQuery.data.result, dollarMode),
+              sustainableWithdrawalPV:
+                mcQuery.data.result.distributions.sustainableWithdrawalPV,
+              failureAge:
+                mcQuery.data.result.distributions.failureAge ?? undefined,
+              computeTimeMs: mcQuery.data.result.computeTimeMs,
+            }}
+          />
+        )}
       </SlidePanel>
     </>
   );

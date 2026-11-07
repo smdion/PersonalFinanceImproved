@@ -152,7 +152,7 @@ function ContributionsCardImpl() {
     useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
-      householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
+      householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
       highIncomeThreshold,
     ),
   );
@@ -161,14 +161,14 @@ function ContributionsCardImpl() {
   if (isLoading || highIncomeThreshold === undefined)
     return <LoadingCard title="Contributions" />;
 
-  const people = data?.people?.filter((d) => d.accountTypes.length > 0) ?? [];
+  const people = data?.people.filter((d) => d.accountTypes.length > 0) ?? [];
 
   const jointAts = data?.jointAccountTypes ?? [];
   // Footer totals: the same calculation as every savings rate
   // (householdSavings), with and without the match.
   const savingsOf = (withoutMatch: boolean) =>
     householdSavings(
-      data?.people?.filter((d) => d.result) ?? [],
+      data?.people.filter((d) => d.result) ?? [],
       jointAts,
       viewMode,
       { excludeMatch: withoutMatch },
@@ -352,7 +352,6 @@ function ContributionsCardImpl() {
                               </p>
                             )}
                           {viewMode === "ytd" &&
-                            hasLimit &&
                             at.views.ytd.fundingPct >= 1 && (
                               <p className="text-caption mt-0.5 text-green-600">
                                 Maxed out

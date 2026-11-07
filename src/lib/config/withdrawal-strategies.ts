@@ -762,14 +762,6 @@ export function strategyParamFields(): StrategyParamField[] {
   ]);
 }
 
-/** Display label map — same pattern as display-labels.ts. */
-export const WITHDRAWAL_STRATEGY_LABELS: Record<
-  WithdrawalStrategyType,
-  string
-> = Object.fromEntries(
-  Object.entries(WITHDRAWAL_STRATEGY_CONFIG).map(([k, v]) => [k, v.label]),
-) as Record<WithdrawalStrategyType, string>;
-
 /** Zod-compatible enum tuple. */
 export function withdrawalStrategyEnum(): [
   WithdrawalStrategyType,

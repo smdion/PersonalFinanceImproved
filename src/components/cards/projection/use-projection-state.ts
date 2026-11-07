@@ -107,7 +107,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
 
     // Determine if this year is post-retirement (DRAW phase)
     const retAge = derived.engineSettings?.retirementAge;
-    const currentAge = derived.result?.projectionByYear?.[0]?.age;
+    const currentAge = derived.result?.projectionByYear[0]?.age;
     const baseYear = new Date().getFullYear();
     const retYear =
       retAge != null && currentAge != null

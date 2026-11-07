@@ -175,7 +175,7 @@ function Growth({
   const [amount, setAmount] = useState("");
   const retirementAge = data.settings.retirementAge;
   const years = Math.max(0, retirementAge - currentAge);
-  const avgReturn = data.returnRateSummary?.avgAccumulation ?? 0;
+  const avgReturn = data.returnRateSummary.avgAccumulation;
   const factor = (yrs: number) => Math.pow(1 + avgReturn, Math.max(0, yrs));
   const amt = parseFloat(amount) || 0;
 

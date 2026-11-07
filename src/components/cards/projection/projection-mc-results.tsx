@@ -1,9 +1,9 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings and compact summary bar. */
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
-import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
@@ -105,7 +105,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
               ))}
             </div>
           )}
-          {/* MC compact summary bar */}
+          {/* MC compact summary bar. simulationInputs is always set; the check stays until this file is split (dropping it re-indents 470 lines). */}
           {mcQuery.data.simulationInputs &&
             (() => {
               const si = mcQuery.data.simulationInputs;
@@ -171,9 +171,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
               // Asset mix behind the blended return/volatility tiles — same
               // weights (current glide-path allocation) for both, so one
               // description serves both tooltips.
-              const mixLines = (si.assetClasses ?? [])
+              const mixLines = si.assetClasses
                 .map((ac) => {
-                  const w = (si.currentAllocation ?? {})[ac.id] ?? 0;
+                  const w = si.currentAllocation[ac.id] ?? 0;
                   return w > 0
                     ? `${formatPercent(w, 0)} ${ac.name} (${formatPercent(ac.meanReturn, 1)} return, ${formatPercent(ac.stdDev, 1)} volatility)`
                     : null;
@@ -308,7 +308,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                             )}
                             <HelpTip
                               maxWidth={260}
-                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${WITHDRAWAL_STRATEGY_LABELS[si.withdrawalStrategy as keyof typeof WITHDRAWAL_STRATEGY_LABELS] ?? si.withdrawalStrategy}) and any changes you set for that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
+                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${STRATEGY_CONFIG_BY_STORED_KEY[si.withdrawalStrategy]?.label ?? si.withdrawalStrategy}) and any changes you set for that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
                             />
                           </div>
                           <div className="text-micro text-faint">
