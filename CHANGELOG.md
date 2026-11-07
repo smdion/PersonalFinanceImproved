@@ -10,10 +10,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.10.3] - unreleased
 
+v0.10.3 cuts Ledgr's longest functions into named stages, each in a file named for what it does: the projection engine's retirement and working years, the engine's input build, the Simulation, and the long services behind Performance, the sync preview, net-worth history, contributions and paychecks. No figure in the app changes: the test that records every figure the app shows keeps every value through this release. Two permission changes close what v0.10.2 left open (below): only an admin manages a YNAB or Actual connection, and a backup restored or imported by someone who isn't an admin keeps the installation's connection credentials.
+
+### Upgrading
+
+- **Pull the new image and restart.** No database changes.
+- **The first projection after upgrading recomputes, once; reload any open Retirement page.** The engine's code changed, so cached projections are recomputed and the Simulation draws fresh samples the first time each is opened (a Simulation's median can differ slightly from the last cached run). A Retirement page left open across the upgrade shows no per-account draws or eligibility notes until it's reloaded. From this release on, a change to the engine's comments alone no longer resets the cache.
+- **API:** a projection's per-account rows group the year's draw under `draw` (`withdrawal`, `penaltyFreeAmount`, `penaltyExposedAmount`, `eligibilityLocked`, `allowPenalizedWithdrawals`, and `reason`, which replaces the `eligibilityReason` text with what decided it: its kind and the age, year or basis behind it) and the tracked Roth basis under `roth` (`basisRemaining`, `contributionBasisRemaining`, `conversionBasisRemaining`, `basisDrawn`, `basisUncertain`, which were `rothBasisRemaining` and so on). Every value is the same.
+
 ### Changed
 
 - **Permission change: only an admin manages a YNAB or Actual connection.** Saving, testing, deleting and editing a connection, and listing a YNAB token's budgets, now need an admin; in 0.10.2 anyone with the sync permission could, though the Integrations page was already shown to admins only. Actual's Server URL is used as saved, LAN addresses included, so this keeps who can point Ledgr's requests at a host on its network to admins. Running a sync, account and category mappings, and names stay with the sync permission.
-- **Permission change: a backup import or restore by someone who isn't an admin keeps the installation's connection settings.** A user with the backup (version) permission still brings back the household's data, but each YNAB, Actual, SimpleFIN, Tiingo and SEC connection keeps today's credentials and Server URL (and its budget app's sync position), so a backup file can't bring in a connection or a Server URL. Its account mappings, skipped categories, linked budget profile and last sync time come from the backup, with the rows they point at, so SimpleFIN's next sync fetches what the restored history is missing; a connection the backup doesn't have keeps its credentials but loses those links and its last sync time, and one only the backup has isn't added. An admin's import and restore carry the connections whole, as before.
+- **Permission change: a backup import or restore by someone who isn't an admin keeps the installation's connection settings.** A user with the backup (version) permission still brings back the household's data, but each YNAB, Actual, SimpleFIN, Tiingo and SEC connection keeps today's credentials and Server URL (and its budget app's sync position), so a backup file can't bring in a connection or a Server URL. Its account mappings, skipped categories, linked budget profile and last sync time come from the backup, with the rows they point at, so SimpleFIN's next sync fetches what the restored history is missing; a connection the backup doesn't have keeps its credentials but loses those links and its last sync time, and one only the backup has isn't added. An admin's import and restore carry the connections whole, as before. The restore and import confirmations now say so to someone who isn't an admin, where they said a restore replaces all current data.
+
+### Fixed
+
+- **Privacy mode hides the dollar figures in the Retirement table's eligibility note.** The note on a Roth account before 59½ (its basis available penalty-free, its growth locked) showed the real amounts with privacy mode on, because the server wrote them into the text. The browser now writes the note, so they're masked like the rest of the row. With privacy mode off it reads as before.
+
+### Under the hood
+
+- **The engine in named stages.** The retirement year (1,494 lines) is now the order of its stages, each in its own file: the year's RMDs, the QCD and RMD enforcement, the tax tables and standard deduction, the need and the withdrawal that meets it, the draw routed and followed to each account, the tax settled in today's order, the unmet need, the IRMAA and ACA checks, and the year's close. The working year is cut the same way (contribution target, limits and slots, credits, goal draws, year-end accounts). Per-account tracking is `individual-accounts/` (ledger, contributions, withdrawals, reconcile), withdrawal routing is `withdrawal-routing/` by mode, the post-withdrawal checks are Roth conversion, IRMAA and ACA modules, the senior deduction lives with tax in `return-deductions.ts`, and the withdrawal solver says whether it met the need or how much it fell short.
+- **Four undecided rules have one home each:** year-0 proration, retiring mid-year, the RMD top-up and what pays a Roth conversion's tax are each named where their code is, with today's behaviour written down; changing any is its own decision. The engine's map (`lib/pure/engine/ARCHITECTURE.md`) lists the stages and these homes.
+- **The engine's input build** reads its data in one named load step and builds the tax year, budget summaries, starting accounts and capped contributions as stages.
+- **The Simulation** runs its setup, trial loop, bands and end figures as stages, always from a stated seed, and names today's blended return and shown volatility for what they are (a weighted geometric rate and a class-weighted volatility), so a later fix to either has its own name.
+- **Long services into stages:** the Performance summary and year finalize, the budget sync preview, net-worth year-end history, and the contribution and paycheck summaries each became a service with its calculations in `lib/pure`; `milestones.ts` and `paycheck.ts` split by concept.
+- **Withdrawal eligibility is a structured reason,** worded in one place (`describeEligibility`), instead of text the Retirement table searched.
+- **Guards the types prove dead are gone:** checks for values that can't be missing, which the type-aware lint counted 688 times, now 191; a guard stays wherever data stored by any earlier version can still reach it.
+- **Comments say what is true now:** the engine's and the stages' history notes are rewritten, and each declaration has one docblock.
+- **Tests and guards:** new behaviour pins for the sync preview, the rows year finalize writes and the engine's text and flags, on SQLite and PostgreSQL; the commit check proves a stage cut moves code unchanged; the engine's cache key ignores comments; tests sit at their modules' paths; `docs/API_ROUTERS.md` lists each procedure by the path a client calls.
+- **Building the image no longer compiles `better-sqlite3`:** it loads its prebuilt binary, so the image build and CI install no compiler.
+- `pnpm release` checks that CI passed for the merged commit instead of running the suite on the release machine.
+
+Counts: functions over 150 lines 299 → 296, over 500 lines 55 → 50; lint suppressions 4,437 → 4,256; type-aware lint suppressions 688 → 191; `src/` 2,280 lines larger.
 
 ## [0.10.2] - 2026-11-06
 
