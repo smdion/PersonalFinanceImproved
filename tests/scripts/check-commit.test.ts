@@ -1519,6 +1519,80 @@ describe("notAMove: a stage cut from a long function (owner v0.10.3 Q1)", () => 
     expect(cut(base, { [YEAR]: outside })).toMatch(CALLBACK_REFUSED);
   });
 
+  describe("a moved comment reworded within RULES' three lines (owner v0.10.4 Q3)", () => {
+    /** The run with a comment block above its loop. */
+    const commented = (comment: string[]) => [
+      rmdRun[0]!,
+      rmdRun[1]!,
+      ...comment,
+      ...rmdRun.slice(2),
+    ];
+    const ONE = ["// Each person's RMD at their age this year."];
+    const withComment = { [YEAR]: yearFile(commented(ONE), [RULES]) };
+    const stageWith = (comment: string[]) =>
+      after(undefined, stageFile({ run: commented(comment) }));
+    const COMMENT_REFUSED = new RegExp(
+      `${REFUSED.source}|comment of \\d+ lines|comment block\\(s\\) added`,
+    );
+
+    it("passes a comment inside the moved code kept, or reworded to three lines or fewer", () => {
+      expect(cut(withComment, stageWith(ONE))).toBeUndefined();
+      expect(
+        cut(
+          withComment,
+          stageWith([
+            "// The RMD each person owes this year,",
+            "// at the age they reach in it.",
+          ]),
+        ),
+      ).toBeUndefined();
+    });
+
+    it("fails a comment inside the moved code reworded past three lines, or added; one dropped passes", () => {
+      const four = ["// One.", "// Two.", "// Three.", "// Four."];
+      expect(cut(withComment, stageWith(four))).toMatch(COMMENT_REFUSED);
+      expect(cut(base, stageWith(ONE))).toMatch(COMMENT_REFUSED);
+      expect(cut(withComment, stageWith([]))).toBeUndefined();
+    });
+
+    it("fails a new doc comment past three lines, and a comment block outside the moved code that rewords nothing", () => {
+      const longDoc = stageFile().map((l) =>
+        l === "/** The year's RMD, per person. */"
+          ? "/**\n * One.\n * Two.\n * Three.\n * Four.\n */"
+          : l,
+      );
+      expect(cut(base, after(undefined, longDoc))).toMatch(
+        /comment of 4 lines \(at most 3/,
+      );
+      // One new comment block for the one function it made: its doc
+      // comment, or a note, not both.
+      const documented = [
+        "",
+        "/** The total and the rest. */",
+        ...wrappedStage().slice(1),
+      ];
+      const sameFile = { [YEAR]: wrapped(wrappedRun) };
+      expect(
+        cut(sameFile, { [YEAR]: wrapped(wrappedCall, documented) }),
+      ).toBeUndefined();
+      expect(
+        cut(sameFile, {
+          [YEAR]: wrapped(
+            ["// A note the move adds.", ...wrappedCall],
+            documented,
+          ),
+        }),
+      ).toMatch(/1 comment block\(s\) added that reword none/);
+      // The stage's own doc comment, three lines, passes.
+      const threeDoc = stageFile().map((l) =>
+        l === "/** The year's RMD, per person. */"
+          ? "/**\n * One.\n * Two.\n * Three.\n */"
+          : l,
+      );
+      expect(cut(base, after(undefined, threeDoc))).toBeUndefined();
+    });
+  });
+
   it("fails a stage that would write or capture a copy of the function's own variable", () => {
     const fn = (body: string[]) => [
       "export function runYear(ctx: Context, year: number): number {",
@@ -1818,6 +1892,29 @@ describe("notAMove: a UI cut (owner v0.10.4 Q3)", () => {
             }),
           },
         ),
+      ).toMatch(REFUSED);
+    });
+
+    it("passes a moved comment reworded within three lines, and fails one past them (Q3)", () => {
+      const said = (comment: string[]) => [...comment, ...tipBody];
+      const from = {
+        [ROW]: row({ tip: iife(said(["// Who is in the row."])) }),
+      };
+      expect(
+        cut(from, {
+          [ROW]: row({
+            tip: tipCall,
+            extra: tipFn(said(["// The people in the row, by name."])),
+          }),
+        }),
+      ).toBeUndefined();
+      expect(
+        cut(from, {
+          [ROW]: row({
+            tip: tipCall,
+            extra: tipFn(said(["// One.", "// Two.", "// Three.", "// Four."])),
+          }),
+        }),
       ).toMatch(REFUSED);
     });
 

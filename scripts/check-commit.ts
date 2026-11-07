@@ -221,8 +221,15 @@ const COMMENT_LINE = /^\s*(\/\/|\/\*|\*\/|\*(\s|$))/;
 const REGISTER_DOC = "docs/CALCULATIONS.md";
 /** A table cell naming code: a backticked `file.ts` or `file.ts:name`. */
 const CODE_REF_CELL = /`[^`|]*\.tsx?(:[^`|]*)?`/;
-/** A changed line and its file. */
-type Line = { file: string; line: string };
+/** A changed line and its file (and, for a comment, where it stands). */
+type Line = {
+  file: string;
+  line: string;
+  at?: number;
+  side?: "old" | "new";
+  /** A comment of a file the change creates or deletes. */
+  whole?: boolean;
+};
 /** A generated count in the docs (docs:verify checks it). */
 const AUTO_GEN_LINE = /<!-- AUTO-GEN:\w+ -->/;
 
@@ -269,6 +276,189 @@ const withoutPaths = (line: string, names?: RegExp) =>
     .split("|")
     .map((cell) => cell.split("; ").sort().join("; "))
     .join("|");
+
+/** A source file's name, its path and line too (`stages/rmd.ts:60`). */
+const FILE_NAME = /[\w@.~$/-]*\.[cm]?[jt]sx?\b(:\d+)?/g;
+/** A comment line with the source files it names read as paths: a move
+ *  rewrites the name of the file its code moved to. */
+const commentPaths = (line: string) =>
+  COMMENT_LINE.test(line) ? line.replace(FILE_NAME, "<path>") : line;
+
+/** RULES' limit on a comment: at most three lines of current reason. */
+const MAX_COMMENT_LINES = 3;
+/** A block comment's delimiter alone on its line (`/**`, `*\/`, `*`). */
+const DELIMITER_ONLY = /^\s*(\/\*\*?|\*\/|\*)\s*$/;
+
+/**
+ * The comment blocks of a side (runs of comment lines) that hold one of
+ * the lines at `at`, each as how many of those it holds (delimiter-only
+ * lines aside): a reworded line of a longer block counts, the rest of the
+ * block, kept as it was, doesn't.
+ */
+function blocksHolding(side: DiffSide, at: Set<number>): number[] {
+  const out: number[] = [];
+  for (let l = 0; l < side.lines.length;) {
+    if (!COMMENT_LINE.test(side.lines[l]!)) {
+      l += 1;
+      continue;
+    }
+    let hit = false;
+    let changed = 0;
+    for (; l < side.lines.length && COMMENT_LINE.test(side.lines[l]!); l++)
+      if (at.has(l)) {
+        hit = true;
+        if (!DELIMITER_ONLY.test(side.lines[l]!)) changed += 1;
+      }
+    if (hit) out.push(changed);
+  }
+  return out;
+}
+
+/**
+ * Why the comment lines a move leaves unexplained aren't rewordings (owner
+ * v0.10.4 Q3), or undefined: no comment block takes more than
+ * MAX_COMMENT_LINES new or reworded lines on the new side, and no more such
+ * blocks than blocks they change on the old side plus the functions the
+ * move made (each may bring its doc comment).
+ */
+function rewordedComments(
+  unexplained: Line[],
+  sidesOf: Map<string, { old: DiffSide; new: DiffSide }>,
+  newFunctions: number,
+): string | undefined {
+  const blocks = { old: [] as number[], new: [] as number[] };
+  for (const [file, sides] of sidesOf)
+    for (const side of ["old", "new"] as const) {
+      const at = new Set(
+        unexplained.flatMap((l) =>
+          l.file === file &&
+          l.side === side &&
+          l.at !== undefined &&
+          COMMENT_LINE.test(l.line)
+            ? [l.at]
+            : [],
+        ),
+      );
+      if (at.size > 0) blocks[side].push(...blocksHolding(sides[side], at));
+    }
+  const long = blocks.new.filter((n) => n > MAX_COMMENT_LINES);
+  if (long.length > 0)
+    return `a reworded or new comment of ${Math.max(...long)} lines (at most ${MAX_COMMENT_LINES}; a longer rewording goes in its own commit)`;
+  const extra = blocks.new.length - blocks.old.length - newFunctions;
+  if (extra > 0)
+    return `${extra} comment block(s) added that reword none the move took away`;
+  return undefined;
+}
+
+/**
+ * The comment blocks of `root` inside `[start, end]` (a block comment, or
+ * adjacent line comments each on its own line), each as its text, spacing
+ * collapsed, and its text lines (delimiters aside), in order.
+ */
+function commentBlocksIn(
+  root: ts.Node,
+  source: ts.SourceFile,
+  start: number,
+  end: number,
+): { text: string; lines: number }[] {
+  const full = source.getFullText();
+  const found = new Map<number, ts.CommentRange>();
+  const add = (ranges: ts.CommentRange[] | undefined) => {
+    for (const r of ranges ?? [])
+      if (r.pos >= start && r.end <= end) found.set(r.pos, r);
+  };
+  const visit = (n: ts.Node) => {
+    const children = n.getChildren(source);
+    if (children.length > 0) children.forEach(visit);
+    else {
+      add(ts.getLeadingCommentRanges(full, n.getFullStart()));
+      add(ts.getTrailingCommentRanges(full, n.getEnd()));
+    }
+  };
+  visit(root);
+  const lineOf = (pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const ownLine = (pos: number) =>
+    BLANK_LINE.test(full.slice(full.lastIndexOf("\n", pos - 1) + 1, pos));
+  const blocks: {
+    text: string[];
+    lines: number;
+    last: number;
+    joins: boolean;
+  }[] = [];
+  for (const r of [...found.values()].sort((a, b) => a.pos - b.pos)) {
+    const raw = full.slice(r.pos, r.end);
+    const single = r.kind === ts.SyntaxKind.SingleLineCommentTrivia;
+    const prev = blocks[blocks.length - 1];
+    if (
+      single &&
+      prev?.joins &&
+      ownLine(r.pos) &&
+      prev.last === lineOf(r.pos) - 1
+    ) {
+      prev.text.push(raw);
+      prev.lines += 1;
+      prev.last = lineOf(r.end);
+      continue;
+    }
+    blocks.push({
+      text: [raw],
+      lines: single
+        ? 1
+        : raw.split("\n").filter(
+            (l) =>
+              l
+                .replace(/^\s*(\/\*\*?|\*(?!\/))?/, "")
+                .replace(/\*\/\s*$/, "")
+                .trim() !== "",
+          ).length,
+      last: lineOf(r.end),
+      joins: single && ownLine(r.pos),
+    });
+  }
+  return blocks.map((b) => ({
+    text: b.text.join(" ").replace(/\s+/g, " "),
+    lines: b.lines,
+  }));
+}
+
+/**
+ * Why the comments inside moved code aren't its old ones (owner v0.10.4
+ * Q3), or undefined: each block as it was, or rewording one that went, in
+ * RULES' three lines at most; none added (one may go with no rewording).
+ */
+function movedCommentsProblem(
+  was: { text: string; lines: number }[],
+  now: { text: string; lines: number }[],
+): string | undefined {
+  const kept = inOrder(
+    was.map((b) => b.text),
+    now.map((b) => b.text),
+  );
+  const keptNow = new Set(kept.map(([, j]) => j));
+  const reworded = now.filter((_, j) => !keptNow.has(j));
+  if (reworded.length > was.length - kept.length)
+    return "a comment is added in the moved code";
+  const long = reworded.find((b) => b.lines > MAX_COMMENT_LINES);
+  if (long)
+    return `a moved comment is reworded to ${long.lines} lines (at most ${MAX_COMMENT_LINES})`;
+  return undefined;
+}
+
+/** The comments of the code between two nodes' ends, as commentBlocksIn reads them. */
+const commentsOfRun = (nodes: readonly ts.Node[], source: ts.SourceFile) =>
+  nodes.length === 0
+    ? []
+    : commentBlocksIn(
+        nodes[0]!.parent,
+        source,
+        nodes[0]!.getStart(source),
+        nodes[nodes.length - 1]!.getEnd(),
+      );
+
+/** The comments inside a function body's braces. */
+const commentsOfBody = (body: ts.Block, source: ts.SourceFile) =>
+  commentBlocksIn(body, source, body.getStart(source), body.getEnd());
 
 /** Enough context that each hunk is its whole file. */
 const FULL_CONTEXT = "-U1000000";
@@ -706,6 +896,13 @@ function cutMovedBodies(
       if (isAsync(from.node) !== isAsync(dest.node)) continue;
       if (from.key.join("\n") !== dest.key.join("\n")) continue;
       const at = code[from.f]!;
+      if (
+        movedCommentsProblem(
+          commentsOfBody(from.node.body, at.oldSource),
+          commentsOfBody(dest.node.body!, to.newSource),
+        ) !== undefined
+      )
+        continue;
       const group = groupOf(
         at.entry.old,
         lineOf(at.oldSource, from.node.getStart(at.oldSource)),
@@ -1922,6 +2119,10 @@ function cutMovedStages(
             dest.params,
             dest.returned,
             isAsync(dest.node),
+          ) !== undefined ||
+          movedCommentsProblem(
+            commentsOfRun(body.slice(i, i + keys.length), at.oldSource),
+            commentsOfRun(dest.moved, to.newSource),
           ) !== undefined
         )
           continue;
@@ -2483,6 +2684,17 @@ function cutMovedUiParts(
       } else if (c.nodes.some(hasKey)) continue;
       if (capturedProblem(c.nodes, first, dest.params, own) !== undefined)
         continue;
+      if (
+        movedCommentsProblem(
+          c.arrow
+            ? commentsOfBody(c.arrow.body, at.oldSource)
+            : commentsOfRun(c.nodes, at.oldSource),
+          c.arrow
+            ? commentsOfBody(dest.node.body, to.newSource)
+            : commentsOfRun(c.run, to.newSource),
+        ) !== undefined
+      )
+        continue;
       // The call, in the file the code left; the one in the code's change
       // group when there are several.
       const calls: ts.Node[] = [];
@@ -3012,17 +3224,22 @@ export function notAMove(
   const leftRemoved: Line[] = [];
   const movedKey = (line: string) =>
     withoutPaths(
-      line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1"),
+      commentPaths(line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1")),
       names,
     );
   const code: { old: CodeSide; new: CodeSide }[] = [];
   const files = readDiff(diff);
-  const bodiesAcross =
-    cutMovedBodies(files, names).movedAcross +
-    cutMovedProcedures(files, names).movedAcross +
-    cutMovedStages(files, names).movedAcross +
-    cutMovedUiParts(files, names).movedAcross;
+  const cuts = [
+    cutMovedBodies(files, names),
+    cutMovedProcedures(files, names),
+    cutMovedStages(files, names),
+    cutMovedUiParts(files, names),
+  ];
+  const bodiesAcross = cuts.reduce((n, c) => n + c.movedAcross, 0);
+  const newFunctions = cuts.reduce((n, c) => n + c.moves.length, 0);
   unwrapExported(files, names);
+  // Each file's sides as read, for the comment blocks a move changes.
+  const sidesOf = new Map<string, { old: DiffSide; new: DiffSide }>();
   for (const entry of files) {
     const { file, wholeFile } = entry;
     if (MOVE_BOOKKEEPING.test(file)) continue;
@@ -3072,10 +3289,11 @@ export function notAMove(
     // Code lines are matched below; the rest (docs, data, comments) here.
     const text = (side: DiffSide, keptLines: { at: number }[]) =>
       keptLines
-        .map(({ at }) => side.lines[at]!)
-        .filter((line) => !isCode || COMMENT_LINE.test(line));
+        .map(({ at }) => ({ at, line: side.lines[at]! }))
+        .filter(({ line }) => !isCode || COMMENT_LINE.test(line));
     const removed = text(entry.old, oldKept);
     const added = text(entry.new, newKept);
+    sidesOf.set(file, { old: entry.old, new: entry.new });
     // The register's code-reference cells change with a move; docs:verify
     // checks each still names a real file and function.
     const keyOf = (line: string) =>
@@ -3085,27 +3303,44 @@ export function notAMove(
               .split("|")
               .map((cell) => (CODE_REF_CELL.test(cell) ? " <refs> " : cell))
               .join("|")
-          : line,
+          : commentPaths(line),
         names,
       );
     const pool = new Map<string, number>();
-    for (const line of removed) {
+    for (const { line } of removed) {
       const key = keyOf(line);
       pool.set(key, (pool.get(key) ?? 0) + 1);
     }
-    for (const line of added) {
+    for (const { line, at } of added) {
       const key = keyOf(line);
       const left = pool.get(key) ?? 0;
       if (left > 0) pool.set(key, left - 1);
-      else if (!IMPORT_LINE.test(line)) leftAdded.push({ file, line });
+      else if (!IMPORT_LINE.test(line))
+        leftAdded.push({ file, line, at, side: "new" });
     }
-    for (const line of removed) {
+    for (const { line, at } of removed) {
       const key = keyOf(line);
       const left = pool.get(key) ?? 0;
       if (left === 0) continue;
       pool.set(key, left - 1);
-      if (!IMPORT_LINE.test(line)) leftRemoved.push({ file, line });
+      if (!IMPORT_LINE.test(line))
+        leftRemoved.push({ file, line, at, side: "old" });
     }
+    // A created or deleted file's comments, matched across files only to
+    // hold a split's moved comments to Q3's rule below.
+    if (wholeFile && isCode)
+      for (const side of ["old", "new"] as const)
+        for (const { at } of entry[side].changed) {
+          const line = entry[side].lines[at]!;
+          if (!COMMENT_LINE.test(line)) continue;
+          (side === "old" ? leftRemoved : leftAdded).push({
+            file,
+            line,
+            at,
+            side,
+            whole: true,
+          });
+        }
   }
   const matchedCode = matchCode(code);
   let unexplained = matchedCode.unexplained;
@@ -3124,16 +3359,30 @@ export function notAMove(
       unexplained.push(entry);
       continue;
     }
-    sourcesOf.splice(i, 1);
-    movedAcross += 1;
+    const [source] = sourcesOf.splice(i, 1);
+    // A whole file's comment, taken along, moves no code.
+    if (!entry.whole && !source!.whole) movedAcross += 1;
   }
   for (const entries of moved.values()) unexplained.push(...entries);
   if (!renamed && movedAcross === 0)
     return "git sees no rename and no code moved between files";
   // A split takes its doc comments with the code and rewords the old header:
-  // comments carry no behavior, and the reviewer still reads them.
-  if (movedAcross > 0)
+  // comments carry no behavior, and the reviewer still reads them. Owner
+  // v0.10.4 Q3: a reworded or new comment stays within RULES' three lines,
+  // and each new comment block rewords one the move took away or documents
+  // a function it made.
+  if (movedAcross > 0) {
+    const created = files.filter(
+      (f) => f.wholeFile && f.old.lines.length === 0,
+    ).length;
+    const problem = rewordedComments(
+      unexplained,
+      sidesOf,
+      newFunctions + created,
+    );
+    if (problem !== undefined) return problem;
     unexplained = unexplained.filter(({ line }) => !COMMENT_LINE.test(line));
+  } else unexplained = unexplained.filter(({ whole }) => !whole);
   const first = (lines: Line[]) =>
     lines
       .slice(0, 3)
