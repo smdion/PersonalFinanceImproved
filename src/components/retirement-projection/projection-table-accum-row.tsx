@@ -1,5 +1,4 @@
 /** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
-import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -28,7 +27,6 @@ import {
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
-import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import {
   catDisplayLabel,
   bucketSlotMap,
@@ -52,15 +50,25 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
-import { shortfallFloor } from "@/lib/pure/engine";
 import {
   renderMcCell,
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
 import {
-  contributionTaxTypeTotals,
-  gapDrawnItems,
+  yearAgesTooltip,
+  salaryTooltip,
+  displaySalary,
+  savingsRateTooltip,
 } from "./projection-table-accum-row.model";
+import {
+  categoryContributionTooltip,
+  overflowContributionTooltip,
+  taxTypeContributionTooltip,
+} from "./projection-table-accum-contributions.model";
+import {
+  totalContributionTooltip,
+  accountBalanceTooltip,
+} from "./projection-table-accum-balances.model";
 
 type AccumulationRowProps = {
   /** A link landed on this year — scrolled to and ringed. */
@@ -98,6 +106,46 @@ function GapYearPhase({ yr }: { yr: EngineAccumulationYear }) {
       )}
     </span>
   );
+}
+
+/** The portfolio total's tooltip, by tax type. */
+function portfolioBalanceTooltip(
+  pt: ReturnType<ProjectionState["getPersonYearTotals"]>,
+  yr: EngineAccumulationYear,
+  deflate: ProjectionState["deflate"],
+  renderTooltip: ProjectionState["renderTooltip"],
+  contribSpecs: ProjectionState["contribSpecs"],
+) {
+  const ptBal = pt ? pt.balance : rowTotal(yr);
+  const items: TooltipLineItem[] = (
+    ["preTax", "taxFree", "hsa", "afterTax"] as const
+  ).map((b) => {
+    const bVal = pt ? pt.byTaxType[b] : yr.balanceByTaxType[b];
+    return {
+      label: taxTypeLabel(b),
+      amount: deflate(bVal, yr.year),
+      percent: percentOf(bVal, ptBal),
+    };
+  });
+  return renderTooltip({
+    kind: "money",
+    header: "Portfolio Balance",
+    items,
+    proRate:
+      yr.proRateFraction != null
+        ? (() => {
+            const totalAnnual =
+              contribSpecs?.reduce((s, sp) => s + (sp.baseAnnual || 0), 0) ?? 0;
+            return totalAnnual > 0
+              ? {
+                  months: proRateMonths(yr.proRateFraction),
+                  annualAmount: deflate(totalAnnual, yr.year),
+                  proRatedAmount: deflate(yr.totalEmployee, yr.year),
+                }
+              : undefined;
+          })()
+        : undefined,
+  });
 }
 
 export function AccumulationRow({
@@ -175,17 +223,7 @@ export function AccumulationRow({
       }`}
     >
       <Tooltip
-        content={(() => {
-          const pp = people ?? enginePeople;
-          if (!pp || pp.length === 0) return undefined;
-          return renderTooltip({
-            kind: "info",
-            lines: pp.map((p) => ({
-              text: `${p.name}: ${yr.year - p.birthYear}`,
-              style: "header" as const,
-            })),
-          });
-        })()}
+        content={yearAgesTooltip(people, enginePeople, renderTooltip, yr)}
         side="top"
       >
         <td className="py-1.5 pr-2 whitespace-nowrap">
@@ -205,181 +243,43 @@ export function AccumulationRow({
         <GapYearPhase yr={yr} />
       </td>
       <Tooltip
-        content={(() => {
-          const prevYr = result.projectionByYear.find(
-            (y) => y.year === yr.year - 1,
-          );
-          // Use person-filtered salary if applicable
-          const personId =
-            isPersonFiltered &&
-            enginePeople?.find((p) => p.id === personFilter)?.id;
-          const currentSal = personId
-            ? (yr.projectedSalaryByPerson?.[personId] ?? yr.projectedSalary)
-            : yr.projectedSalary;
-          const prevSalary =
-            prevYr && prevYr.phase === "accumulation"
-              ? personId
-                ? ((prevYr as EngineAccumulationYear).projectedSalaryByPerson?.[
-                    personId
-                  ] ?? (prevYr as EngineAccumulationYear).projectedSalary)
-                : (prevYr as EngineAccumulationYear).projectedSalary
-              : null;
-          const pctChange =
-            prevSalary && prevSalary > 0
-              ? (currentSal - prevSalary) / prevSalary
-              : null;
-          const lines: {
-            text: string;
-            style: "header" | "meta" | "note";
-            color?: TipColor;
-          }[] = [];
-          if (yr.hasSalaryOverride) {
-            lines.push({
-              text: `Salary changed for this year${salaryOverrideNotes ? ` — ${salaryOverrideNotes}` : ""}`,
-              style: "note",
-              color: "emerald",
-            });
-          } else if (pctChange !== null) {
-            lines.push({
-              text: `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)} from prior year`,
-              style: "header",
-            });
-          } else {
-            lines.push({
-              text: "Base salary (year 1)",
-              style: "header",
-            });
-          }
-          if (!yr.hasSalaryOverride && engineSettings) {
-            lines.push({
-              text: `Annual raise: ${annualRaiseLabel(Number(engineSettings.salaryAnnualIncrease), enginePerPersonSettings)}/yr`,
-              style: "meta",
-            });
-          }
-          if (!personId && yr.projectedSalaryByPerson) {
-            const pp = people ?? enginePeople;
-            const breakdown = (pp ?? [])
-              .filter((p) => yr.projectedSalaryByPerson?.[p.id])
-              .map((p) => ({
-                name: p.name,
-                salary: yr.projectedSalaryByPerson![p.id]!,
-              }));
-            if (breakdown.length >= 2) {
-              lines.push(
-                ...breakdown.map((b) => ({
-                  text: `${b.name}: ${formatCurrency(deflate(b.salary, yr.year))}`,
-                  style: "meta" as const,
-                })),
-              );
-            }
-          }
-          return renderTooltip({
-            kind: "info",
-            lines,
-          });
-        })()}
+        content={salaryTooltip(
+          result,
+          yr,
+          isPersonFiltered,
+          enginePeople,
+          personFilter,
+          salaryOverrideNotes,
+          engineSettings,
+          enginePerPersonSettings,
+          people,
+          deflate,
+          renderTooltip,
+        )}
         side="top"
       >
         <td className="text-muted px-2 py-1.5 text-right">
-          {(() => {
-            let displaySalary = yr.projectedSalary;
-            if (
-              isPersonFiltered &&
-              yr.projectedSalaryByPerson &&
-              enginePeople
-            ) {
-              const person = enginePeople.find((p) => p.id === personFilter);
-              if (person && yr.projectedSalaryByPerson[person.id] != null) {
-                displaySalary = yr.projectedSalaryByPerson[person.id]!;
-              }
-            }
-            return formatCurrency(deflate(displaySalary, yr.year));
-          })()}
+          {displaySalary(
+            yr,
+            isPersonFiltered,
+            enginePeople,
+            personFilter,
+            deflate,
+          )}
         </td>
       </Tooltip>
       <Tooltip
         content={
           yr.projectedSalary > 0
-            ? (() => {
-                const effectiveSalary =
-                  yr.proRateFraction != null && yr.proRateFraction > 0
-                    ? yr.projectedSalary * yr.proRateFraction
-                    : yr.projectedSalary;
-                // The accounts this page shows (the year is already scoped),
-                // with the match when the shared switch counts it.
-                const rateAmount =
-                  yr.totalEmployee + (rateIncludesMatch ? yr.totalEmployer : 0);
-                const effectiveRate = safeDivide(rateAmount, effectiveSalary);
-                const employeeRate = safeDivide(
-                  yr.totalEmployee,
-                  effectiveSalary,
-                );
-                const lines: {
-                  text: string;
-                  style: "header" | "meta" | "note";
-                  color?: TipColor;
-                }[] = [
-                  {
-                    text: `${formatCurrency(deflate(rateAmount, yr.year))} / ${formatCurrency(deflate(effectiveSalary, yr.year))} = ${formatPercent(effectiveRate, 1)}${rateIncludesMatch ? " (incl. match)" : ""}${parentCategoryFilter ? ` — ${parentCategoryFilter} accounts` : ""}`,
-                    style: "header",
-                  },
-                  {
-                    text: `Retirement target (retirement accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
-                    style: "meta",
-                  },
-                ];
-                if (yr.proRateFraction != null) {
-                  lines.push({
-                    text: `${proRateMonths(yr.proRateFraction)}/12 mo — salary pro-rated from ${formatCurrency(deflate(yr.projectedSalary, yr.year))}/yr`,
-                    style: "meta",
-                  });
-                }
-                // The ceiling scales retirement contributions only, so the
-                // uncapped figure is meaningful on the Retirement view.
-                if (
-                  yr.rateCeilingScale != null &&
-                  yr.rateCeilingScale < 1 &&
-                  yr.rateCeilingScale > 0 &&
-                  parentCategoryFilter === PERF_CATEGORY_RETIREMENT
-                ) {
-                  lines.push({
-                    text: `Uncapped rate: ${formatPercent(safeDivide(yr.totalEmployee, effectiveSalary * yr.rateCeilingScale), 1)} → ${formatPercent(employeeRate, 1)} (ceiling applied)`,
-                    style: "note",
-                    color: "amber",
-                  });
-                }
-                // Comparable with the retirement target only when it's the
-                // same measure: retirement accounts, your money only.
-                if (
-                  yr.rateCeilingScale == null &&
-                  parentCategoryFilter === PERF_CATEGORY_RETIREMENT
-                ) {
-                  const diff = employeeRate - yr.config.contributionRate;
-                  if (Math.abs(diff) > 0.001) {
-                    lines.push({
-                      text: `Actual ${diff > 0 ? "higher" : "lower"} — per-account specs${diff < 0 ? " / IRS limits" : ""}`,
-                      style: "note",
-                      color: "amber",
-                    });
-                  }
-                }
-                if (
-                  accumOverrides.some(
-                    (o) =>
-                      o.year === yr.year && o.contributionRate !== undefined,
-                  )
-                ) {
-                  lines.push({
-                    text: `Changed for this year${accumOverrideNotes ? ` — ${accumOverrideNotes}` : ""}`,
-                    style: "note",
-                    color: "emerald",
-                  });
-                }
-                return renderTooltip({
-                  kind: "info",
-                  lines,
-                });
-              })()
+            ? savingsRateTooltip(
+                yr,
+                rateIncludesMatch,
+                deflate,
+                parentCategoryFilter,
+                accumOverrides,
+                accumOverrideNotes,
+                renderTooltip,
+              )
             : undefined
         }
         side="top"
@@ -422,117 +322,23 @@ export function AccumulationRow({
               const catLabel = catDisplayLabel[cat] ?? cat;
               const finalTooltip =
                 emp > 0 || match > 0
-                  ? (() => {
-                      const items: TooltipLineItem[] =
-                        catSpecs.length > 1
-                          ? catSpecs
-                              .filter(
-                                (sp) =>
-                                  !isPersonFiltered ||
-                                  sp.personId === personFilter,
-                              )
-                              .map((sp) => {
-                                const frac = specFrac({
-                                  baseAnnual: sp.baseAnnual || 0,
-                                  specTotal,
-                                  specCount: catSpecs.length,
-                                });
-                                const personEmp = rawEmp * frac;
-                                const label = sp.ownerName
-                                  ? `${sp.ownerName} (${sp.name})`
-                                  : sp.name;
-                                const matchTotal = catSpecs.reduce(
-                                  (s2, s2p) => s2 + (s2p.matchAnnual ?? 0),
-                                  0,
-                                );
-                                const mFrac = matchFracOf({
-                                  matchAnnual: sp.matchAnnual ?? 0,
-                                  allMatchAnnual: matchTotal,
-                                });
-                                return {
-                                  label,
-                                  amount: deflate(personEmp, yr.year),
-                                  taxType: itemTaxType(cat, sp.taxTreatment),
-                                  match:
-                                    (sp.matchAnnual ?? 0) > 0
-                                      ? deflate(rawMatch * mFrac, yr.year)
-                                      : undefined,
-                                  matchLabel: getDisplayConfig(
-                                    cat,
-                                    sp.name !== cat ? sp.name : undefined,
-                                  ).employerMatchLabel,
-                                };
-                              })
-                          : [
-                              {
-                                label:
-                                  catSpecs[0]?.ownerName ??
-                                  (isPersonFiltered
-                                    ? personFilterName
-                                    : "Employee"),
-                                amount: deflate(emp, yr.year),
-                                taxType: itemTaxType(
-                                  cat,
-                                  catSpecs[0]?.taxTreatment,
-                                ),
-                                match:
-                                  match > 0
-                                    ? deflate(match, yr.year)
-                                    : undefined,
-                                matchLabel: getDisplayConfig(
-                                  cat,
-                                  catSpecs[0]?.name !== cat
-                                    ? catSpecs[0]?.name
-                                    : undefined,
-                                ).employerMatchLabel,
-                              },
-                            ];
-                      return renderTooltip({
-                        kind: "money",
-                        header: `${catLabel} Contributions`,
-                        items,
-                        taxSplit:
-                          getAccountTypeConfig(cat).supportsRothSplit &&
-                          slot &&
-                          (slot.rothContrib > 0 || slot.traditionalContrib > 0)
-                            ? {
-                                traditional: deflate(
-                                  slot.traditionalContrib,
-                                  yr.year,
-                                ),
-                                roth: deflate(slot.rothContrib, yr.year),
-                              }
-                            : undefined,
-                        rateCeiling:
-                          yr.rateCeilingScale != null &&
-                          yr.rateCeilingScale < 1 &&
-                          yr.rateCeilingScale > 0
-                            ? {
-                                uncapped: deflate(
-                                  safeDivide(emp, yr.rateCeilingScale),
-                                  yr.year,
-                                ),
-                                capped: deflate(emp, yr.year),
-                                pct: 1 - yr.rateCeilingScale,
-                              }
-                            : undefined,
-                        irsLimit: slot
-                          ? {
-                              category: catLabel,
-                              limit: deflate(slot.irsLimit, yr.year),
-                              used: deflate(emp, yr.year),
-                            }
-                          : undefined,
-                        proRate:
-                          yr.proRateFraction != null
-                            ? {
-                                months: proRateMonths(yr.proRateFraction),
-                                annualAmount: deflate(specTotal, yr.year),
-                                proRatedAmount: deflate(emp, yr.year),
-                              }
-                            : undefined,
-                      });
-                    })()
+                  ? categoryContributionTooltip(
+                      catSpecs,
+                      isPersonFiltered,
+                      personFilter,
+                      specTotal,
+                      rawEmp,
+                      deflate,
+                      yr,
+                      cat,
+                      rawMatch,
+                      personFilterName,
+                      emp,
+                      match,
+                      renderTooltip,
+                      catLabel,
+                      slot,
+                    )
                   : undefined;
               return (
                 <Tooltip key={cat} content={finalTooltip} side="top">
@@ -574,88 +380,16 @@ export function AccumulationRow({
               const ofMatch = ofContrib ? ofContrib.match : ofRawMatch;
               const finalOfTooltip =
                 bSlot && (ofEmp > 0 || ofMatch > 0)
-                  ? (() => {
-                      const allMatchAnnual = ofSpecs.reduce(
-                        (s, sp) => s + (sp.matchAnnual ?? 0),
-                        0,
-                      );
-                      const items: TooltipLineItem[] =
-                        ofSpecs.length > 0
-                          ? ofSpecs.map((sp) => {
-                              const bSpecTotal = ofSpecs.reduce(
-                                (s, s2) => s + (s2.baseAnnual || 0),
-                                0,
-                              );
-                              const frac = specFrac({
-                                baseAnnual: sp.baseAnnual || 0,
-                                specTotal: bSpecTotal,
-                                specCount: ofSpecs.length,
-                              });
-                              const label = sp.ownerName
-                                ? `${sp.ownerName} (${sp.name})`
-                                : sp.name;
-                              const personOf = ofEmp * frac;
-                              const mFrac = matchFracOf({
-                                matchAnnual: sp.matchAnnual ?? 0,
-                                allMatchAnnual,
-                              });
-                              const spMatch = ofMatch * mFrac;
-                              return {
-                                label,
-                                amount: deflate(personOf, yr.year),
-                                match:
-                                  spMatch > 0
-                                    ? deflate(spMatch, yr.year)
-                                    : undefined,
-                                matchLabel: getDisplayConfig(
-                                  ofCat,
-                                  sp.name !== ofCat ? sp.name : undefined,
-                                ).employerMatchLabel,
-                              };
-                            })
-                          : [
-                              {
-                                label: "Employee",
-                                amount: deflate(ofEmp, yr.year),
-                                match:
-                                  ofMatch > 0
-                                    ? deflate(ofMatch, yr.year)
-                                    : undefined,
-                                matchLabel:
-                                  getDisplayConfig(ofCat).employerMatchLabel,
-                              },
-                            ];
-                      const ofAnnual = ofSpecs.reduce(
-                        (s, sp) => s + (sp.baseAnnual || 0),
-                        0,
-                      );
-                      return renderTooltip({
-                        kind: "money",
-                        header: `${ofLabel} Contributions`,
-                        items,
-                        rateCeiling:
-                          yr.rateCeilingScale != null &&
-                          yr.rateCeilingScale > 0 &&
-                          yr.rateCeilingScale < 1
-                            ? {
-                                uncapped: deflate(
-                                  ofEmp / yr.rateCeilingScale,
-                                  yr.year,
-                                ),
-                                capped: deflate(ofEmp, yr.year),
-                                pct: 1 - yr.rateCeilingScale,
-                              }
-                            : undefined,
-                        proRate:
-                          yr.proRateFraction != null && ofAnnual > 0
-                            ? {
-                                months: proRateMonths(yr.proRateFraction),
-                                annualAmount: deflate(ofAnnual, yr.year),
-                                proRatedAmount: deflate(ofEmp, yr.year),
-                              }
-                            : undefined,
-                      });
-                    })()
+                  ? overflowContributionTooltip(
+                      ofSpecs,
+                      ofEmp,
+                      ofMatch,
+                      deflate,
+                      yr,
+                      ofCat,
+                      renderTooltip,
+                      ofLabel,
+                    )
                   : undefined;
               return (
                 <Tooltip key={ofCat} content={finalOfTooltip} side="top">
@@ -772,39 +506,17 @@ export function AccumulationRow({
                 key={bucket}
                 content={
                   items.length > 0
-                    ? (() => {
-                        return renderTooltip({
-                          kind: "money",
-                          header: `${taxTypeLabel(bucket)} Contributions`,
-                          items,
-                          total:
-                            items.length > 1
-                              ? {
-                                  label: "Total",
-                                  amount: deflate(bucketTotal, yr.year),
-                                  match:
-                                    bucketMatch + bucketAssocMatch > 0
-                                      ? deflate(
-                                          bucketMatch + bucketAssocMatch,
-                                          yr.year,
-                                        )
-                                      : undefined,
-                                }
-                              : undefined,
-                          routingNote:
-                            bucketAssocMatch > 0
-                              ? `Match flows to ${taxTypeLabel("preTax")}`
-                              : undefined,
-                          proRate:
-                            yr.proRateFraction != null && bucketAnnual > 0
-                              ? {
-                                  months: proRateMonths(yr.proRateFraction),
-                                  annualAmount: deflate(bucketAnnual, yr.year),
-                                  proRatedAmount: deflate(bucketTotal, yr.year),
-                                }
-                              : undefined,
-                        });
-                      })()
+                    ? taxTypeContributionTooltip(
+                        renderTooltip,
+                        bucket,
+                        items,
+                        deflate,
+                        bucketTotal,
+                        yr,
+                        bucketMatch,
+                        bucketAssocMatch,
+                        bucketAnnual,
+                      )
                     : undefined
                 }
                 side="top"
@@ -824,117 +536,25 @@ export function AccumulationRow({
           })
       )}
       <Tooltip
-        content={(() => {
-          const iabs = yr.individualAccountBalances ?? [];
-          const totalGrowth = (
-            pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
-          ).reduce((s, ia) => s + ia.growth, 0);
-          const accBudgetProfile =
-            accumulationBudgetProfileId != null
-              ? budgetProfileSummaries?.find(
-                  (p) => p.id === accumulationBudgetProfileId,
-                )
-              : undefined;
-          const mine = pt
-            ? iabs.filter((ia) => ia.ownerPersonId === personFilter)
-            : [];
-          const empAmount = deflate(
-            pt ? pt.contribution : yr.totalEmployee,
-            yr.year,
-          );
-          const matchAmount = pt
-            ? deflate(
-                mine.reduce((s, ia) => s + ia.employerMatch, 0),
-                yr.year,
-              )
-            : yr.totalEmployer > 0
-              ? deflate(yr.totalEmployer, yr.year)
-              : 0;
-          const budgetProfileName =
-            accumulationExpenseOverride != null
-              ? `Set for this year${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
-              : accBudgetProfile
-                ? `${accBudgetProfile.name}${accumulationBudgetColumn != null && accBudgetProfile.columnLabels[accumulationBudgetColumn] ? ` (${accBudgetProfile.columnLabels[accumulationBudgetColumn]})` : ""}${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
-                : undefined;
-          // Build per-bucket items from slots (shows all tax types that have contributions)
-          const inOutItems: TooltipLineItem[] = [];
-          if (matchAmount > 0)
-            inOutItems.push({
-              label: "Match",
-              amount: matchAmount,
-              color: "green",
-            });
-          inOutItems.push(...contributionTaxTypeTotals(yr, pt, mine, deflate));
-          // A year a paycheck is gone: money comes out as well as in. With
-          // a person or category filter only the accounts shown count, and
-          // the household's figures (tax, the why) are left out.
-          const gap = yr.gapDraw;
-          const gapScoped = !!gap && drawnTotal(iabs) < gap.withdrawal - 0.5;
-          if (gap) {
-            inOutItems.push(...gapDrawnItems(yr, scopedIabs(iabs), deflate));
-          }
-          const money = (v: number) => formatCurrency(deflate(v, yr.year));
-          const gapMeta = gap
-            ? gap.withdrawal > 0
-              ? `A paycheck is gone: pay ${money(gap.pay)}${gap.ssIncome > 0 ? ` and Social Security ${money(gap.ssIncome)}` : ""}, less ${money(gap.taxOnIncome)} tax and what's saved, leave spending ${money(gap.need)} short, so it's withdrawn`
-              : gap.spendingCut > 0
-                ? `A paycheck is gone: you chose not to withdraw, so spending runs ${money(gap.spendingCut)} under budget`
-                : undefined
-            : undefined;
-          return renderTooltip({
-            kind: "money",
-            header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
-            meta: gapScoped ? undefined : gapMeta,
-            shortfall:
-              gap && !gapScoped && gap.unmetNeed >= shortfallFloor(gap.need)
-                ? { amount: deflate(gap.unmetNeed, yr.year) }
-                : undefined,
-            withdrawals:
-              gap && gap.withdrawal > 0 && !gapScoped
-                ? {
-                    amount: deflate(gap.withdrawal, yr.year),
-                    taxCost: deflate(gap.taxCost, yr.year),
-                  }
-                : undefined,
-            items: inOutItems.length > 0 ? inOutItems : undefined,
-            growth:
-              Math.abs(totalGrowth) > 1
-                ? {
-                    amount: deflate(totalGrowth, yr.year),
-                  }
-                : undefined,
-            budget: budgetProfileName
-              ? {
-                  profile: budgetProfileName,
-                  amount: deflate(yr.projectedExpenses, yr.year),
-                }
-              : undefined,
-            overrideNote:
-              accumOverrideNotes &&
-              !accumOverrides.some(
-                (o) => o.year === yr.year && o.contributionRate !== undefined,
-              )
-                ? `Changed this year: ${accumOverrideNotes}`
-                : undefined,
-            proRate:
-              yr.proRateFraction != null
-                ? (() => {
-                    const totalAnnual =
-                      contribSpecs?.reduce(
-                        (s, sp) => s + (sp.baseAnnual || 0),
-                        0,
-                      ) ?? 0;
-                    return totalAnnual > 0
-                      ? {
-                          months: proRateMonths(yr.proRateFraction),
-                          annualAmount: deflate(totalAnnual, yr.year),
-                          proRatedAmount: empAmount,
-                        }
-                      : undefined;
-                  })()
-                : undefined,
-          });
-        })()}
+        content={totalContributionTooltip(
+          yr,
+          pt,
+          personFilter,
+          accumulationBudgetProfileId,
+          budgetProfileSummaries,
+          deflate,
+          accumulationExpenseOverride,
+          budgetOverrideNotes,
+          accumulationBudgetColumn,
+          drawnTotal,
+          scopedIabs,
+          renderTooltip,
+          isPersonFiltered,
+          personFilterName,
+          accumOverrideNotes,
+          accumOverrides,
+          contribSpecs,
+        )}
         side="top"
       >
         <td className="px-2 py-1.5 text-right font-medium">
@@ -1154,82 +774,21 @@ export function AccumulationRow({
               const colDeflatedBal = deflate(bal, yr.year);
               const tooltipContent =
                 splits.length > 0
-                  ? (() => {
-                      const colChangeParts: {
-                        label: string;
-                        amount: number;
-                        color: TipColor;
-                      }[] = [];
-                      if (colDisplayContrib > 0)
-                        colChangeParts.push({
-                          label: "contrib",
-                          amount: colDisplayContrib,
-                          color: "green",
-                        });
-                      if (Math.abs(colDisplayGrowth) > 1)
-                        colChangeParts.push({
-                          label: "growth",
-                          amount: colDisplayGrowth,
-                          color: colDisplayGrowth >= 0 ? "blue" : "red",
-                        });
-                      const splitItems: TooltipLineItem[] = splits.map(
-                        ({
-                          name: acctName,
-                          taxType: spTaxType,
-                          balance: spBal,
-                          contribution: spContrib,
-                          growth: spGrowth,
-                        }) => {
-                          const entryPct = percentOf(spBal, colSplitsTotal);
-                          const subItems: TooltipLineItem[] = [];
-                          if (spContrib > 1)
-                            subItems.push({
-                              label: "contrib",
-                              amount: deflate(spContrib, yr.year),
-                              prefix: "+",
-                              color: "green",
-                            });
-                          if (Math.abs(spGrowth) > 1)
-                            subItems.push({
-                              label: "growth",
-                              amount: deflate(spGrowth, yr.year),
-                              prefix: spGrowth >= 0 ? "+" : undefined,
-                              color: spGrowth >= 0 ? "blue" : "red",
-                            });
-                          return {
-                            label: acctName,
-                            amount: deflate(spBal, yr.year),
-                            percent: entryPct,
-                            taxType: itemTaxType(catKey, spTaxType),
-                            sub: subItems.length > 0 ? subItems : undefined,
-                          };
-                        },
-                      );
-                      return renderTooltip({
-                        kind: "money",
-                        header: `${col.label}: ${pct}% of portfolio`,
-                        meta: `${yr.year} · BoY: ${formatCurrency(colBoyBal)} → EoY: ${formatCurrency(colDeflatedBal)} · ${formatPercent(yr.returnRate, 1)} return${yr.proRateFraction != null && yr.proRateFraction > 0 ? ` (${formatPercent(yr.annualizedReturnRate, 1)} annual)` : ""}`,
-                        items: splitItems,
-                        yearChange: {
-                          total: colDeflatedBal,
-                          change: colDisplayChange,
-                          parts:
-                            colChangeParts.length > 0
-                              ? colChangeParts
-                              : undefined,
-                        },
-                        legend: [
-                          {
-                            label: "Green = contributions",
-                            color: "green",
-                          },
-                          {
-                            label: "Blue = growth",
-                            color: "blue",
-                          },
-                        ],
-                      });
-                    })()
+                  ? accountBalanceTooltip(
+                      colDisplayContrib,
+                      colDisplayGrowth,
+                      splits,
+                      colSplitsTotal,
+                      deflate,
+                      yr,
+                      catKey,
+                      renderTooltip,
+                      col,
+                      pct,
+                      colBoyBal,
+                      colDeflatedBal,
+                      colDisplayChange,
+                    )
                   : undefined;
               return (
                 <BalanceCell
@@ -1245,44 +804,13 @@ export function AccumulationRow({
       <Tooltip
         content={
           rowTotal(yr) > 0
-            ? (() => {
-                const ptBal = pt ? pt.balance : rowTotal(yr);
-                const items: TooltipLineItem[] = (
-                  ["preTax", "taxFree", "hsa", "afterTax"] as const
-                ).map((b) => {
-                  const bVal = pt ? pt.byTaxType[b] : yr.balanceByTaxType[b];
-                  return {
-                    label: taxTypeLabel(b),
-                    amount: deflate(bVal, yr.year),
-                    percent: percentOf(bVal, ptBal),
-                  };
-                });
-                return renderTooltip({
-                  kind: "money",
-                  header: "Portfolio Balance",
-                  items,
-                  proRate:
-                    yr.proRateFraction != null
-                      ? (() => {
-                          const totalAnnual =
-                            contribSpecs?.reduce(
-                              (s, sp) => s + (sp.baseAnnual || 0),
-                              0,
-                            ) ?? 0;
-                          return totalAnnual > 0
-                            ? {
-                                months: proRateMonths(yr.proRateFraction),
-                                annualAmount: deflate(totalAnnual, yr.year),
-                                proRatedAmount: deflate(
-                                  yr.totalEmployee,
-                                  yr.year,
-                                ),
-                              }
-                            : undefined;
-                        })()
-                      : undefined,
-                });
-              })()
+            ? portfolioBalanceTooltip(
+                pt,
+                yr,
+                deflate,
+                renderTooltip,
+                contribSpecs,
+              )
             : undefined
         }
         side="top"
