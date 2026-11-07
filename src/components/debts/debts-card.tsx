@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CellButton } from "@/components/ui/cell-button";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { localDateStr } from "@/lib/utils/date";
 import { DEBT_KIND_CONFIG } from "@/lib/config/debts";
@@ -34,7 +35,6 @@ type Draft = {
   paidOffDate: string;
   notes: string;
 };
-
 const blank = (): Draft => ({
   name: "",
   kind: "student_loan",
@@ -80,12 +80,10 @@ export function DebtsCard() {
   const [showPaid, setShowPaid] = useState(false);
   const set = (k: keyof Draft) => (v: string) =>
     setDraft((d) => ({ ...d, [k]: v }));
-
   const open = debts?.filter((d) => d.open) ?? [];
   const paid = debts?.filter((d) => !d.open) ?? [];
   const ownerName = (id: number | null) =>
     id == null ? "Joint" : (people?.find((p) => p.id === id)?.name ?? "—");
-
   const save = () => {
     const toNum = (v: string) => (v.trim() === "" ? null : v.trim());
     const rate =
@@ -387,11 +385,13 @@ export function DebtsCard() {
                   onClick={() => admin && startEdit(d)}
                 >
                   <td className="py-1.5">
-                    {d.name}
-                    <span className="text-faint ml-1.5 text-xs">
-                      {DEBT_KIND_CONFIG[d.kind].label} ·{" "}
-                      {ownerName(d.ownerPersonId)}
-                    </span>
+                    <CellButton enabled={admin}>
+                      {d.name}
+                      <span className="text-faint ml-1.5 text-xs">
+                        {DEBT_KIND_CONFIG[d.kind].label} ·{" "}
+                        {ownerName(d.ownerPersonId)}
+                      </span>
+                    </CellButton>
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
                     {formatCurrency(d.currentBalance)}

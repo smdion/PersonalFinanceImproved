@@ -2,7 +2,8 @@
  * Smoke test for the Liabilities page's other-debts card (v0.10.4 commit
  * 5b), mounted on the ws-h2 baseline household, the one with a debt, its
  * queries answered by the router (tests/baseline/screen-mount.tsx): the
- * debt's row renders, and a new debt sends debts.create.
+ * debt's row renders, a new debt sends debts.create, and a debt's name
+ * cell, a button for an admin, opens it for editing.
  */
 import "../../routers/setup-mocks";
 import "../../baseline/mocks";
@@ -61,5 +62,18 @@ describe("DebtsCard", () => {
         notes: null,
       },
     ]);
+  });
+
+  it("opens a debt for editing from its name cell, and saves it once", async () => {
+    await page.mount();
+    fireEvent.click(screen.getByRole("button", { name: /^Car loan/ }));
+    expect(screen.getByLabelText("Name")).toHaveValue("Car loan");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mutationCalls("debts.update")).toHaveLength(1);
+    expect(mutationCalls("debts.update")[0]).toMatchObject({
+      id: expect.any(Number),
+      name: "Car loan",
+      balance: "14000",
+    });
   });
 });
