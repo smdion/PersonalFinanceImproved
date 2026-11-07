@@ -6288,6 +6288,11 @@
       "count": 1
     }
   },
+  "src/server/services/contributions/joint-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    }
+  },
   "src/server/services/contributions/live-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -6323,19 +6328,27 @@
   },
   "src/server/services/contributions/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 11
+      "count": 9
     },
     "max-lines-per-function": {
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 3
+      "count": 1
+    }
+  },
+  "src/server/services/contributions/summary.types.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/server/services/debts/other-liabilities.ts": {
