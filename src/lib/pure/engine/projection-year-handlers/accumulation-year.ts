@@ -3,12 +3,7 @@ import type { EngineAccumulationYear } from "../types/projection-result";
 import { roundToCents } from "../../../utils/math";
 import { resolveAccumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
-import { followInflows } from "../brokerage-basis";
-import {
-  distributeContributions,
-  applyIndividualGrowth,
-  accrueIndividualBasis,
-} from "../individual-account-tracking";
+import { applyIndividualGrowth } from "../individual-account-tracking";
 import { cloneAccountBalances } from "../balance-utils";
 import type {
   PreYearSetup,
@@ -21,6 +16,7 @@ import { yearContributionTarget, yearZeroBasis } from "./contribution-target";
 import { routeYearSlots, yearContributionLimits } from "./contribution-slots";
 import {
   creditYearContributions,
+  distributeYearContributions,
   yearContributionTotals,
 } from "./contribution-credits";
 import { closeYearAccounts } from "./year-end-accounts";
@@ -186,45 +182,29 @@ export function runAccumulationYear(
     ctx,
     state,
   );
-
-  let indContribs = new Map<string, number>();
-  let indMatch = new Map<string, number>();
-  let indIntentional = new Map<string, number>();
-  let indOverflow = new Map<string, number>();
-  let indRamp = new Map<string, number>();
-  if (hasIndividualAccounts && contributionSpecs) {
-    // Contributions, match, overflow and the ramp are cash in: new basis.
-    const distResult = followInflows(indAccts, indKey, indBal, brokBasis, () =>
-      distributeContributions({
-        slots,
-        contributionSpecs,
-        indAccts,
-        indKey,
-        indBal,
-        indParentCat,
-        specToAccount,
-        accountsWithSpecs,
-        projectedSalary,
-        currentSalary,
-        personPay,
-        limitGrowthRate,
-        yearIndex,
-        proRate,
-        overflowToBrokerage,
-        rampAmount,
-        employerMatchByParentCat: activeEmployerMatchByParentCat,
-      }),
+  const { indContribs, indMatch, indIntentional, indOverflow, indRamp } =
+    distributeYearContributions(
+      hasIndividualAccounts,
+      contributionSpecs,
+      indAccts,
+      indKey,
+      indBal,
+      brokBasis,
+      slots,
+      indParentCat,
+      specToAccount,
+      accountsWithSpecs,
+      projectedSalary,
+      currentSalary,
+      personPay,
+      limitGrowthRate,
+      yearIndex,
+      proRate,
+      overflowToBrokerage,
+      rampAmount,
+      activeEmployerMatchByParentCat,
+      indBasis,
     );
-    indContribs = distResult.indContribs;
-    indMatch = distResult.indMatch;
-    indIntentional = distResult.indIntentional;
-    indOverflow = distResult.indOverflow;
-    indRamp = distResult.indRamp;
-    // Tracked Roth basis grows by this year's contribution, which excludes
-    // employer match (roth-basis-tracking.ts's docblock says why).
-    accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
-  }
-
   const { gapRun, gapDraw } = yearGapDraw(
     setup,
     ctx,
@@ -335,7 +315,6 @@ export function runAccumulationYear(
     warnings: routeWarnings,
   };
 
-  // Update RMD tracking at end of accumulation year
   state.priorYearEndTradBalance = balances.preTax;
   updatePerPersonTradBalance(ctx, state);
 

@@ -16,9 +16,16 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
 } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
+import {
+  distributeContributions,
+  accrueIndividualBasis,
+} from "../individual-account-tracking";
 import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
 import { applyLumpSums } from "./lump-sum";
-import type { yearZeroBasis } from "./contribution-target";
+import type {
+  yearContributionTarget,
+  yearZeroBasis,
+} from "./contribution-target";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** The year's contribution totals and the overflow to brokerage. */
@@ -149,4 +156,68 @@ export function creditYearContributions(
   );
 
   return { rampAmount };
+}
+
+/** The year's contributions, match, overflow and ramp, spread to each account. */
+export function distributeYearContributions(
+  hasIndividualAccounts: boolean,
+  contributionSpecs: ProjectionLoopState["contributionSpecs"],
+  indAccts: ProjectionContext["indAccts"],
+  indKey: ProjectionContext["indKey"],
+  indBal: ProjectionLoopState["indBal"],
+  brokBasis: ProjectionLoopState["brokBasis"],
+  slots: AccumulationSlot[],
+  indParentCat: ProjectionContext["indParentCat"],
+  specToAccount: ProjectionLoopState["specToAccount"],
+  accountsWithSpecs: ProjectionLoopState["accountsWithSpecs"],
+  projectedSalary: number,
+  currentSalary: number,
+  personPay: ReturnType<typeof yearContributionTarget>["personPay"],
+  limitGrowthRate: number,
+  yearIndex: number,
+  proRate: number,
+  overflowToBrokerage: number,
+  rampAmount: number,
+  activeEmployerMatchByParentCat: ProjectionLoopState["activeEmployerMatchByParentCat"],
+  indBasis: ProjectionLoopState["indBasis"],
+) {
+  let indContribs = new Map<string, number>();
+  let indMatch = new Map<string, number>();
+  let indIntentional = new Map<string, number>();
+  let indOverflow = new Map<string, number>();
+  let indRamp = new Map<string, number>();
+  if (hasIndividualAccounts && contributionSpecs) {
+    // Contributions, match, overflow and the ramp are cash in: new basis.
+    const distResult = followInflows(indAccts, indKey, indBal, brokBasis, () =>
+      distributeContributions({
+        slots,
+        contributionSpecs,
+        indAccts,
+        indKey,
+        indBal,
+        indParentCat,
+        specToAccount,
+        accountsWithSpecs,
+        projectedSalary,
+        currentSalary,
+        personPay,
+        limitGrowthRate,
+        yearIndex,
+        proRate,
+        overflowToBrokerage,
+        rampAmount,
+        employerMatchByParentCat: activeEmployerMatchByParentCat,
+      }),
+    );
+    indContribs = distResult.indContribs;
+    indMatch = distResult.indMatch;
+    indIntentional = distResult.indIntentional;
+    indOverflow = distResult.indOverflow;
+    indRamp = distResult.indRamp;
+    // Tracked Roth basis grows by this year's contribution, which excludes
+    // employer match (roth-basis-tracking.ts's docblock says why).
+    accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
+  }
+
+  return { indContribs, indMatch, indIntentional, indOverflow, indRamp };
 }
