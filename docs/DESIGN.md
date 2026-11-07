@@ -671,7 +671,7 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 2. **Explicit pipeline order.** The per-year order is defined in the year handlers and listed in `engine/ARCHITECTURE.md` § One year. Changes to it must be intentional and update that list.
 3. **Module interfaces are contracts.** Each module declares its input type. Callers pass data through the interface — they don't reach into module internals or share mutable state.
 4. **Override resolution is centralized.** All per-year sticky-forward config resolution goes through `override-resolution.ts`. No module implements its own override logic.
-5. **Balance operations use utilities.** Clone, deduct, grow, and track operations use `balance-utils.ts`, `balance-deduction.ts`, `growth-application.ts`, and `individual-account-tracking.ts`. Never inline balance math in the orchestrator or other modules.
+5. **Balance operations use utilities.** Clone, deduct, grow, and track operations use `balance-utils.ts`, `balance-deduction.ts`, `growth-application.ts`, and `individual-accounts/`. Never inline balance math in the orchestrator or other modules.
 
 ### Public API
 

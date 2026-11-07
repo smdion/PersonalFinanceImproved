@@ -43,12 +43,15 @@ projection-year-handlers/    one year of work
 
 **Configuration and contributions**
 
-| Module                           | Role                                                                                                                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `override-resolution.ts`         | Resolves "Changes by year" (sticky-forward) into the year's `ResolvedAccumulationConfig` / `ResolvedDecumulationConfig`. Downstream code only sees resolved config. |
-| `contribution-routing.ts`        | Accumulation allocation: waterfall, percentage, or from contribution specs (the production path). IRS limits, caps, tax splits, overflow to a Retirement brokerage. |
-| `contribution-projection.ts`     | The one per-spec formula for a year's contribution amount, shared by routing and per-account tracking.                                                              |
-| `individual-account-tracking.ts` | Per-account bookkeeping: contributions, match, overflow, withdrawals, goal draws, and `reconcileIndividualToAggregate`.                                             |
+| Module                                 | Role                                                                                                                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `override-resolution.ts`               | Resolves "Changes by year" (sticky-forward) into the year's `ResolvedAccumulationConfig` / `ResolvedDecumulationConfig`. Downstream code only sees resolved config. |
+| `contribution-routing.ts`              | Accumulation allocation: waterfall, percentage, or from contribution specs (the production path). IRS limits, caps, tax splits, overflow to a Retirement brokerage. |
+| `contribution-projection.ts`           | The one per-spec formula for a year's contribution amount, shared by routing and per-account tracking.                                                              |
+| `individual-accounts/ledger.ts`        | The per-account ledger: account keys, `credit`, a year's growth and tracked Roth basis.                                                                             |
+| `individual-accounts/contributions.ts` | Contributions, match, overflow and ramp spread to each account; specs matched to their accounts.                                                                    |
+| `individual-accounts/withdrawals.ts`   | Withdrawals and brokerage goal draws spread to each account.                                                                                                        |
+| `individual-accounts/reconcile.ts`     | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`.                                                                             |
 
 **Withdrawals and tax**
 
