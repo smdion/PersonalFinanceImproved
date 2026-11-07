@@ -26,24 +26,9 @@ import {
 } from "@/lib/pure/savings/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
-
-function isTargetMode(v: unknown): v is TargetMode {
-  return TARGET_MODE_VALUES.includes(v as TargetMode);
-}
 import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
-
-// Code-split Recharts-heavy children. Loads on page mount instead of
-// bundling into the savings page chunk. ssr:false
-// because Recharts isn't SSR-friendly.
-const SavingsTrajectoryChart = dynamic(
-  () =>
-    import("@/components/savings/savings-trajectory-chart").then((m) => ({
-      default: m.SavingsTrajectoryChart,
-    })),
-  { loading: () => <SkeletonChart />, ssr: false },
-);
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
 import {
   FundManagementSection,
@@ -78,6 +63,21 @@ import {
   SK_EFUND_BUDGET_COLUMN,
   SK_SAVINGS_PROJECTION_YEARS,
 } from "@/lib/constants/settings-keys";
+
+function isTargetMode(v: unknown): v is TargetMode {
+  return TARGET_MODE_VALUES.includes(v as TargetMode);
+}
+
+// Code-split Recharts-heavy children. Loads on page mount instead of
+// bundling into the savings page chunk. ssr:false
+// because Recharts isn't SSR-friendly.
+const SavingsTrajectoryChart = dynamic(
+  () =>
+    import("@/components/savings/savings-trajectory-chart").then((m) => ({
+      default: m.SavingsTrajectoryChart,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
 
 export default function SavingsPage() {
   const user = useUser();
