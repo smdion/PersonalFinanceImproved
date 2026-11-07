@@ -13,7 +13,8 @@
  */
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
+import type { BoundaryQuery } from "@/components/ui/query-boundary";
 import {
   FILING_STATUS_ORDER,
   filingTable,
@@ -87,7 +88,7 @@ type Props<TEntry> = {
   noun: string;
   year: number;
   admin: boolean;
-  isLoading: boolean;
+  query: BoundaryQuery;
   rows: BracketRow<TEntry>[];
   columns: BracketColumn<TEntry>[];
   defaultBrackets: TEntry[];
@@ -110,7 +111,7 @@ export function BracketTableEditor<TEntry>({
   noun,
   year,
   admin,
-  isLoading,
+  query,
   rows,
   columns,
   defaultBrackets,
@@ -125,7 +126,7 @@ export function BracketTableEditor<TEntry>({
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
   const years = Array.from(new Set(rows.map((r) => r.taxYear))).sort(
     (a, b) => b - a,

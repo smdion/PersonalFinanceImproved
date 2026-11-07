@@ -5,7 +5,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency } from "@/lib/utils/format";
 const HOUSEHOLD_SIZES = ["1", "2", "3", "4", "5", "6", "7", "8"] as const;
 
@@ -17,7 +17,7 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.fplByHousehold.list.useQuery();
+  const query = trpc.settings.fplByHousehold.list.useQuery();
   const updateMutation = trpc.settings.fplByHousehold.update.useMutation({
     onSuccess: () => utils.settings.fplByHousehold.invalidate(),
   });
@@ -34,13 +34,13 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
-  const years = Array.from(new Set((data ?? []).map((r) => r.taxYear))).sort(
-    (a, b) => b - a,
-  );
+  const years = Array.from(
+    new Set((query.data ?? []).map((r) => r.taxYear)),
+  ).sort((a, b) => b - a);
   const activeYear = year;
-  const row = (data ?? []).find((r) => r.taxYear === activeYear);
+  const row = (query.data ?? []).find((r) => r.taxYear === activeYear);
   const amounts = (row?.amounts ?? {}) as Record<string, number>;
   const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
@@ -61,8 +61,8 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
     if (years.includes(activeYear)) return;
 
     const sourceAmounts = effectiveCopyFrom
-      ? (((data ?? []).find((r) => r.taxYear === effectiveCopyFrom)?.amounts ??
-          {}) as Record<string, number>)
+      ? (((query.data ?? []).find((r) => r.taxYear === effectiveCopyFrom)
+          ?.amounts ?? {}) as Record<string, number>)
       : ({} as Record<string, number>);
     await createMutation.mutateAsync({
       taxYear: activeYear,
@@ -77,7 +77,7 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
   };
 
   const handleDeleteYear = async (yr: number) => {
-    const toDelete = (data ?? []).find((r) => r.taxYear === yr);
+    const toDelete = (query.data ?? []).find((r) => r.taxYear === yr);
     if (toDelete) await deleteMutation.mutateAsync({ id: toDelete.id });
     setConfirmDelete(null);
   };

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   W4_FILING_STATUS_VALUES,
@@ -39,7 +39,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.taxBrackets.list.useQuery();
+  const query = trpc.settings.taxBrackets.list.useQuery();
   const updateMutation = trpc.settings.taxBrackets.update.useMutation({
     onSuccess: () => utils.settings.taxBrackets.invalidate(),
   });
@@ -56,14 +56,14 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
   // Get unique years, sorted descending (newest first)
-  const years = Array.from(new Set((data ?? []).map((tb) => tb.taxYear))).sort(
-    (a, b) => b - a,
-  );
+  const years = Array.from(
+    new Set((query.data ?? []).map((tb) => tb.taxYear)),
+  ).sort((a, b) => b - a);
   const activeYear = year;
-  const yearData = (data ?? []).filter((tb) => tb.taxYear === activeYear);
+  const yearData = (query.data ?? []).filter((tb) => tb.taxYear === activeYear);
   const hasYearData = yearData.length > 0;
   // A year Ledgr ships can't be deleted (it would come back on restart).
   const yearShipped = yearData.some((tb) => tb.shipped);
@@ -107,7 +107,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
 
     if (effectiveCopyFrom) {
       // Copy brackets from source year
-      const sourceData = (data ?? []).filter(
+      const sourceData = (query.data ?? []).filter(
         (tb) => tb.taxYear === effectiveCopyFrom,
       );
       for (const tb of sourceData) {
@@ -138,7 +138,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   };
 
   const handleDeleteYear = async (yr: number) => {
-    const toDelete = (data ?? []).filter((tb) => tb.taxYear === yr);
+    const toDelete = (query.data ?? []).filter((tb) => tb.taxYear === yr);
     for (const tb of toDelete) {
       await deleteMutation.mutateAsync({ id: tb.id });
     }

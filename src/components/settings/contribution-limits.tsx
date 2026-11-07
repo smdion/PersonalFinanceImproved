@@ -6,7 +6,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   taxLimitGroups,
@@ -34,7 +34,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.contributionLimits.list.useQuery();
+  const query = trpc.settings.contributionLimits.list.useQuery();
   const updateMut = trpc.settings.contributionLimits.update.useMutation({
     onSuccess: () => utils.settings.contributionLimits.list.invalidate(),
   });
@@ -53,14 +53,14 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     null,
   );
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
   // Get unique years, sorted descending (newest first)
-  const years = Array.from(new Set((data ?? []).map((l) => l.taxYear))).sort(
-    (a, b) => b - a,
-  );
+  const years = Array.from(
+    new Set((query.data ?? []).map((l) => l.taxYear)),
+  ).sort((a, b) => b - a);
   const activeYear = year;
-  const yearData = (data ?? []).filter((l) => l.taxYear === activeYear);
+  const yearData = (query.data ?? []).filter((l) => l.taxYear === activeYear);
 
   // Build a lookup: type -> record for the active year
   const limitsMap = new Map<
@@ -116,7 +116,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
    *  per-row "+ Set" fallback each group already supports. */
   const handleCopyYear = async () => {
     if (!copyFrom || yearData.length > 0) return;
-    const sourceData = (data ?? []).filter((l) => l.taxYear === copyFrom);
+    const sourceData = (query.data ?? []).filter((l) => l.taxYear === copyFrom);
     for (const l of sourceData) {
       // Carried forward: a release with this year's real figure replaces it.
       await createMut.mutateAsync({
@@ -131,7 +131,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   };
 
   const handleDeleteYear = async (yr: number) => {
-    const toDelete = (data ?? []).filter((l) => l.taxYear === yr);
+    const toDelete = (query.data ?? []).filter((l) => l.taxYear === yr);
     for (const l of toDelete) {
       await deleteMut.mutateAsync({ id: l.id });
     }
@@ -151,7 +151,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   const prevYear = years.find((y) => y < activeYear);
   const prevYearMap = new Map<string, number>();
   if (prevYear) {
-    for (const l of (data ?? []).filter((d) => d.taxYear === prevYear)) {
+    for (const l of (query.data ?? []).filter((d) => d.taxYear === prevYear)) {
       prevYearMap.set(l.limitType, Number(l.value));
     }
   }

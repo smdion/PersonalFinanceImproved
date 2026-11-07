@@ -4,12 +4,13 @@
 import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { Badge } from "@/components/ui/badge";
 
 export function RbacGroupsSettings() {
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.rbacGroups.get.useQuery();
+  const query = trpc.settings.rbacGroups.get.useQuery();
+  const { data } = query;
   const upsert = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => {
       utils.settings.rbacGroups.get.invalidate();
@@ -40,9 +41,8 @@ export function RbacGroupsSettings() {
     setDirty(false);
   }, [data]);
 
-  if (isLoading || !data) {
-    return <Skeleton className="h-6 w-48" />;
-  }
+  if (queryPending(query) || !data)
+    return <SettingsQueryBoundary query={query} />;
 
   const handleSave = async () => {
     // Save admin group

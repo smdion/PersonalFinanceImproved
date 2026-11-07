@@ -2201,14 +2201,7 @@ const HOOK_FOLDERS_KNOWN: string[] = [];
 
 /** Skeleton returns on missing data, per file: a failed query shows the
  *  skeleton forever. Each goes to QueryBoundary. */
-const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
-  "src/components/settings/bracket-table-editor.tsx": { count: 1 },
-  "src/components/settings/contribution-limits.tsx": { count: 1 },
-  "src/components/settings/fpl-by-household.tsx": { count: 1 },
-  "src/components/settings/rbac-groups.tsx": { count: 1 },
-  "src/components/settings/return-rates.tsx": { count: 1 },
-  "src/components/settings/tax-brackets.tsx": { count: 1 },
-};
+const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {};
 
 /** Client page.tsx files under app/(dashboard). */
 function clientPages(root: string): string[] {

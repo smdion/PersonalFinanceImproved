@@ -1218,8 +1218,8 @@ if (queryPending(summary))
 - A card passes `frame` to keep both states inside the card
   (`CardQueryBoundary` in `components/dashboard/utils.tsx`).
 - Never `if (isLoading || !data) return <Skeleton />`: a failed query has no
-  data either, and its skeleton never ends (`SKELETON_RETURNS_KNOWN` in
-  `tests/lint/violations.test.ts` holds the sites left).
+  data either, and its skeleton never ends. The skeleton-returns finder in
+  `tests/lint/violations.test.ts` fails a new one.
 
 ### File Organization
 

@@ -16,7 +16,7 @@ type IrmaaEntry = { magiThreshold: number; annualSurcharge: number };
 export function IrmaaBracketsSettings({ year }: { year: number }) {
   const admin = isAdmin(useUser());
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.irmaaBrackets.list.useQuery();
+  const query = trpc.settings.irmaaBrackets.list.useQuery();
   const invalidate = () => utils.settings.irmaaBrackets.invalidate();
   const updateMutation = trpc.settings.irmaaBrackets.update.useMutation({
     onSuccess: invalidate,
@@ -31,7 +31,7 @@ export function IrmaaBracketsSettings({ year }: { year: number }) {
     onSuccess: invalidate,
   });
 
-  const rows = (data ?? []) as BracketRow<IrmaaEntry>[];
+  const rows = (query.data ?? []) as BracketRow<IrmaaEntry>[];
 
   return (
     <BracketTableEditor<IrmaaEntry>
@@ -39,7 +39,7 @@ export function IrmaaBracketsSettings({ year }: { year: number }) {
       noun="IRMAA"
       year={year}
       admin={admin}
-      isLoading={isLoading}
+      query={query}
       rows={rows}
       defaultBrackets={[{ magiThreshold: 0, annualSurcharge: 0 }]}
       entryKey={(e) => e.magiThreshold}

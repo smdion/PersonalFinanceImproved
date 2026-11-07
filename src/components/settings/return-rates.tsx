@@ -22,7 +22,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatPercent } from "@/lib/utils/format";
 import { returnRateAtAge } from "@/lib/pure/simulation/return-rate-breakpoints";
 /** Display-only cap for the glide-path bar and the last breakpoint's
@@ -48,7 +48,7 @@ export function ReturnRatesSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.retirement.returnRates.list.useQuery();
+  const query = trpc.retirement.returnRates.list.useQuery();
   const upsertMut = trpc.retirement.returnRates.upsert.useMutation({
     onSuccess: () => utils.retirement.returnRates.list.invalidate(),
   });
@@ -62,9 +62,9 @@ export function ReturnRatesSettings() {
   const [addNote, setAddNote] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
-  const rows = [...(data ?? [])].sort((a, b) => a.age - b.age);
+  const rows = [...(query.data ?? [])].sort((a, b) => a.age - b.age);
 
   const handleSaveRate = (age: number, rawPercent: string) => {
     const pct = parseFloat(rawPercent);
