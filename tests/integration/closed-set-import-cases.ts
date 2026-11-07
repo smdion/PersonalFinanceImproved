@@ -236,3 +236,74 @@ async function setVersionValue(
   }));
   await db.update(schema.stateVersionTables).set({ data: rows }).where(where);
 }
+
+/** An invented snapshot holding one 401(k) row. */
+async function snapshot(db: Db) {
+  const { schema } = await app();
+  const [snap] = await db
+    .insert(schema.portfolioSnapshots)
+    .values({ snapshotDate: "2026-06-30" })
+    .returning();
+  await db.insert(schema.portfolioAccounts).values({
+    snapshotId: snap!.id,
+    institution: "Acme Funds",
+    taxType: "preTax",
+    amount: "1000.00",
+    accountType: "401k",
+    parentCategory: "Retirement",
+  });
+}
+
+/** The stored snapshot rows as the tax-bucket read takes them. */
+async function snapshotRows(db: Db, accountType?: string) {
+  const { schema } = await app();
+  return (await db.select().from(schema.portfolioAccounts)).map((a) => ({
+    institution: a.institution,
+    taxType: a.taxType,
+    // The read takes the stored string as a category; this one may not be.
+    accountType: (accountType ?? a.accountType) as never,
+    subType: a.subType,
+    label: a.label,
+    parentCategory: a.parentCategory,
+    amount: Number(a.amount),
+    ownerPersonId: a.ownerPersonId,
+    performanceAccountId: a.performanceAccountId,
+    displayName: null,
+    accountLabel: null,
+  }));
+}
+
+/** The account-category read (computeTaxBucketBreakdown) throws on a
+ *  category the config doesn't know; the import check keeps one out. */
+export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
+  it("an import whose snapshot names an unknown account type is refused before the tax-bucket read can see it", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup, ClosedSetRefusal } = await app();
+      const { computeTaxBucketBreakdown } =
+        await import("@/lib/pure/accounts/tax-buckets");
+      await snapshot(db);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db)),
+      ) as Backup;
+      setAll(backup, "portfolio_accounts", "account_type", "solo401k");
+
+      await expect(
+        importBackup(db, backup as never, admin),
+      ).rejects.toBeInstanceOf(ClosedSetRefusal);
+      const rows = await snapshotRows(db);
+      expect(rows.map((r) => r.accountType)).toEqual(["401k"]);
+      expect(
+        computeTaxBucketBreakdown({ accounts: rows }, [], []).portfolioByTaxType
+          .preTax,
+      ).toBe(1000);
+      // What the refusal keeps away: the read throws on the unknown type.
+      const unknown = await snapshotRows(db, "solo401k");
+      expect(() =>
+        computeTaxBucketBreakdown({ accounts: unknown }, [], []),
+      ).toThrow(TypeError);
+    } finally {
+      await done();
+    }
+  });
+}

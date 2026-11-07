@@ -19,7 +19,10 @@ import { describe, beforeAll, afterAll } from "vitest";
 import pg from "pg";
 import { runMigrator } from "../routers/fresh-install-cases";
 import { backupFenceCases } from "./backup-fence-cases";
-import { closedSetImportCases } from "./closed-set-import-cases";
+import {
+  closedSetImportCases,
+  unknownAccountTypeCases,
+} from "./closed-set-import-cases";
 
 describe.skipIf(skipWithoutPostgres)(
   "backup connections fence (PostgreSQL)",
@@ -59,5 +62,6 @@ describe.skipIf(skipWithoutPostgres)(
 
     backupFenceCases(fresh);
     closedSetImportCases(fresh);
+    unknownAccountTypeCases(fresh);
   },
 );

@@ -7,7 +7,10 @@ import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
-import { closedSetImportCases } from "./closed-set-import-cases";
+import {
+  closedSetImportCases,
+  unknownAccountTypeCases,
+} from "./closed-set-import-cases";
 
 async function fresh() {
   const { rawDb, sqlite, cleanup } = await createTestCaller();
@@ -25,6 +28,7 @@ describe("backup connections fence (SQLite)", () => {
 
 describe("closed-set values on import and restore (SQLite)", () => {
   closedSetImportCases(fresh);
+  unknownAccountTypeCases(fresh);
 });
 
 describe("an installation table with no column lists", () => {
