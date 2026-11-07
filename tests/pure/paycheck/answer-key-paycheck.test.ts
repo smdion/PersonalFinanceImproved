@@ -56,7 +56,7 @@ import {
   liabilityInput,
   limit,
 } from "../fixtures/paycheck-answer-key";
-import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { computeAnnualEarnings } from "@/lib/pure/household/household-income";
 import type {

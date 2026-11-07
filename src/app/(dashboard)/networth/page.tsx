@@ -112,8 +112,8 @@ export default function NetWorthPage() {
     if (!h || useMarketValue) return h;
     return h.map((row) => ({
       ...row,
-      houseValue: row.houseValueCostBasis ?? row.houseValue,
-      netWorth: row.netWorthCostBasis ?? row.netWorth,
+      houseValue: row.houseValueCostBasis,
+      netWorth: row.netWorthCostBasis,
     }));
   }, [historyData, useMarketValue]);
 
@@ -264,7 +264,7 @@ export default function NetWorthPage() {
         </p>
         {(() => {
           const today = liveSinceSnapshot?.estimate;
-          if (!today || !liveSinceSnapshot?.snapshotDate) return null;
+          if (!today || !liveSinceSnapshot.snapshotDate) return null;
           return (
             <p className="mt-1 text-sm opacity-80">
               ≈ {formatCurrency(displayNetWorth + today.change)} with current

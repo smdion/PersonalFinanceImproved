@@ -8,7 +8,8 @@
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
  *   tests/lint/violations.test.ts and tests/baseline/router-baseline-postgres.test.ts,
- *   and tests/baseline/__baseline__/** and __sync__/** (only deletions pass).
+ *   and tests/baseline/__baseline__/**, __sync__/** and __text__/** (only
+ *   deletions pass).
  *
  * A move or split is a redistribution, not a rise: each added file is matched
  * to the file its lines came from, and the counts of the files so joined are
@@ -74,6 +75,7 @@ export { RAISE };
 export const BASELINE_DIRS = [
   "tests/baseline/__baseline__",
   "tests/baseline/__sync__",
+  "tests/baseline/__text__",
 ];
 
 // ---------------------------------------------------------------------------
@@ -280,7 +282,7 @@ function notImportLines(
 
 type Moves = ReturnType<typeof structuralMoves>;
 
-/** A Mechanical commit's moved bodies and router splits (check-commit's own reading). */
+/** A Mechanical commit's moved bodies, router splits and stages (check-commit's own reading). */
 function movesOf(git: Git, sha: string): Moves {
   return structuralMoves(
     parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
@@ -295,14 +297,17 @@ const codeLines = (lines: string[]) =>
  * Owner Q14: a procedure body moved whole into a service function may raise
  * size entries by its import lines plus its signature, closing brace and the
  * router's one-line call; a router split (plan 42) by its imports plus the
- * new part's `export const … = createTRPCRouter({` / `});` and its one mount.
+ * new part's `export const … = createTRPCRouter({` / `});` and its one mount;
+ * a stage cut from a function (owner v0.10.3 Q1) by its imports, its
+ * signature, return and brace, and the call left in its place.
  * check-commit's own reading finds those moves (structuralMoves). Once they
  * are cut out of the joined files, what is left may rise by exactly its
  * import lines, counted in code lines (blank lines are layout); the moved
  * code itself may not grow. A function entry the moved body takes over
  * (`xRouter.summary.query()` → `computeX`, and the functions inside it)
  * may grow by the lines its signature and brace add over the router's
- * arrow, and nothing else. Returns undefined when that explains the rise,
+ * arrow, and nothing else; a stage's function by its moved lines and the
+ * lines it adds around them. Returns undefined when that explains the rise,
  * "" when no such move joins these files, else why not.
  */
 function structuralLines(
@@ -316,10 +321,11 @@ function structuralLines(
     joined.has(m.from) && joined.has(m.to);
   const bodies = moves.bodies.filter(inside);
   const routers = moves.routers.filter(inside);
-  if (bodies.length + routers.length === 0) return "";
-  const what = `${bodies.length} moved bod${bodies.length === 1 ? "y" : "ies"} and ${routers.length} router part(s)`;
+  const stages = moves.stages.filter(inside);
+  if (bodies.length + routers.length + stages.length === 0) return "";
+  const what = `${bodies.length} moved bod${bodies.length === 1 ? "y" : "ies"}, ${routers.length} router part(s) and ${stages.length} stage(s)`;
   const grew = [
-    ...bodies
+    ...[...bodies, ...stages]
       .filter((b) => b.bodyCode.new > b.bodyCode.old)
       .map((b) => `${b.name}'s body`),
     ...routers
@@ -343,7 +349,7 @@ function structuralLines(
     if (left === imports) return undefined;
     return `once check-commit's ${what} are cut out, the code lines left across ${[...joined].sort().join(", ")} change by ${left}, their import lines by ${imports} (they may differ by nothing)`;
   }
-  return functionsTakenOver(git, sha, rise, bodies, what);
+  return functionsTakenOver(git, sha, rise, bodies, what, stages);
 }
 
 /** The function-entry half of structuralLines. */
@@ -353,6 +359,7 @@ function functionsTakenOver(
   rise: Rise,
   bodies: Moves["bodies"],
   what: string,
+  stages: Moves["stages"],
 ): string | undefined {
   const empty: SizeBaseline = { files: {}, functions: {} };
   const read = (ref: string): SizeBaseline => {
@@ -360,41 +367,62 @@ function functionsTakenOver(
     return text === undefined ? empty : (JSON.parse(text) as SizeBaseline);
   };
   const [base, head] = [read(`${sha}^`), read(sha)];
+  const call = (k: string) => (k.endsWith(")") ? k : `${k}()`);
   const joined = rise.joined ?? [];
   const wasByName = new Map<string, number>();
   for (const f of joined)
     for (const [fn, n] of Object.entries(base.functions[f] ?? {}))
       wasByName.set(fn, Math.max(n, wasByName.get(fn) ?? 0));
-  // Each moved body's new function takes the entry of the arrow it left.
-  const takes = new Map<string, { was: string; extra: number }>();
-  for (const b of bodies) {
-    const text = treeAt(git, `${sha}^`)(b.from);
-    if (text === undefined) continue;
-    const key = [...functionEntries(b.from, text)].find(
+  // The base entry of the function a move starts in.
+  const keyAt = (m: Moves["bodies"][number]) => {
+    const text = treeAt(git, `${sha}^`)(m.from);
+    if (text === undefined) return undefined;
+    return [...functionEntries(m.from, text)].find(
       ([, at]) =>
-        at.line === b.start.line && at.character === b.start.character,
+        at.line === m.start.line && at.character === m.start.character,
     )?.[0];
+  };
+  // Each moved body's new function takes the entry of the arrow it left.
+  const takes = new Map<string, { limit: number; why: string }>();
+  for (const b of bodies) {
+    const key = keyAt(b);
     if (key === undefined) continue;
     const old = base.functions[b.from] ?? {};
     for (const k of Object.keys(old))
-      if (k === key || k.startsWith(`${key}.`))
+      if (k === key || k.startsWith(`${key}.`)) {
+        const extra =
+          k === key ? Math.max(0, b.wrapper.new - b.wrapper.old) : 0;
         takes.set(`${b.to}\0${b.name}${k.slice(key.length)}`, {
-          was: `${b.from}\0${k}`,
-          extra: k === key ? Math.max(0, b.wrapper.new - b.wrapper.old) : 0,
+          limit: old[k]! + extra,
+          why: `${call(k)} ${old[k]} +${extra} for its signature`,
+        });
+      }
+  }
+  // A stage's function is as long as the lines it took and the lines it
+  // adds around them; a function inside it keeps the entry it had in the
+  // function the stage left.
+  for (const s of stages) {
+    takes.set(`${s.to}\0${s.name}`, {
+      limit: s.body.old + s.wrapper.new,
+      why: `its ${s.body.old} moved lines +${s.wrapper.new} for its signature and return`,
+    });
+    const key = keyAt(s);
+    if (key === undefined) continue;
+    const old = base.functions[s.from] ?? {};
+    for (const k of Object.keys(old))
+      if (k.startsWith(`${key}.`))
+        takes.set(`${s.to}\0${s.name}${k.slice(key.length)}`, {
+          limit: old[k]!,
+          why: `${call(k)} ${old[k]}`,
         });
   }
   const problems: string[] = [];
-  const call = (k: string) => (k.endsWith(")") ? k : `${k}()`);
   for (const f of joined)
     for (const [fn, n] of Object.entries(head.functions[f] ?? {})) {
       const taken = takes.get(`${f}\0${fn}`);
       if (taken) {
-        const [wf, wk] = taken.was.split("\0") as [string, string];
-        const was = base.functions[wf]![wk]!;
-        if (n > was + taken.extra)
-          problems.push(
-            `${f} ${call(fn)}: ${n}, ${call(wk)} ${was} +${taken.extra} for its signature`,
-          );
+        if (n > taken.limit)
+          problems.push(`${f} ${call(fn)}: ${n}, ${taken.why}`);
         continue;
       }
       const was = base.functions[f]?.[fn] ?? wasByName.get(fn);
@@ -427,19 +455,6 @@ function importLinesOnly(
   return `rose +${rise.by} in a Mechanical: commit, which adds ${added} ${lines} across ${files.join(", ")} (a move or split rises by exactly those)`;
 }
 
-/**
- * Raises the owner approved whose trailer names only the ratchet file and
- * whose text names no entry; an entry goes once its commit is on main.
- */
-export const APPROVED_BEFORE_ENTRY_TRAILERS: Record<string, string[]> = {
-  e3768ddbe70c19c90d46273f6b222426c887c11d: [
-    "vitest.config.ts\0threshold statements",
-    "vitest.config.ts\0threshold branches",
-    "vitest.config.ts\0threshold functions",
-    "vitest.config.ts\0threshold lines",
-  ],
-};
-
 /** `This reverts commit <sha>` in a message → that sha. */
 const reverted = (message: string) =>
   /^This reverts commit ([0-9a-f]{7,40})\b/m.exec(message)?.[1];
@@ -468,7 +483,6 @@ export function checkRatchets(
     const mechanical = trailerValues(message, "Mechanical").length > 0;
     let read: Moves | undefined;
     const moves = () => (read ??= movesOf(git, sha));
-    const approved = APPROVED_BEFORE_ENTRY_TRAILERS[sha] ?? [];
     const undone = reverted(message);
     // A revert may put an entry back to its value before the reverted commit.
     let stillHigher: Set<string> | undefined;
@@ -485,12 +499,6 @@ export function checkRatchets(
       const renamedBy = renamedKeys.get(rise.id);
       if (renamedBy) {
         excused.push(`${where}, by "${KNOWN_RENAMED}: ${renamedBy.value}"`);
-        continue;
-      }
-      if (approved.includes(rise.id)) {
-        excused.push(
-          `${where}, by the owner's OK (named in check-ratchets.ts)`,
-        );
         continue;
       }
       if (stillHigher && !stillHigher.has(rise.id)) {

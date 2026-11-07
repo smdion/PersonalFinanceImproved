@@ -222,8 +222,8 @@ describe("Roth growth-vs-basis taxability — full pipeline", () => {
       const nqRoth = nq.individualAccountBalances.find(
         (a) => a.name === "Roth IRA",
       );
-      const nqWithdrawal = nqRoth?.withdrawal ?? 0;
-      const nqBasisDrawn = nqRoth?.rothBasisDrawn ?? 0;
+      const nqWithdrawal = nqRoth?.draw?.withdrawal ?? 0;
+      const nqBasisDrawn = nqRoth?.roth?.basisDrawn ?? 0;
       const grewthDrawnThisYear = nqWithdrawal - nqBasisDrawn;
       if (grewthDrawnThisYear > 1 && nq.taxCost != null && q.taxCost != null) {
         // Never lower -- acceptance criterion 9's "never decreases" clause.

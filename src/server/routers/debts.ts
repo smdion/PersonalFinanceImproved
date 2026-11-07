@@ -3,7 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/lib/utils/numbers";
+import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { debtKindSchema } from "@/lib/config/enum-values.schema";
 import { isCalendarDate } from "@/lib/utils/date";
@@ -52,17 +52,14 @@ export const debtsRouter = createTRPCRouter({
       const row = {
         ...d,
         balance: toNumber(d.balance),
-        purchasePrice:
-          d.purchasePrice == null ? null : toNumber(d.purchasePrice),
-        apiBalance: d.apiBalance == null ? null : toNumber(d.apiBalance),
+        purchasePrice: toNumberOrNull(d.purchasePrice),
+        apiBalance: toNumberOrNull(d.apiBalance),
         /** What's owed now: the pulled balance while one is set. */
         currentBalance: now.balance,
         currentBalanceAsOf: now.asOf,
-        originalAmount:
-          d.originalAmount == null ? null : toNumber(d.originalAmount),
-        interestRate: d.interestRate == null ? null : toNumber(d.interestRate),
-        monthlyPayment:
-          d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
+        originalAmount: toNumberOrNull(d.originalAmount),
+        interestRate: toNumberOrNull(d.interestRate),
+        monthlyPayment: toNumberOrNull(d.monthlyPayment),
         open: isOpenDebt(d, today),
       };
       return {

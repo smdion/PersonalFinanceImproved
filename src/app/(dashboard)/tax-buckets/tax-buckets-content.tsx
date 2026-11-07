@@ -227,8 +227,7 @@ export function TaxBucketsContent() {
     // retirement projection would disagree about the same account's
     // eligibility. `perPersonSettings` rides on the same query result.
     const ruleOf55OverrideByPersonId =
-      "perPersonSettings" in projectionQuery.data &&
-      projectionQuery.data.perPersonSettings
+      "perPersonSettings" in projectionQuery.data
         ? new Map(
             projectionQuery.data.perPersonSettings.map((ps) => [
               ps.personId,
@@ -240,12 +239,11 @@ export function TaxBucketsContent() {
     // when a still-active job ends.
     const birthYears = new Map(data.people.map((p) => [p.id, p.birthYear]));
     const retirementYearByPersonId =
-      "perPersonSettings" in projectionQuery.data &&
-      projectionQuery.data.perPersonSettings
+      "perPersonSettings" in projectionQuery.data
         ? new Map(
             projectionQuery.data.perPersonSettings.flatMap((ps) => {
               const by = birthYears.get(ps.personId);
-              return by != null && ps.retirementAge != null
+              return by != null
                 ? [[ps.personId, by + ps.retirementAge] as const]
                 : [];
             }),

@@ -471,7 +471,7 @@ export function Sidebar({
           ) : (
             <button
               onClick={() => {
-                onMobileClose?.();
+                onMobileClose();
                 signOut({ callbackUrl: "/" });
               }}
               className={`text-faint hover:bg-surface-elevated flex w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors hover:text-red-400 ${collapsed ? "md:justify-center" : ""}`}

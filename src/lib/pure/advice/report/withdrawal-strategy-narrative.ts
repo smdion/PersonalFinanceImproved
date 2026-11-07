@@ -71,7 +71,7 @@ function describeTierRate(
  * Human-readable "why was this account used" explanation for a year's
  * discretionary (beyond-Traditional-bracket-cap) withdrawal routing. Reads
  * directly off `EngineDecumulationYear.discretionaryTierBreakdown`
- * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) rather than
+ * (`RouteResult.tierBreakdown`, withdrawal-routing/types.ts) rather than
  * re-deriving the reasoning from dollar amounts.
  */
 export function formatDiscretionaryTierBreakdown(

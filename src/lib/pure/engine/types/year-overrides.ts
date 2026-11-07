@@ -21,7 +21,7 @@ export type LumpSum = {
    *  them apart. When set, the engine matches on (name, ownerName) before
    *  falling back to name alone, mirroring how `ContributionSpec.ownerName`
    *  already disambiguates the same collision for ongoing contributions
-   *  (`individual-account-tracking.ts`'s `buildSpecToAccountMapping`).
+   *  (`individual-accounts/contributions.ts`'s `buildSpecToAccountMapping`).
    *  Undefined ⇒ name-only match, unchanged behavior for every lump sum
    *  saved before this field existed. */
   targetOwnerName?: string;

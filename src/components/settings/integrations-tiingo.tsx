@@ -148,7 +148,7 @@ export function TiingoCard() {
           </div>
         )}
 
-        {testConnectionMut.isSuccess && testConnectionMut.data && (
+        {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
             tone={testConnectionMut.data.success ? "success" : "error"}
           >

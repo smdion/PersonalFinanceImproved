@@ -33,7 +33,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { ProfileSwitch } from "@/lib/pure/engine/types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { FALLBACK_CONTRIBUTION_RATE } from "@/lib/constants";
-import type { fetchRetirementData } from "./build-engine-payload";
+import type { fetchRetirementData } from "./load";
 import { retirementContributions } from "./retirement-contributions";
 import type { Db } from "@/lib/db";
 
@@ -144,9 +144,9 @@ export function buildProfileSwitches<
   const liveContribRows = allContribsRaw.map((c) => ({
     ...c,
     accountType: c.accountType as AccountCategory,
-    parentCategory: c.parentCategory ?? "",
-    taxTreatment: c.taxTreatment ?? "pre_tax",
-    employerMatchType: c.employerMatchType ?? null,
+    parentCategory: c.parentCategory,
+    taxTreatment: c.taxTreatment,
+    employerMatchType: c.employerMatchType,
     employerMatchValue: c.employerMatchValue
       ? String(c.employerMatchValue)
       : null,

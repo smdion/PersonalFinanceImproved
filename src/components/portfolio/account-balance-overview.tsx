@@ -63,7 +63,7 @@ export function AccountBalanceOverview() {
     const accountTypeRows = Array.from(byAccountType.entries())
       .sort((a, b) => b[1] - a[1])
       .map(([cat, amt]) => ({
-        label: ACCOUNT_TYPE_CONFIG[cat as AccountCategory]?.displayLabel ?? cat,
+        label: ACCOUNT_TYPE_CONFIG[cat as AccountCategory]?.displayLabel ?? cat, // A stored account type this version doesn't know shows as itself.
         amount: amt,
       }));
 

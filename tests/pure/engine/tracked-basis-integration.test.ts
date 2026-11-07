@@ -191,10 +191,10 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
         return acct
           ? {
               year: yr.year,
-              locked: acct.eligibilityLocked,
-              basisRemaining: acct.rothBasisRemaining,
-              basisDrawn: acct.rothBasisDrawn,
-              withdrawal: acct.withdrawal ?? 0,
+              locked: acct.draw?.eligibilityLocked,
+              basisRemaining: acct.roth?.basisRemaining,
+              basisDrawn: acct.roth?.basisDrawn,
+              withdrawal: acct.draw?.withdrawal ?? 0,
               balance: acct.balance,
             }
           : null;
@@ -274,28 +274,28 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
       );
       if (!acct) continue;
 
-      if (acct.rothBasisDrawn !== undefined) {
-        expect(acct.rothBasisDrawn).toBeLessThanOrEqual(
-          (acct.withdrawal ?? 0) + 0.01,
+      if (acct.roth?.basisDrawn !== undefined) {
+        expect(acct.roth?.basisDrawn).toBeLessThanOrEqual(
+          (acct.draw?.withdrawal ?? 0) + 0.01,
         );
-        expect(acct.rothBasisDrawn).toBeGreaterThanOrEqual(0);
+        expect(acct.roth?.basisDrawn).toBeGreaterThanOrEqual(0);
       }
 
       // Basis remaining never increases year-over-year (no new
       // contributions to this account post-retirement in this fixture).
       if (
         prevBasisRemaining !== undefined &&
-        acct.rothBasisRemaining !== undefined
+        acct.roth?.basisRemaining !== undefined
       ) {
         expect(
-          acct.rothContributionBasisRemaining! +
-            acct.rothConversionBasisRemaining!,
-        ).toBeCloseTo(acct.rothBasisRemaining!, 1);
-        expect(acct.rothBasisRemaining).toBeLessThanOrEqual(
+          acct.roth!.contributionBasisRemaining! +
+            acct.roth!.conversionBasisRemaining!,
+        ).toBeCloseTo(acct.roth!.basisRemaining!, 1);
+        expect(acct.roth?.basisRemaining).toBeLessThanOrEqual(
           prevBasisRemaining + 0.01,
         );
       }
-      prevBasisRemaining = acct.rothBasisRemaining;
+      prevBasisRemaining = acct.roth?.basisRemaining;
     }
   });
 });

@@ -33,8 +33,8 @@ import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
  * (`config.withdrawalOrder = [...o.withdrawalOrder]` below) — a partial
  * array reaches the engine intact otherwise, silently stranding real
  * balance in whichever category got left out (waterfall's category loop
- * only ever visits what's listed; bracket_filling's Phase 1 now does too,
- * see `withdrawal-routing.ts`'s `phase1Order`).
+ * only ever visits what's listed; so does bracket_filling's Phase 1,
+ * see `withdrawal-routing/bracket-filling.ts`'s `phase1Order`).
  *
  * Deliberately scoped to THIS function only, not a universal invariant on
  * `ResolvedDecumulationConfig` itself: `tests/pure/engine/

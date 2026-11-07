@@ -13,7 +13,7 @@ import {
   presetAssetClasses,
 } from "@/server/services/simulation/simulation-preset";
 import { computeCurrentStockAllocationPercent } from "@/lib/pure/simulation/stock-share";
-import { fetchRetirementData } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 
 describe("simulation presets", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;

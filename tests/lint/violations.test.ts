@@ -106,7 +106,7 @@ import {
 import { PERMISSIONS } from "@/lib/config/permissions";
 import { routePercentage } from "@/lib/pure/engine/contribution-routing";
 import { resolveAccumulationConfig } from "@/lib/pure/engine/override-resolution";
-import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing";
+import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing/percentage";
 import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import { validateContributionOrder } from "@/lib/pure/contributions/contribution-order";
@@ -1134,12 +1134,12 @@ function findBroadCitationViolations(): Violation[] {
 //      Jan-1 boundary) in any US zone. Fix: `parseLocalDateOnly(...)` or an
 //      explicit `Date.UTC(...)`.
 // Both fixes live in `src/lib/utils/date.ts`. `date.ts` itself documents
-// the anti-patterns; `paycheck.ts` builds payday strings with
+// the anti-patterns; `pay-periods-in-year.ts` builds payday strings with
 // `Date.UTC(...)` and reads them back the same way — internally
 // UTC-consistent, reviewed.
 const TZ_UNSAFE_DATE_EXEMPT = new Set<string>([
   "src/lib/utils/date.ts",
-  "src/lib/pure/paycheck/paycheck.ts",
+  "src/lib/pure/paycheck/pay-periods-in-year.ts",
 ]);
 const TZ_UNSAFE_DATE_PATTERN =
   /\.toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*(?:10|7)\s*\)|\.toISOString\(\)\s*\.\s*split\(\s*["']T["']\s*\)\s*\[\s*0\s*\]|new Date\(\s*["']\d{4}-\d{2}-\d{2}["']\s*\)/;

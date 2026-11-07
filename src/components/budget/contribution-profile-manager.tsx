@@ -4,7 +4,7 @@ import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
-import { takesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
+import { takesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
@@ -115,20 +115,19 @@ export function ContributionProfileManager({
 
   // Post-migration the active-profile setting always points at a real row;
   // useActiveContribProfile repairs it if that row ever goes missing.
-  const globalActiveContribId = activeContribId;
   // local selection -> active profile (single computation path)
   const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
     useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
       localSelection: selectedProfileId,
-      activeProfileId: globalActiveContribId,
+      activeProfileId: activeContribId,
     });
   const activeProfileName = profiles?.find(
-    (p) => p.id === globalActiveContribId,
+    (p) => p.id === activeContribId,
   )?.name;
   const isViewingNonActive =
     effectiveSelectedSource === "user-selection" &&
-    effectiveSelectedId !== globalActiveContribId;
+    effectiveSelectedId !== activeContribId;
 
   if (isLoading) {
     return (
@@ -234,7 +233,7 @@ export function ContributionProfileManager({
 
       {viewMode === "profiles" && (
         <>
-          {/* Viewing/Active/Pinned summary bar — same visual language as Budget/Savings Profiles */}
+          {/* Viewing/active summary bar — same visual language as Budget/Savings Profiles */}
           {displayedProfile && (
             <div className="bg-surface-sunken mb-4 flex items-center justify-between rounded-lg px-4 py-3">
               <div className="flex items-center gap-6">
@@ -304,7 +303,7 @@ export function ContributionProfileManager({
                   key={p.id}
                   name={p.name}
                   isSelected={!creatingNew && effectiveSelectedId === p.id}
-                  isActive={globalActiveContribId === p.id}
+                  isActive={activeContribId === p.id}
                   onSelect={() => {
                     setCreatingNew(false);
                     setSelectedProfileId(p.id);
@@ -472,7 +471,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
 
   return (
     <div>
-      {/* Profile header — Viewing/Active/Pinned state is already shown in the
+      {/* Profile header — the viewing/active state is already shown in the
           summary bar above; this just names which profile's detail this is. */}
       <div className="mb-4 flex items-center gap-2">
         <h3 className="text-primary text-sm font-semibold">{profile.name}</h3>
@@ -652,7 +651,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
             </thead>
             <tbody>
               {deductionRows.map((d: DeductionRow, rowIdx: number) => {
-                const activeFieldsRoot = (profile.contributionActiveFields ??
+                const activeFieldsRoot = (profile.contributionActiveFields ?? // Stored jsonb, typed by $type only: kept guarded.
                   {}) as ActiveFieldsRoot;
                 const af = activeFieldsRoot.deductions?.[String(d.id)] as
                   Record<string, unknown> | undefined;
@@ -936,8 +935,7 @@ function ProfileEditor({
               <tbody>
                 {baseData.accountDetails.map((ad) => {
                   const mVal = matchValues[String(ad.id)] ?? {};
-                  const effectiveMatchType =
-                    mVal.matchType ?? ad.liveMatchType ?? "none";
+                  const effectiveMatchType = mVal.matchType ?? ad.liveMatchType;
                   const hasMatch = effectiveMatchType !== "none";
                   const isPercentMatch =
                     effectiveMatchType === "percent_of_contribution";
@@ -983,7 +981,7 @@ function ProfileEditor({
                       </td>
                       <td className="text-secondary py-1.5">
                         <div className={isDisabled ? "line-through" : ""}>
-                          {ad.liveAccountName ?? ad.accountName}
+                          {ad.liveAccountName}
                         </div>
                         {!ad.liveIsActive && (
                           <div
@@ -1310,7 +1308,7 @@ function ProfileInlineEditor({
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: (row) => {
-      if (row.limitWarning !== undefined) setLimitWarning(row.limitWarning);
+      setLimitWarning(row.limitWarning);
       onSaved();
     },
   });
@@ -1346,7 +1344,7 @@ function ProfileInlineEditor({
 
   if (!profile) return null;
 
-  const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot;
+  const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot; // Stored jsonb, typed by $type only: kept guarded.
   const accountActiveFields = (id: number) =>
     root.contributionAccounts?.[String(id)] ?? {};
   const deductionActiveFields = (id: number) =>
@@ -1526,7 +1524,7 @@ function ProfileInlineEditor({
                   const isDisabled = af.isActive === false;
                   const isSaving =
                     setAccountFields.isPending &&
-                    setAccountFields.variables?.accountId === ad.id;
+                    setAccountFields.variables.accountId === ad.id;
                   const storedValue =
                     af.contributionValue !== undefined
                       ? String(af.contributionValue)
@@ -1593,7 +1591,7 @@ function ProfileInlineEditor({
                       </td>
                       <td className="text-secondary px-3 py-1.5">
                         <div className={isDisabled ? "line-through" : ""}>
-                          {ad.liveAccountName ?? ad.accountName}
+                          {ad.liveAccountName}
                         </div>
                         {!ad.liveIsActive && (
                           <div className="flex items-center gap-1.5">
@@ -1932,7 +1930,7 @@ function ProfileInlineEditor({
                 const storedName = d.deductionName;
                 const isSaving =
                   setDeductionFields.isPending &&
-                  setDeductionFields.variables?.deductionId === d.id;
+                  setDeductionFields.variables.deductionId === d.id;
                 return (
                   <tr
                     key={d.id}

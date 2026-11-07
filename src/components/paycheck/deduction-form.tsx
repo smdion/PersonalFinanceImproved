@@ -42,7 +42,7 @@ export function DeductionForm({
   const canSubmit = jobId != null && deductionName.trim().length > 0;
 
   const handleSubmit = () => {
-    if (!canSubmit || jobId == null) return;
+    if (!canSubmit) return;
     onSave({
       jobId,
       deductionName: deductionName.trim(),

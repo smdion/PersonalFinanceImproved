@@ -67,7 +67,7 @@ export function FundMiniChart({
           margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
           onClick={(state) => {
             if (
-              state?.activeTooltipIndex != null &&
+              state?.activeTooltipIndex != null && // Recharts' runtime props: kept guarded
               typeof state.activeTooltipIndex === "number" &&
               onClickMonth
             ) {
@@ -124,7 +124,7 @@ export function FundMiniChart({
 
           <RechartsTooltip
             content={({ active, payload, label }) => {
-              if (!active || !payload?.length) return null;
+              if (!active || !payload?.length) return null; // Recharts' runtime props: kept guarded
               const point = payload[0]?.payload as ChartDataPoint;
               const labelStr = String(label);
               const [y, m] = labelStr.split("-");
@@ -190,7 +190,7 @@ export function FundMiniChart({
                 payload: ChartDataPoint;
                 index: number;
               };
-              if (!payload?.events?.length) return <g key={index} />;
+              if (!payload?.events?.length) return <g key={index} />; // Recharts' runtime props: kept guarded
               const hasWithdrawal = payload.events.some(
                 (e: { amount: number }) => e.amount < 0,
               );

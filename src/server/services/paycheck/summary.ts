@@ -16,19 +16,14 @@ import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
-import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
+import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
-  bonusCheckContribution,
-  calculatePaycheck,
   checksPaidYtd,
   countPeriodsElapsed,
-  calculateBlendedAnnual,
-  withheldThroughPeriod,
-} from "@/lib/pure/paycheck/paycheck";
-import type { SalarySegment } from "@/lib/pure/paycheck/paycheck";
-import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
-import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
+} from "@/lib/pure/paycheck/pay-periods-in-year";
+import { withheldThroughPeriod } from "@/lib/pure/paycheck/year-schedule";
 import {
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
@@ -51,30 +46,24 @@ import {
   applyActiveBonusTerms,
   contributionPay,
 } from "@/lib/pure/household/compensation";
-import type {
-  DeductionLine,
-  TaxBracketInput,
-} from "@/lib/pure/paycheck/paycheck.types";
-import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
+import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household/household-income";
 import {
-  rothIraRouteOf,
-  rothIraSummary,
-} from "@/lib/pure/contributions/roth-ira";
-import {
   deductionLine,
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
-import { medicareLiabilityKey } from "@/lib/config/tax-params";
-import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
-import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
+import { householdTotals } from "@/server/services/paycheck/household-totals";
+import {
+  checkPaychecks,
+  yearEarnings,
+} from "@/server/services/paycheck/person-paycheck";
 
 export const zPaycheckSummaryInput = z
   .object({
@@ -97,30 +86,6 @@ export const zPaycheckSummaryInput = z
     sandboxContribAdditions: zSandboxContribAdditions,
   })
   .optional();
-
-/**
- * Annual-liability variant of buildBracketInput: same limits, but brackets
- * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (calculateHouseholdTax's own standardDeduction
- * subtraction was double-counting against the un-reshaped Pub 15-T
- * withholding brackets). Requires the standard (non-2c) row — the 2(c)
- * half-tables have no 1040 analogue.
- */
-export function buildLiabilityBracketInput(
-  bracketRow: typeof schema.taxBrackets.$inferSelect,
-  limits: Map<string, number>,
-): TaxBracketInput {
-  if (bracketRow.w4Checkbox) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message:
-        "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
-    });
-  }
-  // No yearBrackets: the liability path never reads w4Adjustment.
-  const base = buildBracketInput(bracketRow, limits, []);
-  return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
-}
 
 export async function computePaycheckSummary(
   ctx: { db: Db; scope: RequestScope },
@@ -550,130 +515,37 @@ export async function computePaycheckSummary(
         contribAccounts,
         paycheckInput,
       } = setup;
-      const paycheck = calculatePaycheck(paycheckInput);
-      // The pay-stub check compares one real check — what payroll
-      // actually deducts, the configured amounts — so a person over an
-      // IRS limit gets that check figured on the configured rows.
-      const configured = <T extends { cappedValue?: number }>(rows: T[]) =>
-        rows.map(({ cappedValue: _capped, ...r }) => r);
-      const paystubPaycheck = [...jobContribs, ...personalContribs].some(
-        (c) => (c.cap?.overBy ?? 0) > 0,
-      )
-        ? calculatePaycheck({
-            ...paycheckInput,
-            contributionAccounts: buildContribAccounts(
-              configured(jobContribs),
-              configured(personalContribs),
-              salary,
-              periodsPerYear,
-              ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
-              contributionPay(salary, bonusTerms, comp.bonusOverride)
-                .bonusGross,
-            ),
-          })
-        : null;
-      // The nominal formula figure, ignoring any current-year pin — lets
-      // the UI show "target" (formula) alongside "actual" (resolved)
-      // instead of only ever showing the resolved value.
-      const fullFormulaBonusEstimate =
-        paycheckInput.bonusOverride !== null
-          ? calculatePaycheck({ ...paycheckInput, bonusOverride: null })
-              .bonusEstimate
-          : paycheck.bonusEstimate;
-
-      // Blended annual computation. Salary is a flat number under the
-      // active Salary Profile — no mid-year timeline to blend across
-      // any more (see resolveCompensation's docblock), so this is
-      // always a single segment spanning the whole year; what's left of
-      // "blended" is folding in actual YTD performance data below.
-      // A last day later this year (the job is still current): its
-      // checks inside the year stop there.
-      const lastDay =
-        activeJob.endDate != null &&
-        Number(String(activeJob.endDate).slice(0, 4)) === taxYear
-          ? new Date(`${String(activeJob.endDate).slice(0, 10)}T12:00:00Z`)
-          : null;
-      const anchor = activeJob.anchorPayDate ?? activeJob.startDate;
-      let blendedAnnual: BlendedAnnualTotals | null = null;
-      {
-        // The checks it pays this year: from its start, to its last day.
-        const salarySegments: SalarySegment[] = [
-          {
-            salary,
-            effectiveDate: null,
-            startPeriod: 1 + paycheck.periodsBeforeStart,
-            endPeriod: lastDay
-              ? Math.min(
-                  periodsPerYear,
-                  countPeriodsElapsed(
-                    lastDay,
-                    activeJob.payPeriod!,
-                    new Date(anchor),
-                  ),
-                )
-              : periodsPerYear,
-            paycheck,
-          },
-        ];
-
-        blendedAnnual = calculateBlendedAnnual(salarySegments, taxBracketInput);
-      }
-
-      // This person's year: salary + the resolved bonus, pre-tax money
-      // and FICA wages — what the household tax and every income
-      // figure read (household annual income, DESIGN.md).
-      // This person's year: every job they had in it, each for the
-      // checks it pays inside the year — the current job from its
-      // start (to its last day when that's later this year), plus any
-      // job that ended this year (household-income.ts).
-      const currentJobYear = computeAnnualEarnings({
-        salary,
-        periodsPerYear,
+      const { paycheck, paystubPaycheck, fullFormulaBonusEstimate } =
+        checkPaychecks(
+          paycheckInput,
+          jobContribs,
+          personalContribs,
+          salary,
+          periodsPerYear,
+          limitsRecord,
+          person,
+          taxYear,
+          bonusTerms,
+          comp,
+        );
+      const {
+        blendedAnnual,
+        earnings,
+        endedWithheld,
+        bonusNotCounted,
+        yearPayNote,
+      } = yearEarnings(
+        activeJob,
+        taxYear,
         paycheck,
-        contributionAccounts: contribAccounts,
+        periodsPerYear,
+        salary,
+        taxBracketInput,
+        contribAccounts,
         deductions,
-        checks: lastDay
-          ? checksPaidYtd(
-              lastDay,
-              activeJob.payPeriod!,
-              anchor,
-              periodsPerYear,
-              activeJob.startDate,
-            )
-          : periodsPerYear - paycheck.periodsBeforeStart,
-        bonusPaid:
-          !paycheck.bonusBeforeStart &&
-          (lastDay === null ||
-            (paycheck.bonusPeriod !== null &&
-              paycheck.bonusPeriod <=
-                countPeriodsElapsed(
-                  lastDay,
-                  activeJob.payPeriod!,
-                  new Date(anchor),
-                ))),
-      });
-      const { endedJobs, endedYears, endedWithheld, undatedBonusEmployers } =
-        endedJobYears(person, activeJob.id);
-      // A job leaving this year whose bonus has no date: whether it's
-      // paid before the last day isn't known, so it isn't counted.
-      const bonusNotCounted = [
-        ...(lastDay && paycheck.bonusUndated ? [activeJob.employerName] : []),
-        ...undatedBonusEmployers,
-      ];
-      const earnings =
-        endedYears.length > 0
-          ? sumHouseholdIncome([currentJobYear, ...endedYears])
-          : currentJobYear;
-      // A job started this year with no earlier job counted: its pay
-      // before the start isn't in Ledgr.
-      const start = String(activeJob.startDate).slice(0, 10);
-      const yearPayNote =
-        paycheck.periodsBeforeStart > 0 && endedYears.length === 0
-          ? {
-              startDate: start,
-              missingEndedJob: endedJobs.length > 0,
-            }
-          : null;
+        endedJobYears,
+        person,
+      );
 
       const rawContribs = [...jobContribs, ...personalContribs];
       const budgetOverride = activeJob.budgetPeriodsPerMonth ?? null;
@@ -775,69 +647,20 @@ export async function computePaycheckSummary(
   const jointContribs = effectiveContribs.filter(
     (c) => c.isActive && c.ownership === "joint",
   );
-
-  // Household annual income and tax. Federal on the combined income
-  // with ONE standard deduction; FICA per person on FICA wages;
-  // Additional Medicare on the household's combined Medicare wages
-  // above the filing status's liability threshold.
-  // Everyone with pay this year — a current job, or one that ended.
-  const earners = results.filter((r) => r.earnings);
-  const householdIncome =
-    earners.length > 0
-      ? sumHouseholdIncome(earners.map((r) => r.earnings!))
-      : null;
-  // The household's tax-return filing status — the one the caps use
-  // (loadCapHousehold), never a W-4 on its own: a W-4 status is a
-  // withholding choice (married couples often pick Single).
-  const householdFilingStatus = capHousehold.filingStatus || null;
-  let householdTax = null;
-  if (earners.length > 0 && householdFilingStatus) {
-    const filingStatus = householdFilingStatus;
-    const bracketRow = allBrackets.find(
-      (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
-    );
-    if (bracketRow) {
-      householdTax = calculateHouseholdTax({
-        people: earners.map((r) => r.earnings!),
-        taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
-        medicareLiabilityThreshold:
-          limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
-      });
-    }
-  }
-
-  const rothIra = rothIraSummary({
-    // No one with a job → no Roth IRA view, as before.
-    filingStatus: earners.length > 0 ? householdFilingStatus : null,
+  const {
+    householdIncome,
+    householdFilingStatus,
+    householdTax,
+    rothIra,
+    hsaBuffers,
+  } = householdTotals(
+    results,
+    capHousehold,
+    allBrackets,
+    limitsMap,
+    limitsRecord,
     taxYear,
-    limits: limitsRecord,
-    people: results.map((r) => ({
-      personId: r.person.id,
-      name: r.person.name,
-      birthYear: Number(r.person.dateOfBirth.slice(0, 4)),
-      earnings: r.earnings,
-      jobAccountTypes: r.rawContribs
-        .filter((c) => c.jobId !== null)
-        .map((c) => c.accountType),
-      iraRoom:
-        r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)?.cap
-          ?.maxEmployee ?? null,
-      rothRoute: rothIraRouteOf(r.rawContribs),
-    })),
-  });
-
-  // Default cash to keep in each person's HSA: the year's HDHP minimum
-  // deductible for their coverage (from their HSA contribution account).
-  const hsaBuffers = hsaCashBuffers({
-    limits: limitsRecord,
-    people: results.map((r) => ({
-      personId: r.person.id,
-      hsaCoverageType:
-        r.rawContribs.find(
-          (c) => isHsaCategory(c.accountType) && c.hsaCoverageType,
-        )?.hsaCoverageType ?? null,
-    })),
-  });
+  );
 
   return {
     people: results,

@@ -60,7 +60,6 @@ function StrategyGuidePanel({
         {keys.map((key) => {
           const config =
             WITHDRAWAL_STRATEGY_CONFIG[key as WithdrawalStrategyType];
-          if (!config) return null;
           const { guide } = config;
           const isActive = key === activeStrategy;
           return (

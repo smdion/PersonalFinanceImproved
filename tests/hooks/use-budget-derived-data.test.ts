@@ -155,7 +155,10 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
   } as RawItem;
 
   it("matchContrib only sees the unlinked account's amount, not the linked account's too", () => {
-    setQuery("paycheck.computeSummary", { people: paycheckPeople });
+    setQuery("paycheck.computeSummary", {
+      people: paycheckPeople,
+      jointContribs: [],
+    });
     const { result } = setup(false, [linkedRBrokerage, unlinkedLtBrokerage]);
 
     // Only account id 3 (the unlinked one, $950) should be in the pool —
@@ -164,7 +167,10 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
   });
 
   it("getCatTotals never includes the fuzzy match — the linked item's own $0 wins, not the pool's $950", () => {
-    setQuery("paycheck.computeSummary", { people: paycheckPeople });
+    setQuery("paycheck.computeSummary", {
+      people: paycheckPeople,
+      jointContribs: [],
+    });
     const { result } = setup(false, [linkedRBrokerage, unlinkedLtBrokerage]);
 
     const [rTotal] = result.current.getCatTotals([linkedRBrokerage]);
@@ -172,7 +178,10 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
   });
 
   it("an unlinked item next to a linked item in the same category is not double-counted in the category total", () => {
-    setQuery("paycheck.computeSummary", { people: paycheckPeople });
+    setQuery("paycheck.computeSummary", {
+      people: paycheckPeople,
+      jointContribs: [],
+    });
     const { result } = setup(false, [linkedRBrokerage, unlinkedLtBrokerage]);
 
     const catTotal = result.current.getCatTotals([
@@ -192,7 +201,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
  * "payroll vs. net-level," but jobId only means "tied to this employer" —
  * the canonical signal for whether money actually comes out of THAT
  * paycheck is isPayrollDeducted (falling back to jobId presence only when
- * unset), matching src/lib/pure/paycheck/paycheck.ts and
+ * unset), matching src/lib/pure/paycheck/bonus.ts and
  * src/lib/pure/contributions/contribution-rows.ts. A job-tied account the user
  * explicitly marked "not payroll deducted" (funded manually from take-home
  * despite being associated with a job) was wrongly treated as payroll and
@@ -201,6 +210,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
 describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, not jobId alone", () => {
   it("includes a job-tied account explicitly marked isPayrollDeducted: false", () => {
     setQuery("paycheck.computeSummary", {
+      jointContribs: [],
       people: [
         {
           paycheck: {
@@ -235,6 +245,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
 
   it("still excludes a job-tied account with no explicit isPayrollDeducted override (falls back to jobId presence)", () => {
     setQuery("paycheck.computeSummary", {
+      jointContribs: [],
       people: [
         {
           paycheck: {

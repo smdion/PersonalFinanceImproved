@@ -215,8 +215,8 @@ describe("DecumulationRow smoke", () => {
     const ann401k = yr.individualAccountBalances!.find(
       (ia) => ia.name === "Ann 401k",
     )!;
-    expect(ann401k.withdrawal).toBeGreaterThan(0);
-    expect(ann401k.eligibilityLocked).toBe(false);
+    expect(ann401k.draw?.withdrawal).toBeGreaterThan(0);
+    expect(ann401k.draw?.eligibilityLocked).toBe(false);
     expect(row).toHaveTextContent(`-${formatCurrency(yr.totalWithdrawal)}`);
   });
 });

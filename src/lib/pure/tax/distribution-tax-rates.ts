@@ -120,7 +120,7 @@ export function buildDistributionTaxRates({
   // $150k MFJ / $75k Single/HoH/MFS. Separate lever from §63(f) above;
   // folded into the standard deduction alongside it in decumulation-year.ts
   // using LAST YEAR's MAGI as the phaseout basis (see
-  // obbba-senior-deduction.ts's docblock for why — same circularity IRMAA's
+  // return-deductions.ts's docblock for why — same circularity IRMAA's
   // 2-year lookback already breaks).
   //
   // Undefined-tolerant (bare `limitsMap[key]`, not `requireLimit`): OBBBA

@@ -3,7 +3,7 @@
  * ordinary tax brackets, the standard deduction, LTCG brackets, IRMAA
  * brackets. (ACA's 400%-FPL cliff is inflation-indexed too and gets the
  * same fix, but grown at its own single call site —
- * `checkAca`, `post-withdrawal-optimizer.ts` — via a `fplGrowthFactor`
+ * `checkAca`, `aca-check.ts` — via a `fplGrowthFactor`
  * multiplier rather than a `grow*` helper here.) An "outside the box" review
  * of engine-wide tax assumptions found that every one of these is resolved
  * once from a
@@ -87,7 +87,7 @@ export function growAmount(
  * Grows a W-4 withholding bracket table forward. Scales BOTH `threshold`
  * AND `baseWithholding` by the identical `growthFactor` — not `threshold`
  * alone. `estimateEffectiveTaxRate`'s real formula
- * (`tax-estimation.ts:101-107`) is
+ * (`tax-estimation.ts`) is
  * `tax = baseWithholding + (bracketIncome - threshold) * rate`; since
  * `baseWithholding` is itself `Σ rate_j·(threshold_{j+1} - threshold_j)`
  * — linear in the thresholds — scaling every threshold by `k` while
@@ -95,9 +95,8 @@ export function growAmount(
  * `tax(k·x) = k·tax(x)`, so scaling `baseWithholding` by the same `k`
  * keeps every bracket's cumulative tax correct. Scaling `threshold`
  * without `baseWithholding` (or vice versa) computes wrong cumulative tax
- * at every bracket above the first — verified by direct derivation
- * before this was written, not asserted on faith (see
- * this module's test file for the executable proof).
+ * at every bracket above the first (this module's test file holds the
+ * executable proof).
  */
 export function growWithholdingBrackets(
   brackets: WithholdingBracket[],

@@ -7,9 +7,10 @@ import { expenseEndingFactor } from "../expense-endings";
 import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
+import { firstYearStatedNeed } from "./stated-need";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
-import { buildSpecToAccountMapping } from "../individual-account-tracking";
+import { buildSpecToAccountMapping } from "../individual-accounts/contributions";
 import { resolveReturnRateForAge } from "../growth-application";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
@@ -57,16 +58,10 @@ export function runPreYearSetup(
 
   const age = input.currentAge + yearIndex;
   const year = input.asOfDate.getFullYear() + yearIndex;
-  // Treat yearIndex=0 as a final partial accumulation year when the household
-  // retires mid-calendar-year (retirementYear is this year and the as-of
-  // date is before year-end). This defers decumulation to yearIndex=1 so that
-  // accumulation-year.ts can pro-rate contributions and growth by
-  // firstYearFraction before the phase boundary is crossed.
-  const isAccumulation =
-    year < input.retirementYear ||
-    (yearIndex === 0 &&
-      year === input.retirementYear &&
-      ctx.firstYearFraction < 1);
+  // A mid-year retirement defers decumulation to year 1, so
+  // accumulation-year.ts pro-rates year 0's contributions and growth by
+  // firstYearFraction before the phase boundary.
+  const { isAccumulation } = yearPhase(input, year, yearIndex, ctx);
 
   // Get return rate for this age (fall back to closest configured age at
   // or below it, floored at MIN_RETURN_RATE) -- shared with the
@@ -92,7 +87,7 @@ export function runPreYearSetup(
       // Update contribution rate ceiling for the new profile
       state.accumulationDefaults.contributionRate = ps.contributionRate;
       // Rebuild spec-to-account mapping for the new specs
-      if (hasIndividualAccounts && state.contributionSpecs) {
+      if (hasIndividualAccounts) {
         const rebuilt = buildSpecToAccountMapping(
           state.contributionSpecs,
           indAccts,
@@ -289,9 +284,8 @@ export function runPreYearSetup(
       (w) => w.start === year || w.end === year,
     );
 
-  // Hoisted above the expenses block (was originally computed just before
-  // the strategy dispatch below) — the Rate-Seeded year-1 seed needs the
-  // starting balance available at seed time, not after. Retirement money
+  // Computed before the expenses block: the Rate-Seeded year-1 seed needs
+  // the starting balance at seed time. Retirement money
   // only: Portfolio-parented accounts never fund retirement spending, so a
   // balance-sized strategy (Guyton-Klinger, Constant %, Endowment, …) or the
   // rate seed must not size spending from them.
@@ -306,38 +300,19 @@ export function runPreYearSetup(
   const { allAccountsBalance: totalBalance, retirementBalance } =
     scopedBalances(state.balances, nonRetirement);
 
-  // Reset expenses to decumulation budget on the FIRST decumulation year.
-  // Do NOT key on `year === retirementYear`: that check fails in the mid-year
-  // case (retiring in the first year) because by yearIndex=1 the year has
-  // already passed it. Instead, fire exactly once on the first year
-  // isAccumulation is false, tracked by state.decumulationExpensesSet.
-  // Budget values are in today's dollars -- inflate to retirement-year nominal
-  // dollars using CPI (inflationRate), NOT the post-retirement raise rate.
-  const decumulationExpensesJustSet =
-    !isAccumulation &&
-    !state.decumulationExpensesSet &&
-    (input.decumulationAnnualExpenses != null ||
-      input.rateSeededDecumulationYear1 === true);
-  if (decumulationExpensesJustSet) {
-    // Rate-Seeded scenario: ignore the stated
-    // budget entirely for year 1 -- seed from the household's Initial
-    // Withdrawal Rate × starting balance instead. Every strategy's ongoing
-    // per-year mechanism (applySpendingStrategy below, unchanged) evolves
-    // this exactly the same way it evolves a budget-seeded year 1 -- this
-    // only changes where the number starts.
-    state.projectedExpenses = input.rateSeededDecumulationYear1
-      ? roundToCents(
-          input.decumulationDefaults.withdrawalRate * retirementBalance,
-        )
-      : input.decumulationAnnualExpenses! * inflation.growth(yearIndex);
-    // budgetOnlyExpenses seeds identically -- a rate-seeded run has no
-    // independent "budget" concept to track (it deliberately ignores the
-    // budget entirely), so both start from the same rate-seed value; for
-    // a normal run this is the same budget-derived number projectedExpenses
-    // just got, before anything downstream can mutate the latter.
-    state.budgetOnlyExpenses = state.projectedExpenses;
-    state.decumulationExpensesSet = true;
-  }
+  // Fires once, on the first year that isn't a working year (a mid-year
+  // retirement included); the budget is grown to then by CPI, not by the
+  // post-retirement raise.
+  const { decumulationExpensesJustSet } = seedRetirementSpending(
+    isAccumulation,
+    state,
+    input,
+    retirementBalance,
+    inflation,
+    yearIndex,
+    ctx,
+    year,
+  );
 
   // Apply budget override (sticky-forward) or inflate expenses
   // Use post-retirement raise rate for expense growth after retirement.
@@ -468,4 +443,63 @@ export function runPreYearSetup(
     gapYear,
     savingStopped,
   };
+}
+
+/** Whether this year runs as a working year. UD-02 (pending decision D3),
+ *  today's behaviour: retiring in year 0 after its start runs it as a
+ *  pro-rated working year; any other retirement year runs whole. */
+function yearPhase(
+  input: ProjectionContext["input"],
+  year: number,
+  yearIndex: number,
+  ctx: ProjectionContext,
+) {
+  const isAccumulation =
+    year < input.retirementYear ||
+    (yearIndex === 0 &&
+      year === input.retirementYear &&
+      ctx.firstYearFraction < 1);
+
+  return { isAccumulation };
+}
+
+/** The first retirement year's spending, set once. UD-01 (pending D2): only
+ *  a working year 0 is pro-rated (contributions, match, growth, and a gap
+ *  year's draw: budget × its share, goal-draws.ts); a retirement year 0 runs whole. */
+function seedRetirementSpending(
+  isAccumulation: boolean,
+  state: ProjectionLoopState,
+  input: ProjectionContext["input"],
+  retirementBalance: number,
+  inflation: ProjectionContext["inflation"],
+  yearIndex: number,
+  ctx: ProjectionContext,
+  year: number,
+) {
+  const decumulationExpensesJustSet =
+    !isAccumulation &&
+    !state.decumulationExpensesSet &&
+    (input.decumulationAnnualExpenses != null ||
+      input.rateSeededDecumulationYear1 === true);
+  if (decumulationExpensesJustSet) {
+    // Rate-Seeded: year 1 is the Initial Withdrawal Rate × starting balance,
+    // not the budget. Strategies evolve it as they would a budget-seeded
+    // year 1; only the starting number differs.
+    state.projectedExpenses = input.rateSeededDecumulationYear1
+      ? roundToCents(
+          input.decumulationDefaults.withdrawalRate * retirementBalance,
+        )
+      : input.decumulationAnnualExpenses! * inflation.growth(yearIndex);
+    // budgetOnlyExpenses seeds identically (a rate-seeded run has no budget
+    // to track), before anything downstream changes projectedExpenses.
+    state.budgetOnlyExpenses = state.projectedExpenses;
+    state.decumulationExpensesSet = true;
+    state.firstDecumulationYearStatedNeed = firstYearStatedNeed(
+      ctx,
+      year,
+      yearIndex,
+    );
+  }
+
+  return { decumulationExpensesJustSet };
 }

@@ -44,8 +44,7 @@ interface QcdPersonInput {
    *  Timing note: the caller reads this balance
    *  live from `indBal` at QCD-computation time, before this year's
    *  growth runs (QCD runs first) — time-equivalent to the RMD
-   *  snapshot's own timing for a fresh projection year. Pre-existing
-   *  engine behavior, not introduced by this module. */
+   *  snapshot's own timing for a fresh projection year. */
   iraTraditionalBalance: number;
 }
 

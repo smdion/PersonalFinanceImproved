@@ -184,13 +184,13 @@ export function PerformanceTable({
               );
             // Sort active accounts first, inactive after
             const activeAccts = yearAccountsAll.filter((a) => {
-              const master = masterAccounts?.find(
+              const master = masterAccounts.find(
                 (m) => m.id === a.performanceAccountId,
               );
               return master ? master.isActive : true;
             });
             const inactiveAccts = yearAccountsAll.filter((a) => {
-              const master = masterAccounts?.find(
+              const master = masterAccounts.find(
                 (m) => m.id === a.performanceAccountId,
               );
               return master ? !master.isActive : false;

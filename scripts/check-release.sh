@@ -30,8 +30,10 @@ if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
   step "constraint snapshot" pnpm -s check:constraints
   for t in tests/routers/demo-postgres.test.ts tests/routers/fresh-install-postgres.test.ts \
     tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts \
+    tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts \
+    tests/routers/match-rate-writes-postgres.test.ts tests/integration/backup-fence-postgres.test.ts \
     tests/routers/seeded-postgres.test.ts \
-    tests/baseline/router-baseline-postgres.test.ts; do
+    tests/baseline/router-baseline-postgres.test.ts tests/baseline/pins-postgres.test.ts; do
     step "PostgreSQL: $t" pnpm -s test "$t"
   done
 else

@@ -23,8 +23,8 @@ export async function GET() {
     }
     if (
       !allowDev &&
-      session?.user?.role !== "admin" &&
-      !session?.user?.permissions.includes("version")
+      session?.user.role !== "admin" &&
+      !session?.user.permissions.includes("version")
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

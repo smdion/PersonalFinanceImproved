@@ -336,12 +336,6 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      # better-sqlite3 builds from source for this Node; the Playwright image
-      # has no compiler.
-      - name: Build tools for native modules
-        if: env.RUN == 'true'
-        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends build-essential python3 >/dev/null
-
       - run: pnpm install --frozen-lockfile
         if: env.RUN == 'true'
 
@@ -510,8 +504,9 @@ jobs:
   # hold on PostgreSQL (16, the version installs run): migrations from
   # empty, the demo profiles (PostgreSQL schemas), a fresh install, a
   # seeded router subset with the backup round trip (in three parts by
-  # household, SEEDED_SHARD), and the router baseline. Each part has its
-  # own throwaway service database; every test step drops and rebuilds it.
+  # household, SEEDED_SHARD), the router baseline, and the pins v0.10.3
+  # added (pins). Each part has its own throwaway service database; every
+  # test step drops and rebuilds it.
   postgres-suites:
     runs-on: ubuntu-latest
     needs: changes
@@ -519,7 +514,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [install, seeded-1, seeded-2, seeded-3, baseline]
+        part: [install, seeded-1, seeded-2, seeded-3, baseline, pins]
 
     env:
       RUN: ${{ needs.changes.outputs.code }}
@@ -603,6 +598,10 @@ jobs:
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts tests/routers/match-rate-writes-postgres.test.ts
 
+      - name: Backup connections fence on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/integration/backup-fence-postgres.test.ts
+
       - name: Seeded routers and backup round trip on PostgreSQL
         if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))
         run: pnpm test tests/routers/seeded-postgres.test.ts
@@ -614,6 +613,12 @@ jobs:
       - name: Router baseline on PostgreSQL (same numbers as SQLite)
         if: env.RUN == 'true' && (matrix.part == 'baseline')
         run: pnpm test tests/baseline/router-baseline-postgres.test.ts
+
+      # The pins v0.10.3 added (sync preview, finalizeYear's writes, the
+      # engine's text), compared with the files SQLite pins.
+      - name: Added baseline pins on PostgreSQL (same figures as SQLite)
+        if: env.RUN == 'true' && (matrix.part == 'pins')
+        run: pnpm test tests/baseline/pins-postgres.test.ts
 
   # The required check `PostgreSQL`: every part above succeeded.
   postgres:

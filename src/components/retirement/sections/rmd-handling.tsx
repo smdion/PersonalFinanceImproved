@@ -44,8 +44,8 @@ export function RmdHandlingSection({
   upsertSettings,
   isEditable,
 }: Props) {
-  const rmdExcessHandling = settings?.rmdExcessHandling ?? "reinvest";
-  const rmdExcessTarget = settings?.rmdExcessTargetPerformanceAccountId ?? null;
+  const rmdExcessHandling = settings.rmdExcessHandling;
+  const rmdExcessTarget = settings.rmdExcessTargetPerformanceAccountId ?? null;
   // Unspent RMD money is retirement money: only active Retirement
   // brokerages can receive it.
   const { data: perfAccounts } =
@@ -56,12 +56,12 @@ export function RmdHandlingSection({
       tracksCostBasis(p.accountType) &&
       isRetirementParent(p.parentCategory),
   );
-  const qcdMaximize = settings?.qcdMaximize ?? false;
-  const rmdSmoothingEnabled = settings?.rmdSmoothingEnabled ?? false;
+  const qcdMaximize = settings.qcdMaximize;
+  const rmdSmoothingEnabled = settings.rmdSmoothingEnabled;
   const rmdSmoothingMaxBracketTarget = String(
     Number(
-      settings?.rmdSmoothingMaxBracketTarget ??
-        settings?.rothBracketTarget ??
+      settings.rmdSmoothingMaxBracketTarget ??
+        settings.rothBracketTarget ??
         "0.24",
     ),
   );
@@ -94,7 +94,6 @@ export function RmdHandlingSection({
             <select
               value={rmdExcessHandling}
               onChange={(e) => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
                     rmdExcessHandling: e.target.value,
@@ -132,7 +131,6 @@ export function RmdHandlingSection({
                 value={rmdExcessTarget ?? ""}
                 aria-label="Reinvested RMD money goes to"
                 onChange={(e) => {
-                  if (!settings) return;
                   upsertSettings.mutate(
                     buildSettingsPatch(settings, {
                       rmdExcessTargetPerformanceAccountId: e.target.value
@@ -173,7 +171,6 @@ export function RmdHandlingSection({
           <div className="font-medium">
             <button
               onClick={() => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
                     qcdMaximize: !qcdMaximize,
@@ -208,7 +205,6 @@ export function RmdHandlingSection({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                if (!settings) return;
                 const enabling = !rmdSmoothingEnabled;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
@@ -236,7 +232,6 @@ export function RmdHandlingSection({
               <select
                 value={rmdSmoothingMaxBracketTarget}
                 onChange={(e) => {
-                  if (!settings) return;
                   upsertSettings.mutate(
                     buildSettingsPatch(settings, {
                       rmdSmoothingMaxBracketTarget: e.target.value,

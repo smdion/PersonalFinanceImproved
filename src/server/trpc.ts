@@ -168,7 +168,7 @@ export function internalCtx(ctx: Context): Context {
 
 /** Extract display label from OIDC/local session user. */
 export function getSessionUserLabel(session: Session): string {
-  return session.user.name ?? session.user.email ?? "unknown";
+  return session.user.name ?? session.user.email ?? "unknown"; // OIDC may send neither
 }
 
 function logMutation(session: Session, path: string, rawInput: unknown) {
@@ -320,7 +320,7 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
  * by that would put every simultaneous demo visitor in ONE shared bucket
  * instead of separate per-visitor ones (and raising the limit would raise
  * a SHARED ceiling for the whole demo instance). Fall back to IP in that
- * case, matching the public limiter's own per-visitor granularity.
+ * case, as the public limiter does. Runs before the auth check: user may be absent.
  */
 export async function resolveAuthenticatedRateLimitKey(
   ctx: Context,
@@ -398,7 +398,7 @@ export const expensiveRateLimitMiddleware = t.middleware(
       return next({ ctx });
     }
 
-    const key = ctx.session?.user?.id
+    const key = ctx.session?.user?.id // runs before the auth check
       ? `expensive:${ctx.session.user.id}:${path}`
       : `expensive:${await getRateLimitKey()}:${path}`;
     const { success, firstExceedance } = rateLimit(

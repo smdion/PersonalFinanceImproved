@@ -2,7 +2,7 @@
 
 /** Contribution row UI: displays a single contribution's summary/edit view with tax treatment, method, employer match fields, and an add-contribution form. */
 
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { mergedMatchRate } from "@/lib/pure/contributions/employer-match";
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -64,7 +64,7 @@ export function ContributionRow({
   onUpdate?: (updates: Record<string, unknown>) => void;
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const cfg = ACCOUNT_TYPE_CONFIG[c.accountType as AccountCategory];
+  const cfg = ACCOUNT_TYPE_CONFIG[c.accountType as AccountCategory]; // A stored account type this version doesn't know has no config.
   const hasCoverage =
     cfg?.irsLimitKeys && "coverageVariant" in cfg.irsLimitKeys;
 
@@ -422,7 +422,7 @@ export function ContributionRow({
                 </div>
                 <InlineText
                   label=""
-                  value={String(c.allocationPriority ?? 0)}
+                  value={String(c.allocationPriority)}
                   placeholder="0"
                   onSave={(val) =>
                     onUpdate?.({ allocationPriority: parseInt(val, 10) || 0 })

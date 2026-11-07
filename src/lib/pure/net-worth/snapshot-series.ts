@@ -48,7 +48,7 @@ export function stackedSeries(snapshots: readonly StackedSnapshot[]): {
     for (const { key } of series) row[key] = 0;
     for (const a of s.byAccount) {
       const k = kept.has(a.key) ? a.key : OTHER;
-      row[k] = ((row[k] as number) ?? 0) + a.amount;
+      row[k] = ((row[k] as number | undefined) ?? 0) + a.amount;
     }
     return row;
   });

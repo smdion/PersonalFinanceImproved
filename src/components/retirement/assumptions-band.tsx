@@ -144,8 +144,7 @@ export function AssumptionsBand({
 
   if (settings.profileId == null) return null;
   const profileId = settings.profileId;
-  const strategyKey = (settings.withdrawalStrategy ??
-    "fixed") as WithdrawalStrategyType;
+  const strategyKey = settings.withdrawalStrategy as WithdrawalStrategyType;
   const strategyMeta = getStrategyMeta(strategyKey);
   const isMultiPerson = perPersonSettings && perPersonSettings.length > 1;
 
@@ -236,7 +235,7 @@ export function AssumptionsBand({
             <HelpTip text="How long your money needs to last. Higher = more safety margin." />
           </span>
           <InlineEdit
-            value={String(settings.ownEndAge ?? settings.endAge)}
+            value={String(settings.ownEndAge)}
             onSave={(v) => {
               const n = parseInt(v, 10);
               if (isNaN(n)) return;

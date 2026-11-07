@@ -28,10 +28,13 @@ import {
   exportBackup,
   importBackup,
   restoreVersion,
+  tablesLostOnRestore,
   type BackupData,
 } from "@/lib/db/version-logic";
 
 type TestCtx = Awaited<ReturnType<typeof createTestCaller>>;
+
+const asAdmin = { asAdmin: true };
 
 /** Every versioned table's rows, ordered by id where there is one. */
 async function snapshotTables(db: TestCtx["rawDb"]) {
@@ -123,7 +126,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
       JSON.stringify(await exportBackup(a.rawDb)),
     ) as BackupData;
 
-    const result = await importBackup(b.rawDb, backup);
+    const result = await importBackup(b.rawDb, backup, asAdmin);
     const nonEmpty = Object.values(before).filter((r) => r.length > 0);
     expect(result.restoredRows).toBe(
       nonEmpty.reduce((n, rows) => n + rows.length, 0),
@@ -143,7 +146,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
         backup.tables[table] as { tax_year: number }[]
       ).filter((r) => r.tax_year !== newest);
 
-    await importBackup(b.rawDb, backup);
+    await importBackup(b.rawDb, backup, asAdmin);
     const after = await exportBackup(b.rawDb);
     for (const table of ["contribution_limits", "tax_params"])
       expect(
@@ -160,7 +163,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
     );
     a.db.run(sql`DELETE FROM mc_presets WHERE key = 'aggressive'`);
     const before = await snapshotTables(a.rawDb);
-    await importBackup(b.rawDb, await exportBackup(a.rawDb));
+    await importBackup(b.rawDb, await exportBackup(a.rawDb), asAdmin);
     const after = await snapshotTables(b.rawDb);
     for (const t of SIMULATION_PRESET_TABLES)
       expect(after[t], t).toEqual(before[t]);
@@ -169,7 +172,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
   it("import of a backup with no preset rows gets the shipped presets", async () => {
     const backup = await exportBackup(a.rawDb);
     for (const t of SIMULATION_PRESET_TABLES) backup.tables[t] = [];
-    await importBackup(b.rawDb, backup);
+    await importBackup(b.rawDb, backup, asAdmin);
     const after = await snapshotTables(b.rawDb);
     const shipped = readSimulationPresetsFile();
     for (const t of SIMULATION_PRESET_TABLES)
@@ -179,7 +182,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
   it("import replaces existing data rather than merging into it", async () => {
     await seedPerson(b.db, "Stale Person", "1980-01-01");
     const backup = await exportBackup(a.rawDb);
-    await importBackup(b.rawDb, backup);
+    await importBackup(b.rawDb, backup, asAdmin);
     const people = await snapshotTables(b.rawDb).then((t) => t.people!);
     expect(people.map((p) => (p as { name: string }).name).sort()).toEqual([
       "Second Person",
@@ -203,7 +206,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
     d.run(sql`UPDATE people SET name = 'Renamed'`);
     await seedPerson(d, "Added After", "2000-01-01");
 
-    await restoreVersion(a.rawDb, version.id);
+    await restoreVersion(a.rawDb, version.id, asAdmin);
     expect(await snapshotTables(a.rawDb)).toEqual(before);
   });
 
@@ -213,7 +216,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
       type: "manual",
       createdBy: "test",
     });
-    await restoreVersion(a.rawDb, version.id);
+    await restoreVersion(a.rawDb, version.id, asAdmin);
     const maxId = Math.max(
       ...(await snapshotTables(a.rawDb)).people!.map(
         (p) => (p as { id: number }).id,
@@ -221,5 +224,88 @@ describe("Backup Round-Trip (real version-logic)", () => {
     );
     const newId = await seedPerson(a.db, "After Restore", "1995-01-01");
     expect(newId).toBeGreaterThan(maxId);
+  });
+});
+
+// The installation's own connections: someone who isn't an admin (a holder
+// of the backup permission) imports or restores the household's data and
+// keeps today's credentials (links and an admin's: ./backup-fence-cases).
+describe("Backup connections fence", () => {
+  let a: TestCtx;
+  let b: TestCtx;
+  const notAdmin = { asAdmin: false };
+
+  function connect(db: TestCtx["db"], service: string, serverUrl: string) {
+    db.insert(sqliteSchema.apiConnections)
+      .values({
+        service,
+        config: { serverUrl, apiKey: `key-${service}`, budgetSyncId: "s-1" },
+      })
+      .run();
+  }
+  const connections = async (db: TestCtx["rawDb"]) =>
+    (await snapshotTables(db)).api_connections;
+  const names = async (db: TestCtx["rawDb"]) =>
+    (await snapshotTables(db))
+      .people!.map((p) => (p as { name: string }).name)
+      .sort();
+
+  beforeEach(async () => {
+    a = await createTestCaller();
+    b = await createTestCaller();
+    await seedHousehold(a.db);
+    connect(a.db, "actual", "http://10.0.0.66:5007");
+    await seedPerson(b.db, "Stale Person", "1980-01-01");
+    connect(b.db, "actual", "https://actual.installation.example");
+    connect(b.db, "ynab", "https://api.ynab.com");
+  });
+
+  afterEach(() => {
+    a.cleanup();
+    b.cleanup();
+  });
+
+  it("an import by someone who isn't an admin keeps today's credentials and brings the household", async () => {
+    const kept = await connections(b.rawDb);
+    const backup = JSON.parse(
+      JSON.stringify(await exportBackup(a.rawDb)),
+    ) as BackupData;
+    expect(backup.tables.api_connections).toHaveLength(1);
+
+    await importBackup(b.rawDb, backup, notAdmin);
+    expect(await connections(b.rawDb)).toEqual(kept);
+    expect(await names(b.rawDb)).toEqual(["Second Person", "Test Person"]);
+  });
+
+  it("an import by someone who isn't an admin keeps today's credentials when the backup has none", async () => {
+    const kept = await connections(b.rawDb);
+    const backup = await exportBackup(a.rawDb);
+    backup.tables.api_connections = [];
+    await importBackup(b.rawDb, backup, notAdmin);
+    expect(await connections(b.rawDb)).toEqual(kept);
+  });
+
+  it("a restore by someone who isn't an admin keeps today's credentials and brings the household back", async () => {
+    const version = await createVersion(a.rawDb, {
+      name: "before edit",
+      type: "manual",
+      createdBy: "test",
+    });
+    a.db.run(sql`DELETE FROM api_connections`);
+    connect(a.db, "actual", "https://actual.changed.example");
+    a.db.run(sql`UPDATE people SET name = 'Renamed'`);
+    const kept = await connections(a.rawDb);
+
+    await restoreVersion(a.rawDb, version.id, notAdmin);
+    expect(await connections(a.rawDb)).toEqual(kept);
+    expect(await names(a.rawDb)).toEqual(["Second Person", "Test Person"]);
+  });
+
+  it("the data-loss warning names the connections only for an admin", async () => {
+    const without = VERSION_TABLE_NAMES.filter((t) => t !== "api_connections");
+    const lost = async (by: { asAdmin: boolean }) =>
+      (await tablesLostOnRestore(b.rawDb, without, by)).map((t) => t.tableName);
+    expect(await lost(asAdmin)).toEqual(["api_connections"]);
+    expect(await lost(notAdmin)).toEqual([]);
   });
 });

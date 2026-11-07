@@ -88,7 +88,6 @@ export function makePersonSettings(
     retirementAge: 65,
     endAge: 95,
     salaryAnnualIncrease: "0.03",
-    withdrawalRate: "0.04",
     socialSecurityMonthly: "2000",
     socialSecurityPia: null,
     ssStartAge: 67,

@@ -324,6 +324,11 @@ export const ACCOUNT_TYPE_CONFIG = {
   },
 } as const satisfies Record<string, AccountTypeConfig>;
 
+/** The config by stored category text, which can be any string: undefined
+ *  for one this version doesn't know. */
+const CONFIG_BY_TEXT: Partial<Record<string, AccountTypeConfig>> =
+  ACCOUNT_TYPE_CONFIG;
+
 /** An account category: one key of `ACCOUNT_TYPE_CONFIG`. */
 export type AccountCategory = keyof typeof ACCOUNT_TYPE_CONFIG;
 
@@ -377,7 +382,7 @@ export function getDisplayConfig(
   displayLabel: string;
   employerContribKind: "match" | "discount";
 } {
-  const cfg = ACCOUNT_TYPE_CONFIG[accountType as AccountCategory];
+  const cfg = CONFIG_BY_TEXT[accountType];
   if (!cfg)
     return {
       hasDiscountBar: false,
@@ -438,7 +443,7 @@ export function getAllCategories(): AccountCategory[] {
 export function getEngineCategories(): AccountCategory[] {
   return getAllCategories().filter(
     (c) =>
-      ACCOUNT_TYPE_CONFIG[c].participatesInEngine &&
+      ACCOUNT_TYPE_CONFIG[c].participatesInEngine && // config: a category set false drops out
       !ACCOUNT_TYPE_CONFIG[c].engineParent,
   );
 }
@@ -489,7 +494,7 @@ export function getRothFraction(
   const cfg = ACCOUNT_TYPE_CONFIG[category];
   if (!cfg.supportsRothSplit) return 0;
   const lookupKey =
-    cfg.irsLimitGroup && cfg.irsLimitGroup !== category
+    cfg.irsLimitGroup && cfg.irsLimitGroup !== category // config: a group may be unset
       ? (cfg.irsLimitGroup as AccountCategory)
       : category;
   return taxSplits[lookupKey] ?? 0;
@@ -514,28 +519,23 @@ export function isOverflowTarget(category: AccountCategory): boolean {
  * Get the limit group for a category (for shared IRS limits like 401k/403b).
  */
 export function getLimitGroup(category: string): string | null {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.irsLimitGroup ?? null;
+  return CONFIG_BY_TEXT[category]?.irsLimitGroup ?? null;
 }
 
 /** The sub-type holding employer match money for a category, if it tracks one. */
 export function getEmployerMatchSubType(category: string): string | null {
-  const cfg: AccountTypeConfig | undefined =
-    ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.employerMatchSubType ?? null;
+  return CONFIG_BY_TEXT[category]?.employerMatchSubType ?? null;
 }
 
 /** Check if a category tracks cost basis (after-tax accounts like brokerage). */
 export function tracksCostBasis(category: string): boolean {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.balanceStructure === "basis_tracking";
+  return CONFIG_BY_TEXT[category]?.balanceStructure === "basis_tracking";
 }
 
 /** Check if a category's Roth balance can carry a basis entry (401k/403b/ira —
  *  anything with a Traditional/Roth split). Mirrors tracksCostBasis(). */
 export function tracksRothBasis(category: string): boolean {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.balanceStructure === "roth_traditional";
+  return CONFIG_BY_TEXT[category]?.balanceStructure === "roth_traditional";
 }
 
 /** Identity checks, kept for the callers not yet on behavior fields
@@ -552,8 +552,7 @@ export function isIraCategory(category: string): boolean {
 /** Rule of 55 can apply (IRC §72(t)(2)(A)(v)): the employer-plan
  *  early-access rule. False for a category not in the config. */
 export function isRuleOf55EligibleCategory(category: string): boolean {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.earlyAccessRule === "employer_plan";
+  return CONFIG_BY_TEXT[category]?.earlyAccessRule === "employer_plan";
 }
 
 /** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */
@@ -606,8 +605,7 @@ export function getDisplayGroup(category: AccountCategory): DisplayGroup {
 
 /** Check if an account category belongs to the Retirement parent category (by account type config). */
 export function isRetirementCategory(category: string): boolean {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg ? cfg.parentCategory === "Retirement" : false;
+  return CONFIG_BY_TEXT[category]?.parentCategory === "Retirement";
 }
 
 /** Check if a parentCategory DB column value is Retirement. Use this when checking the stored/user-editable field, not account type config. */

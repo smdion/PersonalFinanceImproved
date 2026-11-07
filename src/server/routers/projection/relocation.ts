@@ -22,10 +22,8 @@ import { calculateProjection } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
-import {
-  fetchRetirementData,
-  buildEnginePayload,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { buildDecumulationDefaults } from "./_shared";
 import { safeDivide } from "@/lib/utils/math";
 import {
@@ -39,8 +37,8 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
-import { buildCategoryRecord } from "@/lib/config/account-types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
+import { firstRow } from "@/lib/utils/first-row";
 
 /** Router's large-purchase input is zod-nullable, not optional-undefined like
  *  `RelocationPurchaseInput` — convert once so every call site shares the
@@ -151,19 +149,16 @@ export const relocationProjectionRouter = createTRPCRouter({
         .select()
         .from(schema.projectionOverrides)
         .where(eq(schema.projectionOverrides.overrideType, "accumulation"));
-      const dbAccumulationOverrides = ((accumOverrideRows[0]
-        ?.overrides as Record<string, unknown>[]) ??
-        []) as AccumulationOverride[];
+      const dbAccumulationOverrides = ((accumOverrideRows[0]?.overrides as
+        Record<string, unknown>[] | undefined) ?? []) as AccumulationOverride[];
 
       const deaccumOverrideRows = await ctx.db
         .select()
         .from(schema.projectionOverrides)
         .where(eq(schema.projectionOverrides.overrideType, "decumulation"));
-      const dbDecumulationOverrides = ((deaccumOverrideRows[0]
-        ?.overrides as Record<string, unknown>[]) ??
-        []) as DecumulationOverride[];
+      const dbDecumulationOverrides = ((deaccumOverrideRows[0]?.overrides as
+        Record<string, unknown>[] | undefined) ?? []) as DecumulationOverride[];
 
-      // Resolve annual expenses from budget profiles.
       const currentProfile = data.allBudgetProfiles.find(
         (p) => p.id === input.currentProfileId,
       );
@@ -287,9 +282,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         input.yearAdjustments.map((a) => [a.year, a.monthlyExpenses]),
       );
       const baseMonthly = relocationAnnualExpenses / 12;
-      const inflationRate = toNumber(
-        relocPayload.settings.annualInflation ?? 0,
-      );
+      const inflationRate = toNumber(relocPayload.settings.annualInflation);
       const currentAge = currentPayload.age;
       const retirementAge = planRetirementAgeOf(relocPayload.baseEngineInput);
       // Expense schedules are keyed to the ENGINE's year 0 (the snapshot's
@@ -382,15 +375,13 @@ export const relocationProjectionRouter = createTRPCRouter({
             // (its latest age step by then), else as capped today.
             ageStepAt(relocPayload.activeAgeSteps, moveYear) ?? {
               year: moveYear,
-              contributionSpecs: relocBase.contributionSpecs ?? [],
+              contributionSpecs: relocBase.contributionSpecs,
               employerMatchRateByCategory:
                 relocBase.employerMatchRateByCategory,
               // Never borrow the current profile's amounts: they also feed
               // brokerage intentional-contribution detection every year.
-              baseYearContributions:
-                relocBase.baseYearContributions ?? buildCategoryRecord(() => 0),
-              baseYearEmployerMatch:
-                relocBase.baseYearEmployerMatch ?? buildCategoryRecord(() => 0),
+              baseYearContributions: relocBase.baseYearContributions,
+              baseYearEmployerMatch: relocBase.baseYearEmployerMatch,
               employerMatchByParentCat: relocBase.employerMatchByParentCat,
               contributionRate: relocBase.accumulationDefaults.contributionRate,
             },
@@ -412,7 +403,6 @@ export const relocationProjectionRouter = createTRPCRouter({
         accumulationOverrides: dbAccumulationOverrides,
         decumulationOverrides: dbDecumulationOverrides,
       });
-      if (!currentResult) return null;
 
       const relocResult = calculateProjection({
         ...relocPayload.baseEngineInput,
@@ -421,7 +411,6 @@ export const relocationProjectionRouter = createTRPCRouter({
         accumulationOverrides: dbAccumulationOverrides,
         decumulationOverrides: dbDecumulationOverrides,
       });
-      if (!relocResult) return null;
 
       // --- Summary scalars ---
       const currentAccRows = currentResult.projectionByYear.filter(
@@ -501,7 +490,7 @@ export const relocationProjectionRouter = createTRPCRouter({
       // --- Binary search for earliest safe relocation year ---
       const probeViable = (rowIdx: number): boolean => {
         const probeResult = runMovingIn(currentAccRows[rowIdx]!.year);
-        return probeResult != null && assessPlan(probeResult).succeeded;
+        return assessPlan(probeResult).succeeded;
       };
 
       let earliestRelocateYear: number | null = null;
@@ -576,27 +565,25 @@ export const relocationProjectionRouter = createTRPCRouter({
           blendedBalanceAtRetirement = relocationBalanceAtRetirement;
         } else {
           const blended = runMovingIn(moveYear);
-          if (blended) {
-            const accRows = blended.projectionByYear.filter(
-              (r) => r.phase === "accumulation",
-            );
-            blendedBalanceAtRetirement = accRows.at(-1)?.retirementBalance ?? 0;
-            blendedRows = accRows.map((row) => {
-              const moved = row.year >= moveYear;
-              return {
-                year: row.year,
-                age: Math.floor(row.age),
-                balance: row.retirementBalance,
-                contribution: row.totalEmployee + row.totalEmployer,
-                expenses: row.projectedExpenses,
-                phase: moved ? ("relocation" as const) : ("current" as const),
-                hasAdjustment: moved && adjustmentYears.has(row.year),
-                largePurchaseImpact: moved
-                  ? (largePurchaseImpactByYear.get(row.year) ?? 0)
-                  : 0,
-              };
-            });
-          }
+          const accRows = blended.projectionByYear.filter(
+            (r) => r.phase === "accumulation",
+          );
+          blendedBalanceAtRetirement = accRows.at(-1)?.retirementBalance ?? 0;
+          blendedRows = accRows.map((row) => {
+            const moved = row.year >= moveYear;
+            return {
+              year: row.year,
+              age: Math.floor(row.age),
+              balance: row.retirementBalance,
+              contribution: row.totalEmployee + row.totalEmployer,
+              expenses: row.projectedExpenses,
+              phase: moved ? ("relocation" as const) : ("current" as const),
+              hasAdjustment: moved && adjustmentYears.has(row.year),
+              largePurchaseImpact: moved
+                ? (largePurchaseImpactByYear.get(row.year) ?? 0)
+                : 0,
+            };
+          });
         }
       }
 
@@ -612,7 +599,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         projectionRows,
         blendedRows,
         blendedBalanceAtRetirement,
-        inflationRate: toNumber(currentPayload.settings.annualInflation ?? 0),
+        inflationRate: toNumber(currentPayload.settings.annualInflation),
         // The year "today's dollars" deflate to: the calendar year, as on
         // the Retirement page (use-projection-state), so the two agree.
         baseYear: ctx.scope.asOf.getFullYear(),
@@ -645,13 +632,13 @@ export const relocationProjectionRouter = createTRPCRouter({
             })
             .where(eq(schema.relocationScenarios.id, input.id))
             .returning()
-            .then((r) => r[0]);
+            .then(firstRow);
         }
         return ctx.db
           .insert(schema.relocationScenarios)
           .values({ name: input.name, params: input.params })
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

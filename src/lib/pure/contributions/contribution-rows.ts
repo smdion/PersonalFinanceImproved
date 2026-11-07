@@ -10,7 +10,7 @@ import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   bonusCheckContribution,
   isPaidThroughPayroll,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/bonus";
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
 
 /**

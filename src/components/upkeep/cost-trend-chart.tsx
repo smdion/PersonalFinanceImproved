@@ -60,6 +60,7 @@ export function CostTrendChart({
           <RechartsTooltip
             cursor={{ fill: "rgba(148,163,184,0.12)" }}
             formatter={(value, _name, item) => {
+              // Recharts' runtime props, not our types: kept guarded.
               const p = item?.payload as {
                 usage: number | null;
                 costPerUnit: number | null;

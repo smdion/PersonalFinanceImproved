@@ -1023,6 +1023,82 @@ describe("checkRatchets: a body or a router split moved whole (owner Q14)", () =
       expect.stringMatching(/which adds 3 import lines/),
     ]);
   });
+
+  const YEAR = "src/year.ts";
+  const STAGE = "src/stage.ts";
+  const vs = (from: number, to: number, edit = (l: string) => l) =>
+    Array.from({ length: to - from }, (_, k) =>
+      edit(`const v${from + k} = load(a, ${from + k});`),
+    );
+  const yearFn = (inner: string[], extraImports: string[] = []) => [
+    'import { load } from "./lib";',
+    ...extraImports,
+    "",
+    "export function runYear(ctx: { a: number }) {",
+    "  const a = ctx.a;",
+    ...inner.map((l) => `  ${l}`),
+    "  return v449 + v899;",
+    "}",
+  ];
+  let longYear = "";
+  const staged = (
+    stageBody = vs(0, 450).map((l) => `  ${l}`),
+    vStage = 454,
+  ) => {
+    git("checkout", "-q", "-B", "stage", longYear);
+    write(
+      YEAR,
+      yearFn(
+        ["const { v449 } = vStage(a);", ...vs(450, 900)],
+        ['import { vStage } from "./stage";'],
+      ),
+    );
+    write(STAGE, [
+      'import { load } from "./lib";',
+      "",
+      "export function vStage(a: number) {",
+      ...stageBody,
+      "",
+      "  return { v449 };",
+      "}",
+    ]);
+    record([YEAR, STAGE], {
+      [YEAR]: { runYear: 455 },
+      [STAGE]: { vStage },
+    });
+    commit(
+      "refactor: the v stage\n\nMechanical: stage cut\nRatchet-raise: size-baseline.json — src/stage.ts +20; src/stage.ts vStage +10, a stage",
+    );
+  };
+
+  it("passes a stage cut (owner v0.10.3 Q1): imports, signature, return, brace and call, its entry its moved lines and those", () => {
+    git("checkout", "-q", "-B", "stage-base", base);
+    write(YEAR, yearFn(vs(0, 900)));
+    record([YEAR], { [YEAR]: { runYear: 904 } });
+    longYear = commit("chore: a long year");
+    staged();
+    const report = checkRatchets(longYear, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining("files src/stage.ts, src/year.ts"),
+      expect.stringContaining("src/stage.ts vStage"),
+    ]);
+
+    // A blank line inside: the code lines balance, the entry doesn't.
+    const inner = vs(0, 450).map((l) => `  ${l}`);
+    staged([...inner.slice(0, 5), "", ...inner.slice(5)], 455);
+    expect(checkRatchets(longYear, "HEAD", dir).failures).toEqual([
+      expect.stringContaining(
+        "src/stage.ts vStage(): 455, its 450 moved lines +4 for its signature and return",
+      ),
+    ]);
+    // A statement edited on the way: no stage, so only imports.
+    staged(vs(0, 450, (l) => `  ${l.replace("a, 7)", "a, 8)")}`));
+    expect(checkRatchets(longYear, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(/files .*: 914 .*which adds 2 import lines/),
+      expect.stringMatching(/functions .*: 909 .*adds 0 lines of import/),
+    ]);
+  });
 });
 
 describe("checkRatchets: Known-renamed", () => {

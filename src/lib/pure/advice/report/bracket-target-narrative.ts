@@ -29,7 +29,7 @@ function findCandidate(
 
 /** Inputs for `describeBracketCeilingMath` — the pieces
  *  `incomeCapForMarginalRate`/`routeWithdrawalsBracketFilling`
- *  (withdrawal-routing.ts, tax-estimation.ts) already computed for this
+ *  (withdrawal-routing/caps.ts, tax-estimation.ts) already computed for this
  *  year: `bracketTraditionalCap` (the resolved dollar room left for
  *  Traditional withdrawals — engine field of the same name) and
  *  `taxableSS` (the IRS-provisional-income taxable portion of Social
@@ -59,7 +59,7 @@ export function describeBracketCeilingMath(
 ): string | undefined {
   if (!input || input.standardDeduction == null) return undefined;
   // `bracketTraditionalCap` is already clamped to >= 0 upstream
-  // (computeBracketTraditionalCap, withdrawal-routing.ts) — when taxable SS
+  // (computeBracketTraditionalCap, withdrawal-routing/caps.ts) — when taxable SS
   // alone exceeds the bracket's real income cap, the cap clamps to 0 and
   // that information (how far over it SS pushed things) is gone.
   // Reconstructing incomeCap as bracketTraditionalCap + taxableSS in that

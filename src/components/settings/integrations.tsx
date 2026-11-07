@@ -128,7 +128,7 @@ function ServiceCard({
   });
   const fetchBudgetsMut = trpc.sync.fetchYnabBudgets.useMutation({
     onSuccess: (data) => {
-      if (data.success && data.budgets) {
+      if (data.success) {
         setYnabBudgets(data.budgets);
         // Auto-select if only one budget
         const first = data.budgets[0];
@@ -469,7 +469,7 @@ function ServiceCard({
         )}
 
         {/* Test result */}
-        {testConnectionMut.isSuccess && testConnectionMut.data && (
+        {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
             tone={testConnectionMut.data.success ? "success" : "error"}
           >
@@ -482,7 +482,7 @@ function ServiceCard({
         )}
 
         {/* Sync result */}
-        {syncAllMut.isSuccess && syncAllMut.data && (
+        {syncAllMut.isSuccess && (
           <div className="space-y-0.5">
             <ConnectionResultMessage tone="success">
               Pulled {syncAllMut.data.counts.accounts} accounts,{" "}

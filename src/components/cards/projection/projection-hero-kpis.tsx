@@ -144,18 +144,18 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   } = state;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
-  const alreadyRetired = currentAge >= (engineSettings?.retirementAge ?? 999);
+  const alreadyRetired = currentAge >= engineSettings.retirementAge;
   const retYear = alreadyRetired
     ? result.projectionByYear[0]
     : result.projectionByYear.find(
-        (yr) => yr.age === engineSettings?.retirementAge,
+        (yr) => yr.age === engineSettings.retirementAge,
       );
   const retPt = retYear ? getPersonYearTotals(retYear) : null;
   // The household's figure is the engine's retirement money — the same one
   // the dashboard shows (baselineNestEgg); a person filter shows theirs.
   const household = baselineNestEgg(
     result.projectionByYear,
-    alreadyRetired ? currentAge : (engineSettings?.retirementAge ?? currentAge),
+    alreadyRetired ? currentAge : engineSettings.retirementAge,
   );
   const nestEgg =
     retYear && retPt
@@ -199,9 +199,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   const nestEggDisplay = simulatedOrBaseline({
     bands: mcBands,
     baseline: nestEgg,
-    targetAge: alreadyRetired
-      ? currentAge
-      : (engineSettings?.retirementAge ?? currentAge),
+    targetAge: alreadyRetired ? currentAge : engineSettings.retirementAge,
     personFiltered: isPersonFiltered,
   });
   // A non-default simulation preset is named next to the range.
@@ -259,8 +257,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   if (mc) {
     // MC-primary hero
     const hasBudgetStability = mc.budgetStabilityRate !== null;
-    const retSpan =
-      (engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65);
+    const retSpan = engineSettings.endAge - engineSettings.retirementAge;
 
     // The long-horizon tip used to blanket-suggest
     // "a lower withdrawal rate (3-3.5%)" — accurate advice for the budget-
@@ -268,8 +265,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     // RMD-Based Spending (IRS-formula-driven), and the real knob for
     // Constant %/Endowment/Vanguard Dynamic is their own Strategy Params
     // field, not the Initial Withdrawal Rate this tooltip sits near.
-    const activeStrategy = (engineSettings?.withdrawalStrategy ??
-      "fixed") as WithdrawalStrategyType;
+    const activeStrategy =
+      engineSettings.withdrawalStrategy as WithdrawalStrategyType;
     const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
     const longHorizonTip =
       strategyMeta.incomeSource === "formula"
@@ -284,7 +281,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         <KpiCard
           label="Portfolio Survival"
           tooltip={[
-            `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings?.endAge ?? "?"} — a ${retSpan}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
+            `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings.endAge} — a ${retSpan}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
             "90%+ — Strong. Most planners consider this the target.",
             "75–89% — Moderate. Workable but with meaningful risk.",
             "Below 75% — Elevated risk. Review your assumptions.",
@@ -461,7 +458,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         <div className="text-caption text-faint mt-1">
           {alreadyRetired
             ? `${result.projectionByYear[0]?.year} (today's $)`
-            : `In ${yearOfAge(engineSettings?.retirementAge ?? currentAge)}`}
+            : `In ${yearOfAge(engineSettings.retirementAge)}`}
         </div>
       </KpiCard>
 

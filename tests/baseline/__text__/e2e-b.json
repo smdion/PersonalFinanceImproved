@@ -1,0 +1,8122 @@
+{
+ "accountDepletions": [
+  {
+   "category": "401k",
+   "subType": "roth"
+  },
+  {
+   "category": "403b",
+   "subType": "traditional"
+  },
+  {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
+   "category": "ira",
+   "subType": "traditional"
+  },
+  {
+   "category": "ira",
+   "subType": "roth"
+  }
+ ],
+ "projectionByYear": [
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "gapDraw": {
+    "slots": [
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "401k"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "403b"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "ira"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "hsa"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "brokerage"
+     }
+    ]
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "savingStopped": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "gapDraw": {
+    "slots": [
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "401k"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "403b"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "ira"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "hsa"
+     },
+     {
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "category": "brokerage"
+     }
+    ]
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation",
+   "savingStopped": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ]
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    },
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "strategyAction": "vpw_cap",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "strategyAction": "vpw_cap",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "strategyAction": "vpw_cap",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "strategyAction": "vpw_cap",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "strategyAction": "vpw_cap",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "strategyAction": "vpw_cap",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  }
+ ]
+}

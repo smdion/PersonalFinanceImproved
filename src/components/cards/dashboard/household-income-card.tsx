@@ -32,7 +32,7 @@ function HouseholdIncomeCardImpl() {
         null)
       : null;
 
-  const people = data?.people?.filter((d) => d.paycheck) ?? [];
+  const people = data?.people.filter((d) => d.paycheck) ?? [];
   const periods = (d: (typeof people)[0]) =>
     isYtd
       ? Math.max(

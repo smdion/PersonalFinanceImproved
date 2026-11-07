@@ -10,7 +10,7 @@
  * This file is the one place that runs under a REAL behind-UTC zone
  * (America/Chicago, UTC-5 in September) so that class of bug has an actual
  * chance to fail a test. Kept as its own file (not mirrored into
- * tests/helpers/date.test.ts etc.) so the env-var override can't leak into
+ * tests/utils/date.test.ts etc.) so the env-var override can't leak into
  * unrelated tests via ordering — Node's `Date` local getters/constructor
  * read `process.env.TZ` live, so flipping it in beforeAll/afterAll here is
  * enough; no extra mocking library needed.

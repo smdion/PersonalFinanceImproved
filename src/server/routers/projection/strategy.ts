@@ -49,7 +49,7 @@ import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo
 import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
 import {
   interpolateAllocations,
-  geometricMean,
+  weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
@@ -152,12 +152,7 @@ export const strategyRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = mcAssetClasses.reduce((sum, ac) => {
-          const w = allocations[ac.id] ?? 0;
-          return w > 0
-            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
-            : sum;
-        }, 0);
+        const blended = weightedGeometricRate(mcAssetClasses, allocations);
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
@@ -179,7 +174,7 @@ export const strategyRouter = createTRPCRouter({
 
       const userStrategyParams = buildStrategyParams(settings);
       const activeStrategy =
-        (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
+        settings.withdrawalStrategy as WithdrawalStrategyType;
 
       // Resolved ONCE for the whole request — every candidate below spreads
       // this and overrides only withdrawalStrategy/strategyParams, so the
@@ -450,17 +445,12 @@ export const strategyRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = mcAssetClasses.reduce((sum, ac) => {
-          const w = allocations[ac.id] ?? 0;
-          return w > 0
-            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
-            : sum;
-        }, 0);
+        const blended = weightedGeometricRate(mcAssetClasses, allocations);
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
 
       const activeStrategy =
-        (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
+        settings.withdrawalStrategy as WithdrawalStrategyType;
       const strategyMeta = getStrategyMeta(activeStrategy);
       const userStrategyParams = buildStrategyParams(settings);
       const activeParams = userStrategyParams[activeStrategy] ?? {};
@@ -504,13 +494,9 @@ export const strategyRouter = createTRPCRouter({
       });
       const baseline = {
         successRate: baselineMc.successRate,
-        // Coalesce to 0 so downstream comparisons and arithmetic never see null.
-        // A null stability rate means the metric wasn't computable; treating it
-        // as 0 conservatively flags it for the smoothness diagnosis path.
+        // The budget rate when computable, else the spending rate.
         stabilityRate:
-          baselineMc.budgetStabilityRate ??
-          baselineMc.spendingStabilityRate ??
-          0,
+          baselineMc.budgetStabilityRate ?? baselineMc.spendingStabilityRate,
       };
 
       // --- Diagnose ---
@@ -698,7 +684,7 @@ export const strategyRouter = createTRPCRouter({
             const delta = rounded - ssStartAgeBaseline;
             variantInput = { ...variantInput, ssStartAge: rounded };
 
-            if (perPersonSettings && perPersonSettings.length > 1) {
+            if (perPersonSettings.length > 1) {
               // Multi-person: the engine reads
               // `socialSecurityEntries[].startAge`, not the scalar. Rebuild
               // the entries with every claiming age shifted by `delta` via
@@ -720,7 +706,7 @@ export const strategyRouter = createTRPCRouter({
               // AMOUNT responds to the claiming age (delayed-retirement
               // credits), so recompute it; a non-PIA household's flat
               // `socialSecurityMonthly` genuinely doesn't (the old model).
-              const solo = perPersonSettings?.[0];
+              const solo = perPersonSettings[0];
               const soloPia = parseAnnualPia(solo?.socialSecurityPia);
               if (solo && soloPia != null) {
                 variantInput = {

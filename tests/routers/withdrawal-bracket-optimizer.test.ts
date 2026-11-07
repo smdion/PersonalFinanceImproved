@@ -20,10 +20,8 @@ import { createTestCaller, adminSession, seedStandardDataset } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";

@@ -61,10 +61,9 @@ interface RmdEnforcementResult {
    *  exposure, not a display nicety: the same shortfall this function
    *  already prices into the `RMD SHORTFALL` warning string's 25% excise
    *  tax estimate, just also exposed as a number so the UI can show it
-   *  without parsing a warning string. Possible now that the Portfolio-parented
-   *  exclusion can leave
-   *  Retirement-only Traditional capacity genuinely insufficient to cover
-   *  a real RMD requirement. */
+   *  without parsing a warning string. The Portfolio-parented exclusion can
+   *  leave Retirement-only Traditional capacity genuinely insufficient to
+   *  cover a real RMD requirement. */
   rmdShortfallAmount: number;
 }
 
@@ -72,12 +71,6 @@ interface RmdEnforcementResult {
 // Main
 // ---------------------------------------------------------------------------
 
-/**
- * Enforce IRS Required Minimum Distribution on Traditional withdrawals.
- *
- * Mutates `slots` in place (adds RMD shortfall to existing slots or creates
- * new ones). Returns updated totals and diagnostic info.
- */
 /** What routing drew from Traditional money itself: the total's slots
  *  less any single-bucket (HSA) draw, which isn't Traditional for an RMD. */
 function routedTraditionalDraw(slots: DecumulationSlot[]): number {
@@ -93,6 +86,12 @@ function routedTraditionalDraw(slots: DecumulationSlot[]): number {
   );
 }
 
+/**
+ * Enforce IRS Required Minimum Distribution on Traditional withdrawals.
+ *
+ * Mutates `slots` in place (adds RMD shortfall to existing slots or creates
+ * new ones). Returns updated totals and diagnostic info.
+ */
 export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
   const { age, rmdStartAge, priorYearEndTradBalance, slots, acctBal } = input;
   let { totalTraditionalWithdrawal, totalWithdrawal } = input;
@@ -187,16 +186,9 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
             lastSlot = slot;
             lastCat = cat;
           }
-          // Assign rounding residual to last category -- capped at that
-          // category's own remaining capacity (`residual` here used
-          // to always be rounding-cents-scale, since totalTradBal covered
-          // the full blended balance and could always absorb the whole
-          // shortfall; now that capacity can be genuinely, non-trivially
-          // less than rmdShortfall (Retirement-only scoping), blindly
-          // force-feeding the full residual into the last touched account
-          // would silently exceed its capacity and defeat the cap this
-          // function exists to enforce -- a real bug caught by a direct
-          // repro during this session, not a hypothetical).
+          // Rounding residual to the last category, capped at its remaining
+          // capacity: with Retirement-only scoping the residual isn't always
+          // cents and must not overfill the last account.
           const residual = roundToCents(rmdShortfall - distributed);
           if (residual > 0 && lastSlot && lastCat) {
             const lastCatCapacity =

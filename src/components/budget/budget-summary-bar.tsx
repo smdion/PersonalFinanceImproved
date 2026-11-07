@@ -198,20 +198,18 @@ export function BudgetSummaryBar({
               onClick={onPullFromApi}
               disabled={isPulling}
               className="text-caption rounded bg-blue-100 px-2 py-1 font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50"
-              title={`Pull linked amounts from ${apiService?.toUpperCase()} into"${cols[activeColumn]}" mode`}
+              title={`Pull linked amounts from ${apiService.toUpperCase()} into"${cols[activeColumn]}" mode`}
             >
-              {isPulling
-                ? "Pulling…"
-                : `Pull from ${apiService?.toUpperCase()}`}
+              {isPulling ? "Pulling…" : `Pull from ${apiService.toUpperCase()}`}
             </button>
             <button
               type="button"
               onClick={onOpenPushPreview}
               disabled={isPushing}
               className="text-caption rounded bg-blue-100 px-2 py-1 font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50"
-              title={`Push"${cols[activeColumn]}" mode amounts to ${apiService?.toUpperCase()}`}
+              title={`Push"${cols[activeColumn]}" mode amounts to ${apiService.toUpperCase()}`}
             >
-              {isPushing ? "Pushing…" : `Push to ${apiService?.toUpperCase()}`}
+              {isPushing ? "Pushing…" : `Push to ${apiService.toUpperCase()}`}
             </button>
           </>
         )}

@@ -90,7 +90,7 @@ const limitedTypeHasOwner = (data: {
 }) =>
   !(
     data.ownership === "joint" &&
-    getAccountTypeConfig(data.accountType as AccountCategory)?.hasIrsLimit
+    getAccountTypeConfig(data.accountType as AccountCategory).hasIrsLimit
   );
 
 const limitedTypeHasOwnerIssue = {
@@ -174,7 +174,7 @@ export const contributionAccountsProcedures = {
                   "pre_tax" | "tax_free" | "after_tax" | "hsa",
                 employerMatchType: "none" as const,
                 isActive: false,
-                ownership: input.ownership ?? ("individual" as const),
+                ownership: input.ownership,
                 performanceAccountId: input.performanceAccountId,
               })),
             );

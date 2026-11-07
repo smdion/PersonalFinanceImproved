@@ -32,7 +32,7 @@ export function deriveBudgetMonthlyTotal(
   if (!budgetSummary?.result) return null;
   return budgetSummary.columnMonths
     ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
-    : (budgetSummary.result.totalMonthly ?? 0);
+    : budgetSummary.result.totalMonthly;
 }
 
 /**

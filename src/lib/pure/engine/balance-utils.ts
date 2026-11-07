@@ -101,18 +101,15 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
 
 /** @internal Only tests import it (knip --production).
  * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
- * balances, per category (supersedes the
- * Tier B two-pass model this function was originally written for; renamed
- * from `subtractLocked`). Floors at 0 —
+ * balances, per category. Floors at 0 —
  * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
  * of individual-account penalty-exposed amounts, which can't exceed the
  * category total they're within, but flooring keeps this safe against any
  * future drift between `acctBal` and the sum of individual accounts (the
  * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
  * already watches for). Locked design: the penalty-free balance is derived
- * by SUBTRACTION from the real `acctBal`, never by summing `indBal` — see
- * `withdrawal-eligibility.ts`'s module docblock for why the other direction
- * breaks byte-identity.
+ * by SUBTRACTION from the real `acctBal`, never by summing `indBal` (the
+ * other direction breaks byte-identity).
  */
 export function subtractPenaltyExposed(
   balances: AccountBalances,
@@ -126,23 +123,19 @@ export function subtractPenaltyExposed(
         bal,
         Math.max(
           0,
-          bal.traditional - (record.penaltyExposedTradStillExcluded[cat] ?? 0),
+          bal.traditional - record.penaltyExposedTradStillExcluded[cat],
         ),
       );
       setRoth(
         bal,
-        Math.max(
-          0,
-          bal.roth - (record.penaltyExposedRothStillExcluded[cat] ?? 0),
-        ),
+        Math.max(0, bal.roth - record.penaltyExposedRothStillExcluded[cat]),
       );
     } else {
       setBalance(
         bal,
         Math.max(
           0,
-          getTotalBalance(bal) -
-            (record.penaltyExposedTotalStillExcluded[cat] ?? 0),
+          getTotalBalance(bal) - record.penaltyExposedTotalStillExcluded[cat],
         ),
       );
     }

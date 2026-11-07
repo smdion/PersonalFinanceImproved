@@ -30,8 +30,7 @@ export function StrategyParamsSection({
   upsertSettings,
   isEditable,
 }: Props) {
-  const strategyKey = (settings?.withdrawalStrategy ??
-    "fixed") as WithdrawalStrategyType;
+  const strategyKey = settings.withdrawalStrategy as WithdrawalStrategyType;
   const meta = getStrategyMeta(strategyKey);
   if (meta.paramFields.length === 0) return null;
 
@@ -65,7 +64,6 @@ export function StrategyParamsSection({
 
   const renderField = (field: (typeof meta.paramFields)[number]) => {
     const dbCol = field.column;
-    if (!settings) return null;
     const currentVal = (settings as Record<string, unknown>)[dbCol];
 
     if (field.type === "boolean") {

@@ -21,7 +21,6 @@ import {
   maskAmountsInText,
   budgetApiServiceLabel,
 } from "@/lib/utils/format";
-import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
 import {
@@ -190,7 +189,7 @@ export function BrokerageContent() {
   // Run brokerage goals calculator on engine output
   const brokerageGoalsInput = {
     asOfDate: new Date(),
-    goals: data.brokerageGoals ?? [],
+    goals: data.brokerageGoals,
     engineYears: data.result.projectionByYear,
   };
   const brokerageResult = calculateBrokerageGoals(brokerageGoalsInput);
@@ -201,7 +200,7 @@ export function BrokerageContent() {
         ...contribData.people.flatMap((p) =>
           p.accountTypes.filter((at) => isPortfolioParent(at.parentCategory)),
         ),
-        ...(contribData.jointAccountTypes ?? []).filter((at) =>
+        ...contribData.jointAccountTypes.filter((at) =>
           isPortfolioParent(at.parentCategory),
         ),
       ]
@@ -214,10 +213,7 @@ export function BrokerageContent() {
   const budgetLinks = brokerageData?.budgetLinks ?? [];
 
   // Deflation (Today's $ / Future $) — same pattern as retirement
-  const inflationRate =
-    data.settings?.annualInflation != null
-      ? Number(data.settings.annualInflation)
-      : DEFAULT_INFLATION_RATE;
+  const inflationRate = Number(data.settings.annualInflation);
   const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
   const deflate = (value: number, year: number) =>
     dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
@@ -249,14 +245,12 @@ export function BrokerageContent() {
       {hasContextOverrides && (
         <div className="border-subtle bg-surface-secondary text-muted mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-2 text-xs">
           <span className="text-secondary font-medium">Projection basis:</span>
-          {activeProfileName != null && (
-            <span>
-              Contribution profile:{" "}
-              <span className="text-primary font-medium">
-                {activeProfileName}
-              </span>
+          <span>
+            Contribution profile:{" "}
+            <span className="text-primary font-medium">
+              {activeProfileName}
             </span>
-          )}
+          </span>
           <HelpTip text="These settings are applied to both the funding summary and the year-by-year projection. Change them on the Paycheck page." />
         </div>
       )}
@@ -367,9 +361,9 @@ export function BrokerageContent() {
           )}
           <LumpSumForm
             accounts={
-              data?.result?.projectionByYear?.[0]?.individualAccountBalances
-                ?.filter((ia) => isPortfolioParent(ia.parentCategory))
-                ?.map((ia) => ({
+              data.result.projectionByYear[0]?.individualAccountBalances
+                .filter((ia) => isPortfolioParent(ia.parentCategory))
+                .map((ia) => ({
                   name: ia.name,
                   category: ia.category,
                   taxType: ia.taxType,
@@ -793,7 +787,7 @@ function contributionTooltip(yr: BrokerageGoalYear): TooltipData {
           proRate: {
             months: Math.round(yr.proRateFraction * 12),
             annualAmount: Math.round(
-              safeDivide(yr.contribution, yr.proRateFraction!) ?? 0,
+              safeDivide(yr.contribution, yr.proRateFraction!),
             ),
             proRatedAmount: yr.contribution,
           },

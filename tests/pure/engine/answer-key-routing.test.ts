@@ -7,7 +7,7 @@
  * in `answer-key-strategies.test.ts`; the bracketed part is the
  * docs/CALCULATIONS.md row.
  *
- * Functions: `routeForMode` (`engine/withdrawal-routing.ts`), the one
+ * Functions: `routeForMode` (`engine/withdrawal-routing/index.ts`), the one
  * routing dispatch; `computeTaxFromSlots` (`engine/tax-estimation.ts`);
  * `estimateWithdrawalTaxCost` (`engine/withdrawal-solver.ts`), the gross-up
  * solver. Routing's three modes are owner designs (DESIGN 335-337; spec
@@ -162,7 +162,7 @@ function drawn(slots: DecumulationSlot[]) {
   const of = (c: AccountCategory) => slots.find((s) => s.category === c);
   return {
     // An HSA draw is booked as Traditional in its slot (ordinary income,
-    // `withdrawal-routing.ts:85`); it's counted under `hsa` here.
+    // `withdrawal-routing/waterfall.ts:60`); it's counted under `hsa` here.
     traditional: slots
       .filter((s) => s.category !== "hsa")
       .reduce((t, s) => t + s.traditionalWithdrawal, 0),

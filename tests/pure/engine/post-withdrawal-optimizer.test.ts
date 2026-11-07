@@ -1,22 +1,18 @@
 import { describe, it, expect } from "vitest";
-import {
-  performRothConversion,
-  checkIrmaa,
-  checkAca,
-} from "@/lib/pure/engine/post-withdrawal-optimizer";
+import { performRothConversion } from "@/lib/pure/engine/roth-conversion";
+import { checkIrmaa } from "@/lib/pure/engine/irmaa-check";
+import { checkAca } from "@/lib/pure/engine/aca-check";
 import { checkHouseholdIrmaa } from "@/lib/pure/engine/household-irmaa";
-import type {
-  RothConversionInput,
-  IrmaaInput,
-  AcaInput,
-} from "@/lib/pure/engine/post-withdrawal-optimizer";
+import type { RothConversionInput } from "@/lib/pure/engine/roth-conversion";
+import type { IrmaaInput } from "@/lib/pure/engine/irmaa-check";
+import type { AcaInput } from "@/lib/pure/engine/aca-check";
 import {
   makeTaxBuckets,
   makeAccountBalances,
   makeIndividualAccount,
   TEST_BRACKETS,
 } from "../fixtures/engine-fixtures";
-import { makeIndKey } from "@/lib/pure/engine/individual-account-tracking";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
 

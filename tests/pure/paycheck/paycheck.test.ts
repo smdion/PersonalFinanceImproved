@@ -1,19 +1,21 @@
 import { describe, it, expect } from "vitest";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
-  calculatePaycheck,
   calculateBlendedAnnual,
+  withheldThroughPeriod,
+  type SalarySegment,
+} from "@/lib/pure/paycheck/year-schedule";
+import {
   countPeriodsElapsed,
   contribRemainingFraction,
   contribStepFraction,
   monthsDoneYtd,
   monthsElapsedYtd,
   periodsElapsedYtd,
-  getExtraPaycheckMonthKeys,
-  withheldThroughPeriod,
   periodsBeforeStart,
   checksPaidYtd,
-  type SalarySegment,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/pay-periods-in-year";
+import { getExtraPaycheckMonthKeys } from "@/lib/pure/paycheck/extra-paycheck-months";
 import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
 import type {
   PaycheckInput,

@@ -1680,7 +1680,7 @@ describe("budget router", () => {
     });
 
     // "inactive_in_sandbox" is exercised directly against
-    // classifyContribResolution (tests/helpers/contribution-extended.test.ts)
+    // classifyContribResolution (tests/pure/contributions/profile-fields.test.ts)
     // rather than end-to-end here: zSandboxContribActiveFields
     // (lib/pure/household/what-if.schema.ts) only accepts { contributionValue }, so
     // isActive is stripped before it ever reaches the resolver — a What-If

@@ -7,7 +7,7 @@ import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/extra-paycheck-months";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { localDateStr } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";

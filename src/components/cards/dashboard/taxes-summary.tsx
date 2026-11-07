@@ -9,7 +9,7 @@
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { householdWithheldSoFar } from "@/lib/pure/paycheck/paycheck";
+import { householdWithheldSoFar } from "@/lib/pure/paycheck/year-schedule";
 import type { RouterOutputs } from "@/lib/trpc";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 
@@ -24,7 +24,7 @@ export function TaxesSummary({
 }) {
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const hasPaycheck = data?.people?.some((d) => d.paycheck) ?? false;
+  const hasPaycheck = data?.people.some((d) => d.paycheck) ?? false;
   const householdTax = data?.householdTax ?? null;
   // householdTax is set whenever anyone had pay this year — a current job
   // or one that ended (its withholding counts in YTD).

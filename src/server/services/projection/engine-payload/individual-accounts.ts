@@ -27,7 +27,7 @@ import {
 } from "@/lib/pure/accounts/tax-bucket-analysis";
 import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
 import { toNumber } from "@/lib/utils/numbers";
-import type { fetchRetirementData } from "./build-engine-payload";
+import type { fetchRetirementData } from "./load";
 
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
 
@@ -62,7 +62,7 @@ export function buildIndividualAccounts({
   // Per-account withdrawal-ordering eligibility — reuses computeTaxBucketAnalysis
   // verbatim (RULES.md § Single Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
   // resolution a third time. Keyed with the same indKey format the engine's
-  // individual-account-tracking module uses, so Group 2's eligibility gate
+  // individual-accounts modules use, so Group 2's eligibility gate
   // can look a given `IndividualAccountInput` up directly. Retirement-only
   // (computeTaxBucketAnalysis walks `accountRollup`, which excludes
   // Portfolio-category holdings) — a Portfolio-category individualAccounts

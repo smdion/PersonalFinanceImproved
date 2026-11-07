@@ -127,7 +127,7 @@ export function buildContributionDisplaySpecs(
   return filtered.map((c) => {
     const ownerPerson = people.find((p) => p.id === c.personId);
     const cv = computeValue(c);
-    const method = c.contributionMethod ?? "percent_of_salary";
+    const method = c.contributionMethod ?? "percent_of_salary"; // a stored profile entry may omit it
     const value = method === "percent_of_salary" ? fractionFromPercent(cv) : cv;
 
     return {

@@ -384,7 +384,7 @@ export function SimplefinCard() {
           </div>
         )}
 
-        {testConnectionMut.isSuccess && testConnectionMut.data && (
+        {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
             tone={testConnectionMut.data.success ? "success" : "error"}
           >
@@ -394,7 +394,7 @@ export function SimplefinCard() {
           </ConnectionResultMessage>
         )}
 
-        {syncNowMut.isSuccess && syncNowMut.data && (
+        {syncNowMut.isSuccess && (
           <ConnectionResultMessage tone="success">
             Synced {syncNowMut.data.accountCount} account(s), total{" "}
             {formatCurrency(syncNowMut.data.totalBalance)}

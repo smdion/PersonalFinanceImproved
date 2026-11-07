@@ -1,4 +1,4 @@
-import { checkIrmaa, type IrmaaInput } from "./post-withdrawal-optimizer";
+import { checkIrmaa, type IrmaaInput } from "./irmaa-check";
 
 /**
  * The household's IRMAA surcharge: `checkIrmaa`'s per-person cost times the

@@ -728,7 +728,7 @@ export function WhatIfTab({
   // annotation only; never folded into netMonthlyIncome or `leftover`.
   const budgetIncomeAdjustmentThisMonth =
     budgetData && "budgetIncomeAdjustmentThisMonth" in budgetData
-      ? (budgetData.budgetIncomeAdjustmentThisMonth ?? null)
+      ? budgetData.budgetIncomeAdjustmentThisMonth
       : null;
 
   // ── Sandbox-local Budget table wiring (amounts-only, no live mutation) ──
@@ -784,7 +784,7 @@ export function WhatIfTab({
     onSuccess: (created) => {
       utils.budget.invalidate();
       setDuplicateName("");
-      toast.success(`Created budget profile "${created?.name ?? ""}"`);
+      toast.success(`Created budget profile "${created.name}"`);
     },
     onError: (err) => toast.error(err.message || "Failed to duplicate profile"),
   });

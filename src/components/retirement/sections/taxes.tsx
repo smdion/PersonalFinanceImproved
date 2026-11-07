@@ -91,13 +91,13 @@ export function TaxesSection({
   const persistedSplits =
     (settings.withdrawalSplits as Record<string, number> | null) ??
     DEFAULT_WITHDRAWAL_SPLITS;
-  const routingMode =
-    settings.withdrawalRoutingMode ?? DEFAULT_WITHDRAWAL_ROUTING_MODE;
+  const routingMode = settings.withdrawalRoutingMode;
   const [splitsDraft, setSplitsDraft] = useState<Record<string, number> | null>(
     null,
   );
   const effectiveSplits = splitsDraft ?? persistedSplits;
   const splitsTotal = getAllCategories().reduce(
+    // A stored splits record can be partial (older versions saved one).
     (sum, c) => sum + (effectiveSplits[c] ?? 0),
     0,
   );
@@ -107,10 +107,10 @@ export function TaxesSection({
   // smoothing's ceiling and, under bracket filling, distribution routing.
   const recommendedTarget = bracketOptimizerResult?.recommendedTarget ?? null;
   const willChangeSmoothingCeiling =
-    recommendedTarget != null && (settings.rmdSmoothingEnabled ?? false);
+    recommendedTarget != null && settings.rmdSmoothingEnabled;
 
   const applyRecommendedTarget = () => {
-    if (!settings || recommendedTarget == null) return;
+    if (recommendedTarget == null) return;
     const target = String(recommendedTarget);
     upsertSettings.mutate(
       buildSettingsPatch(settings, {
@@ -147,6 +147,7 @@ export function TaxesSection({
           }}
         >
           <option value="">
+            {/* null after an "Auto" save, in the optimistic update until the refetch */}
             Auto ({filingStatusLabel(filingStatus ?? "")})
           </option>
           {RETURN_FILING_STATUS_VALUES.map((s) => (
@@ -201,7 +202,6 @@ export function TaxesSection({
             <InlineEdit
               value={settings.taxMultiplier}
               onSave={(v) => {
-                if (!settings) return;
                 const parsed = parseFloat(v);
                 if (isNaN(parsed) || parsed < 0) return;
                 upsertSettings.mutate(
@@ -233,26 +233,25 @@ export function TaxesSection({
           <div className="font-medium">
             <button
               onClick={() => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
-                    grossUpForTaxes: !(settings.grossUpForTaxes ?? true),
+                    grossUpForTaxes: !settings.grossUpForTaxes,
                   }),
                 );
               }}
               disabled={!isEditable}
               className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
-                (settings?.grossUpForTaxes ?? true)
+                settings.grossUpForTaxes
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
               }`}
             >
-              {(settings?.grossUpForTaxes ?? true) ? "On" : "Off"}
+              {settings.grossUpForTaxes ? "On" : "Off"}
             </button>
           </div>
           {withdrawalSized(settings) && (
             <span className="text-caption text-faint">
-              {settings?.withdrawalStrategy === "rmd_spending"
+              {settings.withdrawalStrategy === "rmd_spending"
                 ? "From the RMD age, no effect: "
                 : "No effect with this strategy: "}
               it sets the withdrawal itself, tax comes out of it, and Social
@@ -267,9 +266,8 @@ export function TaxesSection({
           </span>
           <div className="font-medium">
             <select
-              value={String(rothTargetOf(settings?.rothBracketTarget))}
+              value={String(rothTargetOf(settings.rothBracketTarget))}
               onChange={(e) => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
                     rothBracketTarget: e.target.value,
@@ -320,34 +318,29 @@ export function TaxesSection({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
-                    enableRothConversions: !(
-                      settings.enableRothConversions ?? false
-                    ),
+                    enableRothConversions: !settings.enableRothConversions,
                   }),
                 );
               }}
               disabled={!isEditable}
               className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
-                (settings?.enableRothConversions ?? false)
+                settings.enableRothConversions
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
               }`}
             >
-              {(settings?.enableRothConversions ?? false) ? "On" : "Off"}
+              {settings.enableRothConversions ? "On" : "Off"}
             </button>
-            {(settings?.enableRothConversions ?? false) && (
+            {settings.enableRothConversions && (
               <select
                 value={String(
                   rothTargetOf(
-                    settings?.rothConversionTarget ??
-                      settings?.rothBracketTarget,
+                    settings.rothConversionTarget ?? settings.rothBracketTarget,
                   ),
                 )}
                 onChange={(e) => {
-                  if (!settings) return;
                   upsertSettings.mutate(
                     buildSettingsPatch(settings, {
                       rothConversionTarget: e.target.value,
@@ -372,9 +365,8 @@ export function TaxesSection({
           </span>
           <div className="font-medium">
             <select
-              value={settings?.discretionaryWithdrawalOrder ?? "roth_first"}
+              value={settings.discretionaryWithdrawalOrder}
               onChange={(e) => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
                     discretionaryWithdrawalOrder: e.target.value,
@@ -387,9 +379,9 @@ export function TaxesSection({
               <option value="roth_first">Roth basis first (default)</option>
               <option value="brokerage_first">Brokerage 0% room first</option>
             </select>
-            {settings?.discretionaryWithdrawalOrder === "brokerage_first" &&
-              ((settings?.enableAcaAwareness ?? false) ||
-                (settings?.enableIrmaaAwareness ?? false)) && (
+            {settings.discretionaryWithdrawalOrder === "brokerage_first" &&
+              (settings.enableAcaAwareness ||
+                settings.enableIrmaaAwareness) && (
                 <div className="text-caption mt-1.5 text-amber-700">
                   ACA/IRMAA awareness is on — brokerage-first will realize
                   MAGI-counted gains sooner each year, which can reduce ACA
@@ -408,12 +400,8 @@ export function TaxesSection({
           </span>
           <div className="font-medium">
             <select
-              value={
-                settings?.withdrawalRoutingMode ??
-                DEFAULT_WITHDRAWAL_ROUTING_MODE
-              }
+              value={settings.withdrawalRoutingMode}
               onChange={(e) => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
                     withdrawalRoutingMode: e.target.value,
@@ -446,7 +434,6 @@ export function TaxesSection({
         <WithdrawalOrderEditor
           order={persistedOrder}
           onChange={(next) => {
-            if (!settings) return;
             upsertSettings.mutate(
               buildSettingsPatch(settings, { withdrawalOrder: next }),
             );
@@ -488,6 +475,7 @@ export function TaxesSection({
                     min={0}
                     max={100}
                     disabled={!isEditable}
+                    // A stored splits record can be partial (older versions saved one).
                     value={Math.round((effectiveSplits[cat] ?? 0) * 100)}
                     onChange={(e) => {
                       const v = parseFloat(e.target.value) / 100;
@@ -512,7 +500,6 @@ export function TaxesSection({
                   <button
                     type="button"
                     onClick={() => {
-                      if (!settings) return;
                       upsertSettings.mutate(
                         buildSettingsPatch(settings, {
                           withdrawalSplits: splitsDraft,
@@ -560,7 +547,7 @@ export function TaxesSection({
 function withdrawalSized(settings: Settings | undefined): boolean {
   if (!settings) return false;
   const meta = getStrategyMeta(
-    (settings.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType,
+    settings.withdrawalStrategy as WithdrawalStrategyType,
   );
   const field = meta.paramFields.find((f) => f.key === "ssInAmount");
   if (!field) return false;

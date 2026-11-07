@@ -77,7 +77,7 @@ async function computeLiveMaxMonthlyFunding(
     }),
   ]);
   const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetSummary);
-  return paycheckData && budgetMonthlyTotal !== null
+  return budgetMonthlyTotal !== null
     ? computeMaxMonthlyFunding(
         paycheckData.people as CapacityPerson[],
         budgetMonthlyTotal,

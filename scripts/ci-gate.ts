@@ -1,6 +1,7 @@
 /**
- * Whether a commit has a green CI run, for scripts/deploy.sh: a deploy of a
- * commit CI never passed is refused (`--force` overrides it with a warning).
+ * Whether a commit has a green CI run, for scripts/deploy.sh and
+ * scripts/release.sh: a deploy or release of a commit CI never passed is
+ * refused (deploy's `--skip-ci-gate` overrides it with a warning).
  *
  * Green means the newest push run of the CI workflow (.github/workflows/
  * ci.yml) for exactly that commit has completed with success, and every job

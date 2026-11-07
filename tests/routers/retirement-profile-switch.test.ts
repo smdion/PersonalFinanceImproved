@@ -26,10 +26,8 @@ import "./setup-mocks";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedJob, seedPerformanceAccount } from "./setup";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import * as schema from "@/lib/db/schema-sqlite";
 
 const FIXED_NOW = new Date("2026-04-14T12:00:00Z");

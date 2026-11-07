@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ReplacesNote } from "@/components/versions/replaces-note";
 import { localDateStr } from "@/lib/utils/date";
 
 function formatBytes(bytes: number | null): string {
@@ -408,9 +409,7 @@ export default function VersionsPage() {
                 <input
                   type="text"
                   value={
-                    cronExpression ||
-                    scheduleData?.cronExpression ||
-                    "0 2 * * *"
+                    cronExpression || scheduleData.cronExpression || "0 2 * * *"
                   }
                   onChange={(e) => setCronExpression(e.target.value)}
                   placeholder="0 2 * * *"
@@ -700,7 +699,7 @@ export default function VersionsPage() {
                 className="border-strong bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
               >
                 <option value="">Select a table...</option>
-                {versionDetail.tables?.map((t) => (
+                {versionDetail.tables.map((t) => (
                   <option key={t.tableName} value={t.tableName}>
                     {t.tableName} ({t.rowCount} rows)
                   </option>
@@ -710,7 +709,7 @@ export default function VersionsPage() {
 
             {/* Per-table row count summary */}
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
-              {versionDetail.tables?.map((t) => (
+              {versionDetail.tables.map((t) => (
                 <div
                   key={t.tableName}
                   className={`cursor-pointer rounded px-2 py-1 text-xs transition-colors ${
@@ -795,11 +794,11 @@ export default function VersionsPage() {
             <h3 className="text-primary mb-2 text-lg font-semibold">
               Restore Version
             </h3>
-            <p className="text-muted mb-3 text-sm">
-              This will replace <strong>all current data</strong> with the data
-              from <strong>&ldquo;{restoreTarget.name}&rdquo;</strong>. This
-              action cannot be undone unless you create a backup first.
-            </p>
+            <ReplacesNote className="mb-3">
+              with the data from{" "}
+              <strong>&ldquo;{restoreTarget.name}&rdquo;</strong>. This action
+              cannot be undone unless you create a backup first.
+            </ReplacesNote>
 
             <DataLossWarning tables={restoreDataLoss} />
 
@@ -899,10 +898,7 @@ export default function VersionsPage() {
             <h3 className="text-primary mb-2 text-lg font-semibold">
               Import Backup
             </h3>
-            <p className="text-muted mb-1 text-sm">
-              This will replace <strong>all current data</strong> with the
-              contents of:
-            </p>
+            <ReplacesNote className="mb-1">with the contents of:</ReplacesNote>
             <p className="text-primary mb-3 font-mono text-sm font-medium">
               {importFile?.name}
             </p>

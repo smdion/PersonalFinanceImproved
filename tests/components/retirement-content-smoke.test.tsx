@@ -150,7 +150,11 @@ const mockProjectionData = {
   decumulationBudgetProfileId: null,
   decumulationBudgetColumn: 0,
   budgetProfileSummaries: [],
-  planHealth: null,
+  planHealth: {
+    currentAge: 40,
+    accumulationOrder: [],
+    currentStockAllocationPercent: null,
+  },
   result: { projectionByYear: [] },
 };
 

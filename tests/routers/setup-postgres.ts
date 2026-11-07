@@ -13,6 +13,9 @@
  * Imports no app module at load: the db module picks its dialect when it's
  * first imported, which must be after `pointAtTestDatabase()`.
  */
+// First: a per-process ENCRYPTION_KEY, as setup.ts sets for SQLite (a test
+// that saves a budget connection encrypts its credentials).
+import "./test-encryption-key";
 import { afterAll, beforeAll, vi } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";

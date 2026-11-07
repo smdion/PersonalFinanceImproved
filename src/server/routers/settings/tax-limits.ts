@@ -30,6 +30,7 @@ import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax/data-status";
 import { pendingUpdate } from "./tax-data-sync";
 import { localDateStr } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";
+import { firstRow } from "@/lib/utils/first-row";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
 
@@ -196,8 +197,6 @@ const createProvenance = (carried: boolean | undefined) =>
   carried
     ? { origin: "carried" as const }
     : { origin: "user" as const, confirmedAt: new Date() };
-
-// --- Zod schemas ---
 
 const contributionLimitInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
@@ -407,7 +406,7 @@ export const taxLimitsProcedures = {
           .insert(schema.contributionLimits)
           .values({ ...input, ...createProvenance(carried) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -430,7 +429,7 @@ export const taxLimitsProcedures = {
           })
           .where(eq(schema.contributionLimits.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -491,7 +490,7 @@ export const taxLimitsProcedures = {
           .insert(schema.taxBrackets)
           .values({ ...input, ...createProvenance(carried) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(taxBracketInput.shape))
@@ -508,7 +507,7 @@ export const taxLimitsProcedures = {
           })
           .where(eq(schema.taxBrackets.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -566,7 +565,7 @@ export const taxLimitsProcedures = {
           .insert(schema.ltcgBrackets)
           .values({ ...input, ...createProvenance(carried) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(ltcgBracketInput.shape))
@@ -583,7 +582,7 @@ export const taxLimitsProcedures = {
           })
           .where(eq(schema.ltcgBrackets.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -641,7 +640,7 @@ export const taxLimitsProcedures = {
           .insert(schema.irmaaBrackets)
           .values({ ...input, ...createProvenance(carried) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(irmaaBracketInput.shape))
@@ -662,7 +661,7 @@ export const taxLimitsProcedures = {
           })
           .where(eq(schema.irmaaBrackets.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -720,7 +719,7 @@ export const taxLimitsProcedures = {
           .insert(schema.fplByHousehold)
           .values({ ...input, ...createProvenance(carried) })
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: adminProcedure
       .input(
@@ -743,7 +742,7 @@ export const taxLimitsProcedures = {
           })
           .where(eq(schema.fplByHousehold.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

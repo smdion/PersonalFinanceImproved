@@ -26,24 +26,9 @@ import {
 } from "@/lib/pure/savings/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
-
-function isTargetMode(v: unknown): v is TargetMode {
-  return TARGET_MODE_VALUES.includes(v as TargetMode);
-}
 import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
-
-// Code-split Recharts-heavy children. Loads on page mount instead of
-// bundling into the savings page chunk. ssr:false
-// because Recharts isn't SSR-friendly.
-const SavingsTrajectoryChart = dynamic(
-  () =>
-    import("@/components/savings/savings-trajectory-chart").then((m) => ({
-      default: m.SavingsTrajectoryChart,
-    })),
-  { loading: () => <SkeletonChart />, ssr: false },
-);
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
 import {
   FundManagementSection,
@@ -79,6 +64,21 @@ import {
   SK_SAVINGS_PROJECTION_YEARS,
 } from "@/lib/constants/settings-keys";
 
+function isTargetMode(v: unknown): v is TargetMode {
+  return TARGET_MODE_VALUES.includes(v as TargetMode);
+}
+
+// Code-split Recharts-heavy children. Loads on page mount instead of
+// bundling into the savings page chunk. ssr:false
+// because Recharts isn't SSR-friendly.
+const SavingsTrajectoryChart = dynamic(
+  () =>
+    import("@/components/savings/savings-trajectory-chart").then((m) => ({
+      default: m.SavingsTrajectoryChart,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
+
 export default function SavingsPage() {
   const user = useUser();
   const canEdit = hasPermission(user, "savings");
@@ -102,15 +102,13 @@ export default function SavingsPage() {
     SK_SAVINGS_PROJECTION_YEARS,
     3,
   );
-  const [rawActiveContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContribProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   // Fetch contribution profiles list for subtitle display.
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
-  // The active contribution profile (single computation path — matches
-  // expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
 
   // ── Shared queries ──
   const efundTierInput =
@@ -125,11 +123,11 @@ export default function SavingsPage() {
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
   // Independent Salary Profile axis — the active one.
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const [activeSalaryProfileId] = useActiveSalaryProfile();
   // The active ids, sent explicitly (null while loading = none).
   const paySelection = {
-    contribution: rawActiveContribProfileId,
-    salary: rawActiveSalaryProfileId,
+    contribution: activeContribProfileId,
+    salary: activeSalaryProfileId,
   };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
@@ -140,15 +138,12 @@ export default function SavingsPage() {
   // The active profiles — the same ones computeActiveSummary and the Budget
   // page use, so budget item $ amounts, this page's pool and the payroll
   // breakdown never disagree.
-  const effectiveContribProfileId = rawActiveContribProfileId;
-  const effectiveSalaryProfileId = rawActiveSalaryProfileId;
-
   const paycheckInput = {
-    ...(effectiveContribProfileId != null
-      ? { contributionProfileId: effectiveContribProfileId }
+    ...(activeContribProfileId != null
+      ? { contributionProfileId: activeContribProfileId }
       : {}),
-    ...(effectiveSalaryProfileId != null
-      ? { salaryProfileId: effectiveSalaryProfileId }
+    ...(activeSalaryProfileId != null
+      ? { salaryProfileId: activeSalaryProfileId }
       : {}),
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
@@ -174,11 +169,11 @@ export default function SavingsPage() {
   // The profiles this preview used, threaded into the recalculate and
   // lock-in mutations so their live pool matches it.
   const recalcIncomeParams = {
-    ...(effectiveContribProfileId != null
-      ? { contributionProfileId: effectiveContribProfileId }
+    ...(activeContribProfileId != null
+      ? { contributionProfileId: activeContribProfileId }
       : {}),
-    ...(effectiveSalaryProfileId != null
-      ? { salaryProfileId: effectiveSalaryProfileId }
+    ...(activeSalaryProfileId != null
+      ? { salaryProfileId: activeSalaryProfileId }
       : {}),
     selection: paySelection,
   };
@@ -334,7 +329,7 @@ export default function SavingsPage() {
                 p.job as {
                   extraPaycheckRouting?: ExtraPaycheckRoutingData | null;
                 }
-              )?.extraPaycheckRouting;
+              ).extraPaycheckRouting;
               return {
                 netPay: pc.netPay,
                 periodsPerYear: pc.periodsPerYear,
@@ -426,7 +421,7 @@ export default function SavingsPage() {
   const netPayByPersonId = new Map<number, number>();
   if (paycheckData) {
     for (const p of paycheckData.people) {
-      if (p.paycheck && p.job) {
+      if (p.paycheck) {
         netPayByPersonId.set(p.person.id, p.paycheck.netPay);
       }
     }
@@ -476,12 +471,12 @@ export default function SavingsPage() {
       <PageHeader
         title="Savings"
         subtitle={(() => {
-          const budgetLabel = budgetData?.columnLabels?.[budgetColumn];
+          const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
           if (!budgetLabel) return undefined;
           const profileName =
-            effectiveContribProfileId != null
+            activeContribProfileId != null
               ? (contribProfilesList?.find(
-                  (p) => p.id === effectiveContribProfileId,
+                  (p) => p.id === activeContribProfileId,
                 )?.name ?? null)
               : null;
           return profileName
@@ -734,7 +729,7 @@ export default function SavingsPage() {
                       hiddenGoalIds={hiddenGoalIds}
                       ruleMonthKeys={
                         new Set(
-                          (allocationOverrides ?? [])
+                          allocationOverrides
                             .filter((o) => o.source === "rule")
                             .map((o) => o.monthDate.slice(0, 7)),
                         )

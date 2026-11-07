@@ -111,7 +111,7 @@ export function OverridesPanel({
 
   // Determine if selected year is pre or post retirement
   const retAge = state.engineSettings?.retirementAge;
-  const currentAge = state.result?.projectionByYear?.[0]?.age ?? 0;
+  const currentAge = state.result?.projectionByYear[0]?.age ?? 0;
   const baseYear = new Date().getFullYear();
   const retYear =
     retAge != null && currentAge > 0 ? baseYear + (retAge - currentAge) : null;
@@ -330,7 +330,7 @@ export function OverridesPanel({
         return (
           <div className="space-y-2">
             <LumpSumForm
-              accounts={state.individualAccountNames ?? []}
+              accounts={state.individualAccountNames}
               investedAtStartOf={(year) =>
                 investedAtStartOf(state.result?.projectionByYear ?? [], year)
               }

@@ -281,10 +281,9 @@ export async function computeRelocationAnalysis(
   // Salary — the control arm of the relocation comparison. A job has no
   // salary/bonus of its own any more, so the ACTIVE Salary Profile is
   // the only live source (see resolveCompensation's docblock).
-  const asOfDate = referenceDate;
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(ctx.db, null);
   const activeJobs = mergeSalaryProfileJobFields(
-    filterActiveJobs(allJobs, asOfDate),
+    filterActiveJobs(allJobs, referenceDate),
     salaryProfileActiveMap,
   );
   const jobSalaries = activeJobs.map((j) => {
@@ -351,7 +350,7 @@ export async function computeRelocationAnalysis(
     ctx.db,
     people,
     null,
-    asOfDate.getFullYear(),
+    referenceDate.getFullYear(),
   );
   const resolveContribProfile = async (profileId: number | null) => {
     const profile = profileId
@@ -453,7 +452,7 @@ export async function computeRelocationAnalysis(
     // that; revisit if the relocation tool ever surfaces an absolute
     // (not just comparative) retirement number.
     socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
-    asOfDate,
+    asOfDate: referenceDate,
   });
 
   return {

@@ -13,134 +13,22 @@
  * All settings support per-year sticky-forward overrides.
  * See types.ts for detailed documentation of each type.
  *
- * Year-level logic is extracted to projection-year-handlers.ts for
- * maintainability. This file owns validation, orchestration, and result building.
+ * Year-level logic lives in projection-year-handlers/. This file owns
+ * orchestration and result building; input validation is in
+ * input-validation.ts.
  */
 import type {
   ProjectionInput,
   ProjectionResult,
 } from "./types/projection-result";
-import { formatPercent } from "../../utils/format";
 import { roundToCents } from "../../utils/math";
-import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
-import {
-  getAccountTypeConfig,
-  isTaxFreeBucket,
-} from "../../config/account-types";
-import { emptyTaxBucketMap } from "../../config/tax-treatment-buckets";
-import { expenseEndingFactor } from "./expense-endings";
+import { validateEngineInputs } from "./input-validation";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { buildProjectionContext } from "./projection-year-handlers/context";
 import { buildProjectionState } from "./projection-year-handlers/state";
 import { runPreYearSetup } from "./projection-year-handlers/pre-year-setup";
 import { runAccumulationYear } from "./projection-year-handlers/accumulation-year";
 import { runDecumulationYear } from "./projection-year-handlers/decumulation-year";
-
-// ---------------------------------------------------------------------------
-// Input validation
-// ---------------------------------------------------------------------------
-
-/**
- * Validate and clamp engine inputs. Pushes warnings for any clamped values.
- * Returns sanitized copies of fields that may need clamping.
- */
-function validateEngineInputs(
-  input: ProjectionInput,
-  warnings: string[],
-): {
-  salaryGrowthRate: number;
-  inflationRate: number;
-  postRetirementInflationRate: number;
-} {
-  // Setup notes the caller resolved while building the input (e.g. a
-  // chosen account that no longer qualifies) — shown with the result's.
-  warnings.push(...(input.inputWarnings ?? []));
-  // The aggregate buckets, the per-category balances (what withdrawal
-  // routing draws from) and the individual accounts must describe the same
-  // money: a gap is counted as retirement money the router may never
-  // reach, which moves withdrawals, depletion and the plan's verdict.
-  const categoryTotals = emptyTaxBucketMap();
-  for (const bal of Object.values(input.startingAccountBalances)) {
-    if (bal.structure === "roth_traditional") {
-      categoryTotals.preTax += bal.traditional;
-      categoryTotals.taxFree += bal.roth;
-    } else if (bal.structure === "single_bucket")
-      categoryTotals.hsa += bal.balance;
-    else categoryTotals.afterTax += bal.balance;
-  }
-  for (const [key, sum] of Object.entries(categoryTotals)) {
-    const start = input.startingBalances[key as keyof typeof categoryTotals];
-    if (Math.abs(sum - start) > 1)
-      warnings.push(
-        `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the account categories hold $${sum.toFixed(2)}`,
-      );
-  }
-  if (input.individualAccounts?.length) {
-    const byBucket = emptyTaxBucketMap();
-    for (const ia of input.individualAccounts) {
-      const key = isTaxFreeBucket(ia.taxType)
-        ? "taxFree"
-        : getAccountTypeConfig(ia.category).taxBucketKey;
-      if (key in byBucket)
-        byBucket[key as keyof typeof byBucket] += ia.startingBalance;
-    }
-    for (const [key, sum] of Object.entries(byBucket)) {
-      const start = input.startingBalances[key as keyof typeof byBucket];
-      if (Math.abs(sum - start) > 1)
-        warnings.push(
-          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the accounts hold $${sum.toFixed(2)}`,
-        );
-    }
-  }
-  let { salaryGrowthRate, inflationRate } = input;
-  let postRetirementInflationRate =
-    input.postRetirementInflationRate ?? inflationRate;
-
-  if (salaryGrowthRate < -1) {
-    warnings.push(
-      `Salary growth rate clamped from ${formatPercent(salaryGrowthRate, 1)} to -100%`,
-    );
-    salaryGrowthRate = -1;
-  }
-
-  if (inflationRate > MAX_INFLATION_RATE) {
-    warnings.push(
-      `Inflation rate clamped from ${formatPercent(inflationRate, 1)} to ${formatPercent(MAX_INFLATION_RATE)}`,
-    );
-    inflationRate = MAX_INFLATION_RATE;
-  } else if (inflationRate < MIN_INFLATION_RATE) {
-    warnings.push(
-      `Inflation rate clamped from ${formatPercent(inflationRate, 1)} to ${formatPercent(MIN_INFLATION_RATE)}`,
-    );
-    inflationRate = MIN_INFLATION_RATE;
-  }
-
-  if (postRetirementInflationRate > MAX_INFLATION_RATE) {
-    warnings.push(
-      `Post-retirement raise rate clamped to ${formatPercent(MAX_INFLATION_RATE)}`,
-    );
-    postRetirementInflationRate = MAX_INFLATION_RATE;
-  } else if (postRetirementInflationRate < MIN_INFLATION_RATE) {
-    warnings.push(
-      `Post-retirement raise rate clamped to ${formatPercent(MIN_INFLATION_RATE)}`,
-    );
-    postRetirementInflationRate = MIN_INFLATION_RATE;
-  }
-
-  if (input.returnRates.length === 0) {
-    warnings.push("No return rates configured — investment growth will be 0%");
-  }
-
-  if (
-    input.contributionSpecs &&
-    input.contributionSpecs.length > 0 &&
-    input.contributionSpecs.every((s) => s.baseAnnual === 0 && s.value === 0)
-  ) {
-    warnings.push("All contribution accounts have $0 contributions configured");
-  }
-
-  return { salaryGrowthRate, inflationRate, postRetirementInflationRate };
-}
 
 // ---------------------------------------------------------------------------
 // Main engine
@@ -227,54 +115,6 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
           ).withdrawalRate,
       );
 
-  // Household's stated need, inflated to the first decumulation year's
-  // nominal dollars — same formula pre-year-setup.ts:209-211 uses to seed
-  // year-1 decumulation spending, before any strategy adjusts it. Computed
-  // independently here (post-hoc, like sustainableWithdrawal above) since
-  // the per-strategy dispatch overwrites state.projectedExpenses before the
-  // loop ends, so the pre-strategy "need" value isn't otherwise retained.
-  //
-  // The exponent MUST be the actual first decumulation year's offset from
-  // asOfDate, not `retirementYear` — pre-year-setup.ts's mid-year
-  // retirement handling can defer the first decumulation year by one extra
-  // year (when retirementYear is the first year but the current date isn't
-  // exactly year-start), and a naive age-based exponent silently
-  // under-inflates relative to what the loop actually produced. Reading the
-  // loop's own first decumulation row keeps this a single source of truth
-  // instead of a second, divergence-prone computation of "which year."
-  // A budget override active on
-  // the first decumulation year (pre-year-setup.ts:249-251) replaces
-  // state.projectedExpenses outright, but this computation used to ignore
-  // overrides entirely and always inflate `decumulationAnnualExpenses` --
-  // comparing a pre-override stated need against a post-override actual in
-  // coast-fire.ts's `passes()`. Read the same override the loop actually
-  // applied, with the same Rate-Seeded-year-1 carve-out
-  // pre-year-setup.ts:240-248 uses (that scenario deliberately ignores a
-  // same-year override so the rate seed isn't immediately clobbered).
-  const firstYearOverride =
-    firstDecumYear && input.rateSeededDecumulationYear1 !== true
-      ? ctx.budgetOverrideMap.get(firstDecumYear.year)
-      : undefined;
-  const firstDecumulationYearStatedNeed =
-    input.decumulationAnnualExpenses != null && firstDecumYear
-      ? roundToCents(
-          firstYearOverride ??
-            input.decumulationAnnualExpenses *
-              ctx.inflation.growth(
-                firstDecumYear.year - input.asOfDate.getFullYear(),
-              ) *
-              // A loan paid off by then: the same cut the seed took.
-              (input.rateSeededDecumulationYear1
-                ? 1
-                : expenseEndingFactor({
-                    endings: input.expenseEndings,
-                    phase: "decumulation",
-                    year: firstDecumYear.year,
-                    seeded: true,
-                  })),
-        )
-      : null;
-
   return {
     projectionByYear: state.projectionByYear,
     firstOverflowYear: state.firstOverflowYear,
@@ -283,7 +123,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     retirementDepletionYear: state.retirementDepletionYear,
     retirementDepletionAge: state.retirementDepletionAge,
     sustainableWithdrawal,
-    firstDecumulationYearStatedNeed,
+    firstDecumulationYearStatedNeed: state.firstDecumulationYearStatedNeed,
     accountDepletions: state.accountDepletions,
     warnings,
   };

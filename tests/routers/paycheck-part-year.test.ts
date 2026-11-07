@@ -10,10 +10,12 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
 import {
   checksPaidYtd,
-  householdWithheldSoFar,
   periodsBeforeStart,
+} from "@/lib/pure/paycheck/pay-periods-in-year";
+import {
+  householdWithheldSoFar,
   withheldThroughPeriod,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/year-schedule";
 
 const NOW = new Date("2026-08-14T12:00:00");
 const NEW_START = "2026-06-01";

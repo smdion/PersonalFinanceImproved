@@ -3,6 +3,7 @@
 
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
+import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 import type {
   RuleOf55Status,
   RothBasisMeta,
@@ -67,12 +68,10 @@ export type IndividualAccountInput = {
    *  resolvable owner. The engine re-evaluates this for a future projected
    *  year itself via `projectRuleOf55`
    *  (`src/lib/pure/accounts/tax-bucket-projection.ts`) rather than trusting a
-   *  precomputed "now" answer for a different year. Not yet consumed by
-   *  the engine (Group 2 wires the withdrawal-ordering eligibility gate) —
-   *  purely additive data threading in this pass. */
+   *  precomputed "now" answer for a different year (`eligibility.ts`). */
   ruleOf55?: RuleOf55Status | null;
   /** Companion to `ruleOf55` — Roth contribution/conversion basis "now",
-   *  same scope/caveats. Not yet consumed (see above). */
+   *  same scope/caveats; seeds tracked Roth basis. */
   rothBasisMeta?: RothBasisMeta | null;
   /** `ownerPersonId`'s birth year — carried directly on
    *  the account rather than requiring a separate personId→birthYear
@@ -81,7 +80,7 @@ export type IndividualAccountInput = {
    *  `perPersonBirthYears` is a positional array (no personId link), and
    *  `socialSecurityEntries`/`rmdStartAgeByPerson` are only populated for
    *  multi-person households. Attaching it here means the withdrawal-
-   *  eligibility gate (Group 2) never depends on which of those partial
+   *  eligibility gate never depends on which of those partial
    *  sources happened to cover a given owner. */
   ownerBirthYear?: number;
   /** The owner's planned retirement year (birth year + retirement age) —
@@ -141,46 +140,56 @@ export type IndividualAccountYearBalance = {
   contribution: number;
   employerMatch: number;
   growth: number;
-  /** Per-account withdrawal amount (decumulation only). */
-  withdrawal?: number;
   /** Breakdown of contribution sources (brokerage accounts only). */
   intentionalContribution?: number;
   overflowContribution?: number;
   rampContribution?: number;
-  /** Withdrawal-ordering eligibility for this account, this year
-   *  (decumulation only). `true` = the
-   *  full balance was treated as locked (penalty-preferred-against) when
-   *  withdrawal routing ran this year — never "inaccessible", the engine's
-   *  soft/penalized-but-available model always allows drawing from a
-   *  locked account once eligible sources run out (see
-   *  `withdrawal-eligibility.ts`'s module docblock). `reason` explains why,
+  /** The year's draw from this account and the eligibility it ran under:
+   *  every retirement year, and a year a paycheck is gone (gap-year-draw.ts).
+   *  Absent in an accumulation year with no draw. */
+  draw?: AccountYearDraw;
+  /** Tracked Roth basis: present only for taxFree-bucket accounts with
+   *  tracked basis (see `@/lib/pure/accounts/roth-basis-tracking`); absent
+   *  (not zero) for everything else, so "no data" is never confused with
+   *  "$0 left". */
+  roth?: AccountYearRothBasis;
+};
+
+/** One account's draw this year (`IndividualAccountYearBalance.draw`). */
+export type AccountYearDraw = {
+  /** Per-account withdrawal amount. */
+  withdrawal: number;
+  /** Withdrawal-ordering eligibility for this account, this year. `true` =
+   *  the full balance was treated as locked (penalty-preferred-against)
+   *  when withdrawal routing ran this year (see `eligibility.ts`'s module
+   *  docblock for when routing may still draw it). `reason` explains why,
    *  from `AccountEligibility.reason`. Absent when the account has no
    *  resolvable eligibility question for this category (e.g. brokerage —
-   *  though that case still gets a reason string, just never `locked`) or
-   *  during accumulation. */
+   *  though that case still gets a reason, just never `locked`). */
   eligibilityLocked?: boolean;
-  eligibilityReason?: string;
+  reason?: EligibilityReason;
   /** Start-of-year dollars drawable this year without the early-withdrawal
    *  penalty, and those that aren't (before this year's withdrawals and
-   *  growth — the numbers routing used; decumulation only). */
+   *  growth — the numbers routing used). */
   penaltyFreeAmount?: number;
   penaltyExposedAmount?: number;
   /** The household lets this account take penalized draws. */
   allowPenalizedWithdrawals?: boolean;
-  /** Tracked Roth basis remaining at END of this year, both phases
-   *  (see `@/lib/pure/accounts/roth-basis-tracking`). Contribution + conversion basis
-   *  combined. Present only for taxFree-bucket accounts; absent (not
-   *  zero) for everything else, so "no data" is never confused with
-   *  "$0 left". */
-  rothBasisRemaining?: number;
-  /** `rothBasisRemaining`'s two parts, as the engine tracked them. */
-  rothContributionBasisRemaining?: number;
-  rothConversionBasisRemaining?: number;
+};
+
+/** One account's tracked Roth basis (`IndividualAccountYearBalance.roth`). */
+export type AccountYearRothBasis = {
+  /** Tracked Roth basis remaining at END of this year, both phases.
+   *  Contribution + conversion basis combined. */
+  basisRemaining?: number;
+  /** `basisRemaining`'s two parts, as the engine tracked them. */
+  contributionBasisRemaining?: number;
+  conversionBasisRemaining?: number;
   /** Basis dollars THIS year's withdrawal actually consumed (retirement
    *  years and gap years) — the portion that was basis, not growth. */
-  rothBasisDrawn?: number;
-  /** True when `rothBasisRemaining` rests on a stale (pre-projection) or
+  basisDrawn?: number;
+  /** True when `basisRemaining` rests on a stale (pre-projection) or
    *  auto-seeded, never-reviewed `account_basis` row — the figure may
    *  understate real basis, never overstate it. */
-  rothBasisUncertain?: boolean;
+  basisUncertain?: boolean;
 };

@@ -38,7 +38,8 @@ import {
 } from "@/server/services/simulation/monte-carlo-worker-client";
 import {
   interpolateAllocations,
-  geometricMean,
+  weightedGeometricRate,
+  classWeightedVolatility,
 } from "@/lib/pure/simulation/random";
 import { toNumber } from "@/lib/utils/numbers";
 import { sumBy } from "@/lib/utils/math";
@@ -281,10 +282,7 @@ export const monteCarloRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = sumBy(mcAssetClasses, (ac) => {
-          const w = allocations[ac.id] ?? 0;
-          return w > 0 ? w * geometricMean(ac.meanReturn, ac.stdDev) : 0;
-        });
+        const blended = weightedGeometricRate(mcAssetClasses, allocations);
         mcDeterministicRates.push({ label: `Age ${a}`, rate: blended });
       }
       // VPW sizes by the stock share of the glide path this run simulates.
@@ -372,14 +370,8 @@ export const monteCarloRouter = createTRPCRouter({
 
       // Compute blended portfolio return/vol for display (geometric mean = realistic compounding rate)
       const currentAlloc = currentGpEntry?.allocations ?? {};
-      const blendedReturn = sumBy(mcAssetClasses, (ac) => {
-        const w = currentAlloc[ac.id] ?? 0;
-        return w > 0 ? w * geometricMean(ac.meanReturn, ac.stdDev) : 0;
-      });
-      const blendedVol = sumBy(
-        mcAssetClasses,
-        (ac) => ac.stdDev * (currentAlloc[ac.id] ?? 0),
-      );
+      const blendedReturn = weightedGeometricRate(mcAssetClasses, currentAlloc);
+      const blendedVol = classWeightedVolatility(mcAssetClasses, currentAlloc);
 
       // Build DB (raw) asset class values for comparison
       const dbAssetClasses = baseMcAssetClasses.map((ac) => ({
@@ -437,7 +429,7 @@ export const monteCarloRouter = createTRPCRouter({
           blendedVol,
           inflationRisk: effectiveInflationRisk,
           withdrawalRate: toNumber(settings.withdrawalRate),
-          withdrawalStrategy: settings.withdrawalStrategy ?? "fixed",
+          withdrawalStrategy: settings.withdrawalStrategy,
           decumulationExpenseOverride: profiles.decumulationExpenseOverride,
           accumulationExpenseOverride: profiles.accumulationExpenseOverride,
           taxMode: input.taxMode,

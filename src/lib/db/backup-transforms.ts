@@ -24,16 +24,6 @@ const CURRENT_LINE_TAGS = pgJournal.entries.map((e) => e.tag);
 // ---------------------------------------------------------------------------
 
 /**
- * Every v0.7-line journal tag, in both dialects. Declared ONCE and consumed
- * by both `KNOWN_SCHEMA_VERSIONS` (which decides whether a backup is
- * importable at all) and `schemaEra()` (which decides which transform runs):
- * two hand-kept lists once drifted and broke restore across most of v0.7.
- *
- * Tags 0007–0024 are hand-named and identical in both journals, so they
- * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
- * dialect, so both spellings are listed.
- */
-/**
  * Every v0.8-line incremental journal tag (post the v0.8.0 squash), in both
  * dialects. Same single-source rule as `V07_SCHEMA_TAGS`: consumed by both
  * `KNOWN_SCHEMA_VERSIONS` and `schemaEra()` so a new migration can't silently
@@ -215,6 +205,15 @@ function transformV0810ProfileSets(tables: TableData): void {
   for (const note of r.notes) log("info", "backup_v0810_conversion", { note });
 }
 
+/**
+ * Every v0.7-line journal tag, in both dialects. Declared ONCE and consumed
+ * by both `KNOWN_SCHEMA_VERSIONS` (which decides whether a backup is
+ * importable at all) and `schemaEra()` (which decides which transform runs).
+ *
+ * Tags 0007–0024 are hand-named and identical in both journals, so they
+ * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
+ * dialect, so both spellings are listed.
+ */
 const V07_SCHEMA_TAGS = [
   "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
   // --- PG + SQLite diverge (drizzle-generated names) ---

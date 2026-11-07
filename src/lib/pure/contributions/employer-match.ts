@@ -7,7 +7,7 @@ import type {
   ContributionMethod,
   MatchTaxTreatment,
 } from "@/lib/config/enum-values";
-import { rowTakesFromBonusCheck } from "@/lib/pure/paycheck/paycheck";
+import { rowTakesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 import { applyCeiling, storedCeiling } from "@/lib/utils/ceiling";
 import { percentFromRate } from "@/lib/utils/match-rate";
 import {
@@ -125,36 +125,6 @@ type GroupedMatchResult = {
   employerMatchTaxTreatment: MatchTaxTreatment;
 };
 
-/**
- * Compute employer match per row, correctly combining Roth/Traditional
- * splits of the same physical account before applying the match cap.
- *
- * `computeEmployerMatch` caps a single row against ONLY that row's own
- * contribution — correct for an account with no tax-treatment split, wrong
- * the moment one physical account is split into a Roth row + a Traditional
- * row (same job/person + accountType), since a real employer match cap
- * applies to the account's combined contribution, not each split
- * separately. This groups rows by resolved job (falling back to person —
- * matches every caller's existing jobless-account convention) +
- * accountType + parentCategory, resolves the single row that's allowed to
- * carry real match config for that group, applies the cap once against the
- * group's combined annual contribution, then redistributes the resulting
- * total back onto each row proportionally by its own contribution share
- * (same distribution math previously only used for display).
- *
- * parentCategory is part of the grouping key so match dollars can never
- * silently cross between Retirement/Portfolio buckets — if a data entry
- * mistake gives two real splits of the same account different
- * parentCategory values, they're treated as separate (unfixed, per-row
- * capped) groups rather than combined.
- *
- * At most one row per group may have a real (`!== "none"`) match type —
- * enforced at the DB layer (see migration adding a partial unique index),
- * but this throws defensively if it somehow arrives here anyway, rather
- * than silently falling back to the broken per-row computation (that
- * fallback would itself be a second computation path, and would invent a
- * number for genuinely ambiguous config instead of surfacing the problem).
- */
 /** One physical account's match group: its job (or person, for an account
  *  with no job) + account type + parent category. The match is capped per
  *  group (computeGroupedEmployerMatch) and figured on the group's pay
@@ -189,6 +159,36 @@ export function matchPayGroupsWithBonus(
   return new Set(rows.filter(rowTakesFromBonusCheck).map(matchGroupKey));
 }
 
+/**
+ * Compute employer match per row, correctly combining Roth/Traditional
+ * splits of the same physical account before applying the match cap.
+ *
+ * `computeEmployerMatch` caps a single row against ONLY that row's own
+ * contribution — correct for an account with no tax-treatment split, wrong
+ * the moment one physical account is split into a Roth row + a Traditional
+ * row (same job/person + accountType), since a real employer match cap
+ * applies to the account's combined contribution, not each split
+ * separately. This groups rows by resolved job (falling back to person —
+ * matches every caller's existing jobless-account convention) +
+ * accountType + parentCategory, resolves the single row that's allowed to
+ * carry real match config for that group, applies the cap once against the
+ * group's combined annual contribution, then redistributes the resulting
+ * total back onto each row proportionally by its own contribution share
+ * (same distribution math previously only used for display).
+ *
+ * parentCategory is part of the grouping key so match dollars can never
+ * silently cross between Retirement/Portfolio buckets — if a data entry
+ * mistake gives two real splits of the same account different
+ * parentCategory values, they're treated as separate (unfixed, per-row
+ * capped) groups rather than combined.
+ *
+ * At most one row per group may have a real (`!== "none"`) match type —
+ * enforced at the DB layer (see migration adding a partial unique index),
+ * but this throws defensively if it somehow arrives here anyway, rather
+ * than silently falling back to the broken per-row computation (that
+ * fallback would itself be a second computation path, and would invent a
+ * number for genuinely ambiguous config instead of surfacing the problem).
+ */
 export function computeGroupedEmployerMatch(
   rows: GroupableMatchRow[],
 ): Map<number, GroupedMatchResult> {

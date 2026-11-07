@@ -155,7 +155,7 @@ export function AccumulationRow({
     rows: NonNullable<typeof yr.individualAccountBalances>,
   ) => (pt ? rows.filter((ia) => ia.ownerPersonId === personFilter) : rows);
   const drawnTotal = (rows: NonNullable<typeof yr.individualAccountBalances>) =>
-    scopedIabs(rows).reduce((t, ia) => t + (ia.withdrawal ?? 0), 0);
+    scopedIabs(rows).reduce((t, ia) => t + (ia.draw?.withdrawal ?? 0), 0);
   const gapOut = yr.gapDraw
     ? (yr.individualAccountBalances?.length ?? 0) > 0
       ? drawnTotal(yr.individualAccountBalances!)
@@ -956,7 +956,7 @@ export function AccumulationRow({
             // owner, tax type, and whether the money is penalty-free.
             const categoryOrder = getAllCategories();
             const drawn = scopedIabs(iabs)
-              .filter((ia) => (ia.withdrawal ?? 0) > 0)
+              .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0)
               .sort(
                 (a, b) =>
                   categoryOrder.indexOf(a.category) -
@@ -968,7 +968,7 @@ export function AccumulationRow({
             for (const ia of drawn)
               inOutItems.push({
                 label: ownerAccountLabel(ia),
-                amount: deflate(ia.withdrawal!, yr.year),
+                amount: deflate(ia.draw!.withdrawal, yr.year),
                 prefix: "-",
                 taxType: itemTaxType(ia.category, ia.taxType),
                 color: "red",

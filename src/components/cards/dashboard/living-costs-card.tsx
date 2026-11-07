@@ -27,7 +27,7 @@ import { LoadingCard } from "./utils";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
-} from "@/lib/pure/paycheck/paycheck";
+} from "@/lib/pure/paycheck/extra-paycheck-months";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -213,13 +213,13 @@ function LivingCostsCardImpl() {
   }
 
   const categoryTotals = new Map<string, number>();
-  if (budgetData?.columnMonths && budgetData.allColumnResults) {
+  if (budgetData.columnMonths) {
     // Weighted mode: sum each category across all columns weighted by month count
     const cm = budgetData.columnMonths;
     for (const cat of budget.categories) {
       let annual = 0;
       for (let col = 0; col < cm.length; col++) {
-        const colCat = budgetData.allColumnResults[col]?.categories?.find(
+        const colCat = budgetData.allColumnResults[col]?.categories.find(
           (c: { name: string }) => c.name === cat.name,
         );
         annual += (colCat?.total ?? 0) * (cm[col] ?? 0);
@@ -241,12 +241,12 @@ function LivingCostsCardImpl() {
   // spending and a contribution. Net it out here, at the source, so every
   // downstream total (Ramsey rows, Unallocated) only ever sees each dollar
   // once.
-  const linkedItems = (budgetData?.rawItems ?? []).filter(
+  const linkedItems = budgetData.rawItems.filter(
     (i) => i.contributionAccountId != null,
   );
   if (linkedItems.length > 0) {
     const linkedAnnualByCategory = new Map<string, number>();
-    if (budgetData?.columnMonths && budgetData.allColumnResults) {
+    if (budgetData.columnMonths) {
       const cm = budgetData.columnMonths;
       for (const item of linkedItems) {
         let annual = 0;
@@ -516,14 +516,12 @@ function LivingCostsCardImpl() {
       } · ${fullYearNote ?? "full-year view"}`}
       href="/budget"
     >
-      {budgetData?.result && (
-        <BudgetSummary
-          result={budgetData.result}
-          weightedAnnualTotal={budgetData.weightedAnnualTotal ?? null}
-          weighted={!!budgetData.columnMonths}
-          actuals={actualsData}
-        />
-      )}
+      <BudgetSummary
+        result={budgetData.result}
+        weightedAnnualTotal={budgetData.weightedAnnualTotal}
+        weighted={!!budgetData.columnMonths}
+        actuals={actualsData}
+      />
       {/* Gross / Net toggle */}
       <div
         className="mb-2 flex items-center gap-2"

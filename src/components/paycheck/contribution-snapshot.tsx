@@ -60,7 +60,7 @@ export function ContributionSnapshot() {
     useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
-      householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
+      householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
       highIncomeThreshold,
     ),
   );
@@ -75,7 +75,7 @@ export function ContributionSnapshot() {
     return (
       <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
     );
-  if (!data?.people?.length) return null;
+  if (!data?.people.length) return null;
 
   const { people, jointAccountTypes = [] } = data;
   const activePeople = people.filter((p) => p.accountTypes.length > 0);

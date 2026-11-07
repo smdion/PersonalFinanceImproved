@@ -19,7 +19,7 @@
  * "+ Add Account", and the Paycheck page's create flow.
  */
 
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormField, FormInput, FormSelect } from "@/components/forms";

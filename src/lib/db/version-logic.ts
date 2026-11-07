@@ -27,7 +27,12 @@ import {
   execRaw,
 } from "./compat";
 import { reconcileReferenceData } from "./reference-data";
-import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
+import {
+  VERSION_TABLE_NAMES,
+  VERSION_TABLES,
+  tablesFromBackup,
+} from "./version-tables";
+import { withInstallationRows } from "./installation-rows";
 import { log } from "@/lib/logger";
 import {
   REBUILT_ON_RESTORE,
@@ -61,7 +66,7 @@ function readSchemaVersion(): string {
     const journal = JSON.parse(readFileSync(journalPath, "utf-8")) as {
       entries: { tag: string }[];
     };
-    const entries = journal.entries;
+    const entries = journal.entries; // parsed from disk, cast: kept guarded
     if (!entries || entries.length === 0) {
       throw new Error("No entries in drizzle journal");
     }
@@ -215,10 +220,11 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
 export async function tablesLostOnRestore(
   database: NodePgDatabase<typeof schema>,
   backupTableNames: Iterable<string>,
+  by: { asAdmin: boolean },
 ): Promise<{ tableName: string; currentRows: number }[]> {
   const present = new Set(backupTableNames);
   const lost: { tableName: string; currentRows: number }[] = [];
-  for (const tableName of VERSION_TABLE_NAMES) {
+  for (const tableName of tablesFromBackup(VERSION_TABLE_NAMES, by)) {
     if (present.has(tableName)) continue;
     // Rebuilt by the restore from a table the backup does carry.
     const source = REBUILT_ON_RESTORE[tableName];
@@ -238,9 +244,44 @@ export async function tablesLostOnRestore(
   return lost;
 }
 
+/** Inserts one table's rows, 500 to a statement; returns how many. */
+async function insertRows(
+  tx: Parameters<typeof execRaw>[0],
+  tableName: string,
+  rows: Record<string, unknown>[],
+): Promise<number> {
+  const columns = unionColumns(rows);
+  validateColumns(tableName, columns);
+  const colList = columns.map((c) => `"${c}"`).join(", ");
+  const BATCH_SIZE = 500;
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const valueClauses = batch.map((row) => {
+      const values = columns.map((col) => {
+        const val = row[col];
+        if (val === null || val === undefined) return sql`NULL`;
+        if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
+        if (typeof val === "object") {
+          const jsonStr = JSON.stringify(val);
+          return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
+        }
+        return sql`${val}`;
+      });
+      return sql`(${sql.join(values, sql.raw(", "))})`;
+    });
+    await execRaw(
+      tx,
+      sql`INSERT INTO ${sql.raw(`"${tableName}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
+    );
+  }
+  return rows.length;
+}
+
 export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,
+  by: { asAdmin: boolean },
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Load version metadata
   const [version] = await database
@@ -260,11 +301,9 @@ export async function restoreVersion(
 
   // Transform version-row data if it was created at an older schema version
   const rawTableMap: Record<string, unknown[]> = {};
-  for (const t of tableDatas) {
-    if (Array.isArray(t.data) && t.data.length > 0) {
+  for (const t of tableDatas)
+    if (Array.isArray(t.data) && t.data.length > 0)
       rawTableMap[t.tableName] = t.data;
-    }
-  }
 
   const { tables: transformedMap } = transformBackupToCurrentSchema(
     rawTableMap,
@@ -278,7 +317,8 @@ export async function restoreVersion(
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
-  for (const [tableName, data] of Object.entries(transformedMap))
+  const fenced = await withInstallationRows(database, transformedMap, by);
+  for (const [tableName, data] of Object.entries(fenced))
     tableDataMap.set(tableName, { data });
 
   // Wrap in a transaction so truncate + inserts are atomic.
@@ -303,32 +343,7 @@ export async function restoreVersion(
       }
 
       const rows = tableData.data as Record<string, unknown>[];
-      const columns = unionColumns(rows);
-      validateColumns(tableEntry.name, columns);
-      const colList = columns.map((c) => `"${c}"`).join(", ");
-      const BATCH_SIZE = 500;
-
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
-        const valueClauses = batch.map((row) => {
-          const values = columns.map((col) => {
-            const val = row[col];
-            if (val === null || val === undefined) return sql`NULL`;
-            if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
-            if (typeof val === "object") {
-              const jsonStr = JSON.stringify(val);
-              return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
-            }
-            return sql`${val}`;
-          });
-          return sql`(${sql.join(values, sql.raw(", "))})`;
-        });
-        await execRaw(
-          tx,
-          sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
-        );
-        restoredRows += batch.length;
-      }
+      restoredRows += await insertRows(tx, tableEntry.name, rows);
     }
 
     // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
@@ -354,7 +369,8 @@ export async function restoreVersion(
   // that it lacks (a newer tax year), as the next start would.
   await reconcileReferenceData(database);
 
-  return { restoredTables: tableDatas.length, restoredRows };
+  const names = tableDatas.map((t) => t.tableName);
+  return { restoredTables: tablesFromBackup(names, by).length, restoredRows };
 }
 
 export type BackupData = {
@@ -396,6 +412,7 @@ export async function exportBackup(
 export async function importBackup(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
+  by: { asAdmin: boolean },
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Transform backup to current schema if needed (supports v0.1.x → v0.2.0+)
   const { tables: transformedTables, transformed } =
@@ -415,7 +432,7 @@ export async function importBackup(
   const transformedBackup: BackupData = {
     ...backup,
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    tables: transformedTables,
+    tables: await withInstallationRows(database, transformedTables, by),
   };
 
   // Validate structure — tables present in backup must be arrays
@@ -474,7 +491,7 @@ async function importBackupPg(
     }
 
     for (const tableEntry of sortedTables) {
-      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
+      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
       const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Set();
@@ -558,35 +575,10 @@ async function importBackupSqlite(
     await truncateTables(tx, VERSION_TABLE_NAMES);
 
     for (const tableEntry of sortedTables) {
-      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
+      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
-      const columns = unionColumns(rows);
-      validateColumns(tableEntry.name, columns);
-      const colList = columns.map((c) => `"${c}"`).join(", ");
-      const BATCH_SIZE = 500;
-
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
-        const valueClauses = batch.map((row) => {
-          const values = columns.map((col) => {
-            const val = row[col];
-            if (val === null || val === undefined) return sql`NULL`;
-            if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
-            if (typeof val === "object") {
-              const jsonStr = JSON.stringify(val);
-              return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
-            }
-            return sql`${val}`;
-          });
-          return sql`(${sql.join(values, sql.raw(", "))})`;
-        });
-        await execRaw(
-          tx,
-          sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
-        );
-        restoredRows += batch.length;
-      }
+      restoredRows += await insertRows(tx, tableEntry.name, rows);
     }
 
     // Log import (non-critical)

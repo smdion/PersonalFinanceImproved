@@ -1,7 +1,6 @@
 /**
  * applyLumpSums — apply one-time lump-sum injections to balances and per-account
- * tracking. Shared by the accumulation-year and decumulation-year handlers,
- * which previously carried byte-identical copies.
+ * tracking. Shared by the accumulation-year and decumulation-year handlers.
  */
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { LumpSum } from "../types/year-overrides";
@@ -17,10 +16,7 @@ import {
   addBasis,
 } from "../../../config/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
-import {
-  portfolioFirst,
-  retirementFirst,
-} from "../individual-account-tracking";
+import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
 
 /**
  * Apply one-time lump-sum injections for the current year.

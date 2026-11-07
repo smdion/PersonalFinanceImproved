@@ -1,0 +1,822 @@
+{
+ "synced": true,
+ "cash": {
+  "manual": 40000,
+  "api": 30450.25,
+  "apiAccounts": [
+   {
+    "name": "Joint Checking",
+    "balance": 8450.25,
+    "type": "checking"
+   },
+   {
+    "name": "High-Yield Savings",
+    "balance": 22000,
+    "type": "savings"
+   }
+  ]
+ },
+ "accounts": {
+  "total": 8,
+  "onBudget": 3,
+  "tracking": 5,
+  "byType": {
+   "checking": {
+    "count": 1,
+    "balance": 8450.25
+   },
+   "savings": {
+    "count": 1,
+    "balance": 22000
+   },
+   "creditCard": {
+    "count": 1,
+    "balance": -1234.56
+   },
+   "mortgage": {
+    "count": 1,
+    "balance": -451683.88
+   },
+   "tracking": {
+    "count": 4,
+    "balance": 834119.6
+   }
+  }
+ },
+ "categories": {
+  "groups": 3,
+  "total": 6
+ },
+ "apiCategories": [
+  {
+   "id": "cat-utilities",
+   "name": "Utilities",
+   "groupName": "Bills",
+   "budgeted": 350
+  },
+  {
+   "id": "cat-childcare",
+   "name": "Childcare",
+   "groupName": "Bills",
+   "budgeted": 1600
+  },
+  {
+   "id": "cat-groceries",
+   "name": "Grocery store",
+   "groupName": "Everyday",
+   "budgeted": 1100
+  },
+  {
+   "id": "cat-dining",
+   "name": "Dining out",
+   "groupName": "Everyday",
+   "budgeted": 400
+  },
+  {
+   "id": "cat-efund",
+   "name": "Emergency fund",
+   "groupName": "Savings Goals",
+   "budgeted": 1500
+  },
+  {
+   "id": "cat-roof",
+   "name": "New roof",
+   "groupName": "Savings Goals",
+   "budgeted": 600
+  }
+ ],
+ "profile": {
+  "linkedProfileId": null,
+  "linkedProfileName": "Household budget",
+  "linkedColumnIndex": 0,
+  "columnLabels": [
+   "Standard"
+  ],
+  "availableProfiles": [
+   {
+    "id": 1,
+    "name": "Household budget",
+    "isActive": true,
+    "columnLabels": [
+     "Standard"
+    ]
+   }
+  ]
+ },
+ "portfolio": {
+  "snapshotDate": "2026-03-01",
+  "localAccounts": [
+   {
+    "label": "Jordan 401k (Contoso 401(k) plan)",
+    "balance": 310000,
+    "performanceAccountId": 1,
+    "ownerPersonId": 1
+   },
+   {
+    "label": "Joint Brokerage (Schwab)",
+    "balance": 140000,
+    "performanceAccountId": 5,
+    "ownerPersonId": null
+   },
+   {
+    "label": "Riley 401k (Fabrikam 401(k) plan)",
+    "balance": 95000,
+    "performanceAccountId": 2,
+    "ownerPersonId": 2
+   },
+   {
+    "label": "Riley IRA (Vanguard)",
+    "balance": 45000,
+    "performanceAccountId": 4,
+    "ownerPersonId": 2
+   },
+   {
+    "label": "Jordan HSA (HealthEquity)",
+    "balance": 28000,
+    "performanceAccountId": 3,
+    "ownerPersonId": 1
+   }
+  ],
+  "assetAccounts": [
+   {
+    "label": "Family Car",
+    "balance": 21500,
+    "id": 1
+   }
+  ],
+  "mortgageAccounts": [
+   {
+    "label": "Home loan — Property Value",
+    "id": 1,
+    "type": "propertyValue",
+    "value": 685000
+   },
+   {
+    "label": "Home loan — Loan Balance",
+    "id": 1,
+    "type": "loanBalance",
+    "value": -451683.88,
+    "calculatedBalance": 456971.52,
+    "apiBalance": 451683.88,
+    "apiBalanceDate": "2026-03-07",
+    "fedBySimplefin": false
+   }
+  ],
+  "debtAccounts": [
+   {
+    "label": "Car loan",
+    "id": 1,
+    "value": -13580.4,
+    "enteredBalance": 14000,
+    "apiBalance": 13580.4,
+    "apiBalanceDate": "2026-03-07"
+   }
+  ],
+  "trackingAccounts": [
+   {
+    "id": "acct-mortgage",
+    "name": "Home Loan",
+    "balance": -451683.88,
+    "type": "mortgage"
+   },
+   {
+    "id": "acct-home",
+    "name": "Home Value",
+    "balance": 685000,
+    "type": "tracking"
+   },
+   {
+    "id": "acct-carloan",
+    "name": "Car Loan",
+    "balance": -13580.4,
+    "type": "tracking"
+   },
+   {
+    "id": "acct-car",
+    "name": "Family Car",
+    "balance": 21500,
+    "type": "tracking"
+   },
+   {
+    "id": "acct-brokerage",
+    "name": "Joint Brokerage",
+    "balance": 141200,
+    "type": "tracking"
+   }
+  ],
+  "allAccounts": [
+   {
+    "id": "acct-checking",
+    "name": "Joint Checking",
+    "balance": 8450.25,
+    "type": "checking"
+   },
+   {
+    "id": "acct-savings",
+    "name": "High-Yield Savings",
+    "balance": 22000,
+    "type": "savings"
+   },
+   {
+    "id": "acct-visa",
+    "name": "Rewards Visa",
+    "balance": -1234.56,
+    "type": "creditCard"
+   },
+   {
+    "id": "acct-mortgage",
+    "name": "Home Loan",
+    "balance": -451683.88,
+    "type": "mortgage"
+   },
+   {
+    "id": "acct-home",
+    "name": "Home Value",
+    "balance": 685000,
+    "type": "tracking"
+   },
+   {
+    "id": "acct-carloan",
+    "name": "Car Loan",
+    "balance": -13580.4,
+    "type": "tracking"
+   },
+   {
+    "id": "acct-car",
+    "name": "Family Car",
+    "balance": 21500,
+    "type": "tracking"
+   },
+   {
+    "id": "acct-brokerage",
+    "name": "Joint Brokerage",
+    "balance": 141200,
+    "type": "tracking"
+   }
+  ],
+  "existingMappings": [
+   {
+    "localId": "cash",
+    "localName": "Cash",
+    "remoteAccountId": "acct-checking",
+    "syncDirection": "pull"
+   },
+   {
+    "localId": "cash",
+    "localName": "Cash",
+    "remoteAccountId": "acct-savings",
+    "syncDirection": "pull"
+   },
+   {
+    "localId": "creditCard",
+    "localName": "Credit cards",
+    "remoteAccountId": "acct-visa",
+    "syncDirection": "pull"
+   },
+   {
+    "localId": "mortgage:1:loanBalance",
+    "localName": "Home loan",
+    "remoteAccountId": "acct-mortgage",
+    "syncDirection": "pull",
+    "loanId": 1,
+    "loanMapType": "loanBalance"
+   },
+   {
+    "localId": "mortgage:1:propertyValue",
+    "localName": "Home value",
+    "remoteAccountId": "acct-home",
+    "syncDirection": "pull",
+    "loanId": 1,
+    "loanMapType": "propertyValue"
+   },
+   {
+    "localId": "debt:1",
+    "localName": "Car loan",
+    "remoteAccountId": "acct-carloan",
+    "syncDirection": "pull",
+    "debtId": 1
+   },
+   {
+    "localId": "performance:5",
+    "localName": "Joint brokerage",
+    "remoteAccountId": "acct-brokerage",
+    "syncDirection": "push",
+    "performanceAccountId": 5
+   },
+   {
+    "localId": "asset:1",
+    "localName": "Family Car",
+    "remoteAccountId": "acct-car",
+    "syncDirection": "pull",
+    "assetId": 1
+   }
+  ]
+ },
+ "budget": {
+  "matches": [
+   {
+    "budgetItemId": 1,
+    "ledgrName": "Mortgage/Rent",
+    "ledgrCategory": "Housing",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 2,
+    "ledgrName": "Property Taxes",
+    "ledgrCategory": "Housing",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 3,
+    "ledgrName": "HOA",
+    "ledgrCategory": "Housing",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 4,
+    "ledgrName": "Electric",
+    "ledgrCategory": "Utilities",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 5,
+    "ledgrName": "Gas",
+    "ledgrCategory": "Utilities",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 6,
+    "ledgrName": "Water/Sewer",
+    "ledgrCategory": "Utilities",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 7,
+    "ledgrName": "Internet",
+    "ledgrCategory": "Utilities",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 8,
+    "ledgrName": "Cell Phone",
+    "ledgrCategory": "Utilities",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 9,
+    "ledgrName": "Groceries",
+    "ledgrCategory": "Food",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 10,
+    "ledgrName": "Restaurants",
+    "ledgrCategory": "Food",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 11,
+    "ledgrName": "Fuel",
+    "ledgrCategory": "Transportation",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 12,
+    "ledgrName": "Car Maintenance",
+    "ledgrCategory": "Transportation",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 13,
+    "ledgrName": "Car Insurance",
+    "ledgrCategory": "Insurance",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 14,
+    "ledgrName": "Homeowners Insurance",
+    "ledgrCategory": "Insurance",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 15,
+    "ledgrName": "Life Insurance",
+    "ledgrCategory": "Insurance",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 16,
+    "ledgrName": "General Household",
+    "ledgrCategory": "House Upkeep",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 17,
+    "ledgrName": "Home Improvement",
+    "ledgrCategory": "House Upkeep",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 18,
+    "ledgrName": "Lawn/Garden",
+    "ledgrCategory": "House Upkeep",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 19,
+    "ledgrName": "Clothing",
+    "ledgrCategory": "Personal",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 20,
+    "ledgrName": "Self Care",
+    "ledgrCategory": "Personal",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 21,
+    "ledgrName": "Subscriptions",
+    "ledgrCategory": "Fun Money",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 22,
+    "ledgrName": "Entertainment",
+    "ledgrCategory": "Fun Money",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 23,
+    "ledgrName": "Gifts",
+    "ledgrCategory": "Fun Money",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 24,
+    "ledgrName": "Giving",
+    "ledgrCategory": "Not in Emergency Fund",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 25,
+    "ledgrName": "Investments",
+    "ledgrCategory": "Not in Emergency Fund",
+    "ledgrAmount": 0,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 26,
+    "ledgrName": "Grocery store",
+    "ledgrCategory": "Food",
+    "ledgrAmount": 1100,
+    "status": "suggested",
+    "apiCategoryId": "cat-groceries",
+    "apiCategoryName": "Grocery store",
+    "apiGroupName": "Everyday",
+    "apiBudgeted": 1100,
+    "apiActivity": -288.15,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 27,
+    "ledgrName": "Utilities",
+    "ledgrCategory": "Housing",
+    "ledgrAmount": 350,
+    "status": "suggested",
+    "apiCategoryId": "cat-utilities",
+    "apiCategoryName": "Utilities",
+    "apiGroupName": "Bills",
+    "apiBudgeted": 350,
+    "apiActivity": -96.4,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 28,
+    "ledgrName": "Childcare",
+    "ledgrCategory": "Family",
+    "ledgrAmount": 1600,
+    "status": "suggested",
+    "apiCategoryId": "cat-childcare",
+    "apiCategoryName": "Childcare",
+    "apiGroupName": "Bills",
+    "apiBudgeted": 1600,
+    "apiActivity": -800,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 29,
+    "ledgrName": "Cars and gas",
+    "ledgrCategory": "Transportation",
+    "ledgrAmount": 600,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 30,
+    "ledgrName": "Auto and umbrella",
+    "ledgrCategory": "Insurance",
+    "ledgrAmount": 250,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 31,
+    "ledgrName": "Dining out",
+    "ledgrCategory": "Lifestyle",
+    "ledgrAmount": 400,
+    "status": "suggested",
+    "apiCategoryId": "cat-dining",
+    "apiCategoryName": "Dining out",
+    "apiGroupName": "Everyday",
+    "apiBudgeted": 400,
+    "apiActivity": -61.25,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 32,
+    "ledgrName": "Travel",
+    "ledgrCategory": "Lifestyle",
+    "ledgrAmount": 500,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   },
+   {
+    "budgetItemId": 33,
+    "ledgrName": "Misc",
+    "ledgrCategory": "Lifestyle",
+    "ledgrAmount": 400,
+    "status": "unmatched",
+    "apiCategoryId": null,
+    "apiCategoryName": null,
+    "apiGroupName": null,
+    "apiBudgeted": null,
+    "apiActivity": null,
+    "syncDirection": null,
+    "contributionAccountId": null
+   }
+  ],
+  "unmatchedApiCategories": [],
+  "skippedApiCategories": [],
+  "summary": {
+   "linked": 0,
+   "suggested": 4,
+   "unmatched": 29,
+   "orphaned": 0,
+   "apiOnly": 0
+  }
+ },
+ "savings": {
+  "matches": [
+   {
+    "goalId": 1,
+    "goalName": "Emergency fund",
+    "status": "linked",
+    "apiCategoryId": "cat-efund",
+    "apiCategoryName": "Emergency fund",
+    "apiBalance": 38000,
+    "nameDrifted": false,
+    "isEmergencyFund": true,
+    "reimbursementApiCategoryId": null
+   },
+   {
+    "goalId": 2,
+    "goalName": "New roof",
+    "status": "linked",
+    "apiCategoryId": "cat-roof",
+    "apiCategoryName": "New roof",
+    "apiBalance": 3550,
+    "nameDrifted": false,
+    "isEmergencyFund": false,
+    "reimbursementApiCategoryId": null
+   }
+  ],
+  "summary": {
+   "linked": 2,
+   "suggested": 0,
+   "unmatched": 0,
+   "orphaned": 0
+  }
+ }
+}

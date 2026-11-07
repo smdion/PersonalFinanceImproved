@@ -104,35 +104,27 @@ export function RelocationMetricsAndBanner({
               Balance at Retirement (Move {moveYear})
               <HelpTip text="Projected portfolio balance at your configured retirement age on the blended path: current budget until the move year, then relocation budget." />
             </div>
-            {engineResult === undefined ? (
-              <div className="bg-surface-elevated mt-1 h-7 w-24 animate-pulse rounded" />
-            ) : engineResult === null ? (
-              <div className="text-muted text-lg font-bold">—</div>
-            ) : (
-              <>
-                <div
-                  className={`text-lg font-bold ${
-                    (engineResult.blendedBalanceAtRetirement ?? 0) <
-                    engineResult.currentBalanceAtRetirement
-                      ? "text-red-600"
-                      : "text-green-600"
-                  }`}
-                >
-                  {(engineResult.blendedBalanceAtRetirement ?? 0) >=
-                  engineResult.currentBalanceAtRetirement
-                    ? "+"
-                    : ""}
-                  {formatCurrency(
-                    (engineResult.blendedBalanceAtRetirement ?? 0) -
-                      engineResult.currentBalanceAtRetirement,
-                  )}
-                </div>
-                <div className="text-faint text-xs">
-                  {formatCurrency(engineResult.currentBalanceAtRetirement)} →{" "}
-                  {formatCurrency(engineResult.blendedBalanceAtRetirement ?? 0)}
-                </div>
-              </>
-            )}
+            <div
+              className={`text-lg font-bold ${
+                (engineResult.blendedBalanceAtRetirement ?? 0) <
+                engineResult.currentBalanceAtRetirement
+                  ? "text-red-600"
+                  : "text-green-600"
+              }`}
+            >
+              {(engineResult.blendedBalanceAtRetirement ?? 0) >=
+              engineResult.currentBalanceAtRetirement
+                ? "+"
+                : ""}
+              {formatCurrency(
+                (engineResult.blendedBalanceAtRetirement ?? 0) -
+                  engineResult.currentBalanceAtRetirement,
+              )}
+            </div>
+            <div className="text-faint text-xs">
+              {formatCurrency(engineResult.currentBalanceAtRetirement)} →{" "}
+              {formatCurrency(engineResult.blendedBalanceAtRetirement ?? 0)}
+            </div>
           </div>
         ) : (
           <div className="bg-surface-sunken rounded-lg p-3">
@@ -180,9 +172,7 @@ export function RelocationMetricsAndBanner({
       )}
 
       {/* Secondary hint — earliest viable year when moveYear is set */}
-      {hasBlended && engineResult != null && (
-        <EarliestViableHint engineResult={engineResult} />
-      )}
+      {hasBlended && <EarliestViableHint engineResult={engineResult} />}
 
       {/* Warnings from calculator */}
       {r.warnings.length > 0 && (

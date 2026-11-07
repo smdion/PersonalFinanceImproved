@@ -160,7 +160,7 @@ export function ContributionAccountsSettings() {
             amount: a.amount,
             accountType: a.accountType,
             ownerPersonId: a.ownerPersonId,
-            isActive: a.isActive ?? true,
+            isActive: a.isActive,
           });
           subMap.set(a.performanceAccountId, subs);
         }

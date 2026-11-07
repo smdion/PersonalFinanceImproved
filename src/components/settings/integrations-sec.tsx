@@ -173,7 +173,7 @@ export function SecCard() {
           </div>
         )}
 
-        {testMut.isSuccess && testMut.data && (
+        {testMut.isSuccess && (
           <ConnectionResultMessage
             tone={testMut.data.success ? "success" : "error"}
           >
@@ -182,7 +182,7 @@ export function SecCard() {
               : testMut.data.error}
           </ConnectionResultMessage>
         )}
-        {refreshMut.isSuccess && refreshMut.data && (
+        {refreshMut.isSuccess && (
           <ConnectionResultMessage
             tone={refreshMut.data.stoppedBySec ? "error" : "success"}
           >

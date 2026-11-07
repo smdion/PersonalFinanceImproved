@@ -179,3 +179,79 @@ describe("/api/versions/import settles the first-admin gate", () => {
     );
   });
 });
+
+// Who may import (an admin, or a viewer with the version permission) and
+// how far: anyone but an admin keeps each integration's credentials.
+describe("/api/versions/import: who imports, and the connections fence", () => {
+  const backupFile = () => {
+    const body = new FormData();
+    const backup = {
+      schemaVersion: "0001",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      tables: {},
+    };
+    body.append("file", new File([JSON.stringify(backup)], "backup.json"));
+    return body;
+  };
+  const user = (role: "admin" | "viewer", permissions: string[]) => ({
+    user: { id: "u", name: "U", email: "u@test.local", role, permissions },
+    expires: "2099-12-31T23:59:59.999Z",
+  });
+
+  async function importAs(session: ReturnType<typeof user>, devFlag = false) {
+    vi.stubEnv("NODE_ENV", "production");
+    if (devFlag) process.env.ALLOW_DEV_MODE = "true";
+    else delete process.env.ALLOW_DEV_MODE;
+    const { auth } = await import("@/server/auth");
+    vi.mocked(auth).mockResolvedValueOnce(session as never);
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/version-logic");
+    vi.mocked(importBackup).mockClear();
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body: backupFile(),
+      }),
+    );
+    return { res, importBackup: vi.mocked(importBackup) };
+  }
+
+  it("a viewer with the version permission imports, keeping the credentials", async () => {
+    const { res, importBackup } = await importAs(user("viewer", ["version"]));
+    expect(res.status).toBe(200);
+    expect(importBackup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { asAdmin: false },
+    );
+  });
+
+  it("an admin imports the whole backup, connections included", async () => {
+    const { res, importBackup } = await importAs(user("admin", []));
+    expect(res.status).toBe(200);
+    expect(importBackup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { asAdmin: true },
+    );
+  });
+
+  it("in production ALLOW_DEV_MODE doesn't make a version viewer's import an admin's", async () => {
+    const { res, importBackup } = await importAs(
+      user("viewer", ["version"]),
+      true,
+    );
+    expect(res.status).toBe(200);
+    expect(importBackup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { asAdmin: false },
+    );
+  });
+
+  it("a viewer with only the sync permission can't import", async () => {
+    const { res, importBackup } = await importAs(user("viewer", ["sync"]));
+    expect(res.status).toBe(403);
+    expect(importBackup).not.toHaveBeenCalled();
+  });
+});

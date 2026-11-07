@@ -8,6 +8,7 @@ const STORAGE_KEY = "ledgr-theme";
 
 function getStoredTheme(): Theme {
   if (typeof window === "undefined") return "light";
+  // getItem gives null when nothing is stored, whatever the cast says.
   return (localStorage.getItem(STORAGE_KEY) as Theme) || "light";
 }
 

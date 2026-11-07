@@ -1,6 +1,7 @@
 "use client";
 
 /** Withdrawal strategy configuration panel — bracket filling, waterfall, and percentage routing modes with account order and tax preference editors. */
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
@@ -12,10 +13,7 @@ import {
   categoriesWithoutTaxPreference,
   tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
-import {
-  WITHDRAWAL_STRATEGY_CONFIG,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { type WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
   WITHDRAWAL_ROUTING_MODE_LABELS,
   WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
@@ -142,7 +140,7 @@ export function DecumulationConfig({
 }: DecumulationConfigProps) {
   const strategyKey = (activeSpendingStrategy ??
     "fixed") as WithdrawalStrategyType;
-  const strategyCfg = WITHDRAWAL_STRATEGY_CONFIG[strategyKey];
+  const strategyCfg = STRATEGY_CONFIG_BY_STORED_KEY[strategyKey];
   const isDynamic = strategyKey !== "fixed";
   const persistedModeLabel =
     persistedWithdrawalRoutingMode &&
@@ -381,7 +379,7 @@ export function DecumulationConfig({
                       type="number"
                       min={0}
                       max={100}
-                      value={Math.round((displayedSplits[cat] ?? 0) * 100)}
+                      value={Math.round((displayedSplits[cat] ?? 0) * 100)} // Persisted splits are stored jsonb: a partial record is legal.
                       onChange={(e) => {
                         const v = parseFloat(e.target.value) / 100;
                         // Seed the first edit from what's DISPLAYED (the

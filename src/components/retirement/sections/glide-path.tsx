@@ -20,7 +20,6 @@ type Props = {
 };
 
 export function GlidePathSection({ returnRateSummary }: Props) {
-  if (!returnRateSummary) return null;
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="mb-2 flex items-center gap-2">

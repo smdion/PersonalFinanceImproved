@@ -1,9 +1,9 @@
 "use client";
 
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { RouterInputs, RouterOutputs } from "@/lib/trpc";
 
@@ -376,9 +376,9 @@ export function SimulationAssumptions({
                 tip="Weighted average standard deviation of returns. Higher = wider range of outcomes. Typical range: 8-16% (diversified to all-equity)."
               />
               {(() => {
-                const strategy = (inputs.withdrawalStrategy ??
-                  "fixed") as WithdrawalStrategyType;
-                const cfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
+                const strategy =
+                  inputs.withdrawalStrategy as WithdrawalStrategyType;
+                const cfg = STRATEGY_CONFIG_BY_STORED_KEY[strategy];
                 const isDynamic = strategy !== "fixed";
                 // None of the 8 strategies actually
                 // read this rate to compute spending (Finding 0) — the old
@@ -436,7 +436,7 @@ export function SimulationAssumptions({
                         value={`${formatCurrency(inputs.decumulationExpenseOverride)}/yr`}
                         tip={
                           isDynamic
-                            ? isBudgetSeeded && cfg
+                            ? isBudgetSeeded
                               ? `Starting retirement budget — your ${cfg.label} strategy adjusts actual spending from this figure each year.`
                               : `Starting retirement budget — ${cfg?.label ?? strategy} doesn't read this figure once it takes over (spending is computed from your portfolio balance instead); only used before that strategy fully applies, if at all.`
                             : undefined

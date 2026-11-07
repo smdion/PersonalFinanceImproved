@@ -6,7 +6,7 @@
  * no limits data, negative values, and extreme inputs.
  */
 import { describe, it, expect } from "vitest";
-import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
   taxForOnePerson,
   type OnePersonTaxInput,

@@ -1,16 +1,13 @@
 /**
- * Tracked (not snapshot) Roth basis draw-down — a follow-up to
- * the engine-aware withdrawal ordering.
- *
- * Replaces the one-time `rothBasisMeta`
- * snapshot `withdrawal-eligibility.ts` previously read with a running,
- * per-account, per-projected-year balance that GROWS with modeled
+ * Tracked (not snapshot) Roth basis draw-down: seeded from the one-time
+ * `rothBasisMeta` snapshot, a running, per-account, per-projected-year
+ * balance that GROWS with modeled
  * contributions (accumulation phase) and SHRINKS as withdrawals actually
  * take basis dollars (decumulation phase).
  *
  * This module answers "how much basis is left, and how much of THIS
  * withdrawal was basis" — a different question from
- * `withdrawal-eligibility.ts` ("is this account gated this year"), so it's
+ * `eligibility.ts` ("is this account gated this year"), so it's
  * a separate module with a separate consumer (the accumulation-phase
  * handler only needs this one).
  *
@@ -27,14 +24,10 @@
  * verified against them by the "full distribution" equivalence test in
  * `tests/pure/accounts/roth-basis-tracking.test.ts`.
  *
- * Conversion basis is DECREMENT-ONLY this pass: `performRothConversion`
- * (engine/post-withdrawal-optimizer.ts) moves money at the aggregate/
- * category level only and never touches individual account balances, so
- * there is no per-account conversion number to accrue from yet. See the
- * design doc's Q2b for why this is a separate, pre-existing engine gap
- * (also a likely contributor to the `[DIAG] Roth divergence` warning) and
- * not something this pass can fix without conflating two behavior changes
- * in one diff.
+ * Conversion basis is DECREMENT-ONLY: `performRothConversion`
+ * (engine/roth-conversion.ts) records no per-account conversion basis, so
+ * there is nothing to accrue from (a known engine gap, and a likely
+ * contributor to the `[DIAG] Roth divergence` warning).
  */
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisMeta } from "@/lib/pure/accounts/tax-bucket-analysis";
@@ -55,14 +48,13 @@ export type RothBasisState = {
    *  between the basis row and the projection's own year 0 are not
    *  modeled by the engine, so tracked basis understates real basis by
    *  whatever was contributed in that unmodeled gap. Surfaced, never
-   *  silently swallowed — see `IndividualAccountYearBalance.rothBasisUncertain`. */
+   *  silently swallowed — see `IndividualAccountYearBalance.roth.basisUncertain`. */
   stale: boolean;
 };
 
 /** How much of one account's withdrawal this year came from each basis
  *  source vs. growth. Always sums to the withdrawal amount it was sliced
- *  from (conservation invariant — see the design doc's acceptance
- *  criterion 7). */
+ *  from (conservation invariant). */
 export type BasisDraw = {
   contributionDrawn: number;
   conversionDrawn: number;
@@ -76,7 +68,7 @@ const ZERO_DRAW: BasisDraw = {
 };
 
 /** Seeds tracked basis from the "now" snapshot (`rothBasisMeta`, threaded
- *  per-account by `build-engine-payload.ts` Group 1.1). `meta == null`
+ *  per-account by `engine-payload/individual-accounts.ts`). `meta == null`
  *  (no `account_basis` row at all) seeds an all-zero state rather than
  *  crashing or inventing a figure — basis then grows purely from modeled
  *  contributions going forward. */
@@ -108,8 +100,7 @@ export function initRothBasisState(
  *  contribution-basis total. `contributionThisYear` must already exclude
  *  employer match — match is never Roth basis, regardless of which
  *  tax-type row it lands on (same rule `tax-bucket-projection.ts`'s
- *  `projectContributionBasis` enforces; see the design doc's Q2a and
- *  acceptance criterion 5). Never mutates `state`. */
+ *  `projectContributionBasis` enforces). Never mutates `state`. */
 export function accrueContributionBasis(
   state: RothBasisState,
   contributionThisYear: number,

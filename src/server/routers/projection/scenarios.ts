@@ -92,7 +92,7 @@ export const scenariosRouter = createTRPCRouter({
       const routerWarnings: string[] = [];
       const nullContribAccounts = activeContribs.filter(
         (c) =>
-          c.contributionValue === null || c.contributionValue === undefined,
+          c.contributionValue === null || c.contributionValue === undefined, // from a cast stored entry: null is reachable
       );
       if (nullContribAccounts.length > 0) {
         routerWarnings.push(

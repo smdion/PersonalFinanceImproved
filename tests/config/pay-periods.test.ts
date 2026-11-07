@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { PAY_PERIOD_VALUES } from "@/lib/config/enum-values";
 import { PAY_PERIOD_CONFIG, getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { calculatePaycheck } from "@/lib/pure/paycheck/paycheck";
+import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { PERSON_A_PAYCHECK_INPUT } from "../pure/fixtures";
 
 describe("periods per year", () => {
@@ -31,5 +31,29 @@ describe("periods per year", () => {
 
   it("rejects an unknown pay period", () => {
     expect(() => getPeriodsPerYear("daily")).toThrow(/Unknown pay period/);
+  });
+});
+
+describe("getPeriodsPerYear", () => {
+  it("returns 52 for weekly", () => {
+    expect(getPeriodsPerYear("weekly")).toBe(52);
+  });
+
+  it("returns 26 for biweekly", () => {
+    expect(getPeriodsPerYear("biweekly")).toBe(26);
+  });
+
+  it("returns 24 for semimonthly", () => {
+    expect(getPeriodsPerYear("semimonthly")).toBe(24);
+  });
+
+  it("returns 12 for monthly", () => {
+    expect(getPeriodsPerYear("monthly")).toBe(12);
+  });
+
+  it("throws for unknown pay period", () => {
+    expect(() => getPeriodsPerYear("daily")).toThrow(
+      /Unknown pay period "daily"/,
+    );
   });
 });

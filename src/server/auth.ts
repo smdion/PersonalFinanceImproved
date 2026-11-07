@@ -231,7 +231,9 @@ const fullAuthConfig: NextAuthConfig = {
     session({ session, token }) {
       if (session.user) {
         session.user.role = token.role as "admin" | "viewer";
-        session.user.permissions = (token.permissions as Permission[]) ?? [];
+        // A token from an older version may carry no permissions.
+        session.user.permissions =
+          (token.permissions as Permission[] | undefined) ?? [];
       }
       return session;
     },

@@ -111,10 +111,8 @@ export function RetirementProfileManager({
         // A brand-new profile is useless until it's reachable — make it
         // active AND the one being viewed immediately, rather than
         // leaving the household to hunt for it.
-        if (created) {
-          setActiveRetirementId(created.id);
-          onViewingProfileChange(created.id);
-        }
+        setActiveRetirementId(created.id);
+        onViewingProfileChange(created.id);
       },
       onError: (e) => setError(e.message),
     },

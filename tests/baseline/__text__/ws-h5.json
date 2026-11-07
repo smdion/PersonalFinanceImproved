@@ -1,0 +1,4282 @@
+{
+ "accountDepletions": [
+  {
+   "category": "401k",
+   "subType": "traditional"
+  },
+  {
+   "category": "401k",
+   "subType": "roth"
+  },
+  {
+   "category": "403b",
+   "subType": "traditional"
+  },
+  {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
+   "category": "ira",
+   "subType": "traditional"
+  },
+  {
+   "category": "ira",
+   "subType": "roth"
+  },
+  {
+   "category": "hsa"
+  },
+  {
+   "category": "brokerage"
+  }
+ ],
+ "projectionByYear": [
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "accumulation"
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "brokerage",
+     "401k",
+     "403b",
+     "ira",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "waterfall"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      }
+     },
+     "name": "Drew Brokerage (Vanguard)",
+     "ownerName": "Drew",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "unmetNeedMaterial": true,
+   "withdrawalSized": false
+  }
+ ],
+ "warnings": [
+  "Retirement year (2026) is this year or earlier — entire projection will be in decumulation.",
+  "No contribution accounts found — projections may be inaccurate. Add contribution accounts on the Paycheck page."
+ ]
+}

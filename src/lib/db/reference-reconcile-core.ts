@@ -142,7 +142,7 @@ export function assembleTaxData(
  *  (`pnpm tax-data:new-year`, blanks until filled) isn't: the reconcile
  *  skips it, so a half-done year never reaches a database. */
 export function isCompleteTaxDataYear(d: TaxDataYear): boolean {
-  const num = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+  const num = (v: unknown) => typeof v === "number" && Number.isFinite(v); // `d` is parsed JSON cast to TaxDataYear: the `?.`/`??` keep a malformed year incomplete rather than a thrown TypeError.
   const rows = (b: unknown) =>
     (Array.isArray(b) ? b : []) as Record<string, unknown>[];
   return (

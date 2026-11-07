@@ -25,7 +25,7 @@ import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import { recommendationsFromRothIra } from "@/lib/pure/advice/recommendations-roth";
 import { useInvestingFindings } from "@/lib/hooks/use-investing-findings";
 import { recommendationsFromCash } from "@/lib/pure/advice/recommendations-cash";
-import { classesUnderTarget } from "@/lib/pure/advice/milestones/milestones";
+import { classesUnderTarget } from "@/lib/pure/advice/milestones/investing";
 import { recommendationsFromFunds } from "@/lib/pure/advice/recommendations-funds";
 import {
   rankRecommendations,

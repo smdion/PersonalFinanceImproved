@@ -108,8 +108,8 @@ export default function HousePage() {
   }
 
   const current = assetData?.current;
-  const activeLoan = mortgageData?.loans?.find(
-    (l) => l.id === mortgageData?.activeLoanId,
+  const activeLoan = mortgageData?.loans.find(
+    (l) => l.id === mortgageData.activeLoanId,
   );
   const loanResult = mortgageData?.activeLoanResult ?? undefined;
   const fedBySimplefin =
@@ -133,7 +133,7 @@ export default function HousePage() {
   const loanId = activeLoan?.id;
 
   // Use the server-side hasHouse flag (accounts for mortgage loans + improvements)
-  const hasAnyData = assetData?.current?.hasHouse ?? false;
+  const hasAnyData = assetData?.current.hasHouse ?? false;
 
   if (!hasAnyData) {
     return (

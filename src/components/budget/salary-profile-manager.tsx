@@ -842,9 +842,9 @@ function ProfileEditPanel({
                 const isSaving =
                   sd.jobId !== null &&
                   ((patchEntryMutation.isPending &&
-                    patchEntryMutation.variables?.jobId === sd.jobId) ||
+                    patchEntryMutation.variables.jobId === sd.jobId) ||
                     (removeEntryMutation.isPending &&
-                      removeEntryMutation.variables?.jobId === sd.jobId));
+                      removeEntryMutation.variables.jobId === sd.jobId));
                 return (
                   <React.Fragment key={rawSd.personId}>
                     <tr

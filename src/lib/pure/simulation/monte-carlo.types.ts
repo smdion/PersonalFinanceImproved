@@ -64,8 +64,8 @@ export type MonteCarloInput = {
 
   /** Number of simulation trials (default 1000). */
   numTrials: number;
-  /** Seed for reproducibility (optional, uses Date.now() if not provided). */
-  seed?: number;
+  /** Seed for reproducibility; every caller passes one. */
+  seed: number;
 
   /** Asset class parameters for return modeling. */
   assetClasses: {

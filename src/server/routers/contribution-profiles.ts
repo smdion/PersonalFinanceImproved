@@ -23,7 +23,7 @@ import {
   touchedContribAccounts,
 } from "@/server/services/contributions/caps";
 import { getAllPeople } from "@/server/data/people";
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
@@ -441,10 +441,10 @@ export const contributionProfileRouter = createTRPCRouter({
         if (!perfAccount) {
           const display = getDisplayConfig(row.accountType, row.subType);
           const typeLabel = display.displayLabel.toLowerCase();
-          const personName = person?.name?.toLowerCase() ?? "";
+          const personName = person?.name.toLowerCase() ?? "";
           suggestedPerfAccount =
             allPerfAccounts.find((pa) => {
-              const labelLower = (pa.accountLabel ?? "").toLowerCase();
+              const labelLower = pa.accountLabel.toLowerCase();
               return (
                 labelLower.includes(typeLabel) &&
                 (pa.ownerPersonId === row.personId ||
@@ -655,7 +655,7 @@ export const contributionProfileRouter = createTRPCRouter({
           before,
         ));
       if (incoming) {
-        const after = incoming.contributionAccounts ?? {};
+        const after = incoming.contributionAccounts;
         const check = {
           profileId: input.id,
           before,

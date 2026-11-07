@@ -84,7 +84,7 @@ function readDraft(date: string): SnapshotDraft | null {
     const raw = window.localStorage.getItem(draftKey(date));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SnapshotDraft;
-    return parsed && Array.isArray(parsed.rows) ? parsed : null;
+    return parsed && Array.isArray(parsed.rows) ? parsed : null; // Parsed browser storage: any JSON, even null.
   } catch {
     return null;
   }
@@ -257,7 +257,7 @@ export function NewSnapshotForm({
     onSuccess: (data) => {
       // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
       const sync = (data as unknown as Record<string, unknown>)
-        ?.apiSyncResult as
+        .apiSyncResult as
         | { pushed?: boolean; accountsPushed?: number; error?: string }
         | undefined;
       if (sync?.pushed && (sync.accountsPushed ?? 0) > 0) {

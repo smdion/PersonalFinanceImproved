@@ -101,13 +101,9 @@ export type EarlyAccessSlice = {
  * of that coincidence, because summing would be wrong the moment a shape
  * existed where it mattered.
  *
- * Lives here (next to `EarlyAccessSlice`), not inside
- * `withdrawal-eligibility.ts`, specifically so the Tax Buckets UI can
- * import it directly rather than re-deriving "accessible now" with its own
- * sum-every-penalty-free-slice loop — a real second definition of this
- * quantity that happened to agree with the prefix rule for every shape
- * shipped so far only by the same coincidence this docblock already warns
- * about.
+ * Lives here (next to `EarlyAccessSlice`), not inside `eligibility.ts`, so
+ * the Tax Buckets UI imports it directly rather than re-deriving
+ * "accessible now" with its own sum-every-penalty-free-slice loop.
  */
 export function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
   let sum = 0;
@@ -257,12 +253,6 @@ export function computeRothIraAccess(input: {
   return slices;
 }
 
-/** HSA: modeled as general retirement spending money, not qualified medical
- *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
- *  even though that's real and available. Under that assumption, an HSA
- *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
- *  account's own age gate, not the 59½ IRA one), always ordinary income
- *  tax. No basis concept, so no split — the whole balance moves together. */
 /**
  * How a projection treats an HSA withdrawal, in one sentence for every
  * surface that shows it. The engine doesn't model medical spending, so it
@@ -272,6 +262,12 @@ export function computeRothIraAccess(input: {
  */
 export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty before age ${HSA_NON_MEDICAL_PENALTY_AGE}. Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
 
+/** HSA: modeled as general retirement spending money, not qualified medical
+ *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
+ *  even though that's real and available. Under that assumption, an HSA
+ *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
+ *  account's own age gate, not the 59½ IRA one), always ordinary income
+ *  tax. No basis concept, so no split — the whole balance moves together. */
 export function computeHsaAccess(
   balance: number,
   currentAge: number,

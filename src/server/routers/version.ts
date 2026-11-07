@@ -108,7 +108,7 @@ export const versionRouter = createTRPCRouter({
         name: input.name,
         description: input.description,
         type: "manual",
-        createdBy: ctx.session.user.name ?? ctx.session.user.email ?? "unknown",
+        createdBy: ctx.session.user.name ?? ctx.session.user.email ?? "unknown", // OIDC may send neither
       });
     }),
 
@@ -123,6 +123,7 @@ export const versionRouter = createTRPCRouter({
       return tablesLostOnRestore(
         ctx.db,
         tables.map((t) => t.tableName),
+        { asAdmin: ctx.session.user.role === "admin" },
       );
     }),
 
@@ -130,14 +131,18 @@ export const versionRouter = createTRPCRouter({
   importDataLoss: versionProcedure
     .input(z.object({ tableNames: z.array(z.string().max(100)).max(500) }))
     .query(async ({ ctx, input }) => {
-      return tablesLostOnRestore(ctx.db, input.tableNames);
+      return tablesLostOnRestore(ctx.db, input.tableNames, {
+        asAdmin: ctx.session.user.role === "admin",
+      });
     }),
 
   /** Restore from a version. */
   restore: versionProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      const restored = await restoreVersion(ctx.db, input.id);
+      const restored = await restoreVersion(ctx.db, input.id, {
+        asAdmin: ctx.session.user.role === "admin",
+      });
       await settleFirstRunGate(ctx.db, "restore");
       return restored;
     }),

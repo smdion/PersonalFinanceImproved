@@ -687,7 +687,8 @@ describe("engine invariants", () => {
             const indByCategory: Record<string, number> = {};
             for (const acct of year.individualAccountBalances) {
               indByCategory[acct.category] =
-                (indByCategory[acct.category] ?? 0) + (acct.withdrawal ?? 0);
+                (indByCategory[acct.category] ?? 0) +
+                (acct.draw?.withdrawal ?? 0);
             }
             for (const slot of year.slots) {
               const indTotal = indByCategory[slot.category] ?? 0;

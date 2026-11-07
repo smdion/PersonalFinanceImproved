@@ -10,7 +10,7 @@
  */
 
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import type { PayrollBreakdown, SinkingFundLine } from "./types";
 
 export function buildPayrollBreakdown(
@@ -149,7 +149,7 @@ export function buildNonPayrollContribs(
     for (const c of d.rawContribs ?? []) {
       // The canonical payroll-vs-net-level signal is isPayrollDeducted,
       // falling back to jobId presence only when unset (same resolution
-      // used in src/lib/pure/paycheck/paycheck.ts and
+      // used in src/lib/pure/paycheck/bonus.ts and
       // src/lib/pure/contributions/contribution-rows.ts) — jobId alone just means "tied
       // to this employer," not "deducted from that employer's paycheck." A
       // job-tied account the user explicitly funds from take-home (box

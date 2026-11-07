@@ -7,14 +7,35 @@ The engine is the projection calculator: one pass, year by year, through accumul
 ```
 index.ts                     public API (the only entry point)
 projection.ts                orchestrator: builds context + state, runs the year loop
+input-validation.ts          validateEngineInputs: balance checks, rate clamps, setup warnings
 projection-year-handlers/    one year of work
   context.ts                 immutable run context (buildProjectionContext)
   state.ts                   mutable run state (buildProjectionState)
-  pre-year-setup.ts          return rate, profile switches, spending strategy
+  pre-year-setup.ts          return rate, profile switches, spending strategy; the year's phase (UD-02) and the first retirement year's spending (UD-01)
+  contribution-target.ts     a working year's year-0 basis, contribution target and employer match
+  contribution-slots.ts      the IRS limits per slot, then the slots routed
+  rate-ceiling.ts            the retirement-rate ceiling on the spec slots
+  contribution-credits.ts    the totals and overflow, the credits to the balances, the per-account spread
+  goal-draws.ts              a gap year's draw and the brokerage goal draws
+  year-end-accounts.ts       the per-account rows, reconcile and the year-end balances
   accumulation-year.ts       runAccumulationYear
-  decumulation-year.ts       runDecumulationYear
+  decumulation-year.ts       runDecumulationYear: calls the stages below in order
+  decumulation-income.ts     the year's income before any draw: each owner's RMD
+  rmd-step.ts                the QCD, then each RMD enforced on the routed draw (UD-04)
+  year-tax-tables.ts         the year's tax tables, each grown from its own table year
+  year-deduction.ts          the year's standard deduction, grown, with the senior add-ons
+  year-need.ts               the after-tax need and the withdrawal that meets it
+  year-draws.ts              the draw routed by mode, then followed to each account
+  tax-year-settlement.ts     the tax priced and settled in today's order (UD-04, UD-08)
+  funding-shortfall.ts       the unmet need (raw) and whether it's material
+  year-cliffs.ts             IRMAA and ACA cliff checks
+  portfolio-contributions.ts Portfolio contributions after retirement, reported only
+  year-end.ts                growth, year-end state, account rows, reconciliation
   lump-sum.ts                one-time lump sums (both phases)
+  stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
+individual-accounts/         the per-account ledger: ledger, contributions, withdrawals, reconcile
+withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling
 <modules below>              called by the handlers
 ```
 
@@ -24,30 +45,41 @@ projection-year-handlers/    one year of work
 
 **Configuration and contributions**
 
-| Module                           | Role                                                                                                                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `override-resolution.ts`         | Resolves "Changes by year" (sticky-forward) into the year's `ResolvedAccumulationConfig` / `ResolvedDecumulationConfig`. Downstream code only sees resolved config. |
-| `contribution-routing.ts`        | Accumulation allocation: waterfall, percentage, or from contribution specs (the production path). IRS limits, caps, tax splits, overflow to a Retirement brokerage. |
-| `contribution-projection.ts`     | The one per-spec formula for a year's contribution amount, shared by routing and per-account tracking.                                                              |
-| `individual-account-tracking.ts` | Per-account bookkeeping: contributions, match, overflow, withdrawals, goal draws, and `reconcileIndividualToAggregate`.                                             |
+| Module                                 | Role                                                                                                                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `override-resolution.ts`               | Resolves "Changes by year" (sticky-forward) into the year's `ResolvedAccumulationConfig` / `ResolvedDecumulationConfig`. Downstream code only sees resolved config. |
+| `contribution-routing.ts`              | Accumulation allocation: waterfall, percentage, or from contribution specs (the production path). IRS limits, caps, tax splits, overflow to a Retirement brokerage. |
+| `contribution-projection.ts`           | The one per-spec formula for a year's contribution amount, shared by routing and per-account tracking.                                                              |
+| `individual-accounts/ledger.ts`        | The per-account ledger: account keys, `credit`, a year's growth and tracked Roth basis.                                                                             |
+| `individual-accounts/contributions.ts` | Contributions, match, overflow and ramp spread to each account; specs matched to their accounts.                                                                    |
+| `individual-accounts/withdrawals.ts`   | Withdrawals and brokerage goal draws spread to each account.                                                                                                        |
+| `individual-accounts/reconcile.ts`     | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`.                                                                             |
 
 **Withdrawals and tax**
 
-| Module                         | Role                                                                                                                                                                                                               |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `withdrawal-solver.ts`         | `estimateWithdrawalTaxCost`: the convergence loop that sizes a withdrawal to cover its own tax (Social Security torpedo, NIIT included), routing it as it goes.                                                    |
-| `withdrawal-routing.ts`        | Splits a withdrawal across accounts: waterfall, percentage, or bracket filling. Caps, tax preferences, penalty-locked money.                                                                                       |
-| `withdrawal-cost-ranking.ts`   | Ranks non-Traditional sources by real cost (basis, penalty) for bracket filling beyond the Traditional cap. Public as `rankWithdrawalTiers`.                                                                       |
-| `tax-estimation.ts`            | Bracket tax, effective/marginal rates, taxable Social Security.                                                                                                                                                    |
-| `inflation-path.ts`            | The inflation a run sees year by year: one object every compounding site reads, shocked per year in a Simulation trial.                                                                                            |
-| `bracket-growth.ts`            | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                                                                       |
-| `obbba-senior-deduction.ts`    | The 2025–2028 OBBBA senior deduction and its phase-out.                                                                                                                                                            |
-| `rmd-enforcement.ts`           | Required minimum distributions after routing. Multi-person households: each owner's RMD is pinned to that owner's accounts, including owner assignment; single-person: shortfall spread over Traditional accounts. |
-| `social-security-income.ts`    | Social Security paid in a year, per person; one computation for the year handler and strategies.                                                                                                                   |
-| `qcd.ts`                       | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
-| `post-withdrawal-optimizer.ts` | Roth conversions into bracket room, IRMAA and ACA cliff checks.                                                                                                                                                    |
-| `household-irmaa.ts`           | The household IRMAA surcharge: per-person cost × people 65+, for both decumulation-year sites.                                                                                                                     |
-| `rmd-smoothing.ts`             | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                                                                             |
+| Module                                       | Role                                                                                                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `withdrawal-solver.ts`                       | `estimateWithdrawalTaxCost`: the convergence loop that sizes a withdrawal to cover its own tax (Social Security torpedo, NIIT included), routing it as it goes; `met`, or `capped` with its shortfall.             |
+| `withdrawal-routing/index.ts`                | `routeForMode`: one year's withdrawal to the mode's router, with the Roth-bracket overlay and the last-resort allowance.                                                                                           |
+| `withdrawal-routing/waterfall.ts`            | Waterfall: accounts drained in the household's order, with caps and tax preferences.                                                                                                                               |
+| `withdrawal-routing/percentage.ts`           | Percentage: a fixed share per account; a short account's shortfall spreads to the rest.                                                                                                                            |
+| `withdrawal-routing/bracket-filling.ts`      | Bracket filling: Traditional up to the target bracket, then the rest ranked by real cost.                                                                                                                          |
+| `withdrawal-routing/roth-bracket-overlay.ts` | The Roth-bracket overlay on a waterfall config: Traditional capped at the target bracket.                                                                                                                          |
+| `withdrawal-routing/caps.ts`                 | The bracket cap on Traditional, the household's caps left after a pass, and the past-target warning.                                                                                                               |
+| `withdrawal-routing/types.ts`                | `RouteBracketInfo` (the year's brackets for routing) and `RouteResult` (what every mode returns).                                                                                                                  |
+| `withdrawal-cost-ranking.ts`                 | Ranks non-Traditional sources by real cost (basis, penalty) for bracket filling beyond the Traditional cap. Public as `rankWithdrawalTiers`.                                                                       |
+| `tax-estimation.ts`                          | Bracket tax, effective/marginal rates, taxable Social Security.                                                                                                                                                    |
+| `inflation-path.ts`                          | The inflation a run sees year by year: one object every compounding site reads, shocked per year in a Simulation trial.                                                                                            |
+| `bracket-growth.ts`                          | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                                                                       |
+| `return-deductions.ts`                       | In `lib/pure/tax/`: the 2025–2028 OBBBA senior deduction and its phase-out; last year's MAGI is known or unknown.                                                                                                  |
+| `rmd-enforcement.ts`                         | Required minimum distributions after routing. Multi-person households: each owner's RMD is pinned to that owner's accounts, including owner assignment; single-person: shortfall spread over Traditional accounts. |
+| `social-security-income.ts`                  | Social Security paid in a year, per person; one computation for the year handler and strategies.                                                                                                                   |
+| `qcd.ts`                                     | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
+| `roth-conversion.ts`                         | Roth conversions into bracket room; the tax is paid from brokerage.                                                                                                                                                |
+| `irmaa-check.ts`                             | The IRMAA cliff check: surcharge cost, and a warning when a conversion crosses a cliff.                                                                                                                            |
+| `aca-check.ts`                               | The ACA subsidy cliff check: MAGI headroom under 400% FPL, and a warning past it.                                                                                                                                  |
+| `household-irmaa.ts`                         | The household IRMAA surcharge: per-person cost × people 65+, for both decumulation-year sites.                                                                                                                     |
+| `rmd-smoothing.ts`                           | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                                                                             |
 
 **Balances**
 
@@ -77,7 +109,7 @@ projection-year-handlers/    one year of work
 
 **Every year** — `runPreYearSetup`: return rate, profile switches, the spending strategy's target (from the retirement balance), the Portfolio exclusion for the year.
 
-**Accumulation** — `runAccumulationYear`: route contributions (specs, limits, overflow), match, lump sums, goal draws from Portfolio brokerages, growth, then `reconcileIndividualToAggregate` and `syncAggregateBasis`.
+**Accumulation** — `runAccumulationYear`, in this order: `yearZeroBasis` and `yearContributionTarget` (`contribution-target.ts`: year 0's basis, the target, the employer match), `yearContributionLimits` and `routeYearSlots` (`contribution-slots.ts`, with `applyRateCeiling`), `yearContributionTotals`, `creditYearContributions` (lump sums) and `distributeYearContributions` (`contribution-credits.ts`), `yearGapDraw` (`goal-draws.ts`), `applyGrowth`, `brokerageGoalDraws` (Portfolio brokerages), then `closeYearAccounts` (`year-end-accounts.ts`: the per-account rows, `reconcileIndividualToAggregate`, `syncAggregateBasis`).
 
 **When the phases change** — dates come from `lib/pure/household/household-timeline.ts`: plan dates (retirement year, end year) count from the primary person; per-person rules (catch-up, RMDs, 59½, the senior deduction) use that person's age; withdrawals start when the last person with a job retires (`retirementYear`), and the projection's last row is the year before `projectionEndYear` (the last person's end age): the end year itself isn't run, so a Projection to 95 stops at 94 (RULES.md § Known Gaps). Nothing averages the people.
 
@@ -85,19 +117,36 @@ projection-year-handlers/    one year of work
 
 **Budget lines that end** — `expense-endings.ts`: a loan's line leaves as a share of each phase's budget the year after payoff. Typed figures and rate-seeded retirements are left alone.
 
-**Decumulation** — `runDecumulationYear`, in this order:
+**Decumulation** — `runDecumulationYear` (`decumulation-year.ts`) calls its stages in this order:
 
-1. `resolveDecumulationConfig` — the year's settings
-2. `computeQcdAmounts` — charitable distributions against the RMD
-3. `estimateWithdrawalTaxCost` — size and route the withdrawal (gross-up), against the year's indexed figures (`bracket-growth.ts`: brackets, standard deduction with the 65+ add-on, LTCG thresholds)
-4. `enforceRmd` — top up to the required minimum
-5. per-account distribution, `deductWithdrawals`, `clampBalances`, `reinvestRmdExcess`, `trackDepletions`
-6. `computeRmdSmoothingTargets`, `performRothConversion`
-7. `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
-8. `applyGrowth`
-9. `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`
+1. `resolveDecumulationConfig` — the year's settings; `computeWithdrawalEligibility` for each account
+2. `rmdIncomeByOwner` (`decumulation-income.ts`) — each owner's RMD for the year
+3. `qcdStep` (`rmd-step.ts`) — charitable distributions against the RMD
+4. `growYearTaxTables` (`year-tax-tables.ts`, with `yearStandardDeduction` from `year-deduction.ts`) — the year's brackets, standard deduction with the 65+ and senior add-ons, LTCG thresholds, each grown from its own table year
+5. `yearNeed` (`year-need.ts`) — the after-tax need (IRMAA in it) and `estimateWithdrawalTaxCost`, which sizes the withdrawal to cover its own tax (`met`, or `capped` with its shortfall)
+6. `routeYearDraw` (`year-draws.ts`) — `routeForMode` routes the draw
+7. `enforceYearRmd` (`rmd-step.ts`) — each RMD enforced on the routed draw
+8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty)
+9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced
+10. `settleYearDraws` — `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
+11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` re-prices the year's tax after it
+12. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine) and whether it's material
+13. `yearCliffChecks` (`year-cliffs.ts`) — `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
+14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
+15. `closeDecumulationYear` (`year-end.ts`) — `applyGrowth`, `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
 
 The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`lib/pure/retirement/plan-outcome.ts`) judges the run.
+
+## Undecided engine decisions
+
+Four behaviours the engine spec leaves undecided have one named home each, with today's behaviour in its docblock. Each id is the spec's `UD-` number and the pending decision that settles it; changing the behaviour is that decision's work, not a refactor.
+
+| Id         | What                     | Home                                                                                   | Today                                                                                     |
+| ---------- | ------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| UD-01 (D2) | Year-0 proration         | `pre-year-setup.ts` `seedRetirementSpending`; `contribution-target.ts` `yearZeroBasis` | Only a working year 0 is pro-rated (contributions, match, growth, a gap year's draw)      |
+| UD-02 (D3) | Mid-year retirement      | `pre-year-setup.ts` `yearPhase`                                                        | Retiring in year 0 after its start runs it as a pro-rated working year; else whole        |
+| UD-04 (D1) | The RMD top-up           | `rmd-step.ts` `enforceYearRmd`; `tax-year-settlement.ts` `settleYearDraws`             | A short RMD adds Traditional on top of the routed draw; the excess is reinvested or spent |
+| UD-08 (D4) | What pays conversion tax | `tax-year-settlement.ts` `yearRothConversion`                                          | The tax is paid from retirement brokerage money                                           |
 
 ## Types
 

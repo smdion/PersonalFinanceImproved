@@ -41,6 +41,7 @@ import {
   isOverflowTarget,
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
+import { describeEligibility } from "@/lib/config/eligibility-labels";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
   catDisplayLabel,
@@ -72,72 +73,52 @@ import {
 // comparison on every render.
 const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
 
-/**
- * Builds the merged eligibility + tracked-basis note for one account's
- * tooltip line. Bug fix (found live, real household data): the engine's
- * `eligibilityReason` string bakes its "$X basis remaining" figure as plain
- * NOMINAL dollars (it's built deep in withdrawal-eligibility.ts, which has
- * no access to the page's real/nominal dollar-mode toggle) — but the
- * rothBasisDrawn/rothBasisRemaining figures merged onto the same line ARE
- * deflated. In real-dollar view mode the two halves of one line disagreed
- * by exactly the household's cumulative inflation factor (confirmed:
- * ratio was identical, ~1.99, across both the reason string's figure and
- * the year's own withdrawal/growth figures). Reconstructs the basis-
- * remaining clause from `rothBasisRemaining + rothBasisDrawn` (this year's
- * start-of-year basis, tautologically consistent with the drawn/left
- * figures since both add up from the same already-deflated fields) instead
- * of reusing the engine string's embedded dollar figure — so every number
- * on the line moves together with the SAME toggle, whichever way it's set.
- * Non-basis reason text (Rule of 55 / age-59½ / locked wording, none of
- * which embeds a dollar figure) is untouched.
- */
+/** One account's eligibility + tracked-basis tooltip note. The basis clause
+ *  is rebuilt from `roth.basisRemaining + basisDrawn`, deflated like the
+ *  rest of the line, not from the reason's nominal `basis`. */
 export function buildEligibilityNote(
   ia: IndividualAccountYearBalance,
   year: { year: number },
   deflate: (v: number, yr: number) => number,
 ): { note?: string; noteLocked?: boolean } {
   const parts: string[] = [];
+  const reason = ia.draw?.reason;
+  // A Roth IRA's basis reason. `no_basis` counts too: such an account is
+  // locked unless its balance is under half a cent.
   const isBasisRemainingReason =
-    ia.rothBasisRemaining != null &&
-    !ia.eligibilityLocked &&
-    (ia.eligibilityReason?.includes("basis remaining") ?? false);
-  // Age-59½ qualification (tax-free growth) is a DIFFERENT test than the
-  // Rule-of-55 wording above — Rule of 55 exempts the 10% penalty, never
-  // taxability (splitRothWithdrawalForTax only ever checks age 59½). Both
-  // the IRA (basis_first) and 401k/403b (pro_rata) branches of
-  // withdrawal-eligibility.ts emit this exact string when age-qualified,
-  // so checking for it (rather than reusing isBasisRemainingReason, which
-  // is IRA-reason-text-specific) correctly flags non-qualified growth as
-  // taxable for BOTH account types.
+    ia.roth?.basisRemaining != null &&
+    !ia.draw?.eligibilityLocked &&
+    (reason?.kind === "basis_remaining" || reason?.kind === "no_basis");
+  // Age 59½ reached (IRA or employer plan): Roth growth is tax-free. The
+  // Rule of 55 lifts the penalty, never the tax, so it doesn't count.
   const isAgeQualified =
-    ia.eligibilityReason?.includes("age 59½ or older") ?? false;
-  const basisDrawn = ia.rothBasisDrawn ?? 0;
-  const totalWithdrawn = ia.withdrawal ?? 0;
+    reason?.kind === "age_reached" && reason.gate === "age_59_half";
+  const basisDrawn = ia.roth?.basisDrawn ?? 0;
+  const totalWithdrawn = ia.draw?.withdrawal ?? 0;
   // Basis-first ordering draws basis before growth. Under the
   // penalty-hard-exclusion model, growth this account hasn't earned
   // penalty-free access to should never be drawn at all by default —
-  // this is only
-  // nonzero when the household has explicitly opted out of that
+  // this is only nonzero when the household has explicitly opted out of that
   // exclusion. Surfaced explicitly, and NEVER worded as plain "Eligible",
   // so it's never read as a free lunch: growth drawn while not yet
   // age-59½-qualified is flagged taxable and penalty-exposed.
   const growthDrawn = Math.max(0, roundToCents(totalWithdrawn - basisDrawn));
   if (isBasisRemainingReason) {
-    const startBasis = (ia.rothBasisRemaining ?? 0) + basisDrawn;
-    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    const startBasis = (ia.roth?.basisRemaining ?? 0) + basisDrawn;
+    const flag = ia.roth?.basisUncertain ? " (est.)" : "";
     const label = growthDrawn > 0.01 ? "Partially eligible" : "Eligible";
     parts.push(
       `${label} — ${formatCurrency(deflate(startBasis, year.year))} basis remaining, always penalty-free${flag}`,
     );
-  } else if (ia.eligibilityReason) {
-    parts.push(ia.eligibilityReason);
+  } else if (reason) {
+    parts.push(describeEligibility(reason));
   }
   if (basisDrawn > 0.01) {
     const drawn = formatCurrency(deflate(basisDrawn, year.year));
     const remaining = formatCurrency(
-      deflate(ia.rothBasisRemaining ?? 0, year.year),
+      deflate(ia.roth?.basisRemaining ?? 0, year.year),
     );
-    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    const flag = ia.roth?.basisUncertain ? " (est.)" : "";
     if (growthDrawn > 0.01) {
       const growth = formatCurrency(deflate(growthDrawn, year.year));
       const taxNote = !isAgeQualified
@@ -151,7 +132,7 @@ export function buildEligibilityNote(
     }
   }
   if (parts.length === 0) return {};
-  return { note: parts.join(" · "), noteLocked: !!ia.eligibilityLocked };
+  return { note: parts.join(" · "), noteLocked: !!ia.draw?.eligibilityLocked };
 }
 
 /**
@@ -159,7 +140,7 @@ export function buildEligibilityNote(
  * directly for this: eligibility/basis info alone doesn't say
  * WHY a discretionary (beyond-Traditional-bracket-target) dollar came from
  * this account instead of another. Reads `discretionaryTierBreakdown`
- * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) filtered to this
+ * (`RouteResult.tierBreakdown`, withdrawal-routing/types.ts) filtered to this
  * account's source kind — see `formatDiscretionaryTierBreakdown`'s
  * docblock (utils.ts) for why this is read directly off routing's own
  * decision rather than re-derived.
@@ -178,7 +159,7 @@ export function buildEligibilityNote(
  * not a claim about this specific account's tax treatment).
  */
 function buildRoutingReasonClause(
-  ia: Pick<IndividualAccountYearBalance, "category" | "taxType" | "withdrawal">,
+  ia: Pick<IndividualAccountYearBalance, "category" | "taxType">,
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
@@ -192,7 +173,7 @@ function buildRoutingReasonClause(
   // not a cost comparison between sources). bracketTraditionalCap is the
   // resolved income cap (rothBracketTarget's marginal-rate threshold minus
   // taxable SS) the engine actually filled Traditional up to — see
-  // withdrawal-routing.ts's routeWithdrawalsBracketFilling.
+  // withdrawal-routing/bracket-filling.ts's routeWithdrawalsBracketFilling.
   if (
     catCfg?.supportsRothSplit &&
     !isTaxFreeBucket(ia.taxType) &&
@@ -505,7 +486,7 @@ export function DecumulationRow({
                     // repeating the account name on separate lines for each
                     // fact. See buildEligibilityNote's docblock for why the
                     // basis-remaining figure is reconstructed rather than
-                    // reusing eligibilityReason's embedded dollar amount.
+                    // reusing the reason's nominal basis.
                     const buildNote = noteFor;
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
@@ -516,7 +497,7 @@ export function DecumulationRow({
                       // category. Falls back to the old aggregate when no
                       // individual-account data exists for this category.
                       const withdrawingAccts = catAccts
-                        .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                        .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
                         .sort((a, b) => {
                           const taxDiff =
                             (isTaxFreeBucket(a.taxType) ? 1 : 0) -
@@ -533,7 +514,7 @@ export function DecumulationRow({
                             label: multiAcct
                               ? ownerAccountLabel(ia)
                               : catCfg.displayLabel,
-                            amount: deflate(ia.withdrawal!, yr.year),
+                            amount: deflate(ia.draw!.withdrawal, yr.year),
                             prefix: "-",
                             taxType: itemTaxType(ia.category, ia.taxType),
                             color: "red",
@@ -733,7 +714,7 @@ export function DecumulationRow({
                   : bucketIabsAll
               ).filter((ia) => iaBelongsToBucket(ia, bucket));
               const withdrawingAccts = bucketIabs
-                .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
                 .sort((a, b) => {
                   const catDiff =
                     (CATEGORY_ORDER.get(a.category as AccountCategory) ?? 0) -
@@ -768,7 +749,7 @@ export function DecumulationRow({
                                     ? ownerAccountLabel(ia)
                                     : (catDisplayLabel[ia.category] ??
                                       ia.category),
-                                  amount: deflate(ia.withdrawal!, yr.year),
+                                  amount: deflate(ia.draw!.withdrawal, yr.year),
                                   prefix: "-" as const,
                                   taxType: itemTaxType(ia.category, wdTaxType),
                                   color: "red" as TipColor,
@@ -875,7 +856,7 @@ export function DecumulationRow({
             // account(s), whose, funded it. Ordered by category (accum
             // order), then traditional before roth, then owner name.
             const withdrawingAccts = filteredIabs
-              .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+              .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
               .sort((a, b) => {
                 const catDiff =
                   (CATEGORY_ORDER.get(a.category) ?? 0) -
@@ -902,7 +883,7 @@ export function DecumulationRow({
                 // household" wall of text.
                 items.push({
                   label: ownerAccountLabel(ia),
-                  amount: deflate(ia.withdrawal!, yr.year),
+                  amount: deflate(ia.draw!.withdrawal, yr.year),
                   prefix: "-",
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
@@ -1138,7 +1119,7 @@ export function DecumulationRow({
                   if (bucketAccts.length > 0) {
                     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
                     for (const ia of bucketAccts) {
-                      const wd = ia.withdrawal ?? 0;
+                      const wd = ia.draw?.withdrawal ?? 0;
                       if (wd > 0) {
                         wdLineItems.push({
                           label: multiAcctBucket
@@ -1289,7 +1270,7 @@ export function DecumulationRow({
                     entryTaxType: ia.taxType,
                     balance: ia.balance,
                     growth: ia.growth,
-                    withdrawal: ia.withdrawal ?? 0,
+                    withdrawal: ia.draw?.withdrawal ?? 0,
                   });
                 }
                 const splitsTotal = decSplits.reduce(

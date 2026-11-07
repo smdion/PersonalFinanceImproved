@@ -719,7 +719,7 @@ describe("growIrmaaBrackets", () => {
 // on TWO DIFFERENT growth vintages (see decumulation-year.ts's
 // grownIrmaaBracketsForCheck/grownIrmaaBracketsForCap docblocks):
 //
-//  1. checkIrmaa (post-withdrawal-optimizer.ts) -- reports irmaaCost/
+//  1. checkIrmaa (irmaa-check.ts) -- reports irmaaCost/
 //     warnings, grown to the CURRENT year's vintage.
 //  2. performRothConversion's IRMAA-aware cap -- actually LIMITS
 //     rothConversionAmount (a real withdrawal number, not just display),

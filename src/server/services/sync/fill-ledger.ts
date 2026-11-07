@@ -92,6 +92,7 @@ export async function recordFill(
       stored && typeof stored === "object" ? stored : {}
     ) as Ledger;
     const scoped = (ledger[scope] ??= {});
+    // The year's first fill finds no record.
     const record = (scoped[fill.year] ??= { baselines: {}, counted: {} });
     for (const [row, baseline] of Object.entries(fill.baselines))
       if (

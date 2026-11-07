@@ -465,7 +465,7 @@ export async function runSimplefinSync(
       const missingAccounts = expectedIncluded.filter(
         (a) => !fetchedIds.has(a.externalAccountId) && !renewed.has(a.id),
       );
-      const errored = new Set(accountIdsWithErrors ?? []);
+      const errored = new Set(accountIdsWithErrors);
       await applyLoanFeedBalances(
         tx,
         new Set([...fetchedIds].filter((id) => !errored.has(id))),
@@ -543,7 +543,7 @@ export async function runSimplefinSync(
           ]),
         ),
         windowStart: utcDayOf(windowStart),
-        accountIdsWithErrors: new Set(accountIdsWithErrors ?? []),
+        accountIdsWithErrors: new Set(accountIdsWithErrors),
         now: asOfDate,
       });
       const { warnings, ...counts } = summary;
@@ -551,10 +551,7 @@ export async function runSimplefinSync(
       ingestWarnings.push(...warnings);
       // Only a complete ingest moves the window forward: an account that
       // errored or didn't answer is re-requested from the old start.
-      if (
-        (accountIdsWithErrors ?? []).length === 0 &&
-        missingAccounts.length === 0
-      )
+      if (accountIdsWithErrors.length === 0 && missingAccounts.length === 0)
         await setInvestmentsSyncedAt(db, asOfDate);
     } catch (e) {
       ingestWarnings.push(

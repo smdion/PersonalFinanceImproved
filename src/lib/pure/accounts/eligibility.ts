@@ -4,35 +4,28 @@
  * withdrawal routing exactly which dollars, in each individual account,
  * would incur the 10% early-withdrawal penalty this year (Rule of 55, 59½,
  * HSA 65, Roth ordering) — the same rules the Tax Buckets analysis tool
- * already displays, now wired into actual withdrawal routing.
+ * displays.
  *
- * Key decisions this
- * module implements (supersedes an earlier "soft/penalized-but-available"
- * design, Group 0 § Q0):
+ * Key decisions this module implements:
  *
- * - Group 0 § Q0 ("soft/penalized-but-available") is SUPERSEDED. A
- *   penalty-exposed dollar is no longer treated as reachable-but-
- *   disfavored — by explicit user direction, the router (see
- *   `withdrawal-routing.ts`) now excludes it by default
- *   (`config.avoidPenalizedWithdrawals`, default true). This module still
- *   only computes the per-dollar partition; it does not itself gate
- *   anything — the router decides what to do with the partition.
- * - Penalty-hard-exclusion § Q1 (per-dollar partition, one rule for every
- *   account type): penalty-free capacity is the LEADING, CONTIGUOUSLY
+ * - A penalty-exposed dollar is not reachable-but-disfavored: the router
+ *   (see `withdrawal-routing/`) excludes it by default
+ *   (`config.avoidPenalizedWithdrawals`, default true). This module only
+ *   computes the per-dollar partition; it does not itself gate anything —
+ *   the router decides what to do with the partition.
+ * - Per-dollar partition, one rule for every account type: penalty-free
+ *   capacity is the LEADING, CONTIGUOUSLY
  *   penalty-free PREFIX of an account's `early-access.ts` slices, in the
  *   order that account's own ordering rules release them — not the sum of
  *   every penalty-free slice regardless of position. See
  *   `penaltyFreePrefixAmount`'s docblock.
- * - Penalty-hard-exclusion § Q2: `locked` (old, whole-account concept) and
- *   `penalty-exposed` (this pass) are NOT parallel ideas — every dollar in
- *   an old-style "locked" account is penalty-exposed, but a partially
- *   penalty-exposed account (the case that motivated this whole pass — a
- *   pre-59½ Roth IRA with contribution basis) was never "locked" under the
- *   old whole-account boolean. `eligibilityLocked` in
- *   `IndividualAccountYearBalance` (consumed by the UI) keeps meaning
- *   "every dollar in this account is penalty-exposed" for backward
- *   compatibility with existing reason-string wording; `penaltyExposedAmount`
- *   is the number that actually matters for routing.
+ * - `locked` (whole-account) and `penalty-exposed` (per dollar) are NOT
+ *   parallel ideas — every dollar in a "locked" account is penalty-exposed,
+ *   but a partially penalty-exposed account (e.g. a pre-59½ Roth IRA with
+ *   contribution basis) isn't "locked". `draw.eligibilityLocked` means
+ *   "every dollar in this account is penalty-exposed", and `draw.reason` is
+ *   a structured `EligibilityReason` (worded by `describeEligibility`);
+ *   `penaltyExposedAmount` is the number that matters for routing.
  *
  * Leaf predicates (`early-access.ts`) and `projectRuleOf55`
  * (`tax-bucket-projection.ts`) are called verbatim — never reimplemented
@@ -57,11 +50,11 @@ import type {
   RuleOf55Status,
   RothBasisMeta,
 } from "@/lib/pure/accounts/tax-bucket-analysis";
-import { formatCurrency } from "@/lib/utils/format";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 
 /** The account shape this module needs — a structural subset of
  *  `IndividualAccountInput` (`lib/pure/accounts/account-balances.types.ts`), named
@@ -83,9 +76,8 @@ export type EligibilityAccountInput = {
    *  `projectRuleOf55`'s `opts.forceIneligible` docblock
    *  (`tax-bucket-projection.ts`) for the full contract. Passed straight
    *  through to that function; this module never inspects or short-circuits
-   *  on it directly — doing so was a real bug, since Rule-of-55-ineligible is
-   *  not the same as locked (the pro_rata
-   *  branch below is "Rule of 55 OR 59½"). */
+   *  on it directly: Rule-of-55-ineligible is not the same as locked (the
+   *  pro_rata branch below is "Rule of 55 OR 59½"). */
   ruleOf55ForceIneligible?: boolean;
   /** The owner's planned retirement year — caps when a still-active job is
    *  assumed to end (see `projectRuleOf55`'s `opts.ownerRetirementYear`). */
@@ -94,8 +86,8 @@ export type EligibilityAccountInput = {
    *  otherwise-real shortfall. Only ever `true` when set — see
    *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
    *  (`lib/pure/accounts/account-balances.types.ts`) for the full contract. This
-   *  module doesn't gate on it directly (same "compute the partition,
-   *  don't decide policy" boundary as the module docblock's § Q0 note) —
+   *  module doesn't gate on it directly (it computes the partition; the
+   *  router decides policy) —
    *  it just carries the flag onto `AccountEligibility` and folds it into
    *  the record's "still excluded" aggregates below, which
    *  `subtractPenaltyExposed` (`engine/balance-utils.ts`) is the one that
@@ -128,12 +120,9 @@ export type AccountEligibility = {
   penaltyFreeAmount: number;
   /** Balance − penaltyFreeAmount. Every dollar here costs 10% if drawn. */
   penaltyExposedAmount: number;
-  /** Human-readable explanation of the eligibility verdict above — which
-   *  early-access rule decided it, and (for the pro_rata/basis_first
-   *  branches) the concrete age/year that drove the call. Surfaced in the
-   *  UI so a household can see WHY the engine drew from — or excluded — a
-   *  given account, not just that it did. Always present. */
-  reason: string;
+  /** Which early-access rule decided the verdict above, with the age,
+   *  year or basis that drove it. Always present. */
+  reason: EligibilityReason;
   /** Start-of-year tracked Roth basis remaining (contribution + conversion
    *  combined) — present only when `indBasis` was supplied and this is a
    *  taxFree-bucket account. Absent (not zero) when tracked basis isn't
@@ -192,17 +181,9 @@ function zeroByCategory(): Record<AccountCategory, number> {
   >;
 }
 
-/** Whether every DOLLAR-BEARING slice `early-access.ts` returns for this
- *  account has `penaltyFree === false` — every dollar in the account is
- *  penalty-exposed. Zero-amount slices are excluded: `computeRothIraAccess`
- *  always emits a "Contribution basis" slice with `penaltyFree: true` even
- *  when `contributionBasis` is 0 (there's genuinely no basis to report a
- *  false status for) — counting that empty slice would make a pure-growth
- *  Roth IRA with $0 basis look "not fully exposed" for an owner of any age,
- *  silently defeating the 59½ gate for exactly the account shape it exists
- *  to gate. Used only for the UI's `eligibilityLocked` flag and reason-text
- *  branching now — routing uses `penaltyFreePrefixAmount` instead (see
- *  module docblock's § Q2 note: these are not the same question). */
+/** Whether every dollar-bearing slice is penalty-exposed ($0 slices skipped: a $0
+ *  "Contribution basis" slice must not unlock a pure-growth Roth IRA). Picks
+ *  `eligibilityLocked` and the reason's kind; routing uses `penaltyFreePrefixAmount`. */
 function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
   const dollarBearing = slices.filter((s) => s.amount > 0);
   return dollarBearing.length > 0 && dollarBearing.every((s) => !s.penaltyFree);
@@ -214,7 +195,7 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
  * `indBal` supplies each account's *current* projected balance (not its
  * `startingBalance` — that's an accumulation-phase input, stale by the time
  * decumulation runs). Each account's own `ownerBirthYear` and `ruleOf55`
- * ("now" resolution, threaded by `build-engine-payload.ts` Group 1.1) are
+ * ("now" resolution, threaded by `engine-payload/individual-accounts.ts`) are
  * external inputs; every eligibility question is re-derived from them
  * fresh for `year` via the same leaf predicates `early-access.ts` and the
  * Tax Buckets tool already use.
@@ -254,7 +235,7 @@ export function computeWithdrawalEligibility(input: {
     const balance = indBal.get(key) ?? 0;
     const birthYear = ia.ownerBirthYear;
 
-    let reason = "No individual eligibility rule (joint account)";
+    let reason: EligibilityReason = { kind: "no_owner" };
     let basisRemaining: number | undefined;
     let basisUncertain: boolean | undefined;
     let penaltyFreeAmount = balance; // default: joint/no-owner accounts are always fully penalty-free
@@ -310,38 +291,45 @@ export function computeWithdrawalEligibility(input: {
           Math.max(0, balance - penaltyFreeAmount),
         );
         if (currentAge >= PENALTY_FREE_AGE) {
-          reason = "Eligible — age 59½ or older";
+          reason = { kind: "age_reached", gate: "age_59_half" };
         } else if (isRoth && !locked && growthExposed <= 0.005) {
-          reason = `Eligible — ${formatCurrency(basisRemaining ?? 0)} basis remaining, always penalty-free`;
+          reason = { kind: "basis_remaining", basis: basisRemaining ?? 0 };
         } else if (isRoth && !locked) {
-          // Part reachable (basis), part locked until 59½ (growth).
-          reason = `Partially eligible — ${formatCurrency(basisRemaining ?? 0)} basis penalty-free, ${formatCurrency(growthExposed)} growth locked until 59½`;
+          reason = {
+            kind: "basis_partial",
+            basis: basisRemaining ?? 0,
+            growthLocked: growthExposed,
+          };
         } else if (isRoth) {
-          reason = "Locked until age 59½ — no basis remaining";
+          reason = { kind: "no_basis" };
         } else {
-          reason = `Locked until age 59½ (currently ${currentAge})`;
+          reason = { kind: "locked", gate: "age_59_half", currentAge };
         }
       } else if (rule === "employer_plan") {
         if (ruleOf55Met) {
           reason =
             projected?.separationYear != null
-              ? `Eligible — Rule of 55 met (separated ${projected.separationYear})`
-              : "Eligible — Rule of 55 met";
+              ? { kind: "rule_of_55", separationYear: projected.separationYear }
+              : { kind: "rule_of_55" };
         } else if (currentAge >= PENALTY_FREE_AGE) {
-          reason = "Eligible — age 59½ or older";
+          reason = { kind: "age_reached", gate: "age_59_half" };
         } else if (ia.ruleOf55ForceIneligible) {
-          reason = `Locked until age 59½ — Rule of 55 marked unavailable for forecasting (currently ${currentAge})`;
+          reason = {
+            kind: "locked",
+            gate: "rule_of_55_unavailable",
+            currentAge,
+          };
         } else {
-          reason = `Locked until Rule of 55 or age 59½ (currently ${currentAge})`;
+          reason = { kind: "locked", gate: "rule_of_55_or_age", currentAge };
         }
       } else if (rule === "hsa_non_medical" && slices) {
         reason = allSlicesLocked(slices)
-          ? `Locked until age 65 — non-medical withdrawal penalty (currently ${currentAge})`
-          : "Eligible — age 65 or older";
+          ? { kind: "locked", gate: "hsa_age_65", currentAge }
+          : { kind: "age_reached", gate: "hsa_age_65" };
       } else {
         // Rule "none" (brokerage): no age or employer gate, so the whole
         // balance stays penalty-free.
-        reason = "Always accessible — no age or employer restriction";
+        reason = { kind: "always_available" };
       }
     }
 
@@ -360,16 +348,9 @@ export function computeWithdrawalEligibility(input: {
       allowPenalizedWithdrawals: ia.allowPenalizedWithdrawals ?? false,
     });
 
-    // A Portfolio-parented account's penalty exposure is never added
-    // to these category-level aggregates — it's excluded from routing
-    // wholesale via computeNonRetirementExclusion instead (see
-    // parentCategory's docblock above). Without this gate, a hypothetical
-    // Portfolio-parented pre-59½ 401k/IRA would have the same dollars
-    // counted in both exclusion mechanisms, and the two subtractions
-    // applied to `balances` downstream would double-remove them. The
-    // per-account `byKey` entry above is NOT gated — it still gets a
-    // normal, informative reason string for the UI regardless of
-    // parentCategory.
+    // A Portfolio-parented account stays out of these aggregates:
+    // computeNonRetirementExclusion excludes it wholesale, and counting it
+    // here too would remove its dollars twice. Its `byKey` entry stays.
     if (
       isRetirementMoney(ia.parentCategory) &&
       getAccountTypeConfig(ia.category).balanceStructure !== "basis_tracking"

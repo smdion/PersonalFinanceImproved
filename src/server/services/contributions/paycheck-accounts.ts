@@ -14,7 +14,7 @@ import {
   fractionFromPercent,
 } from "@/lib/pure/contributions/contribution-amount";
 import { toNumber } from "@/lib/utils/numbers";
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { payrollFicaExemptCap } from "@/lib/pure/contributions/irs-limits";
 import {
   matchPayGroupsWithBonus,

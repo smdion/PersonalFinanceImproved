@@ -105,7 +105,8 @@ function sourceKind(a: IndividualAccountYearBalance): BridgeSourceKind {
 }
 
 const lockedFor = (a: IndividualAccountYearBalance) =>
-  (a.penaltyExposedAmount ?? 0) > 0 && a.allowPenalizedWithdrawals !== true;
+  (a.draw?.penaltyExposedAmount ?? 0) > 0 &&
+  a.draw?.allowPenalizedWithdrawals !== true;
 
 export function retirementBridge(
   projection: readonly EngineYearProjection[],
@@ -150,7 +151,7 @@ export function retirementBridge(
   const counted = startAccounts.filter((a) => !isHsaCategory(a.category));
   const bySource = new Map<BridgeSourceKind, number>();
   for (const a of counted) {
-    const free = a.penaltyFreeAmount ?? 0;
+    const free = a.draw?.penaltyFreeAmount ?? 0;
     if (free <= 0) continue;
     const kind = sourceKind(a);
     bySource.set(kind, (bySource.get(kind) ?? 0) + free);
@@ -172,7 +173,11 @@ export function retirementBridge(
   for (const y of bridge) {
     const left = sumBy(
       bridgeAccounts(y).filter((a) => !isHsaCategory(a.category)),
-      (a) => Math.max(0, (a.penaltyFreeAmount ?? 0) - (a.withdrawal ?? 0)),
+      (a) =>
+        Math.max(
+          0,
+          (a.draw?.penaltyFreeAmount ?? 0) - (a.draw?.withdrawal ?? 0),
+        ),
     );
     if (!cushion || left < cushion.amount)
       cushion = { amount: roundToCents(left), year: y.year };
@@ -203,9 +208,9 @@ export function retirementBridge(
       ),
     ),
     penaltyCost: roundToCents(sumBy(bridge, (y) => y.penaltyCost ?? 0)),
-    conversionsDuring: bridge.some((y) => (y.rothConversionAmount ?? 0) > 0),
+    conversionsDuring: bridge.some((y) => y.rothConversionAmount > 0),
     rothBasisUncertain: counted.some(
-      (a) => isTaxFreeBucket(a.taxType) && a.rothBasisUncertain === true,
+      (a) => isTaxFreeBucket(a.taxType) && a.roth?.basisUncertain === true,
     ),
     unownedAccounts: counted
       .filter(

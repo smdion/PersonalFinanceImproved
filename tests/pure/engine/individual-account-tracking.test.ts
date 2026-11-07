@@ -1,19 +1,26 @@
 import { describe, it, expect } from "vitest";
+import { describeEligibility } from "@/lib/config/eligibility-labels";
 import {
   makeIndKey,
   specKeyOf,
-  buildSpecToAccountMapping,
-  distributeContributions,
-  distributeWithdrawals,
-  distributeGoalWithdrawal,
   applyIndividualGrowth,
-  clampIndividualBalances,
-  buildIndividualYearBalances,
   accrueIndividualBasis,
   depleteIndividualBasis,
+} from "@/lib/pure/engine/individual-accounts/ledger";
+import {
+  buildSpecToAccountMapping,
+  distributeContributions,
+} from "@/lib/pure/engine/individual-accounts/contributions";
+import {
+  distributeWithdrawals,
+  distributeGoalWithdrawal,
+} from "@/lib/pure/engine/individual-accounts/withdrawals";
+import {
+  clampIndividualBalances,
+  buildIndividualYearBalances,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
-} from "@/lib/pure/engine/individual-account-tracking";
+} from "@/lib/pure/engine/individual-accounts/reconcile";
 import type {
   IndividualAccountInput,
   AccountBalances,
@@ -311,7 +318,7 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 20000,
             penaltyExposedAmount: 0,
-            reason: "Eligible — Rule of 55 met",
+            reason: { kind: "rule_of_55" },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -323,7 +330,11 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 100000,
-            reason: "Locked until Rule of 55 or age 59½",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -425,7 +436,11 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 20000,
-            reason: "Locked until Rule of 55 or age 59½",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: true,
           },
         ],
@@ -437,7 +452,11 @@ describe("distributeWithdrawals", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 20000,
-            reason: "Locked until Rule of 55 or age 59½",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -540,7 +559,11 @@ describe("distributeWithdrawals", () => {
       taxType: "preTax",
       penaltyFreeAmount: 0,
       penaltyExposedAmount,
-      reason: "Locked until Rule of 55 or age 59½",
+      reason: {
+        kind: "locked" as const,
+        gate: "rule_of_55_or_age" as const,
+        currentAge: 40,
+      },
       allowPenalizedWithdrawals,
     });
     const eligibility: EligibilityRecord = {
@@ -1725,11 +1748,11 @@ describe("buildIndividualYearBalances", () => {
     expect(result[0]!.contribution).toBe(0);
     expect(result[0]!.employerMatch).toBe(0);
     expect(result[0]!.growth).toBe(5000);
-    expect(result[0]!.withdrawal).toBe(20000);
+    expect(result[0]!.draw?.withdrawal).toBe(20000);
     expect(result[0]!.balance).toBe(85000);
   });
 
-  it("passes eligibilityLocked/eligibilityReason through from the eligibility record (v0.7.8 follow-up)", () => {
+  it("passes eligibilityLocked/reason through from the eligibility record (v0.7.8 follow-up)", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({
         name: "Locked 401k",
@@ -1758,7 +1781,11 @@ describe("buildIndividualYearBalances", () => {
             taxType: "preTax",
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 50000,
-            reason: "Locked until Rule of 55 or age 59½ (currently 40)",
+            reason: {
+              kind: "locked",
+              gate: "rule_of_55_or_age",
+              currentAge: 40,
+            },
             allowPenalizedWithdrawals: false,
           },
         ],
@@ -1798,8 +1825,8 @@ describe("buildIndividualYearBalances", () => {
     );
 
     const locked = result.find((r) => r.name === "Locked 401k")!;
-    expect(locked.eligibilityLocked).toBe(true);
-    expect(locked.eligibilityReason).toBe(
+    expect(locked.draw?.eligibilityLocked).toBe(true);
+    expect(describeEligibility(locked.draw!.reason!)).toBe(
       "Locked until Rule of 55 or age 59½ (currently 40)",
     );
 
@@ -1807,8 +1834,8 @@ describe("buildIndividualYearBalances", () => {
     // wasn't computed this year, or the account has no owner) — fields
     // stay absent rather than defaulting to a misleading "not locked".
     const noData = result.find((r) => r.name === "No Eligibility Data")!;
-    expect(noData.eligibilityLocked).toBeUndefined();
-    expect(noData.eligibilityReason).toBeUndefined();
+    expect(noData.draw?.eligibilityLocked).toBeUndefined();
+    expect(noData.draw?.reason).toBeUndefined();
   });
 
   it("zeroes balance below $1 threshold", () => {
@@ -2130,9 +2157,9 @@ describe("buildIndividualYearBalances — tracked basis fields", () => {
       "decumulation",
       { withdrawal: new Map([[k, 1500]]), basis: indBasis, draws },
     );
-    expect(result[0]!.rothBasisRemaining).toBe(6000);
-    expect(result[0]!.rothBasisDrawn).toBe(1000);
-    expect(result[0]!.rothBasisUncertain).toBe(true);
+    expect(result[0]!.roth?.basisRemaining).toBe(6000);
+    expect(result[0]!.roth?.basisDrawn).toBe(1000);
+    expect(result[0]!.roth?.basisUncertain).toBe(true);
   });
 
   it("leaves basis fields absent when no basis map is supplied (byte-identity for non-Roth callers)", () => {
@@ -2150,8 +2177,6 @@ describe("buildIndividualYearBalances — tracked basis fields", () => {
       "decumulation",
       { withdrawal: new Map([[k, 1500]]) },
     );
-    expect(result[0]!.rothBasisRemaining).toBeUndefined();
-    expect(result[0]!.rothBasisDrawn).toBeUndefined();
-    expect(result[0]!.rothBasisUncertain).toBeUndefined();
+    expect(result[0]!.roth).toBeUndefined();
   });
 });

@@ -118,7 +118,7 @@ describe("checkCommit", () => {
       "src/lib/tax-data/2027.ts",
       "src/lib/config/tax-tables.ts",
       // Withholding and the IRS limits are tax law too.
-      "src/lib/pure/paycheck/paycheck.ts",
+      "src/lib/pure/paycheck/per-check.ts",
       "src/lib/pure/contributions/irs-limits.ts",
     ]) {
       expect(rules(facts({ files: nine(first) }))).toEqual(["engine-files"]);
@@ -265,6 +265,24 @@ describe("notAMove", () => {
     expect(
       notAMove(renamed, diff(["-  return total * 2;", "+  return total * 3;"])),
     ).toMatch(/2 changed line\(s\) are neither imports nor path rewrites/);
+  });
+
+  it("fails a line taken out in one place and put back in another, though the two read alike once joined", () => {
+    // Two lines swapped: git keeps one and moves the other past it, so each
+    // side holds the same one changed line, in different changes.
+    expect(
+      notAMove(
+        renamed,
+        diff([
+          " function f() {",
+          "+  const b = 2;",
+          "   const a = 1;",
+          "-  const b = 2;",
+          "   return a + b;",
+          " }",
+        ]),
+      ),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
   });
 
   it("makes checkCommit refuse the exemption for a commit that isn't a move", () => {
@@ -449,6 +467,94 @@ describe("notAMove: a split moves code between files", () => {
       "+}",
     ];
     expect(notAMove(numstat, split(oldSide, newSide))).toBeUndefined();
+  });
+
+  describe("a moved statement that gains export and is re-wrapped (owner v0.10.3 Q23)", () => {
+    // 80 characters as it was; 87 once exported, so prettier wraps it.
+    const journey = [
+      "function journey(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {",
+      "  const out: MilestoneResult[] = []; // the steps",
+      '  out.push(step("zero", now.netWorth, 0));',
+      "  return out;",
+      "}",
+    ];
+    const rewrapped = [
+      "export function journey(",
+      "  input: MilestoneInput,",
+      "  now: MilestoneYear,",
+      "): MilestoneResult[] {",
+      ...journey.slice(1),
+    ];
+    const moved = (lines: string[], extra: string[] = []) =>
+      notAMove(
+        numstat,
+        split(
+          [...journey, ...extra].map((l) => `-${l}`),
+          [
+            '+import { step } from "@/lib/pure/area/steps";',
+            ...lines.map((l) => `+${l}`),
+          ],
+        ),
+      );
+    const edit = (from: string, to: string) =>
+      rewrapped.map((l) => l.replace(from, to));
+
+    it("passes it, compared token by token", () => {
+      expect(moved(rewrapped)).toBeUndefined();
+    });
+
+    it("fails a changed identifier", () => {
+      expect(moved(edit("now: MilestoneYear", "today: MilestoneYear"))).toMatch(
+        /changed line\(s\)/,
+      );
+      expect(moved(edit("now.netWorth", "now.liquid"))).toMatch(
+        /changed line\(s\)/,
+      );
+    });
+
+    it("fails a changed literal", () => {
+      expect(moved(edit('"zero"', '"one"'))).toMatch(/changed line\(s\)/);
+      expect(moved(edit("now.netWorth, 0", "now.netWorth, 1"))).toMatch(
+        /changed line\(s\)/,
+      );
+    });
+
+    it("fails an added statement", () => {
+      const added = [
+        ...rewrapped.slice(0, 5),
+        "  out.length = 0;",
+        ...rewrapped.slice(5),
+      ];
+      expect(moved(added)).toMatch(/changed line\(s\)/);
+    });
+
+    it("fails any token added beside export, or a comment changed inside", () => {
+      const asAsync = ["export async function journey(", ...rewrapped.slice(1)];
+      expect(moved(asAsync)).toMatch(/changed line\(s\)/);
+      expect(moved(edit("// the steps", "// the milestones"))).toMatch(
+        /changed line\(s\)/,
+      );
+    });
+
+    it("fails a statement exported in place and re-wrapped", () => {
+      const inPlace = [
+        "diff --git a/src/server/helpers/big.ts b/src/server/helpers/big.ts",
+        "--- a/src/server/helpers/big.ts",
+        "+++ b/src/server/helpers/big.ts",
+        "@@ -1,8 +1,8 @@",
+        `-${journey[0]}`,
+        ...rewrapped.slice(0, 4).map((l) => `+${l}`),
+        ...journey.slice(1).map((l) => ` ${l}`),
+        ...body.map((l) => `-${l}`),
+        "diff --git a/src/lib/pure/area/part.ts b/src/lib/pure/area/part.ts",
+        "new file mode 100644",
+        "--- /dev/null",
+        "+++ b/src/lib/pure/area/part.ts",
+        "@@ -0,0 +1,3 @@",
+        ...body.map((l) => `+${l}`),
+      ].join("\n");
+      expect(notAMove(numstat, inPlace)).toMatch(/changed line\(s\)/);
+    });
   });
 
   it("reads a register row's code cells as paths, and only those", () => {
@@ -912,6 +1018,572 @@ describe("notAMove: a router split moves whole procedures to a new part", () => 
       ),
       [BAR]: part(ROUTER, [...b, ...c]),
     });
+  });
+});
+
+describe("notAMove: a stage cut from a long function (owner v0.10.3 Q1)", () => {
+  let dir: string;
+  let cases = 0;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+  const write = (files: Record<string, string[]>) => {
+    for (const [file, lines] of Object.entries(files)) {
+      const full = path.join(dir, file);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, `${lines.join("\n")}\n`);
+    }
+  };
+  /** The staged change from `base` (committed alone) to `after`. */
+  const change = (
+    base: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ) => {
+    cases += 1;
+    git("checkout", "-q", "-f", "--orphan", `case-${cases}`);
+    git("read-tree", "--empty");
+    git("clean", "-qfdx");
+    write(base);
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    write(after);
+    git("add", "-A");
+    return [
+      parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+      git("diff", "--cached", "-M", "-U1000000"),
+    ] as const;
+  };
+  const cut = (
+    base: Record<string, string[]>,
+    after: Record<string, string[]>,
+  ) => notAMove(...change(base, after));
+  const REFUSED = /changed line\(s\)|not whole top-level statements/;
+
+  const YEAR = "src/lib/pure/engine/year.ts";
+  const STAGE = "src/lib/pure/engine/stages/rmd.ts";
+  /** The statements the stage takes, as they read in the year function. */
+  const rmdRun = [
+    "let total = 0;",
+    "const byPerson: number[] = [];",
+    "for (const person of people) {",
+    "  const amount = computeRmd(balances.of(person), ageInYear(person, year));",
+    "  if (amount > 0) {",
+    "    byPerson.push(amount);",
+    "    total += amount;",
+    "  }",
+    "}",
+    "const rmd = roundToCents(total);",
+  ];
+  const indent = (lines: string[], by = "  ") => lines.map((l) => by + l);
+  const yearFile = (body: string[], imports: string[]) => [
+    ...imports,
+    'import type { Context, Result } from "./types";',
+    "",
+    "export function runYear(ctx: Context, year: number): Result {",
+    "  const { people, balances } = ctx;",
+    "  const start = balances.total;",
+    "  // The year's RMD, per person.",
+    ...indent(body),
+    "  // What is left.",
+    "  const left = start - rmd;",
+    // The stage's own `amount` (in its loop) is another binding.
+    "  const amount = left / 2;",
+    "  return { rmd, byPerson, left, amount };",
+    "}",
+  ];
+  const RULES =
+    'import { ageInYear, computeRmd, roundToCents } from "./rules";';
+  const base = { [YEAR]: yearFile(rmdRun, [RULES]) };
+  const stageFile = ({
+    run = rmdRun,
+    params = [
+      'people: Context["people"],',
+      'balances: Context["balances"],',
+      "year: number,",
+    ],
+    ret = ["", "return { rmd, byPerson };"],
+  }: { run?: string[]; params?: string[]; ret?: string[] } = {}) => [
+    'import { ageInYear, computeRmd, roundToCents } from "../rules";',
+    'import type { Context } from "../types";',
+    "",
+    "/** The year's RMD, per person. */",
+    "export function rmdStage(",
+    ...indent(params),
+    ") {",
+    ...indent(run),
+    ...indent(ret).map((l) => (l.trim() === "" ? "" : l)),
+    "}",
+  ];
+  const STAGE_IMPORT = 'import { rmdStage } from "./stages/rmd";';
+  const after = (
+    call = "const { rmd, byPerson } = rmdStage(people, balances, year);",
+    stage = stageFile(),
+  ) => ({
+    [YEAR]: yearFile([call], [STAGE_IMPORT]),
+    [STAGE]: stage,
+  });
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-stage-cut-"));
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "Test");
+  });
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it("passes statements moved in order into a stage, called with a destructure of what it returns", () => {
+    expect(cut(base, after())).toBeUndefined();
+    const moves = structuralMoves(...change(base, after()));
+    expect(moves.stages).toEqual([
+      {
+        from: YEAR,
+        to: STAGE,
+        start: { line: 3, character: 0 },
+        name: "rmdStage",
+        // The call; the signature (5 lines), the blank line, return and `}`.
+        wrapper: { old: 1, new: 8 },
+        body: { old: rmdRun.length, new: rmdRun.length },
+        bodyCode: { old: rmdRun.length, new: rmdRun.length },
+        statements: 4,
+        returned: ["rmd", "byPerson"],
+      },
+    ]);
+    expect(moves.bodies).toEqual([]);
+  });
+
+  it("passes a stage that returns nothing, called as a statement", () => {
+    const logged = [
+      'import { record } from "./log";',
+      "",
+      "export function runYear(ctx: Context, year: number): number {",
+      "  const total = ctx.total * 2;",
+      ...indent(["record(ctx.log, year, total);", "ctx.seen.add(year);"]),
+      "  return total;",
+      "}",
+    ];
+    const stage = [
+      'import { record } from "../log";',
+      "",
+      "export function logStage(ctx: Context, year: number, total: number) {",
+      "  record(ctx.log, year, total);",
+      "  ctx.seen.add(year);",
+      "}",
+    ];
+    expect(
+      cut(
+        { [YEAR]: logged },
+        {
+          [YEAR]: [
+            'import { logStage } from "./stages/log";',
+            ...logged.slice(1, 4),
+            "  logStage(ctx, year, total);",
+            ...logged.slice(6),
+          ],
+          "src/lib/pure/engine/stages/log.ts": stage,
+        },
+      ),
+    ).toBeUndefined();
+  });
+
+  it("fails a statement reordered on the way", () => {
+    const run = [rmdRun[1]!, rmdRun[0]!, ...rmdRun.slice(2)];
+    expect(cut(base, after(undefined, stageFile({ run })))).toMatch(REFUSED);
+  });
+
+  it("fails a line edited on the way, or a variable renamed", () => {
+    const edited = rmdRun.map((l) => l.replace("+= amount", "+= amount * 2"));
+    expect(cut(base, after(undefined, stageFile({ run: edited })))).toMatch(
+      REFUSED,
+    );
+    const renamed = rmdRun.map((l) => l.replace(/\btotal\b/g, "sum"));
+    expect(cut(base, after(undefined, stageFile({ run: renamed })))).toMatch(
+      REFUSED,
+    );
+  });
+
+  it("fails a new branch in the stage", () => {
+    const branched = [
+      "if (people.length === 0) total = -1;",
+      ...rmdRun.slice(1),
+    ];
+    expect(
+      cut(
+        base,
+        after(undefined, stageFile({ run: [rmdRun[0]!, ...branched] })),
+      ),
+    ).toMatch(REFUSED);
+    // A new branch at the call.
+    expect(
+      cut(base, {
+        ...after(),
+        [YEAR]: yearFile(
+          [
+            "if (year < 0) throw new Error();",
+            "const { rmd, byPerson } = rmdStage(people, balances, year);",
+          ],
+          [STAGE_IMPORT],
+        ),
+      }),
+    ).toMatch(REFUSED);
+  });
+
+  it("fails a stage that leaves out a name the rest reads, or reads one it isn't passed", () => {
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd } = rmdStage(people, balances, year);",
+          stageFile({ ret: ["", "return { rmd };"] }),
+        ),
+      ),
+    ).toMatch(REFUSED);
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson } = rmdStage(people, balances);",
+          stageFile({
+            params: [
+              'people: Context["people"],',
+              'balances: Context["balances"],',
+            ],
+          }),
+        ),
+      ),
+    ).toMatch(REFUSED);
+  });
+
+  it("fails a call that does more than call, or passes another name", () => {
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson } = rmdStage(people, balances, year + 1);",
+        ),
+      ),
+    ).toMatch(REFUSED);
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson } = rmdStage(people, ctx.balances, year);",
+        ),
+      ),
+    ).toMatch(REFUSED);
+    expect(
+      cut(
+        base,
+        after(
+          "const { rmd, byPerson: rmdByPerson } = rmdStage(people, balances, year);",
+        ),
+      ),
+    ).toMatch(REFUSED);
+  });
+
+  /** A function whose middle statements wrap, so its call shares lines
+   *  with them (`  people,`, `);`), as prettier writes both. */
+  const wrapped = (body: string[], extra: string[] = []) => [
+    'import { sum } from "./lib";',
+    "",
+    "export function runYear(ctx: Context): number {",
+    "  const { people, balances } = ctx;",
+    ...indent(body),
+    "  return total + rest;",
+    "}",
+    ...extra,
+  ];
+  const wrappedRun = [
+    "const total = sum(",
+    "  people,",
+    "  balances,",
+    ");",
+    "const rest = sum(",
+    "  balances,",
+    "  people,",
+    ");",
+  ];
+  const wrappedCall = [
+    "const { total, rest } = totalStage(",
+    "  people,",
+    "  balances,",
+    ");",
+  ];
+  const wrappedStage = (run = wrappedRun) => [
+    "",
+    "function totalStage(people: People, balances: Balances) {",
+    ...indent(run),
+    "",
+    "  return { total, rest };",
+    "}",
+  ];
+
+  it("passes a stage whose call shares lines with what it took (git matches them)", () => {
+    expect(
+      cut(
+        { [YEAR]: wrapped(wrappedRun) },
+        {
+          [YEAR]: wrapped(wrappedCall).map((l) =>
+            l.replace(
+              '"./lib";',
+              '"./lib";\nimport { totalStage } from "./stages/total";',
+            ),
+          ),
+          "src/lib/pure/engine/stages/total.ts": [
+            'import { sum } from "../lib";',
+            ...wrappedStage().map((l) =>
+              l.startsWith("function") ? `export ${l}` : l,
+            ),
+          ],
+        },
+      ),
+    ).toBeUndefined();
+  });
+
+  it("passes a stage cut into a new function in the same file, and holds it to the same rules", () => {
+    const base = { [YEAR]: wrapped(wrappedRun) };
+    expect(
+      cut(base, { [YEAR]: wrapped(wrappedCall, wrappedStage()) }),
+    ).toBeUndefined();
+    const moves = structuralMoves(
+      ...change(base, { [YEAR]: wrapped(wrappedCall, wrappedStage()) }),
+    );
+    expect(moves.stages).toEqual([
+      expect.objectContaining({ from: YEAR, to: YEAR, name: "totalStage" }),
+    ]);
+    // An edited line, a reordered statement, a new branch: no stage, so
+    // nothing moved.
+    const SAME_FILE_REFUSED = new RegExp(
+      `${REFUSED.source}|no code moved between files`,
+    );
+    const edited = wrappedRun.map((l) =>
+      l.replace("  balances,", "  balances!,"),
+    );
+    expect(
+      cut(base, { [YEAR]: wrapped(wrappedCall, wrappedStage(edited)) }),
+    ).toMatch(SAME_FILE_REFUSED);
+    const reordered = [...wrappedRun.slice(4), ...wrappedRun.slice(0, 4)];
+    expect(
+      cut(base, { [YEAR]: wrapped(wrappedCall, wrappedStage(reordered)) }),
+    ).toMatch(SAME_FILE_REFUSED);
+    expect(
+      cut(base, {
+        [YEAR]: wrapped(
+          wrappedCall,
+          wrappedStage(["if (!people) return;", ...wrappedRun]),
+        ),
+      }),
+    ).toMatch(SAME_FILE_REFUSED);
+    // The old statements left in place beside the call.
+    expect(
+      cut(base, {
+        [YEAR]: wrapped(
+          [...wrappedRun.slice(0, 4), ...wrappedCall],
+          wrappedStage(),
+        ),
+      }),
+    ).toMatch(SAME_FILE_REFUSED);
+  });
+
+  it("fails a call left somewhere other than where the statements were", () => {
+    const later = [
+      'import { sum } from "./lib";',
+      "",
+      "export function runYear(ctx: Context): number {",
+      "  const { people, balances } = ctx;",
+      "  const seen = people.length;",
+      ...indent(wrappedRun),
+      "  return total + rest + seen;",
+      "}",
+    ];
+    const moved = [
+      'import { sum } from "./lib";',
+      "",
+      "export function runYear(ctx: Context): number {",
+      "  const { people, balances } = ctx;",
+      ...indent(wrappedCall),
+      "  const seen = people.length;",
+      "  return total + rest + seen;",
+      "}",
+      ...wrappedStage(),
+    ];
+    expect(cut({ [YEAR]: later }, { [YEAR]: moved })).toMatch(REFUSED);
+  });
+
+  /** A per-person callback, as computeContributionSummary's: `around` sits
+   *  in the enclosing function, `body` in the callback. */
+  const perPerson = (
+    body: string[],
+    around: string[] = [],
+    extra: string[] = [],
+  ) => [
+    "export async function summary(ctx: Context) {",
+    "  const { people } = ctx;",
+    "  let rate = ctx.rate;",
+    ...indent(around),
+    "  const rows = await Promise.all(",
+    "    people.map(async (person) => {",
+    ...indent(body, "      "),
+    "      const total = pay + match;",
+    "      return { total };",
+    "    }),",
+    "  );",
+    "  return rows;",
+    "}",
+    ...extra,
+  ];
+  const payRun = [
+    "const pay = person.salary * rate;",
+    "const match = Math.min(",
+    "  pay,",
+    "  person.cap,",
+    ");",
+  ];
+  const payCall = [
+    "const { pay, match } = payStage(",
+    "  person,",
+    "  rate,",
+    ");",
+  ];
+  const payStage = (run = payRun, params = "person: Person, rate: number") => [
+    "",
+    `function payStage(${params}) {`,
+    ...indent(run),
+    "",
+    "  return { pay, match };",
+    "}",
+  ];
+  const CALLBACK_REFUSED = new RegExp(
+    `${REFUSED.source}|no code moved between files`,
+  );
+
+  it("passes a stage cut from a callback passed to a call, the callback's own and captured names passed in (owner Q18)", () => {
+    const base = { [YEAR]: perPerson(payRun) };
+    const after = { [YEAR]: perPerson(payCall, [], payStage()) };
+    expect(cut(base, after)).toBeUndefined();
+    expect(structuralMoves(...change(base, after)).stages).toEqual([
+      expect.objectContaining({ from: YEAR, to: YEAR, name: "payStage" }),
+    ]);
+  });
+
+  it("fails a callback's stage that changes, or reads a captured name it isn't passed or that is reassigned", () => {
+    const base = { [YEAR]: perPerson(payRun) };
+    const fails = (after: string[], from = base) =>
+      expect(cut(from, { [YEAR]: after })).toMatch(CALLBACK_REFUSED);
+    // An edited line, a reordered statement, a new branch.
+    fails(
+      perPerson(
+        payCall,
+        [],
+        payStage(payRun.map((l) => l.replace("* rate", "* rate * 2"))),
+      ),
+    );
+    fails(perPerson(payCall, [], payStage([...payRun.slice(1), payRun[0]!])));
+    fails(
+      perPerson(
+        payCall,
+        [],
+        payStage(["if (!person) throw new Error();", ...payRun]),
+      ),
+    );
+    // A captured name not passed in.
+    fails(
+      perPerson(
+        ["const { pay, match } = payStage(person);"],
+        [],
+        payStage(payRun, "person: Person"),
+      ),
+    );
+    // A captured name the enclosing function reassigns: the stage would
+    // read a copy taken when it is called.
+    const reassigned = { [YEAR]: perPerson(payRun, ["if (!rate) rate = 1;"]) };
+    fails(perPerson(payCall, ["if (!rate) rate = 1;"], payStage()), reassigned);
+  });
+
+  it("fails a callback's stage whose call moves out of the callback", () => {
+    const base = { [YEAR]: perPerson(payRun) };
+    const outside = [
+      "export async function summary(ctx: Context) {",
+      "  const { people } = ctx;",
+      "  let rate = ctx.rate;",
+      "  const person = people[0];",
+      ...indent(payCall),
+      "  const rows = await Promise.all(",
+      "    people.map(async (person) => {",
+      "      const total = pay + match;",
+      "      return { total };",
+      "    }),",
+      "  );",
+      "  return rows;",
+      "}",
+      ...payStage(),
+    ];
+    expect(cut(base, { [YEAR]: outside })).toMatch(CALLBACK_REFUSED);
+  });
+
+  it("fails a stage that would write or capture a copy of the function's own variable", () => {
+    const fn = (body: string[]) => [
+      "export function runYear(ctx: Context, year: number): number {",
+      "  let spent = ctx.spent;",
+      ...indent(body),
+      "  return spent;",
+      "}",
+    ];
+    const stage = (params: string, body: string[], ret: string) => ({
+      "src/lib/pure/engine/stages/spend.ts": [
+        `export function spendStage(${params}) {`,
+        ...indent(body),
+        ...(ret ? [`  ${ret}`] : []),
+        "}",
+      ],
+    });
+    // It assigns `spent`, which the function reads after it.
+    const assigns = ["spent += year;"];
+    expect(
+      cut(
+        { [YEAR]: fn([...assigns, "ctx.log(spent);"]) },
+        {
+          [YEAR]: [
+            'import { spendStage } from "./stages/spend";',
+            "",
+            ...fn(["spendStage(spent, year);", "ctx.log(spent);"]),
+          ],
+          ...stage("spent: number, year: number", assigns, ""),
+        },
+      ),
+    ).toMatch(REFUSED);
+    // A function it creates reads `spent`, which the function changes later.
+    const captures = ["const read = () => spent;"];
+    expect(
+      cut(
+        { [YEAR]: fn([...captures, "spent += year;", "ctx.log(read());"]) },
+        {
+          [YEAR]: [
+            'import { spendStage } from "./stages/spend";',
+            "",
+            ...fn([
+              "const { read } = spendStage(spent);",
+              "spent += year;",
+              "ctx.log(read());",
+            ]),
+          ],
+          ...stage("spent: number", captures, "return { read };"),
+        },
+      ),
+    ).toMatch(REFUSED);
+    // It returns from the function.
+    const returns = ["if (year < 0) return 0;"];
+    expect(
+      cut(
+        { [YEAR]: fn([...returns, "ctx.log(spent);"]) },
+        {
+          [YEAR]: [
+            'import { spendStage } from "./stages/spend";',
+            "",
+            ...fn(["spendStage(year);", "ctx.log(spent);"]),
+          ],
+          ...stage("year: number", returns, ""),
+        },
+      ),
+    ).toMatch(REFUSED);
   });
 });
 

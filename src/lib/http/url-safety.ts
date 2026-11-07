@@ -1,6 +1,6 @@
 /** Where Ledgr may send a request: a scheme the service takes, no user name
  *  or password, and a public host as `new URL` normalises it. Actual takes
- *  any host: its Server URL is the one saved in Settings (sync permission). */
+ *  any host: its Server URL is the one saved in Settings (by an admin). */
 import "server-only";
 import {
   lookup as dnsLookup,

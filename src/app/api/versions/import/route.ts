@@ -64,8 +64,8 @@ export async function POST(request: Request) {
     }
     if (
       !allowDev &&
-      session?.user?.role !== "admin" &&
-      !session?.user?.permissions.includes("version")
+      session?.user.role !== "admin" &&
+      !session?.user.permissions.includes("version")
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -113,9 +113,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Anyone but an admin leaves the installation's connections as they are.
     const importResult = await importBackup(
       db as Parameters<typeof importBackup>[0],
       backup,
+      { asAdmin: allowDev || session?.user.role === "admin" },
     );
     await settleFirstRunGate(db, "import");
 

@@ -48,13 +48,13 @@ export function calculateEFund(input: EFundInput): EFundResult {
   // Current months: raw balance / essential expenses (spreadsheet "Current Months")
   const monthsCovered =
     essentialMonthlyExpenses > 0
-      ? (safeDivide(rawBalance, essentialMonthlyExpenses) as number)
+      ? safeDivide(rawBalance, essentialMonthlyExpenses)
       : null;
 
   // Repaid months: with-repay balance / essential expenses (spreadsheet "Repaid Months")
   const monthsCoveredWithRepay =
     essentialMonthlyExpenses > 0
-      ? (safeDivide(balanceWithRepay, essentialMonthlyExpenses) as number)
+      ? safeDivide(balanceWithRepay, essentialMonthlyExpenses)
       : null;
 
   // Target in dollars

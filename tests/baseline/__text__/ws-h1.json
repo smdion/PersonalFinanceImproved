@@ -1,0 +1,6464 @@
+{
+ "accountDepletions": [
+  {
+   "category": "403b",
+   "subType": "traditional"
+  },
+  {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
+   "category": "ira",
+   "subType": "traditional"
+  },
+  {
+   "category": "hsa"
+  },
+  {
+   "category": "brokerage"
+  },
+  {
+   "category": "401k",
+   "subType": "traditional"
+  }
+ ],
+ "projectionByYear": [
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-1534.10 (indBal sum $49038.39 vs acctBal $47504.29)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-1917.65 (indBal sum $56582.55 vs acctBal $54664.90)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-1975.19 (indBal sum $64417.00 vs acctBal $62441.81)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2034.43 (indBal sum $72916.05 vs acctBal $70881.62)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2095.47 (indBal sum $82129.75 vs acctBal $80034.28)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2158.34 (indBal sum $92111.69 vs acctBal $89953.35)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2223.08 (indBal sum $102919.34 vs acctBal $100696.26)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2289.77 (indBal sum $114614.33 vs acctBal $112324.56)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2358.48 (indBal sum $127262.70 vs acctBal $124904.22)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2429.23 (indBal sum $140935.20 vs acctBal $138505.97)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2502.09 (indBal sum $155707.69 vs acctBal $153205.60)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2577.17 (indBal sum $171661.49 vs acctBal $169084.32)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2654.48 (indBal sum $188883.67 vs acctBal $186229.19)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2734.12 (indBal sum $207467.59 vs acctBal $204733.47)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2816.14 (indBal sum $227513.23 vs acctBal $224697.09)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2900.62 (indBal sum $249127.76 vs acctBal $246227.14)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2987.64 (indBal sum $272425.97 vs acctBal $269438.33)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3077.26 (indBal sum $297530.82 vs acctBal $294453.56)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3169.59 (indBal sum $324574.08 vs acctBal $321404.49)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3264.68 (indBal sum $353696.84 vs acctBal $350432.16)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3362.61 (indBal sum $385050.26 vs acctBal $381687.65)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3463.50 (indBal sum $418796.28 vs acctBal $415332.78)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3567.40 (indBal sum $455108.28 vs acctBal $451540.88)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3674.42 (indBal sum $494172.01 vs acctBal $490497.59)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3784.65 (indBal sum $536186.38 vs acctBal $532401.73)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3898.19 (indBal sum $581364.44 vs acctBal $577466.25)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4015.15 (indBal sum $629934.32 vs acctBal $625919.17)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4135.59 (indBal sum $682140.30 vs acctBal $678004.71)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4259.66 (indBal sum $738244.03 vs acctBal $733984.37)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4387.44 (indBal sum $798525.63 vs acctBal $794138.19)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4519.08 (indBal sum $863285.09 vs acctBal $858766.01)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4654.65 (indBal sum $932843.58 vs acctBal $928188.93)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4794.28 (indBal sum $1007545.02 vs acctBal $1002750.74)"
+   ]
+  },
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "accumulation",
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "warnings": [
+    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4938.12 (indBal sum $1087757.65 vs acctBal $1082819.53)"
+   ]
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=3913886, balances.taxFree=3913885, delta=-1"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=4143879, balances.taxFree=4143878, delta=-1"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=4388652, balances.taxFree=4388651, delta=-1"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=4649201, balances.taxFree=4649199, delta=-1"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=4926588, balances.taxFree=4926586, delta=-1"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=5221950, balances.taxFree=5221949, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=5536503, balances.taxFree=5536502, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=5871545, balances.taxFree=5871544, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=6228465, balances.taxFree=6228463, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=6608747, balances.taxFree=6608745, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=7013976, balances.taxFree=7013974, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=7445851, balances.taxFree=7445849, delta=-2"
+   ],
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Avery IRA (Vanguard)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "warnings": [
+    "[DIAG] Roth divergence: acctBal.roth=7906183, balances.taxFree=7906181, delta=-2"
+   ],
+   "withdrawalSized": false
+  }
+ ]
+}

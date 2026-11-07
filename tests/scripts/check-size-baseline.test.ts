@@ -274,3 +274,102 @@ describe("--record --from: a procedure body moved whole into a service (owner Q1
     ]);
   });
 });
+
+describe("--record --from: stages cut from a long function (owner v0.10.3 Q1)", () => {
+  const YEAR = "src/lib/pure/engine/year.ts";
+  const STAGES = "src/lib/pure/engine/stages/year-stages.ts";
+  const was = [
+    'import { load } from "./lib";',
+    "",
+    "export function runYear(a: number) {",
+    "  const v0 = load(a, 0);",
+    "  const v1 = load(a, 1);",
+    "  load(a, 2);",
+    "  return v0 + v1;",
+    "}",
+  ].join("\n");
+  const now = [
+    'import { load } from "./lib";',
+    'import { vStage, wStage } from "./stages/year-stages";',
+    "",
+    "export function runYear(a: number) {",
+    "  const { v0 } = vStage(a);",
+    "  const v1 = load(a, 1);",
+    "  wStage(a);",
+    "  return v0 + v1;",
+    "}",
+  ].join("\n");
+  const stages = [
+    'import { load } from "../lib";',
+    "",
+    "export function vStage(a: number) {",
+    "  const v0 = load(a, 0);",
+    "",
+    "  return { v0 };",
+    "}",
+    "",
+    "export function wStage(a: number) {",
+    "  load(a, 2);",
+    "}",
+  ].join("\n");
+  const tree = (files: Record<string, string>) => (f: string) => files[f];
+  const carry = () =>
+    bodyCarry(
+      YEAR,
+      [STAGES],
+      tree({ [YEAR]: now, [STAGES]: stages }),
+      tree({ [YEAR]: was }),
+    );
+  const old: Baseline = {
+    files: { [YEAR]: 900 },
+    functions: { [YEAR]: { runYear: 800, "runYear.map()": 200 } },
+  };
+  const measured = (fns: Record<string, number>, part = 450) => ({
+    files: { [STAGES]: part, [YEAR]: 452 },
+    functions: { [STAGES]: fns },
+  });
+
+  it("names the function each stage was cut from, and what its wrapper and call add", () => {
+    // vStage: signature, blank, return and brace (4), its call (1); wStage:
+    // signature and brace (2), its call (1); a second import in each file.
+    expect(carry()).toEqual({
+      renames: {},
+      wrapper: {},
+      stages: { vStage: "runYear", wStage: "runYear" },
+      total: 4 + 1 + 2 + 1 + 2,
+    });
+  });
+
+  it("records stages that share their function's entry, and the ones inside them", () => {
+    const result = recorded(
+      old,
+      measured({ vStage: 500, wStage: 290, "vStage.map()": 200 }),
+      [STAGES],
+      YEAR,
+      carry(),
+    );
+    expect(result.problems).toEqual([]);
+    expect(result.baseline.functions[STAGES]).toEqual({
+      vStage: 500,
+      wStage: 290,
+      "vStage.map()": 200,
+    });
+  });
+
+  it("refuses a stage past its function's entry, and a total past the allowance", () => {
+    expect(
+      recorded(old, measured({ vStage: 801 }, 460), [STAGES], YEAR, carry())
+        .problems,
+    ).toEqual([
+      `${STAGES} vStage(): 801 lines, ${YEAR} runYear() 800 — split it; never raise the baseline`,
+      `${YEAR}: the parts and what is left total 912 lines, entry 900 and +10 for the moved bodies — split it; never raise the baseline`,
+    ]);
+    // Without the carry a stage has no entry.
+    expect(
+      recorded(old, measured({ vStage: 500 }), [STAGES], YEAR).problems,
+    ).toEqual([
+      `${STAGES} vStage(): 500 lines, no entry in ${YEAR} — split it; never raise the baseline`,
+      `${YEAR}: the parts and what is left total 902 lines, entry 900 — split it; never raise the baseline`,
+    ]);
+  });
+});

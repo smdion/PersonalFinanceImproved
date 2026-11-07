@@ -225,7 +225,7 @@ describe("Roth growth income correctly reaches MAGI/taxCost in a Roth-conversion
       );
       const growthDrawn = Math.max(
         0,
-        (ia?.withdrawal ?? 0) - (ia?.rothBasisDrawn ?? 0),
+        (ia?.draw?.withdrawal ?? 0) - (ia?.roth?.basisDrawn ?? 0),
       );
       // Isolate years where the specific bug-triggering combination fires:
       // a Roth conversion happened AND growth was actually drawn.

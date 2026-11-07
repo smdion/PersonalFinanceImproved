@@ -9,7 +9,7 @@ import {
   isHsaTreatment,
   getLimitGroup,
 } from "@/lib/config/account-types";
-import { isPaidThroughPayroll } from "@/lib/pure/paycheck/paycheck";
+import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { sumBy } from "@/lib/utils/math";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {

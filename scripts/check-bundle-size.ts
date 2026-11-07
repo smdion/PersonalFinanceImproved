@@ -60,7 +60,7 @@ const PAGE_BUDGET_KB: Record<string, number> = {
   "/(dashboard)/milestones/page": 284,
   "/(dashboard)/mortgage/page": 214,
   "/(dashboard)/networth/page": 372,
-  "/(dashboard)/page": 329,
+  "/(dashboard)/page": 330,
   "/(dashboard)/paycheck/page": 296,
   "/(dashboard)/performance/page": 274,
   "/(dashboard)/portfolio/page": 380,

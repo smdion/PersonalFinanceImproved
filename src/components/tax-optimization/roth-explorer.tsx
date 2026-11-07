@@ -201,7 +201,7 @@ export function RothExplorer({ selection }: { selection: Selection }) {
               />
               <Stat
                 label="Break-even year"
-                value={exp.breakEvenYear ? String(exp.breakEvenYear) : "—"}
+                value={exp.breakEvenYear ? String(exp.breakEvenYear) : "—"} // The server's type narrows breakEvenYear to null (it is set inside a callback); it holds a year when one breaks even.
               />
             </div>
             <div className="overflow-x-auto">

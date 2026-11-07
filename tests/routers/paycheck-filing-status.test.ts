@@ -11,10 +11,8 @@ import { createTestCaller, seedJob, seedPerson } from "./setup";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { type SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
-import {
-  buildEnginePayload,
-  fetchRetirementData,
-} from "@/server/services/projection/engine-payload/build-engine-payload";
+import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
+import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/tax/filing-status";
 import { recommendationsFromFilingStatus } from "@/lib/pure/advice/recommendations-data";
 

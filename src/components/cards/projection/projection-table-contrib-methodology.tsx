@@ -43,7 +43,6 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
     contribSpecs,
     budgetProfileSummaries: _budgetProfileSummaries,
     result,
-    baseYear,
     deflate,
   } = state;
 
@@ -172,7 +171,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 {realDefaults &&
                   (() => {
                     const totalMatch = Object.values(
-                      realDefaults.employerMatchByCategory ?? {},
+                      realDefaults.employerMatchByCategory,
                     ).reduce((s: number, v: number) => s + v, 0);
                     if (totalMatch <= 0) return null;
                     return (
@@ -190,7 +189,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                     {formatCurrency(
                       deflate(
                         result.firstOverflowAmount ?? 0,
-                        result.firstOverflowYear ?? baseYear,
+                        result.firstOverflowYear,
                       ),
                     )}
                     /yr overflows to brokerage

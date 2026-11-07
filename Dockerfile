@@ -1,6 +1,5 @@
 # Stage 1: Install dependencies
 FROM node:26.13.0-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS deps
-RUN apk add --no-cache python3 make g++
 RUN npm install -g pnpm@10.32.1
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./

@@ -2,872 +2,539 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**396 procedures across 94 routers.**
+**396 procedures across 27 routers.**
+
+Each procedure is listed by its client path (`trpc.<path>`); Source is its file under `src/server/routers/`.
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
 ## `assets`
 
-| Procedure               | Kind     | Auth                 | Description                                                                                                                      |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `addHomeImprovement`    | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `computeSummary`        | query    | `protectedProcedure` | Asset-focused summary: current state + year-over-year history. Includes API sync status per item so the UI can show sync badges. |
-| `deleteHomeImprovement` | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `deleteOtherAsset`      | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `deletePropertyTax`     | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `listPropertyTaxes`     | query    | `protectedProcedure` | (no description)                                                                                                                 |
-| `updateAsset`           | mutation | `adminProcedure`     | Update simple asset fields (cash, houseValue) on a net_worth_annual row.                                                         |
-| `updateHomeImprovement` | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `upsertNote`            | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `upsertOtherAsset`      | mutation | `adminProcedure`     | (no description)                                                                                                                 |
-| `upsertPropertyTax`     | mutation | `adminProcedure`     | (no description)                                                                                                                 |
+| Procedure                      | Kind     | Auth                 | Source      | Description                                                                                                                      |
+| ------------------------------ | -------- | -------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `assets.addHomeImprovement`    | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.computeSummary`        | query    | `protectedProcedure` | `assets.ts` | Asset-focused summary: current state + year-over-year history. Includes API sync status per item so the UI can show sync badges. |
+| `assets.deleteHomeImprovement` | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.deleteOtherAsset`      | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.deletePropertyTax`     | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.listPropertyTaxes`     | query    | `protectedProcedure` | `assets.ts` | (no description)                                                                                                                 |
+| `assets.updateAsset`           | mutation | `adminProcedure`     | `assets.ts` | Update simple asset fields (cash, houseValue) on a net_worth_annual row.                                                         |
+| `assets.updateHomeImprovement` | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.upsertNote`            | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.upsertOtherAsset`      | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
+| `assets.upsertPropertyTax`     | mutation | `adminProcedure`     | `assets.ts` | (no description)                                                                                                                 |
 
 ## `brokerage`
 
-| Procedure        | Kind     | Auth                 | Description      |
-| ---------------- | -------- | -------------------- | ---------------- |
-| `computeSummary` | query    | `protectedProcedure` | (no description) |
-| `createGoal`     | mutation | `brokerageProcedure` | (no description) |
-| `deleteGoal`     | mutation | `brokerageProcedure` | (no description) |
-| `listGoals`      | query    | `protectedProcedure` | (no description) |
-| `updateGoal`     | mutation | `brokerageProcedure` | (no description) |
+| Procedure                  | Kind     | Auth                 | Source         | Description      |
+| -------------------------- | -------- | -------------------- | -------------- | ---------------- |
+| `brokerage.computeSummary` | query    | `protectedProcedure` | `brokerage.ts` | (no description) |
+| `brokerage.createGoal`     | mutation | `brokerageProcedure` | `brokerage.ts` | (no description) |
+| `brokerage.deleteGoal`     | mutation | `brokerageProcedure` | `brokerage.ts` | (no description) |
+| `brokerage.listGoals`      | query    | `protectedProcedure` | `brokerage.ts` | (no description) |
+| `brokerage.updateGoal`     | mutation | `brokerageProcedure` | `brokerage.ts` | (no description) |
 
-## `budget/api-links`
+## `budget`
 
-| Procedure           | Kind     | Auth                 | Description                                                                              |
-| ------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------- |
-| `linkToApi`         | mutation | `budgetProcedure`    | Link a budget item to a budget API category.                                             |
-| `listApiActuals`    | query    | `protectedProcedure` | Get API actuals for linked budget items (activity + balance from cached month data).     |
-| `listApiCategories` | query    | `protectedProcedure` | Get cached categories from the active (or specified) budget API for the category picker. |
-| `setSyncDirection`  | mutation | `budgetProcedure`    | Change sync direction on a linked budget item.                                           |
-| `unlinkFromApi`     | mutation | `budgetProcedure`    | Remove API link from a budget item.                                                      |
-
-## `budget/api-sync`
-
-| Procedure           | Kind     | Auth              | Description                                                         |
-| ------------------- | -------- | ----------------- | ------------------------------------------------------------------- |
-| `syncBudgetFromApi` | mutation | `budgetProcedure` | Pull budgeted amounts from API for all linked items (API -> Ledgr). |
-| `syncBudgetToApi`   | mutation | `budgetProcedure` | Push budget amounts to API for all linked items (Ledgr -> API).     |
-
-## `budget/columns`
-
-| Procedure            | Kind     | Auth              | Description                                                                  |
-| -------------------- | -------- | ----------------- | ---------------------------------------------------------------------------- |
-| `addColumn`          | mutation | `budgetProcedure` | Add a new column (budget mode) to the target profile (active if not given).  |
-| `removeColumn`       | mutation | `budgetProcedure` | Remove a column (budget mode) from the target profile (active if not given). |
-| `renameColumn`       | mutation | `budgetProcedure` | Rename a column (budget mode).                                               |
-| `updateColumnMonths` | mutation | `budgetProcedure` | Update column months for weighted budget profiles.                           |
-
-## `budget/item-amounts`
-
-| Procedure           | Kind     | Auth              | Description                                    |
-| ------------------- | -------- | ----------------- | ---------------------------------------------- |
-| `updateItemAmount`  | mutation | `budgetProcedure` | Update a single amount cell for a budget item. |
-| `updateItemAmounts` | mutation | `budgetProcedure` | Batch update multiple amount cells.            |
-
-## `budget/item-links`
-
-| Procedure                       | Kind     | Auth                 | Description                                                                                                                                                                                 |
-| ------------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `linkContributionAccount`       | mutation | `budgetProcedure`    | (no description)                                                                                                                                                                            |
-| `listContribAccountsForLinking` | query    | `protectedProcedure` | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck. |
-| `mortgageItemChoices`           | query    | `protectedProcedure` | profile, and which one is.                                                                                                                                                                  |
-| `setMortgageItem`               | mutation | `budgetProcedure`    | one loan and a loan has one line per profile: the projection drops it after payoff.                                                                                                         |
-| `unlinkContributionAccount`     | mutation | `budgetProcedure`    | Remove contribution account link from a budget item.                                                                                                                                        |
-
-## `budget/items`
-
-| Procedure                 | Kind     | Auth              | Description                                                                                                                                                        |
-| ------------------------- | -------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `createItem`              | mutation | `budgetProcedure` | Create a new budget item.                                                                                                                                          |
-| `deleteItem`              | mutation | `budgetProcedure` | Delete a budget item.                                                                                                                                              |
-| `moveItem`                | mutation | `budgetProcedure` | Move a budget item to a different category.                                                                                                                        |
-| `reorderCategory`         | mutation | `budgetProcedure` | block. No-ops at the first/last category boundary.                                                                                                                 |
-| `reorderItem`             | mutation | `budgetProcedure` | category. No-ops at the category's first/last item boundary — moving an item into a different category is the "Move..." dropdown's job (moveItem above), not this. |
-| `updateCategoryEssential` | mutation | `budgetProcedure` | Toggle isEssential for all items in a category.                                                                                                                    |
-| `updateItemEssential`     | mutation | `budgetProcedure` | Update a budget item's essential flag.                                                                                                                             |
-
-## `budget/profiles`
-
-| Procedure          | Kind     | Auth              | Description                                                                                                                                                                                              |
-| ------------------ | -------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createProfile`    | mutation | `budgetProcedure` | categories. Its take-home math uses the active Contribution and Salary profiles, like every budget profile.                                                                                              |
-| `deleteProfile`    | mutation | `budgetProcedure` | Delete a budget profile (cannot delete the active one).                                                                                                                                                  |
-| `duplicateProfile` | mutation | `budgetProcedure` | account) is a live external-write hazard, and a copy is exactly how you'd create one by accident. - Forced: `isActive: false`. Duplicating is not activating. Same `budget` permission gate as createPro |
-| `renameProfile`    | mutation | `budgetProcedure` | Rename a budget profile.                                                                                                                                                                                 |
-| `setActiveProfile` | mutation | `budgetProcedure` | — an error between the deactivate-all and activate-one writes must not be able to leave zero active profiles (every downstream reader of getActiveBudgetProfile silently treats that as "no profile").   |
-
-## `budget/summary`
-
-| Procedure              | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ---------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeActiveSummary` | query | `protectedProcedure` | Returns the active budget profile's calculator result for a given column.                                                                                                                                |
-| `listProfiles`         | query | `protectedProcedure` | ignored the active Contribution and Salary Profiles. This procedure already loops every profile and already resolves each profile's own savings allocations and per-mode weighting, so resolving the pay |
+| Procedure                              | Kind     | Auth                 | Source                   | Description                                                                                                                                                                                              |
+| -------------------------------------- | -------- | -------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `budget.addColumn`                     | mutation | `budgetProcedure`    | `budget/columns.ts`      | Add a new column (budget mode) to the target profile (active if not given).                                                                                                                              |
+| `budget.computeActiveSummary`          | query    | `protectedProcedure` | `budget/summary.ts`      | Returns the active budget profile's calculator result for a given column.                                                                                                                                |
+| `budget.createItem`                    | mutation | `budgetProcedure`    | `budget/items.ts`        | Create a new budget item.                                                                                                                                                                                |
+| `budget.createProfile`                 | mutation | `budgetProcedure`    | `budget/profiles.ts`     | categories. Its take-home math uses the active Contribution and Salary profiles, like every budget profile.                                                                                              |
+| `budget.deleteItem`                    | mutation | `budgetProcedure`    | `budget/items.ts`        | Delete a budget item.                                                                                                                                                                                    |
+| `budget.deleteProfile`                 | mutation | `budgetProcedure`    | `budget/profiles.ts`     | Delete a budget profile (cannot delete the active one).                                                                                                                                                  |
+| `budget.duplicateProfile`              | mutation | `budgetProcedure`    | `budget/profiles.ts`     | account) is a live external-write hazard, and a copy is exactly how you'd create one by accident. - Forced: `isActive: false`. Duplicating is not activating. Same `budget` permission gate as createPro |
+| `budget.linkContributionAccount`       | mutation | `budgetProcedure`    | `budget/item-links.ts`   | Link a budget item to a specific contribution account.                                                                                                                                                   |
+| `budget.linkToApi`                     | mutation | `budgetProcedure`    | `budget/api-links.ts`    | Link a budget item to a budget API category.                                                                                                                                                             |
+| `budget.listApiActuals`                | query    | `protectedProcedure` | `budget/api-links.ts`    | Get API actuals for linked budget items (activity + balance from cached month data).                                                                                                                     |
+| `budget.listApiCategories`             | query    | `protectedProcedure` | `budget/api-links.ts`    | Get cached categories from the active (or specified) budget API for the category picker.                                                                                                                 |
+| `budget.listContribAccountsForLinking` | query    | `protectedProcedure` | `budget/item-links.ts`   | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck.              |
+| `budget.listProfiles`                  | query    | `protectedProcedure` | `budget/summary.ts`      | ignored the active Contribution and Salary Profiles. This procedure already loops every profile and already resolves each profile's own savings allocations and per-mode weighting, so resolving the pay |
+| `budget.mortgageItemChoices`           | query    | `protectedProcedure` | `budget/item-links.ts`   | profile, and which one is.                                                                                                                                                                               |
+| `budget.moveItem`                      | mutation | `budgetProcedure`    | `budget/items.ts`        | Move a budget item to a different category.                                                                                                                                                              |
+| `budget.removeColumn`                  | mutation | `budgetProcedure`    | `budget/columns.ts`      | Remove a column (budget mode) from the target profile (active if not given).                                                                                                                             |
+| `budget.renameColumn`                  | mutation | `budgetProcedure`    | `budget/columns.ts`      | Rename a column (budget mode).                                                                                                                                                                           |
+| `budget.renameProfile`                 | mutation | `budgetProcedure`    | `budget/profiles.ts`     | Rename a budget profile.                                                                                                                                                                                 |
+| `budget.reorderCategory`               | mutation | `budgetProcedure`    | `budget/items.ts`        | block. No-ops at the first/last category boundary.                                                                                                                                                       |
+| `budget.reorderItem`                   | mutation | `budgetProcedure`    | `budget/items.ts`        | category. No-ops at the category's first/last item boundary — moving an item into a different category is the "Move..." dropdown's job (moveItem above), not this.                                       |
+| `budget.setActiveProfile`              | mutation | `budgetProcedure`    | `budget/profiles.ts`     | — an error between the deactivate-all and activate-one writes must not be able to leave zero active profiles (every downstream reader of getActiveBudgetProfile silently treats that as "no profile").   |
+| `budget.setMortgageItem`               | mutation | `budgetProcedure`    | `budget/item-links.ts`   | one loan and a loan has one line per profile: the projection drops it after payoff.                                                                                                                      |
+| `budget.setSyncDirection`              | mutation | `budgetProcedure`    | `budget/api-links.ts`    | Change sync direction on a linked budget item.                                                                                                                                                           |
+| `budget.syncBudgetFromApi`             | mutation | `budgetProcedure`    | `budget/api-sync.ts`     | Pull budgeted amounts from API for all linked items (API -> Ledgr).                                                                                                                                      |
+| `budget.syncBudgetToApi`               | mutation | `budgetProcedure`    | `budget/api-sync.ts`     | Push budget amounts to API for all linked items (Ledgr -> API).                                                                                                                                          |
+| `budget.unlinkContributionAccount`     | mutation | `budgetProcedure`    | `budget/item-links.ts`   | Remove contribution account link from a budget item.                                                                                                                                                     |
+| `budget.unlinkFromApi`                 | mutation | `budgetProcedure`    | `budget/api-links.ts`    | Remove API link from a budget item.                                                                                                                                                                      |
+| `budget.updateCategoryEssential`       | mutation | `budgetProcedure`    | `budget/items.ts`        | Toggle isEssential for all items in a category.                                                                                                                                                          |
+| `budget.updateColumnMonths`            | mutation | `budgetProcedure`    | `budget/columns.ts`      | Update column months for weighted budget profiles.                                                                                                                                                       |
+| `budget.updateItemAmount`              | mutation | `budgetProcedure`    | `budget/item-amounts.ts` | Update a single amount cell for a budget item.                                                                                                                                                           |
+| `budget.updateItemAmounts`             | mutation | `budgetProcedure`    | `budget/item-amounts.ts` | Batch update multiple amount cells.                                                                                                                                                                      |
+| `budget.updateItemEssential`           | mutation | `budgetProcedure`    | `budget/items.ts`        | Update a budget item's essential flag.                                                                                                                                                                   |
 
 ## `contribution`
 
-| Procedure        | Kind  | Auth                 | Description                                                                                                               |
-| ---------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `computeSummary` | query | `protectedProcedure` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
-| `highIncomeLine` | query | `protectedProcedure` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
+| Procedure                     | Kind  | Auth                 | Source            | Description                                                                                                               |
+| ----------------------------- | ----- | -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `contribution.computeSummary` | query | `protectedProcedure` | `contribution.ts` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
+| `contribution.highIncomeLine` | query | `protectedProcedure` | `contribution.ts` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
 
-## `contribution-profiles`
+## `contributionProfile`
 
-| Procedure                  | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| -------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compareData`              | query    | `protectedProcedure`           | map, keyed by account id. Deliberately skips what `getById` does per profile — perf-account fuzzy matching and full display-name disambiguation — since those only need to happen once per account row,  |
-| `create`                   | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
-| `delete`                   | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
-| `duplicate`                | mutation | `contributionProfileProcedure` | a value map keyed by account id, with no owned rows to duplicate.                                                                                                                                        |
-| `getById`                  | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
-| `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
-| `setAccountActiveFields`   | mutation | `contributionProfileProcedure` | `fields` sets keys, `unset` removes them; the merged entry is validated (contributionValue and contributionMethod together, or neither).                                                                 |
-| `setActive`                | mutation | `contributionProfileProcedure` | under the contributionProfile permission, not admin.                                                                                                                                                     |
-| `setDeductionActiveFields` | mutation | `contributionProfileProcedure` | Patch (merge) one deduction's active amount within a profile — same field-level-patch, same-transaction pattern as setAccountActiveFields. A deduction has no live amountPerPeriod any more (Stage B dro |
-| `update`                   | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
+| Procedure                                      | Kind     | Auth                           | Source                     | Description                                                                                                                                                                                              |
+| ---------------------------------------------- | -------- | ------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contributionProfile.compareData`              | query    | `protectedProcedure`           | `contribution-profiles.ts` | map, keyed by account id. Deliberately skips what `getById` does per profile — perf-account fuzzy matching and full display-name disambiguation — since those only need to happen once per account row,  |
+| `contributionProfile.create`                   | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | Create a new contribution profile.                                                                                                                                                                       |
+| `contributionProfile.delete`                   | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
+| `contributionProfile.duplicate`                | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | a value map keyed by account id, with no owned rows to duplicate.                                                                                                                                        |
+| `contributionProfile.getById`                  | query    | `protectedProcedure`           | `contribution-profiles.ts` | Get a single profile with fully resolved per-account details.                                                                                                                                            |
+| `contributionProfile.list`                     | query    | `protectedProcedure`           | `contribution-profiles.ts` | List all contribution profiles with resolved summary totals.                                                                                                                                             |
+| `contributionProfile.setAccountActiveFields`   | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | `fields` sets keys, `unset` removes them; the merged entry is validated (contributionValue and contributionMethod together, or neither).                                                                 |
+| `contributionProfile.setActive`                | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | under the contributionProfile permission, not admin.                                                                                                                                                     |
+| `contributionProfile.setDeductionActiveFields` | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | Patch (merge) one deduction's active amount within a profile — same field-level-patch, same-transaction pattern as setAccountActiveFields. A deduction has no live amountPerPeriod any more (Stage B dro |
+| `contributionProfile.update`                   | mutation | `contributionProfileProcedure` | `contribution-profiles.ts` | Update an existing contribution profile.                                                                                                                                                                 |
 
-## `data-browser`
+## `dataBrowser`
 
-| Procedure    | Kind  | Auth             | Description                            |
-| ------------ | ----- | ---------------- | -------------------------------------- |
-| `getColumns` | query | `adminProcedure` | Get column metadata for a table.       |
-| `getRows`    | query | `adminProcedure` | Get paginated rows from a table.       |
-| `listTables` | query | `adminProcedure` | List all known tables with row counts. |
+| Procedure                | Kind  | Auth             | Source            | Description                            |
+| ------------------------ | ----- | ---------------- | ----------------- | -------------------------------------- |
+| `dataBrowser.getColumns` | query | `adminProcedure` | `data-browser.ts` | Get column metadata for a table.       |
+| `dataBrowser.getRows`    | query | `adminProcedure` | `data-browser.ts` | Get paginated rows from a table.       |
+| `dataBrowser.listTables` | query | `adminProcedure` | `data-browser.ts` | List all known tables with row counts. |
 
 ## `debts`
 
-| Procedure     | Kind     | Auth                 | Description                                                       |
-| ------------- | -------- | -------------------- | ----------------------------------------------------------------- |
-| `create`      | mutation | `adminProcedure`     | (no description)                                                  |
-| `delete`      | mutation | `adminProcedure`     | (no description)                                                  |
-| `list`        | query    | `protectedProcedure` | Every debt (open first), with its payoff estimate.                |
-| `markPaidOff` | mutation | `adminProcedure`     | Paid off on `date`, keeping its last balance.                     |
-| `summary`     | query    | `protectedProcedure` | Other liabilities and its parts — the same figure net worth uses. |
-| `update`      | mutation | `adminProcedure`     | (no description)                                                  |
+| Procedure           | Kind     | Auth                 | Source     | Description                                                       |
+| ------------------- | -------- | -------------------- | ---------- | ----------------------------------------------------------------- |
+| `debts.create`      | mutation | `adminProcedure`     | `debts.ts` | (no description)                                                  |
+| `debts.delete`      | mutation | `adminProcedure`     | `debts.ts` | (no description)                                                  |
+| `debts.list`        | query    | `protectedProcedure` | `debts.ts` | Every debt (open first), with its payoff estimate.                |
+| `debts.markPaidOff` | mutation | `adminProcedure`     | `debts.ts` | Paid off on `date`, keeping its last balance.                     |
+| `debts.summary`     | query    | `protectedProcedure` | `debts.ts` | Other liabilities and its parts — the same figure net worth uses. |
+| `debts.update`      | mutation | `adminProcedure`     | `debts.ts` | (no description)                                                  |
 
 ## `demo`
 
-| Procedure         | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ----------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `activateProfile` | mutation | `protectedProcedure` | Uses protectedProcedure (not a domain procedure) intentionally: writes go to an isolated per-user demo schema, never to shared application data, and must remain callable in DEMO_ONLY mode. See RULES.m |
-| `deactivateDemo`  | mutation | `protectedProcedure` | Uses protectedProcedure (not a domain procedure) intentionally: this mutates session/cookie state, not application data, and must remain callable in DEMO_ONLY mode where the demoOnlyGuard exempts demo |
-| `listProfiles`    | query    | `protectedProcedure` | List available demo profiles.                                                                                                                                                                            |
+| Procedure              | Kind     | Auth                 | Source    | Description                                                                                                                                                                                              |
+| ---------------------- | -------- | -------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `demo.activateProfile` | mutation | `protectedProcedure` | `demo.ts` | Uses protectedProcedure (not a domain procedure) intentionally: writes go to an isolated per-user demo schema, never to shared application data, and must remain callable in DEMO_ONLY mode. See RULES.m |
+| `demo.deactivateDemo`  | mutation | `protectedProcedure` | `demo.ts` | Uses protectedProcedure (not a domain procedure) intentionally: this mutates session/cookie state, not application data, and must remain callable in DEMO_ONLY mode where the demoOnlyGuard exempts demo |
+| `demo.listProfiles`    | query    | `protectedProcedure` | `demo.ts` | List available demo profiles.                                                                                                                                                                            |
 
 ## `historical`
 
-| Procedure        | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ---------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeSummary` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `update`         | mutation | `adminProcedure`     | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only).                                                                                                                   |
-| `upsertNote`     | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `upsertSalary`   | mutation | `adminProcedure`     | field falls back to the SAME live estimate the current-year auto-fill in `computeSummary` shows (active job's compensation under the active Salary Profile) for the current year, or 0 for a past year w |
+| Procedure                   | Kind     | Auth                 | Source          | Description                                                                                                                                                                                              |
+| --------------------------- | -------- | -------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `historical.computeSummary` | query    | `protectedProcedure` | `historical.ts` | (no description)                                                                                                                                                                                         |
+| `historical.update`         | mutation | `adminProcedure`     | `historical.ts` | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only).                                                                                                                   |
+| `historical.upsertNote`     | mutation | `adminProcedure`     | `historical.ts` | (no description)                                                                                                                                                                                         |
+| `historical.upsertSalary`   | mutation | `adminProcedure`     | `historical.ts` | field falls back to the SAME live estimate the current-year auto-fill in `computeSummary` shows (active job's compensation under the active Salary Profile) for the current year, or 0 for a past year w |
 
-## `investments/account-insights`
+## `investments`
 
-| Procedure              | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ---------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getAccountInsights`   | query | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
-| `getLiveSinceSnapshot` | query | `portfolioProcedure` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
-
-## `investments/buying`
-
-| Procedure         | Kind  | Auth                 | Description      |
-| ----------------- | ----- | -------------------- | ---------------- |
-| `getBuyingMonths` | query | `portfolioProcedure` | (no description) |
-
-## `investments/comparison`
-
-| Procedure             | Kind  | Auth                 | Description                                                                                                             |
-| --------------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `getComparison`       | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains).             |
-| `getYearReturnRanges` | query | `portfolioProcedure` | at the primary person's age that year on the chosen preset's glide path — today's assumptions, not what was known then. |
-
-## `investments/current-balances`
-
-| Procedure            | Kind  | Auth                 | Description                                |
-| -------------------- | ----- | -------------------- | ------------------------------------------ |
-| `getCurrentBalances` | query | `protectedProcedure` | daily moves — no holdings or transactions. |
-
-## `investments/fund-facts`
-
-| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                   |
-| ------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checkStandIn`            | mutation | `portfolioProcedure` | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files. |
-| `clearUserFacts`          | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                               |
-| `confirmStandIn`          | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                   |
-| `findStandIn`             | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                |
-| `getHoldingsOverview`     | query    | `portfolioProcedure` | (no description)                                                                                                                                                                              |
-| `getSimulationGlidePaths` | query    | `portfolioProcedure` | Simulation runs on — so Benchmarks can show it beside your target mix. Allocations by age only; no balances.                                                                                  |
-| `linkCompositionBucket`   | mutation | `portfolioProcedure` | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                    |
-| `rejectStandIn`           | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                 |
-| `setUserFacts`            | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                |
-
-## `investments/health`
-
-| Procedure   | Kind  | Auth                 | Description                                                              |
-| ----------- | ----- | -------------------- | ------------------------------------------------------------------------ |
-| `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance. |
-
-## `investments/holding-periods`
-
-| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `addFundByName`       | mutation | `portfolioProcedure` | A fund with no public ticker (a workplace plan's own fund), by name. Its fee and mix are entered by hand (setUserFacts).                                                                                 |
-| `addFundByTicker`     | mutation | `portfolioProcedure` | A fund by its public ticker: checked against SEC's fund ticker list (no guessing — an unknown ticker is refused), reusing a row that already has it, then its facts fetched.                             |
-| `deleteHoldingPeriod` | mutation | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
-| `listHoldingPeriods`  | query    | `portfolioProcedure` | Periods (observed + entered) per holder — the account, or each part of an account kept per part — and the funds they name. A stored period with no holder (its part is gone, or it no longer fits how th |
-| `saveHoldingPeriod`   | mutation | `portfolioProcedure` | Create or update an entered period with its funds, in one transaction.                                                                                                                                   |
-
-## `investments/snapshot-flows`
-
-| Procedure          | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ------------------ | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getSnapshotFlows` | query | `portfolioProcedure` | Money added since a snapshot across SimpleFIN accounts linked to tracked accounts (the Live Balance change's scope), whether stored transactions reach back that far, and the latest few money movements |
-
-## `investments/suggestions`
-
-| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getSavingsThisYear` | query | `portfolioProcedure` | Saved so far this year against the paycheck plan, per tracked account and for the household (Dashboard).                                                                                                 |
-| `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
-| `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
-| `suggestSnapshot`    | query | `portfolioProcedure` | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
-
-## `investments/tax-inputs`
-
-| Procedure          | Kind  | Auth                 | Description      |
-| ------------------ | ----- | -------------------- | ---------------- |
-| `getRothIraInputs` | query | `portfolioProcedure` | (no description) |
+| Procedure                             | Kind     | Auth                 | Source                            | Description                                                                                                                                                                                              |
+| ------------------------------------- | -------- | -------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `investments.addFundByName`           | mutation | `portfolioProcedure` | `investments/holding-periods.ts`  | A fund with no public ticker (a workplace plan's own fund), by name. Its fee and mix are entered by hand (setUserFacts).                                                                                 |
+| `investments.addFundByTicker`         | mutation | `portfolioProcedure` | `investments/holding-periods.ts`  | A fund by its public ticker: checked against SEC's fund ticker list (no guessing — an unknown ticker is refused), reusing a row that already has it, then its facts fetched.                             |
+| `investments.checkStandIn`            | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files.            |
+| `investments.clearUserFacts`          | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                                          |
+| `investments.confirmStandIn`          | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                              |
+| `investments.deleteHoldingPeriod`     | mutation | `portfolioProcedure` | `investments/holding-periods.ts`  | (no description)                                                                                                                                                                                         |
+| `investments.findStandIn`             | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                           |
+| `investments.getAccountInsights`      | query    | `portfolioProcedure` | `investments/account-insights.ts` | (no description)                                                                                                                                                                                         |
+| `investments.getBuyingMonths`         | query    | `portfolioProcedure` | `investments/buying.ts`           | (no description)                                                                                                                                                                                         |
+| `investments.getComparison`           | query    | `portfolioProcedure` | `investments/comparison.ts`       | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains).                                                                                              |
+| `investments.getCurrentBalances`      | query    | `protectedProcedure` | `investments/current-balances.ts` | daily moves — no holdings or transactions.                                                                                                                                                               |
+| `investments.getHealth`               | query    | `portfolioProcedure` | `investments/health.ts`           | Accounts whose holdings stopped arriving or don't add up to the balance.                                                                                                                                 |
+| `investments.getHoldingsOverview`     | query    | `portfolioProcedure` | `investments/fund-facts.ts`       | Holdings valued today, with each fund's facts; allocation vs target; blended cost.                                                                                                                       |
+| `investments.getLiveSinceSnapshot`    | query    | `portfolioProcedure` | `investments/account-insights.ts` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
+| `investments.getRothIraInputs`        | query    | `portfolioProcedure` | `investments/tax-inputs.ts`       | (no description)                                                                                                                                                                                         |
+| `investments.getSavingsThisYear`      | query    | `portfolioProcedure` | `investments/suggestions.ts`      | Saved so far this year against the paycheck plan, per tracked account and for the household (Dashboard).                                                                                                 |
+| `investments.getSimulationGlidePaths` | query    | `portfolioProcedure` | `investments/fund-facts.ts`       | Simulation runs on — so Benchmarks can show it beside your target mix. Allocations by age only; no balances.                                                                                             |
+| `investments.getSnapshotFlows`        | query    | `portfolioProcedure` | `investments/snapshot-flows.ts`   | Money added since a snapshot across SimpleFIN accounts linked to tracked accounts (the Live Balance change's scope), whether stored transactions reach back that far, and the latest few money movements |
+| `investments.getYearReturnRanges`     | query    | `portfolioProcedure` | `investments/comparison.ts`       | at the primary person's age that year on the chosen preset's glide path — today's assumptions, not what was known then.                                                                                  |
+| `investments.linkCompositionBucket`   | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                               |
+| `investments.listHoldingPeriods`      | query    | `portfolioProcedure` | `investments/holding-periods.ts`  | Periods (observed + entered) per holder — the account, or each part of an account kept per part — and the funds they name. A stored period with no holder (its part is gone, or it no longer fits how th |
+| `investments.rejectStandIn`           | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                            |
+| `investments.saveHoldingPeriod`       | mutation | `portfolioProcedure` | `investments/holding-periods.ts`  | Create or update an entered period with its funds, in one transaction.                                                                                                                                   |
+| `investments.setUserFacts`            | mutation | `portfolioProcedure` | `investments/fund-facts.ts`       | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                           |
+| `investments.suggestBasis`            | query    | `portfolioProcedure` | `investments/suggestions.ts`      | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
+| `investments.suggestPerformance`      | query    | `portfolioProcedure` | `investments/suggestions.ts`      | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
+| `investments.suggestSnapshot`         | query    | `portfolioProcedure` | `investments/suggestions.ts`      | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
 
 ## `milestones`
 
-| Procedure       | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeInputs` | query    | `protectedProcedure` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist.                                                                                                         |
-| `firstReached`  | query    | `protectedProcedure` | When each milestone was first reached (null before any recording).                                                                                                                                       |
-| `recordReached` | mutation | `protectedProcedure` | Record milestones reached now that aren't recorded yet. Judged here, on the active profiles — never on what a page shows (it may be a What-If) or on ids a browser sends. Any signed-in viewer's visit c |
+| Procedure                  | Kind     | Auth                 | Source          | Description                                                                                                                                                                                              |
+| -------------------------- | -------- | -------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `milestones.computeInputs` | query    | `protectedProcedure` | `milestones.ts` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist.                                                                                                         |
+| `milestones.firstReached`  | query    | `protectedProcedure` | `milestones.ts` | When each milestone was first reached (null before any recording).                                                                                                                                       |
+| `milestones.recordReached` | mutation | `protectedProcedure` | `milestones.ts` | Record milestones reached now that aren't recorded yet. Judged here, on the active profiles — never on what a page shows (it may be a What-If) or on ids a browser sends. Any signed-in viewer's visit c |
 
 ## `mortgage`
 
-| Procedure              | Kind     | Auth                 | Description      |
-| ---------------------- | -------- | -------------------- | ---------------- |
-| `computeActiveSummary` | query    | `protectedProcedure` | (no description) |
-| `create`               | mutation | `adminProcedure`     | (no description) |
-| `create`               | mutation | `adminProcedure`     | (no description) |
-| `create`               | mutation | `adminProcedure`     | (no description) |
-| `delete`               | mutation | `adminProcedure`     | (no description) |
-| `delete`               | mutation | `adminProcedure`     | (no description) |
-| `delete`               | mutation | `adminProcedure`     | (no description) |
-| `list`                 | query    | `protectedProcedure` | (no description) |
-| `list`                 | query    | `protectedProcedure` | (no description) |
-| `list`                 | query    | `protectedProcedure` | (no description) |
-| `update`               | mutation | `adminProcedure`     | (no description) |
-| `update`               | mutation | `adminProcedure`     | (no description) |
-| `update`               | mutation | `adminProcedure`     | (no description) |
+| Procedure                                 | Kind     | Auth                 | Source        | Description      |
+| ----------------------------------------- | -------- | -------------------- | ------------- | ---------------- |
+| `mortgage.computeActiveSummary`           | query    | `protectedProcedure` | `mortgage.ts` | (no description) |
+| `mortgage.mortgageExtraPayments.create`   | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageExtraPayments.delete`   | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageExtraPayments.list`     | query    | `protectedProcedure` | `mortgage.ts` | (no description) |
+| `mortgage.mortgageExtraPayments.update`   | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageLoans.create`           | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageLoans.delete`           | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageLoans.list`             | query    | `protectedProcedure` | `mortgage.ts` | (no description) |
+| `mortgage.mortgageLoans.update`           | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageWhatIfScenarios.create` | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageWhatIfScenarios.delete` | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
+| `mortgage.mortgageWhatIfScenarios.list`   | query    | `protectedProcedure` | `mortgage.ts` | (no description) |
+| `mortgage.mortgageWhatIfScenarios.update` | mutation | `adminProcedure`     | `mortgage.ts` | (no description) |
 
-## `networth/comparison`
+## `networth`
 
-| Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                       |
-| ------------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeComparison` | query | `protectedProcedure` | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation). |
-
-## `networth/history`
-
-| Procedure                | Kind  | Auth                 | Description                                                                  |
-| ------------------------ | ----- | -------------------- | ---------------------------------------------------------------------------- |
-| `computeDetailedHistory` | query | `protectedProcedure` | Used by the spreadsheet view; heavier than listHistory (which feeds charts). |
-| `listHistory`            | query | `protectedProcedure` | (no description)                                                             |
-
-## `networth/portfolio-snapshots`
-
-| Procedure   | Kind     | Auth                 | Description                                                                      |
-| ----------- | -------- | -------------------- | -------------------------------------------------------------------------------- |
-| `create`    | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                    |
-| `delete`    | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                    |
-| `getLatest` | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form). |
-
-## `networth/snapshot-accounts`
-
-| Procedure       | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createAccount` | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                                                                                                                     |
-| `updateAccount` | mutation | `portfolioProcedure` | only allowed on the **most recent** snapshot — it re-derives that year's performance ending balances + annual rollups and re-pushes ("resync") the corrected balances to the budget API. Older snapshots |
-
-## `networth/snapshots`
-
-| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                        |
-| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `listSnapshots`      | query | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                               |
-| `listSnapshotTotals` | query | `protectedProcedure` | Lightweight snapshot totals for the portfolio chart — (date, total) pairs, plus each snapshot's amount per tracked account (for the stacked by-account view; rows tied to no account are "Other"). |
-
-## `networth/summary`
-
-| Procedure        | Kind  | Auth                 | Description      |
-| ---------------- | ----- | -------------------- | ---------------- |
-| `computeSummary` | query | `protectedProcedure` | (no description) |
+| Procedure                                   | Kind     | Auth                 | Source                            | Description                                                                                                                                                                                              |
+| ------------------------------------------- | -------- | -------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `networth.computeComparison`                | query    | `protectedProcedure` | `networth/comparison.ts`          | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation).        |
+| `networth.computeDetailedHistory`           | query    | `protectedProcedure` | `networth/history.ts`             | Used by the spreadsheet view; heavier than listHistory (which feeds charts).                                                                                                                             |
+| `networth.computeSummary`                   | query    | `protectedProcedure` | `networth/summary.ts`             | (no description)                                                                                                                                                                                         |
+| `networth.listHistory`                      | query    | `protectedProcedure` | `networth/history.ts`             | (no description)                                                                                                                                                                                         |
+| `networth.listSnapshots`                    | query    | `protectedProcedure` | `networth/snapshots.ts`           | Paginated snapshot list with optional date range filter and sorting.                                                                                                                                     |
+| `networth.listSnapshotTotals`               | query    | `protectedProcedure` | `networth/snapshots.ts`           | Lightweight snapshot totals for the portfolio chart — (date, total) pairs, plus each snapshot's amount per tracked account (for the stacked by-account view; rows tied to no account are "Other").       |
+| `networth.portfolioSnapshots.create`        | mutation | `portfolioProcedure` | `networth/portfolio-snapshots.ts` | Create a new snapshot with all its accounts in a single call.                                                                                                                                            |
+| `networth.portfolioSnapshots.createAccount` | mutation | `portfolioProcedure` | `networth/snapshot-accounts.ts`   | Create a new sub-account row in the latest snapshot.                                                                                                                                                     |
+| `networth.portfolioSnapshots.delete`        | mutation | `portfolioProcedure` | `networth/portfolio-snapshots.ts` | Delete a snapshot (cascades to its accounts).                                                                                                                                                            |
+| `networth.portfolioSnapshots.getLatest`     | query    | `protectedProcedure` | `networth/portfolio-snapshots.ts` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                         |
+| `networth.portfolioSnapshots.updateAccount` | mutation | `portfolioProcedure` | `networth/snapshot-accounts.ts`   | only allowed on the **most recent** snapshot — it re-derives that year's performance ending balances + annual rollups and re-pushes ("resync") the corrected balances to the budget API. Older snapshots |
 
 ## `paycheck`
 
-| Procedure        | Kind  | Auth                 | Description      |
-| ---------------- | ----- | -------------------- | ---------------- |
-| `computeSummary` | query | `protectedProcedure` | (no description) |
-
-## `performance/accounts`
-
-| Procedure         | Kind     | Auth                   | Description      |
-| ----------------- | -------- | ---------------------- | ---------------- |
-| `create`          | mutation | `performanceProcedure` | (no description) |
-| `delete`          | mutation | `performanceProcedure` | (no description) |
-| `list`            | query    | `protectedProcedure`   | (no description) |
-| `update`          | mutation | `performanceProcedure` | (no description) |
-| `updateCostBasis` | mutation | `performanceProcedure` | (no description) |
-
-## `performance/finalize-year`
-
-| Procedure      | Kind     | Auth                   | Description                                                                                                                                                    |
-| -------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `finalizeYear` | mutation | `performanceProcedure` | Finalize a year: marks all account_performance and annual_performance rows for that year as finalized, then auto-creates next year's rows for active accounts. |
-
-## `performance/summary`
-
-| Procedure        | Kind  | Auth                 | Description                                                                                                                                                                                       |
-| ---------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeSummary` | query | `protectedProcedure` | computeSummary — returns all performance data joined through the master performance_accounts table. Includes: annual rollups, account-level detail, master account list, and current-year status. |
-
-## `performance/year-records`
-
-| Procedure             | Kind     | Auth                   | Description                                                                                                                                                                                              |
-| --------------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `annotateAccount`     | mutation | `performanceProcedure` | The household's note on an account-year, which figures are still estimates, and gaps accepted as on purpose. Accepting reads the gap from the same checks the page shows, and needs its own reason; the  |
-| `batchUpdateAccounts` | mutation | `performanceProcedure` | Batch-update account_performance rows for the current year. Used by the Update Performance form to save all flow fields in one pass. Annual rollups are recomputed automatically by computeSummary on ne |
-| `createAccount`       | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
-| `updateAccount`       | mutation | `performanceProcedure` | Edit one account row (editAccountRow: a balanced row stays balanced, every affected year's rollups follow). `chainNextYear` moves next year's beginning with a changed ending; `dryRun` returns what wou |
-| `updateAnnual`        | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
-
-## `projection/coast-fire`
-
-| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeCoastFire`   | query | `protectedProcedure` | ~log₂(retirementAge - currentAge) engine runs. Success criterion: the plan judge passes it (`assessPlan`) AND the strategy's first-year spending covers the stated need. See `findCoastFireAge` for the  |
-| `computeCoastFireMC` | query | `protectedProcedure` | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled). Rate-l |
-
-## `projection/coast-fire-probe`
-
-| Procedure               | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ----------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeCoastFireProbe` | query | `protectedProcedure` | the binary search's earliest-passing-age or "today." Reuses the same `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s binary search already uses; no new simulation logic. Returns |
-
-## `projection/metadata`
-
-| Procedure               | Kind  | Auth                 | Description                                                      |
-| ----------------------- | ----- | -------------------- | ---------------------------------------------------------------- |
-| `getProjectionMetadata` | query | `protectedProcedure` | settings, budgets and the rest. Not configured still returns it. |
-
-## `projection/monte-carlo`
-
-| Procedure                     | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clearCache`                  | mutation | `adminProcedure`     | forces a full recompute without a deploy. Admin-only: destructive against shared cache state.                                                                                                            |
-| `computeMonteCarloProjection` | query    | `protectedProcedure` | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
-| `getMonteCarloProgress`       | query    | `protectedProcedure` | running — see monte-carlo-worker-client.ts's module docblock for why this is an in-memory Map rather than a DB table or a subscription. Returns null once the job is done or if the runId is unknown (e. |
-| `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
-| `updateGlidePathAllocations`  | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
-
-## `projection/monte-carlo-peek`
-
-| Procedure               | Kind  | Auth                 | Description                                                       |
-| ----------------------- | ----- | -------------------- | ----------------------------------------------------------------- |
-| `peekMonteCarloSummary` | query | `protectedProcedure` | The cached Simulation's success rate, today's bands and run time. |
-
-## `projection/presets`
-
-| Procedure                  | Kind     | Auth                | Description                                               |
-| -------------------------- | -------- | ------------------- | --------------------------------------------------------- |
-| `updateInflationOverrides` | mutation | `scenarioProcedure` | Persist MC stochastic inflation overrides to appSettings. |
-
-## `projection/relocation`
-
-| Procedure                       | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ------------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeRelocationFiProjection` | query    | `protectedProcedure` | the earliest year when the user can safely relocate and still retire at their configured retirementAge. Also returns year-by-year projection rows for the comparison table, and — when moveYear is provi |
-| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `list`                          | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `save`                          | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-
-## `projection/scenarios`
-
-| Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeProjection` | query | `protectedProcedure` | and per-year sticky-forward overrides. All data (salary, contributions, portfolio, limits, return rates) comes from the same DB sources as the other endpoints — this engine just gives you much more gr |
-
-## `projection/social-security`
-
-| Procedure                         | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| --------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sweepSocialSecurityClaimingAges` | query | `protectedProcedure` | real flat `socialSecurityMonthly` benefit with a PIA-derived one (`sweepClaimingAges` unconditionally overrides the scalar SS fields per candidate) — the UI must not present these candidates as direct |
-
-## `projection/strategy`
-
-| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                               |
-| --------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `analyzeStrategy`           | query    | `protectedProcedure` | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                 |
-| `computeStrategyComparison` | query    | `protectedProcedure` | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams. |
-| `updateAssetClassOverrides` | mutation | `scenarioProcedure`  | Persist MC asset class return/volatility overrides to appSettings.                                                                                                        |
-
-## `projection/stress-test`
-
-| Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
-
-## `projection/tax-optimization`
-
-| Procedure                     | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ----------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compareWithdrawalStrategies` | query | `protectedProcedure` | strategy and score each on lifetime tax — the side-by-side comparison (roadmap #2). Clone-and-score, same pattern as `optimizeRothBracketTarget`: a baseline run learns the first decumulation year, the |
-| `projectTaxYears`             | query | `protectedProcedure` | Year-by-year tax projection through decumulation — a straight read of the deterministic engine run (NOT Monte Carlo). One row per decumulation year with income sources, federal / NIIT / IRMAA tax, eff |
-| `rothConversionWhatIf`        | query | `protectedProcedure` | sticky-forward `decumulationOverrides`, runs the engine once, and also runs a baseline with conversions switched off, then returns the before/after: per-year conversion + tax now, RMD reduction, IRMAA |
-
-## `projection/withdrawal-bracket-optimizer`
-
-| Procedure                           | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ----------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeWithdrawalBracketOptimizer` | query | `protectedProcedure` | Searches the household's own real marginal bracket rates for the `rothBracketTarget` that minimizes lifetime tax cost (plus a terminal-value penalty for Traditional money left unconverted), subject to |
-
-## `retirement/overrides`
-
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `clear`   | mutation | `brokerageProcedure` | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `get`     | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `save`    | mutation | `brokerageProcedure` | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-
-## `retirement/profile-people`
-
-| Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list`                  | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `upsertHouseholdFields` | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
-| `upsertPerson`          | mutation | `adminProcedure`     | from once those reads were switched to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as the pre-0b5d5fe |
-
-## `retirement/profiles`
-
-| Procedure   | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ----------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `delete`    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `duplicate` | mutation | `adminProcedure`     | Clone a profile's per-person rows into a new profile (profile-lifecycle.ts).                                                                                                                             |
-| `list`      | query    | `protectedProcedure` | adminProcedure throughout, matching retirementSettings.upsert's existing gate — CONTRIBUTING.md Composed Router Convention: an inconsistent procedure type within one group is a bug, not a design choic |
-| `update`    | mutation | `adminProcedure`     | per-person assumptions themselves are edited through retirementSettings.upsert, scoped to whichever profile is active — not here. taxParamsYear lives on retirement_profiles itself: null (default) trac |
-
-## `retirement/relocation-analysis`
-
-| Procedure                   | Kind  | Auth                 | Description      |
-| --------------------------- | ----- | -------------------- | ---------------- |
-| `computeRelocationAnalysis` | query | `protectedProcedure` | (no description) |
-
-## `retirement/return-rates`
-
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `upsert`  | mutation | `adminProcedure`     | (no description) |
-
-## `retirement/settings`
-
-| Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list`                  | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `upsert`                | mutation | `adminProcedure`     | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
-| `upsertPersonRaiseRate` | mutation | `adminProcedure`     | `upsert` (which requires a full anchor payload the per-person UI doesn't have, runs the endAge fan-out, and resolves+writes a default filing status — all wrong for a one-field raise-rate edit). UPDATE |
-
-## `salary-profiles`
-
-| Procedure     | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| ------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`      | mutation | `contributionProfileProcedure` | Create a profile. `salaries` defaults to EMPTY — genuinely no job entries, not copied from any other profile. A new what-if profile must never silently inherit whatever another profile happened to say |
-| `delete`      | mutation | `contributionProfileProcedure` | Delete a profile. Blocked when it's the last one left (the active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the sce |
-| `duplicate`   | mutation | `contributionProfileProcedure` | reason someone clones a profile) would then immediately materialize real savings_planned_transactions off a stale, wrong number with no error surfaced — `update`'s active-profile-only refresh (below)  |
-| `getById`     | query    | `protectedProcedure`           | One profile plus per-person resolved rows, so the editor can show what this profile actually produces for each job without a second round trip.                                                          |
-| `list`        | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
-| `patchEntry`  | mutation | `contributionProfileProcedure` | The read-merge-write happens inside a transaction so two overlapping patches to the same profile (two fields committed in quick succession, a second tab/device) can't silently clobber each other the w |
-| `removeEntry` | mutation | `contributionProfileProcedure` | Remove one job's entry from a profile entirely — it goes back to contributing $0, the same as a job that was never added. Same transactional read-merge-write pattern as patchEntry.                     |
-| `setActive`   | mutation | `contributionProfileProcedure` | is split out from settings.appSettings.upsert instead of writing through it (same admin-only-write-vs-contributionProfile-permission gap) and for why null is accepted (the hook's own `(id: number \| n |
-| `update`      | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
-
-## `savings/allocation-overrides`
-
-| Procedure          | Kind     | Auth               | Description                                                                     |
-| ------------------ | -------- | ------------------ | ------------------------------------------------------------------------------- |
-| `delete`           | mutation | `savingsProcedure` | (no description)                                                                |
-| `deleteMonth`      | mutation | `savingsProcedure` | Delete all overrides for ALL goals in one or more months.                       |
-| `upsert`           | mutation | `savingsProcedure` | ══ ALLOCATION OVERRIDES ══                                                      |
-| `upsertMonth`      | mutation | `savingsProcedure` | Atomically upsert overrides for ALL goals in a single month (pool-constrained). |
-| `upsertMonthRange` | mutation | `savingsProcedure` | Atomically upsert overrides for ALL goals across a month range (fill-forward).  |
-
-## `savings/api-links`
-
-| Procedure           | Kind     | Auth                 | Description                                                       |
-| ------------------- | -------- | -------------------- | ----------------------------------------------------------------- |
-| `linkGoalToApi`     | mutation | `savingsProcedure`   | Link a savings goal to a budget API category.                     |
-| `listApiBalances`   | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display). |
-| `unlinkGoalFromApi` | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                 |
-
-## `savings/api-sync`
-
-| Procedure                | Kind     | Auth               | Description                                                                                                                                                                                             |
-| ------------------------ | -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pushContributionsToApi` | mutation | `savingsProcedure` | as a "target-balance" goal write — amount only, never touches the goal's type/cadence (that has to be configured once, manually, in YNAB; see YnabClient's writeTargetBalance for why). Every target is |
-
-## `savings/extra-paycheck-routing`
-
-| Procedure      | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| -------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list`         | query    | `protectedProcedure` | Load routing rules for all jobs.                                                                                                                                                                         |
-| `save`         | mutation | `savingsProcedure`   | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
-| `saveGrowth`   | mutation | `savingsProcedure`   | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
-| `saveOverride` | mutation | `savingsProcedure`   | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
-| `setEnabled`   | mutation | `savingsProcedure`   | "Budget" mode (enabled: false) means the extra paycheck isn't diverted to any goal and stays as regular income, same as a job with no routing at all; switching back to "Savings" (enabled: true) restor |
-
-## `savings/goals`
-
-| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `convertBudgetItemToGoal` | mutation | `savingsProcedure`   | Convert a budget item into a savings goal, transferring the API category link.                                                                                                                           |
-| `convertGoalToBudgetItem` | mutation | `savingsProcedure`   | Convert a savings goal into a budget item, transferring the API category link.                                                                                                                           |
-| `create`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `delete`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-| `list`                    | query    | `protectedProcedure` | No live UI consumer reads this today (the Savings page uses computeSummary's goalsForClient instead — see budget-content.tsx's comment), but it's a general-purpose CRUD list endpoint, so its apiCatego |
-| `update`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
-
-## `savings/history`
-
-| Procedure           | Kind  | Auth                 | Description                                                                |
-| ------------------- | ----- | -------------------- | -------------------------------------------------------------------------- |
-| `getMonthlyHistory` | query | `protectedProcedure` | All recorded monthly balances for active savings goals (for history view). |
-
-## `savings/planned-transactions`
-
-| Procedure                  | Kind     | Auth                 | Description                                                                                                                                                                                             |
-| -------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`                   | mutation | `savingsProcedure`   | ══ PLANNED TRANSACTIONS ══                                                                                                                                                                              |
-| `delete`                   | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                        |
-| `getSettlementSuggestions` | query    | `protectedProcedure` | this deliberately doesn't try to match dollar amounts: once ANY real transaction posts in the goal's linked category on/after the planned date, in the same month, the live balance already reflects it |
-| `settle`                   | mutation | `savingsProcedure`   | Settlement is per-occurrence (plannedTxId + occurrenceMonth), never per-row — a recurring row has many future occurrences, and settling one must not hide the others from the projection. Never invoked |
-| `settleMany`               | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                        |
-| `update`                   | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                        |
-
-## `savings/profile-allocations`
-
-| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list`                    | query    | `protectedProcedure` | Every active goal's funding for a given profile.                                                                                                                                                         |
-| `listSummaries`           | query    | `protectedProcedure` | nonzero allocation) for every budget profile at once — for the profile-picker sidebar. Routes through the same resolver as `list` above (one call per profile) rather than re-deriving totals independen |
-| `lockInAllocationPercent` | mutation | `savingsProcedure`   | an accurate description of "what % of current income this is" rather than a stale figure computed against a smaller pool. allocation_percent is decimal(6,3) — rounded to 3 decimals, which at typical p |
-| `recalculateAllocation`   | mutation | `savingsProcedure`   | explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal (for the target profile) from one shared live-pool snapshot (a single fetch applied to all rows, so a batch |
-| `resetAllToZero`          | mutation | `savingsProcedure`   | Set every active goal's funding to $0/no-percent for one profile.                                                                                                                                        |
-| `upsert`                  | mutation | `savingsProcedure`   | of the live pool (contrast with recalculateAllocation/ lockInAllocationPercent, which also write here but derive the value from the live pool instead of taking it directly from the caller).            |
-
-## `savings/reimbursements`
-
-| Procedure                   | Kind     | Auth                 | Description                                                                |
-| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------- |
-| `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                 |
-| `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field. |
-
-## `savings/summary`
-
-| Procedure        | Kind  | Auth                 | Description      |
-| ---------------- | ----- | -------------------- | ---------------- |
-| `computeSummary` | query | `protectedProcedure` | (no description) |
-
-## `savings/transfers`
-
-| Procedure | Kind     | Auth               | Description                                   |
-| --------- | -------- | ------------------ | --------------------------------------------- |
-| `create`  | mutation | `savingsProcedure` | ══ TRANSFERS (paired planned transactions) ══ |
-| `delete`  | mutation | `savingsProcedure` | (no description)                              |
+| Procedure                 | Kind  | Auth                 | Source        | Description      |
+| ------------------------- | ----- | -------------------- | ------------- | ---------------- |
+| `paycheck.computeSummary` | query | `protectedProcedure` | `paycheck.ts` | (no description) |
+
+## `performance`
+
+| Procedure                                | Kind     | Auth                   | Source                         | Description                                                                                                                                                                                              |
+| ---------------------------------------- | -------- | ---------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `performance.annotateAccount`            | mutation | `performanceProcedure` | `performance/year-records.ts`  | The household's note on an account-year, which figures are still estimates, and gaps accepted as on purpose. Accepting reads the gap from the same checks the page shows, and needs its own reason; the  |
+| `performance.batchUpdateAccounts`        | mutation | `performanceProcedure` | `performance/year-records.ts`  | Batch-update account_performance rows for the current year. Used by the Update Performance form to save all flow fields in one pass. Annual rollups are recomputed automatically by computeSummary on ne |
+| `performance.computeSummary`             | query    | `protectedProcedure`   | `performance/summary.ts`       | computeSummary — returns all performance data joined through the master performance_accounts table. Includes: annual rollups, account-level detail, master account list, and current-year status.        |
+| `performance.createAccount`              | mutation | `performanceProcedure` | `performance/year-records.ts`  | (no description)                                                                                                                                                                                         |
+| `performance.finalizeYear`               | mutation | `performanceProcedure` | `performance/finalize-year.ts` | Finalize a year: marks all account_performance and annual_performance rows for that year as finalized, then auto-creates next year's rows for active accounts.                                           |
+| `performance.performanceAccounts.create` | mutation | `performanceProcedure` | `performance/accounts.ts`      | (no description)                                                                                                                                                                                         |
+| `performance.performanceAccounts.delete` | mutation | `performanceProcedure` | `performance/accounts.ts`      | (no description)                                                                                                                                                                                         |
+| `performance.performanceAccounts.list`   | query    | `protectedProcedure`   | `performance/accounts.ts`      | (no description)                                                                                                                                                                                         |
+| `performance.performanceAccounts.update` | mutation | `performanceProcedure` | `performance/accounts.ts`      | (no description)                                                                                                                                                                                         |
+| `performance.updateAccount`              | mutation | `performanceProcedure` | `performance/year-records.ts`  | Edit one account row (editAccountRow: a balanced row stays balanced, every affected year's rollups follow). `chainNextYear` moves next year's beginning with a changed ending; `dryRun` returns what wou |
+| `performance.updateAnnual`               | mutation | `performanceProcedure` | `performance/year-records.ts`  | (no description)                                                                                                                                                                                         |
+| `performance.updateCostBasis`            | mutation | `performanceProcedure` | `performance/accounts.ts`      | (no description)                                                                                                                                                                                         |
+
+## `projection`
+
+| Procedure                                      | Kind     | Auth                 | Source                                       | Description                                                                                                                                                                                              |
+| ---------------------------------------------- | -------- | -------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `projection.analyzeStrategy`                   | query    | `protectedProcedure` | `projection/strategy.ts`                     | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                                                |
+| `projection.clearCache`                        | mutation | `adminProcedure`     | `projection/monte-carlo.ts`                  | forces a full recompute without a deploy. Admin-only: destructive against shared cache state.                                                                                                            |
+| `projection.compareWithdrawalStrategies`       | query    | `protectedProcedure` | `projection/tax-optimization.ts`             | strategy and score each on lifetime tax — the side-by-side comparison (roadmap #2). Clone-and-score, same pattern as `optimizeRothBracketTarget`: a baseline run learns the first decumulation year, the |
+| `projection.computeCoastFire`                  | query    | `protectedProcedure` | `projection/coast-fire.ts`                   | ~log₂(retirementAge - currentAge) engine runs. Success criterion: the plan judge passes it (`assessPlan`) AND the strategy's first-year spending covers the stated need. See `findCoastFireAge` for the  |
+| `projection.computeCoastFireMC`                | query    | `protectedProcedure` | `projection/coast-fire.ts`                   | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled). Rate-l |
+| `projection.computeCoastFireProbe`             | query    | `protectedProcedure` | `projection/coast-fire-probe.ts`             | the binary search's earliest-passing-age or "today." Reuses the same `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s binary search already uses; no new simulation logic. Returns |
+| `projection.computeMonteCarloProjection`       | query    | `protectedProcedure` | `projection/monte-carlo.ts`                  | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
+| `projection.computeProjection`                 | query    | `protectedProcedure` | `projection/scenarios.ts`                    | and per-year sticky-forward overrides. All data (salary, contributions, portfolio, limits, return rates) comes from the same DB sources as the other endpoints — this engine just gives you much more gr |
+| `projection.computeRelocationFiProjection`     | query    | `protectedProcedure` | `projection/relocation.ts`                   | the earliest year when the user can safely relocate and still retire at their configured retirementAge. Also returns year-by-year projection rows for the comparison table, and — when moveYear is provi |
+| `projection.computeStrategyComparison`         | query    | `protectedProcedure` | `projection/strategy.ts`                     | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams.                                |
+| `projection.computeStressTest`                 | query    | `protectedProcedure` | `projection/stress-test.ts`                  | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
+| `projection.computeWithdrawalBracketOptimizer` | query    | `protectedProcedure` | `projection/withdrawal-bracket-optimizer.ts` | Searches the household's own real marginal bracket rates for the `rothBracketTarget` that minimizes lifetime tax cost (plus a terminal-value penalty for Traditional money left unconverted), subject to |
+| `projection.getMonteCarloProgress`             | query    | `protectedProcedure` | `projection/monte-carlo.ts`                  | running — see monte-carlo-worker-client.ts's module docblock for why this is an in-memory Map rather than a DB table or a subscription. Returns null once the job is done or if the runId is unknown (e. |
+| `projection.getProjectionMetadata`             | query    | `protectedProcedure` | `projection/metadata.ts`                     | settings, budgets and the rest. Not configured still returns it.                                                                                                                                         |
+| `projection.peekMonteCarloSummary`             | query    | `protectedProcedure` | `projection/monte-carlo-peek.ts`             | The cached Simulation's success rate, today's bands and run time.                                                                                                                                        |
+| `projection.projectTaxYears`                   | query    | `protectedProcedure` | `projection/tax-optimization.ts`             | Year-by-year tax projection through decumulation — a straight read of the deterministic engine run (NOT Monte Carlo). One row per decumulation year with income sources, federal / NIIT / IRMAA tax, eff |
+| `projection.relocationScenarios.delete`        | mutation | `adminProcedure`     | `projection/relocation.ts`                   | (no description)                                                                                                                                                                                         |
+| `projection.relocationScenarios.list`          | query    | `protectedProcedure` | `projection/relocation.ts`                   | (no description)                                                                                                                                                                                         |
+| `projection.relocationScenarios.save`          | mutation | `adminProcedure`     | `projection/relocation.ts`                   | (no description)                                                                                                                                                                                         |
+| `projection.rothConversionWhatIf`              | query    | `protectedProcedure` | `projection/tax-optimization.ts`             | sticky-forward `decumulationOverrides`, runs the engine once, and also runs a baseline with conversions switched off, then returns the before/after: per-year conversion + tax now, RMD reduction, IRMAA |
+| `projection.sweepSocialSecurityClaimingAges`   | query    | `protectedProcedure` | `projection/social-security.ts`              | real flat `socialSecurityMonthly` benefit with a PIA-derived one (`sweepClaimingAges` unconditionally overrides the scalar SS fields per candidate) — the UI must not present these candidates as direct |
+| `projection.updateAssetClassOverrides`         | mutation | `scenarioProcedure`  | `projection/strategy.ts`                     | Persist MC asset class return/volatility overrides to appSettings.                                                                                                                                       |
+| `projection.updateClampBounds`                 | mutation | `scenarioProcedure`  | `projection/monte-carlo.ts`                  | (no description)                                                                                                                                                                                         |
+| `projection.updateGlidePathAllocations`        | mutation | `scenarioProcedure`  | `projection/monte-carlo.ts`                  | (no description)                                                                                                                                                                                         |
+| `projection.updateInflationOverrides`          | mutation | `scenarioProcedure`  | `projection/presets.ts`                      | Persist MC stochastic inflation overrides to appSettings.                                                                                                                                                |
+
+## `retirement`
+
+| Procedure                                                  | Kind     | Auth                 | Source                              | Description                                                                                                                                                                                              |
+| ---------------------------------------------------------- | -------- | -------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `retirement.computeRelocationAnalysis`                     | query    | `protectedProcedure` | `retirement/relocation-analysis.ts` | (no description)                                                                                                                                                                                         |
+| `retirement.projectionOverrides.clear`                     | mutation | `brokerageProcedure` | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.projectionOverrides.get`                       | query    | `protectedProcedure` | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.projectionOverrides.save`                      | mutation | `brokerageProcedure` | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementBudgetOverrides.create`              | mutation | `adminProcedure`     | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementBudgetOverrides.delete`              | mutation | `adminProcedure`     | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementBudgetOverrides.list`                | query    | `protectedProcedure` | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementBudgetOverrides.update`              | mutation | `adminProcedure`     | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementProfilePeople.list`                  | query    | `protectedProcedure` | `retirement/profile-people.ts`      | (no description)                                                                                                                                                                                         |
+| `retirement.retirementProfilePeople.upsertHouseholdFields` | mutation | `adminProcedure`     | `retirement/profile-people.ts`      | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
+| `retirement.retirementProfilePeople.upsertPerson`          | mutation | `adminProcedure`     | `retirement/profile-people.ts`      | from once those reads were switched to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as the pre-0b5d5fe |
+| `retirement.retirementProfiles.delete`                     | mutation | `adminProcedure`     | `retirement/profiles.ts`            | (no description)                                                                                                                                                                                         |
+| `retirement.retirementProfiles.duplicate`                  | mutation | `adminProcedure`     | `retirement/profiles.ts`            | Clone a profile's per-person rows into a new profile (profile-lifecycle.ts).                                                                                                                             |
+| `retirement.retirementProfiles.list`                       | query    | `protectedProcedure` | `retirement/profiles.ts`            | adminProcedure throughout, matching retirementSettings.upsert's existing gate — CONTRIBUTING.md Composed Router Convention: an inconsistent procedure type within one group is a bug, not a design choic |
+| `retirement.retirementProfiles.update`                     | mutation | `adminProcedure`     | `retirement/profiles.ts`            | per-person assumptions themselves are edited through retirementSettings.upsert, scoped to whichever profile is active — not here. taxParamsYear lives on retirement_profiles itself: null (default) trac |
+| `retirement.retirementSalaryOverrides.create`              | mutation | `adminProcedure`     | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementSalaryOverrides.delete`              | mutation | `adminProcedure`     | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementSalaryOverrides.list`                | query    | `protectedProcedure` | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementSalaryOverrides.update`              | mutation | `adminProcedure`     | `retirement/overrides.ts`           | (no description)                                                                                                                                                                                         |
+| `retirement.retirementSettings.list`                       | query    | `protectedProcedure` | `retirement/settings.ts`            | (no description)                                                                                                                                                                                         |
+| `retirement.retirementSettings.upsert`                     | mutation | `adminProcedure`     | `retirement/settings.ts`            | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
+| `retirement.retirementSettings.upsertPersonRaiseRate`      | mutation | `adminProcedure`     | `retirement/settings.ts`            | `upsert` (which requires a full anchor payload the per-person UI doesn't have, runs the endAge fan-out, and resolves+writes a default filing status — all wrong for a one-field raise-rate edit). UPDATE |
+| `retirement.returnRates.delete`                            | mutation | `adminProcedure`     | `retirement/return-rates.ts`        | (no description)                                                                                                                                                                                         |
+| `retirement.returnRates.list`                              | query    | `protectedProcedure` | `retirement/return-rates.ts`        | (no description)                                                                                                                                                                                         |
+| `retirement.returnRates.upsert`                            | mutation | `adminProcedure`     | `retirement/return-rates.ts`        | (no description)                                                                                                                                                                                         |
+
+## `salaryProfile`
+
+| Procedure                   | Kind     | Auth                           | Source               | Description                                                                                                                                                                                              |
+| --------------------------- | -------- | ------------------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `salaryProfile.create`      | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | Create a profile. `salaries` defaults to EMPTY — genuinely no job entries, not copied from any other profile. A new what-if profile must never silently inherit whatever another profile happened to say |
+| `salaryProfile.delete`      | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | Delete a profile. Blocked when it's the last one left (the active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the sce |
+| `salaryProfile.duplicate`   | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | reason someone clones a profile) would then immediately materialize real savings_planned_transactions off a stale, wrong number with no error surfaced — `update`'s active-profile-only refresh (below)  |
+| `salaryProfile.getById`     | query    | `protectedProcedure`           | `salary-profiles.ts` | One profile plus per-person resolved rows, so the editor can show what this profile actually produces for each job without a second round trip.                                                          |
+| `salaryProfile.list`        | query    | `protectedProcedure`           | `salary-profiles.ts` | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
+| `salaryProfile.patchEntry`  | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | The read-merge-write happens inside a transaction so two overlapping patches to the same profile (two fields committed in quick succession, a second tab/device) can't silently clobber each other the w |
+| `salaryProfile.removeEntry` | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | Remove one job's entry from a profile entirely — it goes back to contributing $0, the same as a job that was never added. Same transactional read-merge-write pattern as patchEntry.                     |
+| `salaryProfile.setActive`   | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | is split out from settings.appSettings.upsert instead of writing through it (same admin-only-write-vs-contributionProfile-permission gap) and for why null is accepted (the hook's own `(id: number \| n |
+| `salaryProfile.update`      | mutation | `contributionProfileProcedure` | `salary-profiles.ts` | (no description)                                                                                                                                                                                         |
+
+## `savings`
+
+| Procedure                                              | Kind     | Auth                 | Source                              | Description                                                                                                                                                                                              |
+| ------------------------------------------------------ | -------- | -------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `savings.allocationOverrides.delete`                   | mutation | `savingsProcedure`   | `savings/allocation-overrides.ts`   | (no description)                                                                                                                                                                                         |
+| `savings.allocationOverrides.deleteMonth`              | mutation | `savingsProcedure`   | `savings/allocation-overrides.ts`   | Delete all overrides for ALL goals in one or more months.                                                                                                                                                |
+| `savings.allocationOverrides.upsert`                   | mutation | `savingsProcedure`   | `savings/allocation-overrides.ts`   | ══ ALLOCATION OVERRIDES ══                                                                                                                                                                               |
+| `savings.allocationOverrides.upsertMonth`              | mutation | `savingsProcedure`   | `savings/allocation-overrides.ts`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                          |
+| `savings.allocationOverrides.upsertMonthRange`         | mutation | `savingsProcedure`   | `savings/allocation-overrides.ts`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                           |
+| `savings.computeSummary`                               | query    | `protectedProcedure` | `savings/summary.ts`                | (no description)                                                                                                                                                                                         |
+| `savings.convertBudgetItemToGoal`                      | mutation | `savingsProcedure`   | `savings/goals.ts`                  | Convert a budget item into a savings goal, transferring the API category link.                                                                                                                           |
+| `savings.convertGoalToBudgetItem`                      | mutation | `savingsProcedure`   | `savings/goals.ts`                  | Convert a savings goal into a budget item, transferring the API category link.                                                                                                                           |
+| `savings.extraPaycheckRouting.list`                    | query    | `protectedProcedure` | `savings/extra-paycheck-routing.ts` | Load routing rules for all jobs.                                                                                                                                                                         |
+| `savings.extraPaycheckRouting.save`                    | mutation | `savingsProcedure`   | `savings/extra-paycheck-routing.ts` | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
+| `savings.extraPaycheckRouting.saveGrowth`              | mutation | `savingsProcedure`   | `savings/extra-paycheck-routing.ts` | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
+| `savings.extraPaycheckRouting.saveOverride`            | mutation | `savingsProcedure`   | `savings/extra-paycheck-routing.ts` | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
+| `savings.extraPaycheckRouting.setEnabled`              | mutation | `savingsProcedure`   | `savings/extra-paycheck-routing.ts` | "Budget" mode (enabled: false) means the extra paycheck isn't diverted to any goal and stays as regular income, same as a job with no routing at all; switching back to "Savings" (enabled: true) restor |
+| `savings.getMonthlyHistory`                            | query    | `protectedProcedure` | `savings/history.ts`                | All recorded monthly balances for active savings goals (for history view).                                                                                                                               |
+| `savings.goalProfileAllocations.list`                  | query    | `protectedProcedure` | `savings/profile-allocations.ts`    | Every active goal's funding for a given profile.                                                                                                                                                         |
+| `savings.goalProfileAllocations.listSummaries`         | query    | `protectedProcedure` | `savings/profile-allocations.ts`    | nonzero allocation) for every budget profile at once — for the profile-picker sidebar. Routes through the same resolver as `list` above (one call per profile) rather than re-deriving totals independen |
+| `savings.goalProfileAllocations.resetAllToZero`        | mutation | `savingsProcedure`   | `savings/profile-allocations.ts`    | Set every active goal's funding to $0/no-percent for one profile.                                                                                                                                        |
+| `savings.goalProfileAllocations.upsert`                | mutation | `savingsProcedure`   | `savings/profile-allocations.ts`    | of the live pool (contrast with recalculateAllocation/ lockInAllocationPercent, which also write here but derive the value from the live pool instead of taking it directly from the caller).            |
+| `savings.linkGoalToApi`                                | mutation | `savingsProcedure`   | `savings/api-links.ts`              | Link a savings goal to a budget API category.                                                                                                                                                            |
+| `savings.linkReimbursementCategory`                    | mutation | `savingsProcedure`   | `savings/reimbursements.ts`         | Link a reimbursement tracking category to the e-fund goal.                                                                                                                                               |
+| `savings.listApiBalances`                              | query    | `protectedProcedure` | `savings/api-links.ts`              | Get API category balances for linked savings goals (for display).                                                                                                                                        |
+| `savings.listEfundReimbursements`                      | query    | `protectedProcedure` | `savings/reimbursements.ts`         | Get parsed reimbursement items from the linked YNAB category's note field.                                                                                                                               |
+| `savings.lockInAllocationPercent`                      | mutation | `savingsProcedure`   | `savings/profile-allocations.ts`    | an accurate description of "what % of current income this is" rather than a stale figure computed against a smaller pool. allocation_percent is decimal(6,3) — rounded to 3 decimals, which at typical p |
+| `savings.plannedTransactions.create`                   | mutation | `savingsProcedure`   | `savings/planned-transactions.ts`   | ══ PLANNED TRANSACTIONS ══                                                                                                                                                                               |
+| `savings.plannedTransactions.delete`                   | mutation | `savingsProcedure`   | `savings/planned-transactions.ts`   | (no description)                                                                                                                                                                                         |
+| `savings.plannedTransactions.getSettlementSuggestions` | query    | `protectedProcedure` | `savings/planned-transactions.ts`   | this deliberately doesn't try to match dollar amounts: once ANY real transaction posts in the goal's linked category on/after the planned date, in the same month, the live balance already reflects it  |
+| `savings.plannedTransactions.settle`                   | mutation | `savingsProcedure`   | `savings/planned-transactions.ts`   | Settlement is per-occurrence (plannedTxId + occurrenceMonth), never per-row — a recurring row has many future occurrences, and settling one must not hide the others from the projection. Never invoked  |
+| `savings.plannedTransactions.settleMany`               | mutation | `savingsProcedure`   | `savings/planned-transactions.ts`   | (no description)                                                                                                                                                                                         |
+| `savings.plannedTransactions.update`                   | mutation | `savingsProcedure`   | `savings/planned-transactions.ts`   | (no description)                                                                                                                                                                                         |
+| `savings.pushContributionsToApi`                       | mutation | `savingsProcedure`   | `savings/api-sync.ts`               | as a "target-balance" goal write — amount only, never touches the goal's type/cadence (that has to be configured once, manually, in YNAB; see YnabClient's writeTargetBalance for why). Every target is  |
+| `savings.recalculateAllocation`                        | mutation | `savingsProcedure`   | `savings/profile-allocations.ts`    | explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal (for the target profile) from one shared live-pool snapshot (a single fetch applied to all rows, so a batch |
+| `savings.savingsGoals.create`                          | mutation | `savingsProcedure`   | `savings/goals.ts`                  | (no description)                                                                                                                                                                                         |
+| `savings.savingsGoals.delete`                          | mutation | `savingsProcedure`   | `savings/goals.ts`                  | (no description)                                                                                                                                                                                         |
+| `savings.savingsGoals.list`                            | query    | `protectedProcedure` | `savings/goals.ts`                  | No live UI consumer reads this today (the Savings page uses computeSummary's goalsForClient instead — see budget-content.tsx's comment), but it's a general-purpose CRUD list endpoint, so its apiCatego |
+| `savings.savingsGoals.update`                          | mutation | `savingsProcedure`   | `savings/goals.ts`                  | (no description)                                                                                                                                                                                         |
+| `savings.transfers.create`                             | mutation | `savingsProcedure`   | `savings/transfers.ts`              | ══ TRANSFERS (paired planned transactions) ══                                                                                                                                                            |
+| `savings.transfers.delete`                             | mutation | `savingsProcedure`   | `savings/transfers.ts`              | (no description)                                                                                                                                                                                         |
+| `savings.unlinkGoalFromApi`                            | mutation | `savingsProcedure`   | `savings/api-links.ts`              | Unlink a savings goal from a budget API category.                                                                                                                                                        |
 
 ## `sec`
 
-| Procedure          | Kind     | Auth                 | Description                                                           |
-| ------------------ | -------- | -------------------- | --------------------------------------------------------------------- |
-| `getStatus`        | query    | `protectedProcedure` | Status for Settings and Data sources. Never returns the contact.      |
-| `refreshNow`       | mutation | `syncProcedure`      | Check every held fund for new filings now (at most every 10 minutes). |
-| `removeConnection` | mutation | `syncProcedure`      | (no description)                                                      |
-| `saveContact`      | mutation | `syncProcedure`      | Check SEC accepts the contact, then store it encrypted.               |
-| `testConnection`   | mutation | `syncProcedure`      | Test the stored contact.                                              |
+| Procedure              | Kind     | Auth                 | Source   | Description                                                           |
+| ---------------------- | -------- | -------------------- | -------- | --------------------------------------------------------------------- |
+| `sec.getStatus`        | query    | `protectedProcedure` | `sec.ts` | Status for Settings and Data sources. Never returns the contact.      |
+| `sec.refreshNow`       | mutation | `syncProcedure`      | `sec.ts` | Check every held fund for new filings now (at most every 10 minutes). |
+| `sec.removeConnection` | mutation | `syncProcedure`      | `sec.ts` | (no description)                                                      |
+| `sec.saveContact`      | mutation | `syncProcedure`      | `sec.ts` | Check SEC accepts the contact, then store it encrypted.               |
+| `sec.testConnection`   | mutation | `syncProcedure`      | `sec.ts` | Test the stored contact.                                              |
 
-## `settings/admin`
+## `settings`
 
-| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `activate`            | mutation | `protectedProcedure` | Make this Plan's profiles the active ones, household-wide (applyPlan).                                                                                                                                   |
-| `create`              | mutation | `scenarioProcedure`  | Save a set of profiles as a Plan — all four kinds, by name.                                                                                                                                              |
-| `delete`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `delete`              | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
-| `delete`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `get`                 | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                                                                                                                                      |
-| `getDataFreshness`    | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                                                                                                                                     |
-| `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                                                                                                                                       |
-| `list`                | query    | `protectedProcedure` | Every saved Plan.                                                                                                                                                                                        |
-| `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP). Connections are written only through each integration's own save (sync), which encrypts, checks the URL and the mappings; a generic ups |
-| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).                                                                                                                                              |
-| `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                                                                                                                                                         |
-| `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `upsert`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| Procedure                                          | Kind     | Auth                           | Source                              | Description                                                                                                                                                                                              |
+| -------------------------------------------------- | -------- | ------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings.apiConnections.delete`                   | mutation | `adminProcedure`               | `settings/admin.ts`                 | (no description)                                                                                                                                                                                         |
+| `settings.apiConnections.list`                     | query    | `adminProcedure`               | `settings/admin.ts`                 | (encrypted envelopes, or plaintext for legacy rows such as FMP). Connections are written only through each integration's own save (sync), which encrypts, checks the URL and the mappings; a generic ups |
+| `settings.appSettings.delete`                      | mutation | `adminProcedure`               | `settings/admin.ts`                 | (no description)                                                                                                                                                                                         |
+| `settings.appSettings.list`                        | query    | `protectedProcedure`           | `settings/admin.ts`                 | ══ APP SETTINGS ══                                                                                                                                                                                       |
+| `settings.appSettings.setDismissal`                | mutation | `adminProcedure`               | `settings/admin.ts`                 | server, so two admins changing different items both stick).                                                                                                                                              |
+| `settings.appSettings.upsert`                      | mutation | `adminProcedure`               | `settings/admin.ts`                 | (no description)                                                                                                                                                                                         |
+| `settings.completeOnboarding`                      | mutation | `adminProcedure`               | `settings/onboarding.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.contributionAccounts.create`             | mutation | `adminProcedure`               | `settings/contribution-accounts.ts` | (no description)                                                                                                                                                                                         |
+| `settings.contributionAccounts.delete`             | mutation | `adminProcedure`               | `settings/contribution-accounts.ts` | (no description)                                                                                                                                                                                         |
+| `settings.contributionAccounts.list`               | query    | `protectedProcedure`           | `settings/contribution-accounts.ts` | (no description)                                                                                                                                                                                         |
+| `settings.contributionAccounts.setActive`          | mutation | `adminProcedure`               | `settings/contribution-accounts.ts` | have the curated accountDetails/compareData view of an account, not every raw structural field. Deliberately separate from any profile-scoped mutation: this flag isn't profile-owned (it gates the acco |
+| `settings.contributionAccounts.setPriorYearAmount` | mutation | `adminProcedure`               | `settings/contribution-accounts.ts` | (no description)                                                                                                                                                                                         |
+| `settings.contributionAccounts.update`             | mutation | `adminProcedure`               | `settings/contribution-accounts.ts` | (no description)                                                                                                                                                                                         |
+| `settings.contributionLimits.create`               | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | The documents Ledgr's figure cites, each with its link.                                                                                                                                                  |
+| `settings.contributionLimits.delete`               | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.contributionLimits.list`                 | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | Each row says whether Ledgr ships it (Reset to shipped vs delete).                                                                                                                                       |
+| `settings.contributionLimits.resetToShipped`       | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | the shipped value back now (and keeps it current from then on).                                                                                                                                          |
+| `settings.contributionLimits.update`               | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.createLocalAdmin`                        | mutation | `publicProcedure`              | `settings/onboarding.ts`            | Create the first local admin. Public, because no session exists yet; callable only while `firstRunState` says an admin is needed, so it closes for good once any local admin exists or onboarding is com |
+| `settings.deductions.create`                       | mutation | `contributionProfileProcedure` | `settings/deductions.ts`            | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
+| `settings.deductions.delete`                       | mutation | `adminProcedure`               | `settings/deductions.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.deductions.list`                         | query    | `protectedProcedure`           | `settings/deductions.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.deductions.update`                       | mutation | `contributionProfileProcedure` | `settings/deductions.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.earnings.create`                         | mutation | `contributionProfileProcedure` | `settings/earnings.ts`              | Same permission level as deductions: structure only, the amount is the Salary Profile's.                                                                                                                 |
+| `settings.earnings.delete`                         | mutation | `adminProcedure`               | `settings/earnings.ts`              | Also drops its amount from every Salary Profile, so no profile keeps an amount for a line that no longer exists.                                                                                         |
+| `settings.earnings.list`                           | query    | `protectedProcedure`           | `settings/earnings.ts`              | (no description)                                                                                                                                                                                         |
+| `settings.earnings.update`                         | mutation | `contributionProfileProcedure` | `settings/earnings.ts`              | (no description)                                                                                                                                                                                         |
+| `settings.firstRunState`                           | query    | `publicProcedure`              | `settings/onboarding.ts`            | "Create the first admin" only while it says so.                                                                                                                                                          |
+| `settings.fplByHousehold.create`                   | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.fplByHousehold.delete`                   | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.fplByHousehold.list`                     | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.fplByHousehold.resetToShipped`           | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | the shipped value back now (and keeps it current from then on).                                                                                                                                          |
+| `settings.fplByHousehold.update`                   | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.getDataFreshness`                        | query    | `protectedProcedure`           | `settings/admin.ts`                 | ══ DATA FRESHNESS ══                                                                                                                                                                                     |
+| `settings.irmaaBrackets.create`                    | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.irmaaBrackets.delete`                    | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.irmaaBrackets.list`                      | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.irmaaBrackets.resetToShipped`            | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | the shipped value back now (and keeps it current from then on).                                                                                                                                          |
+| `settings.irmaaBrackets.update`                    | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.isOnboardingComplete`                    | query    | `protectedProcedure`           | `settings/onboarding.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.jobs.create`                             | mutation | `adminProcedure`               | `settings/jobs.ts`                  | (no description)                                                                                                                                                                                         |
+| `settings.jobs.delete`                             | mutation | `adminProcedure`               | `settings/jobs.ts`                  | (no description)                                                                                                                                                                                         |
+| `settings.jobs.list`                               | query    | `protectedProcedure`           | `settings/jobs.ts`                  | (no description)                                                                                                                                                                                         |
+| `settings.jobs.update`                             | mutation | `adminProcedure`               | `settings/jobs.ts`                  | (no description)                                                                                                                                                                                         |
+| `settings.ltcgBrackets.create`                     | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.ltcgBrackets.delete`                     | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.ltcgBrackets.list`                       | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.ltcgBrackets.resetToShipped`             | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | the shipped value back now (and keeps it current from then on).                                                                                                                                          |
+| `settings.ltcgBrackets.update`                     | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.people.create`                           | mutation | `adminProcedure`               | `settings/people.ts`                | (no description)                                                                                                                                                                                         |
+| `settings.people.delete`                           | mutation | `adminProcedure`               | `settings/people.ts`                | (no description)                                                                                                                                                                                         |
+| `settings.people.list`                             | query    | `protectedProcedure`           | `settings/people.ts`                | (no description)                                                                                                                                                                                         |
+| `settings.people.update`                           | mutation | `adminProcedure`               | `settings/people.ts`                | (no description)                                                                                                                                                                                         |
+| `settings.rbacGroups.get`                          | query    | `adminProcedure`               | `settings/admin.ts`                 | Get current RBAC group mapping (DB overrides merged with defaults).                                                                                                                                      |
+| `settings.scenarios.activate`                      | mutation | `protectedProcedure`           | `settings/admin.ts`                 | Make this Plan's profiles the active ones, household-wide (applyPlan).                                                                                                                                   |
+| `settings.scenarios.create`                        | mutation | `scenarioProcedure`            | `settings/admin.ts`                 | Save a set of profiles as a Plan — all four kinds, by name.                                                                                                                                              |
+| `settings.scenarios.delete`                        | mutation | `scenarioProcedure`            | `settings/admin.ts`                 | (no description)                                                                                                                                                                                         |
+| `settings.scenarios.list`                          | query    | `protectedProcedure`           | `settings/admin.ts`                 | Every saved Plan.                                                                                                                                                                                        |
+| `settings.scenarios.update`                        | mutation | `scenarioProcedure`            | `settings/admin.ts`                 | Rename a Plan or change which profiles it holds.                                                                                                                                                         |
+| `settings.taxBrackets.create`                      | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.taxBrackets.delete`                      | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.taxBrackets.list`                        | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.taxBrackets.resetToShipped`              | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | the shipped value back now (and keeps it current from then on).                                                                                                                                          |
+| `settings.taxBrackets.update`                      | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | (no description)                                                                                                                                                                                         |
+| `settings.taxData.addYear`                         | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | carried forward until the real figures ship.                                                                                                                                                             |
+| `settings.taxData.confirm`                         | mutation | `adminProcedure`               | `settings/tax-limits.ts`            | figure replaces it when it ships), but no longer needs attention.                                                                                                                                        |
+| `settings.taxData.sectionSources`                  | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | The documents each year's shipped tables cite, linked.                                                                                                                                                   |
+| `settings.taxData.status`                          | query    | `protectedProcedure`           | `settings/tax-limits.ts`            | The documents each year's shipped tables cite, linked.                                                                                                                                                   |
+| `settings.taxDataSync.approve`                     | mutation | `adminProcedure`               | `settings/tax-data-sync.ts`         | Apply the reviewed update, exactly as reviewed.                                                                                                                                                          |
+| `settings.taxDataSync.checkNow`                    | mutation | `adminProcedure`               | `settings/tax-data-sync.ts`         | (no description)                                                                                                                                                                                         |
+| `settings.taxDataSync.dismiss`                     | mutation | `adminProcedure`               | `settings/tax-data-sync.ts`         | (no description)                                                                                                                                                                                         |
+| `settings.taxDataSync.preview`                     | query    | `protectedProcedure`           | `settings/tax-data-sync.ts`         | What the waiting update would change, and a hash to approve it by.                                                                                                                                       |
+| `settings.taxDataSync.setEnabled`                  | mutation | `adminProcedure`               | `settings/tax-data-sync.ts`         | (no description)                                                                                                                                                                                         |
+| `settings.taxDataSync.status`                      | query    | `protectedProcedure`           | `settings/tax-data-sync.ts`         | On/off, the last check, and a summary of any waiting update.                                                                                                                                             |
+| `settings.testOidcConnection`                      | query    | `publicProcedure`              | `settings/onboarding.ts`            | Test whether OIDC (Authentik) is configured and reachable. Checks env vars and fetches the issuer's well-known endpoint.                                                                                 |
+| `settings.updateDataFreshness`                     | mutation | `adminProcedure`               | `settings/admin.ts`                 | (no description)                                                                                                                                                                                         |
 
-## `settings/contribution-accounts`
+## `simplefin`
 
-| Procedure            | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| -------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`             | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `list`               | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `setActive`          | mutation | `adminProcedure`     | have the curated accountDetails/compareData view of an account, not every raw structural field. Deliberately separate from any profile-scoped mutation: this flag isn't profile-owned (it gates the acco |
-| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| Procedure                         | Kind     | Auth                 | Source                     | Description                                                                                                                                                                                             |
+| --------------------------------- | -------- | -------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `simplefin.acceptLinkSuggestions` | mutation | `syncProcedure`      | `simplefin/links.ts`       | Link every unlinked SimpleFIN account to its suggested (sub-)account, and narrow whole-account links to their suggested sub-account.                                                                    |
+| `simplefin.getCollectionStats`    | query    | `protectedProcedure` | `simplefin/connections.ts` | What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources.                                                                                   |
+| `simplefin.getStatus`             | query    | `protectedProcedure` | `simplefin/connections.ts` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                                                                                                            |
+| `simplefin.listAccounts`          | query    | `protectedProcedure` | `simplefin/accounts.ts`    | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |
+| `simplefin.listBalanceHistory`    | query    | `protectedProcedure` | `simplefin/accounts.ts`    | Snapshot history for the dashboard sparkline.                                                                                                                                                           |
+| `simplefin.listLinkableLoans`     | query    | `protectedProcedure` | `simplefin/links.ts`       | Loans a feed can report; `feedId` shows which are taken.                                                                                                                                                |
+| `simplefin.listMatchableAccounts` | query    | `protectedProcedure` | `simplefin/links.ts`       | Active performance_accounts, for the match-to-existing-account picker.                                                                                                                                  |
+| `simplefin.listReaddedAccounts`   | query    | `protectedProcedure` | `simplefin/links.ts`       | an account absent from the latest sync (readdedCandidates).                                                                                                                                             |
+| `simplefin.mergeReaddedAccount`   | mutation | `syncProcedure`      | `simplefin/links.ts`       | confirmed: no 24-hour wait.                                                                                                                                                                             |
+| `simplefin.removeConnection`      | mutation | `syncProcedure`      | `simplefin/connections.ts` | Remove the stored connection (history in simplefin_balance_snapshots is preserved).                                                                                                                     |
+| `simplefin.saveToken`             | mutation | `syncProcedure`      | `simplefin/connections.ts` | Claim a one-time setup token and store the resulting access URL.                                                                                                                                        |
+| `simplefin.setAccountIncluded`    | mutation | `syncProcedure`      | `simplefin/accounts.ts`    | Toggle an account's inclusion and recompute today's total from local data immediately — no SimpleFIN API call, so this is free to click repeatedly. Does not touch any prior day's snapshot.            |
+| `simplefin.setAccountMapping`     | mutation | `syncProcedure`      | `simplefin/links.ts`       | multiple SimpleFIN accounts can point at the same performance account (e.g. historical account splits/merges Ledgr still tracks as a single account) — listAccounts sums every linked account's balance |
+| `simplefin.setLoanLink`           | mutation | `syncProcedure`      | `simplefin/links.ts`       | Make a feed a mortgage's balance (or stop, with loanId null). The feed stops being an account: it leaves any tracked-account link and the live total, and it's included, or the link would do nothing.  |
+| `simplefin.syncNow`               | mutation | `syncProcedure`      | `simplefin/connections.ts` | Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota).                                                                                        |
+| `simplefin.testConnection`        | mutation | `syncProcedure`      | `simplefin/connections.ts` | Test the stored connection without writing a snapshot.                                                                                                                                                  |
 
-## `settings/deductions`
+## `sync`
 
-| Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`  | mutation | `contributionProfileProcedure` | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
-| `delete`  | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `list`    | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
-| `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
+| Procedure                       | Kind     | Auth                 | Source                       | Description                                                                                                                                                                                              |
+| ------------------------------- | -------- | -------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sync.computeExpenseComparison` | query    | `protectedProcedure` | `sync/expense-comparison.ts` | Compare expenses between two periods using cached transaction data.                                                                                                                                      |
+| `sync.createAssetAndMap`        | mutation | `syncProcedure`      | `sync/mappings.ts`           | Create a new Ledgr asset item and add a mapping to a tracking account.                                                                                                                                   |
+| `sync.deleteConnection`         | mutation | `adminProcedure`     | `sync/connections.ts`        | Delete a connection and clear its cache                                                                                                                                                                  |
+| `sync.fetchYnabBudgets`         | mutation | `adminProcedure`     | `sync/connections.ts`        | Fetch YNAB budgets list using a raw token (before saving connection)                                                                                                                                     |
+| `sync.getActiveBudgetApi`       | query    | `protectedProcedure` | `sync/config.ts`             | Get the current active_budget_api setting                                                                                                                                                                |
+| `sync.getActiveBudgetApiLink`   | query    | `protectedProcedure` | `sync/config.ts`             | hosted app; Actual only links once the household has set an External URL (its `serverUrl` is often a private/internal address a browser outside that network can't reach — see ActualConfig's docblock). |
+| `sync.getConnection`            | query    | `protectedProcedure` | `sync/connections.ts`        | Get connection status for each service (not just the active one)                                                                                                                                         |
+| `sync.getPreview`               | query    | `protectedProcedure` | `sync/preview.ts`            | Preview: read cached data for a service and compare against current manual values. Works before activation — shows what will change when the API is activated.                                           |
+| `sync.getSyncStatus`            | query    | `protectedProcedure` | `sync/connections.ts`        | Get sync status for the active API                                                                                                                                                                       |
+| `sync.moveBudgetItemToApiGroup` | mutation | `syncProcedure`      | `sync/names.ts`              | Move a budget item to the API's category group.                                                                                                                                                          |
+| `sync.renameBudgetItemApiName`  | mutation | `syncProcedure`      | `sync/names.ts`              | Rename a budget item's API category name to match the Ledgr subcategory (update stored name).                                                                                                            |
+| `sync.renameBudgetItemToApi`    | mutation | `syncProcedure`      | `sync/names.ts`              | Rename a budget item's subcategory to match the API category name.                                                                                                                                       |
+| `sync.renameSavingsGoalApiName` | mutation | `syncProcedure`      | `sync/names.ts`              | Update a savings goal's stored API name to match its current Ledgr name.                                                                                                                                 |
+| `sync.renameSavingsGoalToApi`   | mutation | `syncProcedure`      | `sync/names.ts`              | Rename a savings goal to match the API category name.                                                                                                                                                    |
+| `sync.resyncPortfolioPush`      | mutation | `syncProcedure`      | `sync/mappings.ts`           | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
+| `sync.saveConnection`           | mutation | `adminProcedure`     | `sync/connections.ts`        | Save (upsert) a budget API connection                                                                                                                                                                    |
+| `sync.setActiveBudgetApi`       | mutation | `syncProcedure`      | `sync/config.ts`             | Set the active_budget_api setting                                                                                                                                                                        |
+| `sync.setLinkedColumn`          | mutation | `syncProcedure`      | `sync/config.ts`             | Set which budget column (mode) syncs with the budget API.                                                                                                                                                |
+| `sync.setLinkedProfile`         | mutation | `syncProcedure`      | `sync/config.ts`             | Set (or clear) which Ledgr budget profile syncs with the budget API.                                                                                                                                     |
+| `sync.skipCategory`             | mutation | `syncProcedure`      | `sync/config.ts`             | Skip an API category — hide from "not in Ledgr" list                                                                                                                                                     |
+| `sync.syncAll`                  | mutation | `syncProcedure`      | `sync/sync-all.ts`           | Full sync for a specific service — works independently of active_budget_api. Pulls accounts, categories, current month, and transactions into cache.                                                     |
+| `sync.syncAllNames`             | mutation | `syncProcedure`      | `sync/names.ts`              | Batch rename all drifted items in one direction.                                                                                                                                                         |
+| `sync.testConnection`           | mutation | `adminProcedure`     | `sync/connections.ts`        | Test a specific service connection (works before activation)                                                                                                                                             |
+| `sync.unskipCategory`           | mutation | `syncProcedure`      | `sync/config.ts`             | Unskip an API category — restore to "not in Ledgr" list                                                                                                                                                  |
+| `sync.updateAccountMappings`    | mutation | `syncProcedure`      | `sync/mappings.ts`           | Update account mappings for a service (works pre-activation).                                                                                                                                            |
+| `sync.updateActualExternalUrl`  | mutation | `adminProcedure`     | `sync/connections.ts`        | address for the nav link (see ActualConfig's docblock). Deliberately separate from saveConnection: that mutation requires retyping every credential field (apiKey isn't ever sent back to the client to  |
 
-## `settings/earnings`
+## `taxBuckets`
 
-| Procedure | Kind     | Auth                           | Description                                                                                                      |
-| --------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `create`  | mutation | `contributionProfileProcedure` | Same permission level as deductions: structure only, the amount is the Salary Profile's.                         |
-| `delete`  | mutation | `adminProcedure`               | Also drops its amount from every Salary Profile, so no profile keeps an amount for a line that no longer exists. |
-| `list`    | query    | `protectedProcedure`           | (no description)                                                                                                 |
-| `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                 |
-
-## `settings/jobs`
-
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-
-## `settings/onboarding`
-
-| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `completeOnboarding`   | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `createLocalAdmin`     | mutation | `publicProcedure`    | Create the first local admin. Public, because no session exists yet; callable only while `firstRunState` says an admin is needed, so it closes for good once any local admin exists or onboarding is com |
-| `firstRunState`        | query    | `publicProcedure`    | "Create the first admin" only while it says so.                                                                                                                                                          |
-| `isOnboardingComplete` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `testOidcConnection`   | query    | `publicProcedure`    | Test whether OIDC (Authentik) is configured and reachable. Checks env vars and fetches the issuer's well-known endpoint.                                                                                 |
-
-## `settings/people`
-
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-
-## `settings/tax-data-sync`
-
-| Procedure    | Kind     | Auth                 | Description                                                        |
-| ------------ | -------- | -------------------- | ------------------------------------------------------------------ |
-| `approve`    | mutation | `adminProcedure`     | Apply the reviewed update, exactly as reviewed.                    |
-| `checkNow`   | mutation | `adminProcedure`     | (no description)                                                   |
-| `dismiss`    | mutation | `adminProcedure`     | (no description)                                                   |
-| `preview`    | query    | `protectedProcedure` | What the waiting update would change, and a hash to approve it by. |
-| `setEnabled` | mutation | `adminProcedure`     | (no description)                                                   |
-| `status`     | query    | `protectedProcedure` | On/off, the last check, and a summary of any waiting update.       |
-
-## `settings/tax-limits`
-
-| Procedure        | Kind     | Auth                 | Description                                                        |
-| ---------------- | -------- | -------------------- | ------------------------------------------------------------------ |
-| `addYear`        | mutation | `adminProcedure`     | carried forward until the real figures ship.                       |
-| `confirm`        | mutation | `adminProcedure`     | figure replaces it when it ships), but no longer needs attention.  |
-| `create`         | mutation | `adminProcedure`     | The documents Ledgr's figure cites, each with its link.            |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `list`           | query    | `protectedProcedure` | Each row says whether Ledgr ships it (Reset to shipped vs delete). |
-| `list`           | query    | `protectedProcedure` | (no description)                                                   |
-| `list`           | query    | `protectedProcedure` | (no description)                                                   |
-| `list`           | query    | `protectedProcedure` | (no description)                                                   |
-| `list`           | query    | `protectedProcedure` | (no description)                                                   |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
-| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
-| `sectionSources` | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.             |
-| `status`         | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.             |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
-| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
-
-## `simplefin/accounts`
-
-| Procedure            | Kind     | Auth                 | Description                                                                                                                                                                                             |
-| -------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `listAccounts`       | query    | `protectedProcedure` | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |
-| `listBalanceHistory` | query    | `protectedProcedure` | Snapshot history for the dashboard sparkline.                                                                                                                                                           |
-| `setAccountIncluded` | mutation | `syncProcedure`      | Toggle an account's inclusion and recompute today's total from local data immediately — no SimpleFIN API call, so this is free to click repeatedly. Does not touch any prior day's snapshot.            |
-
-## `simplefin/connections`
-
-| Procedure            | Kind     | Auth                 | Description                                                                                                           |
-| -------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `getCollectionStats` | query    | `protectedProcedure` | What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources. |
-| `getStatus`          | query    | `protectedProcedure` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                          |
-| `removeConnection`   | mutation | `syncProcedure`      | Remove the stored connection (history in simplefin_balance_snapshots is preserved).                                   |
-| `saveToken`          | mutation | `syncProcedure`      | Claim a one-time setup token and store the resulting access URL.                                                      |
-| `syncNow`            | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota).      |
-| `testConnection`     | mutation | `syncProcedure`      | Test the stored connection without writing a snapshot.                                                                |
-
-## `simplefin/links`
-
-| Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                             |
-| ----------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `acceptLinkSuggestions` | mutation | `syncProcedure`      | Link every unlinked SimpleFIN account to its suggested (sub-)account, and narrow whole-account links to their suggested sub-account.                                                                    |
-| `listLinkableLoans`     | query    | `protectedProcedure` | Loans a feed can report; `feedId` shows which are taken.                                                                                                                                                |
-| `listMatchableAccounts` | query    | `protectedProcedure` | Active performance_accounts, for the match-to-existing-account picker.                                                                                                                                  |
-| `listReaddedAccounts`   | query    | `protectedProcedure` | an account absent from the latest sync (readdedCandidates).                                                                                                                                             |
-| `mergeReaddedAccount`   | mutation | `syncProcedure`      | confirmed: no 24-hour wait.                                                                                                                                                                             |
-| `setAccountMapping`     | mutation | `syncProcedure`      | multiple SimpleFIN accounts can point at the same performance account (e.g. historical account splits/merges Ledgr still tracks as a single account) — listAccounts sums every linked account's balance |
-| `setLoanLink`           | mutation | `syncProcedure`      | Make a feed a mortgage's balance (or stop, with loanId null). The feed stops being an account: it leaves any tracked-account link and the live total, and it's included, or the link would do nothing.  |
-
-## `sync/config`
-
-| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getActiveBudgetApi`     | query    | `protectedProcedure` | Get the current active_budget_api setting                                                                                                                                                                |
-| `getActiveBudgetApiLink` | query    | `protectedProcedure` | hosted app; Actual only links once the household has set an External URL (its `serverUrl` is often a private/internal address a browser outside that network can't reach — see ActualConfig's docblock). |
-| `setActiveBudgetApi`     | mutation | `syncProcedure`      | Set the active_budget_api setting                                                                                                                                                                        |
-| `setLinkedColumn`        | mutation | `syncProcedure`      | Set which budget column (mode) syncs with the budget API.                                                                                                                                                |
-| `setLinkedProfile`       | mutation | `syncProcedure`      | Set (or clear) which Ledgr budget profile syncs with the budget API.                                                                                                                                     |
-| `skipCategory`           | mutation | `syncProcedure`      | Skip an API category — hide from "not in Ledgr" list                                                                                                                                                     |
-| `unskipCategory`         | mutation | `syncProcedure`      | Unskip an API category — restore to "not in Ledgr" list                                                                                                                                                  |
-
-## `sync/connections`
-
-| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                             |
-| ------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deleteConnection`        | mutation | `syncProcedure`      | Delete a connection and clear its cache                                                                                                                                                                 |
-| `fetchYnabBudgets`        | mutation | `syncProcedure`      | Fetch YNAB budgets list using a raw token (before saving connection)                                                                                                                                    |
-| `getConnection`           | query    | `protectedProcedure` | Get connection status for each service (not just the active one)                                                                                                                                        |
-| `getSyncStatus`           | query    | `protectedProcedure` | Get sync status for the active API                                                                                                                                                                      |
-| `saveConnection`          | mutation | `syncProcedure`      | Save (upsert) a budget API connection                                                                                                                                                                   |
-| `testConnection`          | mutation | `syncProcedure`      | Test a specific service connection (works before activation)                                                                                                                                            |
-| `updateActualExternalUrl` | mutation | `syncProcedure`      | address for the nav link (see ActualConfig's docblock). Deliberately separate from saveConnection: that mutation requires retyping every credential field (apiKey isn't ever sent back to the client to |
-
-## `sync/expense-comparison`
-
-| Procedure                  | Kind  | Auth                 | Description                                                         |
-| -------------------------- | ----- | -------------------- | ------------------------------------------------------------------- |
-| `computeExpenseComparison` | query | `protectedProcedure` | Compare expenses between two periods using cached transaction data. |
-
-## `sync/mappings`
-
-| Procedure               | Kind     | Auth            | Description                                                                                                                                                                                     |
-| ----------------------- | -------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createAssetAndMap`     | mutation | `syncProcedure` | Create a new Ledgr asset item and add a mapping to a tracking account.                                                                                                                          |
-| `resyncPortfolioPush`   | mutation | `syncProcedure` | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user. |
-| `updateAccountMappings` | mutation | `syncProcedure` | Update account mappings for a service (works pre-activation).                                                                                                                                   |
-
-## `sync/names`
-
-| Procedure                  | Kind     | Auth            | Description                                                                                   |
-| -------------------------- | -------- | --------------- | --------------------------------------------------------------------------------------------- |
-| `moveBudgetItemToApiGroup` | mutation | `syncProcedure` | Move a budget item to the API's category group.                                               |
-| `renameBudgetItemApiName`  | mutation | `syncProcedure` | Rename a budget item's API category name to match the Ledgr subcategory (update stored name). |
-| `renameBudgetItemToApi`    | mutation | `syncProcedure` | Rename a budget item's subcategory to match the API category name.                            |
-| `renameSavingsGoalApiName` | mutation | `syncProcedure` | Update a savings goal's stored API name to match its current Ledgr name.                      |
-| `renameSavingsGoalToApi`   | mutation | `syncProcedure` | Rename a savings goal to match the API category name.                                         |
-| `syncAllNames`             | mutation | `syncProcedure` | Batch rename all drifted items in one direction.                                              |
-
-## `sync/preview`
-
-| Procedure    | Kind  | Auth                 | Description                                                                                                                                                    |
-| ------------ | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getPreview` | query | `protectedProcedure` | Preview: read cached data for a service and compare against current manual values. Works before activation — shows what will change when the API is activated. |
-
-## `sync/sync-all`
-
-| Procedure | Kind     | Auth            | Description                                                                                                                                          |
-| --------- | -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `syncAll` | mutation | `syncProcedure` | Full sync for a specific service — works independently of active_budget_api. Pulls accounts, categories, current month, and transactions into cache. |
-
-## `tax-buckets`
-
-| Procedure              | Kind     | Auth                   | Description                                                                                                                                                                                             |
-| ---------------------- | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `batchUpdateRothBasis` | mutation | `performanceProcedure` | mirroring performance.batchUpdateAccounts — each entry targets its own already-known current year (from computeBreakdown's rothBasisMeta), so no per-row year resolution is needed here.                |
-| `computeBreakdown`     | query    | `protectedProcedure`   | Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account.                                                                                                                                 |
-| `updateRothBasis`      | mutation | `performanceProcedure` | needed from the caller. An explicit `year` lets the caller deliberately correct an older, already-finalized year (no hard reject — matches how updateAccount already edits finalized accountPerformance |
-| `updateSeparationDate` | mutation | `performanceProcedure` | Set the durable Rule of 55 source-of-truth date for a 401k/403b account.                                                                                                                                |
+| Procedure                         | Kind     | Auth                   | Source           | Description                                                                                                                                                                                             |
+| --------------------------------- | -------- | ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `taxBuckets.batchUpdateRothBasis` | mutation | `performanceProcedure` | `tax-buckets.ts` | mirroring performance.batchUpdateAccounts — each entry targets its own already-known current year (from computeBreakdown's rothBasisMeta), so no per-row year resolution is needed here.                |
+| `taxBuckets.computeBreakdown`     | query    | `protectedProcedure`   | `tax-buckets.ts` | Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account.                                                                                                                                 |
+| `taxBuckets.updateRothBasis`      | mutation | `performanceProcedure` | `tax-buckets.ts` | needed from the caller. An explicit `year` lets the caller deliberately correct an older, already-finalized year (no hard reject — matches how updateAccount already edits finalized accountPerformance |
+| `taxBuckets.updateSeparationDate` | mutation | `performanceProcedure` | `tax-buckets.ts` | Set the durable Rule of 55 source-of-truth date for a 401k/403b account.                                                                                                                                |
 
 ## `tiingo`
 
-| Procedure          | Kind     | Auth                 | Description                                                                            |
-| ------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `getStatus`        | query    | `protectedProcedure` | Connection status for the Settings integrations card. Never returns the key.           |
-| `removeConnection` | mutation | `syncProcedure`      | Remove the stored key.                                                                 |
-| `saveKey`          | mutation | `syncProcedure`      | Validate a key against Tiingo, then store it encrypted. An invalid key is never saved. |
-| `testConnection`   | mutation | `syncProcedure`      | Test the stored key and report how far back price history goes.                        |
+| Procedure                 | Kind     | Auth                 | Source      | Description                                                                            |
+| ------------------------- | -------- | -------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| `tiingo.getStatus`        | query    | `protectedProcedure` | `tiingo.ts` | Connection status for the Settings integrations card. Never returns the key.           |
+| `tiingo.removeConnection` | mutation | `syncProcedure`      | `tiingo.ts` | Remove the stored key.                                                                 |
+| `tiingo.saveKey`          | mutation | `syncProcedure`      | `tiingo.ts` | Validate a key against Tiingo, then store it encrypted. An invalid key is never saved. |
+| `tiingo.testConnection`   | mutation | `syncProcedure`      | `tiingo.ts` | Test the stored key and report how far back price history goes.                        |
 
 ## `utilities`
 
-| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                      |
-| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `applyBudgetApiFeed`      | mutation | `adminProcedure`     | the same budget service wrote; never touches usage, or a cost someone changed after the review.                                                                                  |
-| `computeSummary`          | query    | `protectedProcedure` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
-| `deleteReading`           | mutation | `adminProcedure`     | (no description)                                                                                                                                                                 |
-| `listBudgetApiCategories` | query    | `protectedProcedure` | one its bills are paid from. Empty until the budget has synced.                                                                                                                  |
-| `listServices`            | query    | `protectedProcedure` | All utility services ordered for display.                                                                                                                                        |
-| `previewBudgetApiFeed`    | query    | `protectedProcedure` | leaves alone (conflicts, credits, months no longer in the budget), and a hash the apply must match — it writes exactly what was reviewed.                                        |
-| `updateReading`           | mutation | `adminProcedure`     | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
-| `updateService`           | mutation | `adminProcedure`     | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
-| `upsertReading`           | mutation | `adminProcedure`     | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
-| `upsertService`           | mutation | `adminProcedure`     | Create or update a service by its kind (unique).                                                                                                                                 |
+| Procedure                           | Kind     | Auth                 | Source         | Description                                                                                                                                                                      |
+| ----------------------------------- | -------- | -------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `utilities.applyBudgetApiFeed`      | mutation | `adminProcedure`     | `utilities.ts` | the same budget service wrote; never touches usage, or a cost someone changed after the review.                                                                                  |
+| `utilities.computeSummary`          | query    | `protectedProcedure` | `utilities.ts` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
+| `utilities.deleteReading`           | mutation | `adminProcedure`     | `utilities.ts` | (no description)                                                                                                                                                                 |
+| `utilities.listBudgetApiCategories` | query    | `protectedProcedure` | `utilities.ts` | one its bills are paid from. Empty until the budget has synced.                                                                                                                  |
+| `utilities.listServices`            | query    | `protectedProcedure` | `utilities.ts` | All utility services ordered for display.                                                                                                                                        |
+| `utilities.previewBudgetApiFeed`    | query    | `protectedProcedure` | `utilities.ts` | leaves alone (conflicts, credits, months no longer in the budget), and a hash the apply must match — it writes exactly what was reviewed.                                        |
+| `utilities.updateReading`           | mutation | `adminProcedure`     | `utilities.ts` | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
+| `utilities.updateService`           | mutation | `adminProcedure`     | `utilities.ts` | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
+| `utilities.upsertReading`           | mutation | `adminProcedure`     | `utilities.ts` | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
+| `utilities.upsertService`           | mutation | `adminProcedure`     | `utilities.ts` | Create or update a service by its kind (unique).                                                                                                                                 |
 
 ## `version`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                           |
-| ---------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                                                                                                          |
-| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                                                                                                     |
-| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                                                                                                         |
-| `getById`              | query    | `versionProcedure`   | Version permission: a backup's contents are every table's data.                                                                                                                                       |
-| `getPreview`           | query    | `versionProcedure`   | permission — the rows are any table's data, which elsewhere needs its own permission — and never a credential table (withheld, count only).                                                           |
-| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                                                                                               |
-| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                                                                                                   |
-| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                                                                                                 |
-| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                                                                                                   |
-| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                                                                                                     |
-| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins, and clears the app_settings keys that describe the data (DATA_SETTING_KEYS). |
-| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                                                                                               |
-| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                                                                                         |
-| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                                                                                                         |
-| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                                                                                                         |
+| Procedure                      | Kind     | Auth                 | Source       | Description                                                                                                                                                                                           |
+| ------------------------------ | -------- | -------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version.create`               | mutation | `versionProcedure`   | `version.ts` | Create a new manual version.                                                                                                                                                                          |
+| `version.delete`               | mutation | `versionProcedure`   | `version.ts` | Delete a version.                                                                                                                                                                                     |
+| `version.dismissUpgradeBanner` | mutation | `versionProcedure`   | `version.ts` | Dismiss the upgrade banner by removing the app_settings flag.                                                                                                                                         |
+| `version.getById`              | query    | `versionProcedure`   | `version.ts` | Version permission: a backup's contents are every table's data.                                                                                                                                       |
+| `version.getPreview`           | query    | `versionProcedure`   | `version.ts` | permission — the rows are any table's data, which elsewhere needs its own permission — and never a credential table (withheld, count only).                                                           |
+| `version.getRetention`         | query    | `protectedProcedure` | `version.ts` | Read retention setting.                                                                                                                                                                               |
+| `version.getSchedule`          | query    | `protectedProcedure` | `version.ts` | Read auto-version schedule setting.                                                                                                                                                                   |
+| `version.getUpgradeBanner`     | query    | `protectedProcedure` | `version.ts` | Check if a pre-upgrade backup banner should be shown.                                                                                                                                                 |
+| `version.importDataLoss`       | query    | `versionProcedure`   | `version.ts` | Same check for an uploaded backup file, given only its table names.                                                                                                                                   |
+| `version.list`                 | query    | `protectedProcedure` | `version.ts` | List all versions (metadata only, no JSONB data).                                                                                                                                                     |
+| `version.resetAllData`         | mutation | `adminProcedure`     | `version.ts` | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins, and clears the app_settings keys that describe the data (DATA_SETTING_KEYS). |
+| `version.restore`              | mutation | `versionProcedure`   | `version.ts` | Restore from a version.                                                                                                                                                                               |
+| `version.restoreDataLoss`      | query    | `versionProcedure`   | `version.ts` | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                                                                                         |
+| `version.setRetention`         | mutation | `versionProcedure`   | `version.ts` | Update retention setting and trigger cleanup.                                                                                                                                                         |
+| `version.setSchedule`          | mutation | `versionProcedure`   | `version.ts` | Update auto-version schedule.                                                                                                                                                                         |

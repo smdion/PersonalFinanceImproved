@@ -31,7 +31,7 @@ import {
   sumAccounts,
   type Rollup,
 } from "@/lib/pure/investments/returns";
-import { toNumber } from "@/lib/utils/numbers";
+import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 import {
   buildPerfAcctLookups,
@@ -204,10 +204,7 @@ async function carryEditIntoLockedYear(
                 distributions: was.distributions,
                 fees: was.fees,
                 rollovers: was.rollovers,
-                annualReturnPct:
-                  row.annualReturnPct == null
-                    ? null
-                    : toNumber(row.annualReturnPct),
+                annualReturnPct: toNumberOrNull(row.annualReturnPct),
               },
               d,
             ),

@@ -87,8 +87,7 @@ export function HistoricalLoans({
                     {isRefinanced ? "Balance at Refinance" : "Final Balance"}
                   </p>
                   <p className="text-muted font-medium">
-                    {loan.endedBalance !== undefined &&
-                    loan.endedBalance !== null
+                    {loan.endedBalance !== undefined
                       ? formatCurrency(loan.endedBalance)
                       : formatCurrency(0)}
                   </p>

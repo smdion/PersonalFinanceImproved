@@ -106,23 +106,23 @@ function projectContributionBasis(
  *  falls back to `projectContributionBasis`. */
 function transitionRothBasis(
   rothBasisMeta: RothBasisMeta | null,
-  projected: {
-    rothContributionBasisRemaining?: number;
-    rothConversionBasisRemaining?: number;
-  },
+  projectedRoth: {
+    contributionBasisRemaining?: number;
+    conversionBasisRemaining?: number;
+  } = {},
   contributionByYear: Map<number, number> | undefined,
   transitionYear: number,
 ): { contributionBasis: number; conversionBasis: number } {
   return {
     contributionBasis:
-      projected.rothContributionBasisRemaining ??
+      projectedRoth.contributionBasisRemaining ??
       projectContributionBasis(
         rothBasisMeta,
         contributionByYear,
         transitionYear,
       ),
     conversionBasis:
-      projected.rothConversionBasisRemaining ??
+      projectedRoth.conversionBasisRemaining ??
       rothBasisMeta?.conversionBasis ??
       0,
   };
@@ -191,14 +191,10 @@ function projectCostBasis(
  *  genuinely no data) is reused unchanged — the future can't move a real
  *  past separation, and can't manufacture data that doesn't exist.
  *
- *  Exported — the retirement projection
- *  engine's decumulation-year handler reuses this verbatim as its
- *  "will this person have separated by projected year N" resolver, rather
- *  than duplicating the logic. Originally written for this module's own
- *  "at retirement" transition-year question (`assumedYear` was always
- *  `transitionYear`); the parameter name reflects that it now answers the
- *  same question for any assumed future year, not only the household's
- *  retirement transition. */
+ *  Exported — the retirement projection engine's withdrawal eligibility
+ *  reuses this as its "will this person have separated by projected year
+ *  N" resolver. `assumedYear` is any assumed future year, not only the
+ *  household's retirement transition. */
 export function projectRuleOf55(
   now: RuleOf55Status | null,
   assumedYear: number,
@@ -213,7 +209,7 @@ export function projectRuleOf55(
      *  One-directional by construction — this can only ever push `eligible`
      *  from true to false, never the reverse. `separationYear`/`source`/
      *  `knownFutureSeparationYear` are preserved, so the UI can still show
-     *  "separates 2034" alongside "ineligible". Both call sites (withdrawal-eligibility.ts,
+     *  "separates 2034" alongside "ineligible". Both call sites (eligibility.ts,
      *  computeTaxBucketProjection below) must pass this identically or the
      *  Tax Buckets page and the retirement engine would disagree about the
      *  same account (Single Computation Path). Never applied to the "now"
@@ -417,7 +413,7 @@ export function computeTaxBucketProjection(input: {
           conversionBasis: projectedConversionBasis,
         } = transitionRothBasis(
           now.rothBasisMeta,
-          projected,
+          projected.roth,
           contributionsByKey.get(key),
           transitionYear,
         );
@@ -446,13 +442,8 @@ export function computeTaxBucketProjection(input: {
         person!.birthYear,
         {
           forceIneligible:
-            now.ownerPersonId != null
-              ? ruleOf55OverrideByPersonId?.get(now.ownerPersonId) === false
-              : false,
-          ownerRetirementYear:
-            now.ownerPersonId != null
-              ? retirementYearByPersonId?.get(now.ownerPersonId)
-              : undefined,
+            ruleOf55OverrideByPersonId?.get(now.ownerPersonId) === false,
+          ownerRetirementYear: retirementYearByPersonId?.get(now.ownerPersonId),
         },
       );
       const eligible = ruleOf55?.eligible ?? false;
@@ -462,7 +453,7 @@ export function computeTaxBucketProjection(input: {
           conversionBasis: projectedConversionBasis,
         } = transitionRothBasis(
           now.rothBasisMeta,
-          projected,
+          projected.roth,
           contributionsByKey.get(key),
           transitionYear,
         );

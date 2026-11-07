@@ -19,7 +19,8 @@ import type {
   DeductionLine,
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
-import { bonusCheckContribution, isPreTax } from "@/lib/pure/paycheck/paycheck";
+import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
+import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
 import type { BonusDestination } from "@/lib/config/enum-values";
@@ -86,7 +87,7 @@ export function computeAnnualEarnings(args: {
     ) * checks;
 
   // Other pay on the checks, by its own tax flags.
-  const lines = paycheck.earnings ?? [];
+  const lines = paycheck.earnings;
   const perYear = (pick: (e: (typeof lines)[number]) => boolean) =>
     sumBy(lines.filter(pick), (e) => e.amount) * checks;
   const otherCashPay = perYear((e) => e.isCash);

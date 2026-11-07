@@ -130,7 +130,7 @@ export const profilePeopleProcedures = {
       .mutation(async ({ ctx, input }) => {
         const { profileId, ...fields } = input;
         const patch = Object.fromEntries(
-          Object.entries(fields).filter(([, v]) => v !== undefined),
+          Object.entries(fields).filter(([, v]) => v !== undefined), // superjson keeps a key sent as undefined
         );
         if (Object.keys(patch).length === 0) return [];
         return ctx.db

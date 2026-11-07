@@ -117,8 +117,7 @@ function NetWorthCardImpl() {
           <span className="text-muted">Cash</span>
           <span className="text-primary">{formatCurrency(data.cash)}</span>
         </div>
-        {data.otherAssetItems &&
-          data.otherAssetItems.length > 0 &&
+        {data.otherAssetItems.length > 0 &&
           data.otherAssetItems.map((item) => (
             <div key={item.name} className="flex justify-between">
               <span className="text-muted">{item.name}</span>

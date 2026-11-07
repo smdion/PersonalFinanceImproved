@@ -162,18 +162,17 @@ export function useContributionAccountsMutations({
       displayOrder: pa.displayOrder,
       retirementBehavior: (updates.retirementBehavior !== undefined
         ? updates.retirementBehavior
-        : (pa.retirementBehavior ?? "stops_at_owner_retirement")) as
+        : pa.retirementBehavior) as
         | "stops_at_owner_retirement"
         | "stops_when_last_retires"
         | "continues_after_retirement",
       contributionScaling: (updates.contributionScaling !== undefined
         ? updates.contributionScaling
-        : (pa.contributionScaling ?? "scales_with_salary")) as
-        "scales_with_salary" | "fixed_amount",
+        : pa.contributionScaling) as "scales_with_salary" | "fixed_amount",
       allowPenalizedWithdrawals:
         updates.allowPenalizedWithdrawals !== undefined
           ? updates.allowPenalizedWithdrawals
-          : (pa.allowPenalizedWithdrawals ?? false),
+          : pa.allowPenalizedWithdrawals,
     });
   };
 
@@ -287,7 +286,7 @@ export function useContributionAccountsMutations({
       allocationPriority:
         updates.allocationPriority !== undefined
           ? updates.allocationPriority
-          : (c.allocationPriority ?? 0),
+          : c.allocationPriority,
       notes: updates.notes !== undefined ? updates.notes : c.notes,
       isPayrollDeducted:
         updates.isPayrollDeducted !== undefined

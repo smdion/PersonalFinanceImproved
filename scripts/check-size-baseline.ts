@@ -13,7 +13,10 @@
  * whole into a part's function (the router now only calls it) hands that
  * function the router arrow's entry, plus its signature lines (owner Q14),
  * and the total may also hold the import, signature, brace and call lines
- * and what the parts held before (bodyCarry).
+ * and what the parts held before (bodyCarry). A stage cut from a function
+ * into a part (owner v0.10.3 Q1, the function now calls it and reads back
+ * what it returns) carries that function's entry, and the total may also
+ * hold the stage's signature, return and brace and the call.
  */
 import { execFileSync } from "child_process";
 import * as fs from "fs";
@@ -300,26 +303,37 @@ const tail = (key: string) => key.slice(key.indexOf(".") + 1);
  * head and `})` are read as one line each), and the lines the parts and
  * what is left may total over the old entry: the import lines they add,
  * each moved body's signature, brace and one-line call, and the lines the
- * parts already held.
+ * parts already held. `stages` names each stage cut into a part → the entry
+ * of the function it was cut from, which all its stages share (check-ratchets
+ * holds each to its moved lines, commit by commit).
  */
 export type BodyCarry = {
   renames: Record<string, string>;
   wrapper: Record<string, number>;
   total: number;
+  stages?: Record<string, string>;
 };
 
 /**
  * The old file's entry a part's function carries: same key, else a moved
- * body's rename (its nested keys too), else same tail.
+ * body's rename (its nested keys too), else a stage's function's (shared by
+ * its stages; the ones inside a stage keep theirs), else same tail.
  */
 function carriedEntry(
   key: string,
   old: Record<string, number>,
   used: Set<string>,
   renames: Record<string, string> = {},
+  stages: Record<string, string> = {},
 ): string | undefined {
   if (old[key] !== undefined && !used.has(key)) return key;
   const dot = key.indexOf(".");
+  const cutFrom = stages[dot < 0 ? key : key.slice(0, dot)];
+  if (cutFrom !== undefined) {
+    const was = cutFrom + (dot < 0 ? "" : key.slice(dot));
+    if (old[was] === undefined) return undefined;
+    return dot < 0 || !used.has(was) ? was : undefined;
+  }
   const renamed = renames[dot < 0 ? key : key.slice(0, dot)];
   if (renamed !== undefined) {
     const was = renamed + (dot < 0 ? "" : key.slice(dot));
@@ -375,7 +389,13 @@ export function recorded(
       measured.functions[file] ?? {},
     )) {
       if (baseline.functions[file]?.[key] !== undefined) continue;
-      const carried = carriedEntry(key, oldFns, used, carry?.renames);
+      const carried = carriedEntry(
+        key,
+        oldFns,
+        used,
+        carry?.renames,
+        carry?.stages,
+      );
       const where = `${file} ${key}()`;
       if (carried === undefined)
         problems.push(
@@ -386,7 +406,7 @@ export function recorded(
           `${where}: ${fnLines} lines, ${from} ${carried}() ${oldFns[carried]}${carry?.wrapper[key] ? ` and +${carry.wrapper[key]} for its signature` : ""} — ${GROW}`,
         );
       else {
-        used.add(carried);
+        if (carry?.stages?.[key] === undefined) used.add(carried);
         functions[file] = { ...functions[file], [key]: fnLines };
       }
     }
@@ -431,6 +451,25 @@ function passedTo(node: ts.Node): string | undefined {
 }
 
 /**
+ * The callee of a stage's call: `fn(…);` or `const|let { … } = fn(…);`,
+ * awaited or not, as a statement of a function's body.
+ */
+function stageCalled(statement: ts.Statement): string | undefined {
+  let call: ts.Expression | undefined;
+  if (ts.isExpressionStatement(statement)) call = statement.expression;
+  else if (
+    ts.isVariableStatement(statement) &&
+    statement.declarationList.declarations.length === 1 &&
+    ts.isObjectBindingPattern(statement.declarationList.declarations[0]!.name)
+  )
+    call = statement.declarationList.declarations[0]!.initializer;
+  if (call && ts.isAwaitExpression(call)) call = call.expression;
+  return call && ts.isCallExpression(call) && ts.isIdentifier(call.expression)
+    ? call.expression.text
+    : undefined;
+}
+
+/**
  * The BodyCarry for a split from `from` into `parts`: a part's top-level
  * function that `from` now only calls through (the router's pass-through)
  * takes the entry of that arrow's key. `now` and `before` read a file in
@@ -453,7 +492,34 @@ export function bodyCarry(
     if (callee !== undefined) passes.set(callee, keyOf(node));
     ts.forEachChild(node, visit);
   };
-  visit(parse(from, fromText));
+  const fromSource = parse(from, fromText);
+  visit(fromSource);
+  // Each stage's call, and the function it sits in.
+  const stageCalls = new Map<string, { key: string; lines: number }>();
+  const fromLine = (pos: number) =>
+    fromSource.getLineAndCharacterOfPosition(pos).line;
+  const visitStages = (node: ts.Node) => {
+    if (
+      (ts.isFunctionDeclaration(node) ||
+        ts.isFunctionExpression(node) ||
+        ts.isArrowFunction(node)) &&
+      node.body &&
+      ts.isBlock(node.body)
+    )
+      for (const statement of node.body.statements) {
+        const callee = stageCalled(statement);
+        if (callee !== undefined && !stageCalls.has(callee))
+          stageCalls.set(callee, {
+            key: keyOf(node),
+            lines:
+              fromLine(statement.getEnd()) -
+              fromLine(statement.getStart(fromSource)) +
+              1,
+          });
+      }
+    ts.forEachChild(node, visitStages);
+  };
+  visitStages(fromSource);
   for (const part of parts) {
     const text = now(part);
     if (text === undefined) continue;
@@ -463,6 +529,23 @@ export function bodyCarry(
       if (!ts.isFunctionDeclaration(statement) || !statement.body) continue;
       const name = statement.name?.text;
       const key = name === undefined ? undefined : passes.get(name);
+      const stage = name === undefined ? undefined : stageCalls.get(name);
+      if (name !== undefined && key === undefined && stage !== undefined) {
+        // Its lines around the statements it took: the signature, the
+        // blank line and return after them, and its `}`.
+        const body = [...statement.body.statements];
+        if (body.length > 0 && ts.isReturnStatement(body[body.length - 1]!))
+          body.pop();
+        const inner =
+          body.length === 0
+            ? 0
+            : line(body[body.length - 1]!.getEnd()) -
+              line(statement.body.getStart(sf));
+        const all = line(statement.getEnd()) - line(statement.getStart(sf)) + 1;
+        carry.stages = { ...carry.stages, [name]: stage.key };
+        carry.total += all - inner + stage.lines;
+        continue;
+      }
       if (name === undefined || key === undefined) continue;
       const signature =
         line(statement.body.getStart(sf)) - line(statement.getStart(sf)) + 1;
@@ -471,7 +554,11 @@ export function bodyCarry(
       carry.total += signature + 1 + 1;
     }
   }
-  if (Object.keys(carry.renames).length === 0) return carry;
+  if (
+    Object.keys(carry.renames).length === 0 &&
+    Object.keys(carry.stages ?? {}).length === 0
+  )
+    return carry;
   for (const file of [from, ...parts]) {
     const [was, is] = [
       importLines(file, before(file)),

@@ -34,12 +34,12 @@ export async function backfillPerformanceAccountIds(db: Db) {
     for (const contrib of nullContribs) {
       const person =
         contrib.personId != null ? peopleMap.get(contrib.personId) : undefined;
-      const personName = person?.name?.toLowerCase() ?? "";
+      const personName = person?.name.toLowerCase() ?? "";
       const display = getDisplayConfig(contrib.accountType, contrib.subType);
       const typeLabel = display.displayLabel.toLowerCase();
 
       const match = perfAccounts.find((pa) => {
-        const labelLower = (pa.accountLabel ?? "").toLowerCase();
+        const labelLower = pa.accountLabel.toLowerCase();
         return (
           labelLower.includes(typeLabel) &&
           (pa.ownerPersonId === contrib.personId ||

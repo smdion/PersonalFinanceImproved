@@ -26,6 +26,7 @@ export async function getTiingoConnection(db: Db) {
 export async function getTiingoApiKey(db: Db): Promise<string | null> {
   const conn = await getTiingoConnection(db);
   if (!conn) return null;
+  // Stored config, cast: a saved one may lack the field.
   return readMaybeEncrypted<TiingoConfig>(conn.config).apiKey ?? null;
 }
 

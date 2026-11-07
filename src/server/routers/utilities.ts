@@ -3,7 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/lib/utils/numbers";
+import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import {
   utilityKindSchema,
@@ -154,7 +154,7 @@ export const utilitiesRouter = createTRPCRouter({
             year,
             readingCount: rows.length,
             totalCost,
-            avgCost: safeDivide(totalCost, costs.length) ?? 0,
+            avgCost: safeDivide(totalCost, costs.length),
             minCost: Math.min(...costs),
             maxCost: Math.max(...costs),
             totalUsage,
@@ -180,7 +180,7 @@ export const utilitiesRouter = createTRPCRouter({
             })(),
             yoyCostPct: null as number | null, // filled in below
             readings: rows.map((r) => {
-              const usage = r.usage != null ? toNumber(r.usage) : null;
+              const usage = toNumberOrNull(r.usage);
               return {
                 id: r.id,
                 month: r.month,

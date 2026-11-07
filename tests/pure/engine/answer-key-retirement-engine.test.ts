@@ -129,7 +129,7 @@ describe("answer key through the engine: the penalty is priced", () => {
       tax: r.taxCost,
       penalty: r.penaltyCost ?? NaN,
       delivered: r.deliveredAfterTax ?? NaN,
-      ...(roth ? { basisDrawn: roth.rothBasisDrawn ?? NaN } : {}),
+      ...(roth ? { basisDrawn: roth.roth?.basisDrawn ?? NaN } : {}),
       unmet: r.unmetNeed ?? 0,
     };
   };

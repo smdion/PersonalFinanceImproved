@@ -1,0 +1,8877 @@
+{
+ "accountDepletions": [
+  {
+   "category": "401k",
+   "subType": "traditional"
+  },
+  {
+   "category": "401k",
+   "subType": "roth"
+  },
+  {
+   "category": "403b",
+   "subType": "traditional"
+  },
+  {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
+   "category": "ira",
+   "subType": "traditional"
+  },
+  {
+   "category": "ira",
+   "subType": "roth"
+  },
+  {
+   "category": "hsa"
+  },
+  {
+   "category": "brokerage"
+  }
+ ],
+ "projectionByYear": [
+  {
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "accountOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "hsa",
+     "brokerage"
+    ],
+    "routingMode": "waterfall"
+   },
+   "hasBonusAdjustment": false,
+   "hasBudgetOverride": false,
+   "hasSalaryOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "accumulation"
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "locked"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "no_basis"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "locked"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam IRA (Schwab)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Alex IRA (Schwab)",
+     "ownerName": "Alex",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "hsa_age_65",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Sam HSA (Fidelity)",
+     "ownerName": "Sam",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Sam"
+    },
+    {
+     "personName": "Alex"
+    }
+   ],
+   "strategyAction": "floor_applied",
+   "unmetNeedMaterial": true,
+   "withdrawalSized": true
+  }
+ ],
+ "warnings": [
+  "Retirement year (2026) is this year or earlier — entire projection will be in decumulation.",
+  "No contribution accounts found — projections may be inaccurate. Add contribution accounts on the Paycheck page."
+ ]
+}

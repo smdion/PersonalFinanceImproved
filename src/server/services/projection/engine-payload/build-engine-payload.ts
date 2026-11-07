@@ -1,7 +1,7 @@
 /**
  * Retirement-scoped engine payload builder.
  *
- * `fetchRetirementData` loads every DB table the projection / Monte Carlo engine
+ * `fetchRetirementData` (load.ts) loads every DB table the projection engine
  * needs. `buildEnginePayload` turns that raw data into `baseEngineInput` plus all
  * the computed intermediate values retirement routers expose to the UI.
  *
@@ -18,7 +18,6 @@ import {
   planRetirementAge,
 } from "@/lib/pure/household/household-timeline";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
-import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import {
   classifyAssetClasses,
   stockShareByAge,
@@ -28,46 +27,28 @@ import {
   storedProfileFilingStatus,
 } from "@/lib/pure/tax/filing-status";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
-import { eq, asc } from "drizzle-orm";
-import * as schema from "@/lib/db/schema";
 import {
   contributionPay,
   getTotalCompensation,
-  applySalaryProfileRow,
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
-import { getLatestSnapshot } from "@/server/data/snapshots";
-import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
-import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import { applyContribProfileRow } from "@/server/services/contributions/profile";
-import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
-import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { toNumber } from "@/lib/utils/numbers";
-import { getAllPeople } from "@/server/data/people";
 import {
   resolveRetirementProfileIdFrom,
-  retirementProfileIsFallback,
   pickProfileSettingsRow,
 } from "@/lib/pure/household/retirement-profile";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAllCategories,
-  getAccountTypeConfig,
   categoriesWithTaxPreference,
   getDefaultAccumulationOrder,
   isRetirementMoney,
 } from "@/lib/config/account-types";
 import type { SimpleTaxModeParts } from "@/lib/pure/tax/simple-tax-mode";
-import { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import {
-  findMissingCostBasis,
-  missingCostBasisWarning,
-} from "@/lib/pure/accounts/basis-consistency";
-import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
-import {
-  DEFAULT_SIMULATION,
   IRS_LIMIT_GROWTH_RATE,
   IRS_LIMIT_GROWTH_RATE_MAX,
   FALLBACK_CONTRIBUTION_RATE,
@@ -75,11 +56,6 @@ import {
 import { log } from "@/lib/logger";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { buildDistributionTaxRates } from "@/lib/pure/tax/distribution-tax-rates";
-import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
-import {
-  capEffectiveContribs,
-  type CapPassHousehold,
-} from "@/lib/pure/contributions/cap-pass";
 import { resolvePhaseExpenses } from "./budget-expenses";
 import {
   buildProfileSwitches,
@@ -88,185 +64,18 @@ import {
   profileSwitchFrom,
 } from "./profile-switches";
 import { retirementContributions } from "./retirement-contributions";
-import { buildIndividualAccounts } from "./individual-accounts";
-import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
+import { applyProfiles, type fetchRetirementData } from "./load";
+import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
+import { budgetSummaries } from "./display";
+import { resolveTaxYear } from "./tax-year";
+import { startingAccounts } from "./accounts";
+import { capContributions } from "./contributions";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_IRS_LIMIT_GROWTH_RATE,
 } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
-
-/**
- * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
- * Returns the raw query results — callers can destructure what they need.
- */
-
-export async function fetchRetirementData(
-  db: Db,
-  opts?: {
-    snapshotId?: number;
-    contributionProfileId?: number;
-    salaryProfileId?: number;
-    /** Reference date for the IRS-limits-by-tax-year lookup. Defaults to
-     *  today. NOTE: for snapshotId-based historical calls, the snapshot's
-     *  own date isn't known until this same Promise.all resolves (it's one
-     *  of the parallel fetches), so it can't retroactively affect this
-     *  query — this only helps callers that already know their target date
-     *  up front. */
-    asOfDate?: Date;
-  },
-) {
-  const [
-    people,
-    allJobs,
-    retSettings,
-    retProfiles,
-    retProfilePeople,
-    retScenarios,
-    returnRates,
-    allContribsRaw,
-    allLimits,
-    snapshotData,
-    salaryOverrideRows,
-    budgetOverrideRows,
-    allBudgetProfiles,
-    allBudgetItems,
-    perfAccounts,
-    allTaxBrackets,
-    allLtcgBrackets,
-    allIrmaaBrackets,
-    allFplByHousehold,
-    allTaxParams,
-    brokerageGoalRows,
-    allAppSettings,
-    contribProfileRow,
-    salaryProfileRow,
-    jobLinkRows,
-    accountBasisRows,
-    defaultPreset,
-    classBucketRows,
-  ] = await Promise.all([
-    getAllPeople(db),
-    db.select().from(schema.jobs),
-    db.select().from(schema.retirementSettings),
-    db
-      .select()
-      .from(schema.retirementProfiles)
-      .orderBy(asc(schema.retirementProfiles.id)),
-    db.select().from(schema.retirementProfilePeople),
-    db.select().from(schema.retirementScenarios),
-    db
-      .select()
-      .from(schema.returnRateTable)
-      .orderBy(asc(schema.returnRateTable.age)),
-    db
-      .select()
-      .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true)),
-    // Unfiltered: resolveTaxParams picks the year. Was previously
-    // filtered to asOfDate.getFullYear() here, which — combined with
-    // tax_brackets being taken at MAX(tax_year) — was the split-vintage
-    // gap. The resolver now anchors every slice on one year.
-    db.select().from(schema.contributionLimits),
-    getLatestSnapshot(db, opts?.snapshotId),
-    db
-      .select()
-      .from(schema.retirementSalaryOverrides)
-      .orderBy(asc(schema.retirementSalaryOverrides.projectionYear)),
-    db
-      .select()
-      .from(schema.retirementBudgetOverrides)
-      .orderBy(asc(schema.retirementBudgetOverrides.projectionYear)),
-    db
-      .select()
-      .from(schema.budgetProfiles)
-      .orderBy(asc(schema.budgetProfiles.id)),
-    db.select().from(schema.budgetItems),
-    db.select().from(schema.performanceAccounts),
-    db.select().from(schema.taxBrackets),
-    db.select().from(schema.ltcgBrackets),
-    db.select().from(schema.irmaaBrackets),
-    db.select().from(schema.fplByHousehold),
-    db.select().from(schema.taxParams),
-    db
-      .select()
-      .from(schema.brokerageGoals)
-      .where(eq(schema.brokerageGoals.isActive, true))
-      .orderBy(asc(schema.brokerageGoals.targetYear)),
-    db.select().from(schema.appSettings),
-    // Batch contribution profile fetch when profileId is known at fetch time.
-    // Returns the row (or null = not found) when profileId is provided; undefined when
-    // profileId is absent. buildEnginePayload checks for undefined to decide whether to
-    // fall back to the async fetch (backward compat for callers that don't pass profileId here).
-    opts?.contributionProfileId
-      ? db
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, opts.contributionProfileId))
-          .then((r) => r[0] ?? null)
-      : Promise.resolve(undefined as undefined),
-    // Same batching for the independent Salary Profile axis.
-    opts?.salaryProfileId
-      ? db
-          .select()
-          .from(schema.salaryProfiles)
-          .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
-          .then((r) => r[0] ?? null)
-      : Promise.resolve(undefined as undefined),
-    // Withdrawal-ordering eligibility:
-    // which job funds which performance account. Deliberately unfiltered —
-    // no isActive filter — a separated employer's contribution-account link
-    // is exactly the one likely to be inactive, and it's exactly the
-    // evidence Rule of 55 needs to see. Same query tax-buckets.ts's
-    // computeBreakdown procedure uses; kept identical rather than reusing
-    // allContribsRaw, which IS isActive-filtered and would silently drop
-    // dormant former-employer plans.
-    db
-      .select({
-        performanceAccountId: schema.contributionAccounts.performanceAccountId,
-        jobId: schema.contributionAccounts.jobId,
-      })
-      .from(schema.contributionAccounts),
-    db.select().from(schema.accountBasis),
-    // The Default preset's glide path and which classes are stocks — VPW
-    // sizes its percentage by the stock share (lib/pure/simulation/stock-share.ts). A
-    // Simulation run replaces this with its own preset's.
-    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
-    db.select().from(schema.assetClassBuckets),
-  ]);
-  return {
-    people,
-    allJobs,
-    retSettings,
-    retProfiles,
-    retProfilePeople,
-    retScenarios,
-    returnRates,
-    allContribsRaw,
-    allLimits,
-    snapshotData,
-    salaryOverrideRows,
-    budgetOverrideRows,
-    allBudgetProfiles,
-    allBudgetItems,
-    perfAccounts,
-    allTaxBrackets,
-    allLtcgBrackets,
-    allIrmaaBrackets,
-    allFplByHousehold,
-    allTaxParams,
-    brokerageGoalRows,
-    allAppSettings,
-    contribProfileRow,
-    salaryProfileRow,
-    jobLinkRows,
-    accountBasisRows,
-    defaultPreset,
-    classBucketRows,
-  };
-}
 
 /**
  * Build the shared engine payload from raw DB data.
@@ -330,38 +139,8 @@ export async function buildEnginePayload(
     classBucketRows,
   } = data;
 
-  // All active contribution accounts feed the engine (both Retirement and Portfolio).
-  // Pages filter output by parentCategory on individualAccountBalances.
-  // When a contribution profile is selected, apply its overrides to the raw rows.
-  // If the caller passed contributionProfileId to fetchRetirementData, the profile
-  // row is already batched in data.contribProfileRow (undefined = not fetched; use async
-  // fallback for backward-compat). When pre-fetched, the sync path avoids a serial round-trip.
-  // Salary Profile resolved up front — both the Contribution Profile
-  // application below (jobs now carry their pay-schedule/W-4 fields via the
-  // Salary Profile, not raw `jobs` columns) and the salary math further
-  // down need it.
-  const salaryProfileActiveMap =
-    data.salaryProfileRow !== undefined
-      ? applySalaryProfileRow(data.salaryProfileRow)
-      : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
-
-  const contribProfileResult =
-    data.contribProfileRow !== undefined
-      ? applyContribProfileRow(
-          data.contribProfileRow,
-          allContribsRaw,
-          allJobs,
-          salaryProfileActiveMap,
-        )
-      : await loadAndApplyContribProfile(
-          db,
-          opts.contributionProfileId,
-          allContribsRaw,
-          allJobs,
-          salaryProfileActiveMap,
-        );
-  const allContribs = contribProfileResult.contribs;
-  const patchedJobs = contribProfileResult.jobs;
+  const { salaryProfileActiveMap, allContribs, patchedJobs } =
+    await applyProfiles(db, data, opts, allContribsRaw, allJobs);
 
   const primaryPerson = getPrimaryPerson(people);
   if (!primaryPerson) return null;
@@ -403,213 +182,59 @@ export async function buildEnginePayload(
     thisYearFiling.status,
   );
 
-  // Every per-year tax slice (withholding brackets, contribution
-  // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
-  // FPL) is resolved through ONE call, anchored on ONE year.
-  //
-  // requestedYear: the active retirement profile's pin (`tax_params_year`,
-  // null ⇒ newest enacted). Historical portfolio snapshots price tax off
-  // current data too, not the snapshot's year.
-  // `onMissing: "nearest"` — a projection uses this as a base year then
-  // grows it forward, so an unseeded pin year falls back to the newest
-  // earlier year rather than throwing.
-  const activeProfile = retProfiles.find((p) => p.id === activeProfileId);
-  const requestedTaxYear = activeProfile?.taxParamsYear ?? undefined;
-  const resolvedTax = resolveTaxParams(
-    {
-      vintage: allTaxParams,
-      contributionLimits: allLimits,
-      withholdingBrackets: allTaxBrackets,
-      ltcgBrackets: allLtcgBrackets,
-      irmaaBrackets: allIrmaaBrackets,
-      fpl: allFplByHousehold,
-    },
-    requestedTaxYear,
-    // Each table from its own newest complete year (a new year's limits
-    // can land before its withholding/IRMAA/FPL tables) — the engine grows
-    // each from that year.
-    { onMissing: "nearest", sectionFallback: true },
+  const {
+    resolvedTax,
+    latestTaxYear,
+    ltcgBracketData,
+    irmaaBracketData,
+    fplByHouseholdData,
+    bracketData,
+  } = resolveTaxYear(
+    filingStatus,
+    retProfiles,
+    activeProfileId,
+    allTaxParams,
+    allLimits,
+    allTaxBrackets,
+    allLtcgBrackets,
+    allIrmaaBrackets,
+    allFplByHousehold,
   );
-  const latestTaxYear = resolvedTax.resolvedYear;
-  // No complete year of a table at all means an emptied table — the
-  // tax-data file is applied on every start and after any restore, and
-  // shipped rows can't be deleted. Nothing stands in for a missing table:
-  // a projection without one would quietly price that tax at a guess.
-  const sectionNames: Record<TaxSection, string> = {
-    withholding: "withholding tables (Tax Brackets)",
-    ltcg: "capital-gains brackets (LTCG Brackets)",
-    irmaa: "Medicare brackets (IRMAA Tables)",
-    fpl: "poverty levels (ACA/FPL)",
-  };
-  const missingSections = resolvedTax.missing ?? [];
-  const ltcgBracketData = resolvedTax.ltcgByStatus;
-  const irmaaBracketData = resolvedTax.irmaaByStatus;
-  const fplByHouseholdData = resolvedTax.fplByHousehold;
-  if (
-    missingSections.length > 0 ||
-    !ltcgBracketData ||
-    !irmaaBracketData ||
-    !fplByHouseholdData
-  )
-    throw new Error(
-      `Tax data is missing: no complete year of ${
-        missingSections.map((s) => sectionNames[s]).join(", ") || "a tax table"
-      } (Settings → Reference Data).`,
-    );
 
-  // A complete year has every status's table: never a guessed empty one.
-  const withholding = resolvedTax.withholdingBrackets?.[filingStatus]?.false;
-  if (!withholding) throw new Error(`No ${filingStatus} withholding table.`);
-  const bracketData = withholding as {
-    threshold: number;
-    baseWithholding: number;
-    rate: number;
-  }[];
-
-  // Per-person retirement settings (for per-person age display + editing)
-  // Per-person assumptions come from the active profile's own child rows.
+  // Per-person retirement settings (for per-person age display + editing),
+  // from the active profile's own rows: settingsFor.
   //
-  // The `?? settings.X` fallbacks that used to be here are GONE, deliberately.
-  // They existed because retirement_settings was per-person and a person might
-  // have no row; step A's backfill materialised a row for every person in
-  // every profile (the completeness invariant), populated from exactly what
-  // those fallbacks resolved to — so removing them changes nothing today and
-  // stops "person has no row" from silently inheriting stale household values.
-  // If a row really is missing, fall back to the profile's own household
-  // values rather than returning null, so a page renders instead of blanking.
-  const profilePeople = retProfilePeople.filter(
-    (r) => r.profileId === activeProfileId,
-  );
-  // Primary person's raise rate — the fallback every other person inherits
-  // when they have no `retirement_settings` row in the active profile at
-  // all (not when their row holds an explicit 0 — 0% is a real, meaningful
-  // rate, e.g. someone at a salary cap or modeling a freeze; treating it as
-  // "unset" silently overwrote it with the primary's rate, defeating the
-  // per-person raise-rate control). Computed here so BOTH
-  // `perPersonSettings` (below, for the per-person UI control) and
-  // `raiseRateByPerson` (further down, for salary-override growth) resolve
-  // the effective rate the same way — one decision, one code path.
+  // A person with no `retirement_settings` row inherits `primaryRaiseRate`,
+  // here and in profile switches' salary-override growth alike.
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
-  const perPersonSettings = people.map((p) => {
-    const pp = profilePeople.find((r) => r.personId === p.id);
-    // Only this profile's row: another profile's values never stand in.
-    // With no profile at all (null), every row has a null profile id.
-    const ps =
-      pp ??
-      retSettings.find(
-        (s) => s.personId === p.id && s.profileId === activeProfileId,
-      );
-    // salary_annual_increase DOES exist as a column on retirement_profile_people
-    // (migration 0032 backfilled it, profile duplication clones it) — but
-    // nothing reads or writes it there; `pp` above is never used for this
-    // field. retirement_settings stays the live source, genuinely per
-    // (profile, person). Scope to the active profile so a household with
-    // 2+ profiles doesn't pick an arbitrary one's rate (same fix the
-    // raiseRateByPerson docblock records).
-    const rsRowForRaise = retSettings.find(
-      (s) => s.personId === p.id && s.profileId === activeProfileId,
-    );
-    const parsedRaiseRate = rsRowForRaise
-      ? toNumber(rsRowForRaise.salaryAnnualIncrease)
-      : NaN;
-    const effectiveRaiseRate = Number.isFinite(parsedRaiseRate)
-      ? parsedRaiseRate
-      : primaryRaiseRate;
-    return {
-      personId: p.id,
-      name: p.name,
-      birthYear: calendarYear(p.dateOfBirth),
-      retirementAge:
-        (ps?.retirementAge ?? settings.retirementAge) +
-        (opts.retirementAgeDelta ?? 0),
-      endAge: ps?.endAge ?? settings.endAge,
-      // Effective pre-retirement raise rate for THIS person. A person with
-      // no retirement_settings row in the active profile at all shows the
-      // primary's rate here; a person with a row (including an explicit 0)
-      // shows their own — the per-person control edits this effective
-      // value directly.
-      salaryAnnualIncrease: String(effectiveRaiseRate),
-      // Still read from THIS person's own retirement_settings row, not from
-      // the profile's. The field is dead (the client's PerPersonSettings type
-      // doesn't carry it and nothing writes it back), but rows can disagree
-      // on it, so sourcing it differently would move a value in the response
-      // for no benefit. Removing it is its own change, not a ride-along in a
-      // behaviour-neutral migration.
-      withdrawalRate:
-        retSettings.find(
-          (s) => s.personId === p.id && s.profileId === activeProfileId,
-        )?.withdrawalRate ?? settings.withdrawalRate,
-      socialSecurityMonthly:
-        ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
-      // PIA (benefit at FRA) — opt-in, no household-level fallback (decision
-      // #5 in SOCIAL-SECURITY-OPTIMIZATION-PLAN.md: unlike every other field
-      // here, an unset PIA on this person's row does NOT fall back to
-      // `settings`, since a household-wide PIA makes no sense — PIA is
-      // inherently per-person, computed from an individual's own earnings
-      // record. null means "not opted in," not "use the household default."
-      // Read from `pp` specifically (the retirement_profile_people row),
-      // not the wider `ps` union — `ps`'s fallback (a bare
-      // retirement_settings row) has no PIA column at all; there's no
-      // household-grain equivalent to fall back to.
-      socialSecurityPia: pp?.socialSecurityPia ?? null,
-      ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
-      ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
-    };
-  });
+  const activeProfileRows: ActiveProfileRows = {
+    activeProfileId,
+    profilePeople: retProfilePeople.filter(
+      (r) => r.profileId === activeProfileId,
+    ),
+    retSettings,
+    settings,
+    primaryRaiseRate,
+  };
+  const { perPersonSettings } = perPersonSettingsFor(
+    people,
+    activeProfileRows,
+    opts,
+  );
 
-  // When a historical snapshot is selected, use its date as the reference point
-  const referenceDate = data.snapshotData?.snapshot.snapshotDate
+  // The plan's "as of" date: a selected historical snapshot's date, else today.
+  const asOfDate = data.snapshotData?.snapshot.snapshotDate
     ? new Date(data.snapshotData.snapshot.snapshotDate)
     : new Date();
-  const currentYear = referenceDate.getFullYear();
+  const currentYear = asOfDate.getFullYear();
 
-  // Budget profile summaries (for budget override "from profile" UI) — each
-  // linked item's dollar amount resolved through the same contribution-
-  // account chain computeActiveSummary uses (see resolveLinkedBudgetItemAmounts),
-  // not the raw `amounts` column, which is intentionally left stale for
-  // linked items and would silently undercount them here.
-  const budgetProfileSummaries = await Promise.all(
-    allBudgetProfiles.map(async (p) => {
-      const items = allBudgetItems.filter((i) => i.profileId === p.id);
-      const labels = p.columnLabels as string[];
-      const months = (p.columnMonths as number[] | null) ?? null;
-      const numColumns = labels.length;
-      const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        db,
-        items,
-        numColumns,
-        {
-          contribProfileId: opts.contributionProfileId ?? null,
-          salaryProfileId: opts.salaryProfileId ?? null,
-        },
-      );
-      const totals = labels.map((_: string, colIdx: number) =>
-        sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
-      );
-      const weightedAnnualTotal = months
-        ? roundToCents(
-            sumBy(
-              totals.map((t, i) => t * (months[i] ?? 0)),
-              (v) => v,
-            ),
-          )
-        : null;
-      return {
-        id: p.id,
-        name: p.name,
-        isActive: p.isActive,
-        columnLabels: labels,
-        columnMonths: months,
-        columnTotals: totals,
-        weightedAnnualTotal,
-      };
-    }),
+  const { budgetProfileSummaries } = await budgetSummaries(
+    allBudgetProfiles,
+    allBudgetItems,
+    db,
+    opts,
   );
 
-  // Salary comes from the Salary Profile (salaryProfileActiveMap, resolved
-  // above); the Contribution Profile contributes no salary — the two are
-  // independent.
-  const asOfDate = referenceDate;
   // Each person's current job, or the next one they start; its dates bound
   // the years it's worked (workingYearsByPerson, below).
   const activeJobs = projectionJobs(patchedJobs, asOfDate);
@@ -669,13 +294,6 @@ export async function buildEnginePayload(
     (js) => js.totalCompFullFormula,
   );
 
-  // Portfolio by tax bucket + per-account balances (combined for engine).
-  // Shared with the Tax Buckets analysis tool — see src/lib/pure/accounts/tax-buckets.ts.
-  const taxBucketBreakdown = computeTaxBucketBreakdown(
-    snapshotData,
-    people,
-    perfAccounts,
-  );
   const {
     portfolioByTaxType,
     portfolioByTaxTypeByParentCat,
@@ -684,87 +302,25 @@ export async function buildEnginePayload(
     accountOwnersByCategory,
     ownershipByPerson,
     accountBreakdownByCategory,
-  } = taxBucketBreakdown;
-
-  // Where reinvested RMD money goes (Retirement settings): the chosen
-  // Retirement brokerage, else every Retirement brokerage — never a
-  // Portfolio account. With no Retirement brokerage, a projection-only one
-  // holds that money and contribution overflow.
-  const rmdTarget = resolveRmdExcessTarget({
-    targetPerformanceAccountId:
-      settings.rmdExcessTargetPerformanceAccountId ?? null,
-    reinvest: settings.rmdExcessHandling !== "spend",
-    entries: Object.entries(accountBreakdownByCategory).flatMap(
-      ([category, accts]) => accts.map((a) => ({ ...a, category })),
-    ),
+    inputWarnings,
+    personNameById,
+    birthYearByPersonId,
+    individualAccounts,
+  } = startingAccounts(
+    snapshotData,
+    people,
     perfAccounts,
-  });
-  // Brokerages holding money with no cost basis: the projection taxes every
-  // dollar drawn from them as a gain — say so (0 also means "not entered").
-  const basisWarnings = [
-    ...new Set(
-      findMissingCostBasis(
-        Object.entries(accountBreakdownByCategory).flatMap(
-          ([category, accts]) =>
-            accts
-              .filter((a) => a.costBasis != null)
-              .map((a) => ({
-                category,
-                name: a.name,
-                balance: a.amount,
-                costBasis: a.costBasis!,
-              })),
-        ),
-      ).map((a) => missingCostBasisWarning(a.name)),
-    ),
-  ];
-  const viewingFallbackProfile =
-    activeProfileId !== opts.retirementProfileId &&
-    retirementProfileIsFallback(allAppSettings, retProfiles);
-  const inputWarnings = [
-    ...(viewingFallbackProfile
-      ? [
-          `No active retirement profile is set, so this uses ${retProfiles.find((p) => p.id === activeProfileId)?.name}. Choose one in the Retirement profiles.`,
-        ]
-      : []),
-    ...(rmdTarget.warning ? [rmdTarget.warning] : []),
-    ...basisWarnings,
-  ];
-  const personNameById = new Map(people.map((p) => [p.id, p.name]));
-
-  const birthYearByPersonId = new Map(
-    perPersonSettings.map((p) => [p.personId, p.birthYear]),
-  );
-  // Rule of 55 forecasting override -- see
-  // IndividualAccountInput.ruleOf55ForceIneligible's docblock for the full
-  // contract. Only ever set true (never false) below, so a household not
-  // using this feature gets a byte-identical engine input.
-  const ruleOf55OverrideByPerson = new Map(
-    perPersonSettings.map((p) => [p.personId, p.ruleOf55Override]),
-  );
-  // When each person's still-active job ends (Rule of 55): their own
-  // planned retirement year.
-  const retirementYearByPersonId = new Map(
-    perPersonSettings.flatMap((ps) => {
-      const birthYear = birthYearByPersonId.get(ps.personId);
-      return birthYear != null
-        ? [[ps.personId, birthYear + ps.retirementAge] as const]
-        : [];
-    }),
-  );
-  const individualAccounts = buildIndividualAccounts({
+    settings,
+    activeProfileId,
+    opts,
+    allAppSettings,
+    retProfiles,
+    perPersonSettings,
     allJobs,
     jobLinkRows,
     accountBasisRows,
-    perfAccounts,
-    people,
     asOfDate,
-    taxBucketBreakdown,
-    birthYearByPersonId,
-    retirementYearByPersonId,
-    ruleOf55OverrideByPerson,
-    rmdTarget,
-  });
+  );
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
@@ -800,70 +356,26 @@ export async function buildEnginePayload(
     }
   }
 
-  // IRS limits — the `contribution_limits` rows for the resolved tax year
-  // (resolveTaxParams already filtered + coerced to numbers). Same
-  // map shape as the old `for (const l of allLimits)` loop.
-  const limitsMap: Record<string, number> = resolvedTax.limits;
-
-  // Per-person account types for limit aggregation.
-  // A jobless row is "active" if it's tied to a currently-known person, OR
-  // if personId is null — which (per the ownership/personId invariant
-  // enforced in settings/contribution-accounts.ts) only ever means a joint account, not
-  // a data error. Without the null case, joint jobless contributions
-  // (e.g. a joint brokerage account with no linked job) would silently
-  // drop out of activeContribs entirely once their personId is cleared,
-  // excluding their contribution amount from every downstream total this
-  // function computes.
-  // The IRS-limit cap pass runs on every set of effective rows — these and
-  // each profile switch's — so every figure reads the capped value.
-  const irsLimitPeople = people.map((p) => ({
-    id: p.id,
-    birthYear: birthYearByPersonId.get(p.id) ?? null,
-  }));
-  // This year's caps follow this year's return (the household setting),
-  // as the paycheck's do; the projection's brackets keep the profile's.
-  const capFilingStatus = thisYearFiling.status ?? "";
-  const capHousehold: CapPassHousehold = {
-    people: irsLimitPeople,
-    limits: limitsMap,
-    filingStatus: capFilingStatus,
-    taxYear: currentYear,
-  };
-  const activeContribs = capEffectiveContribs(
-    allContribs
-      .filter(
-        (c) =>
-          activeJobs.some((j) => j.id === c.jobId) ||
-          (c.jobId === null &&
-            (c.personId === null || people.some((p) => p.id === c.personId))),
-      )
-      .map((c) => ({ ...c, accountType: c.accountType as AccountCategory })),
-    { ...capHousehold, activeJobs, jobSalaries },
-  );
-  // Who holds which limited account, and each limit group's household
-  // limit from it (every shared limit counted once) — the totals the pages
-  // show, and what the engine sizes limits from without specs.
-  const irsLimitAccounts = activeContribs
-    .filter((c) => getAccountTypeConfig(c.accountType).hasIrsLimit)
-    .map((c) => ({
-      personId: c.personId,
-      accountType: c.accountType,
-      hsaCoverageType: c.hsaCoverageType ?? null,
-    }));
-  const irsGroupLimits = Object.fromEntries(
-    accountGroupLimits(irsLimitAccounts, {
-      taxYear: currentYear,
-      filingStatus: capFilingStatus,
-      limits: limitsMap,
-      people: irsLimitPeople.map((p) => ({ ...p, wages: null })),
-    }),
-  );
-  // Aggregate contributions and employer match by category (shared helper — single pass)
   const {
+    limitsMap,
+    irsLimitPeople,
+    capHousehold,
+    activeContribs,
+    irsLimitAccounts,
+    irsGroupLimits,
     contribByCategory,
     employerMatchByCategory,
-    retirementOnly: retirementContrib,
-  } = aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
+    retirementContrib,
+  } = capContributions(
+    resolvedTax,
+    people,
+    birthYearByPersonId,
+    thisYearFiling,
+    currentYear,
+    allContribs,
+    activeJobs,
+    jobSalaries,
+  );
 
   // Build per-person salary map from job salaries — the engine's compounding
   // baseline, so full-formula bonus (see totalCompFullFormula's docblock
@@ -979,16 +491,10 @@ export async function buildEnginePayload(
 
   // Shared context for spec building (used by both default profile and profile switches)
   const perfRetirementBehaviorMap = new Map(
-    perfAccounts.map((p) => [
-      p.id,
-      p.retirementBehavior ?? "stops_at_owner_retirement",
-    ]),
+    perfAccounts.map((p) => [p.id, p.retirementBehavior]),
   );
   const perfContributionScalingMap = new Map(
-    perfAccounts.map((p) => [
-      p.id,
-      p.contributionScaling ?? "scales_with_salary",
-    ]),
+    perfAccounts.map((p) => [p.id, p.contributionScaling]),
   );
   const profileContribCtx = {
     perfCategoryMap,
@@ -1005,7 +511,7 @@ export async function buildEnginePayload(
     accountType: c.accountType as AccountCategory,
     subType: c.subType,
     label: c.label ?? null,
-    parentCategory: c.parentCategory ?? null,
+    parentCategory: c.parentCategory,
     contributionMethod: c.contributionMethod,
     contributionValue: c.contributionValue,
     taxTreatment: c.taxTreatment,

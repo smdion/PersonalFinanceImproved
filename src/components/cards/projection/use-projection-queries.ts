@@ -677,7 +677,7 @@ export function useProjectionQueries(
   // null as "not available yet".
   const coastFireTodayMcResult = (
     coastFireMcQuery.data?.result?.status === "already_coast"
-      ? coastFireMcQuery.data?.result?.mcResult
+      ? coastFireMcQuery.data.result.mcResult
       : coastFireMcQuery.data?.result?.stopNowMcResult
   ) as MonteCarloResult | undefined;
 
@@ -745,7 +745,7 @@ export function useProjectionQueries(
       mcQuery.data?.savedOverrides ?? mcPrefetchQuery.data?.savedOverrides;
     if (!saved) return;
     mcOverridesInitialized.current = true;
-    if (saved.assetClassOverrides && saved.assetClassOverrides.length > 0) {
+    if (saved.assetClassOverrides.length > 0) {
       setMcAssetClassOverrides(saved.assetClassOverrides);
     }
   }, [
@@ -850,7 +850,7 @@ export function useProjectionQueries(
     )
       return null;
     const bands = useCoastFireMc
-      ? (activeAltMcResult?.spendingStabilityBands ?? null)
+      ? activeAltMcResult.spendingStabilityBands
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.spendingStabilityBands
           : null) ??
@@ -869,7 +869,7 @@ export function useProjectionQueries(
     mcQuery.data?.result?.spendingStabilityBands,
     mcPrefetchQuery.data?.result?.spendingStabilityBands,
     useCoastFireMc,
-    activeAltMcResult?.spendingStabilityBands,
+    activeAltMcResult,
   ]);
 
   const mcIsPrefetch =
@@ -886,7 +886,7 @@ export function useProjectionQueries(
     )
       return null;
     const det = useCoastFireMc
-      ? (activeAltMcResult?.deterministicProjection ?? null)
+      ? activeAltMcResult.deterministicProjection
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.deterministicProjection
           : null) ??
@@ -908,7 +908,7 @@ export function useProjectionQueries(
     mcPrefetchQuery.data?.result?.deterministicProjection,
     parentCategoryFilter,
     useCoastFireMc,
-    activeAltMcResult?.deterministicProjection,
+    activeAltMcResult,
   ]);
 
   // Contribution profiles query

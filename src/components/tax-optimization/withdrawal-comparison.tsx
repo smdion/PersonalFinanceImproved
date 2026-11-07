@@ -139,14 +139,14 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
                 className={
                   s.label === best
                     ? "bg-green-50 font-medium"
-                    : "isCurrentPlan" in s && s.isCurrentPlan
+                    : "isCurrentPlan" in s
                       ? "bg-slate-50"
                       : undefined
                 }
               >
                 <td className="px-2 py-1.5 text-left">
                   {s.label}
-                  {"isCurrentPlan" in s && s.isCurrentPlan && (
+                  {"isCurrentPlan" in s && (
                     <span className="ml-1 text-[10px] text-slate-600">
                       your plan
                     </span>

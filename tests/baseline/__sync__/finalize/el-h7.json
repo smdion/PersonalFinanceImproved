@@ -1,0 +1,177 @@
+{
+ "2025": {
+  "annual_performance": {
+   "written": [
+    {
+     "id": 1,
+     "year": 2025,
+     "category": "401k/IRA",
+     "beginningBalance": "200000.00",
+     "totalContributions": "15000.00",
+     "yearlyGainLoss": "7500.00",
+     "endingBalance": "225000.00",
+     "annualReturnPct": "0.036145",
+     "employerContributions": "2500.00",
+     "distributions": "0.00",
+     "fees": "0.00",
+     "rollovers": "0.00",
+     "lifetimeGains": "7500.00",
+     "lifetimeContributions": "15000.00",
+     "lifetimeMatch": "2500.00",
+     "isCurrentYear": false,
+     "isFinalized": true,
+     "isImmutable": true
+    },
+    {
+     "id": 2,
+     "year": 2025,
+     "category": "Portfolio",
+     "beginningBalance": "200000.00",
+     "totalContributions": "15000.00",
+     "yearlyGainLoss": "7500.00",
+     "endingBalance": "225000.00",
+     "annualReturnPct": "0.036145",
+     "employerContributions": "2500.00",
+     "distributions": "0.00",
+     "fees": "0.00",
+     "rollovers": "0.00",
+     "lifetimeGains": "7500.00",
+     "lifetimeContributions": "15000.00",
+     "lifetimeMatch": "2500.00",
+     "isCurrentYear": false,
+     "isFinalized": true,
+     "isImmutable": true
+    },
+    {
+     "id": 3,
+     "year": 2026,
+     "category": "401k/IRA",
+     "beginningBalance": "225000.00",
+     "totalContributions": "0",
+     "yearlyGainLoss": "0",
+     "endingBalance": "225000.00",
+     "annualReturnPct": null,
+     "employerContributions": "0",
+     "distributions": "0",
+     "fees": "0",
+     "rollovers": "0",
+     "lifetimeGains": "7500.00",
+     "lifetimeContributions": "15000.00",
+     "lifetimeMatch": "2500.00",
+     "isCurrentYear": true,
+     "isFinalized": false,
+     "isImmutable": false
+    },
+    {
+     "id": 4,
+     "year": 2026,
+     "category": "Portfolio",
+     "beginningBalance": "225000.00",
+     "totalContributions": "0",
+     "yearlyGainLoss": "0",
+     "endingBalance": "225000.00",
+     "annualReturnPct": null,
+     "employerContributions": "0",
+     "distributions": "0",
+     "fees": "0",
+     "rollovers": "0",
+     "lifetimeGains": "7500.00",
+     "lifetimeContributions": "15000.00",
+     "lifetimeMatch": "2500.00",
+     "isCurrentYear": true,
+     "isFinalized": false,
+     "isImmutable": false
+    }
+   ],
+   "replacedOrRemoved": 0
+  },
+  "account_performance": {
+   "written": [
+    {
+     "id": 1,
+     "year": 2025,
+     "institution": "Index Funds IRA",
+     "accountLabel": "Marlow IRA (Index Funds IRA)",
+     "ownerPersonId": 1,
+     "beginningBalance": "200000",
+     "totalContributions": "15000",
+     "yearlyGainLoss": "7500",
+     "endingBalance": "225000",
+     "annualReturnPct": null,
+     "employerContributions": "2500",
+     "fees": "0",
+     "distributions": "0",
+     "rollovers": "0",
+     "parentCategory": "Retirement",
+     "isActive": true,
+     "isFinalized": true,
+     "performanceAccountId": 1,
+     "note": null,
+     "estimatedFields": [],
+     "acceptedChecks": {}
+    },
+    {
+     "id": 2,
+     "year": 2026,
+     "institution": "Index Funds IRA",
+     "accountLabel": "Marlow IRA (Index Funds IRA)",
+     "ownerPersonId": 1,
+     "beginningBalance": "225000",
+     "totalContributions": "0",
+     "yearlyGainLoss": "0",
+     "endingBalance": "225000",
+     "annualReturnPct": null,
+     "employerContributions": "0",
+     "fees": "0",
+     "distributions": "0",
+     "rollovers": "0",
+     "parentCategory": "Retirement",
+     "isActive": true,
+     "isFinalized": false,
+     "performanceAccountId": 1,
+     "note": null,
+     "estimatedFields": [],
+     "acceptedChecks": {}
+    }
+   ],
+   "replacedOrRemoved": 1
+  },
+  "net_worth_annual": {
+   "written": [
+    {
+     "id": 1,
+     "yearEndDate": "2025-12-31",
+     "grossIncome": "0.00",
+     "combinedAgi": "0",
+     "ssaEarnings": null,
+     "effectiveTaxRate": null,
+     "taxesPaid": null,
+     "cash": "0.00",
+     "houseValue": "0.00",
+     "retirementTotal": "0",
+     "hsa": "0",
+     "ltBrokerage": "0",
+     "espp": "0",
+     "rBrokerage": "0",
+     "otherAssets": "0.00",
+     "mortgageBalance": "0.00",
+     "otherLiabilities": "0.00",
+     "taxFreeTotal": "0",
+     "taxDeferredTotal": "0",
+     "portfolioTotal": "225000.00",
+     "propertyTaxes": null,
+     "portfolioByTaxLocation": {
+      "retirement": {
+       "preTax": 250000
+      },
+      "portfolio": {}
+     }
+    }
+   ],
+   "replacedOrRemoved": 0
+  }
+ },
+ "2026": {
+  "$threw": "No salary data exists for 2026 yet. Record it on the Historical page (or complete the active Salary Profile's entries for the current year) before finalizing."
+ }
+}

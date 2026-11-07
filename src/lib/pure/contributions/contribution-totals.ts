@@ -36,9 +36,7 @@ export function calculateContributions(
     group: ca.group,
     annualContribution: roundToCents(ca.annualContribution),
     employerMatch: roundToCents(ca.employerMatch),
-    percentOfSalary: Number(
-      safeDivide(ca.annualContribution, annualSalary) ?? 0,
-    ),
+    percentOfSalary: Number(safeDivide(ca.annualContribution, annualSalary)),
   }));
 
   // Total includes both employee and employer contributions across all accounts
@@ -65,10 +63,10 @@ export function calculateContributions(
   const groupRates: Record<string, number> = {};
   const groupRatesExMatch: Record<string, number> = {};
   groupMap.forEach((total, group) => {
-    groupRates[group] = Number(safeDivide(total, rateDenominator) ?? 0);
+    groupRates[group] = Number(safeDivide(total, rateDenominator));
   });
   groupMapExMatch.forEach((total, group) => {
-    groupRatesExMatch[group] = Number(safeDivide(total, rateDenominator) ?? 0);
+    groupRatesExMatch[group] = Number(safeDivide(total, rateDenominator));
   });
 
   // "total" is the combined savings rate across ALL groups
@@ -77,9 +75,9 @@ export function calculateContributions(
     (s, v) => s + v,
     0,
   );
-  groupRates["total"] = Number(safeDivide(allTotal, rateDenominator) ?? 0);
+  groupRates["total"] = Number(safeDivide(allTotal, rateDenominator));
   groupRatesExMatch["total"] = Number(
-    safeDivide(allTotalExMatch, rateDenominator) ?? 0,
+    safeDivide(allTotalExMatch, rateDenominator),
   );
 
   const totalEmployeeOnly = roundToCents(

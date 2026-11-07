@@ -1,5 +1,6 @@
 "use client";
 
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { useEffect, useRef } from "react";
 
@@ -16,13 +17,9 @@ import {
   formatPercent,
   compactCurrency,
 } from "@/lib/utils/format";
-import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { safeDivide } from "@/lib/utils/math";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
-import {
-  WITHDRAWAL_STRATEGY_CONFIG,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { type WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
   ComposedChart,
   Bar,
@@ -71,9 +68,8 @@ export function SpendingStabilityChart({
   // "Show anyway" link was confusing because the real BASELINE toggle
   // appeared to do nothing on this chart).
   const reactsToVolatility =
-    WITHDRAWAL_STRATEGY_CONFIG[
-      (engineSettings?.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType
-    ]?.reactsToVolatility ?? false;
+    STRATEGY_CONFIG_BY_STORED_KEY[engineSettings?.withdrawalStrategy ?? "fixed"]
+      ?.reactsToVolatility ?? false;
   const appliedSmartDefault = useRef(false);
   useEffect(() => {
     if (appliedSmartDefault.current) return;
@@ -105,10 +101,7 @@ export function SpendingStabilityChart({
   }
 
   const year1Withdrawal = decYears[0]!.totalWithdrawal;
-  const inflationRate =
-    engineSettings?.annualInflation != null
-      ? parseFloat(engineSettings.annualInflation)
-      : DEFAULT_INFLATION_RATE;
+  const inflationRate = parseFloat(engineSettings.annualInflation);
 
   const isStrategy = view === "strategy";
   const baselineLabel = isStrategy ? "Strategy" : "Budget";
@@ -121,10 +114,11 @@ export function SpendingStabilityChart({
   // (Fixed, Forgo, G-K) since their year-1 spending IS the budget, making
   // "Strategy" and "Budget" look like near-duplicates. Mirroring the same
   // flag here keeps the chart honest about what "vs Strategy" means.
-  const activeStrategy = (engineSettings?.withdrawalStrategy ??
-    "fixed") as WithdrawalStrategyType;
+  const activeStrategy =
+    engineSettings.withdrawalStrategy as WithdrawalStrategyType;
   const usesPostRetirementRaise =
-    WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.usesPostRetirementRaise ?? true;
+    STRATEGY_CONFIG_BY_STORED_KEY[activeStrategy]?.usesPostRetirementRaise ??
+    true;
 
   const hasMcData = !!mcStabilityBands;
   const mcBandMap = isStrategy
@@ -268,7 +262,7 @@ export function SpendingStabilityChart({
         {reactsToVolatility && !showBars && (
           <>
             {" "}
-            {(WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.label ??
+            {(STRATEGY_CONFIG_BY_STORED_KEY[activeStrategy]?.label ??
               activeStrategy) + "’s"}{" "}
             own guardrail mechanism needs real return volatility to trigger, so
             the deterministic bars are hidden here by default (they&apos;d just
@@ -323,6 +317,7 @@ export function SpendingStabilityChart({
           />
           <RechartsTooltip
             content={({ active, payload }) => {
+              // Recharts' runtime props, not our types: kept guarded.
               if (!active || !payload?.[0]) return null;
               const d = payload[0].payload as Record<
                 string,

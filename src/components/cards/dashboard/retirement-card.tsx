@@ -1,5 +1,6 @@
 "use client";
 
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import {
   planAgeLabel,
   yearOfPlanAge,
@@ -33,11 +34,9 @@ import { sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { simulationRateTone } from "@/lib/config/simulation-tones";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
-import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { filterYearByParentCategory } from "@/components/cards/projection/utils";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
@@ -111,11 +110,10 @@ function RetirementCardImpl() {
       filterYearByParentCategory(yr, PERF_CATEGORY_RETIREMENT),
     ),
   };
-  const retirementSpecs = (data.contributionSpecs ?? []).filter(
+  const retirementSpecs = data.contributionSpecs.filter(
     (s) => s.parentCategory === PERF_CATEGORY_RETIREMENT,
   );
-  const retPortfolio =
-    portfolioByTaxTypeByParentCat?.[PERF_CATEGORY_RETIREMENT];
+  const retPortfolio = portfolioByTaxTypeByParentCat[PERF_CATEGORY_RETIREMENT];
   const retAge = settings.retirementAge;
   const endAge = settings.endAge;
   const currentAge = result.projectionByYear[0]?.age ?? 0;
@@ -127,7 +125,7 @@ function RetirementCardImpl() {
   const ageLabel = (age: number) =>
     planAgeLabel(
       firstRow,
-      data.people?.find((p) => p.id === data.primaryPersonId)?.name,
+      data.people.find((p) => p.id === data.primaryPersonId)?.name,
       age,
     );
   const portfolioTotal = retPortfolio
@@ -137,10 +135,7 @@ function RetirementCardImpl() {
       retPortfolio.afterTax
     : 0;
   const annualContributions = sumBy(retirementSpecs, (s) => s.baseAnnual);
-  const employerContributions = sumBy(
-    retirementSpecs,
-    (s) => s.matchAnnual ?? 0,
-  );
+  const employerContributions = sumBy(retirementSpecs, (s) => s.matchAnnual);
   // Room is measured against what goes into limited accounts only.
   const limitedContributions = sumBy(
     retirementSpecs.filter((s) =>
@@ -177,7 +172,7 @@ function RetirementCardImpl() {
     personFiltered: false,
   });
   const totalWithMatch = annualContributions + employerContributions;
-  const retirementBudget = data.decumulationExpenses ?? 0;
+  const retirementBudget = data.decumulationExpenses;
   const taxAdvSpace =
     retLimits > 0 && limitedContributions < retLimits
       ? retLimits - limitedContributions
@@ -298,9 +293,8 @@ function RetirementCardImpl() {
                 const strategyKey = settings.withdrawalStrategy as
                   string | undefined;
                 const strategyLabel = strategyKey
-                  ? (WITHDRAWAL_STRATEGY_LABELS[
-                      strategyKey as WithdrawalStrategyType
-                    ] ?? strategyKey)
+                  ? (STRATEGY_CONFIG_BY_STORED_KEY[strategyKey]?.label ??
+                    strategyKey)
                   : "Fixed";
                 const isDynamic = strategyKey && strategyKey !== "fixed";
                 return (

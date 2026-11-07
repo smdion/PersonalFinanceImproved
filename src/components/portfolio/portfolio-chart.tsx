@@ -143,8 +143,8 @@ export function PortfolioChart({
 
   const first = chartData[0]!;
   const last = chartData[chartData.length - 1]!;
-  const totalChange = (last.total ?? 0) - (first.total ?? 0);
-  const totalChangePct = safeDivide(totalChange, first.total ?? 0, 0) * 100;
+  const totalChange = last.total - first.total;
+  const totalChangePct = safeDivide(totalChange, first.total, 0) * 100;
 
   // The dashed live line starts at the latest snapshot (when it's in view).
   const latest = snapshots.at(-1);
@@ -156,7 +156,7 @@ export function PortfolioChart({
     liveAfter.length > 0
       ? [
           ...chartData.slice(0, -1),
-          { ...last, live: last.total ?? undefined },
+          { ...last, live: last.total },
           ...liveAfter.map((p) => ({
             date: p.date,
             label: shortLabel(p.date),
@@ -261,7 +261,7 @@ export function PortfolioChart({
             />
             <RechartsTooltip
               content={({ active, payload }) => {
-                const hovered =
+                const hovered = // Recharts' runtime props, not our types: kept guarded.
                   active && payload?.length
                     ? (payload[0]!.payload as ChartPoint)
                     : null;
@@ -394,7 +394,7 @@ function StackedByAccount({
           />
           <RechartsTooltip
             content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
+              if (!active || !payload?.length) return null; // Recharts' runtime props, not our types: kept guarded.
               const row = payload[0]!.payload as (typeof rows)[number];
               const total = stacked.series.reduce(
                 (t, s) => t + Number(row[s.key] ?? 0),

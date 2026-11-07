@@ -1,13 +1,13 @@
 /**
  * Shared progressive-bracket tax accumulation, used by both tax.ts (annual
- * liability) and paycheck.ts (per-period withholding, via the IRS
+ * liability) and per-check.ts (per-period withholding, via the IRS
  * annualized method). Consolidated per audit Batch 4 Finding 1 — both files
  * independently walked the same bracket structure summing tax per slice.
  *
  * Deliberately scoped to ONLY the tax-total accumulation. Marginal-rate
  * determination stays separate in each caller: tax.ts derives it as a
  * byproduct of this same walk (the last bracket with positive taxable
- * amount), while paycheck.ts needs a distinct highest-bracket-reached pass
+ * amount), while per-check.ts needs a distinct highest-bracket-reached pass
  * (plus bracketMin/baseWithholding for the IRS withholding-table display)
  * that tax.ts has no use for — audit flagged these as "differently
  * structured," not interchangeable.

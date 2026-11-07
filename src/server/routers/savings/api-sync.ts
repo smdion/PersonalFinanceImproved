@@ -23,7 +23,7 @@ import type { PreparedGoalWrite, BudgetCategoryGroup } from "@/lib/budget-api";
 import {
   getEssentialExpenses,
   resolveEfundTierIndex,
-} from "@/server/services/savings/summary";
+} from "@/lib/pure/savings/efund-expenses";
 
 export const apiSyncProcedures = {
   /**
@@ -87,7 +87,7 @@ export const apiSyncProcedures = {
       const efundTierIndex = resolveEfundTierIndex(
         appSettings,
         undefined,
-        activeProfile?.columnLabels?.length,
+        activeProfile?.columnLabels.length,
       );
       const essentialExpenses = activeProfile
         ? getEssentialExpenses(

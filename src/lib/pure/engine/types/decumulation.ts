@@ -175,7 +175,7 @@ export type DecumulationDefaults = {
      *  $6,000/person 65+, tax years 2025–2028 only, from `contribution_limits`
      *  (`obbba_senior_deduction_per_person`). Undefined ⇒ not seeded for this
      *  tax year ⇒ $0, same convention as every other deduction figure here.
-     *  See `obbba-senior-deduction.ts`'s docblock for the full mechanism
+     *  See `return-deductions.ts`'s docblock for the full mechanism
      *  (folded into `standardDeduction` pre-routing using LAST YEAR's MAGI
      *  as the phaseout basis — same circularity-breaking lag IRMAA's 2-year
      *  lookback already uses). */
@@ -262,7 +262,7 @@ export type DecumulationDefaults = {
    * household's penalty-free money runs
    * out, the shortfall is left unfunded and surfaced as
    * `penaltyAvoidedShortfall` rather than silently drawing penalized money
-   * — see `RouteResult`'s docblock (`withdrawal-routing.ts`). Penalty
+   * — see `RouteResult`'s docblock (`withdrawal-routing/types.ts`). Penalty
    * COST itself (the 10% charged on any penalized dollar actually drawn,
    * e.g. when this is `false`) is NOT gated by this flag — it applies
    * unconditionally, a correctness floor rather than a preference.

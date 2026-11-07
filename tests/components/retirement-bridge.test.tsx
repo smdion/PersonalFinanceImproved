@@ -37,9 +37,11 @@ const brokerage = {
   taxType: "afterTax",
   parentCategory: "Retirement",
   balance: 300_000,
-  penaltyFreeAmount: 300_000,
-  penaltyExposedAmount: 0,
-  withdrawal: 60_000,
+  draw: {
+    withdrawal: 60_000,
+    penaltyFreeAmount: 300_000,
+    penaltyExposedAmount: 0,
+  },
 };
 const locked = {
   name: "IRA",
@@ -49,8 +51,7 @@ const locked = {
   ownerPersonId: 1,
   parentCategory: "Retirement",
   balance: 500_000,
-  penaltyFreeAmount: 0,
-  penaltyExposedAmount: 500_000,
+  draw: { withdrawal: 0, penaltyFreeAmount: 0, penaltyExposedAmount: 500_000 },
 };
 
 describe("RetirementBridge", () => {

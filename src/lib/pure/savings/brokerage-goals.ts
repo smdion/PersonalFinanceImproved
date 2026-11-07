@@ -231,7 +231,7 @@ export function calculateBrokerageGoals(
         status.funded = status.shortfall === 0;
         status.taxCost = gw.taxCost;
       }
-    } else if (yr.phase === "decumulation") {
+    } else {
       // Brokerage contributions continue post-retirement (fixed-dollar only)
       const decYr = yr as EngineDecumulationYear;
       contribution = roundToCents(decYr.brokerageContribution);

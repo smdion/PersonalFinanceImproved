@@ -24,7 +24,7 @@ import type {
 import type { DecumulationOverride } from "../types/decumulation";
 import type { SpendingCrossYearState } from "../spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import type { makeIndKey } from "../individual-account-tracking";
+import type { makeIndKey } from "../individual-accounts/ledger";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
@@ -108,6 +108,10 @@ export type ProjectionLoopState = {
    *  case of retiring mid-way through the first year, where the year never
    *  equals retirementYear on the first decumulation year. */
   decumulationExpensesSet: boolean;
+  /** The first decumulation year's stated need in that year's dollars, set
+   *  once with the decumulation budget; null without one. The result's
+   *  `firstDecumulationYearStatedNeed`. */
+  firstDecumulationYearStatedNeed: number | null;
 
   // Milestone tracking
   firstOverflowYear: number | null;

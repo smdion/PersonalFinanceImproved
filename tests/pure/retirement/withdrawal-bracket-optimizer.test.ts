@@ -522,7 +522,7 @@ describe("optimizeRothBracketTarget", () => {
 
   it("regression guard: 32% is worse than the optimum, not part of a monotonic-improvement-forever curve", () => {
     // Round 4's discontinuity, encoded: a future change to the all-or-
-    // nothing conversion gate in post-withdrawal-optimizer.ts that
+    // nothing conversion gate in roth-conversion.ts that
     // accidentally "fixes" this household's discontinuity shouldn't
     // silently go unnoticed.
     const result = optimizeRothBracketTarget(makeMainHousehold(0.12, true));

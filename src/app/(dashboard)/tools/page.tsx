@@ -230,6 +230,7 @@ export default function ToolsPage() {
         ? String(params.relocationExpenseOverride)
         : "",
     );
+    // A saved scenario's params are stored jsonb, typed by $type only.
     setRelocYearAdjustments(
       (params.yearAdjustments ?? []).map((a) => ({
         ...a,
@@ -424,12 +425,6 @@ export default function ToolsPage() {
           (() => {
             const bi = relocQuery.data.budgetInfo;
             const r = relocQuery.data.result;
-            if (!r)
-              return (
-                <p className="text-muted text-sm">
-                  No retirement settings found.
-                </p>
-              );
 
             return (
               <div className="space-y-4">

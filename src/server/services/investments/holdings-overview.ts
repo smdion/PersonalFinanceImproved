@@ -18,8 +18,10 @@ import {
   portfolioBuckets,
   valueByClass,
 } from "@/lib/pure/investments/fund-facts";
-import { interpolateAllocations } from "@/lib/pure/simulation/random";
-import { blendedReturnForAge } from "@/lib/pure/retirement/projection";
+import {
+  interpolateAllocations,
+  weightedGeometricRate,
+} from "@/lib/pure/simulation/random";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/services/investments/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
@@ -255,7 +257,7 @@ export async function loadHoldingsOverview(db: Db) {
   const classTotal = sumBy([...byClass.values()], (v) => v);
   const expectedReturn =
     classTotal > 0
-      ? blendedReturnForAge(
+      ? weightedGeometricRate(
           assetClasses.map((a) => ({
             id: a.id,
             meanReturn: Number(a.meanReturn),

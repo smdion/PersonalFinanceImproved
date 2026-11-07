@@ -372,7 +372,7 @@ export function FundCard({
                 Unlink API
               </button>
             )}
-            {!rawGoal.isEmergencyFund && rawGoal.targetMode !== "fixed" && (
+            {rawGoal.targetMode !== "fixed" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -384,7 +384,7 @@ export function FundCard({
                 Set Fixed Target
               </button>
             )}
-            {!rawGoal.isEmergencyFund && rawGoal.targetMode !== "ongoing" && (
+            {rawGoal.targetMode !== "ongoing" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -404,27 +404,25 @@ export function FundCard({
                 Set Ongoing
               </button>
             )}
-            {!rawGoal.isEmergencyFund &&
-              rawGoal.targetMode !== "bucket" &&
-              onGoalUpdateMulti && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                    onGoalUpdateMulti(projection.goalId, {
-                      targetMode: "bucket",
-                      targetAmount: null,
-                      targetDate: null,
-                      monthlyContribution: "0",
-                      allocationPercent: null,
-                    });
-                  }}
-                  className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-                >
-                  Set as Bucket
-                </button>
-              )}
-            {onConvertToBudgetItem && !rawGoal.isEmergencyFund && (
+            {rawGoal.targetMode !== "bucket" && onGoalUpdateMulti && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  onGoalUpdateMulti(projection.goalId, {
+                    targetMode: "bucket",
+                    targetAmount: null,
+                    targetDate: null,
+                    monthlyContribution: "0",
+                    allocationPercent: null,
+                  });
+                }}
+                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
+              >
+                Set as Bucket
+              </button>
+            )}
+            {onConvertToBudgetItem && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
