@@ -224,7 +224,7 @@ export const accountsProcedures = {
       }
 
       return {
-        success: true as const,
+        ok: true as const,
         ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
       };
     }),

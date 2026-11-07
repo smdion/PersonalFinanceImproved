@@ -116,7 +116,7 @@ export const debtsRouter = createTRPCRouter({
           .update(schema.debts)
           .set(set)
           .where(eq(schema.debts.id, id));
-      return { success: true };
+      return { ok: true };
     }),
 
   // Only the date changes: the last balance stays as history (and as the
@@ -130,7 +130,7 @@ export const debtsRouter = createTRPCRouter({
         .update(schema.debts)
         .set({ paidOffDate: input.date })
         .where(eq(schema.debts.id, input.id));
-      return { success: true };
+      return { ok: true };
     }),
 
   delete: adminProcedure
@@ -140,6 +140,6 @@ export const debtsRouter = createTRPCRouter({
         await dropMappingsTo(tx, { debtId: input.id });
         await tx.delete(schema.debts).where(eq(schema.debts.id, input.id));
       });
-      return { success: true };
+      return { ok: true };
     }),
 });

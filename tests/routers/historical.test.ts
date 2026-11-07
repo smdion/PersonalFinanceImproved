@@ -105,7 +105,7 @@ describe("historical router", () => {
         field: TEST_FIELD,
         note: "First note",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary includes the created note", async () => {
@@ -120,7 +120,7 @@ describe("historical router", () => {
         field: TEST_FIELD,
         note: "Updated note",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
 
       const summary = await caller.historical.computeSummary();
       const key = `${TEST_YEAR}:${TEST_FIELD}`;
@@ -145,7 +145,7 @@ describe("historical router", () => {
         field: TEST_FIELD,
         note: "",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
 
       const summary = await caller.historical.computeSummary();
       const key = `${TEST_YEAR}:${TEST_FIELD}`;
@@ -291,7 +291,7 @@ describe("historical router — update", () => {
       year: 2023,
       fields: { grossIncome: 120000 },
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("computeSummary reflects the updated grossIncome in history", async () => {
@@ -312,7 +312,7 @@ describe("historical router — update", () => {
         taxesPaid: 25000,
       },
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("updates effectiveTaxRate", async () => {
@@ -320,7 +320,7 @@ describe("historical router — update", () => {
       year: 2023,
       fields: { effectiveTaxRate: 19.2 },
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("updates otherLiabilities", async () => {
@@ -328,7 +328,7 @@ describe("historical router — update", () => {
       year: 2023,
       fields: { otherLiabilities: 3000 },
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("updates ssaEarnings", async () => {
@@ -336,7 +336,7 @@ describe("historical router — update", () => {
       year: 2023,
       fields: { ssaEarnings: 95000 },
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("updates propertyTaxes", async () => {
@@ -344,7 +344,7 @@ describe("historical router — update", () => {
       year: 2023,
       fields: { propertyTaxes: 6000 },
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("returns success when no fields are provided", async () => {
@@ -352,7 +352,7 @@ describe("historical router — update", () => {
       year: 2023,
       fields: {},
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("throws when year does not exist", async () => {

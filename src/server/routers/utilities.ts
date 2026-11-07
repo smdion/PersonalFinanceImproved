@@ -284,7 +284,7 @@ export const utilitiesRouter = createTRPCRouter({
             source,
           },
         });
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Update a reading's values by id (key fields stay fixed). */
@@ -315,7 +315,7 @@ export const utilitiesRouter = createTRPCRouter({
           .set(updates)
           .where(eq(schema.utilityReading.id, input.id));
       }
-      return { success: true };
+      return { ok: true };
     }),
 
   deleteReading: adminProcedure
@@ -324,7 +324,7 @@ export const utilitiesRouter = createTRPCRouter({
       await ctx.db
         .delete(schema.utilityReading)
         .where(eq(schema.utilityReading.id, input.id));
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Create or update a service by its kind (unique). */
@@ -356,7 +356,7 @@ export const utilitiesRouter = createTRPCRouter({
             ...(input.active !== undefined ? { active: input.active } : {}),
           },
         });
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Update editable fields of an existing service by id (kind is immutable). */
@@ -407,7 +407,7 @@ export const utilitiesRouter = createTRPCRouter({
           .set(updates)
           .where(eq(schema.utilityService.id, input.id));
       }
-      return { success: true };
+      return { ok: true };
     }),
 
   /** The active budget service's categories, for mapping a service to the

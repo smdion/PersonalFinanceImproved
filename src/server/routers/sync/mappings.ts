@@ -97,7 +97,7 @@ export const syncMappingsRouter = createTRPCRouter({
             .set({ usePurchaseOrEstimated: "estimated" })
             .where(eq(schema.mortgageLoans.id, m.loanId));
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Create a new Ledgr asset item and add a mapping to a tracking account. */
@@ -165,7 +165,7 @@ export const syncMappingsRouter = createTRPCRouter({
         .set({ accountMappings: mappings })
         .where(eq(schema.apiConnections.service, input.service));
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /**

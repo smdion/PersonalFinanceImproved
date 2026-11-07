@@ -151,14 +151,14 @@ export const historicalRouter = createTRPCRouter({
         }
       }
 
-      if (Object.keys(updates).length === 0) return { success: true };
+      if (Object.keys(updates).length === 0) return { ok: true };
 
       await ctx.db
         .update(schema.netWorthAnnual)
         .set(updates)
         .where(eq(schema.netWorthAnnual.id, row.id));
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /**
@@ -255,6 +255,6 @@ export const historicalRouter = createTRPCRouter({
             set: { note: input.note },
           });
       }
-      return { success: true };
+      return { ok: true };
     }),
 });

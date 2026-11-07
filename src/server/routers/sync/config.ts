@@ -55,7 +55,7 @@ export const syncConfigRouter = createTRPCRouter({
 
       await upsertSetting(ctx.db, "active_budget_api", input.value);
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Set (or clear) which Ledgr budget profile syncs with the budget API. */

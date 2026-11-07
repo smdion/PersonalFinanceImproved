@@ -50,8 +50,8 @@ describe.each([
     setQuery("settings.appSettings.list", [{ key: settingKey, value: 1 }]);
     setQuery("contributionProfile.list", [{ id: 1 }, { id: 2 }]);
     setQuery("salaryProfile.list", [{ id: 1 }, { id: 2 }]);
-    setMutationResult("contributionProfile.setActive", { success: true });
-    setMutationResult("salaryProfile.setActive", { success: true });
+    setMutationResult("contributionProfile.setActive", { ok: true });
+    setMutationResult("salaryProfile.setActive", { ok: true });
   });
 
   it(`writes through ${router}.setActive, not the generic appSettings.upsert`, async () => {

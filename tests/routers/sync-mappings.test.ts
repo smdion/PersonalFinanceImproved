@@ -110,7 +110,7 @@ describe("sync mappings — basic operations", () => {
         service: "ynab",
         mappings: [],
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("refuses a budget account pulled into two places (it would count twice)", async () => {
@@ -205,7 +205,7 @@ describe("sync mappings — basic operations", () => {
             },
           ],
         }),
-      ).resolves.toEqual({ success: true });
+      ).resolves.toEqual({ ok: true });
     });
 
     it("persists mappings to the connection row", async () => {
@@ -233,7 +233,7 @@ describe("sync mappings — basic operations", () => {
         service: "ynab",
         mappings,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
 
       // Verify DB
       const rows = db.select().from(schema.apiConnections).all();
@@ -302,7 +302,7 @@ describe("sync mappings — createAssetAndMap", () => {
       remoteAccountId: "ynab-track-1",
       syncDirection: "pull",
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
 
     // Verify asset was created
     const assets = db.select().from(schema.otherAssetItems).all();
@@ -331,7 +331,7 @@ describe("sync mappings — createAssetAndMap", () => {
       remoteAccountId: "ynab-track-2",
       syncDirection: "both",
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
 
     // Should have same name/year but updated value
     const assets = db

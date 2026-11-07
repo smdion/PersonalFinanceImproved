@@ -15,6 +15,7 @@ import {
   saveSecConnection,
 } from "@/lib/sec/connection";
 import { SecRateLimitError, testSecContact } from "@/lib/sec/client";
+import type { ProbeResult } from "@/lib/http/probe-result";
 import {
   BudgetApiError,
   nothingChanged,
@@ -51,20 +52,22 @@ export const secRouter = createTRPCRouter({
         });
       }
       await saveSecConnection(ctx.db, input.contactEmail);
-      return { success: true as const };
+      return { ok: true as const };
     }),
 
   /** Test the stored contact. */
-  testConnection: syncProcedure.mutation(async ({ ctx }) => {
-    try {
-      const contact = await getSecContact(ctx.db);
-      if (!contact)
-        return { success: false as const, error: "SEC isn't set up" };
-      return { success: true as const, funds: await testSecContact(contact) };
-    } catch (e) {
-      return { success: false as const, error: describe(e) };
-    }
-  }),
+  testConnection: syncProcedure.mutation(
+    async ({ ctx }): Promise<ProbeResult<{ funds: number }>> => {
+      try {
+        const contact = await getSecContact(ctx.db);
+        if (!contact)
+          return { success: false as const, error: "SEC isn't set up" };
+        return { success: true as const, funds: await testSecContact(contact) };
+      } catch (e) {
+        return { success: false as const, error: describe(e) };
+      }
+    },
+  ),
 
   /** Check every held fund for new filings now (at most every 10 minutes). */
   refreshNow: syncProcedure.mutation(async ({ ctx }) => {
@@ -80,7 +83,7 @@ export const secRouter = createTRPCRouter({
 
   removeConnection: syncProcedure.mutation(async ({ ctx }) => {
     await removeSecConnection(ctx.db);
-    return { success: true as const };
+    return { ok: true as const };
   }),
 
   /** Status for Settings and Data sources. Never returns the contact. */

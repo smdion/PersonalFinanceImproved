@@ -90,7 +90,7 @@ describe("sync connections router", () => {
       const result = await caller.sync.deleteConnection({
         service: "ynab",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
   });
 
@@ -99,8 +99,10 @@ describe("sync connections router", () => {
       const result = await caller.sync.testConnection({
         service: "ynab",
       });
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("No ynab connection configured");
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining("No ynab connection configured"),
+      });
     });
   });
 });
@@ -127,7 +129,7 @@ describe("sync.saveConnection", () => {
       accessToken: "test-token-abc",
       budgetId: "budget-123",
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("saves an Actual connection", async () => {
@@ -137,7 +139,7 @@ describe("sync.saveConnection", () => {
       apiKey: "ak-xyz",
       budgetSyncId: "sync-456",
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("upserts YNAB connection on re-save", async () => {
@@ -146,7 +148,7 @@ describe("sync.saveConnection", () => {
       accessToken: "updated-token",
       budgetId: "budget-999",
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("rejects YNAB with empty accessToken", async () => {
@@ -179,7 +181,7 @@ describe("sync.saveConnection", () => {
         apiKey: "ak-xyz",
         budgetSyncId: "sync-456",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     },
   );
 
@@ -205,7 +207,7 @@ describe("sync.saveConnection", () => {
       budgetSyncId: "sync-456",
       externalUrl: "https://actual.mydomain.com",
     });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 
   it("rejects an Actual connection with a malformed External URL", async () => {
@@ -267,7 +269,7 @@ describe("sync.updateActualExternalUrl", () => {
     const setResult = await caller.sync.updateActualExternalUrl({
       externalUrl: "https://actual.mydomain.com",
     });
-    expect(setResult).toEqual({ success: true });
+    expect(setResult).toEqual({ ok: true });
 
     const afterSet = await caller.sync.getConnection();
     expect(afterSet.actual.externalUrl).toBe("https://actual.mydomain.com");
@@ -275,7 +277,7 @@ describe("sync.updateActualExternalUrl", () => {
     const clearResult = await caller.sync.updateActualExternalUrl({
       externalUrl: "",
     });
-    expect(clearResult).toEqual({ success: true });
+    expect(clearResult).toEqual({ ok: true });
 
     const afterClear = await caller.sync.getConnection();
     expect(afterClear.actual.externalUrl).toBeNull();
@@ -311,8 +313,7 @@ describe("sync.testConnection with client", () => {
     });
 
     const result = await caller.sync.testConnection({ service: "ynab" });
-    expect(result.success).toBe(true);
-    expect(result.budgetName).toBe("My Budget");
+    expect(result).toMatchObject({ success: true, budgetName: "My Budget" });
   });
 
   it("returns failure when client throws", async () => {
@@ -322,8 +323,10 @@ describe("sync.testConnection with client", () => {
     });
 
     const result = await caller.sync.testConnection({ service: "ynab" });
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("Auth failed");
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining("Auth failed"),
+    });
   });
 
   it("asks the budget even when its name is local (Actual), and says why it failed", async () => {
@@ -351,8 +354,10 @@ describe("sync.testConnection with client", () => {
     mockGetClientForService.mockResolvedValueOnce(null);
 
     const result = await caller.sync.testConnection({ service: "actual" });
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("No actual connection configured");
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining("No actual connection configured"),
+    });
   });
 });
 
@@ -467,7 +472,7 @@ describe("sync.deleteConnection with active API", () => {
     mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
 
     const result = await caller.sync.deleteConnection({ service: "ynab" });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
     expect(mockCacheClear).toHaveBeenCalled();
   });
 
@@ -483,7 +488,7 @@ describe("sync.deleteConnection with active API", () => {
     mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
 
     const result = await caller.sync.deleteConnection({ service: "actual" });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ ok: true });
   });
 });
 
@@ -703,9 +708,7 @@ describe("connection management is admin-only", () => {
     async (input) => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
-        expect(await caller.sync.saveConnection(input)).toEqual({
-          success: true,
-        });
+        expect(await caller.sync.saveConnection(input)).toEqual({ ok: true });
         expect(
           db
             .select()
@@ -722,7 +725,7 @@ describe("connection management is admin-only", () => {
         ).toEqual({ success: true, budgetName: "Household" });
         expect(
           await caller.sync.deleteConnection({ service: input.service }),
-        ).toEqual({ success: true });
+        ).toEqual({ ok: true });
         expect(db.select().from(schema.apiConnections).all()).toEqual([]);
       } finally {
         cleanup();

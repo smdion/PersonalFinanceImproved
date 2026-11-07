@@ -86,7 +86,7 @@ describe("assets router", () => {
         cost: 15000,
         note: "Asphalt shingles",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary reflects the new home improvement", async () => {
@@ -107,7 +107,7 @@ describe("assets router", () => {
         description: "Kitchen remodel",
         cost: 25000,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary lists both home improvements", async () => {
@@ -121,7 +121,7 @@ describe("assets router", () => {
         description: "New roof (upgraded)",
         cost: 17500,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary reflects the update", async () => {
@@ -138,7 +138,7 @@ describe("assets router", () => {
       const result = await caller.assets.deleteHomeImprovement({
         id: improvementId,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary no longer contains deleted home improvement", async () => {
@@ -163,7 +163,7 @@ describe("assets router", () => {
         value: 30000,
         note: "1967 Mustang",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary includes the new other asset in current state", async () => {
@@ -189,7 +189,7 @@ describe("assets router", () => {
         value: 32000,
         note: "1967 Mustang - appraised",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary reflects the updated value", async () => {
@@ -204,7 +204,7 @@ describe("assets router", () => {
 
     it("deletes the other asset", async () => {
       const result = await caller.assets.deleteOtherAsset({ id: assetId });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary no longer includes the deleted other asset", async () => {
@@ -228,7 +228,7 @@ describe("assets router", () => {
         field: noteField,
         note: "Estimated by agent",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary notes map contains the new note", async () => {
@@ -242,7 +242,7 @@ describe("assets router", () => {
         field: noteField,
         note: "Zillow estimate",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary notes map reflects the updated note", async () => {
@@ -256,7 +256,7 @@ describe("assets router", () => {
         field: noteField,
         note: "",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("computeSummary notes map no longer contains the deleted note", async () => {
@@ -327,7 +327,7 @@ describe("assets router", () => {
         taxAmount: 4200,
         note: "County assessment",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("listPropertyTaxes returns the new record", async () => {
@@ -348,7 +348,7 @@ describe("assets router", () => {
         taxAmount: 4350,
         note: "Revised",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("listPropertyTaxes reflects the updated values", async () => {
@@ -361,7 +361,7 @@ describe("assets router", () => {
 
     it("deletes the property tax record", async () => {
       const result = await caller.assets.deletePropertyTax({ id: taxId });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("listPropertyTaxes no longer contains the deleted record", async () => {

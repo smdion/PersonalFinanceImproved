@@ -242,7 +242,7 @@ export async function syncAll(
     });
 
     return {
-      success: true,
+      ok: true,
       counts: {
         accounts: accounts.length,
         categories: categories.reduce((sum, g) => sum + g.categories.length, 0),

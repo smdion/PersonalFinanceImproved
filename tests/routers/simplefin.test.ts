@@ -96,7 +96,7 @@ describe("simplefin router", () => {
         id: row.id,
         isIncluded: false,
       });
-      expect(excluded.success).toBe(true);
+      expect(excluded.ok).toBe(true);
 
       const accounts = await caller.simplefin.listAccounts();
       const toggled = accounts.find((a) => a.id === row.id);
@@ -106,7 +106,7 @@ describe("simplefin router", () => {
         id: row.id,
         isIncluded: true,
       });
-      expect(included.success).toBe(true);
+      expect(included.ok).toBe(true);
       const accountsAfter = await caller.simplefin.listAccounts();
       expect(accountsAfter.find((a) => a.id === row.id)?.isIncluded).toBe(true);
     });
@@ -149,7 +149,7 @@ describe("simplefin router", () => {
           id: row.id,
           isIncluded: false,
         });
-        expect(result.success).toBe(true);
+        expect(result.ok).toBe(true);
       } finally {
         syncCleanup();
       }

@@ -233,7 +233,7 @@ export const taxBucketsRouter = createTRPCRouter({
           },
         });
       await stampBasisUpdated(ctx.db);
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Update every (account, owner) Roth basis entry in one screen/save,
@@ -259,7 +259,7 @@ export const taxBucketsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (input.entries.length === 0) return { success: true };
+      if (input.entries.length === 0) return { ok: true };
       await ctx.db.transaction(async (tx) => {
         for (const e of input.entries) {
           await tx
@@ -293,7 +293,7 @@ export const taxBucketsRouter = createTRPCRouter({
         if (input.simplefinFill)
           await recordFill(tx, "basis", input.simplefinFill);
       });
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Set the durable Rule of 55 source-of-truth date for a 401k/403b account. */
@@ -312,6 +312,6 @@ export const taxBucketsRouter = createTRPCRouter({
         .update(schema.performanceAccounts)
         .set({ separationDate: input.separationDate })
         .where(eq(schema.performanceAccounts.id, input.performanceAccountId));
-      return { success: true };
+      return { ok: true };
     }),
 });

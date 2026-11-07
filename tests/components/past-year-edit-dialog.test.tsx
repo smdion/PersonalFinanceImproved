@@ -10,7 +10,7 @@ import {
 } from "./trpc-mock";
 
 const previewData = {
-  success: true,
+  ok: true,
   preview: {
     accounts: [
       {

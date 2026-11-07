@@ -227,14 +227,14 @@ export const assetsRouter = createTRPCRouter({
         }
       }
 
-      if (Object.keys(updates).length === 0) return { success: true };
+      if (Object.keys(updates).length === 0) return { ok: true };
 
       await ctx.db
         .update(schema.netWorthAnnual)
         .set(updates)
         .where(eq(schema.netWorthAnnual.id, row.id));
 
-      return { success: true };
+      return { ok: true };
     }),
 
   // --- Home Improvement Items ---
@@ -255,7 +255,7 @@ export const assetsRouter = createTRPCRouter({
         cost: String(input.cost),
         note: input.note ?? null,
       });
-      return { success: true };
+      return { ok: true };
     }),
 
   updateHomeImprovement: adminProcedure
@@ -279,7 +279,7 @@ export const assetsRouter = createTRPCRouter({
           .set(updates)
           .where(eq(schema.homeImprovementItems.id, input.id));
       }
-      return { success: true };
+      return { ok: true };
     }),
 
   deleteHomeImprovement: adminProcedure
@@ -288,7 +288,7 @@ export const assetsRouter = createTRPCRouter({
       await ctx.db
         .delete(schema.homeImprovementItems)
         .where(eq(schema.homeImprovementItems.id, input.id));
-      return { success: true };
+      return { ok: true };
     }),
 
   // --- Other Asset Items ---
@@ -318,7 +318,7 @@ export const assetsRouter = createTRPCRouter({
             note: input.note ?? null,
           },
         });
-      return { success: true };
+      return { ok: true };
     }),
 
   deleteOtherAsset: adminProcedure
@@ -330,7 +330,7 @@ export const assetsRouter = createTRPCRouter({
           .delete(schema.otherAssetItems)
           .where(eq(schema.otherAssetItems.id, input.id));
       });
-      return { success: true };
+      return { ok: true };
     }),
 
   // --- Property Taxes ---
@@ -408,7 +408,7 @@ export const assetsRouter = createTRPCRouter({
             note: input.note ?? null,
           },
         });
-      return { success: true };
+      return { ok: true };
     }),
 
   deletePropertyTax: adminProcedure
@@ -417,7 +417,7 @@ export const assetsRouter = createTRPCRouter({
       await ctx.db
         .delete(schema.propertyTaxes)
         .where(eq(schema.propertyTaxes.id, input.id));
-      return { success: true };
+      return { ok: true };
     }),
 
   // --- Notes ---
@@ -449,6 +449,6 @@ export const assetsRouter = createTRPCRouter({
             set: { note: input.note },
           });
       }
-      return { success: true };
+      return { ok: true };
     }),
 });

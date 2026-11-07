@@ -99,7 +99,7 @@ describe("simplefin.mergeReaddedAccount", () => {
       copyId,
       keepId: oldId,
     });
-    expect(out.success).toBe(true);
+    expect(out.ok).toBe(true);
     const rows = feeds();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({

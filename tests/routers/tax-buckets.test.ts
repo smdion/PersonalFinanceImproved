@@ -289,7 +289,7 @@ describe("taxBuckets router", () => {
         },
       ],
     });
-    expect(result.success).toBe(true);
+    expect(result.ok).toBe(true);
 
     const breakdown = await caller.taxBuckets.computeBreakdown();
     const entry1 = breakdown.accounts.find(
@@ -322,7 +322,7 @@ describe("taxBuckets router", () => {
         },
       ],
     });
-    expect(revised.success).toBe(true);
+    expect(revised.ok).toBe(true);
     const afterUpdate = await caller.taxBuckets.computeBreakdown();
     const entry1Updated = afterUpdate.accounts.find(
       (a) => a.performanceAccountId === acct1Id,

@@ -269,7 +269,7 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
             eq(schema.holdingPeriods.basis, "user"),
           ),
         );
-      return { success: true };
+      return { ok: true };
     }),
 
   /**

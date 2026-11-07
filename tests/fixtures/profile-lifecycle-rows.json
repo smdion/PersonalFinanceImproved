@@ -300,7 +300,7 @@
       "step": "setActive",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -352,7 +352,7 @@
       "step": "delete an inactive profile",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -451,7 +451,7 @@
       "step": "setActive moves to another profile",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -475,7 +475,7 @@
       "step": "delete the profile that was active",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -519,7 +519,7 @@
       "step": "delete with the active id stored as a string",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -561,7 +561,7 @@
       "step": "setActive null clears the setting",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -580,7 +580,7 @@
       "step": "delete profile 1 with no active profile",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1297,7 +1297,7 @@
       "step": "setActive",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1352,7 +1352,7 @@
       "step": "delete an inactive profile",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1537,7 +1537,7 @@
       "step": "setActive moves to another profile",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1562,7 +1562,7 @@
       "step": "delete the profile that was active",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1651,7 +1651,7 @@
       "step": "delete with the active id stored as a string",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1744,7 +1744,7 @@
       "step": "setActive null clears the setting",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -1764,7 +1764,7 @@
       "step": "delete profile 1 with no active profile",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -2887,7 +2887,7 @@
       "step": "delete an inactive profile and its rows",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {
@@ -3258,7 +3258,7 @@
       "step": "delete the profile that was implicitly active",
       "outcome": {
         "result": {
-          "success": true
+          "ok": true
         }
       },
       "rows": {

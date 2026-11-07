@@ -151,7 +151,7 @@ describe("sync core — syncAll", () => {
     mockGetApiConnection.mockResolvedValue({ accountMappings: [] });
 
     const result = await caller.sync.syncAll({ service: "ynab" });
-    expect(result.success).toBe(true);
+    expect(result.ok).toBe(true);
     expect(result.counts.accounts).toBe(2);
     expect(result.counts.categories).toBe(2);
     expect(result.counts.transactions).toBe(1);
@@ -199,7 +199,7 @@ describe("sync core — syncAll", () => {
     });
 
     const result = await caller.sync.syncAll({ service: "ynab" });
-    expect(result.success).toBe(true);
+    expect(result.ok).toBe(true);
     expect(result.counts.assetsPulled).toBe(1);
 
     // Verify asset was updated
@@ -255,7 +255,7 @@ describe("sync core — syncAll", () => {
     });
 
     const result = await caller.sync.syncAll({ service: "ynab" });
-    expect(result.success).toBe(true);
+    expect(result.ok).toBe(true);
     expect(result.counts.assetsPulled).toBe(1);
 
     const loans = db.select().from(schema.mortgageLoans).all();
@@ -300,7 +300,7 @@ describe("sync core — syncAll", () => {
     });
 
     const result = await caller.sync.syncAll({ service: "ynab" });
-    expect(result.success).toBe(true);
+    expect(result.ok).toBe(true);
     expect(result.counts.assetsPulled).toBe(1);
 
     const updatedLoans = db.select().from(schema.mortgageLoans).all();
