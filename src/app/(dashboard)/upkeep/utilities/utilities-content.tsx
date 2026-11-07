@@ -414,7 +414,7 @@ function UtilityCard({
   );
 }
 
-export default function UtilitiesPage() {
+export function UtilitiesContent() {
   const { data, isLoading } = trpc.utilities.computeSummary.useQuery();
   const summaries: UtilitySummary[] = data?.summaries ?? [];
 

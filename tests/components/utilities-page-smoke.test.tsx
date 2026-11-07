@@ -22,7 +22,7 @@ const page = seededPage(
   "e2e-b",
   async () =>
     (await import("@/app/(dashboard)/upkeep/utilities/utilities-content"))
-      .default,
+      .UtilitiesContent,
 );
 
 describe("Utilities page", () => {

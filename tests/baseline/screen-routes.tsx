@@ -128,7 +128,7 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
     file: "upkeep-utilities",
     load: async () =>
       (await import("@/app/(dashboard)/upkeep/utilities/utilities-content"))
-        .default,
+        .UtilitiesContent,
   },
   {
     route: "/versions",
