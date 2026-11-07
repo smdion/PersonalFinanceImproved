@@ -205,20 +205,6 @@ export function runDecumulationYear(
     priorYearEndTradByPerson,
   );
 
-  // The year's after-tax need: spending less Social Security — or, when
-  // the strategy sized the gross withdrawal (Social Security on top), what
-  // that withdrawal delivers after tax (set from the estimate below).
-  let afterTaxNeed = roundToCents(
-    Math.max(0, state.projectedExpenses - ssIncome),
-  );
-  // Social Security beyond spending pays the year's tax first — only the
-  // rest needs a withdrawal (withdrawal-solver.ts solves with the same credit).
-  // A withdrawal-sized year has Social Security on top by definition.
-  let ssSurplus =
-    state.portfolioWithdrawal === null
-      ? Math.max(0, ssIncome - state.projectedExpenses)
-      : 0;
-
   const { totalQcd, qcdByPerson } = qcdStep(
     hasIndividualAccounts,
     rmdStartAgeByPerson,
@@ -346,6 +332,20 @@ export function runDecumulationYear(
     "medicare",
     year,
   );
+  // The year's after-tax need: spending less Social Security — or, when
+  // the strategy sized the gross withdrawal (Social Security on top), what
+  // that withdrawal delivers after tax (set from the estimate below).
+  let afterTaxNeed = roundToCents(
+    Math.max(0, state.projectedExpenses - ssIncome),
+  );
+  // Social Security beyond spending pays the year's tax first — only the
+  // rest needs a withdrawal (withdrawal-solver.ts solves with the same credit).
+  // A withdrawal-sized year has Social Security on top by definition.
+  let ssSurplus =
+    state.portfolioWithdrawal === null
+      ? Math.max(0, ssIncome - state.projectedExpenses)
+      : 0;
+
   // IRMAA paid on top of the budget joins a need-sized year's need, so the
   // gross-up, shortfall and RMD excess all see it. It's a cost beside the
   // need: never in projectedExpenses (a strategy would carry it forward)
@@ -373,7 +373,6 @@ export function runDecumulationYear(
     ssSurplus = Math.max(0, ssIncome - state.projectedExpenses - irmaaInNeed);
   }
 
-  // SS convergence + gross-up estimation (extracted to withdrawal-solver module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
     fixedGrossWithdrawal: state.portfolioWithdrawal ?? undefined,
@@ -404,8 +403,6 @@ export function runDecumulationYear(
     indBasis: hasIndividualAccounts ? indBasis : undefined,
     year,
   });
-  let { taxableSS } = taxEst;
-  let { grossUpFactor } = taxEst;
   const { targetWithdrawal } = taxEst;
   if (taxEst.derivedAfterTaxNeed !== undefined)
     afterTaxNeed = taxEst.derivedAfterTaxNeed;
@@ -479,7 +476,7 @@ export function runDecumulationYear(
       // it differs from the withdrawal target above — see this const's
       // own comment. Only meaningful when conversionsEnabled.
       conversionTarget: resolvedConversionTarget,
-      taxableSS,
+      taxableSS: taxEst.taxableSS,
       filingStatus,
       ltcgBrackets: grownLtcgBrackets,
       rothBasisAvailable,
@@ -627,6 +624,7 @@ export function runDecumulationYear(
   // (taxableSSFor) — then the year priced with it. The first pass only
   // supplies those amounts, which don't depend on taxable SS.
   // TODO: If muni bond income tracking is added, pass taxExemptInterest.
+  let { taxableSS } = taxEst;
   let taxFromSlots = priceTax(taxableSS);
   if (filingStatus && ssIncome > 0) {
     taxableSS = taxableSSFor(ssIncome, taxFromSlots, filingStatus);
@@ -663,6 +661,7 @@ export function runDecumulationYear(
   const surplusCredit = (tax: number) =>
     roundToCents(Math.min(ssSurplus, Math.max(0, tax)));
 
+  let { grossUpFactor } = taxEst;
   // Recompute grossUpFactor post-RMD for accurate diagnostics (#45).
   // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.
   // Includes penaltyCost in the cost scalar alongside taxCost -- RMD dollars are never
@@ -705,6 +704,8 @@ export function runDecumulationYear(
   // UI trace. What happens to it depends on the household's
   // rmdExcessHandling setting (reinvest into brokerage, or spend it).
   // Reinvested RMD money is cash in: new basis where it lands.
+  // The tax the withdrawal pays — Social Security's surplus pays the rest.
+  const withdrawalTax = roundToCents(taxCost - surplusCredit(taxCost));
   const rmdExcessAmount = followInflows(
     indAccts,
     indKey,
@@ -716,8 +717,7 @@ export function runDecumulationYear(
         rmdOverrodeRouting,
         totalWithdrawal,
         afterTaxNeed,
-        // The tax the withdrawal pays — Social Security's surplus pays the rest.
-        roundToCents(taxCost - surplusCredit(taxCost)),
+        withdrawalTax,
         balances,
         acctBal,
         hasIndividualAccounts ? indAccts : undefined,
