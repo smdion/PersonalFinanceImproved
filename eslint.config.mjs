@@ -245,8 +245,9 @@ const config = [
   },
   {
     // date.ts documents the anti-pattern (it's the helper's reason to
-    // exist); paycheck.ts builds payday strings with Date.UTC(...) and
-    // reads them back the same way — internally UTC-consistent, reviewed.
+    // exist); pay-periods-in-year.ts builds payday strings with
+    // Date.UTC(...) and reads them back the same way — internally
+    // UTC-consistent, reviewed.
     files: [
       "src/lib/utils/date.ts",
       "src/lib/pure/paycheck/pay-periods-in-year.ts",
