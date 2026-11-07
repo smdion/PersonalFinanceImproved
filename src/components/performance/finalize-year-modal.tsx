@@ -51,6 +51,18 @@ const FIELDS = [
 
 type FieldKey = (typeof FIELDS)[number]["key"];
 
+/** Accounts with an open check or a figure still estimated. Finalizing
+ *  doesn't clear estimate marks: only confirming them does. */
+function figuresToLookAt(accounts: AccountRow[]) {
+  return accounts
+    .map((a) => ({
+      a,
+      open: (a.checks ?? []).filter((c) => !c.accepted),
+      estimated: a.estimatedFields ?? [],
+    }))
+    .filter((x) => x.open.length > 0 || x.estimated.length > 0);
+}
+
 export function FinalizeYearModal({
   year,
   rows,
@@ -59,14 +71,7 @@ export function FinalizeYearModal({
   onCancel,
   isPending,
 }: FinalizeYearModalProps) {
-  // Finalizing doesn't clear estimate marks: only confirming them does.
-  const toLookAt = accounts
-    .map((a) => ({
-      a,
-      open: (a.checks ?? []).filter((c) => !c.accepted),
-      estimated: a.estimatedFields ?? [],
-    }))
-    .filter((x) => x.open.length > 0 || x.estimated.length > 0);
+  const toLookAt = figuresToLookAt(accounts);
   // Initialize editable state from computed annual rows
   const [values, setValues] = useState<
     Record<string, Record<FieldKey, string>>
@@ -121,6 +126,8 @@ export function FinalizeYearModal({
     <Modal
       onClose={onCancel}
       label={`Finalize ${year}`}
+      closeOnEscape={!isPending}
+      closeOnBackdrop={!isPending}
       className="bg-surface-primary mx-4 max-h-[85vh] w-full max-w-4xl overflow-auto rounded-lg border shadow-xl"
     >
       <div className="bg-surface-primary sticky top-0 flex items-center justify-between border-b px-6 py-4">
@@ -236,6 +243,7 @@ export function FinalizeYearModal({
       <div className="bg-surface-primary sticky bottom-0 flex justify-end gap-3 border-t px-6 py-4">
         <button
           onClick={onCancel}
+          disabled={isPending}
           className="text-muted hover:bg-surface-elevated rounded-md px-4 py-2 text-sm transition-colors"
         >
           Cancel

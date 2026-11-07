@@ -1,6 +1,6 @@
 /**
  * Escape in the Finalize-year dialog: inside an edited figure it ends that
- * edit only; anywhere else it cancels the dialog, as its backdrop does.
+ * edit only; anywhere else it cancels, unless the year is being finalized.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
@@ -51,5 +51,25 @@ describe("FinalizeYearModal Escape", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("can't be closed while the year is being finalized", () => {
+    const onCancel = vi.fn();
+    render(
+      <FinalizeYearModal
+        year={2026}
+        rows={[row]}
+        onConfirm={vi.fn()}
+        onCancel={onCancel}
+        isPending
+      />,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("presentation"));
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel).toBeDisabled();
+    fireEvent.click(cancel);
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Finalize 2026" })).toBeTruthy();
   });
 });
