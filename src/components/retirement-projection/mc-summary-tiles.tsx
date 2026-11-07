@@ -1,10 +1,14 @@
-/** The Simulation bar's stat tiles. */
+/** The Simulation bar's stat tiles and run controls. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import type { ProjectionState } from "./projection-table-types";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatRelativeTime,
+} from "@/lib/utils/format";
 
 export type McRateTilesProps = {
   si: NonNullable<
@@ -162,6 +166,75 @@ export function McRunTiles({
         </div>
         <div className="text-micro text-faint">trials</div>
         <div className="text-micro text-faint">1K+</div>
+      </div>
+    </>
+  );
+}
+
+export type McRunControlsProps = {
+  si: NonNullable<
+    Extract<
+      NonNullable<ProjectionState["mcQuery"]["data"]>,
+      { simulationInputs: unknown }
+    >["simulationInputs"]
+  >;
+  handleRerun: ProjectionState["rerunAllMc"];
+  isRerunning: ProjectionState["isRerunning"];
+  handleClearCache: () => void;
+  clearProjectionCacheMutation: ProjectionState["clearProjectionCacheMutation"];
+  setShowAssumptions: ProjectionState["setShowAssumptions"];
+  ps: { border: string; pill: string; accent: string };
+};
+
+export function McRunControls({
+  si,
+  handleRerun,
+  isRerunning,
+  handleClearCache,
+  clearProjectionCacheMutation,
+  setShowAssumptions,
+  ps,
+}: McRunControlsProps) {
+  return (
+    <>
+      {/* Explicit full-width fallback below the ~1024px point
+        where this bar (sidebar + card padding, not raw
+        viewport width) actually runs out of room — without
+        it, this cluster squeezes between the stat blocks
+        instead of dropping to its own clean row (live-user
+        finding, 2026-08-29). */}
+      <div className="ml-auto flex basis-full items-center justify-end gap-3 lg:basis-auto">
+        {si.computedAt && (
+          <div className="text-center">
+            <div className="text-xs font-semibold whitespace-nowrap tabular-nums">
+              {formatRelativeTime(si.computedAt)}
+            </div>
+            <div className="text-micro text-faint">last run</div>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleRerun}
+          disabled={isRerunning}
+          className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors disabled:opacity-50"
+        >
+          {isRerunning ? "Running…" : "Re-run"}
+        </button>
+        <button
+          type="button"
+          onClick={handleClearCache}
+          disabled={clearProjectionCacheMutation.isPending}
+          className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors disabled:opacity-50"
+        >
+          {clearProjectionCacheMutation.isPending ? "Clearing…" : "Clear Cache"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowAssumptions(true)}
+          className={`text-label rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
+        >
+          View Assumptions &rarr;
+        </button>
       </div>
     </>
   );

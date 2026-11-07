@@ -7,15 +7,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/hooks/use-toast";
 import { ControlZone } from "./pill-btn";
-import {
-  formatPercent,
-  formatRelativeTime,
-  maskAmountsInText,
-} from "@/lib/utils/format";
+import { formatPercent, maskAmountsInText } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
-import { McRateTiles, McRunTiles } from "./mc-summary-tiles";
+import { McRateTiles, McRunTiles, McRunControls } from "./mc-summary-tiles";
 
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ state }: { state: ProjectionState }) {
@@ -227,47 +223,17 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         mcr={mcr}
                       />
                     </div>
-                    {/* Explicit full-width fallback below the ~1024px point
-                      where this bar (sidebar + card padding, not raw
-                      viewport width) actually runs out of room — without
-                      it, this cluster squeezes between the stat blocks
-                      instead of dropping to its own clean row (live-user
-                      finding, 2026-08-29). */}
-                    <div className="ml-auto flex basis-full items-center justify-end gap-3 lg:basis-auto">
-                      {si.computedAt && (
-                        <div className="text-center">
-                          <div className="text-xs font-semibold whitespace-nowrap tabular-nums">
-                            {formatRelativeTime(si.computedAt)}
-                          </div>
-                          <div className="text-micro text-faint">last run</div>
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleRerun}
-                        disabled={isRerunning}
-                        className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors disabled:opacity-50"
-                      >
-                        {isRerunning ? "Running…" : "Re-run"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleClearCache}
-                        disabled={clearProjectionCacheMutation.isPending}
-                        className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors disabled:opacity-50"
-                      >
-                        {clearProjectionCacheMutation.isPending
-                          ? "Clearing…"
-                          : "Clear Cache"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowAssumptions(true)}
-                        className={`text-label rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
-                      >
-                        View Assumptions &rarr;
-                      </button>
-                    </div>
+                    <McRunControls
+                      si={si}
+                      handleRerun={handleRerun}
+                      isRerunning={isRerunning}
+                      handleClearCache={handleClearCache}
+                      clearProjectionCacheMutation={
+                        clearProjectionCacheMutation
+                      }
+                      setShowAssumptions={setShowAssumptions}
+                      ps={ps}
+                    />
                   </div>
                 </ControlZone>
               );

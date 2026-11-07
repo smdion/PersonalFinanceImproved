@@ -1166,10 +1166,13 @@
   },
   "src/components/retirement-projection/mc-summary-tiles.tsx": {
     "ratchet/max-comment-lines": {
-      "count": 1
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/components/retirement-projection/projection-table-accum-row.model.ts": {
@@ -1357,19 +1360,16 @@
   },
   "src/components/retirement-projection/projection-mc-results.tsx": {
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-jsx-iife": {
       "count": 1
-    },
-    "ratchet/no-raw-button": {
-      "count": 3
     }
   },
   "src/components/retirement-projection/projection-table-accum-row.tsx": {

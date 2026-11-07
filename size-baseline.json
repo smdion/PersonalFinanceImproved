@@ -63,7 +63,7 @@
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
     "src/components/retirement-projection/projection-chart.tsx": 1145,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 504,
-    "src/components/retirement-projection/projection-mc-results.tsx": 285,
+    "src/components/retirement-projection/projection-mc-results.tsx": 251,
     "src/components/retirement-projection/projection-table-accum-balances.model.ts": 229,
     "src/components/retirement-projection/projection-table-accum-contributions.model.ts": 250,
     "src/components/retirement-projection/projection-table-accum-row.tsx": 872,
@@ -643,8 +643,7 @@
       "ProjectionHeroKpis": 383
     },
     "src/components/retirement-projection/projection-mc-results.tsx": {
-      "McResultsSection": 265,
-      "McResultsSection.iife()": 167
+      "McResultsSection": 235
     },
     "src/components/retirement-projection/projection-table-accum-row.tsx": {
       "AccumulationRow": 722
