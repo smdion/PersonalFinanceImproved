@@ -545,9 +545,6 @@
     }
   },
   "src/components/versions/restore-dialog.tsx": {
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -559,9 +556,6 @@
     }
   },
   "src/components/versions/import-dialog.tsx": {
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
