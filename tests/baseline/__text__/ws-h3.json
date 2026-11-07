@@ -1382,39 +1382,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 62)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 62)"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1515,39 +1523,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 63)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 63)"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1648,39 +1664,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 64)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 64)"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1781,39 +1805,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1914,39 +1946,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2047,39 +2087,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2181,39 +2229,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2314,39 +2370,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2447,39 +2511,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2580,39 +2652,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2713,39 +2793,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2846,39 +2934,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2979,39 +3075,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3112,39 +3216,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3250,39 +3362,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3388,39 +3508,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3526,39 +3654,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3664,39 +3800,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3802,39 +3946,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3940,39 +4092,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4078,39 +4238,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4216,39 +4384,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4354,39 +4530,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4492,39 +4676,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4630,39 +4822,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4768,39 +4968,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4906,39 +5114,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5044,39 +5260,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5182,39 +5406,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5320,39 +5552,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5458,39 +5698,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5596,39 +5844,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5734,39 +5990,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -5872,39 +6136,47 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2043)"
+     },
      "name": "Cameron 401k (Granite 401(k) plan)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Cameron HSA (HealthEquity)",
      "ownerName": "Cameron",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,

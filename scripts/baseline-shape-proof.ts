@@ -8,9 +8,10 @@
  *
  * Every behavior-baseline file (`tests/baseline/__baseline__/`, `__sync__/`,
  * `__text__/`) that differs between `<rev>` and the working tree is read on
- * both sides; the named shape's flatten turns the new file back into the old
- * shape, and the result must equal the old file exactly (same keys, same
- * values). A file added or deleted fails. Prints one line per folder and
+ * both sides; the named shape's flatten turns each side into the shape
+ * before any of the re-records it undoes, and the two must be equal exactly
+ * (same keys, same values). A side already in that shape flattens to
+ * itself. A file added or deleted fails. Prints one line per folder and
  * exits 1 on any difference.
  */
 import { execFileSync } from "node:child_process";
@@ -117,7 +118,7 @@ function main() {
       execFileSync("git", ["show", `${base}:${file}`], { encoding: "utf8" }),
     ) as Json;
     const after = JSON.parse(fs.readFileSync(file, "utf8")) as Json;
-    if (canonical(flatten(after)) !== canonical(before)) {
+    if (canonical(flatten(after)) !== canonical(flatten(before))) {
       failed.push(`values differ: ${file}`);
       continue;
     }

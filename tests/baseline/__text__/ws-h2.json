@@ -1388,10 +1388,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -1484,107 +1486,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
-     "name": "Taylor 401k (Lakeside 401(k) plan)",
-     "ownerName": "Taylor",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    }
-   ],
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    }
-   ],
-   "strategyAction": "decline",
-   "unmetNeedMaterial": false,
-   "withdrawalSized": false
-  },
-  {
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "hasBudgetOverride": false,
-   "individualAccountBalances": [
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -1678,10 +1585,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -1775,10 +1684,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -1872,10 +1783,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -1969,10 +1882,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -2066,10 +1981,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -2163,10 +2080,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -2260,10 +2179,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
@@ -2357,20 +2278,123 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
+     "name": "Taylor 401k (Lakeside 401(k) plan)",
+     "ownerName": "Taylor",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "strategyAction": "decline",
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2464,20 +2488,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2571,20 +2599,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2678,20 +2710,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2785,20 +2821,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2892,20 +2932,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2999,20 +3043,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3106,20 +3154,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3213,20 +3265,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3320,20 +3376,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3427,20 +3487,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3534,20 +3598,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3641,20 +3709,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3748,20 +3820,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3855,20 +3931,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -3962,20 +4042,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -4069,20 +4153,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2053)"
+     },
      "name": "Taylor 401k (Lakeside 401(k) plan)",
      "ownerName": "Taylor",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,

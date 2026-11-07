@@ -141,37 +141,43 @@ export type IndividualAccountYearBalance = {
   contribution: number;
   employerMatch: number;
   growth: number;
-  /** Per-account withdrawal amount (decumulation only). */
-  withdrawal?: number;
   /** Breakdown of contribution sources (brokerage accounts only). */
   intentionalContribution?: number;
   overflowContribution?: number;
   rampContribution?: number;
-  /** Withdrawal-ordering eligibility for this account, this year
-   *  (decumulation only). `true` = the
-   *  full balance was treated as locked (penalty-preferred-against) when
-   *  withdrawal routing ran this year — never "inaccessible", the engine's
-   *  soft/penalized-but-available model always allows drawing from a
-   *  locked account once eligible sources run out (see
-   *  `withdrawal-eligibility.ts`'s module docblock). `reason` explains why,
-   *  from `AccountEligibility.reason`. Absent when the account has no
-   *  resolvable eligibility question for this category (e.g. brokerage —
-   *  though that case still gets a reason string, just never `locked`) or
-   *  during accumulation. */
-  eligibilityLocked?: boolean;
-  eligibilityReason?: string;
-  /** Start-of-year dollars drawable this year without the early-withdrawal
-   *  penalty, and those that aren't (before this year's withdrawals and
-   *  growth — the numbers routing used; decumulation only). */
-  penaltyFreeAmount?: number;
-  penaltyExposedAmount?: number;
-  /** The household lets this account take penalized draws. */
-  allowPenalizedWithdrawals?: boolean;
+  /** The year's draw from this account and the eligibility it ran under:
+   *  every retirement year, and a year a paycheck is gone (gap-year-draw.ts).
+   *  Absent in an accumulation year with no draw. */
+  draw?: AccountYearDraw;
   /** Tracked Roth basis: present only for taxFree-bucket accounts with
    *  tracked basis (see `@/lib/pure/accounts/roth-basis-tracking`); absent
    *  (not zero) for everything else, so "no data" is never confused with
    *  "$0 left". */
   roth?: AccountYearRothBasis;
+};
+
+/** One account's draw this year (`IndividualAccountYearBalance.draw`). */
+export type AccountYearDraw = {
+  /** Per-account withdrawal amount. */
+  withdrawal: number;
+  /** Withdrawal-ordering eligibility for this account, this year. `true` =
+   *  the full balance was treated as locked (penalty-preferred-against)
+   *  when withdrawal routing ran this year — never "inaccessible", the
+   *  engine's soft/penalized-but-available model always allows drawing from
+   *  a locked account once eligible sources run out (see
+   *  `withdrawal-eligibility.ts`'s module docblock). `reason` explains why,
+   *  from `AccountEligibility.reason`. Absent when the account has no
+   *  resolvable eligibility question for this category (e.g. brokerage —
+   *  though that case still gets a reason string, just never `locked`). */
+  eligibilityLocked?: boolean;
+  eligibilityReason?: string;
+  /** Start-of-year dollars drawable this year without the early-withdrawal
+   *  penalty, and those that aren't (before this year's withdrawals and
+   *  growth — the numbers routing used). */
+  penaltyFreeAmount?: number;
+  penaltyExposedAmount?: number;
+  /** The household lets this account take penalized draws. */
+  allowPenalizedWithdrawals?: boolean;
 };
 
 /** One account's tracked Roth basis (`IndividualAccountYearBalance.roth`). */

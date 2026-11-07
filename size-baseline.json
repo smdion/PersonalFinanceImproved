@@ -142,7 +142,7 @@
     "src/lib/pure/engine/contribution-routing.ts": 624,
     "src/lib/pure/engine/individual-accounts/contributions.ts": 430,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 164,
-    "src/lib/pure/engine/individual-accounts/reconcile.ts": 419,
+    "src/lib/pure/engine/individual-accounts/reconcile.ts": 407,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 381,
     "src/lib/pure/engine/irmaa-check.ts": 91,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 322,
@@ -889,9 +889,6 @@
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
       "distributeContributions": 319
-    },
-    "src/lib/pure/engine/individual-accounts/reconcile.ts": {
-      "buildIndividualYearBalances": 154
     },
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
       "runAccumulationYear": 295

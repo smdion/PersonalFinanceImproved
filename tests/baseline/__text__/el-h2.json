@@ -228,30 +228,36 @@
    "hasSalaryOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -333,30 +339,36 @@
    "hasSalaryOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2029)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2029)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2029)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2029)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -438,30 +450,36 @@
    "hasSalaryOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2030)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2030)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2030)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2030)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -543,30 +561,36 @@
    "hasSalaryOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2031)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2031)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2031)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2031)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -623,30 +647,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -750,30 +780,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -877,30 +913,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1004,30 +1046,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1131,30 +1179,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1258,30 +1312,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1385,30 +1445,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1512,30 +1578,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1545,10 +1617,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1654,30 +1728,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1687,10 +1767,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1796,30 +1878,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1829,10 +1917,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -1938,30 +2028,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -1971,10 +2067,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2080,30 +2178,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -2113,10 +2217,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2222,30 +2328,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -2255,10 +2367,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2364,30 +2478,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -2397,10 +2517,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2506,30 +2628,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -2539,10 +2667,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2648,30 +2778,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "403b",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2028)"
+     },
      "name": "Robin 403b (Plan Co 403(b))",
      "ownerName": "Robin",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2032)"
+     },
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
@@ -2681,10 +2817,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,

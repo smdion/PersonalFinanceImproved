@@ -4,6 +4,7 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
   AccountBalances,
+  AccountYearDraw,
   AccountYearRothBasis,
 } from "../../accounts/account-balances.types";
 import { roundToCents } from "../../../utils/math";
@@ -32,7 +33,7 @@ import {
  * Build individual account year balance records for output.
  *
  * `eligibility` (decumulation only) —
- * when provided, each output record's `eligibilityLocked`/`eligibilityReason`
+ * when provided, each output record's `draw.eligibilityLocked`/`eligibilityReason`
  * are read straight from the matching `AccountEligibility` entry, so the
  * UI can show why the engine did or didn't prefer an account this year.
  * Purely a read/pass-through here — this module never computes eligibility
@@ -66,16 +67,24 @@ export function buildIndividualYearBalances(
   },
   eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
-  const withdrawalFields = (k: string) => {
+  const drawFor = (k: string): AccountYearDraw => {
     const acctEligibility = eligibility?.byKey.get(k);
     return {
       withdrawal: maps.withdrawal?.get(k) ?? 0,
       ...(acctEligibility
         ? {
+            // "Locked" (whole-account, backward-compatible UI meaning) —
+            // every dollar in the account is penalty-exposed. A PARTIALLY
+            // exposed account (some penalty-free capacity remaining) is
+            // NOT locked under this definition, even though it now has a
+            // nonzero penaltyExposedAmount — see withdrawal-eligibility.ts's
+            // module docblock § Q2.
             eligibilityLocked:
               acctEligibility.penaltyFreeAmount <= 0.005 &&
               acctEligibility.penaltyExposedAmount > 0,
             eligibilityReason: acctEligibility.reason,
+            // Start-of-year capacity (before this year's withdrawals and
+            // growth) — the same numbers routing used.
             penaltyFreeAmount: acctEligibility.penaltyFreeAmount,
             penaltyExposedAmount: acctEligibility.penaltyExposedAmount,
             allowPenalizedWithdrawals:
@@ -143,15 +152,14 @@ export function buildIndividualYearBalances(
         ...costBasisFields,
         ...projectedFields,
         // A year a paycheck is gone draws too (gap-year-draw.ts): the same
-        // withdrawal, eligibility and basis fields a retirement year has.
-        ...(maps.withdrawal ? withdrawalFields(k) : {}),
+        // draw, eligibility and basis fields a retirement year has.
+        ...(maps.withdrawal ? { draw: drawFor(k) } : {}),
         ...rothFields(
           maps.withdrawal ? { ...basisFields, ...drawnFields } : basisFields,
         ),
       };
     }
 
-    const acctEligibility = eligibility?.byKey.get(k);
     return {
       name: ia.name,
       category: ia.category,
@@ -163,27 +171,7 @@ export function buildIndividualYearBalances(
       contribution: maps.contribs?.get(k) ?? 0,
       employerMatch: 0,
       growth: maps.growth?.get(k) ?? 0,
-      withdrawal: maps.withdrawal?.get(k) ?? 0,
-      ...(acctEligibility
-        ? {
-            // "Locked" (whole-account, backward-compatible UI meaning) —
-            // every dollar in the account is penalty-exposed. A PARTIALLY
-            // exposed account (some penalty-free capacity remaining) is
-            // NOT locked under this definition, even though it now has a
-            // nonzero penaltyExposedAmount — see withdrawal-eligibility.ts's
-            // module docblock § Q2.
-            eligibilityLocked:
-              acctEligibility.penaltyFreeAmount <= 0.005 &&
-              acctEligibility.penaltyExposedAmount > 0,
-            eligibilityReason: acctEligibility.reason,
-            // Start-of-year capacity (before this year's withdrawals and
-            // growth) — the same numbers routing used.
-            penaltyFreeAmount: acctEligibility.penaltyFreeAmount,
-            penaltyExposedAmount: acctEligibility.penaltyExposedAmount,
-            allowPenalizedWithdrawals:
-              acctEligibility.allowPenalizedWithdrawals,
-          }
-        : {}),
+      draw: drawFor(k),
       ...rothFields({ ...basisFields, ...drawnFields }),
       ...costBasisFields,
       ...projectedFields,
@@ -196,7 +184,7 @@ export function buildIndividualYearBalances(
       !r.projectedOnly ||
       r.balance !== 0 ||
       r.contribution !== 0 ||
-      (r.withdrawal ?? 0) !== 0,
+      (r.draw?.withdrawal ?? 0) !== 0,
   );
 }
 

@@ -191,10 +191,10 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
         return acct
           ? {
               year: yr.year,
-              locked: acct.eligibilityLocked,
+              locked: acct.draw?.eligibilityLocked,
               basisRemaining: acct.roth?.basisRemaining,
               basisDrawn: acct.roth?.basisDrawn,
-              withdrawal: acct.withdrawal ?? 0,
+              withdrawal: acct.draw?.withdrawal ?? 0,
               balance: acct.balance,
             }
           : null;
@@ -276,7 +276,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
 
       if (acct.roth?.basisDrawn !== undefined) {
         expect(acct.roth?.basisDrawn).toBeLessThanOrEqual(
-          (acct.withdrawal ?? 0) + 0.01,
+          (acct.draw?.withdrawal ?? 0) + 0.01,
         );
         expect(acct.roth?.basisDrawn).toBeGreaterThanOrEqual(0);
       }

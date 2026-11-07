@@ -1731,7 +1731,7 @@ describe("buildIndividualYearBalances", () => {
     expect(result[0]!.contribution).toBe(0);
     expect(result[0]!.employerMatch).toBe(0);
     expect(result[0]!.growth).toBe(5000);
-    expect(result[0]!.withdrawal).toBe(20000);
+    expect(result[0]!.draw?.withdrawal).toBe(20000);
     expect(result[0]!.balance).toBe(85000);
   });
 
@@ -1804,8 +1804,8 @@ describe("buildIndividualYearBalances", () => {
     );
 
     const locked = result.find((r) => r.name === "Locked 401k")!;
-    expect(locked.eligibilityLocked).toBe(true);
-    expect(locked.eligibilityReason).toBe(
+    expect(locked.draw?.eligibilityLocked).toBe(true);
+    expect(locked.draw?.eligibilityReason).toBe(
       "Locked until Rule of 55 or age 59½ (currently 40)",
     );
 
@@ -1813,8 +1813,8 @@ describe("buildIndividualYearBalances", () => {
     // wasn't computed this year, or the account has no owner) — fields
     // stay absent rather than defaulting to a misleading "not locked".
     const noData = result.find((r) => r.name === "No Eligibility Data")!;
-    expect(noData.eligibilityLocked).toBeUndefined();
-    expect(noData.eligibilityReason).toBeUndefined();
+    expect(noData.draw?.eligibilityLocked).toBeUndefined();
+    expect(noData.draw?.eligibilityReason).toBeUndefined();
   });
 
   it("zeroes balance below $1 threshold", () => {

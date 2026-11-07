@@ -111,10 +111,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -207,10 +209,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -303,10 +307,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -399,10 +405,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -495,10 +503,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -591,10 +601,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -687,10 +699,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -783,10 +797,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -879,10 +895,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -975,10 +993,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1071,10 +1091,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1167,10 +1189,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1263,10 +1287,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1359,10 +1385,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1455,10 +1483,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1551,10 +1581,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1647,10 +1679,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1743,10 +1777,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1839,10 +1875,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -1935,10 +1973,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2031,10 +2071,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2127,10 +2169,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2223,10 +2267,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2319,10 +2365,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2415,10 +2463,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2511,10 +2561,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2607,10 +2659,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2703,10 +2757,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2799,10 +2855,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2895,10 +2953,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -2991,10 +3051,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3087,10 +3149,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3183,10 +3247,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3279,10 +3345,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3375,10 +3443,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3471,10 +3541,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3567,10 +3639,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3663,10 +3737,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3759,10 +3835,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3855,10 +3933,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -3951,10 +4031,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",
@@ -4047,10 +4129,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Drew Brokerage (Vanguard)",
      "ownerName": "Drew",
      "parentCategory": "Retirement",

@@ -1686,40 +1686,48 @@
    "hasSalaryOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 60)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 60)"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -1729,10 +1737,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -1815,40 +1825,48 @@
    "hasSalaryOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2045)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2045)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 61)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 61)"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -1858,10 +1876,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -1919,40 +1939,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 62)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 62)"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -1962,10 +1990,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2065,40 +2095,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 63)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 63)"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2108,10 +2146,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2211,40 +2251,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 64)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 65 — non-medical withdrawal penalty (currently 64)"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2254,10 +2302,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2357,40 +2407,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2400,10 +2458,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2503,40 +2563,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2546,10 +2614,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2649,40 +2719,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2692,10 +2770,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2795,40 +2875,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2838,10 +2926,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -2946,40 +3036,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -2989,10 +3087,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -3097,40 +3197,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -3140,10 +3248,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -3248,40 +3358,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -3291,10 +3409,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -3399,40 +3519,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -3442,10 +3570,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -3550,40 +3680,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -3593,10 +3731,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -3704,40 +3844,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -3747,10 +3895,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -3855,40 +4005,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -3898,166 +4056,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
-     "name": "Joint Brokerage (Schwab)",
-     "parentCategory": "Portfolio",
-     "taxType": "afterTax"
-    }
-   ],
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdByPerson": [
-    {
-     "personName": "Jordan"
-    }
-   ],
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": true,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jordan"
-    },
-    {
-     "personName": "Riley"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
-    {
-     "source": "hsa"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "individualAccountBalances": [
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
-     "name": "Jordan 401k (Contoso 401(k) plan)",
-     "ownerName": "Jordan",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
-     "name": "Riley 401k (Fabrikam 401(k) plan)",
-     "ownerName": "Riley",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
-     "name": "Jordan HSA (HealthEquity)",
-     "ownerName": "Jordan",
-     "parentCategory": "Retirement",
-     "taxType": "hsa"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
-     "name": "Riley IRA (Vanguard)",
-     "ownerName": "Riley",
-     "parentCategory": "Retirement",
-     "roth": {
-      "basisUncertain": false
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
      },
-     "taxType": "taxFree"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -4167,40 +4171,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -4210,10 +4222,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -4240,9 +4254,6 @@
    "rmdByPerson": [
     {
      "personName": "Jordan"
-    },
-    {
-     "personName": "Riley"
     }
    ],
    "rmdOverrodeRouting": false,
@@ -4326,40 +4337,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -4369,10 +4388,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -4485,40 +4506,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -4528,10 +4557,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -4644,40 +4675,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -4687,10 +4726,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -4803,40 +4844,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -4846,10 +4895,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -4962,40 +5013,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5005,10 +5064,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -5121,40 +5182,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5164,10 +5233,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -5280,40 +5351,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5323,10 +5402,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -5439,40 +5520,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5482,10 +5571,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -5598,40 +5689,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5641,10 +5740,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -5757,40 +5858,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5800,10 +5909,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -5916,40 +6027,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -5959,10 +6078,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -6075,40 +6196,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -6118,10 +6247,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -6234,40 +6365,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -6277,10 +6416,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -6393,40 +6534,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -6436,10 +6585,181 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "hsa",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -6553,40 +6873,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -6596,10 +6924,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -6713,40 +7043,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -6756,10 +7094,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -6873,40 +7213,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -6916,10 +7264,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -7033,40 +7383,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -7076,10 +7434,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
@@ -7188,40 +7548,48 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)"
+     },
      "name": "Jordan 401k (Contoso 401(k) plan)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)"
+     },
      "name": "Riley 401k (Fabrikam 401(k) plan)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Jordan HSA (HealthEquity)",
      "ownerName": "Jordan",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
@@ -7231,10 +7599,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"

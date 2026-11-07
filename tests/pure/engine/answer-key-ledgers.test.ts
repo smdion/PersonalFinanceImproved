@@ -132,7 +132,7 @@ function engineCells(
     cells[`${a.name}.contributions`] = a.contribution;
     cells[`${a.name}.match`] = a.employerMatch;
     cells[`${a.name}.growth`] = a.growth;
-    cells[`${a.name}.gross_distribution`] = a.withdrawal ?? 0;
+    cells[`${a.name}.gross_distribution`] = a.draw?.withdrawal ?? 0;
   }
   return cells;
 }

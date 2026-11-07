@@ -369,7 +369,7 @@ export function useProjectionDerived(
                       parentCategory?: string;
                       contribution: number;
                       employerMatch: number;
-                      withdrawal?: number;
+                      draw?: { withdrawal: number };
                     }[];
                   }
                 ).individualAccountBalances;
@@ -379,7 +379,7 @@ export function useProjectionDerived(
                     ia.parentCategory === parentCategoryFilter &&
                     (ia.contribution !== 0 ||
                       ia.employerMatch !== 0 ||
-                      (ia.withdrawal ?? 0) !== 0),
+                      (ia.draw?.withdrawal ?? 0) !== 0),
                 );
                 if (hasMatchingContrib) contribCats.add(slotCat);
               } else {

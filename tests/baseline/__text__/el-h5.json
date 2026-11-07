@@ -981,20 +981,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1004,10 +1008,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1100,20 +1106,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1123,10 +1133,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1219,20 +1231,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1242,10 +1258,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1338,20 +1356,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1361,10 +1383,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1457,20 +1481,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1480,10 +1508,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1576,20 +1606,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1599,10 +1633,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1695,20 +1731,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1718,10 +1758,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1814,20 +1856,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1837,10 +1883,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1933,20 +1981,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -1956,10 +2008,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2052,20 +2106,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2075,10 +2133,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2171,20 +2231,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2194,10 +2258,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2290,20 +2356,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2313,10 +2383,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2409,20 +2481,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2432,10 +2508,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2528,20 +2606,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2551,10 +2633,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2647,20 +2731,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2670,10 +2758,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2766,20 +2856,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2789,10 +2883,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2885,20 +2981,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2039)"
+     },
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
@@ -2908,10 +3008,12 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Emery Brokerage (Index Funds Brokerage)",
      "ownerName": "Emery",
      "parentCategory": "Retirement",

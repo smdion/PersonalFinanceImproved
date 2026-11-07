@@ -885,20 +885,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -908,20 +912,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1022,20 +1030,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1045,20 +1057,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1159,20 +1175,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1182,20 +1202,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1296,20 +1320,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1319,20 +1347,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1433,20 +1465,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1456,20 +1492,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1570,20 +1610,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1593,20 +1637,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1707,20 +1755,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1730,20 +1782,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1844,20 +1900,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -1867,20 +1927,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -1981,20 +2045,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -2004,20 +2072,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -2118,20 +2190,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -2141,20 +2217,24 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
@@ -2255,20 +2335,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -2278,30 +2362,36 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2407,20 +2497,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -2430,30 +2524,36 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2559,20 +2659,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — Rule of 55 met (separated 2036)"
+     },
      "name": "Dana 401k (Plan Co 401(k))",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Dana IRA (Index Funds IRA)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
@@ -2582,30 +2686,36 @@
      "taxType": "taxFree"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 65 or older"
+     },
      "name": "Dana HSA (Health Savings Co)",
      "ownerName": "Dana",
      "parentCategory": "Retirement",
      "taxType": "hsa"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Dana Brokerage (Index Funds Brokerage)",
      "ownerName": "Dana",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,

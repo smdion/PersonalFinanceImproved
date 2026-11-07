@@ -353,17 +353,17 @@ export function filterYearByParentCategory(
       traditionalWithdrawal = roundToCents(
         catIabs
           .filter((ia) => !isTaxFreeBucket(ia.taxType))
-          .reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+          .reduce((s, ia) => s + (ia.draw?.withdrawal ?? 0), 0),
       );
       rothWithdrawal = roundToCents(
         catIabs
           .filter((ia) => isTaxFreeBucket(ia.taxType))
-          .reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+          .reduce((s, ia) => s + (ia.draw?.withdrawal ?? 0), 0),
       );
       withdrawal = roundToCents(traditionalWithdrawal + rothWithdrawal);
     } else {
       withdrawal = roundToCents(
-        catIabs.reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+        catIabs.reduce((s, ia) => s + (ia.draw?.withdrawal ?? 0), 0),
       );
       rothWithdrawal = 0;
       traditionalWithdrawal = 0;

@@ -121,30 +121,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 49)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 49)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -240,30 +246,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 50)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 50)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -359,30 +371,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 51)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 51)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -478,30 +496,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 52)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 52)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -597,30 +621,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 53)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 53)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -716,30 +746,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 54)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 54)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -835,30 +871,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 55)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 55)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -954,30 +996,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 56)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 56)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1073,30 +1121,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 57)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 57)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1192,30 +1246,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 58)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 58)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1311,30 +1371,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 59)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 59)"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ — no basis remaining",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ — no basis remaining"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1430,30 +1496,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1549,30 +1621,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1668,30 +1746,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1787,30 +1871,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -1906,30 +1996,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2025,30 +2121,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2144,30 +2246,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2263,30 +2371,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2382,30 +2496,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2501,30 +2621,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2620,30 +2746,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2739,30 +2871,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2858,30 +2996,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -2977,30 +3121,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -3096,30 +3246,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
@@ -3215,30 +3371,36 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Always accessible — no age or employer restriction",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Always accessible — no age or employer restriction"
+     },
      "name": "Rowan Brokerage (Index Funds Brokerage)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "afterTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",

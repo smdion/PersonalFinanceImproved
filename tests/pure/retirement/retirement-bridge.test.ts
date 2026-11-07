@@ -31,9 +31,23 @@ const acct = (
   ...o,
 });
 
-/** An account in the engine's row shape: Roth basis under `roth`. */
-const asRow = ({ rothBasisUncertain, ...rest }: Acct) => ({
+/** An account in the engine's row shape: the draw fields under `draw`,
+ *  Roth basis under `roth`. */
+const asRow = ({
+  withdrawal,
+  penaltyFreeAmount,
+  penaltyExposedAmount,
+  allowPenalizedWithdrawals,
+  rothBasisUncertain,
+  ...rest
+}: Acct) => ({
   ...rest,
+  draw: {
+    withdrawal: withdrawal ?? 0,
+    penaltyFreeAmount,
+    penaltyExposedAmount,
+    allowPenalizedWithdrawals,
+  },
   ...(rothBasisUncertain !== undefined
     ? { roth: { basisUncertain: rothBasisUncertain } }
     : {}),

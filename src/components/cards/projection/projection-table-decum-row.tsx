@@ -99,8 +99,8 @@ export function buildEligibilityNote(
   const parts: string[] = [];
   const isBasisRemainingReason =
     ia.roth?.basisRemaining != null &&
-    !ia.eligibilityLocked &&
-    (ia.eligibilityReason?.includes("basis remaining") ?? false);
+    !ia.draw?.eligibilityLocked &&
+    (ia.draw?.eligibilityReason?.includes("basis remaining") ?? false);
   // Age-59½ qualification (tax-free growth) is a DIFFERENT test than the
   // Rule-of-55 wording above — Rule of 55 exempts the 10% penalty, never
   // taxability (splitRothWithdrawalForTax only ever checks age 59½). Both
@@ -110,9 +110,9 @@ export function buildEligibilityNote(
   // is IRA-reason-text-specific) correctly flags non-qualified growth as
   // taxable for BOTH account types.
   const isAgeQualified =
-    ia.eligibilityReason?.includes("age 59½ or older") ?? false;
+    ia.draw?.eligibilityReason?.includes("age 59½ or older") ?? false;
   const basisDrawn = ia.roth?.basisDrawn ?? 0;
-  const totalWithdrawn = ia.withdrawal ?? 0;
+  const totalWithdrawn = ia.draw?.withdrawal ?? 0;
   // Basis-first ordering draws basis before growth. Under the
   // penalty-hard-exclusion model, growth this account hasn't earned
   // penalty-free access to should never be drawn at all by default —
@@ -129,8 +129,8 @@ export function buildEligibilityNote(
     parts.push(
       `${label} — ${formatCurrency(deflate(startBasis, year.year))} basis remaining, always penalty-free${flag}`,
     );
-  } else if (ia.eligibilityReason) {
-    parts.push(ia.eligibilityReason);
+  } else if (ia.draw?.eligibilityReason) {
+    parts.push(ia.draw.eligibilityReason);
   }
   if (basisDrawn > 0.01) {
     const drawn = formatCurrency(deflate(basisDrawn, year.year));
@@ -151,7 +151,7 @@ export function buildEligibilityNote(
     }
   }
   if (parts.length === 0) return {};
-  return { note: parts.join(" · "), noteLocked: !!ia.eligibilityLocked };
+  return { note: parts.join(" · "), noteLocked: !!ia.draw?.eligibilityLocked };
 }
 
 /**
@@ -178,7 +178,7 @@ export function buildEligibilityNote(
  * not a claim about this specific account's tax treatment).
  */
 function buildRoutingReasonClause(
-  ia: Pick<IndividualAccountYearBalance, "category" | "taxType" | "withdrawal">,
+  ia: Pick<IndividualAccountYearBalance, "category" | "taxType">,
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
@@ -516,7 +516,7 @@ export function DecumulationRow({
                       // category. Falls back to the old aggregate when no
                       // individual-account data exists for this category.
                       const withdrawingAccts = catAccts
-                        .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                        .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
                         .sort((a, b) => {
                           const taxDiff =
                             (isTaxFreeBucket(a.taxType) ? 1 : 0) -
@@ -533,7 +533,7 @@ export function DecumulationRow({
                             label: multiAcct
                               ? ownerAccountLabel(ia)
                               : catCfg.displayLabel,
-                            amount: deflate(ia.withdrawal!, yr.year),
+                            amount: deflate(ia.draw!.withdrawal, yr.year),
                             prefix: "-",
                             taxType: itemTaxType(ia.category, ia.taxType),
                             color: "red",
@@ -733,7 +733,7 @@ export function DecumulationRow({
                   : bucketIabsAll
               ).filter((ia) => iaBelongsToBucket(ia, bucket));
               const withdrawingAccts = bucketIabs
-                .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
                 .sort((a, b) => {
                   const catDiff =
                     (CATEGORY_ORDER.get(a.category as AccountCategory) ?? 0) -
@@ -768,7 +768,7 @@ export function DecumulationRow({
                                     ? ownerAccountLabel(ia)
                                     : (catDisplayLabel[ia.category] ??
                                       ia.category),
-                                  amount: deflate(ia.withdrawal!, yr.year),
+                                  amount: deflate(ia.draw!.withdrawal, yr.year),
                                   prefix: "-" as const,
                                   taxType: itemTaxType(ia.category, wdTaxType),
                                   color: "red" as TipColor,
@@ -875,7 +875,7 @@ export function DecumulationRow({
             // account(s), whose, funded it. Ordered by category (accum
             // order), then traditional before roth, then owner name.
             const withdrawingAccts = filteredIabs
-              .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+              .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
               .sort((a, b) => {
                 const catDiff =
                   (CATEGORY_ORDER.get(a.category) ?? 0) -
@@ -902,7 +902,7 @@ export function DecumulationRow({
                 // household" wall of text.
                 items.push({
                   label: ownerAccountLabel(ia),
-                  amount: deflate(ia.withdrawal!, yr.year),
+                  amount: deflate(ia.draw!.withdrawal, yr.year),
                   prefix: "-",
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
@@ -1138,7 +1138,7 @@ export function DecumulationRow({
                   if (bucketAccts.length > 0) {
                     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
                     for (const ia of bucketAccts) {
-                      const wd = ia.withdrawal ?? 0;
+                      const wd = ia.draw?.withdrawal ?? 0;
                       if (wd > 0) {
                         wdLineItems.push({
                           label: multiAcctBucket
@@ -1289,7 +1289,7 @@ export function DecumulationRow({
                     entryTaxType: ia.taxType,
                     balance: ia.balance,
                     growth: ia.growth,
-                    withdrawal: ia.withdrawal ?? 0,
+                    withdrawal: ia.draw?.withdrawal ?? 0,
                   });
                 }
                 const splitsTotal = decSplits.reduce(

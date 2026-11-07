@@ -65,10 +65,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -162,10 +164,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -259,10 +263,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -356,10 +362,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -453,10 +461,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -550,10 +560,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -647,10 +659,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -744,10 +758,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -841,10 +857,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -938,10 +956,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1035,10 +1055,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1132,10 +1154,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1229,10 +1253,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1326,10 +1352,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1423,10 +1451,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1520,10 +1550,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1617,10 +1649,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1714,10 +1748,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1811,10 +1847,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",
@@ -1908,10 +1946,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Frankie IRA (Fidelity)",
      "ownerName": "Frankie",
      "parentCategory": "Retirement",

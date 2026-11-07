@@ -107,10 +107,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 50)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 50)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -206,10 +208,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 51)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 51)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -305,10 +309,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 52)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 52)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -404,10 +410,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 53)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 53)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -503,10 +511,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 54)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 54)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -602,10 +612,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 55)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 55)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -701,10 +713,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 56)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 56)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -800,10 +814,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 57)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 57)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -899,10 +915,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 58)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 58)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -998,10 +1016,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": true,
-     "eligibilityReason": "Locked until age 59½ (currently 59)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": true,
+      "eligibilityReason": "Locked until age 59½ (currently 59)"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1097,10 +1117,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1193,10 +1215,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1289,10 +1313,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1385,10 +1411,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1481,10 +1509,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1577,10 +1607,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1673,10 +1705,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1769,10 +1803,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1865,10 +1901,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -1961,10 +1999,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -2057,10 +2097,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -2153,10 +2195,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -2249,10 +2293,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -2345,10 +2391,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -2441,10 +2489,12 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
@@ -2537,20 +2587,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
@@ -2643,20 +2697,24 @@
    "hasBudgetOverride": false,
    "individualAccountBalances": [
     {
-     "allowPenalizedWithdrawals": false,
      "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "Eligible — age 59½ or older"
+     },
      "name": "Blake IRA (Index Funds IRA)",
      "ownerName": "Blake",
      "parentCategory": "Retirement",
      "taxType": "preTax"
     },
     {
-     "allowPenalizedWithdrawals": false,
      "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "eligibilityReason": "No individual eligibility rule (joint account)"
+     },
      "name": "Retirement brokerage (projected)",
      "parentCategory": "Retirement",
      "projectedOnly": true,
