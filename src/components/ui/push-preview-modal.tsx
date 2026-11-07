@@ -68,15 +68,13 @@ export function PushPreviewModal({
       : "Pushing...";
 
   const titleId = useId();
-
   // Push sends one request per changed item to the connected budget API
   // (YNAB or Actual), so a full push can take well over 30 seconds — show
   // elapsed time so it's clear the app is still working, not stuck.
-  // setState only ever happens from the
-  // interval's own callback (never synchronously in the effect body) — the
-  // parent unmounts this modal once the mutation settles (see
-  // BudgetPushYnabModal/BudgetPullYnabModal), so a fresh mount next time
-  // already starts elapsedSeconds back at 0 with no explicit reset needed.
+  // setState only ever happens from the interval's own callback (never
+  // synchronously in the effect body) — the parent unmounts this modal once
+  // the mutation settles (see BudgetPushYnabModal/BudgetPullYnabModal), so a
+  // fresh mount next time starts elapsedSeconds at 0 with no reset needed.
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   useEffect(() => {
     if (!isPending) return;
@@ -91,6 +89,8 @@ export function PushPreviewModal({
       onClose={onCancel}
       role="alertdialog"
       labelledBy={titleId}
+      closeOnEscape={!isPending}
+      closeOnBackdrop={!isPending}
       className="bg-surface-primary mx-4 flex max-h-[80vh] w-full max-w-lg flex-col rounded-lg border p-5 shadow-xl"
     >
       <h3 id={titleId} className="text-primary mb-1 text-sm font-semibold">
