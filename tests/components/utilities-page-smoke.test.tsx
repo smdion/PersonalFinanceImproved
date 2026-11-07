@@ -59,4 +59,28 @@ describe("Utilities page", () => {
       },
     ]);
   });
+
+  it("opens a month's reading for editing from its month button", async () => {
+    const caller = page.household().caller;
+    await caller.utilities.upsertService({
+      kind: "gas",
+      providerName: "Example Gas Co",
+      usageUnit: "ccf",
+    });
+    const [service] = await caller.utilities.listServices();
+    await caller.utilities.upsertReading({
+      serviceId: service!.id,
+      year: 2026,
+      month: 2,
+      cost: "61.25",
+      usage: "48",
+    });
+    page.fresh();
+    await page.mount();
+    expect(screen.queryByRole("button", { name: "Feb" })).toBeNull();
+    fireEvent.click(screen.getByTitle("Unlock to edit"));
+    fireEvent.click(screen.getByRole("button", { name: "Feb" }));
+    expect(screen.getByDisplayValue("61.25")).toBeTruthy();
+    expect(screen.getByDisplayValue("48")).toBeTruthy();
+  });
 });

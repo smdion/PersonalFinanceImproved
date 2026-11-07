@@ -7,6 +7,7 @@ import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { CellButton } from "@/components/ui/cell-button";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import dynamic from "next/dynamic";
 import {
@@ -259,7 +260,6 @@ function UtilityCard({
                   {year.readingCount} mo
                 </span>
               </button>
-
               {open && (
                 <table className="mb-2 w-full text-sm">
                   <thead>
@@ -342,14 +342,14 @@ function UtilityCard({
                             if (!isUnlocked) return;
                             setEditingId(r.id);
                             setEditCost(String(r.cost));
-                            setEditUsage(
-                              r.usage != null ? String(r.usage) : "",
-                            );
+                            setEditUsage(r.usage?.toString() ?? "");
                             setEditNote(r.note ?? "");
                           }}
                         >
                           <td className="text-muted py-1.5 pl-6">
-                            {MONTH_NAMES[r.month - 1]}
+                            <CellButton enabled={isUnlocked}>
+                              {MONTH_NAMES[r.month - 1]}
+                            </CellButton>
                           </td>
                           <td className="py-1.5 text-right font-medium tabular-nums">
                             {(r.source === "ynab" || r.source === "actual") && (
