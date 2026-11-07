@@ -210,7 +210,7 @@
     "src/server/routers/simplefin/accounts.ts": 254,
     "src/server/routers/simplefin/index.ts": 24,
     "src/server/routers/sync/core.ts": 12,
-    "src/server/routers/sync/preview.ts": 733,
+    "src/server/routers/sync/preview.ts": 14,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
     "src/server/services/budget/active-summary.ts": 330,
@@ -242,6 +242,7 @@
     "src/server/services/savings/summary.ts": 370,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
+    "src/server/services/sync/preview.ts": 709,
     "src/server/services/sync/sync-all.ts": 268,
     "src/server/trpc.ts": 581
   },
@@ -943,9 +944,6 @@
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159
     },
-    "src/server/routers/sync/preview.ts": {
-      "previewProcedures.getPreview.query()": 699
-    },
     "src/server/services/budget/active-summary.ts": {
       "computeBudgetActiveSummary": 247
     },
@@ -999,6 +997,9 @@
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237
+    },
+    "src/server/services/sync/preview.ts": {
+      "computeSyncPreview": 683
     },
     "src/server/services/sync/sync-all.ts": {
       "syncAll": 245,
