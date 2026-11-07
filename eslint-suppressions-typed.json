@@ -84,11 +84,6 @@
       "count": 1
     }
   },
-  "src/components/layout/quick-search.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/components/portfolio/account-balance-overview.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2

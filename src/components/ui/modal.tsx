@@ -12,6 +12,7 @@ const OVERLAY = "fixed inset-0 z-[110] flex bg-black/40 print:hidden";
 const PLACEMENT = {
   center: "items-center justify-center",
   right: "justify-end",
+  top: "items-start justify-center pt-[15vh]",
 } as const;
 
 type ModalName =
@@ -25,7 +26,8 @@ export type ModalProps = ModalName & {
   role?: "dialog" | "alertdialog";
   closeOnEscape?: boolean;
   closeOnBackdrop?: boolean;
-  /** `right` docks a full-height panel to the right edge. */
+  /** `right` docks a full-height panel to the right edge; `top` hangs the
+   *  panel below the top, as a command palette. */
   placement?: keyof typeof PLACEMENT;
   /** Keeps a 1rem gap between the panel and the viewport's edges. */
   gutter?: boolean;

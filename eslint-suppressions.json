@@ -1762,16 +1762,7 @@
     }
   },
   "src/components/layout/quick-search.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "jsx-a11y/click-events-have-key-events": {
-      "count": 3
-    },
-    "jsx-a11y/no-static-element-interactions": {
-      "count": 1
-    },
-    "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
     "ratchet/no-raw-input": {
