@@ -27,7 +27,7 @@
 
 import type { MutableRefObject } from "react";
 import { trpc } from "@/lib/trpc";
-import { useOptimisticMutation } from "@/lib/hooks/use-optimistic-mutation";
+import { useOptimisticMutation } from "@/components/budget/use-optimistic-mutation";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
 type UseItemMutationsOpts = {

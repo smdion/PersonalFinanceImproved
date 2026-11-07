@@ -27,7 +27,7 @@ vi.mock("@/lib/hooks/use-milestones", () => ({
     results: evaluateMilestones(input),
   }),
 }));
-vi.mock("@/lib/hooks/use-first-reached", () => ({
+vi.mock("@/app/(dashboard)/milestones/use-first-reached", () => ({
   useFirstReached: () => () => null,
 }));
 vi.mock("@/components/milestones/milestone-settings", () => ({

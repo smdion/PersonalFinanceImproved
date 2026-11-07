@@ -31,7 +31,7 @@ import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_BUDGET_NAME_COL_WIDTH,
 } from "@/lib/constants/settings-keys";
-import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
+import { useCloneProfile } from "@/components/budget/use-clone-profile";
 import {
   ContributionProfileManager,
   SalaryProfileManager,

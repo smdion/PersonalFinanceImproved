@@ -41,7 +41,7 @@ import { FplByHouseholdSettings } from "@/components/settings/fpl-by-household";
 import { IrsLimitGrowthSetting } from "./irs-limit-growth";
 import { ReturnRatesSettings } from "@/components/settings/return-rates";
 import { FixedByLaw } from "./fixed-by-law";
-import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import { useDeepLinkParam } from "@/components/settings/use-deep-link-param";
 import {
   SETTINGS_SECTION_PARAM,
   TAX_DATA_SECTIONS,

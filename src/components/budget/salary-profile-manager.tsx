@@ -14,7 +14,7 @@ import {
   ProfileSidebarHeader,
 } from "@/components/ui/profile-sidebar";
 import { confirm } from "@/components/ui/confirm-dialog";
-import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
+import { useCloneProfile } from "@/components/budget/use-clone-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 import { PayScheduleSection } from "@/components/paycheck/pay-schedule-section";

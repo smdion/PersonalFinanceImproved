@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { PeopleSettings } from "@/components/settings/people";
 
-import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import { useDeepLinkParam } from "@/components/settings/use-deep-link-param";
 import {
   GENERAL_SECTIONS,
   SETTINGS_SECTION_PARAM,

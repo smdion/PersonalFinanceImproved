@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
+import { useCloneProfile } from "@/components/budget/use-clone-profile";
 import { promptText } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/hooks/use-toast";
 

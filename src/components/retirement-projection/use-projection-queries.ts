@@ -2,7 +2,7 @@
 import { useMemo, useEffect, useRef, useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
-import { useBoundedPollInterval } from "@/lib/hooks/use-bounded-poll-interval";
+import { useBoundedPollInterval } from "@/components/retirement-projection/use-bounded-poll-interval";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import {
   SK_RETIREMENT_SIMULATION_AUTOLOAD,

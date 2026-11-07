@@ -196,7 +196,7 @@
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/lib/hooks/use-first-reached.ts",
+    "from": "src/app/(dashboard)/milestones/use-first-reached.ts",
     "to": "src/lib/pure/advice/milestone-first-reached.ts"
   },
   {

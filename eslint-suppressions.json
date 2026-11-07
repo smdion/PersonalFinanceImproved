@@ -4492,7 +4492,7 @@
       "count": 2
     }
   },
-  "src/lib/hooks/use-bounded-poll-interval.ts": {
+  "src/components/retirement-projection/use-bounded-poll-interval.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4510,7 +4510,7 @@
       "count": 2
     }
   },
-  "src/lib/hooks/use-clone-profile.ts": {
+  "src/components/budget/use-clone-profile.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
@@ -4520,7 +4520,7 @@
       "count": 2
     }
   },
-  "src/lib/hooks/use-deep-link-param.ts": {
+  "src/components/settings/use-deep-link-param.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -4581,7 +4581,7 @@
       "count": 1
     }
   },
-  "src/lib/hooks/use-local-storage-set.ts": {
+  "src/app/(dashboard)/savings/use-local-storage-set.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
@@ -4599,7 +4599,7 @@
       "count": 2
     }
   },
-  "src/lib/hooks/use-optimistic-mutation.ts": {
+  "src/components/budget/use-optimistic-mutation.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
     }

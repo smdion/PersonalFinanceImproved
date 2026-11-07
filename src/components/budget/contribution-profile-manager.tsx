@@ -34,7 +34,7 @@ import {
   ProfileSidebarHeader,
 } from "@/components/ui/profile-sidebar";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
-import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
+import { useCloneProfile } from "@/components/budget/use-clone-profile";
 import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import {
   resolveContribFieldDisplayState,

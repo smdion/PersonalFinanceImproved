@@ -14,7 +14,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
+import { useLocalStorageSet } from "@/app/(dashboard)/savings/use-local-storage-set";
 import { SummaryCards } from "@/components/savings/summary-cards";
 import { NewFundFormCard } from "@/components/savings/new-fund-form-card";
 import type { GoalProjection, NewFundForm } from "@/components/savings/types";

@@ -17,7 +17,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_SETTINGS_ACTIVE_TAB } from "@/lib/constants/settings-keys";
-import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import { useDeepLinkParam } from "@/components/settings/use-deep-link-param";
 import {
   ADMIN_SETTINGS_TABS,
   SETTINGS_SECTION_PARAM,

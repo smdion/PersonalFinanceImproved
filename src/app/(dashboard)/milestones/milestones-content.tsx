@@ -2,7 +2,7 @@
 
 /** Milestones page body: what's next and what's been reached, the FOO
  *  ladder, then every milestone by group. */
-import { useFirstReached } from "@/lib/hooks/use-first-reached";
+import { useFirstReached } from "@/app/(dashboard)/milestones/use-first-reached";
 import { RaiseHistoryTable } from "@/components/milestones/raise-history-table";
 import { AlwaysBuyingDetail } from "@/components/milestones/always-buying-detail";
 import { useState } from "react";

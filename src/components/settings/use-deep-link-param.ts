@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { useClearParams } from "./use-focus";
+import { useClearParams } from "@/lib/hooks/use-focus";
 
 const NONE: readonly string[] = [];
 
