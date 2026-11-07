@@ -185,10 +185,10 @@ export function settleYearDraws(
   year: number,
   age: number,
 ) {
-  // Deduct withdrawals from tax buckets and per-account balances -- extracted to balance-deduction.ts
+  // Deduct withdrawals from tax buckets and per-account balances
   deductWithdrawals({ slots, balances, acctBal, brokerageBasisPortion });
 
-  // Ensure no negative balances -- extracted to balance-deduction.ts
+  // Ensure no negative balances
   clampBalances(balances, acctBal);
 
   // Lump sums (one-time, outside limits) are cash in: new basis in the
@@ -223,14 +223,14 @@ export function settleYearDraws(
       ),
   );
 
-  // Clamp individual account balances -- extracted to individual-account-tracking.ts
+  // Clamp individual account balances
   if (hasIndividualAccounts) {
     followDraws(indAccts, indKey, indBal, brokBasis, () =>
       clampIndividualBalances(indAccts, indKey, indBal),
     );
   }
 
-  // Track per-account depletions -- extracted to balance-deduction.ts
+  // Track per-account depletions
   trackDepletions(acctBal, depletionTracked, accountDepletions, year, age);
 
   return { rmdExcessAmount };

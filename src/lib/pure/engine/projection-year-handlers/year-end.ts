@@ -47,7 +47,7 @@ export function closeDecumulationYear(
   year: number,
   age: number,
 ) {
-  // Apply growth -- extracted to growth-application.ts
+  // Apply growth
   applyGrowth({ effectiveReturn: returnRate, balances, acctBal });
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
@@ -55,7 +55,7 @@ export function closeDecumulationYear(
   // Update spending strategy state: prior year return + spending
   spendingState.priorYearReturn = returnRate;
   spendingState.priorYearSpending = state.projectedExpenses;
-  // Per-individual-account growth (decumulation) -- extracted to individual-account-tracking.ts
+  // Per-individual-account growth (decumulation)
   const decIndGrowth = hasIndividualAccounts
     ? applyIndividualGrowth(indAccts, indKey, indBal, returnRate, true)
     : new Map<string, number>();
@@ -73,7 +73,7 @@ export function closeDecumulationYear(
     clampIndividualBasis(indAccts, indKey, indBasis, indBal);
   }
 
-  // Build individual account year balances (decumulation) -- extracted to individual-account-tracking.ts
+  // Build individual account year balances (decumulation)
   const decIndYearBalances: IndividualAccountYearBalance[] =
     hasIndividualAccounts
       ? buildIndividualYearBalances(
@@ -94,7 +94,7 @@ export function closeDecumulationYear(
         )
       : [];
 
-  // Zero out rounding dust -- extracted to balance-deduction.ts
+  // Zero out rounding dust
   followDraws(indAccts, indKey, indBal, brokBasis, () =>
     cleanupDust(balances, acctBal, indAccts, indKey, indBal),
   );

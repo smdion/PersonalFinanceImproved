@@ -1,7 +1,4 @@
-/**
- * runDecumulationYear — single-year decumulation-phase logic. Mutates state in
- * place and pushes a year projection to `state.projectionByYear`.
- */
+/** The decumulation year: runDecumulationYear calls its stages in order. */
 import { socialSecurityForYear } from "../social-security-income";
 import { retirementBrokerageBasisRatio } from "../brokerage-basis";
 import type { EngineDecumulationYear } from "../types/projection-result";
@@ -36,16 +33,9 @@ import { decumulationPortfolioContributions } from "./portfolio-contributions";
 import { yearCliffChecks } from "./year-cliffs";
 import { closeDecumulationYear } from "./year-end";
 
-// ---------------------------------------------------------------------------
-// Decumulation year handler
-// ---------------------------------------------------------------------------
-
-/**
- * Run a single decumulation year. Mutates state in place and pushes
- * the year projection to state.projectionByYear.
- *
- * Logic copied exactly from projection.ts lines 1079-1539.
- */
+/** One decumulation year, its stages in today's order; each stage's file
+ *  names its decision (UD-04 in rmd-step.ts and tax-year-settlement.ts,
+ *  UD-08 in tax-year-settlement.ts). Pushes the row to state.projectionByYear. */
 export function runDecumulationYear(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -100,34 +90,14 @@ export function runDecumulationYear(
     sortedDecOverrides,
   );
 
-  // Withdrawal-ordering eligibility --
-  // per-account penalty-free/locked split for this projected year. Computed
-  // once, here, BEFORE either routeForMode call site (this function's real
-  // execution below and withdrawal-solver.ts's independent estimate) -- both
-  // must see the exact same eligibility record, or the gross-up estimate
-  // would target money the real router can't (or won't prefer to) reach,
-  // desyncing the tax estimate from actual routing (the single-dispatch
-  // invariant routeForMode exists to preserve). Computed unconditionally
-  // when individual accounts exist -- Tier A (distributeWithdrawals) has no
-  // config lever and always applies; routeForMode itself checks
-  // config.avoidPenalizedWithdrawals before using this for Tier B. indAccts
-  // already carry their own ruleOf55/rothBasisMeta/ownerBirthYear ("now"
-  // data, threaded by build-engine-payload.ts Group 1.1); this recomputes
-  // locked/eligible fresh for the current projected `year` via
-  // projectRuleOf55. `indBasis` (tracked Roth basis follow-up) is passed
-  // through so the gate reads the SAME running basis figure the UI shows
-  // -- reading a stale snapshot for the gate while showing tracked basis
-  // in the tooltip would be two numbers for one quantity (see
-  // withdrawal-eligibility.ts's docblock).
+  // Each account's penalty-free/locked split this year, computed once for
+  // both routeForMode sites (the solver's estimate and the real draw), from
+  // the running Roth basis the UI shows.
   const eligibility = hasIndividualAccounts
     ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
     : undefined;
-  // Portfolio-parented accounts (e.g. a taxable brokerage the
-  // household doesn't consider part of the retirement plan) never fund
-  // retirement spending need — computed once per year here, threaded to
-  // every consumer that decides how much money is "available"
-  // (routeForMode's two call sites, performRothConversion, enforceRmd, and
-  // QCD's capacity/debit below) so they can't disagree with each other.
+  // Portfolio-parented money never funds retirement spending: one exclusion
+  // a year, read by every step that decides what's available.
   const { nonRetirement } = setup;
 
   // Reconciliation check: acctBal Roth total should match balances.taxFree
@@ -178,8 +148,6 @@ export function runDecumulationYear(
     ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
     : undefined;
 
-  // Tax gross-up: estimate tax from expected withdrawal routing, then
-  // increase withdrawal so after-tax proceeds cover the expense need.
   const taxRates = decumulationDefaults.distributionTaxRates;
   // Retirement money only (PreYearSetup.retirementBalance): Portfolio-
   // parented Traditional money is never withdrawn for spending, so it can't

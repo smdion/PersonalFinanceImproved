@@ -136,7 +136,7 @@
     "src/lib/pure/engine/post-withdrawal-optimizer.ts": 727,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 852,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 68,
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 586,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 554,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 91,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 471,
@@ -866,7 +866,7 @@
       "buildProjectionContext": 188
     },
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 538
+      "runDecumulationYear": 516
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 437
