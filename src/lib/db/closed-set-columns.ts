@@ -6,6 +6,7 @@
 import { getTableColumns, getTableName, type Table } from "drizzle-orm";
 import * as schema from "./schema-pg";
 import { TAX_DATA_ORIGIN_VALUES } from "./reference-reconcile-core";
+import { log } from "@/lib/logger";
 import {
   getAllCategories,
   PARENT_CATEGORY_VALUES,
@@ -83,7 +84,7 @@ function columnsOf<T extends Table>(
 
 /** Every closed-set column of a versioned table, built from today's config.
  *  A value outside the set takes the default only in the columns whose
- *  default the owner named. */
+ *  default the owner named (where the default keeps the row's meaning). */
 export function closedSetColumns(): ClosedSetColumn[] {
   const s = schema;
   const categories = getAllCategories();
@@ -133,23 +134,28 @@ export function closedSetColumns(): ClosedSetColumn[] {
       contributionScaling: CONTRIBUTION_SCALING_VALUES,
     }),
     ...columnsOf(s.accountPerformance, { parentCategory: parent }),
-    ...columnsOf(s.taxBrackets, {
-      filingStatus: W4_FILING_STATUS_VALUES,
-      origin,
-    }),
-    ...columnsOf(s.ltcgBrackets, {
-      filingStatus: RETURN_FILING_STATUS_VALUES,
-      origin,
-    }),
-    ...columnsOf(s.irmaaBrackets, {
-      filingStatus: RETURN_FILING_STATUS_VALUES,
-      origin,
-    }),
-    ...columnsOf(s.contributionLimits, { origin }),
-    ...columnsOf(s.fplByHousehold, { origin }),
-    ...columnsOf(s.budgetItems, {
-      apiSyncDirection: API_SYNC_DIRECTION_VALUES,
-    }),
+    ...columnsOf(
+      s.taxBrackets,
+      { filingStatus: W4_FILING_STATUS_VALUES, origin },
+      ["origin"],
+    ),
+    ...columnsOf(
+      s.ltcgBrackets,
+      { filingStatus: RETURN_FILING_STATUS_VALUES, origin },
+      ["origin"],
+    ),
+    ...columnsOf(
+      s.irmaaBrackets,
+      { filingStatus: RETURN_FILING_STATUS_VALUES, origin },
+      ["origin"],
+    ),
+    ...columnsOf(s.contributionLimits, { origin }, ["origin"]),
+    ...columnsOf(s.fplByHousehold, { origin }, ["origin"]),
+    ...columnsOf(
+      s.budgetItems,
+      { apiSyncDirection: API_SYNC_DIRECTION_VALUES },
+      ["apiSyncDirection"],
+    ),
     ...columnsOf(s.budgetItemCategoryLinks, {
       service,
       syncDirection: API_SYNC_DIRECTION_VALUES,
@@ -185,10 +191,16 @@ export type OutsideValue = {
 /** A value an import or restore set to its column's default. */
 export type ValueNote = OutsideValue & { defaultedTo: string };
 
+/** Where the rows come from: a stored version, or an uploaded backup file. */
+type BackupSource = "restore" | "import";
+
 /** A backup holding values outside their sets in columns that refuse them.
  *  Thrown before anything is written. */
 export class ClosedSetRefusal extends Error {
-  constructor(readonly outside: OutsideValue[]) {
+  constructor(
+    readonly outside: OutsideValue[],
+    from: BackupSource,
+  ) {
     super(
       `This backup holds values this version of Ledgr doesn't have, in columns where no stand-in keeps their meaning: ${outside
         .map(
@@ -197,7 +209,7 @@ export class ClosedSetRefusal extends Error {
         )
         .join(
           "; ",
-        )}. Nothing was changed. Update Ledgr, or correct the backup, and try again.`,
+        )}. Nothing was changed. ${from === "restore" ? "Restore another version, or update Ledgr and try again." : "Update Ledgr, or correct the backup, and try again."}`,
     );
     this.name = "ClosedSetRefusal";
   }
@@ -228,7 +240,10 @@ function tally<T extends OutsideValue>(
 /** A backup's rows with each value outside a "default" column's set set to
  *  the default, and notes; one outside a "refuse" column's set throws
  *  ClosedSetRefusal. A row without the column is left to the insert. */
-export function checkClosedSetValues(tables: Record<string, unknown[]>): {
+function checkClosedSetValues(
+  tables: Record<string, unknown[]>,
+  from: BackupSource,
+): {
   tables: Record<string, unknown[]>;
   valueNotes: ValueNote[];
 } {
@@ -261,6 +276,25 @@ export function checkClosedSetValues(tables: Record<string, unknown[]>): {
     }
     if (changed) out[table] = changed;
   }
-  if (refused.size > 0) throw new ClosedSetRefusal([...refused.values()]);
-  return { tables: out, valueNotes: [...defaulted.values()] };
+  if (refused.size > 0) throw new ClosedSetRefusal([...refused.values()], from);
+  const valueNotes = [...defaulted.values()];
+  // The original value is gone from the data once written: the log keeps it.
+  for (const { table, column, value, rows, defaultedTo } of valueNotes)
+    log("warn", "backup_value_defaulted", {
+      from,
+      table,
+      column,
+      value: JSON.stringify(value),
+      defaultedTo,
+      rows,
+    });
+  return { tables: out, valueNotes };
 }
+
+/** The check on a stored version's rows (a refusal says to restore another). */
+export const checkRestoredValues = (tables: Record<string, unknown[]>) =>
+  checkClosedSetValues(tables, "restore");
+
+/** The check on an uploaded backup file's rows. */
+export const checkImportedValues = (tables: Record<string, unknown[]>) =>
+  checkClosedSetValues(tables, "import");

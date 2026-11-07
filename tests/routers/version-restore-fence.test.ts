@@ -150,8 +150,8 @@ describe("version.restore over a value Ledgr doesn't have", () => {
         ctx.caller.version.restore({ id: ctx.versionId }),
       ).rejects.toMatchObject({
         code: "BAD_REQUEST",
-        message: expect.stringContaining(
-          'performance_accounts.account_type = "solo401k" (1 row)',
+        message: expect.stringMatching(
+          /performance_accounts\.account_type = "solo401k" \(1 row\).*Restore another version/,
         ),
       });
       expect(

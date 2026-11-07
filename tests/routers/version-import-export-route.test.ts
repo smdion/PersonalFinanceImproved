@@ -266,14 +266,17 @@ describe("/api/versions/import: a backup refused over its closed-set values", ()
     const { ClosedSetRefusal } = await import("@/lib/db/closed-set-columns");
     vi.mocked(settleFirstRunGate).mockClear();
     vi.mocked(importBackup).mockRejectedValueOnce(
-      new ClosedSetRefusal([
-        {
-          table: "performance_accounts",
-          column: "account_type",
-          value: "solo401k",
-          rows: 1,
-        },
-      ]),
+      new ClosedSetRefusal(
+        [
+          {
+            table: "performance_accounts",
+            column: "account_type",
+            value: "solo401k",
+            rows: 1,
+          },
+        ],
+        "import",
+      ),
     );
     const body = new FormData();
     const backup = {

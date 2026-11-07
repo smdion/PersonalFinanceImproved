@@ -33,7 +33,7 @@ import {
   tablesFromBackup,
 } from "./version-tables";
 import { withInstallationRows } from "./installation-rows";
-import { checkClosedSetValues } from "./closed-set-columns";
+import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
 import { transformBackupToCurrentSchema } from "./backup-transforms";
 
@@ -280,7 +280,7 @@ export async function restoreVersion(
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
-  const fenced = checkClosedSetValues(
+  const fenced = checkRestoredValues(
     await withInstallationRows(database, transformedMap, by),
   );
   for (const [tableName, data] of Object.entries(fenced.tables))
@@ -395,7 +395,7 @@ export async function importBackup(
     });
   }
 
-  const checked = checkClosedSetValues(
+  const checked = checkImportedValues(
     await withInstallationRows(database, transformedTables, by),
   );
   const transformedBackup: BackupData = {

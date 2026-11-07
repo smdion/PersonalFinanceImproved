@@ -5,7 +5,7 @@
  * listed in UNION_TYPED below, and the type check fails on one that isn't.
  * Each listed column of a versioned table must be in closedSetColumns().
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import * as pgSchema from "@/lib/db/schema-pg";
@@ -13,8 +13,14 @@ import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
 import {
   ClosedSetRefusal,
   closedSetColumns,
-  checkClosedSetValues,
+  checkImportedValues,
+  checkRestoredValues,
 } from "@/lib/db/closed-set-columns";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { VERSION_PREVIEW_WITHHELD_TABLES } from "@/lib/db/version-tables";
+import { log } from "@/lib/logger";
+
+vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
 
 type Schema = typeof pgSchema;
 type TableExport = {
@@ -121,7 +127,7 @@ describe("the closed-set table", () => {
     expect([...listed].sort()).toEqual([...typed, ...UNTYPED_CHECKED].sort());
   });
 
-  it("defaults only the withdrawal strategy, routing mode, target mode and two parent categories, each to a value in its set", () => {
+  it("defaults only where the default keeps the row's meaning, each to a value in its set", () => {
     const defaulted = CLOSED_SET_COLUMNS.filter((c) => c.takesDefault !== null);
     expect(
       defaulted.map((c) => `${c.table}.${c.column}=${c.takesDefault}`),
@@ -131,8 +137,19 @@ describe("the closed-set table", () => {
       "savings_goals.target_mode=fixed",
       "contribution_accounts.parent_category=Retirement",
       "portfolio_accounts.parent_category=Retirement",
+      "tax_brackets.origin=user",
+      "ltcg_brackets.origin=user",
+      "irmaa_brackets.origin=user",
+      "contribution_limits.origin=user",
+      "fpl_by_household.origin=user",
+      "budget_items.api_sync_direction=pull",
     ]);
     for (const c of defaulted) expect(c.values).toContain(c.takesDefault);
+  });
+
+  it("checks no table that holds credentials", () => {
+    for (const c of CLOSED_SET_COLUMNS)
+      expect(VERSION_PREVIEW_WITHHELD_TABLES).not.toContain(c.table);
   });
 
   it("has no column twice and no empty set", () => {
@@ -153,7 +170,9 @@ const accountRow = (account_type: unknown) => ({
   parent_category: "Retirement",
 });
 
-describe("checkClosedSetValues", () => {
+describe("checkImportedValues and checkRestoredValues", () => {
+  beforeEach(() => vi.mocked(log).mockClear());
+
   it("returns a valid backup's tables as the same arrays, with no notes", () => {
     const tables = {
       retirement_settings: [settingsRow("guyton_klinger")],
@@ -162,7 +181,7 @@ describe("checkClosedSetValues", () => {
       ],
       people: [{ id: 1, name: "Robin" }],
     };
-    const out = checkClosedSetValues(tables);
+    const out = checkImportedValues(tables);
     expect(out.valueNotes).toEqual([]);
     for (const [name, rows] of Object.entries(tables))
       expect(out.tables[name]).toBe(rows);
@@ -174,7 +193,7 @@ describe("checkClosedSetValues", () => {
       { ...settingsRow("retired_strategy"), id: 2 },
       { ...settingsRow("fixed"), id: 3 },
     ];
-    const out = checkClosedSetValues({ retirement_settings: rows });
+    const out = checkImportedValues({ retirement_settings: rows });
     expect(out.tables.retirement_settings).toEqual([
       settingsRow("fixed"),
       { ...settingsRow("fixed"), id: 2 },
@@ -199,7 +218,7 @@ describe("checkClosedSetValues", () => {
     ["null in a NOT NULL column", null],
     ["a number", 3],
   ])("treats %s as outside the set", (_label, value) => {
-    const out = checkClosedSetValues({
+    const out = checkImportedValues({
       retirement_settings: [settingsRow(value)],
     });
     expect(out.tables.retirement_settings).toEqual([settingsRow("fixed")]);
@@ -208,7 +227,7 @@ describe("checkClosedSetValues", () => {
 
   it("leaves a row without the column to the insert (the schema default)", () => {
     const rows = [{ id: 1, person_id: 1 }];
-    const out = checkClosedSetValues({ retirement_settings: rows });
+    const out = checkImportedValues({ retirement_settings: rows });
     expect(out.tables.retirement_settings).toBe(rows);
     expect(out.valueNotes).toEqual([]);
   });
@@ -216,7 +235,7 @@ describe("checkClosedSetValues", () => {
   it("takes null in a nullable column", () => {
     const rows = [{ id: 1, filing_status: null }];
     expect(
-      checkClosedSetValues({ retirement_settings: rows }).valueNotes,
+      checkImportedValues({ retirement_settings: rows }).valueNotes,
     ).toEqual([]);
   });
 
@@ -228,7 +247,7 @@ describe("checkClosedSetValues", () => {
     };
     let thrown: unknown;
     try {
-      checkClosedSetValues(tables);
+      checkImportedValues(tables);
     } catch (err) {
       thrown = err;
     }
@@ -259,9 +278,109 @@ describe("checkClosedSetValues", () => {
 
   it("refuses an unknown value in a nullable column with no default", () => {
     expect(() =>
-      checkClosedSetValues({
+      checkImportedValues({
         contribution_accounts: [{ id: 1, hsa_coverage_type: "family_plus" }],
       }),
     ).toThrow(ClosedSetRefusal);
+  });
+});
+
+describe("the follow-up defaults and refusals", () => {
+  beforeEach(() => vi.mocked(log).mockClear());
+
+  it.each([
+    ["tax_brackets", "origin", "verified", "user"],
+    ["fpl_by_household", "origin", "Seed", "user"],
+    ["budget_items", "api_sync_direction", "sideways", "pull"],
+  ])(
+    "%s.%s takes its default for %s, with a note",
+    (table, column, value, to) => {
+      const out = checkImportedValues({
+        [table]: [{ id: 1, [column]: value }],
+      });
+      expect(out.tables[table]).toEqual([{ id: 1, [column]: to }]);
+      expect(out.valueNotes).toEqual([
+        { table, column, value, rows: 1, defaultedTo: to },
+      ]);
+    },
+  );
+
+  it.each([
+    ["contribution_accounts", "employer_match_tax_treatment", "roth"],
+    ["contribution_accounts", "ownership", "community"],
+    ["performance_accounts", "retirement_behavior", "never"],
+    ["performance_accounts", "contribution_scaling", "doubles"],
+  ])("%s.%s still refuses %s", (table, column, value) => {
+    expect(() =>
+      checkImportedValues({ [table]: [{ id: 1, [column]: value }] }),
+    ).toThrow(ClosedSetRefusal);
+  });
+
+  it("logs one line per defaulted value, with the original, and none for a valid backup", () => {
+    checkRestoredValues({
+      retirement_settings: [
+        settingsRow("retired_strategy"),
+        settingsRow("fixed"),
+      ],
+      tax_brackets: [
+        { id: 1, origin: "verified" },
+        { id: 2, origin: "verified" },
+      ],
+    });
+    expect(vi.mocked(log).mock.calls).toEqual([
+      [
+        "warn",
+        "backup_value_defaulted",
+        {
+          from: "restore",
+          table: "retirement_settings",
+          column: "withdrawal_strategy",
+          value: '"retired_strategy"',
+          defaultedTo: "fixed",
+          rows: 1,
+        },
+      ],
+      [
+        "warn",
+        "backup_value_defaulted",
+        {
+          from: "restore",
+          table: "tax_brackets",
+          column: "origin",
+          value: '"verified"',
+          defaultedTo: "user",
+          rows: 2,
+        },
+      ],
+    ]);
+    vi.mocked(log).mockClear();
+    checkImportedValues({ retirement_settings: [settingsRow("fixed")] });
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it("a refused restore says to restore another version; a refused import, to correct the backup", () => {
+    const tables = {
+      performance_accounts: [{ id: 1, account_type: "solo401k" }],
+    };
+    expect(() => checkRestoredValues(tables)).toThrow(
+      "Nothing was changed. Restore another version, or update Ledgr and try again.",
+    );
+    expect(() => checkRestoredValues(tables)).not.toThrow(/correct the backup/);
+    expect(() => checkImportedValues(tables)).toThrow(
+      "Nothing was changed. Update Ledgr, or correct the backup, and try again.",
+    );
+  });
+});
+
+describe("the stored-strategy lookup", () => {
+  it("finds a current key and nothing for an Object member's name", () => {
+    expect(STRATEGY_CONFIG_BY_STORED_KEY["fixed"]?.label).toBe("Fixed Real");
+    for (const key of [
+      "constructor",
+      "toString",
+      "__proto__",
+      "hasOwnProperty",
+    ])
+      expect(STRATEGY_CONFIG_BY_STORED_KEY[key]).toBeUndefined();
   });
 });
