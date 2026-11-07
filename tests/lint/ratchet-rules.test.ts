@@ -3,7 +3,8 @@
  * lowers (owner Q4): each rule fires on its pattern and stays quiet on the
  * shapes it allows. Plain JSX through ESLint's own parser; nothing reads src/.
  */
-import { Linter } from "eslint";
+import { ESLint, Linter } from "eslint";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ratchetPlugin } from "../../eslint-ratchet.mjs";
 
@@ -133,4 +134,62 @@ describe("ratchet/no-raw-chart-container", () => {
       ),
     ).toEqual([1]);
   });
+});
+
+describe("the repo config's scopes (owner Q4, v0.10.4)", () => {
+  const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+  /** The rules the repo config reports for `code` written at `file`. */
+  const rulesAt = async (file: string, code: string) => {
+    const [result] = await eslint.lintText(code, { filePath: file });
+    return [...new Set(result!.messages.map((m) => m.ruleId))].sort();
+  };
+  const NEW_RULES = [
+    "jsx-a11y/click-events-have-key-events",
+    "jsx-a11y/no-static-element-interactions",
+    "ratchet/no-hand-date-format",
+    "ratchet/no-raw-button",
+    "ratchet/no-raw-chart-container",
+    "ratchet/no-raw-tablist",
+    "ratchet/no-unlabeled-control",
+  ];
+  const code = [
+    "export function Part({ go, d }: { go: () => void; d: Date }) {",
+    "  return (",
+    "    <div role='tablist'>",
+    "      <button type='button'>{d.toLocaleDateString()}</button>",
+    "      <div onClick={go}>x</div>",
+    "      <input />",
+    "      <ResponsiveContainer />",
+    "    </div>",
+    "  );",
+    "}",
+    "",
+  ].join("\n");
+  const only = (rules: (string | null)[]) =>
+    rules.filter((r) => r !== null && NEW_RULES.includes(r));
+
+  it("counts every new rule in a feature component", async () => {
+    expect(only(await rulesAt("src/components/demo/part.tsx", code))).toEqual(
+      NEW_RULES,
+    );
+  }, 30_000);
+
+  it("leaves each primitive's own folder to it", async () => {
+    expect(only(await rulesAt("src/components/ui/part.tsx", code))).toEqual(
+      NEW_RULES.filter(
+        (r) => r !== "ratchet/no-raw-button" && r !== "ratchet/no-raw-tablist",
+      ),
+    );
+    expect(
+      only(await rulesAt("src/components/charts/part.tsx", code)),
+    ).not.toContain("ratchet/no-raw-chart-container");
+    expect(
+      only(
+        await rulesAt(
+          "src/lib/utils/format.ts",
+          "export const f = (d: Date) => d.toLocaleDateString();\n",
+        ),
+      ),
+    ).toEqual([]);
+  }, 30_000);
 });

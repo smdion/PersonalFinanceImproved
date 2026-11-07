@@ -3,7 +3,13 @@
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -27,11 +33,17 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/app/(dashboard)/brokerage/page.tsx": {
@@ -56,6 +68,12 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-raw-tablist": {
+      "count": 2
     }
   },
   "src/app/(dashboard)/budget/budget-detail-panel.tsx": {
@@ -109,8 +127,14 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
+    "ratchet/no-raw-button": {
+      "count": 6
+    },
     "ratchet/no-raw-input": {
       "count": 4
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 6
     }
   },
   "src/app/(dashboard)/budget/what-if-paycheck-summary.tsx": {
@@ -130,6 +154,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 6
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -151,7 +178,13 @@
     "ratchet/no-jsx-iife": {
       "count": 3
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -177,7 +210,13 @@
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -199,6 +238,9 @@
     "ratchet/no-guarded-division": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     }
@@ -218,26 +260,50 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
   "src/app/(dashboard)/house/page.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 7
+    },
     "ratchet/no-raw-input": {
+      "count": 12
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 12
     }
   },
   "src/app/(dashboard)/liabilities/page.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/milestones/milestones-content.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/app/(dashboard)/networth/page.tsx": {
@@ -249,6 +315,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
     }
   },
   "src/app/(dashboard)/page.tsx": {
@@ -265,6 +334,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 8
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/performance/page.tsx": {
@@ -287,6 +359,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   },
   "src/app/(dashboard)/portfolio/page.tsx": {
@@ -295,13 +370,25 @@
     }
   },
   "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
     "max-lines-per-function": {
       "count": 2
     },
     "ratchet/max-comment-lines": {
       "count": 5
     },
+    "ratchet/no-raw-button": {
+      "count": 12
+    },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -312,6 +399,9 @@
   },
   "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -325,6 +415,12 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -343,6 +439,14 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 7
+    }
+  },
+  "src/app/(dashboard)/settings/page.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/tax-buckets/page.tsx": {
@@ -360,6 +464,9 @@
     "ratchet/max-comment-lines": {
       "count": 9
     },
+    "ratchet/no-raw-button": {
+      "count": 6
+    },
     "ratchet/no-raw-input": {
       "count": 7
     }
@@ -371,6 +478,9 @@
   },
   "src/app/(dashboard)/tax-optimization/tax-optimization-content.tsx": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -387,7 +497,13 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -395,13 +511,25 @@
     "max-lines-per-function": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 7
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 8
     }
   },
   "src/app/(dashboard)/versions/page.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
@@ -409,8 +537,17 @@
     "ratchet/no-fixed-inset-overlay": {
       "count": 4
     },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 18
+    },
     "ratchet/no-raw-input": {
       "count": 8
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 10
     }
   },
   "src/app/api/health/detailed/route.ts": {
@@ -449,7 +586,20 @@
       "count": 2
     }
   },
+  "src/app/demo/page.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    }
+  },
+  "src/app/global-error.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
   "src/app/login/first-admin-form.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
@@ -457,6 +607,9 @@
   "src/app/login/login-form.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -468,15 +621,27 @@
     }
   },
   "src/components/budget/add-category-form.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
   "src/components/budget/add-item-form.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -490,8 +655,14 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/budget/budget-category-row.tsx": {
@@ -500,9 +671,18 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
     }
   },
   "src/components/budget/budget-item-row.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -512,16 +692,28 @@
     "ratchet/no-history-comment": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/budget/budget-mode-manager.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/budget/budget-page-context.tsx": {
@@ -561,6 +753,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/components/budget/budget-summary-table.tsx": {
@@ -575,6 +770,9 @@
     }
   },
   "src/components/budget/budget-table.tsx": {
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "ratchet/max-comment-lines": {
       "count": 2
     }
@@ -584,6 +782,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -603,11 +804,17 @@
     "ratchet/no-jsx-iife": {
       "count": 3
     },
+    "ratchet/no-raw-button": {
+      "count": 8
+    },
     "ratchet/no-raw-input": {
       "count": 13
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 16
     }
   },
   "src/components/budget/extra-paycheck-budget-note.tsx": {
@@ -666,6 +873,9 @@
   "src/components/budget/profile-viewing-badge.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/budget/salary-profile-manager.tsx": {
@@ -677,6 +887,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
     },
     "ratchet/no-raw-input": {
       "count": 1
@@ -695,7 +908,13 @@
     "ratchet/no-jsx-iife": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -708,7 +927,13 @@
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 7
+    },
     "ratchet/no-raw-input": {
+      "count": 10
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 10
     }
   },
@@ -737,6 +962,9 @@
   "src/components/cards/dashboard/financial-checkup-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/cards/dashboard/high-income-line-edit.tsx": {
@@ -758,10 +986,19 @@
   "src/components/cards/dashboard/linked-balance-card.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/cards/dashboard/living-costs-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
       "count": 1
     },
     "max-lines-per-function": {
@@ -769,10 +1006,19 @@
     },
     "ratchet/max-comment-lines": {
       "count": 9
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/cards/dashboard/net-worth-card.tsx": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -782,8 +1028,17 @@
     }
   },
   "src/components/cards/dashboard/retirement-benchmarks.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/cards/dashboard/retirement-card.tsx": {
@@ -814,6 +1069,9 @@
       "count": 1
     },
     "ratchet/no-jsx-iife": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -848,7 +1106,13 @@
     "ratchet/no-jsx-iife": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 14
+    },
     "ratchet/no-raw-input": {
+      "count": 6
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 6
     }
   },
@@ -856,8 +1120,14 @@
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
     }
   },
   "src/components/cards/plan-health.tsx": {
@@ -886,6 +1156,9 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
@@ -900,11 +1173,17 @@
     "ratchet/max-comment-lines": {
       "count": 17
     },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
     "ratchet/no-history-comment": {
       "count": 4
     },
     "ratchet/no-jsx-iife": {
       "count": 3
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     },
     "ratchet/no-raw-input": {
       "count": 1
@@ -916,6 +1195,9 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     },
     "ratchet/no-raw-input": {
       "count": 3
@@ -934,6 +1216,9 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 13
+    },
     "ratchet/no-raw-input": {
       "count": 8
     }
@@ -941,6 +1226,12 @@
   "src/components/cards/projection/pill-btn.tsx": {
     "ratchet/max-comment-lines": {
       "count": 5
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/cards/projection/projection-chart-skeleton.tsx": {
@@ -963,6 +1254,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 2
+    },
+    "ratchet/no-raw-chart-container": {
+      "count": 1
     }
   },
   "src/components/cards/projection/projection-hero-kpis.tsx": {
@@ -985,6 +1279,9 @@
   "src/components/cards/projection/projection-loader.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/components/cards/projection/projection-mc-results.tsx": {
@@ -999,6 +1296,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/components/cards/projection/projection-table-accum-row.tsx": {
@@ -1021,6 +1321,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 3
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
     }
   },
   "src/components/cards/projection/projection-table-decum-row.tsx": {
@@ -1085,6 +1388,9 @@
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/cards/projection/report/report-header.tsx": {
@@ -1114,6 +1420,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-chart-container": {
+      "count": 1
     }
   },
   "src/components/cards/projection/tax-summary-card.tsx": {
@@ -1121,6 +1430,9 @@
       "count": 1
     },
     "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -1222,10 +1534,19 @@
   "src/components/cards/strategy-guide-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/cards/withdrawal-comparison.tsx": {
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 9
+    },
+    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },
@@ -1237,6 +1558,11 @@
   "src/components/decumulation-methodology-content.tsx": {
     "max-lines-per-function": {
       "count": 1
+    }
+  },
+  "src/components/expenses/expenses-charts.tsx": {
+    "ratchet/no-raw-chart-container": {
+      "count": 2
     }
   },
   "src/components/forms/form-field.tsx": {
@@ -1256,8 +1582,23 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 3
+    },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
     }
   },
   "src/components/historical/jobs.tsx": {
@@ -1265,6 +1606,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-raw-button": {
       "count": 2
     },
     "ratchet/no-raw-input": {
@@ -1279,11 +1623,20 @@
   "src/components/investments/comparison-section.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-raw-chart-container": {
+      "count": 1
     }
   },
   "src/components/investments/current-glide-path-editor.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -1295,6 +1648,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -1309,6 +1665,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-chart-container": {
+      "count": 1
     }
   },
   "src/components/investments/holding-history-section.tsx": {
@@ -1318,8 +1677,14 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 5
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
     }
   },
   "src/components/investments/holdings-section.tsx": {
@@ -1331,6 +1696,12 @@
     },
     "ratchet/no-guarded-division": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/investments/hsa-cash-buffer.tsx": {
@@ -1346,6 +1717,9 @@
   "src/components/layout/dashboard-layout.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/layout/data-freshness.tsx": {
@@ -1354,10 +1728,24 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    }
+  },
+  "src/components/layout/demo-banner.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/layout/quick-search.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 3
+    },
+    "jsx-a11y/no-static-element-interactions": {
       "count": 1
     },
     "ratchet/no-fixed-inset-overlay": {
@@ -1374,11 +1762,23 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 6
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-raw-tablist": {
+      "count": 2
     }
   },
   "src/components/layout/sidebar.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -1387,6 +1787,9 @@
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/liabilities/debts-card.tsx": {
@@ -1398,6 +1801,12 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     },
     "ratchet/no-raw-input": {
       "count": 11
@@ -1413,28 +1822,58 @@
       "count": 1
     }
   },
+  "src/components/milestones/milestone-row.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
   "src/components/milestones/milestone-settings.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/no-raw-button": {
       "count": 3
     },
     "ratchet/no-raw-input": {
       "count": 4
     }
   },
+  "src/components/mortgage/active-loan-card.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/components/mortgage/historical-loans.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
   "src/components/mortgage/mortgage-settings.tsx": {
     "max-lines-per-function": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 19
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 18
     }
   },
   "src/components/mortgage/refinance-calculator.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
     }
   },
   "src/components/mortgage/refinance-impact.tsx": {
@@ -1454,7 +1893,13 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 7
+    },
     "ratchet/no-raw-input": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 3
     }
   },
@@ -1469,14 +1914,42 @@
       "count": 1
     }
   },
+  "src/components/networth/financial-independence-card.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/components/networth/journey-to-abundance-chart.tsx": {
+    "ratchet/no-raw-chart-container": {
+      "count": 1
+    }
+  },
   "src/components/networth/net-worth-composition.tsx": {
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/components/networth/net-worth-line-chart.tsx": {
+    "ratchet/no-raw-chart-container": {
+      "count": 1
+    }
+  },
+  "src/components/networth/net-worth-location-pie.tsx": {
+    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },
   "src/components/networth/spreadsheet/spreadsheet-controls.tsx": {
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
+    }
+  },
+  "src/components/networth/spreadsheet/spreadsheet-health-stats.tsx": {
+    "ratchet/no-hand-date-format": {
+      "count": 1
     }
   },
   "src/components/networth/spreadsheet/spreadsheet-tax-location.tsx": {
@@ -1487,6 +1960,9 @@
   "src/components/networth/spreadsheet/spreadsheet-view.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
@@ -1495,6 +1971,14 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    }
+  },
+  "src/components/networth/tax-location-pie.tsx": {
+    "ratchet/no-raw-chart-container": {
+      "count": 1
     }
   },
   "src/components/onboarding/onboarding-wizard.tsx": {
@@ -1507,12 +1991,24 @@
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 11
+    },
     "ratchet/no-raw-input": {
       "count": 10
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 11
     }
   },
   "src/components/paycheck/add-deduction-form.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -1534,6 +2030,9 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
     "ratchet/no-raw-input": {
       "count": 2
     }
@@ -1547,6 +2046,12 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
     }
   },
   "src/components/paycheck/contribution-snapshot.tsx": {
@@ -1578,15 +2083,24 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/paycheck/deduction-form.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/paycheck/deduction-row.tsx": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -1597,6 +2111,12 @@
   },
   "src/components/paycheck/inline-account-type.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -1609,6 +2129,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/paycheck/other-pay-section.tsx": {
@@ -1618,12 +2141,21 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
   "src/components/paycheck/pay-stub.tsx": {
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -1634,8 +2166,14 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-raw-tablist": {
+      "count": 1
     }
   },
   "src/components/paycheck/person-paycheck.tsx": {
@@ -1677,6 +2215,9 @@
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
@@ -1691,12 +2232,21 @@
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/performance/basis-cell.tsx": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     },
     "ratchet/no-raw-input": {
@@ -1706,15 +2256,24 @@
   "src/components/performance/category-tabs.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
     }
   },
   "src/components/performance/check-badge.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/performance/editable-cell.tsx": {
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -1735,7 +2294,18 @@
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
+    }
+  },
+  "src/components/performance/lifetime-summary-cards.tsx": {
+    "ratchet/no-hand-date-format": {
       "count": 1
     }
   },
@@ -1746,12 +2316,18 @@
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
   },
   "src/components/performance/performance-table.tsx": {
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -1770,7 +2346,13 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 3
     }
   },
@@ -1781,8 +2363,14 @@
     "max-lines-per-function": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 7
+    },
     "ratchet/no-raw-input": {
       "count": 6
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
     }
   },
   "src/components/performance/year-range-picker.tsx": {
@@ -1791,6 +2379,12 @@
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/performance/year-row.tsx": {
@@ -1817,6 +2411,9 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
@@ -1835,10 +2432,19 @@
   "src/components/portfolio/account-live-data.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/portfolio/contribution-accounts-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
       "count": 1
     },
     "max-lines-per-function": {
@@ -1846,6 +2452,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 10
     },
     "ratchet/no-raw-input": {
       "count": 1
@@ -1864,11 +2473,17 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 6
     }
   },
   "src/components/portfolio/contribution-accounts-create-form.tsx": {
@@ -1880,6 +2495,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     },
     "ratchet/no-raw-input": {
       "count": 4
@@ -1894,14 +2512,23 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/portfolio/contribution-accounts-sub-account.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
       "count": 7
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 8
     }
   },
   "src/components/portfolio/contribution-accounts-types.ts": {
@@ -1918,6 +2545,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 3
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/portfolio/hooks/use-portfolio-snapshot-mutations.ts": {
@@ -1943,11 +2573,17 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
     "ratchet/no-history-comment": {
       "count": 4
     },
     "ratchet/no-jsx-iife": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 6
     },
     "ratchet/no-raw-input": {
       "count": 3
@@ -1957,6 +2593,9 @@
     },
     "ratchet/no-text-includes": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
     }
   },
   "src/components/portfolio/portfolio-chart.tsx": {
@@ -1965,6 +2604,15 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-chart-container": {
+      "count": 2
     }
   },
   "src/components/portfolio/portfolio-quick-look-stats.ts": {
@@ -1987,6 +2635,9 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/portfolio/unlinked-contribs-banner.tsx": {
@@ -1995,6 +2646,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/portfolio/use-contribution-accounts-mutations.ts": {
@@ -2012,6 +2666,9 @@
     }
   },
   "src/components/recommendations/dismiss-controls.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
@@ -2025,17 +2682,35 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/retirement/retirement-profile-manager.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 3
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/retirement/retirement-profile-tab.tsx": {
@@ -2050,11 +2725,17 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/retirement/sections/claiming-age-explorer.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/retirement/sections/glide-path.tsx": {
@@ -2063,6 +2744,14 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 2
+    }
+  },
+  "src/components/retirement/sections/healthcare.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/retirement/sections/helpers.ts": {
@@ -2079,6 +2768,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/retirement/sections/per-phase-budget.tsx": {
@@ -2096,6 +2788,12 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/retirement/sections/raise-and-rate.tsx": {
@@ -2115,6 +2813,12 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/retirement/sections/settings-patch.ts": {
@@ -2142,6 +2846,12 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
     }
   },
   "src/components/retirement/sections/taxes.tsx": {
@@ -2154,8 +2864,14 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 7
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 5
     }
   },
   "src/components/retirement/sections/timeline.tsx": {
@@ -2171,11 +2887,20 @@
   "src/components/retirement/withdrawal-order-editor.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/savings/add-transaction-form.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/savings/all-transactions-tab.tsx": {
@@ -2194,8 +2919,14 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 11
+    },
     "ratchet/no-raw-input": {
       "count": 13
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 15
     }
   },
   "src/components/savings/api-sync-section.tsx": {
@@ -2210,16 +2941,36 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    }
+  },
+  "src/components/savings/budget-capacity-bar.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/savings/contribution-grid.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
     "max-lines-per-function": {
       "count": 2
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 9
+    },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -2230,8 +2981,14 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/savings/extra-paycheck-rules-editor.tsx": {
@@ -2244,11 +3001,23 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
+    "ratchet/no-raw-button": {
+      "count": 19
+    },
     "ratchet/no-raw-input": {
+      "count": 6
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 6
     }
   },
   "src/components/savings/fund-card.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -2261,8 +3030,14 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 14
+    },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
     }
   },
   "src/components/savings/fund-management-section.tsx": {
@@ -2280,6 +3055,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/savings/fund-mini-chart.tsx": {
@@ -2288,48 +3066,92 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-chart-container": {
+      "count": 1
     }
   },
   "src/components/savings/fund-overrides-summary.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   },
   "src/components/savings/fund-timeline-detail.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/savings/fund-transaction-list.tsx": {
     "max-lines-per-function": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 8
+    },
     "ratchet/no-raw-input": {
+      "count": 5
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 5
     }
   },
   "src/components/savings/month-override-modal.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 10
     }
   },
   "src/components/savings/new-fund-form-card.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   },
   "src/components/savings/pool-distribution-editor.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
       "count": 4
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
+    }
+  },
+  "src/components/savings/projection-impact-bar.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/savings/savings-trajectory-chart.tsx": {
@@ -2337,6 +3159,9 @@
       "count": 4
     },
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },
@@ -2349,6 +3174,9 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/savings/types.ts": {
@@ -2367,10 +3195,16 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/settings/auth-settings.tsx": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -2384,6 +3218,9 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -2394,6 +3231,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 7
     }
   },
   "src/components/settings/data-sources.tsx": {
@@ -2407,14 +3247,23 @@
   "src/components/settings/data-table.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/components/settings/debug.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/settings/fpl-by-household.tsx": {
@@ -2423,6 +3272,9 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   },
   "src/components/settings/general.tsx": {
@@ -2435,7 +3287,18 @@
     "ratchet/max-comment-lines": {
       "count": 3
     },
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
+    }
+  },
+  "src/components/settings/integrations-api-category-select.tsx": {
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -2459,8 +3322,14 @@
     "max-lines-per-function": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/settings/integrations-tiingo.tsx": {
@@ -2485,6 +3354,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/settings/integrations/budget-section.tsx": {
@@ -2496,6 +3368,12 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 15
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/settings/integrations/connection-card.tsx": {
@@ -2506,11 +3384,23 @@
   "src/components/settings/integrations/contrib-section.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
     }
   },
   "src/components/settings/integrations/drift-banner.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/settings/integrations/hooks/use-budget-mutations.ts": {
@@ -2555,6 +3445,12 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 5
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
     }
   },
   "src/components/settings/integrations/savings-section.tsx": {
@@ -2563,6 +3459,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 6
     }
   },
   "src/components/settings/integrations/section-summary-badge.tsx": {
@@ -2591,6 +3490,9 @@
     }
   },
   "src/components/settings/people.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 1
     }
@@ -2602,7 +3504,13 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -2613,8 +3521,16 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 4
+    },
     "ratchet/no-raw-input": {
       "count": 2
+    }
+  },
+  "src/components/settings/simplefin-readded-prompt.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/settings/tax-brackets.tsx": {
@@ -2623,6 +3539,14 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
+    }
+  },
+  "src/components/settings/tax-data-updates.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   },
   "src/components/settings/tax-data.tsx": {
@@ -2635,8 +3559,19 @@
     "ratchet/no-history-comment": {
       "count": 2
     },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    }
+  },
+  "src/components/settings/year-selector.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-tablist": {
+      "count": 2
     }
   },
   "src/components/tax-optimization/irmaa-cliff-alert.tsx": {
@@ -2677,16 +3612,28 @@
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 8
     }
   },
   "src/components/tools/relocation/large-purchases.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 9
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 8
     }
   },
   "src/components/tools/relocation/metrics-and-banner.tsx": {
@@ -2706,8 +3653,14 @@
     }
   },
   "src/components/tools/relocation/scenarios-controls.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/tools/relocation/year-adjustments.tsx": {
@@ -2720,8 +3673,14 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 6
     }
   },
   "src/components/ui/badge.tsx": {
@@ -2737,6 +3696,12 @@
   "src/components/ui/card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 3
     }
   },
   "src/components/ui/chip-toggle.tsx": {
@@ -2745,12 +3710,21 @@
     }
   },
   "src/components/ui/collapsible-section.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/components/ui/confirm-dialog.tsx": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -2774,12 +3748,26 @@
       "count": 1
     }
   },
+  "src/components/ui/help-tip.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
   "src/components/ui/inline-edit.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/components/ui/profile-sidebar.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
     "ratchet/max-comment-lines": {
       "count": 6
     }
@@ -2812,6 +3800,9 @@
   },
   "src/components/upkeep/cost-trend-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-raw-chart-container": {
       "count": 1
     }
   },
@@ -4883,6 +5874,11 @@
       "count": 2
     }
   },
+  "src/lib/pure/net-worth/short-day.ts": {
+    "ratchet/no-hand-date-format": {
+      "count": 1
+    }
+  },
   "src/lib/pure/net-worth/snapshot-flows.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5265,6 +6261,11 @@
   },
   "src/lib/pure/sync/budget-preview.ts": {
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/sync/data-freshness.ts": {
+    "ratchet/no-hand-date-format": {
       "count": 1
     }
   },
@@ -5843,11 +6844,11 @@
     }
   },
   "src/server/routers/performance/year-records.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -6373,11 +7374,11 @@
     }
   },
   "src/server/services/contributions/summary.types.ts": {
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
-    },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/server/services/debts/other-liabilities.ts": {
@@ -6508,11 +7509,11 @@
     }
   },
   "src/server/services/performance/finalize-year.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "max-lines-per-function": {
       "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
     }
   },
   "src/server/services/performance/performance-edit.ts": {

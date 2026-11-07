@@ -2185,3 +2185,251 @@ function twoYearHousehold(): ProjectionInput {
   input.startingBalances.afterTaxBasis += 500_000;
   return input;
 }
+
+// ── UI structure known lists (owner Q4, v0.10.4) ────────────────────
+//
+// Shrink-only, recorded at today's count before the UI work: a new entry
+// fails, and an entry that goes fails until it is removed here.
+
+/** Client `page.tsx` files under app/(dashboard): each becomes a thin
+ *  server page and a `<route>-content.tsx`. */
+const CLIENT_PAGES_KNOWN: string[] = [
+  "src/app/(dashboard)/historical/page.tsx",
+  "src/app/(dashboard)/house/page.tsx",
+  "src/app/(dashboard)/liabilities/page.tsx",
+  "src/app/(dashboard)/networth/page.tsx",
+  "src/app/(dashboard)/paycheck/page.tsx",
+  "src/app/(dashboard)/savings/page.tsx",
+  "src/app/(dashboard)/settings/page.tsx",
+  "src/app/(dashboard)/tools/page.tsx",
+  "src/app/(dashboard)/upkeep/utilities/page.tsx",
+  "src/app/(dashboard)/versions/page.tsx",
+];
+
+/** Hook files in a `hooks/` folder outside lib/hooks: a hook lives in one
+ *  of three homes (its route, its feature folder, lib/hooks). */
+const HOOK_FOLDERS_KNOWN: string[] = [
+  "src/components/budget/hooks/use-column-mutations.ts",
+  "src/components/budget/hooks/use-invalidate-budget.ts",
+  "src/components/budget/hooks/use-item-mutations.ts",
+  "src/components/budget/hooks/use-profile-mutations.ts",
+  "src/components/budget/hooks/use-sync-mutations.ts",
+  "src/components/portfolio/hooks/use-portfolio-snapshot-mutations.ts",
+  "src/components/portfolio/hooks/use-snapshot-sync-pending.ts",
+  "src/components/settings/integrations/hooks/use-budget-mutations.ts",
+  "src/components/settings/integrations/hooks/use-contrib-mutations.ts",
+  "src/components/settings/integrations/hooks/use-drift-mutations.ts",
+  "src/components/settings/integrations/hooks/use-invalidate-preview.ts",
+  "src/components/settings/integrations/hooks/use-portfolio-mutations.ts",
+  "src/components/settings/integrations/hooks/use-savings-mutations.ts",
+];
+
+/** Skeleton returns on missing data, per file: a failed query shows the
+ *  skeleton forever. Each goes to QueryBoundary. */
+const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
+  "src/app/(dashboard)/assets/assets-content.tsx": { count: 1 },
+  "src/app/(dashboard)/brokerage/brokerage-content.tsx": { count: 1 },
+  "src/app/(dashboard)/budget/budget-content.tsx": { count: 1 },
+  "src/app/(dashboard)/contributions/contributions-content.tsx": { count: 1 },
+  "src/app/(dashboard)/historical/page.tsx": { count: 1 },
+  "src/app/(dashboard)/house/page.tsx": { count: 1 },
+  "src/app/(dashboard)/liabilities/page.tsx": { count: 1 },
+  "src/app/(dashboard)/networth/page.tsx": { count: 1 },
+  "src/app/(dashboard)/paycheck/page.tsx": { count: 1 },
+  "src/app/(dashboard)/performance/performance-content.tsx": { count: 1 },
+  "src/app/(dashboard)/portfolio/portfolio-content.tsx": { count: 1 },
+  "src/app/(dashboard)/retirement/retirement-content.tsx": { count: 1 },
+  "src/app/(dashboard)/savings/page.tsx": { count: 1 },
+  "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": { count: 1 },
+  "src/app/(dashboard)/tax-optimization/tax-optimization-content.tsx": {
+    count: 1,
+  },
+  "src/app/(dashboard)/upkeep/utilities/page.tsx": { count: 1 },
+  "src/components/cards/brokerage-goals.tsx": { count: 1 },
+  "src/components/retirement/retirement-profile-tab.tsx": { count: 1 },
+  "src/components/settings/bracket-table-editor.tsx": { count: 1 },
+  "src/components/settings/contribution-limits.tsx": { count: 1 },
+  "src/components/settings/fpl-by-household.tsx": { count: 1 },
+  "src/components/settings/rbac-groups.tsx": { count: 1 },
+  "src/components/settings/return-rates.tsx": { count: 1 },
+  "src/components/settings/tax-brackets.tsx": { count: 1 },
+  "src/components/tax-optimization/withdrawal-comparison.tsx": { count: 1 },
+};
+
+/** Client page.tsx files under app/(dashboard). */
+function clientPages(root: string): string[] {
+  return [...walkTsFiles(path.join(root, "src/app/(dashboard)"))]
+    .filter((f) => path.basename(f) === "page.tsx")
+    .filter((f) => /^\s*["']use client["']/.test(fs.readFileSync(f, "utf8")))
+    .map((f) => path.relative(root, f))
+    .sort();
+}
+
+/** Files in a `hooks/` folder anywhere under src/ but lib/hooks. */
+function hookFolderFiles(root: string): string[] {
+  return [...walkTsFiles(path.join(root, "src"))]
+    .map((f) => path.relative(root, f).split(path.sep).join("/"))
+    .filter((f) => f.includes("/hooks/") && !f.startsWith("src/lib/hooks/"))
+    .sort();
+}
+
+/**
+ * `if (<missing>) return <…Skeleton…>;` per file: the test reads a loading
+ * flag (`isLoading`, `isPending`) or a negation (`!data`), alone or in an
+ * `||`, and the one statement returns JSX holding a `*Skeleton*` element.
+ */
+function skeletonReturns(file: string, text: string): number {
+  const sf = ts.createSourceFile(
+    file,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const missing = (e: ts.Expression): boolean => {
+    if (ts.isParenthesizedExpression(e)) return missing(e.expression);
+    if (
+      ts.isBinaryExpression(e) &&
+      e.operatorToken.kind === ts.SyntaxKind.BarBarToken
+    )
+      return missing(e.left) || missing(e.right);
+    if (
+      ts.isPrefixUnaryExpression(e) &&
+      e.operator === ts.SyntaxKind.ExclamationToken
+    )
+      return true;
+    return /(^|\.)(isLoading|isPending)$/.test(e.getText(sf));
+  };
+  const skeleton = (n: ts.Node): boolean =>
+    ((ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) &&
+      /Skeleton/.test(n.tagName.getText(sf))) ||
+    ts.forEachChild(n, skeleton) === true;
+  let count = 0;
+  const visit = (n: ts.Node) => {
+    if (ts.isIfStatement(n) && missing(n.expression)) {
+      const then = n.thenStatement;
+      const only = ts.isBlock(then) ? then.statements : [then];
+      const [ret] = only;
+      if (
+        only.length === 1 &&
+        ret &&
+        ts.isReturnStatement(ret) &&
+        ret.expression &&
+        skeleton(ret.expression)
+      )
+        count += 1;
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return count;
+}
+
+function skeletonReturnsIn(root: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const abs of walkTsFiles(path.join(root, "src"))) {
+    if (!abs.endsWith(".tsx")) continue;
+    const n = skeletonReturns(abs, fs.readFileSync(abs, "utf8"));
+    if (n > 0) out[path.relative(root, abs).split(path.sep).join("/")] = n;
+  }
+  return out;
+}
+
+/** What fails against a known list: a new entry, or one that went. */
+function knownListProblems(
+  name: string,
+  now: Record<string, number>,
+  known: Record<string, number>,
+): string[] {
+  const problems: string[] = [];
+  for (const [file, n] of Object.entries(now))
+    if (n > (known[file] ?? 0))
+      problems.push(`${file}: ${n}, ${known[file] ?? 0} known in ${name}`);
+  for (const [file, n] of Object.entries(known))
+    if ((now[file] ?? 0) < n)
+      problems.push(
+        `${file}: ${now[file] ?? 0}, ${n} known — lower or remove its entry in ${name}`,
+      );
+  return problems;
+}
+
+const ones = (files: string[]) => Object.fromEntries(files.map((f) => [f, 1]));
+const counts = (list: Record<string, { count: number }>) =>
+  Object.fromEntries(Object.entries(list).map(([f, { count }]) => [f, count]));
+
+describe("UI structure known lists (owner Q4, v0.10.4)", () => {
+  it("client page.tsx files under app/(dashboard) only shrink", () => {
+    expect(
+      knownListProblems(
+        "CLIENT_PAGES_KNOWN",
+        ones(clientPages(REPO_ROOT)),
+        ones(CLIENT_PAGES_KNOWN),
+      ),
+    ).toEqual([]);
+  });
+
+  it("hook files in a hooks/ folder outside lib/hooks only shrink", () => {
+    expect(
+      knownListProblems(
+        "HOOK_FOLDERS_KNOWN",
+        ones(hookFolderFiles(REPO_ROOT)),
+        ones(HOOK_FOLDERS_KNOWN),
+      ),
+    ).toEqual([]);
+  });
+
+  it("skeleton returns on missing data only shrink", () => {
+    expect(
+      knownListProblems(
+        "SKELETON_RETURNS_KNOWN",
+        skeletonReturnsIn(REPO_ROOT),
+        counts(SKELETON_RETURNS_KNOWN),
+      ),
+    ).toEqual([]);
+  });
+
+  it("the finders see what they look for, and not their neighbours", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "ledgr-ui-known-"));
+    try {
+      const put = (file: string, text: string) => {
+        fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+        fs.writeFileSync(path.join(root, file), text);
+      };
+      put(
+        "src/app/(dashboard)/a/page.tsx",
+        '"use client";\nexport default 1;\n',
+      );
+      put("src/app/(dashboard)/b/page.tsx", "export default 1;\n");
+      put("src/components/x/hooks/use-x.ts", "export const x = 1;\n");
+      put("src/lib/hooks/use-y.ts", "export const y = 1;\n");
+      put(
+        "src/components/x/view.tsx",
+        [
+          "export function A({ q }) {",
+          "  if (q.isLoading || !q.data) return <CardSkeleton />;",
+          "  if (!q.data) {",
+          "    return (<div><Skeleton /></div>);",
+          "  }",
+          "  if (q.error) return <Skeleton />;",
+          "  if (!q.data) return null;",
+          "  return <p />;",
+          "}",
+        ].join("\n"),
+      );
+      expect(clientPages(root)).toEqual(["src/app/(dashboard)/a/page.tsx"]);
+      expect(hookFolderFiles(root)).toEqual([
+        "src/components/x/hooks/use-x.ts",
+      ]);
+      expect(skeletonReturnsIn(root)).toEqual({
+        "src/components/x/view.tsx": 2,
+      });
+      expect(knownListProblems("L", { a: 2, c: 1 }, { a: 1, b: 1 })).toEqual([
+        "a: 2, 1 known in L",
+        "c: 1, 0 known in L",
+        "b: 0, 1 known — lower or remove its entry in L",
+      ]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

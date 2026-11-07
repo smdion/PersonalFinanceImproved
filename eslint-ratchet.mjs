@@ -464,6 +464,14 @@ export const ratchetConfig = [
       "ratchet/no-jsx-iife": "error",
       "ratchet/no-text-includes": "error",
       "ratchet/no-raw-input": "error",
+      // Owner Q4 (v0.10.4): counted before the UI work lowers them.
+      "ratchet/no-raw-button": "error",
+      "ratchet/no-unlabeled-control": "error",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-static-element-interactions": "error",
+      "ratchet/no-raw-tablist": "error",
+      "ratchet/no-hand-date-format": "error",
+      "ratchet/no-raw-chart-container": "error",
       "ratchet/no-string-closed-set-field": "error",
       "ratchet/no-config-reach-through": "error",
       "ratchet/no-fixed-inset-overlay": "error",
@@ -485,5 +493,23 @@ export const ratchetConfig = [
       "ratchet/no-raw-input": "off",
       "ratchet/no-fixed-inset-overlay": "off",
     },
+  },
+  {
+    // The button, tab and segment primitives themselves.
+    files: ["src/components/ui/**"],
+    rules: {
+      "ratchet/no-raw-button": "off",
+      "ratchet/no-raw-tablist": "off",
+    },
+  },
+  {
+    // formatDate itself.
+    files: ["src/lib/utils/format.ts"],
+    rules: { "ratchet/no-hand-date-format": "off" },
+  },
+  {
+    // The chart primitives.
+    files: ["src/components/charts/**"],
+    rules: { "ratchet/no-raw-chart-container": "off" },
   },
 ];
