@@ -11,7 +11,13 @@ input-validation.ts          validateEngineInputs: balance checks, rate clamps, 
 projection-year-handlers/    one year of work
   context.ts                 immutable run context (buildProjectionContext)
   state.ts                   mutable run state (buildProjectionState)
-  pre-year-setup.ts          return rate, profile switches, spending strategy
+  pre-year-setup.ts          return rate, profile switches, spending strategy; the year's phase (UD-02) and the first retirement year's spending (UD-01)
+  contribution-target.ts     a working year's year-0 basis, contribution target and employer match
+  contribution-slots.ts      the IRS limits per slot, then the slots routed
+  rate-ceiling.ts            the retirement-rate ceiling on the spec slots
+  contribution-credits.ts    the totals and overflow, the credits to the balances, the per-account spread
+  goal-draws.ts              a gap year's draw and the brokerage goal draws
+  year-end-accounts.ts       the per-account rows, reconcile and the year-end balances
   accumulation-year.ts       runAccumulationYear
   decumulation-year.ts       runDecumulationYear: calls the stages below in order
   decumulation-income.ts     the year's income before any draw: each owner's RMD
