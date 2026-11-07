@@ -1358,9 +1358,20 @@ function scopeFacts(nodes: readonly ts.Statement[]) {
   return { refs, assigned, inClosure, returns, yields, awaits, own };
 }
 
+/** The function around a node, or undefined at module level (a class
+ *  counts as one: a method's `this` is its own). */
+function enclosingFunction(node: ts.Node): ts.Node | undefined {
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+    if (opensScope(up) || ts.isClassLike(up)) return up;
+  return undefined;
+}
+
 /**
  * A function the stage may be cut from: a function with a block body and
- * no function around it (its scope is its own and the module's).
+ * no function around it (its scope is its own and the module's), or
+ * (owner Q18) an arrow or function expression with a block body passed
+ * straight as a call's argument inside one (`people.map(async (p) => {…})`),
+ * whose outer names a stage reads only as parameters too.
  */
 function stageSource(node: ts.Node): node is BlockFunction {
   if (
@@ -1370,9 +1381,14 @@ function stageSource(node: ts.Node): node is BlockFunction {
   )
     return false;
   if (!node.body || !ts.isBlock(node.body) || node.asteriskToken) return false;
-  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
-    if (opensScope(up) || ts.isClassLike(up)) return false;
-  return true;
+  const around = enclosingFunction(node);
+  if (around === undefined) return true;
+  return (
+    !ts.isFunctionDeclaration(node) &&
+    ts.isCallExpression(node.parent) &&
+    node.parent.arguments.some((a) => a === node) &&
+    stageSource(around)
+  );
 }
 
 /** A source function's name: its own, or its variable's. */
@@ -1382,6 +1398,105 @@ function functionName(node: BlockFunction): string | undefined {
   if (ts.isVariableDeclaration(up) && ts.isIdentifier(up.name))
     return up.name.text;
   return undefined;
+}
+
+/**
+ * Each stage source in a file with a key that names it on both sides of a
+ * change: a top-level function by its name, a callback by the key of the
+ * function around it, its call's callee and argument place, and which such
+ * callback it is there in source order (`computeX > people.map(0) #1`).
+ */
+function stageSources(
+  source: ts.SourceFile,
+): { node: BlockFunction; key: string }[] {
+  const out: { node: BlockFunction; key: string }[] = [];
+  const keys = new Map<ts.Node, string>();
+  const seen = new Map<string, number>();
+  const visit = (node: ts.Node) => {
+    if (stageSource(node)) {
+      const around = enclosingFunction(node);
+      let key: string | undefined;
+      if (around === undefined) key = functionName(node);
+      else {
+        const call = node.parent as ts.CallExpression;
+        const label = `${keys.get(around)} > ${call.expression.getText(source)}(${call.arguments.findIndex((arg) => arg === node)})`;
+        const n = (seen.get(label) ?? 0) + 1;
+        seen.set(label, n);
+        key = keys.get(around) === undefined ? undefined : `${label} #${n}`;
+      }
+      if (key !== undefined) {
+        keys.set(node, key);
+        out.push({ node, key });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return out;
+}
+
+/**
+ * The names a callback's run sees from the functions and blocks around the
+ * callback (their parameters, and what they declare), and every name
+ * assigned anywhere in the outermost one.
+ */
+function outerScope(fn: BlockFunction): {
+  names: Set<string>;
+  assigned: Set<string>;
+  outermost: ts.Node | undefined;
+} {
+  const names = new Set<string>();
+  let outermost: ts.Node | undefined;
+  for (let up = fn.parent; up && !ts.isSourceFile(up); up = up.parent) {
+    if (ts.isBlock(up) || ts.isModuleBlock(up))
+      blockNames(up.statements).forEach((n) => names.add(n));
+    else if (ts.isCaseBlock(up))
+      up.clauses.forEach((c) =>
+        blockNames(c.statements).forEach((n) => names.add(n)),
+      );
+    else if (
+      (ts.isForStatement(up) ||
+        ts.isForInStatement(up) ||
+        ts.isForOfStatement(up)) &&
+      up.initializer &&
+      ts.isVariableDeclarationList(up.initializer)
+    )
+      up.initializer.declarations.forEach((d) =>
+        bindingIdentifiers(d.name).forEach((n) => names.add(n)),
+      );
+    else if (ts.isCatchClause(up) && up.variableDeclaration)
+      bindingIdentifiers(up.variableDeclaration.name).forEach((n) =>
+        names.add(n),
+      );
+    else if (opensScope(up)) {
+      const f = up as ts.SignatureDeclaration & { body?: ts.Node };
+      for (const p of f.parameters ?? [])
+        bindingIdentifiers(p.name).forEach((n) => names.add(n));
+      if (ts.isFunctionExpression(up) && up.name) names.add(up.name.text);
+      if (f.body && ts.isBlock(f.body))
+        varNames(f.body.statements).forEach((n) => names.add(n));
+      outermost = up;
+    }
+  }
+  const assigned = new Set<string>();
+  const visit = (node: ts.Node) => {
+    if (ts.isBinaryExpression(node) && isAssignment(node.operatorToken.kind))
+      targetNames(node.left).forEach((n) => assigned.add(n));
+    if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      (node.operator === ts.SyntaxKind.PlusPlusToken ||
+        node.operator === ts.SyntaxKind.MinusMinusToken)
+    )
+      targetNames(node.operand).forEach((n) => assigned.add(n));
+    if (
+      (ts.isForInStatement(node) || ts.isForOfStatement(node)) &&
+      !ts.isVariableDeclarationList(node.initializer)
+    )
+      targetNames(node.initializer).forEach((n) => assigned.add(n));
+    ts.forEachChild(node, visit);
+  };
+  if (outermost) visit(outermost);
+  return { names, assigned, outermost };
 }
 
 /**
@@ -1550,6 +1665,13 @@ function stageProblem(
   if (ts.isFunctionExpression(fn) && fn.name) visible.add(fn.name.text);
   for (const s of rest) declaredBy(s).names.forEach((n) => visible.add(n));
   varNames(rest).forEach((n) => visible.add(n));
+  // A callback's run also sees the names around it (owner Q18). One it
+  // takes as a parameter is a copy: refused when anything in the outermost
+  // function assigns that name (the callback may run later, or between
+  // awaits, and would then read the new value).
+  const outer = outerScope(fn);
+  const own = new Set(visible);
+  outer.names.forEach((n) => visible.add(n));
   const declared = new Map<string, { hoists: boolean; mutable: boolean }>();
   for (const n of varNames(run))
     declared.set(n, { hoists: true, mutable: true });
@@ -1563,6 +1685,14 @@ function stageProblem(
       return `reads ${n} without it as a parameter`;
   for (const n of moved.assigned)
     if (passed.has(n)) return `assigns its parameter ${n}`;
+  for (const n of moved.refs)
+    if (
+      passed.has(n) &&
+      outer.names.has(n) &&
+      !own.has(n) &&
+      outer.assigned.has(n)
+    )
+      return `reads ${n} from around the callback, which is assigned there`;
   const outside = scopeFacts(rest);
   for (const n of moved.inClosure)
     if (passed.has(n) && outside.assigned.has(n))
@@ -1697,25 +1827,25 @@ function cutMovedStages(
     );
   const keyOf = (s: ts.Statement, source: ts.SourceFile) =>
     tokensOf(s, source, names).join(" ");
-  const sources: { f: number; node: BlockFunction; keys: string[] }[] = [];
+  const sources: {
+    f: number;
+    node: BlockFunction;
+    name: string;
+    keys: string[];
+  }[] = [];
   const dests: {
     f: number;
     dest: NonNullable<ReturnType<typeof stageDestination>>;
     keys: string[];
   }[] = [];
   code.forEach(({ entry, oldSource, newSource }, f) => {
-    const visit = (node: ts.Node) => {
-      if (stageSource(node)) {
-        sources.push({
-          f,
-          node,
-          keys: node.body.statements.map((s) => keyOf(s, oldSource)),
-        });
-        return;
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(oldSource);
+    for (const { node, key } of stageSources(oldSource))
+      sources.push({
+        f,
+        node,
+        name: key,
+        keys: node.body.statements.map((s) => keyOf(s, oldSource)),
+      });
     const oldNames = new Set(
       oldSource.statements.flatMap((s) =>
         ts.isFunctionDeclaration(s) && s.name ? [s.name.text] : [],
@@ -1751,8 +1881,7 @@ function cutMovedStages(
     for (const source of sources) {
       if (found) break;
       const at = code[source.f]!;
-      const name = functionName(source.node);
-      if (name === undefined) continue;
+      const name = source.name;
       const body = source.node.body.statements;
       for (let i = 0; i + keys.length <= body.length && !found; i++) {
         if (keys.some((k, j) => source.keys[i + j] !== k)) continue;
@@ -1770,35 +1899,31 @@ function cutMovedStages(
           ) !== undefined
         )
           continue;
-        // The call, inside the function of that name: the one with the
-        // run's neighbours around it when there are several.
+        // The call, inside the function of that key (the same callback):
+        // the one with the run's neighbours around it when there are
+        // several.
         const before = source.keys[i - 1];
         const after = source.keys[i + keys.length];
         let call: ts.Statement | undefined;
-        const look = (node: ts.Node) => {
-          if (call) return;
-          if (stageSource(node) && functionName(node) === name) {
-            const list = node.body.statements;
-            const calls = list.filter(
-              (s) =>
-                !claimedCalls.has(s) &&
-                callsStage(s, dest.node, dest.params, dest.returned),
+        const there = stageSources(at.newSource).find((x) => x.key === name);
+        if (there) {
+          const list = there.node.body.statements;
+          const calls = list.filter(
+            (s) =>
+              !claimedCalls.has(s) &&
+              callsStage(s, dest.node, dest.params, dest.returned),
+          );
+          const fits = (s: ts.Statement) => {
+            const k = list.indexOf(s);
+            const prev = list[k - 1];
+            const next = list[k + 1];
+            return (
+              (prev ? keyOf(prev, at.newSource) : undefined) === before ||
+              (next ? keyOf(next, at.newSource) : undefined) === after
             );
-            const fits = (s: ts.Statement) => {
-              const k = list.indexOf(s);
-              const prev = list[k - 1];
-              const next = list[k + 1];
-              return (
-                (prev ? keyOf(prev, at.newSource) : undefined) === before ||
-                (next ? keyOf(next, at.newSource) : undefined) === after
-              );
-            };
-            call = calls.find(fits) ?? calls[0];
-            return;
-          }
-          ts.forEachChild(node, look);
-        };
-        look(at.newSource);
+          };
+          call = calls.find(fits) ?? calls[0];
+        }
         if (!call) continue;
         const r = { start: call.getStart(at.newSource), end: call.getEnd() };
         const ds = {

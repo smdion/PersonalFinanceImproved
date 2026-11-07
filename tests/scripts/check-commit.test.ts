@@ -1320,6 +1320,117 @@ describe("notAMove: a stage cut from a long function (owner v0.10.3 Q1)", () => 
     expect(cut({ [YEAR]: later }, { [YEAR]: moved })).toMatch(REFUSED);
   });
 
+  /** A per-person callback, as computeContributionSummary's: `around` sits
+   *  in the enclosing function, `body` in the callback. */
+  const perPerson = (
+    body: string[],
+    around: string[] = [],
+    extra: string[] = [],
+  ) => [
+    "export async function summary(ctx: Context) {",
+    "  const { people } = ctx;",
+    "  let rate = ctx.rate;",
+    ...indent(around),
+    "  const rows = await Promise.all(",
+    "    people.map(async (person) => {",
+    ...indent(body, "      "),
+    "      const total = pay + match;",
+    "      return { total };",
+    "    }),",
+    "  );",
+    "  return rows;",
+    "}",
+    ...extra,
+  ];
+  const payRun = [
+    "const pay = person.salary * rate;",
+    "const match = Math.min(",
+    "  pay,",
+    "  person.cap,",
+    ");",
+  ];
+  const payCall = [
+    "const { pay, match } = payStage(",
+    "  person,",
+    "  rate,",
+    ");",
+  ];
+  const payStage = (run = payRun, params = "person: Person, rate: number") => [
+    "",
+    `function payStage(${params}) {`,
+    ...indent(run),
+    "",
+    "  return { pay, match };",
+    "}",
+  ];
+  const CALLBACK_REFUSED = new RegExp(
+    `${REFUSED.source}|no code moved between files`,
+  );
+
+  it("passes a stage cut from a callback passed to a call, the callback's own and captured names passed in (owner Q18)", () => {
+    const base = { [YEAR]: perPerson(payRun) };
+    const after = { [YEAR]: perPerson(payCall, [], payStage()) };
+    expect(cut(base, after)).toBeUndefined();
+    expect(structuralMoves(...change(base, after)).stages).toEqual([
+      expect.objectContaining({ from: YEAR, to: YEAR, name: "payStage" }),
+    ]);
+  });
+
+  it("fails a callback's stage that changes, or reads a captured name it isn't passed or that is reassigned", () => {
+    const base = { [YEAR]: perPerson(payRun) };
+    const fails = (after: string[], from = base) =>
+      expect(cut(from, { [YEAR]: after })).toMatch(CALLBACK_REFUSED);
+    // An edited line, a reordered statement, a new branch.
+    fails(
+      perPerson(
+        payCall,
+        [],
+        payStage(payRun.map((l) => l.replace("* rate", "* rate * 2"))),
+      ),
+    );
+    fails(perPerson(payCall, [], payStage([...payRun.slice(1), payRun[0]!])));
+    fails(
+      perPerson(
+        payCall,
+        [],
+        payStage(["if (!person) throw new Error();", ...payRun]),
+      ),
+    );
+    // A captured name not passed in.
+    fails(
+      perPerson(
+        ["const { pay, match } = payStage(person);"],
+        [],
+        payStage(payRun, "person: Person"),
+      ),
+    );
+    // A captured name the enclosing function reassigns: the stage would
+    // read a copy taken when it is called.
+    const reassigned = { [YEAR]: perPerson(payRun, ["if (!rate) rate = 1;"]) };
+    fails(perPerson(payCall, ["if (!rate) rate = 1;"], payStage()), reassigned);
+  });
+
+  it("fails a callback's stage whose call moves out of the callback", () => {
+    const base = { [YEAR]: perPerson(payRun) };
+    const outside = [
+      "export async function summary(ctx: Context) {",
+      "  const { people } = ctx;",
+      "  let rate = ctx.rate;",
+      "  const person = people[0];",
+      ...indent(payCall),
+      "  const rows = await Promise.all(",
+      "    people.map(async (person) => {",
+      "      const total = pay + match;",
+      "      return { total };",
+      "    }),",
+      "  );",
+      "  return rows;",
+      "}",
+      ...payStage(),
+    ];
+    expect(cut(base, { [YEAR]: outside })).toMatch(CALLBACK_REFUSED);
+  });
+
   it("fails a stage that would write or capture a copy of the function's own variable", () => {
     const fn = (body: string[]) => [
       "export function runYear(ctx: Context, year: number): number {",
