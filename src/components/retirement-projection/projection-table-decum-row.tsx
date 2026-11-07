@@ -131,22 +131,22 @@ export function DecumulationRow({
   // WHICH roth/brokerage account row triggers it —
   // a household with 1 Roth + 2 brokerage accounts saw it verbatim 3 times
   // in one year. Show it on the first qualifying row only per year (this
-  // component renders once per year, so a plain local flag closed over by
+  // component renders once per year, so a plain local flag object closed over by
   // the per-account calls below is safe — synchronous, no cross-row state).
-  let capacityNoteShownThisYear = false;
+  const capacityNote = { shownThisYear: false };
 
   // Shared by all three withdrawal-by-tax-type/withdrawal-by-account
   // branches below — was the same 6-arg buildFullAccountNote call (incl.
-  // the same capacityNoteShownThisYear closure) copy-pasted 3x.
+  // the same capacityNote closure) copy-pasted 3x.
   const noteFor = (ia: IndividualAccountYearBalance) =>
     buildFullAccountNote(
       ia,
       yr,
       deflate,
       bracketOptimizerResult,
-      !capacityNoteShownThisYear,
+      !capacityNote.shownThisYear,
       () => {
-        capacityNoteShownThisYear = true;
+        capacityNote.shownThisYear = true;
       },
     );
 
