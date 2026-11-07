@@ -279,7 +279,7 @@ export function performRothConversion(
         balances.preTax -
           getAllCategories().reduce((s, cat) => {
             if (acctBal[cat].structure !== "roth_traditional") return s;
-            return s + (nonRetirement.trad[cat] ?? 0);
+            return s + nonRetirement.trad[cat];
           }, 0),
       )
     : balances.preTax;
@@ -347,9 +347,7 @@ export function performRothConversion(
   // hard-exclusion philosophy, not a soft preference).
   const retirementOnlyAfterTax =
     nonRetirement && overflowCat
-      ? roundToCents(
-          balances.afterTax - (nonRetirement.total[overflowCat] ?? 0),
-        )
+      ? roundToCents(balances.afterTax - nonRetirement.total[overflowCat])
       : balances.afterTax;
   if (retirementOnlyAfterTax < taxCostOfConversion) {
     // If brokerage can't cover tax, skip conversion (don't sell Traditional to pay tax on itself)
@@ -386,7 +384,7 @@ export function performRothConversion(
     const bal = acctBal[cat];
     if (bal.structure !== "roth_traditional") continue;
     const weight = nonRetirement
-      ? Math.max(0, bal.traditional - (nonRetirement.trad[cat] ?? 0))
+      ? Math.max(0, bal.traditional - nonRetirement.trad[cat])
       : bal.traditional;
     if (weight > 0) tradAccounts.push({ cat, balance: weight });
   }

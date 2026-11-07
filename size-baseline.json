@@ -108,7 +108,7 @@
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 465,
-    "src/lib/pure/accounts/tax-bucket-projection.ts": 523,
+    "src/lib/pure/accounts/tax-bucket-projection.ts": 518,
     "src/lib/pure/advice/milestones/custom-goals.ts": 129,
     "src/lib/pure/advice/milestones/foo.ts": 387,
     "src/lib/pure/advice/milestones/habits.ts": 391,
@@ -147,7 +147,7 @@
     "src/lib/pure/engine/irmaa-check.ts": 91,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 322,
     "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": 221,
-    "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": 233,
+    "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": 232,
     "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 181,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 68,
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 554,
@@ -166,7 +166,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 117,
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
     "src/lib/pure/engine/rmd-enforcement.ts": 460,
-    "src/lib/pure/engine/roth-conversion.ts": 528,
+    "src/lib/pure/engine/roth-conversion.ts": 526,
     "src/lib/pure/engine/tax-estimation.ts": 506,
     "src/lib/pure/engine/types/accumulation.ts": 163,
     "src/lib/pure/engine/types/contribution-spec.ts": 96,
@@ -866,8 +866,8 @@
       "computeTaxBucketAnalysis": 244
     },
     "src/lib/pure/accounts/tax-bucket-projection.ts": {
-      "computeTaxBucketProjection": 280,
-      "computeTaxBucketProjection.entries.map()": 191
+      "computeTaxBucketProjection": 275,
+      "computeTaxBucketProjection.entries.map()": 186
     },
     "src/lib/pure/accounts/tax-buckets.ts": {
       "computeTaxBucketBreakdown": 243
@@ -906,7 +906,7 @@
       "enforceOwnerRmds": 151
     },
     "src/lib/pure/engine/roth-conversion.ts": {
-      "performRothConversion": 375
+      "performRothConversion": 373
     },
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
       "rankWithdrawalTiers": 262

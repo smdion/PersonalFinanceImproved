@@ -123,23 +123,19 @@ export function subtractPenaltyExposed(
         bal,
         Math.max(
           0,
-          bal.traditional - (record.penaltyExposedTradStillExcluded[cat] ?? 0),
+          bal.traditional - record.penaltyExposedTradStillExcluded[cat],
         ),
       );
       setRoth(
         bal,
-        Math.max(
-          0,
-          bal.roth - (record.penaltyExposedRothStillExcluded[cat] ?? 0),
-        ),
+        Math.max(0, bal.roth - record.penaltyExposedRothStillExcluded[cat]),
       );
     } else {
       setBalance(
         bal,
         Math.max(
           0,
-          getTotalBalance(bal) -
-            (record.penaltyExposedTotalStillExcluded[cat] ?? 0),
+          getTotalBalance(bal) - record.penaltyExposedTotalStillExcluded[cat],
         ),
       );
     }

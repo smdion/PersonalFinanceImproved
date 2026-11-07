@@ -87,7 +87,7 @@ export function runPreYearSetup(
       // Update contribution rate ceiling for the new profile
       state.accumulationDefaults.contributionRate = ps.contributionRate;
       // Rebuild spec-to-account mapping for the new specs
-      if (hasIndividualAccounts && state.contributionSpecs) {
+      if (hasIndividualAccounts) {
         const rebuilt = buildSpecToAccountMapping(
           state.contributionSpecs,
           indAccts,

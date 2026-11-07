@@ -120,7 +120,7 @@ export function yearContributionTarget(
       personId == null
         ? safeDivide(projectedSalary, currentSalary, 0)
         : safeDivide(
-            projectedSalaryByPerson?.get(personId) ?? 0,
+            projectedSalaryByPerson.get(personId) ?? 0,
             baseSalaryByPerson[personId] ?? 0,
             0,
           );

@@ -300,7 +300,7 @@ export function routeForMode(
     return dispatchOnce(targetWithdrawal, config, balances, bracketInfo);
   }
 
-  if (hasLastResortAllowance && exposure != null) {
+  if (hasLastResortAllowance) {
     return routeWithLastResortAllowance(
       targetWithdrawal,
       config,

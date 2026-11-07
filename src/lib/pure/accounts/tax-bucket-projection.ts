@@ -442,13 +442,8 @@ export function computeTaxBucketProjection(input: {
         person!.birthYear,
         {
           forceIneligible:
-            now.ownerPersonId != null
-              ? ruleOf55OverrideByPersonId?.get(now.ownerPersonId) === false
-              : false,
-          ownerRetirementYear:
-            now.ownerPersonId != null
-              ? retirementYearByPersonId?.get(now.ownerPersonId)
-              : undefined,
+            ruleOf55OverrideByPersonId?.get(now.ownerPersonId) === false,
+          ownerRetirementYear: retirementYearByPersonId?.get(now.ownerPersonId),
         },
       );
       const eligible = ruleOf55?.eligible ?? false;

@@ -71,10 +71,9 @@ export function yearContributionLimits(
           ctx: capCtx,
           people: irsLimitCaps.people,
           employerMatch: yearEmployerMatch,
-          wagesByPerson:
-            hasPerPersonSalary && projectedSalaryByPerson
-              ? new Map(projectedSalaryByPerson)
-              : null,
+          wagesByPerson: hasPerPersonSalary
+            ? new Map(projectedSalaryByPerson)
+            : null,
         },
       )
     : null;
