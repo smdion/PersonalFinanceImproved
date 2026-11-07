@@ -644,7 +644,7 @@ export function runDecumulationYear(
   const {
     deliveredAfterTax,
     shortfallMaterialityFloor,
-    finalUnmetNeed,
+    unmetNeedRaw,
     unmetNeedMaterial,
   } = fundingShortfallForYear(
     totalWithdrawal,
@@ -926,7 +926,7 @@ export function runDecumulationYear(
     discretionaryTierBreakdown: routeResult.tierBreakdown,
     rothBasisCapacity: routeResult.rothBasisCapacity,
     brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,
-    unmetNeed: finalUnmetNeed,
+    unmetNeed: unmetNeedRaw,
     unmetNeedMaterial,
     shortfallMaterialityFloor,
     penaltyAvoidedShortfall,

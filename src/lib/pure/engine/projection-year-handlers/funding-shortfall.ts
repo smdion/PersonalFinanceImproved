@@ -4,9 +4,9 @@ import { shortfallFloor } from "../gap-year-draw";
 import type { pricedYearParts } from "./tax-year-settlement";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
-/** The router's unmet need and the funding shortfall after the year's tax
- *  settled (the larger, past the materiality floor), and whether it's
- *  material once a no-gross-up household's own tax is netted out. */
+/** unmetNeedRaw (the response's unmetNeed; its routed branch isn't
+ *  floor-filtered) and unmetNeedMaterial, the verdict once a no-gross-up
+ *  household's own tax is netted out. Which one screens read is v0.11's. */
 export function fundingShortfallForYear(
   totalWithdrawal: number,
   taxCost: number,
@@ -33,7 +33,7 @@ export function fundingShortfallForYear(
   );
   // Materiality floor, not a correctness tolerance (SHORTFALL_MATERIALITY).
   const shortfallMaterialityFloor = shortfallFloor(afterTaxNeed);
-  const finalUnmetNeed =
+  const unmetNeedRaw =
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
@@ -55,7 +55,7 @@ export function fundingShortfallForYear(
   return {
     deliveredAfterTax,
     shortfallMaterialityFloor,
-    finalUnmetNeed,
+    unmetNeedRaw,
     unmetNeedMaterial,
   };
 }
