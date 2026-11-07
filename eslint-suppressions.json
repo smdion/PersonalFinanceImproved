@@ -4894,6 +4894,17 @@
       "count": 1
     }
   },
+  "src/lib/pure/net-worth/year-end-rows.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/net-worth/year-end-targeting.schema.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -6408,7 +6419,7 @@
   },
   "src/server/services/net-worth/year-end-history.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
@@ -6420,10 +6431,7 @@
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 3
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
+      "count": 2
     }
   },
   "src/server/services/paycheck/job-net-pay.ts": {
