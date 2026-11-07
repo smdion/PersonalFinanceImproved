@@ -415,6 +415,39 @@ export async function projectionText(
   return textTree(response.result) ?? null;
 }
 
+/** The Simulation and Coast FIRE procedures whose text the second text
+ *  pin keeps (v0.10.4 plan commit 27c). */
+const SIMULATIONS = [
+  "projection.computeCoastFire",
+  "projection.computeCoastFireMC",
+  "projection.computeCoastFireProbe",
+  "projection.computeMonteCarloProjection",
+].map((p) => PROCEDURES.find((procedure) => procedure.path === p)!);
+
+/** The second text pin of a seeded household: each Simulation and Coast
+ *  FIRE response's text and flags, by procedure, called in the router
+ *  baseline's order with its input (one it can't be called with is left
+ *  out). A call
+ *  that threw is kept as `{ $threw }`. */
+export async function simulationText(
+  caller: Caller,
+  household: Household,
+  ids: SeededIds,
+): Promise<TextTree> {
+  const out: Record<string, TextTree> = {};
+  for (const procedure of SIMULATIONS) {
+    const input = procedure.input?.({ household, ids });
+    if (input === null) continue;
+    try {
+      out[procedure.path] =
+        textTree(await callProcedure(caller, procedure, input)) ?? null;
+    } catch (error) {
+      out[procedure.path] = { $threw: (error as Error).message };
+    }
+  }
+  return out;
+}
+
 /** A pin file's JSON, or null when there is none. */
 export function readPin(file: string): unknown {
   if (!fs.existsSync(file)) return null;
