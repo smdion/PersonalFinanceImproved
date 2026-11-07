@@ -2194,7 +2194,6 @@ function twoYearHousehold(): ProjectionInput {
 /** Client `page.tsx` files under app/(dashboard): each becomes a thin
  *  server page and a `<route>-content.tsx`. */
 const CLIENT_PAGES_KNOWN: string[] = [
-  "src/app/(dashboard)/tools/page.tsx",
   "src/app/(dashboard)/upkeep/utilities/page.tsx",
   "src/app/(dashboard)/versions/page.tsx",
 ];

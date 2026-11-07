@@ -16,7 +16,7 @@
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
     "src/app/(dashboard)/savings/savings-content.tsx": 930,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1020,
-    "src/app/(dashboard)/tools/page.tsx": 580,
+    "src/app/(dashboard)/tools/tools-content.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 934,
     "src/components/budget/budget-summary-table.tsx": 772,
@@ -373,7 +373,7 @@
       "BulkRothBasisForm": 181,
       "TaxBucketsContent": 376
     },
-    "src/app/(dashboard)/tools/page.tsx": {
+    "src/app/(dashboard)/tools/tools-content.tsx": {
       "ToolsPage": 537
     },
     "src/app/(dashboard)/upkeep/utilities/page.tsx": {

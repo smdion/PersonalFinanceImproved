@@ -9,7 +9,7 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/tools/page.tsx": {
+  "src/app/(dashboard)/tools/tools-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }

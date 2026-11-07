@@ -120,7 +120,8 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
   {
     route: "/tools",
     file: "tools",
-    load: async () => (await import("@/app/(dashboard)/tools/page")).default,
+    load: async () =>
+      (await import("@/app/(dashboard)/tools/tools-content")).default,
   },
   {
     route: "/upkeep/utilities",
