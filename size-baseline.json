@@ -632,7 +632,7 @@
       "AccountPicker": 192
     },
     "src/components/performance/finalize-year-modal.tsx": {
-      "FinalizeYearModal": 213
+      "FinalizeYearModal": 204
     },
     "src/components/performance/performance-table.tsx": {
       "PerformanceTable": 181

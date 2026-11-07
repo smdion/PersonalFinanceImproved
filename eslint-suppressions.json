@@ -2288,9 +2288,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
