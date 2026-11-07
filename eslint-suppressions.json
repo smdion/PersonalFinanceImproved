@@ -4458,7 +4458,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 8
     }
   },
   "src/lib/pure/engine/projection-year-handlers/state.ts": {
