@@ -10,7 +10,6 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
   ReferenceLine,
-  ResponsiveContainer,
 } from "recharts";
 import {
   formatCurrency,
@@ -26,6 +25,8 @@ import {
   trajectoryChartPalette,
 } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { trajectorySummary } from "./savings-trajectory-chart.summary";
 
 interface TrajectoryDataPoint {
   month: string;
@@ -181,7 +182,7 @@ export function SavingsTrajectoryChart({
         )}
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
+      <ChartFrame summary={trajectorySummary(data)} height={280}>
         <LineChart
           data={data}
           margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -332,7 +333,7 @@ export function SavingsTrajectoryChart({
             );
           })}
         </LineChart>
-      </ResponsiveContainer>
+      </ChartFrame>
     </div>
   );
 }

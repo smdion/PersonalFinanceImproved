@@ -10,6 +10,14 @@ import { journeySummary } from "@/components/networth/journey-to-abundance-chart
 import { costTrendSummary } from "@/components/upkeep/cost-trend-chart.summary";
 import { budgetVsActualSummary } from "@/components/expenses/expenses-charts.summary";
 import type { HistoryRow } from "@/components/networth/types";
+import { trajectorySummary } from "@/components/savings/savings-trajectory-chart.summary";
+import { fundMiniSummary } from "@/components/savings/fund-mini-chart.summary";
+import { glidePathSummary } from "@/components/investments/glide-path-chart.summary";
+import { comparisonSummary } from "@/components/investments/comparison-section.summary";
+import {
+  portfolioSummary,
+  stackedSummary,
+} from "@/components/portfolio/portfolio-chart.summary";
 
 const row = (year: number, netWorth: number): HistoryRow => ({
   year,
@@ -114,6 +122,103 @@ describe("chart summaries", () => {
       ]).text,
     ).toBe(
       "Budget vs actual by group: Housing budgeted $2,000.00, actual $2,100.00; Food budgeted $800.00, actual $650.00.",
+    );
+  });
+
+  it("savings goal trajectories", () => {
+    expect(
+      trajectorySummary([
+        { month: "2026-01", Emergency: 5_000, Car: 1_000 },
+        { month: "2026-12", Emergency: 9_000, Car: -250 },
+      ]).text,
+    ).toBe(
+      "Goal trajectories, Jan 2026 to Dec 2026. Dec 2026: Emergency $9,000.00; Car -$250.00.",
+    );
+  });
+
+  it("a fund's mini chart, with and without a target", () => {
+    const dates = [new Date(2026, 0, 1), new Date(2026, 1, 1)];
+    expect(fundMiniSummary([100, 200], dates, 1_000).text).toBe(
+      "Fund balance by month, Jan 2026 to Feb 2026. Feb 2026: Balance $200.00; Target $1,000.00.",
+    );
+    expect(fundMiniSummary([100, 200], dates, 0).text).toBe(
+      "Fund balance by month, Jan 2026 to Feb 2026. Feb 2026: Balance $200.00.",
+    );
+  });
+
+  it("glide path, with the Vanguard line", () => {
+    const key = (id: number) => `c${id}`;
+    const points = [
+      { age: 25, c1: 90, c2: 10, vanguard: 90 },
+      { age: 95, c1: 30, c2: 70, vanguard: 30 },
+    ];
+    expect(
+      glidePathSummary(
+        points,
+        [
+          { assetClassId: 1, name: "US stocks" },
+          { assetClassId: 2, name: "Bonds" },
+        ],
+        key,
+      ).text,
+    ).toBe(
+      "Target mix by age, Age 25 to Age 95. Age 95: US stocks 30%; Bonds 70%; Vanguard target-date stocks 30%.",
+    );
+  });
+
+  it("you vs the market, the shown index runs only", () => {
+    expect(
+      comparisonSummary(
+        [
+          { label: "2024", deposits: 10_000, you: 11_000, sp: 11_500 },
+          {
+            label: "2025 so far",
+            deposits: 12_000,
+            you: 14_000,
+            sp: 14_400,
+            bonds: 12_100,
+          },
+        ],
+        [{ key: "sp", label: "the S&P 500" }],
+      ).text,
+    ).toBe(
+      "How you did vs the market, 2024 to 2025 so far. 2025 so far: What you put in $12,000.00; You $14,000.00; Same money in the S&P 500 $14,400.00.",
+    );
+  });
+
+  it("portfolio value: a snapshot total, or the live estimate after it", () => {
+    expect(
+      portfolioSummary([
+        { label: "Jan 5, 26", total: 100_000 },
+        { label: "Feb 5, 26", total: 101_000 },
+      ]).text,
+    ).toBe(
+      "Portfolio value, Jan 5, 26 to Feb 5, 26. Feb 5, 26: Total $101,000.00.",
+    );
+    expect(
+      portfolioSummary([
+        { label: "Feb 5, 26", total: 101_000, live: 101_000 },
+        { label: "Feb 6, 26", total: null, live: 101_250.5 },
+      ]).text,
+    ).toBe(
+      "Portfolio value, Feb 5, 26 to Feb 6, 26. Feb 6, 26: Live estimate ≈ $101,250.50.",
+    );
+  });
+
+  it("portfolio value by account", () => {
+    expect(
+      stackedSummary(
+        [
+          { date: "2026-01-05", label: "Jan 5, 26", a: 60_000, b: 40_000 },
+          { date: "2026-02-05", label: "Feb 5, 26", a: 61_000, b: 39_500 },
+        ],
+        [
+          { key: "a", label: "401k" },
+          { key: "b", label: "IRA" },
+        ],
+      ).text,
+    ).toBe(
+      "Portfolio value by account, Jan 5, 26 to Feb 5, 26. Feb 5, 26: 401k $61,000.00; IRA $39,500.00.",
     );
   });
 });

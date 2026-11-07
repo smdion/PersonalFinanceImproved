@@ -11,7 +11,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
-  ResponsiveContainer,
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import {
@@ -32,6 +31,8 @@ import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
 import { localDateStr } from "@/lib/utils/date";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { portfolioSummary, stackedSummary } from "./portfolio-chart.summary";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
 const TIME_FRAMES: TimeFrame[] = ["YTD", "3M", "6M", "1Y", "3Y", "All"];
@@ -225,7 +226,7 @@ export function PortfolioChart({
       {mode === "account" && canStack ? (
         <StackedByAccount stacked={stacked} />
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
+        <ChartFrame summary={portfolioSummary(renderData)} height={300}>
           <AreaChart
             data={renderData}
             margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -353,7 +354,7 @@ export function PortfolioChart({
               />
             )}
           </AreaChart>
-        </ResponsiveContainer>
+        </ChartFrame>
       )}
     </Card>
   );
@@ -366,8 +367,7 @@ function StackedByAccount({
   stacked: ReturnType<typeof stackedSeries>;
 }) {
   const colorOf = (i: number) => FUND_COLORS[i % FUND_COLORS.length]!;
-  // The account band under the mouse: drawn stronger, and picked out in the
-  // tooltip and legend.
+  // The hovered account band: drawn stronger, picked out in tooltip and legend.
   const [hovered, setHovered] = useState<string | null>(null);
   const rows: (Record<string, number | string> & {
     date: string;
@@ -375,7 +375,7 @@ function StackedByAccount({
   })[] = stacked.rows.map((r) => ({ ...r, label: shortLabel(r.date) }));
   return (
     <>
-      <ResponsiveContainer width="100%" height={300}>
+      <ChartFrame summary={stackedSummary(rows, stacked.series)} height={300}>
         <AreaChart
           data={rows}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -454,7 +454,7 @@ function StackedByAccount({
             />
           ))}
         </AreaChart>
-      </ResponsiveContainer>
+      </ChartFrame>
       <div className="text-caption text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {stacked.series.map((s, i) => (
           <span

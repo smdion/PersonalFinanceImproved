@@ -7,7 +7,6 @@ import {
   XAxis,
   YAxis,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
 import {
@@ -17,6 +16,8 @@ import {
 } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { fundMiniSummary } from "./fund-mini-chart.summary";
 import { monthKey } from "@/lib/pure/savings/savings-projection";
 
 interface FundMiniChartProps {
@@ -61,7 +62,7 @@ export function FundMiniChart({
 
   return (
     <div className="h-[120px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ChartFrame summary={fundMiniSummary(balances, monthDates, target)}>
         <AreaChart
           data={data}
           margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
@@ -218,7 +219,7 @@ export function FundMiniChart({
             }}
           />
         </AreaChart>
-      </ResponsiveContainer>
+      </ChartFrame>
     </div>
   );
 }
