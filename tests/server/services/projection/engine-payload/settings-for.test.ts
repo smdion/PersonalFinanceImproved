@@ -55,7 +55,6 @@ const householdValues = {
   retirementAge: 65,
   endAge: 95,
   salaryAnnualIncrease: 0.03,
-  withdrawalRate: "0.04",
   socialSecurityMonthly: "2000",
   socialSecurityPia: null,
   ssStartAge: 67,
@@ -73,7 +72,6 @@ describe("settingsFor", () => {
       retirementAge: 62,
       endAge: 92,
       salaryAnnualIncrease: "0.05",
-      withdrawalRate: "0.035",
       socialSecurityMonthly: "1200",
       ssStartAge: 68,
       ruleOf55Override: true,
@@ -82,7 +80,6 @@ describe("settingsFor", () => {
       retirementAge: 62,
       endAge: 92,
       salaryAnnualIncrease: 0.05,
-      withdrawalRate: "0.035",
       socialSecurityMonthly: "1200",
       socialSecurityPia: null,
       ssStartAge: 68,
@@ -90,7 +87,7 @@ describe("settingsFor", () => {
     });
   });
 
-  it("a profile-people row only: its values, the raise and withdrawal rates fall back", () => {
+  it("a profile-people row only: its values, the raise rate falls back", () => {
     expect(
       settingsFor(2, rows({ profilePeople: [profilePerson({})] })),
     ).toEqual({
@@ -98,7 +95,6 @@ describe("settingsFor", () => {
       endAge: 90,
       // The profile-people column is never read for the raise rate.
       salaryAnnualIncrease: 0.03,
-      withdrawalRate: "0.04",
       socialSecurityMonthly: "1500",
       socialSecurityPia: "1800",
       ssStartAge: 70,
@@ -127,7 +123,6 @@ describe("settingsFor", () => {
       profileId: 2,
       retirementAge: 55,
       salaryAnnualIncrease: "0.07",
-      withdrawalRate: "0.05",
     });
     expect(settingsFor(2, rows({ retSettings: [household, other] }))).toEqual(
       householdValues,
@@ -154,7 +149,6 @@ describe("perPersonSettingsFor", () => {
         retirementAge: 67,
         endAge: 95,
         salaryAnnualIncrease: "0.03",
-        withdrawalRate: "0.04",
         socialSecurityMonthly: "2000",
         socialSecurityPia: null,
         ssStartAge: 67,
@@ -167,7 +161,6 @@ describe("perPersonSettingsFor", () => {
         retirementAge: 62,
         endAge: 90,
         salaryAnnualIncrease: "0.03",
-        withdrawalRate: "0.04",
         socialSecurityMonthly: "1500",
         socialSecurityPia: "1800",
         ssStartAge: 70,

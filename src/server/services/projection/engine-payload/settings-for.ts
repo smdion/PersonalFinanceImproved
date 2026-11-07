@@ -46,9 +46,6 @@ export function settingsFor(personId: number, profile: ActiveProfileRows) {
     salaryAnnualIncrease: Number.isFinite(ownRaiseRate)
       ? ownRaiseRate
       : profile.primaryRaiseRate,
-    // Dead: no client reads it. From this person's own retirement_settings
-    // row: rows can disagree on it, so another source would move a value.
-    withdrawalRate: rs?.withdrawalRate ?? settings.withdrawalRate,
     socialSecurityMonthly:
       ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
     // PIA is per person with no household value; only the
@@ -78,7 +75,6 @@ export function perPersonSettingsFor(
       endAge: own.endAge,
       // The effective raise rate: the per-person control edits it directly.
       salaryAnnualIncrease: String(own.salaryAnnualIncrease),
-      withdrawalRate: own.withdrawalRate,
       socialSecurityMonthly: own.socialSecurityMonthly,
       socialSecurityPia: own.socialSecurityPia,
       ssStartAge: own.ssStartAge,

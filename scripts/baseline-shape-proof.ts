@@ -11,8 +11,9 @@
  * both sides; the named shape's flatten turns each side into the shape
  * before any of the re-records it undoes, and the two must be equal exactly
  * (same keys, same values). A side already in that shape flattens to
- * itself. A file added or deleted fails. Prints one line per folder and
- * exits 1 on any difference.
+ * itself. A removal-only shape drops its key from the old side and fails
+ * if any old entry lacks it or any new entry still has it. A file added or
+ * deleted fails. Prints one line per folder and exits 1 on any difference.
  */
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -58,8 +59,9 @@ function flattenAccountYearGroups(tree: Json): Json {
   });
 }
 
-/** One side of the comparison: a baseline file as that side has it. */
-type Side = { file: string; read: (file: string) => Json };
+/** One side of the comparison: a baseline file as that side has it
+ *  (`base` is the `--base` side, the old files). */
+type Side = { file: string; base: boolean; read: (file: string) => Json };
 
 /** Plan commit 11: an account-year row's `draw.reason` (a structured
  *  fact) goes back to the prose `draw.eligibilityReason` it replaced,
@@ -114,7 +116,37 @@ function dropReason(row: JsonObject): JsonObject {
   return { ...row, draw: rest };
 }
 
+/** Removal-only (owner Q3e): each `perPersonSettings` entry loses its
+ *  unused `withdrawalRate` and nothing else. The old side must have the
+ *  key in every entry, the new side in none; the household
+ *  `settings.withdrawalRate` is not touched. */
+function dropPerPersonWithdrawalRate(tree: Json, side: Side): Json {
+  if (Array.isArray(tree))
+    return tree.map((v) => dropPerPersonWithdrawalRate(v, side));
+  if (!isObject(tree)) return tree;
+  return Object.fromEntries(
+    Object.entries(tree).map(([k, v]) => {
+      if (k !== "perPersonSettings" || !Array.isArray(v))
+        return [k, dropPerPersonWithdrawalRate(v, side)];
+      return [
+        k,
+        v.map((entry) => {
+          const has = isObject(entry) && "withdrawalRate" in entry;
+          if (has !== side.base)
+            throw new Error(
+              `${side.file}: ${side.base ? "old" : "new"} perPersonSettings entry ${has ? "has" : "lacks"} withdrawalRate`,
+            );
+          if (!isObject(entry)) return entry;
+          const { withdrawalRate: _, ...rest } = entry;
+          return rest;
+        }),
+      ];
+    }),
+  );
+}
+
 const SHAPES: Record<string, (tree: Json, side: Side) => Json> = {
+  "per-person-withdrawal-rate": dropPerPersonWithdrawalRate,
   "account-year-groups": (tree) => flattenAccountYearGroups(tree),
   "eligibility-reason": (tree, side) =>
     flattenAccountYearGroups(describeReasons(tree, side)),
@@ -180,6 +212,7 @@ function main() {
     const after = JSON.parse(fs.readFileSync(file, "utf8")) as Json;
     const sides = (rev: string | null): Side => ({
       file,
+      base: rev !== null,
       read: (f) =>
         JSON.parse(
           rev
