@@ -4423,9 +4423,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 5
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/projection-year-handlers/context.ts": {
@@ -4442,6 +4439,11 @@
     },
     "ratchet/no-guarded-division": {
       "count": 2
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": {
+    "ratchet/no-guarded-division": {
+      "count": 1
     }
   },
   "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {

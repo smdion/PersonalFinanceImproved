@@ -3,10 +3,8 @@
  * place and pushes a year projection to `state.projectionByYear`.
  */
 import {
-  followDraws,
   followInflows,
   followReconciliation,
-  groupBasisRatio,
   syncAggregateBasis,
 } from "../brokerage-basis";
 import type { AccountCategory } from "../../../config/account-types";
@@ -27,13 +25,10 @@ import {
   addRoth,
   addBalance,
   addBasis,
-  setBasis,
-  getBasis,
 } from "../../../config/account-balance";
 import {
   OVERFLOW_TOLERANCE,
   MAX_BROKERAGE_RAMP_YEARS,
-  DEFAULT_TAX_RATE_BROKERAGE,
 } from "../../../constants";
 import { resolveAccumulationConfig } from "../override-resolution";
 import {
@@ -48,9 +43,6 @@ import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,
-  distributeGoalWithdrawal,
-  goalFundingAccounts,
-  goalFundingBalance,
   applyIndividualGrowth,
   buildIndividualYearBalances,
   accrueIndividualBasis,
@@ -63,7 +55,7 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
-import { shortfallFloor, runGapYearDraw } from "../gap-year-draw";
+import { brokerageGoalDraws, yearGapDraw } from "./goal-draws";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
 import { contributionStateForYear } from "@/lib/pure/contributions/contribution-state";
@@ -579,30 +571,21 @@ export function runAccumulationYear(
     accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
   }
 
-  // A paycheck is gone: the budget's shortfall comes out of the accounts,
-  // before growth, as a retirement year's withdrawal does.
-  const gapRun = setup.gapYear
-    ? runGapYearDraw(ctx, state, {
-        year,
-        age,
-        fraction: proRate,
-        payByPerson: (hasPerPersonSalary
-          ? [...projectedSalaryByPerson.values()]
-          : [projectedSalary]
-        ).map((p) => p * proRate),
-        budget: state.projectedExpenses * proRate,
-        employeeContributions: totalEmployee + rampAmount,
-        pretaxContributions: totalTraditional,
-      })
-    : null;
-  const gapDraw = gapRun?.draw ?? null;
-  if (gapDraw) {
-    routeWarnings.push(...gapDraw.warnings);
-    if (gapDraw.unmetNeed >= shortfallFloor(gapDraw.need))
-      routeWarnings.push(
-        `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
-      );
-  }
+  const { gapRun, gapDraw } = yearGapDraw(
+    setup,
+    ctx,
+    state,
+    year,
+    age,
+    proRate,
+    hasPerPersonSalary,
+    projectedSalaryByPerson,
+    projectedSalary,
+    totalEmployee,
+    rampAmount,
+    totalTraditional,
+    routeWarnings,
+  );
 
   // Apply growth to each bucket (pro-rated for year 0)
   // Extracted to growth-application.ts -- applies return rate to all balance structures.
@@ -616,83 +599,20 @@ export function runAccumulationYear(
     ? applyIndividualGrowth(indAccts, indKey, indBal, effectiveReturn)
     : new Map<string, number>();
 
-  // Process brokerage goal withdrawals during accumulation
-  const yearGoals = brokerageGoalsByYear.get(year) ?? [];
-  const goalWithdrawals: EngineAccumulationYear["brokerageGoalWithdrawals"] =
-    [];
-  for (const goal of yearGoals) {
-    // Goals are Portfolio money: with individual accounts, the most a goal
-    // can draw is what the Portfolio-parented brokerages hold.
-    const drawAmount = roundToCents(
-      Math.min(
-        goal.targetAmount,
-        balances.afterTax,
-        hasIndividualAccounts
-          ? goalFundingBalance(indAccts, indKey, indBal)
-          : balances.afterTax,
-      ),
-    );
-    if (drawAmount <= 0) {
-      goalWithdrawals.push({
-        goalId: goal.id,
-        name: goal.name,
-        amount: 0,
-        basisPortion: 0,
-        gainsPortion: 0,
-        taxCost: 0,
-      });
-      routeWarnings.push(
-        `Brokerage goal "${goal.name}" unfunded — insufficient balance`,
-      );
-      continue;
-    }
-    // Goals draw Portfolio brokerages, so their own basis prices the gain
-    // (the aggregate ratio when they hold nothing per account).
-    const basisRatio =
-      (hasIndividualAccounts
-        ? groupBasisRatio(
-            goalFundingAccounts(indAccts),
-            indKey,
-            indBal,
-            brokBasis,
-          )
-        : undefined) ??
-      (balances.afterTax > 0
-        ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
-        : 0);
-    const basisPortion = roundToCents(drawAmount * basisRatio);
-    const gainsPortion = roundToCents(drawAmount - basisPortion);
-    const taxCost = roundToCents(
-      gainsPortion *
-        (decumulationDefaults.distributionTaxRates?.brokerage ??
-          DEFAULT_TAX_RATE_BROKERAGE),
-    );
-    balances.afterTax = roundToCents(balances.afterTax - drawAmount);
-    balances.afterTaxBasis = roundToCents(
-      Math.max(0, balances.afterTaxBasis - basisPortion),
-    );
-    addBalance(acctBal[OVERFLOW_CATEGORY], -drawAmount);
-    setBasis(
-      acctBal[OVERFLOW_CATEGORY],
-      roundToCents(
-        Math.max(0, getBasis(acctBal[OVERFLOW_CATEGORY]) - basisPortion),
-      ),
-    );
-    // Distribute brokerage goal withdrawal -- extracted to individual-account-tracking.ts
-    if (hasIndividualAccounts) {
-      followDraws(indAccts, indKey, indBal, brokBasis, () =>
-        distributeGoalWithdrawal(drawAmount, indAccts, indKey, indBal),
-      );
-    }
-    goalWithdrawals.push({
-      goalId: goal.id,
-      name: goal.name,
-      amount: drawAmount,
-      basisPortion,
-      gainsPortion,
-      taxCost,
-    });
-  }
+  const { goalWithdrawals } = brokerageGoalDraws(
+    brokerageGoalsByYear,
+    year,
+    balances,
+    hasIndividualAccounts,
+    indAccts,
+    indKey,
+    indBal,
+    routeWarnings,
+    brokBasis,
+    decumulationDefaults,
+    acctBal,
+    OVERFLOW_CATEGORY,
+  );
 
   // Build individual account year balances -- extracted to individual-account-tracking.ts
   const indYearBalances: IndividualAccountYearBalance[] = hasIndividualAccounts

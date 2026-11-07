@@ -134,10 +134,11 @@
     "src/lib/pure/engine/contribution-routing.ts": 624,
     "src/lib/pure/engine/individual-account-tracking.ts": 1473,
     "src/lib/pure/engine/post-withdrawal-optimizer.ts": 727,
-    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 822,
+    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 742,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 68,
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 554,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
+    "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 156,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 91,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
@@ -867,7 +868,7 @@
       "performRothConversion": 375
     },
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 741
+      "runAccumulationYear": 669
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 188

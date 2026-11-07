@@ -601,7 +601,12 @@
   },
   "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 7
+      "count": 5
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
