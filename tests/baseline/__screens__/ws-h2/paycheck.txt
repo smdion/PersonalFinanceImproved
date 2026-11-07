@@ -1,0 +1,72 @@
+Paycheck
+Tax Year:
+2026
+2025
+Showing Salary Profile “Current” and Contribution Profile “Current”
+View only — unlock to edit
+Taylor
+Lakeside Clinic
+Semi-Monthly · Next: 2026-03-15 · 24 checks/yr
+$72,000.00
+annual salary
+Pay stub (one check)
+Gross pay?
+$3,000.00
+Before-tax deductions?
+Health insurance
+-$120.00
+401k
+-$150.00
+Federal taxable?
+$2,730.00
+Taxes?
+Federal withholding?
+-$192.10
+Social Security?
+-$178.56
+Medicare?
+-$41.76
+After-tax deductions?
+None
+Net pay?
+$2,317.58
+Withholding (W-4)
+Filing status
+[Head of household]
+Extra withholding?
+—
+Multiple jobs or spouse works (Step 2c)
+Projected year
+Gross pay
+$72,000.00
+Before-tax deductions
+$6,480.00
+Federal withholding
+$4,610.40
+Social Security + Medicare?
+$5,287.68
+After-tax deductions
+$0.00
+Net pay
+$55,621.92
+24 of 24 checks
+Bonus
+Bonus %
+0.0%
+Check against a pay stub
+Contribution Accounts?(1)
+Household Contribution Snapshot
+Per check
+Monthly
+Annual
+Account types:401k — employer-sponsored retirementIRA — individual retirementHSA — health savings (tax-free)Brokerage — taxable investmentESPP — employee stock purchase
+401k
+$3,600.00(5% of pay)
+15% of $24,500.00-$20,900.00
+Need +29% to max
+Retirement?
+$3,600.00
+Brokerage?
+$0.00
+Total Portfolio?
+$3,600.00

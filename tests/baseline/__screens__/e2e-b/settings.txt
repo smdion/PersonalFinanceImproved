@@ -1,0 +1,100 @@
+Settings
+Cross-cutting reference data. Domain-specific settings live on their respective pages.
+General
+Reference Data
+Integrations
+Access Control
+Debug
+People
+Household
+Retirement
+Living Costs Mapping
+Data Sources
+People
+Add
+ID
+Name
+Date of Birth
+Primary
+Actions
+1
+Jordan
+1984-02-20
+Yes
+Edit
+Delete
+2
+Riley
+1986-09-05
+Edit
+Delete
+Retirement
+Controls for the retirement projection page.
+Auto-load simulation
+Runs the projection engine automatically on page load and whenever inputs change. Disable to trigger manually.
+Auto-load simulations
+Prefetches 500 simulation trials in the background after the engine completes. Disable on slow connections or to run manually.
+Always prefetch Coast FIRE simulations
+Runs the Coast FIRE simulation after the engine completes, even before you select that scenario. Takes 4–6s. Off by default — it already runs automatically the moment you pick a Coast FIRE scenario; enable this only if you want that switch to feel instant at the cost of a slower page load every time.
+Living Costs Mapping
+Map your budget categories to Dave Ramsey's recommended spending ranges. The dashboard Living Costs card uses this mapping.
+Save
+Housing25%–35% of income
++ Add
+Housing
+×
+Water/Sewer
+×
+Food10%–15% of income
++ Add
+Food
+×
+Transportation10%–15% of income
++ Add
+Transportation
+×
+Utilities5%–10% of income
++ Add
+Utilities
+×
+Insurance10%–25% of income
++ Add
+Insurance
+×
+Savings10%–15% of income
++ Add
+Savings
+×
+Not in Emergency Fund
+×
+Retirement
+×
+Contributions
+×
+Education
+×
+Personal10%–15% of income
++ Add
+Personal
+×
+Personal Care
+×
+Recreation5%–10% of income
++ Add
+Fun Money
+×
+Recreation
+×
+Travel
+×
+Giving10%–15% of income
++ Add
+Giving
+×
+House Upkeep5%–10% of income
++ Add
+House Upkeep
+×
+Maintenance
+×
+Unmapped categories: Family, Lifestyle

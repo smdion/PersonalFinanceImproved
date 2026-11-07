@@ -1,0 +1,49 @@
+Liabilities
+Mortgage detail, amortization, and other debts
+Manage Loans
+Total Liabilities
+$456,971.52
+Mortgage Balance
+$456,971.52
+Home loan
+Other Liabilities
+$0.00
+No other debts
+Home loan
+Active
+Current Balance
+$456,971.52
+Payoff Date
+Jun 2052
+Remaining
+315 months
+Ahead of Schedule?
+On schedule
+Paid off
+This payment in Household budget
+[Not in this budget]
+Pick the line that pays this loan and your retirement projection stops spending it after payoff.
+Total Interest Paid
+$109,966.32
+Interest paid so far
+Lifetime Interest?
+$583,961.05
+Total interest over loan life (with extra payments)
+Interest Saved?
+$0.00
+vs. original schedule (no extra payments)
+Show amortization schedule
+What-If Scenarios?
+Scenario
+Payoff Date
+Total Interest
+Interest Saved
+Months Saved
+Order
++ Add scenario
+No scenarios configured. Add one above.
+Refinance Calculator
+Compare a refinance scenario...
+Other debts
++ Add debt
+No debts listed. Add student or car loans, cards you carry a balance on, and other debts — with a rate and what you pay each month, Ledgr judges them against Money Guy's high-interest line and estimates when they're paid off.

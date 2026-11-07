@@ -1,0 +1,4 @@
+House
+Home value, mortgage summary, property taxes, and improvements
+No house data yet
+Add a mortgage on the Liabilities page, or record home improvements below to get started.

@@ -1,0 +1,111 @@
+Contributions
+Household contribution breakdown and savings rates
+Contribution Profile
+[Current (active)]
+Annual
+Monthly
+Per Period
+Your active plan could stop contributing today and retirement would still work, on average returns (the Simulation can be stricter) — see Coast FIRE on Retirement.
+Prior-year contributions: You can designate IRA and HSA contributions for tax year 2025 until April 15, 2026. Set prior-year amounts on individual accounts in the Portfolio settings.
+You're saving 13% of your pay — $40,000.00 a year (before employer match). Next: Save $2,916.67 more a month to reach a 25% savings rate — Riley 401k has $20,300.00 of IRS room this year.
+Counts
+Employer match
+Portfolio
+High-income line
+$200,000 (Married filing jointly)
+?
+Total Savings
+13%
+$40,000.00/yr(17% w/ match)
+Retirement
+9%
+$28,000.00/yr(13% w/ match)
+Portfolio
+4%
+$12,000.00/yr
+Employer Match
+$10,100.00/yr
+$10,100.00 annual employer match across all accounts
+Account
+Employee
+Match
+Total
+401k(Jordan)
+$16,000.00
+$8,000.00
+$24,000.00
+401k(Riley)
+$4,200.00
+$2,100.00
+$6,300.00
+Jordan — $200,000.00/yr
+Account
+Employee
+Match
+Limit
+Utilization
+401k
+$16,000.00
+$8,000.00
+$24,500.00
+65%
+HSA
+$7,800.00
+—
+$8,750.00
+89%
+Prior year (2025)
+[]
+$8,550.00 left
+$8,550.00
+0%
+Total
+$23,800.00
+$8,000.00
+Savings rate: 10% (w/o match)
+Riley — $70,000.00/yr
+Account
+Employee
+Match
+Limit
+Utilization
+401k
+$4,200.00
+$2,100.00
+$24,500.00
+17%
+Total
+$4,200.00
+$2,100.00
+Savings rate: 6% (w/o match)
+Joint — $12,000.00/yr
+Account
+Employee
+Match
+Limit
+Utilization
+Joint Brokerage
+$12,000.00
+—
+—
+No limit
+Total
+$12,000.00
+$0.00
+Profile Comparison
+Metric
+Current
+Profile
+Delta
+Total (w/o match)
+$40,000.00
+$40,000.00
+$0.00
+Retirement
+$28,000.00
+$28,000.00
+$0.00
+Portfolio
+$12,000.00
+$12,000.00
+$0.00

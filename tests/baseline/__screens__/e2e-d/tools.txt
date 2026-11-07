@@ -1,0 +1,59 @@
+Relocation
+Financial analysis and decision-making tools.
+Relocation Analysis?
+[Unsaved]
+Save
+Current Budget?
+[Household budget]
+Custom: []
+→
+Relocation Budget?
+[Household budget]
+Custom: []
+Current Contributions?
+[Current]
+Salary: $0.00Contributions: $0.00/yrMatch: $0.00/yr
+→
+Relocation Contributions?
+[Current]
+Salary: $0.00Contributions: $0.00/yrMatch: $0.00/yr
+Planned Move Year
+[]
+Monthly Delta?
+-$7,500.00
+-100.0% decrease
+Additional Nest Egg Needed?
+-$2,250,000.00
+Target: $2,250,000.00 → $0.00
+Savings Rate Impact?
++0%
+0% → 0%
+Portfolio at Retirement?
++$0.00
+$2,390,000.00 → $2,390,000.00
+Warning: With the relocation budget, the portfolio may not sustain retirement by age 49. Consider reducing expenses, increasing contributions, or adjusting your timeline.
+Large Purchases?
++ Add Purchase
+Year-by-Year Expense Adjustments
++ Add Adjustment
+Portfolio Projection Comparison
+?
+Today's $
+All years
+Year
+Age (avg)
+Contributions (today's $)
+Current Balance (today's $)
+Move Path Contributions (today's $)
+Move Path Balance (today's $)
+Gap
+Reloc Expenses
+2026
+50No retire date
+$0.00
+$2,390,000.00
+$0.00
+$2,390,000.00
+$0.00
+$0.00/mo
+RetirePortfolio meets current expense target?Retire (reloc)Portfolio meets relocation expense target?MOVEEarliest year to relocate and still retire on budget?*Custom expense amount applies this year?$A large purchase hits this year?

@@ -1,0 +1,14 @@
+Liabilities
+Mortgage detail, amortization, and other debts
+Manage Loans
+Mortgage
+No mortgage loans configured. Add one below to track amortization, equity, and payoff scenarios.
+Mortgage Loans
++ Add Loan
+No loans configured.
+Extra Payments
++ Add Extra Payment
+No extra payments configured.
+Other debts
++ Add debt
+No debts listed. Add student or car loans, cards you carry a balance on, and other debts — with a rate and what you pay each month, Ledgr judges them against Money Guy's high-interest line and estimates when they're paid off.

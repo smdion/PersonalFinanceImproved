@@ -1,0 +1,33 @@
+Liabilities
+Mortgage detail, amortization, and other debts
+Manage Loans
+Total Liabilities
+$14,000.00
+Mortgage Balance
+$0.00
+0 loans
+Other Liabilities
+$14,000.00
+Debts, cards and other debt
+Mortgage
+No mortgage loans configured. Add one below to track amortization, equity, and payoff scenarios.
+Mortgage Loans
++ Add Loan
+No loans configured.
+Extra Payments
++ Add Extra Payment
+No extra payments configured.
+Other debts
++ Add debt
+Debt
+Balance
+Rate
+Per month
+Paid off
+Car loanCar loan · Joint
+$14,000.00
+as of Mar 1, 2026
+6.90%
+$435.00
+Mar 2029
+✓

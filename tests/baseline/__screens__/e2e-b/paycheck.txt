@@ -1,0 +1,180 @@
+Paycheck
+Tax Year:
+2026
+2025
+Showing Salary Profile “Current” and Contribution Profile “Current”
+View only — unlock to edit
+Jordan
+Contoso Energy
+Biweekly · Next: 2026-03-20 · 26 checks/yr · 3-check months: May, October
+$200,000.00
+annual salary
+Pay stub (one check)
+Gross pay?
+$7,692.31
+Before-tax deductions?
+Medical
+-$250.00
+401k
+-$615.38
+HSA
+-$300.00
+Dental
+—
+Federal taxable?
+$6,526.93
+Taxes?
+Federal withholding?
+-$756.69
+Social Security?
+-$439.96
+Medicare?
+-$103.56
+After-tax deductions?
+None
+Net pay?
+$5,226.71
+Withholding (W-4)
+Filing status
+[Married jointly]
+Extra withholding?
+—
+Multiple jobs or spouse works (Step 2c)
+Extra paycheck
+Goes to
+Set up where it goes in Savings
+Savings
+Budget
+Projected year
+Gross pay
+$200,000.06
+Before-tax deductions
+$30,299.88
+Federal withholding
+$19,673.94
+Social Security + Medicare?
+$14,131.52
+After-tax deductions
+$0.00
+Net pay
+$135,894.46
+26 of 26 checks
+Bonus
+Bonus %
+15.0%
+Multiplier?
+1.00x
+2026 actual?
+Formula: $30,000.00
+—
+Paid on?
+Pay period 5 of 26
+[2026-03-13]
+Goes to?
+Budget
+Extra spending
+Gross
+$30,000.00
+Federal (supplemental)?
+at 22%
+-$6,600.00
+Social Security + Medicare
+-$435.00
+No contributions are taken from this bonus. Turn on “Also taken from bonus checks” on an account under Contributions.
+Net
+76.5% take-home
+$22,965.00
+Check against a pay stub
+Contribution Accounts?(2)
+SS wage base cap hit at period 23 of 26(bonus in period 5 accelerates this)
+Take-home increases by $442.82/period after
+Social Security stops once your pay for the year passes $184,500.00; per-check figures average it over the year.
+Riley
+Fabrikam Health
+Semi-Monthly · Next: 2026-03-15 · 24 checks/yr
+$70,000.00
+annual salary
+Pay stub (one check)
+Gross pay?
+$2,916.67
+Before-tax deductions?
+Medical
+—
+401k
+-$175.00
+HSA
+—
+Dental
+-$20.00
+Federal taxable?
+$2,721.67
+Taxes?
+Federal withholding?
+-$144.93
+Social Security?
+-$179.59
+Medicare?
+-$42.00
+After-tax deductions?
+None
+Net pay?
+$2,355.14
+Withholding (W-4)
+Filing status
+[Married jointly]
+Extra withholding?
+—
+Multiple jobs or spouse works (Step 2c)
+Projected year
+Gross pay
+$70,000.08
+Before-tax deductions
+$4,680.00
+Federal withholding
+$3,478.32
+Social Security + Medicare?
+$5,318.16
+After-tax deductions
+$0.00
+Net pay
+$56,523.36
+24 of 24 checks
+Bonus
+Bonus %
+0.0%
+Check against a pay stub
+Contribution Accounts?(1)
+Household Contribution Snapshot
+Per check
+Monthly
+Annual
+Account types:401k — employer-sponsored retirementIRA — individual retirementHSA — health savings (tax-free)Brokerage — taxable investmentESPP — employee stock purchase
+401k
+Jordan
+$16,000.00(8% of pay)
++$8,000.00match
+65% of $24,500.00-$8,500.00
+Match does not count toward IRS limit
+Need +4% to max
+Riley
+$4,200.00(6% of pay)
++$2,100.00match
+17% of $24,500.00-$20,300.00
+Match does not count toward IRS limit
+Need +29% to max
+HSA(Family)
+Jordan
+$7,800.00
+89% of $8,750.00-$950.00
+Maxed out
+Riley
+Covered via Jordan
+Joint Brokerage(Joint)
+$12,000.00/yr
+No IRS limit
+Retirement?
+$28,000.00$38,100.00 w/ match
+Brokerage?
+$12,000.00
+Total Portfolio?
+$40,000.00$50,100.00 w/ match

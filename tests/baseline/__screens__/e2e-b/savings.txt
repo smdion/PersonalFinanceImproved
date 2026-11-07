@@ -1,0 +1,299 @@
+Savings
+Budget: Standard | Profile: Current
+Allocation percentages sum to 0.0%, expected 100%
+Overview
+Total Saved
+$0.00
+Emergency Fund$0.00
+Sinking Funds$0.00
+Monthly Pool?
+$0.00
+Total monthly contributions
+Emergency Fund?
+0.0 months
+Target: 4 months
+Plan
+Manage
+Table
+Chart
+Projection:
+2yr
+3yr
+5yr
+10yr
+?$0.00 allocated of $9,963.70 available·$9,963.70 left
+Fund TrackerToggle columns
+Emergency fundOn track$0proj$0
+New roofOn track$0proj$0
+✓$0,000= target reached-$0,000= balance negative
+[No history]
+▸Show allocations
+Month
+Emergency fund
+target $15,600.00
+New roof
+target $18,000.00
+Mar 1 '26
+$0.00
+$0.00
+Apr 1 '26
+$0.00
+$0.00
+May 1 '26
+$0.00
+$0.00
+Jun 1 '26
+$0.00
+$0.00
+Jul 1 '26
+$0.00
+$0.00
+Aug 1 '26
+$0.00
+$0.00
+Sep 1 '26
+$0.00
+$0.00
+Oct 1 '26
+$0.00
+$0.00
+Nov 1 '26
+$0.00
+$0.00
+Dec 1 '26
+$0.00
+$0.00
+Jan 1 '27
+$0.00
+$0.00
+Feb 1 '27
+$0.00
+$0.00
+Mar 1 '27
+$0.00
+$0.00
+Apr 1 '27
+$0.00
+$0.00
+May 1 '27
+$0.00
+$0.00
+Jun 1 '27
+$0.00
+$0.00
+Jul 1 '27
+$0.00
+$0.00
+Aug 1 '27
+$0.00
+$0.00
+Sep 1 '27
+$0.00
+$0.00
+Oct 1 '27
+$0.00
+$0.00
+Nov 1 '27
+$0.00
+$0.00
+Dec 1 '27
+$0.00
+$0.00
+Jan 1 '28
+$0.00
+$0.00
+Feb 1 '28
+$0.00
+$0.00
+Mar 1 '28
+$0.00
+$0.00
+Apr 1 '28
+$0.00
+$0.00
+May 1 '28
+$0.00
+$0.00
+Jun 1 '28
+$0.00
+$0.00
+Jul 1 '28
+$0.00
+$0.00
+Aug 1 '28
+$0.00
+$0.00
+Sep 1 '28
+$0.00
+$0.00
+Oct 1 '28
+$0.00
+$0.00
+Nov 1 '28
+$0.00
+$0.00
+Dec 1 '28
+$0.00
+$0.00
+Jan 1 '29
+$0.00
+$0.00
+Feb 1 '29
+$0.00
+$0.00
+Allocations
+Transactions
+Paychecks & Growth
+View only — unlock to edit
+Month
+Emergency fund
+New roof
+Allocated
+Default /mo
+—
+—
+$9,963.70
+Mar 1 '26
+$0.00
+$0.00
+$0.00
+Apr 1 '26
+$0.00
+$0.00
+$0.00
+May 1 '26
+$0.00
+$0.00
+$0.00
+Jun 1 '26
+$0.00
+$0.00
+$0.00
+Jul 1 '26
+$0.00
+$0.00
+$0.00
+Aug 1 '26
+$0.00
+$0.00
+$0.00
+Sep 1 '26
+$0.00
+$0.00
+$0.00
+Oct 1 '26
+$0.00
+$0.00
+$0.00
+Nov 1 '26
+$0.00
+$0.00
+$0.00
+Dec 1 '26
+$0.00
+$0.00
+$0.00
+Jan 1 '27
+$0.00
+$0.00
+$0.00
+Feb 1 '27
+$0.00
+$0.00
+$0.00
+Mar 1 '27
+$0.00
+$0.00
+$0.00
+Apr 1 '27
+$0.00
+$0.00
+$0.00
+May 1 '27
+$0.00
+$0.00
+$0.00
+Jun 1 '27
+$0.00
+$0.00
+$0.00
+Jul 1 '27
+$0.00
+$0.00
+$0.00
+Aug 1 '27
+$0.00
+$0.00
+$0.00
+Sep 1 '27
+$0.00
+$0.00
+$0.00
+Oct 1 '27
+$0.00
+$0.00
+$0.00
+Nov 1 '27
+$0.00
+$0.00
+$0.00
+Dec 1 '27
+$0.00
+$0.00
+$0.00
+Jan 1 '28
+$0.00
+$0.00
+$0.00
+Feb 1 '28
+$0.00
+$0.00
+$0.00
+Mar 1 '28
+$0.00
+$0.00
+$0.00
+Apr 1 '28
+$0.00
+$0.00
+$0.00
+May 1 '28
+$0.00
+$0.00
+$0.00
+Jun 1 '28
+$0.00
+$0.00
+$0.00
+Jul 1 '28
+$0.00
+$0.00
+$0.00
+Aug 1 '28
+$0.00
+$0.00
+$0.00
+Sep 1 '28
+$0.00
+$0.00
+$0.00
+Oct 1 '28
+$0.00
+$0.00
+$0.00
+Nov 1 '28
+$0.00
+$0.00
+$0.00
+Dec 1 '28
+$0.00
+$0.00
+$0.00
+Jan 1 '29
+$0.00
+$0.00
+$0.00
+Feb 1 '29
+$0.00
+$0.00
+$0.00

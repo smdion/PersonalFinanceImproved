@@ -1,0 +1,64 @@
+Trends
+Balance updated: 3/1/2026
+Spreadsheet View
+Net Worth
+Market Value
+$2,440,000.00
+X-Axis:
+Year
+Age
+Net Worth Comparison ?
+Net Worth Location ?
+Portfolio
+98%$2,390,000.00
+Cash
+2%$50,000.00
+Tax Location ?
+After-Tax
+63%$1,500,000.00
+Traditional
+27%$650,000.00
+Roth
+8%$200,000.00
+HSA
+2%$40,000.00
+Net Worth Composition ?
+Assets$2,440,000.00
+Portfolio98%
+Cash2%
+Liabilities$0.00
+Net Worth$2,440,000.00
+Assets
+Investment Portfolioⓘ$2,390,000.00
+By Tax Type
+After-Tax$1,500,000.00
+Traditional$650,000.00
+Roth$200,000.00
+HSA$40,000.00
+Total$2,390,000.00
+6 accounts
+Cash
+$50,000.00
+Total Assets$2,440,000.00
+Liabilities
+Other debts, not itemized?
+$0.00
+Total Liabilities$0.00
+Wealth Metrics ?
+Wealth Score0%
+AAW Score0.0x
+UAW — Under Accumulator
+FI Progress ?
+108%
+Target: $2,250,000.00
+Both Views ?
+Market Value$2,440,000.00
+Cost Basis$2,440,000.00
+Difference$0.00
+Financial Independence ?
+Annual Expenses$90,000.00
+Withdrawal Rate ?4%
+FI Target (expenses / withdrawal rate)$2,250,000.00
+Investments + cash ?$2,440,000.00
+Progress108%
+Projected FI Year ?Reached

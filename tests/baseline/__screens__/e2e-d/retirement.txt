@@ -1,0 +1,331 @@
+Retirement Projection
+Budget scenario: Standard
+Projection
+Plan Health
+AssumptionsCurrent Retirement
+View only — unlock to edit
+Sam48Alex48Through?95Inflation0.00%StrategyEndowmentBracket Ceiling?12%
+SS (per person) ▼
+Print Chart & Table
+Print Full Report
+Portfolio Survival?
+100%
+through 2072
+Lifetime Income Stability?
+100%
+vs strategy
+100%
+vs budget
+Current Portfolio
+$2,614,038.44
+Range $2,569,648.99 – $2,646,105.58
+Baseline: $2,390,000.00 (fixed returns)
+End Balance
+$4,751,597.70
+Range $3,414,394.14 – $9,933,264.34 in 2072
+Baseline: $0.00 (fixed returns)
+Coast FIRE?
+Already ✓
+$119,500.00/yr sustainable
+vs $119,500.00 expenses
+Simulation— what was run
+Default?Tax-aware?
+6.72%?
+return
+5–10%
+11.86%?
+volatility
+8–16%
+4.00%?
+ref. rate
+3–5%
+$119,500.00?
+starting income
+today's $
+0.00%?
+inflation
+2–3%
+10?
+trials
+1K+
+just now
+last run
+Re-run
+Clear Cache
+View Assumptions →
+Compute— what gets run
+Scenario?
+Active Plan
+Coast FIRE (2026 (Sam, 50))
+Coast FIRE (Today)
+Coast FIRE (Custom)
+Initial Rate
+View
+Joint
+Sam
+Alex
+Preset?
+[Default]
+Sets the Simulation and strategy comparison. The year-by-year projection, Coast FIRE and the glide-path check stay on Default.
+Trials
+[500]
+Tax Mode?
+Simple
+Advanced
+How does this work?
+Display— how it's shown
+Chart?
+Balance
+Yearly Income Stability
+Dollars?
+Today's $
+Future $
+Baseline
+On
+Off
+Income?
+On
+Off
+Confidence Band?
+Off
+50%
+80%
+90%
+$Balance Projection
+⚠ 25 years in this deterministic projection couldn't fund the actual spending need — see the marked ages below.
+Traditional Roth HSA After-Tax Withdrawal SS Income Sim. median 50% bandSS StartUnmet Need
+Contributions
+Account
+Tax Type
+Balances
+Tax Type
+Account
+All years
+Timeline
+Contributions
+Balances (by Tax Type)
+Simulation
+Notes
+Year?
+Phase?
+Salary?
+Rate?
+IRA?
+HSA?
+Brokerage?
+In / Out?
+Traditional?
+Roth?
+HSA?
+After-Tax?
+Balance?
+Sim. Median?
+Info?
+2026*
+SAVE
+$0.00
+---
+$0.00
+$0.00
+---
+$0.00
+$650,000.00
+$200,000.00
+$40,000.00
+$1,500,000.00
+$2,390,000.00
+$2,614,038.44
+10/12 mo remaining
+2027
+DRAW
+---
+---
+---
+---
+-$119,500.00
+-$119,500.00
+$650,000.00
+$200,000.00
+$40,000.00
+$1,380,500.00
+$2,270,500.00
+$2,673,671.66
+2030
+DRAW
+---
+---
+---
+---
+-$110,686.25
+-$110,686.25
+$650,000.00
+$200,000.00
+$40,000.00
+$1,039,726.46
+$1,929,726.46
+$2,744,715.85
+2035
+DRAW
+---
+---
+---
+---
+-$107,550.00
+-$107,550.00
+$650,000.00
+$200,000.00
+$40,000.00
+$501,680.19
+$1,391,680.19
+$3,573,964.20
+2040
+DRAW
+---
+---
+-$107,550.00
+---
+---
+-$107,550.00
+$112,250.00
+$200,000.00
+$40,000.00
+$501,680.19
+$853,930.19
+$4,333,452.07
+~$8,546.00 tax (7.9% eff.)
+2045
+DRAW
+---
+---
+---
+---
+-$107,550.00
+-$107,550.00
+$0.00
+$0.00
+$40,000.00
+$276,180.19
+$316,180.19
+$3,979,077.44
+2048
+DRAW
+---
+---
+---
+-$40,000.00
+-$61,080.19
+-$101,080.19
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$4,031,203.96
+~$2,634.42 tax (2.6% eff.) + $3,151.25 on Social Security
+2050
+DRAW
+---
+---
+---
+---
+---
+depleted
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$4,356,192.20
+2055
+DRAW
+---
+---
+---
+---
+---
+depleted
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$4,836,197.23
+2060
+DRAW
+---
+---
+---
+---
+---
+depleted
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$4,866,376.55
+2065
+DRAW
+---
+---
+---
+---
+---
+depleted
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$5,060,100.86
+2070
+DRAW
+---
+---
+---
+---
+---
+depleted
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$4,885,782.89
+2072
+DRAW
+---
+---
+---
+---
+---
+depleted
+$0.00
+$0.00
+$0.00
+$0.00
+$0.00
+$4,751,597.70
+Lifetime Tax Paid (Retirement)$56,863.67(2.4% effective)
+How contributions & distributions are projected
+Accumulation Engine?
+Routes contributions across 401k, IRA, HSA, and brokerage using waterfall, percentage, or per-account specs. Handles IRS limit growth, catch-up contributions (SECURE 2.0), employer matches, Roth/Traditional splits, and overflow to brokerage.
+Full methodology →
+Decumulation Engine?
+Computes annual need (budget × inflation − Social Security from each person's start age), grosses up for taxes, and routes withdrawals via bracket filling (Traditional to bracket cap, then whichever of Roth or Brokerage is cheaper that year, HSA last). Enforces RMDs, optional Roth conversions, 8 dynamic spending strategies (Morningstar), and IRMAA/ACA cliff awareness.
+Full methodology →
+The plan runs out at age 72 (2048)
+Why Trust These Numbers??
+Calibrated against the Trinity Study, cFIREsim backtesting, the IRS's published tax tables, and institutional asset data. Backed by thousands of automated tests, including mathematical invariants checked against random inputs.
+Full validation evidence →
+Retirement year (2026) is this year or earlier — entire projection will be in decumulation.
+No contribution accounts found — projections may be inaccurate. Add contribution accounts on the Paycheck page.
+Withdrawal Routing
+?Bracket Filling · 401k → 403b → IRA → Roth/Brokerage/HSA (cost-ranked)
+Configure
+Endowment adjusts HOW MUCH to withdraw each year. This section determines FROM WHICH accounts.
+Changes by year
+?
++ Add a change
+No changes — every year uses the page settings
+Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.

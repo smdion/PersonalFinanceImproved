@@ -1,0 +1,120 @@
+Budget
+Spends the take-home pay your Salary and Contribution profiles produce; Savings allocates what’s left. Salary, Contribution, Savings and Retirement profiles have their own page.
+View only — unlock to edit
+Your retirement projection spends Household budget · Standard ($62,400.00 a year) until retirement; in retirement your Variable Percentage (VPW) withdrawal strategy works spending out from the portfolio, so the budget isn't used — change these on Retirement.
+ActiveHousehold budget
+Mode: StandardUnallocated: $9,963.74/moTotal spending + savings: $62,400.00/yr
+Manage Modes
+Extra paychecks not routed to savings
+Jordan (Contoso Energy): an extra check expected in May 2026, Oct 2026 — lands as regular income, not counted in the totals above.
+Profiles
++ New
+Household budget
+ACTIVE
+clone
+$62,400.00/yr1 mode
+Standard●
+Gross Income
+$21,217.96
+Taxes
+−$3,333.46
+Pre-Tax Deductions?
+−$2,720.76
+Take-Home Pay?
+$15,163.74
+Essential?
+−$3,900.00
+Discretionary?
+−$1,300.00
+Savings(Household budget)?
+$9,963.74
+Category / Item⋮
+Standard
+Housing
+$350.00
+Mortgage/Rent+API
+—
+Property Taxes+API
+—
+HOA+API
+—
+Utilities+API
+$350.00
+Utilities
+$0.00
+Electric+API
+—
+Gas+API
+—
+Water/Sewer+API
+—
+Internet+API
+—
+Cell Phone+API
+—
+Food
+$1,100.00
+Groceries+API
+—
+Restaurants+API
+—
+Grocery store+API
+$1,100.00
+Transportation
+$600.00
+Fuel+API
+—
+Car Maintenance+API
+—
+Cars and gas+API
+$600.00
+Insurance
+$250.00
+Car Insurance+API
+—
+Homeowners Insurance+API
+—
+Life Insurance+API
+—
+Auto and umbrella+API
+$250.00
+House Upkeep
+$0.00
+General Household+API
+—
+Home Improvement+API
+—
+Lawn/Garden+API
+—
+Personal
+$0.00
+Clothing+API
+—
+Self Care+API
+—
+Fun Money
+$0.00
+Subscriptions+API
+—
+Entertainment+API
+—
+Gifts+API
+—
+Not in Emergency Fund
+$0.00
+Giving+API
+—
+Investments+API
+—
+Family
+$1,600.00
+Childcare+API
+$1,600.00
+Lifestyle
+$1,300.00
+Dining out+API
+$400.00
+Travel+API
+$500.00
+Misc+API
+$400.00

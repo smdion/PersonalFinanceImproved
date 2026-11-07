@@ -1,0 +1,20 @@
+Versions
+Full-database versioning with automatic and manual save points
+Create Version
+Auto Schedule
+[Daily]
+Automatic versions are created by a cron job on the configured schedule.
+Retention
+30auto versions kept
+Edit
+Manual versions are never auto-deleted.
+Backup / Restore
+Download Backup
+Import Backup
+Export all data as JSON for disaster recovery or environment migration.
+Danger Zone
+Reset App — Clear All Data
+Removes all financial data. Download a backup first.
+All Versions
+No versions yet
+Create a manual version or wait for the next automatic version.

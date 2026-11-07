@@ -1,0 +1,102 @@
+Budget
+Spends the take-home pay your Salary and Contribution profiles produce; Savings allocates what’s left. Salary, Contribution, Savings and Retirement profiles have their own page.
+View only — unlock to edit
+Your retirement projection spends Household budget · Standard ($90,000.00 a year) until retirement and starts retirement at Household budget · Standard ($90,000.00 a year), which your Endowment withdrawal strategy then moves with the portfolio — change these on Retirement.
+ActiveHousehold budget
+Mode: StandardUnallocated: -$7,500.00/moTotal spending + savings: $90,000.00/yr
+Manage Modes
+Profiles
++ New
+Household budget
+ACTIVE
+clone
+$90,000.00/yr1 mode
+Standard●
+Category / Item⋮
+Standard
+Housing
+$2,600.00
+Mortgage/Rent+API
+—
+Property Taxes+API
+—
+HOA+API
+—
+Rent+API
+$2,600.00
+Utilities
+$300.00
+Electric+API
+—
+Gas+API
+—
+Water/Sewer+API
+—
+Internet+API
+—
+Cell Phone+API
+—
+Utilities+API
+$300.00
+Food
+$1,100.00
+Groceries+API
+—
+Restaurants+API
+—
+Food+API
+$1,100.00
+Transportation
+$500.00
+Fuel+API
+—
+Car Maintenance+API
+—
+Transport+API
+$500.00
+Insurance
+$0.00
+Car Insurance+API
+—
+Homeowners Insurance+API
+—
+Life Insurance+API
+—
+House Upkeep
+$0.00
+General Household+API
+—
+Home Improvement+API
+—
+Lawn/Garden+API
+—
+Personal
+$0.00
+Clothing+API
+—
+Self Care+API
+—
+Fun Money
+$0.00
+Subscriptions+API
+—
+Entertainment+API
+—
+Gifts+API
+—
+Not in Emergency Fund
+$0.00
+Giving+API
+—
+Investments+API
+—
+Health
+$1,300.00
+Marketplace premiums+API
+$1,300.00
+Lifestyle
+$1,700.00
+Travel+API
+$1,200.00
+Misc+API
+$500.00
