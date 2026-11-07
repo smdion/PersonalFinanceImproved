@@ -39,7 +39,7 @@ import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
-import { toNumber } from "@/lib/utils/numbers";
+import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
@@ -102,15 +102,14 @@ function borrowingFrom(
   }[],
   today: string,
 ) {
-  const num = (v: string | null) => (v == null ? null : toNumber(v));
   const carLoans = debtRows
     .filter((d) => d.kind === "auto_loan" && isOpenDebt(d, today))
     .map((d) => ({
       name: d.name,
-      purchasePrice: num(d.purchasePrice),
-      originalAmount: num(d.originalAmount),
+      purchasePrice: toNumberOrNull(d.purchasePrice),
+      originalAmount: toNumberOrNull(d.originalAmount),
       termMonths: d.termMonths,
-      monthlyPayment: num(d.monthlyPayment),
+      monthlyPayment: toNumberOrNull(d.monthlyPayment),
     }));
   const student = debtRows.filter((d) => d.kind === "student_loan");
   const studentLoans = people.flatMap((p) => {
@@ -235,14 +234,13 @@ export async function loadMilestoneInputs(
   const debts: MilestoneDebt[] = debtRows.map((d) => {
     const now = debtBalance(d);
     const balance = now.balance;
-    const rate = d.interestRate == null ? null : toNumber(d.interestRate);
+    const rate = toNumberOrNull(d.interestRate);
     const open = isOpenDebt(d, today);
     const est = debtPayoffEstimate(
       {
         balance,
         interestRate: rate,
-        monthlyPayment:
-          d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
+        monthlyPayment: toNumberOrNull(d.monthlyPayment),
         balanceAsOf: now.asOf,
       },
       today,

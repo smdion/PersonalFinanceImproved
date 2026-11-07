@@ -14,7 +14,7 @@
  */
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/lib/utils/numbers";
+import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 
 interface ResolvedGoalAllocation {
@@ -58,8 +58,7 @@ export async function getResolvedGoalAllocations(
     const row = rowsByGoal.get(g.id);
     result.set(g.id, {
       goalId: g.id,
-      allocationPercent:
-        row?.allocationPercent != null ? toNumber(row.allocationPercent) : null,
+      allocationPercent: toNumberOrNull(row?.allocationPercent),
       monthlyContribution: row ? toNumber(row.monthlyContribution) : 0,
     });
   }

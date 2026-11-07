@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toNumber } from "@/lib/utils/numbers";
+import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 
 describe("toNumber", () => {
   it("parses numeric string", () => {
@@ -28,5 +28,26 @@ describe("toNumber", () => {
 
   it("parses zero", () => {
     expect(toNumber("0")).toBe(0);
+  });
+});
+
+describe("toNumberOrNull", () => {
+  it("returns null for null and undefined", () => {
+    expect(toNumberOrNull(null)).toBeNull();
+    expect(toNumberOrNull(undefined)).toBeNull();
+  });
+
+  it("parses a present value exactly as toNumber does", () => {
+    for (const v of ["123.45", "0", "-42.5", "", "abc", "1e3", " 7 "]) {
+      expect(toNumberOrNull(v)).toEqual(toNumber(v));
+    }
+  });
+
+  it("keeps zero as zero", () => {
+    expect(toNumberOrNull("0")).toBe(0);
+  });
+
+  it("parses an empty string as NaN, not null", () => {
+    expect(toNumberOrNull("")).toBeNaN();
   });
 });
