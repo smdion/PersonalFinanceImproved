@@ -38,7 +38,7 @@ import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { toast } from "@/lib/hooks/use-toast";
 import { SK_PAYCHECK_TAX_YEAR } from "@/lib/constants/settings-keys";
 
-export default function PaycheckPage() {
+export function PaycheckContent() {
   const user = useUser();
   const canEditProfiles = hasPermission(user, "contributionProfile");
   const { viewMode: mode } = useScenario();

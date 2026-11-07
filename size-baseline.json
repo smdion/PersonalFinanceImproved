@@ -349,8 +349,8 @@
       "NetWorthContent": 396
     },
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
-      "PaycheckPage": 645,
-      "PaycheckPage.map()": 321
+      "PaycheckContent": 645,
+      "PaycheckContent.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
       "PerformanceContent": 809
