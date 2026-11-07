@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
-import { Badge, StatusDot } from "@/components/ui/badge";
+import { StatusDot } from "@/components/ui/badge";
 import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import type { PayrollBreakdown, ColumnResult, SinkingFundLine } from "./types";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
+import { BudgetSummaryHeader } from "./budget-summary-header";
 
 type BudgetSummaryTableProps = {
   cols: string[];
@@ -137,64 +138,16 @@ export function BudgetSummaryTable({
         className="w-full border-collapse text-xs"
         style={{ tableLayout: "fixed" }}
       >
-        <thead>
-          <tr className="border-strong border-b-2">
-            <th
-              className="text-muted py-1.5 pr-3 text-left font-medium"
-              style={{
-                width: nameColWidth ?? 192,
-                minWidth: 120,
-                maxWidth: 400,
-              }}
-            />
-            {cols.map((label, colIdx) => (
-              <th
-                key={label}
-                className={`min-w-[90px] px-2 py-1.5 text-right font-semibold transition-colors ${
-                  isWeighted
-                    ? "text-primary"
-                    : colIdx === activeColumn
-                      ? "cursor-pointer bg-blue-50 text-blue-700"
-                      : "text-primary cursor-pointer hover:text-blue-600"
-                }`}
-                onClick={
-                  isWeighted ? undefined : () => onSetActiveColumn(colIdx)
-                }
-                title={
-                  isWeighted
-                    ? `${label} — ${columnMonths[colIdx] ?? 0} month${(columnMonths[colIdx] ?? 0) !== 1 ? "s" : ""}`
-                    : colIdx === activeColumn
-                      ? `${label} is the active budget mode`
-                      : `Set ${label} as active mode`
-                }
-              >
-                {label}
-                {!isWeighted && colIdx === activeColumn && (
-                  <span className="text-caption ml-1 align-super text-blue-500">
-                    ●
-                  </span>
-                )}
-                {apiService && apiLinkedColumnIndex === colIdx && (
-                  <Badge
-                    color="blue"
-                    case="normal"
-                    className="ml-1 align-middle"
-                  >
-                    ⇄ {apiService.toUpperCase()}
-                  </Badge>
-                )}
-              </th>
-            ))}
-            {isWeighted && (
-              <th
-                className="text-primary bg-surface-sunken/60 min-w-[90px] px-2 py-1.5 text-right font-semibold"
-                title="Weighted average across modes — what a typical month looks like"
-              >
-                Blended
-              </th>
-            )}
-          </tr>
-        </thead>
+        <BudgetSummaryHeader
+          nameColWidth={nameColWidth}
+          cols={cols}
+          isWeighted={isWeighted}
+          activeColumn={activeColumn}
+          onSetActiveColumn={onSetActiveColumn}
+          columnMonths={columnMonths}
+          apiService={apiService}
+          apiLinkedColumnIndex={apiLinkedColumnIndex}
+        />
         <tbody>
           {hasAnyPayroll && (
             <>
