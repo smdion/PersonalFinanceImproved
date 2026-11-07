@@ -599,9 +599,14 @@
       "count": 3
     }
   },
-  "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
+  "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
     }
   },
   "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": {

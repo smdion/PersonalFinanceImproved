@@ -7,18 +7,13 @@ import {
   followReconciliation,
   syncAggregateBasis,
 } from "../brokerage-basis";
-import type { AccountCategory } from "../../../config/account-types";
-import type { AccumulationSlot } from "../types/routing";
 import type { EngineAccumulationYear } from "../types/projection-result";
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
 import {
-  buildCategoryRecord,
   getAllCategories,
   getAccountTypeConfig,
   isOverflowTarget,
-  isPortfolioParent,
-  getRothFraction as configGetRothFraction,
 } from "../../../config/account-types";
 import {
   addTraditional,
@@ -31,15 +26,6 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
 } from "../../../constants";
 import { resolveAccumulationConfig } from "../override-resolution";
-import {
-  routeWaterfall,
-  routePercentage,
-  routeFromSpecs,
-  capSpecs,
-  slotLimits,
-  remainingRoom,
-} from "../contribution-routing";
-import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,
@@ -58,8 +44,8 @@ import type {
 import { brokerageGoalDraws, yearGapDraw } from "./goal-draws";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
-import { contributionStateForYear } from "@/lib/pure/contributions/contribution-state";
-import { applyRateCeiling } from "./rate-ceiling";
+import { yearContributionTarget, yearZeroBasis } from "./contribution-target";
+import { routeYearSlots, yearContributionLimits } from "./contribution-slots";
 
 // ---------------------------------------------------------------------------
 // Accumulation year handler
@@ -136,310 +122,63 @@ export function runAccumulationYear(
   // IRS limits grow annually
   const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
 
-  // Year 0 with real contribution data: use actual per-account amounts
-  // instead of salary x rate which can create artificial overflow
-  // (Not when a job starts or ends this year, or someone isn't at work:
-  // this year's paycheck amounts don't know that; the specs do.)
-  const useRealContribs =
-    yearIndex === 0 &&
-    !setup.jobEdgeThisYear &&
-    !setup.yearSpecs &&
-    activeBaseYearContributions &&
-    activeBaseYearEmployerMatch;
-
-  // Pro-rate year 0 contributions/match based on months remaining in the year
-  const proRate = yearIndex === 0 ? firstYearFraction : 1;
-
-  // Late in year 0, a contribution over its IRS limit has been paid at its
-  // configured rate so far: what's left of its capped amount is
-  // max(0, capped − configured × elapsed), not capped × the rest of the
-  // year. The cut per category, off the pro-rated amount.
-  const lateYearCut = buildCategoryRecord(() => 0);
-  if (yearIndex === 0)
-    for (const s of contributionSpecs ?? []) {
-      if (s.configuredAnnual === undefined) continue;
-      const left = Math.max(
-        0,
-        s.baseAnnual - s.configuredAnnual * (1 - proRate),
-      );
-      lateYearCut[s.category] += Math.max(0, s.baseAnnual * proRate - left);
-    }
-  const totalLateYearCut = sumBy(Object.values(lateYearCut), (v) => v);
-
-  let targetContribution: number;
-  if (useRealContribs) {
-    targetContribution = roundToCents(
-      Object.values(activeBaseYearContributions!).reduce((s, v) => s + v, 0) *
-        proRate -
-        totalLateYearCut,
-    );
-  } else if (contributionSpecs && contributionSpecs.length > 0) {
-    // Sum projected per-account contributions (before IRS capping)
-    targetContribution = roundToCents(
-      contributionSpecs.reduce((sum, spec) => {
-        if (spec.method === "percent_of_salary") {
-          return sum + projectedSalary * spec.salaryFraction * spec.value;
-        }
-        return sum + spec.baseAnnual * lgf;
-      }, 0) * proRate,
-    );
-  } else {
-    targetContribution = roundToCents(
-      projectedSalary * Math.max(0, config.contributionRate) * proRate,
-    );
-  }
-
-  // Employer match (grows with salary in future years; pro-rated for year 0)
-  const yearEmployerMatch: Record<AccountCategory, number> = Object.fromEntries(
-    getAllCategories().map((cat) => [
-      cat,
-      useRealContribs
-        ? roundToCents((activeBaseYearEmployerMatch![cat] ?? 0) * proRate)
-        : roundToCents(
-            projectedSalary *
-              Math.max(0, activeEmployerMatchRateByCategory[cat] ?? 0) *
-              proRate,
-          ),
-    ]),
-  ) as Record<AccountCategory, number>;
-  // With pay tracked per person, each spec's match moves with its own
-  // person's pay (its share of the category's base-year match, grown with
-  // that person's salary), not the household rate: raises differ, and
-  // someone may not be at work this year.
-  const baseSalaryByPerson = input.salaryByPerson ?? {};
-  const personPay = hasPerPersonSalary
-    ? { projected: projectedSalaryByPerson, base: baseSalaryByPerson }
-    : undefined;
-  if (!useRealContribs && hasPerPersonSalary && contributionSpecs) {
-    const payRatio = (personId: number | null | undefined) =>
-      personId == null
-        ? safeDivide(projectedSalary, currentSalary, 0)
-        : safeDivide(
-            projectedSalaryByPerson?.get(personId) ?? 0,
-            baseSalaryByPerson[personId] ?? 0,
-            0,
-          );
-    // A category with no spec holding its match keeps the household rate
-    // (specs saying nothing about whose it is) — unless someone's away,
-    // when the away specs are what's left of it.
-    const owned = new Set(
-      contributionSpecs
-        .filter((s) => (s.employerShare ?? 0) > 0)
-        .map((s) => s.category),
-    );
-    for (const cat of getAllCategories())
-      if (owned.has(cat) || setup.yearSpecs) yearEmployerMatch[cat] = 0;
-    for (const spec of contributionSpecs)
-      yearEmployerMatch[spec.category] +=
-        (spec.employerShare ?? 0) *
-        (activeBaseYearEmployerMatch?.[spec.category] ??
-          Math.max(0, activeEmployerMatchRateByCategory[spec.category] ?? 0) *
-            currentSalary) *
-        payRatio(spec.personId) *
-        proRate;
-    for (const cat of getAllCategories())
-      yearEmployerMatch[cat] = roundToCents(yearEmployerMatch[cat]);
-  }
-  const contribution = contributionStateForYear({
-    actual: Boolean(useRealContribs),
-    savingStopped: setup.savingStopped,
-    rate: config.contributionRate,
-    defaultRate: state.accumulationDefaults.contributionRate,
-    salary: projectedSalary,
-  });
-  // Stopped: no contributions and no match, whichever path sized them.
-  if (contribution.kind === "stopped") {
-    targetContribution = 0;
-    for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
-  }
-
-  // Paused: no match that depends on contributing; flat employer money stays.
-  if (contribution.kind === "paused") {
-    if (!contributionSpecs?.length) {
-      for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
-    } else {
-      const kept = buildCategoryRecord(() => 1);
-      for (const spec of contributionSpecs)
-        if (
-          !isPortfolioParent(spec.parentCategory) &&
-          spec.matchNeedsContribution !== false
-        )
-          kept[spec.category] -= spec.employerShare ?? 0;
-      for (const cat of getAllCategories())
-        yearEmployerMatch[cat] = roundToCents(
-          yearEmployerMatch[cat] * Math.max(0, kept[cat]),
-        );
-    }
-  }
-
-  // IRS limits: every key grows at the limit growth rate; the specs are
-  // capped per person (ages at Dec 31 of this year), and every path sizes
-  // its slot limits from the household's group limits, each counted once.
-  const hasSpecs = !!contributionSpecs && contributionSpecs.length > 0;
-  const capCtx = {
-    taxYear: year,
-    filingStatus: irsLimitCaps.filingStatus,
-    limits: Object.fromEntries(
-      Object.entries(irsLimitCaps.limits).map(([k, v]) => [
-        k,
-        roundToCents(v * lgf),
-      ]),
-    ),
-  };
-  const capped = hasSpecs
-    ? capSpecs(
-        contributionSpecs!,
-        {
-          projectedSalary,
-          salaryBase: currentSalary,
-          limitGrowthFactor: lgf,
-          personPay,
-        },
-        {
-          ctx: capCtx,
-          people: irsLimitCaps.people,
-          employerMatch: yearEmployerMatch,
-          wagesByPerson:
-            hasPerPersonSalary && projectedSalaryByPerson
-              ? new Map(projectedSalaryByPerson)
-              : null,
-        },
-      )
-    : null;
-  const groupLimits =
-    capped?.groupLimits ??
-    accountGroupLimits(irsLimitCaps.accounts, {
-      ...capCtx,
-      people: irsLimitCaps.people.map((p) => ({ ...p, wages: null })),
-    });
-  const cappedByCategory = buildCategoryRecord(() => 0);
-  contributionSpecs?.forEach((spec, i) => {
-    cappedByCategory[spec.category] += capped!.capped[i]!.cappedAnnual;
-  });
-  const yearLimits = slotLimits(
-    groupLimits,
-    useRealContribs ? activeBaseYearContributions! : cappedByCategory,
-  );
-
-  let slots: AccumulationSlot[];
-  let routeWarnings: string[];
-  let specOverflow = 0; // overflow from per-account routing (only IRS cap spillover)
-  let rateCeilingScale: number | null = null; // set when rate ceiling scales down contributions
-
-  if (useRealContribs) {
-    // Build slots from per-account annual projections, pro-rated for partial year 0
-    const categories: AccountCategory[] = getAllCategories();
-    slots = categories
-      .filter(
-        (cat) =>
-          activeBaseYearContributions![cat] > 0 || yearEmployerMatch[cat] > 0,
-      )
-      .map((cat) => {
-        const employeeContrib = roundToCents(
-          Math.max(
-            0,
-            activeBaseYearContributions![cat] * proRate - lateYearCut[cat],
-          ),
-        );
-        const irsLimit = yearLimits[cat];
-        const rothFrac = configGetRothFraction(cat, config.taxSplits);
-        const rothContrib = roundToCents(employeeContrib * rothFrac);
-        const tradContrib = roundToCents(employeeContrib - rothContrib);
-        return {
-          category: cat,
-          irsLimit,
-          effectiveLimit: isOverflowTarget(cat) ? 0 : irsLimit,
-          employerMatch: yearEmployerMatch[cat],
-          employeeContrib,
-          rothContrib,
-          traditionalContrib: tradContrib,
-          remainingSpace: remainingRoom(
-            {
-              category: cat,
-              irsLimit,
-              effectiveLimit: isOverflowTarget(cat) ? 0 : irsLimit,
-              employerMatch: yearEmployerMatch[cat],
-            },
-            employeeContrib,
-          ),
-          cappedByAccount: false,
-          cappedByTaxType: false,
-          overflowAmount: 0,
-        };
-      });
-    routeWarnings = [];
-  } else if (contributionSpecs && contributionSpecs.length > 0) {
-    // Per-account routing from DB specs, capped per person above.
-    const routed = routeFromSpecs(
+  const { useRealContribs, proRate, lateYearCut, totalLateYearCut } =
+    yearZeroBasis(
+      yearIndex,
+      setup,
+      activeBaseYearContributions,
+      activeBaseYearEmployerMatch,
+      firstYearFraction,
       contributionSpecs,
-      capped!,
-      yearLimits,
-      yearEmployerMatch,
-      config,
     );
-    slots = routed.slots;
-    routeWarnings = routed.warnings;
-    specOverflow = routed.totalOverflow;
-
-    // Pro-rate year 0 spec-based employee contributions (routeFromSpecs computes full-year amounts)
-    if (proRate < 1) {
-      for (const slot of slots) {
-        // The late-year cut comes off the slot's employee money; its tax
-        // parts follow by the same ratio.
-        const full = slot.employeeContrib;
-        slot.employeeContrib = roundToCents(
-          Math.max(0, full * proRate - lateYearCut[slot.category]),
-        );
-        const partRatio =
-          lateYearCut[slot.category] > 0 && full > 0
-            ? slot.employeeContrib / full
-            : proRate;
-        // The Portfolio part pro-rates with the slot (the ceiling below
-        // scales the rest; left full-year it would exceed the slot).
-        if (slot.portfolioContrib != null)
-          slot.portfolioContrib = roundToCents(
-            Math.min(slot.portfolioContrib * partRatio, slot.employeeContrib),
-          );
-        slot.rothContrib = roundToCents(slot.rothContrib * partRatio);
-        slot.traditionalContrib = roundToCents(
-          slot.traditionalContrib * partRatio,
-        );
-        slot.remainingSpace = remainingRoom(slot, slot.employeeContrib);
-      }
-      // Recompute overflow -- pro-rating may reduce or eliminate it
-      specOverflow = roundToCents(specOverflow * proRate);
-    }
-
-    // The retirement-rate ceiling on the spec slots.
-    const ceiling = applyRateCeiling(
-      slots,
+  const { targetContribution, yearEmployerMatch, personPay, contribution } =
+    yearContributionTarget(
+      useRealContribs,
+      activeBaseYearContributions,
+      proRate,
+      totalLateYearCut,
+      contributionSpecs,
+      projectedSalary,
+      lgf,
+      config,
+      activeBaseYearEmployerMatch,
+      activeEmployerMatchRateByCategory,
+      input,
+      hasPerPersonSalary,
+      projectedSalaryByPerson,
+      currentSalary,
+      setup,
+      state,
+    );
+  const { capped, yearLimits } = yearContributionLimits(
+    contributionSpecs,
+    year,
+    irsLimitCaps,
+    lgf,
+    projectedSalary,
+    currentSalary,
+    personPay,
+    yearEmployerMatch,
+    hasPerPersonSalary,
+    projectedSalaryByPerson,
+    useRealContribs,
+    activeBaseYearContributions,
+  );
+  const { slots, routeWarnings, specOverflow, rateCeilingScale } =
+    routeYearSlots(
+      useRealContribs,
+      activeBaseYearContributions,
+      yearEmployerMatch,
+      proRate,
+      lateYearCut,
+      yearLimits,
+      config,
+      contributionSpecs,
+      capped,
       contribution,
       projectedSalary,
-      config,
-      proRate,
-      specOverflow,
+      targetContribution,
     );
-    rateCeilingScale = ceiling.scale;
-    specOverflow = ceiling.specOverflow;
-  } else {
-    // Fallback: Route contributions based on mode (blended rate)
-    const routed =
-      config.routingMode === "waterfall"
-        ? routeWaterfall(
-            targetContribution,
-            config,
-            yearLimits,
-            yearEmployerMatch,
-          )
-        : routePercentage(
-            targetContribution,
-            config,
-            yearLimits,
-            yearEmployerMatch,
-          );
-    slots = routed.slots;
-    routeWarnings = routed.warnings;
-  }
 
   const totalEmployee = roundToCents(sumBy(slots, (s) => s.employeeContrib));
   const totalEmployer = roundToCents(sumBy(slots, (s) => s.employerMatch));
