@@ -72,7 +72,7 @@
     "src/components/retirement-projection/use-projection-derived.ts": 640,
     "src/components/retirement-projection/use-projection-queries.ts": 977,
     "src/components/retirement-projection/utils.ts": 870,
-    "src/components/retirement-projection/withdrawal-comparison.tsx": 559,
+    "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 431,
     "src/components/retirement/retirement-profile-tab.tsx": 552,
     "src/components/retirement/sections/taxes.tsx": 551,
@@ -685,7 +685,7 @@
       "filterYearByParentCategory": 241
     },
     "src/components/retirement-projection/withdrawal-comparison.tsx": {
-      "WithdrawalComparisonCard": 490
+      "WithdrawalComparisonCard": 477
     },
     "src/components/retirement/assumptions-band.tsx": {
       "AssumptionsBand": 325

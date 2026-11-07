@@ -12,6 +12,7 @@ import { budgetVsActualSummary } from "@/components/expenses/expenses-charts.sum
 import type { HistoryRow } from "@/components/networth/types";
 import { balanceSummary } from "@/components/retirement-projection/projection-chart.summary";
 import { stabilitySummary } from "@/components/retirement-projection/spending-stability-chart.summary";
+import { strategyLinesSummary } from "@/components/retirement-projection/withdrawal-comparison.summary";
 import { trajectorySummary } from "@/components/savings/savings-trajectory-chart.summary";
 import { fundMiniSummary } from "@/components/savings/fund-mini-chart.summary";
 import { glidePathSummary } from "@/components/investments/glide-path-chart.summary";
@@ -266,6 +267,25 @@ describe("chart summaries", () => {
         .text,
     ).toBe(
       "Yearly income stability vs Strategy, 2040. 2040: vs Strategy 100.0%.",
+    );
+  });
+
+  it("withdrawal strategy comparison, by metric", () => {
+    const strategies = [
+      { strategy: "fixed", shortLabel: "Fixed" },
+      { strategy: "guyton_klinger", shortLabel: "Guardrails" },
+    ];
+    const rows = [
+      { year: 2040, fixed: 1_000_000, guyton_klinger: 1_000_000 },
+      { year: 2070, fixed: 200_000, guyton_klinger: 450_000 },
+    ];
+    expect(
+      strategyLinesSummary(rows, strategies, "retirementBalance").text,
+    ).toBe(
+      "Portfolio balance by strategy, 2040 to 2070. 2070: Fixed $200,000.00; Guardrails $450,000.00.",
+    );
+    expect(strategyLinesSummary(rows, strategies, "withdrawal").label).toBe(
+      "Annual withdrawal by strategy",
     );
   });
 });

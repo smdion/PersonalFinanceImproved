@@ -24,11 +24,16 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
 } from "recharts";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { strategyLinesSummary } from "./withdrawal-comparison.summary";
 import { STRATEGY_COMPARISON_COLORS, CHART_COLORS } from "@/lib/utils/colors";
 import { simulationRateTone } from "@/lib/config/simulation-tones";
+import {
+  strategyChartRows,
+  type ChartMetric,
+} from "./withdrawal-comparison.model";
 
 const RATE_TONE_CLASS = {
   green: "text-green-400",
@@ -65,8 +70,6 @@ type Props = {
   analyzerInput?: AnalyzerInput;
 };
 
-type ChartMetric = "retirementBalance" | "withdrawal";
-
 export function WithdrawalComparisonCard({
   strategies,
   activeStrategy,
@@ -93,23 +96,7 @@ export function WithdrawalComparisonCard({
   const deflate = (value: number, year: number) =>
     dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
-  // Build chart data: merge all strategies into year-indexed rows
-  const chartData = (() => {
-    const byYear = new Map<number, Record<string, number>>();
-    for (const s of strategies) {
-      for (const pt of s.yearByYear) {
-        if (!byYear.has(pt.year)) byYear.set(pt.year, { year: pt.year });
-        const raw =
-          chartMetric === "retirementBalance"
-            ? pt.retirementBalance
-            : pt.withdrawal;
-        byYear.get(pt.year)![s.strategy] = deflate(raw, pt.year);
-      }
-    }
-    return Array.from(byYear.values()).sort(
-      (a, b) => (a.year ?? 0) - (b.year ?? 0),
-    );
-  })();
+  const chartData = strategyChartRows(strategies, chartMetric, deflate);
 
   return (
     <Card
@@ -351,7 +338,10 @@ export function WithdrawalComparisonCard({
               Annual Withdrawal
             </button>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
+          <ChartFrame
+            summary={strategyLinesSummary(chartData, strategies, chartMetric)}
+            height={300}
+          >
             <LineChart data={chartData}>
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -407,7 +397,7 @@ export function WithdrawalComparisonCard({
                 />
               ))}
             </LineChart>
-          </ResponsiveContainer>
+          </ChartFrame>
         </div>
       }
       {/* Strategy Analyzer — opt-in */}
