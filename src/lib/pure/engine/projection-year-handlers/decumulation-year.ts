@@ -561,14 +561,10 @@ export function runDecumulationYear(
     taxEst,
     ssIncome,
   );
-  let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
-  // This used to be re-derived locally
-  // as `totalTraditionalWithdrawal + taxableSS`, silently dropping
-  // non-qualified Roth growth income (rothTaxSplit.taxableGrowth) from
-  // everything downstream (LTCG bracket selection, MAGI). Read the single
-  // source of truth computeTaxFromSlots already computed instead.
+  // This year's taxable income, non-qualified Roth growth included, as
+  // computeTaxFromSlots computed it (LTCG bracket selection and MAGI read it).
   const actualTaxableIncome = taxFromSlots.actualTaxableIncome;
   // Annotate the brokerage slot with its basis/gains breakdown -- same gate
   // computeTaxFromSlots uses internally to decide whether there's a real
@@ -585,7 +581,6 @@ export function runDecumulationYear(
     brokerageSlot.gainsPortion = brokerageGainsPortion;
   }
 
-  let taxCost = taxFromSlots.taxCost;
   const penaltyCost = taxFromSlots.penaltyCost;
   const ssTaxCost = taxFromSlots.ssTaxCost;
   // Never more than the tax: the surplus isn't banked.
@@ -606,7 +601,7 @@ export function runDecumulationYear(
     afterTaxNeed > 0 &&
     state.portfolioWithdrawal === null
   ) {
-    const postRmdTotalCost = roundToCents(taxCost + penaltyCost);
+    const postRmdTotalCost = roundToCents(taxFromSlots.taxCost + penaltyCost);
     const postRmdEffRate = postRmdTotalCost / (afterTaxNeed + postRmdTotalCost);
     // Not a safeDivide candidate: the guard
     // is `< 1`, not a zero-denominator check — postRmdEffRate exceeding 1 is
@@ -636,7 +631,9 @@ export function runDecumulationYear(
   // rmdExcessHandling setting (reinvest into brokerage, or spend it).
   // Reinvested RMD money is cash in: new basis where it lands.
   // The tax the withdrawal pays — Social Security's surplus pays the rest.
-  const withdrawalTax = roundToCents(taxCost - surplusCredit(taxCost));
+  const withdrawalTax = roundToCents(
+    taxFromSlots.taxCost - surplusCredit(taxFromSlots.taxCost),
+  );
   const rmdExcessAmount = followInflows(
     indAccts,
     indKey,
@@ -795,6 +792,8 @@ export function runDecumulationYear(
     rothConversionIrmaaCapped,
   } = rothResult;
 
+  let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
+  let taxCost = taxFromSlots.taxCost;
   // Roth conversions are ordinary income and can push the gains into a higher
   // LTCG bracket: recompute on the revised ordinary income, converted once to
   // the taxable income the LTCG calls below use (they're its only readers).

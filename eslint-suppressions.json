@@ -4441,13 +4441,13 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 30
+      "count": 29
     },
     "ratchet/no-guarded-division": {
       "count": 2
     },
     "ratchet/no-history-comment": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {
