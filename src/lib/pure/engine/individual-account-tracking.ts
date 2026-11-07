@@ -84,6 +84,16 @@ export function makeIndKey(): IndKeyFn {
     `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;
 }
 
+/** Adds `amount` to account `acct` in each of the year's maps `into`
+ *  (its contributions, balance, and the source the amount came from). */
+function credit(
+  acct: string,
+  amount: number,
+  into: Map<string, number>[],
+): void {
+  for (const map of into) map.set(acct, (map.get(acct) ?? 0) + amount);
+}
+
 /** Creates spec key from contribution spec fields. */
 export function specKeyOf(spec: {
   name: string;
@@ -128,38 +138,26 @@ export function buildSpecToAccountMapping(
       ia.ownerPersonId != null && spec.personId != null
         ? ia.ownerPersonId === spec.personId
         : ia.ownerName === spec.ownerName;
+    const unowned = (ia: { ownerPersonId?: number; ownerName?: string }) =>
+      ia.ownerPersonId === undefined && ia.ownerName === undefined;
     const ownerMatch = (ia: { ownerPersonId?: number; ownerName?: string }) =>
-      exactOwner(ia) ||
-      (ia.ownerPersonId === undefined && ia.ownerName === undefined);
+      exactOwner(ia) || unowned(ia);
 
-    const match =
-      accts.find(
-        (ia) =>
-          ia.category === spec.category &&
-          exactOwner(ia) &&
-          ia.taxType === specTaxType &&
-          parentCatMatch(ia),
-      ) ??
-      accts.find(
-        (ia) =>
-          ia.category === spec.category &&
-          ia.ownerPersonId === undefined &&
-          ia.ownerName === undefined &&
-          ia.taxType === specTaxType &&
-          parentCatMatch(ia),
-      ) ??
-      accts.find(
-        (ia) =>
-          ia.category === spec.category && exactOwner(ia) && parentCatMatch(ia),
-      ) ??
-      accts.find(
-        (ia) =>
-          ia.category === spec.category &&
-          ia.ownerPersonId === undefined &&
-          ia.ownerName === undefined &&
-          parentCatMatch(ia),
-      ) ??
-      accts.find((ia) => ia.category === spec.category && ownerMatch(ia));
+    // The match rules, tried in rank order: the first that finds an account
+    // in the spec's category wins.
+    const matchRules: ((ia: IndividualAccountInput) => boolean)[] = [
+      (ia) =>
+        exactOwner(ia) && ia.taxType === specTaxType && parentCatMatch(ia),
+      (ia) => unowned(ia) && ia.taxType === specTaxType && parentCatMatch(ia),
+      (ia) => exactOwner(ia) && parentCatMatch(ia),
+      (ia) => unowned(ia) && parentCatMatch(ia),
+      ownerMatch,
+    ];
+    let match: IndividualAccountInput | undefined;
+    for (const rule of matchRules) {
+      match = accts.find((ia) => ia.category === spec.category && rule(ia));
+      if (match) break;
+    }
     if (match) specToAccount.set(specKeyOf(spec), indKey(match));
   }
 
@@ -281,8 +279,7 @@ export function distributeContributions(
         if (!acctName) continue;
         const portion = roundToCents(Math.min(specRaw.get(sk) ?? 0, remaining));
         if (portion <= 0) continue;
-        indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
-        indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        credit(acctName, portion, [indContribs, indBal]);
         remaining -= portion;
       }
       const specs = allSpecs.filter((sp) =>
@@ -304,8 +301,7 @@ export function distributeContributions(
         const rawAmount = specRaw.get(sk) ?? 0;
         const portion = roundToCents(Math.min(rawAmount, remaining));
         if (portion <= 0) continue;
-        indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
-        indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        credit(acctName, portion, [indContribs, indBal]);
         remaining -= portion;
       }
 
@@ -324,24 +320,7 @@ export function distributeContributions(
               ? (specRaw.get(sk) ?? 0) / rawTotal
               : 1 / scalingSpecs.length;
           const portion = roundToCents(remaining * weight);
-          indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
-          indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
-        }
-      } else if (fixedSpecs.length === 0) {
-        // All specs are scaling (original behavior) — fallback for no fixed specs
-        const rawTotal = specs.reduce(
-          (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
-          0,
-        );
-        for (const sp of specs) {
-          const sk = specKeyOf(sp);
-          const acctName = specAcct.get(sk);
-          if (!acctName) continue;
-          const weight =
-            rawTotal > 0 ? (specRaw.get(sk) ?? 0) / rawTotal : 1 / specs.length;
-          const portion = roundToCents(remaining * weight);
-          indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
-          indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+          credit(acctName, portion, [indContribs, indBal]);
         }
       }
     };
@@ -374,10 +353,30 @@ export function distributeContributions(
   }
 
   // --- Step 3: Route employer match to individual accounts ---
+  // A pool's match goes to its pre-tax accounts (all of them when it has
+  // none), those with specs of their own first, weighted by balance.
+  const spreadMatch = (pool: IndividualAccountInput[], amount: number) => {
+    const preTax = pool.filter((ia) => isPreTaxType(ia.taxType));
+    const candidates = preTax.length > 0 ? preTax : pool;
+    const withSpecs = candidates.filter((ia) =>
+      accountsWithSpecs.has(indKey(ia)),
+    );
+    const accts = withSpecs.length > 0 ? withSpecs : candidates;
+    const total = accts.reduce((s, ia) => s + (indBal.get(indKey(ia)) ?? 0), 0);
+    for (const ia of accts) {
+      const k = indKey(ia);
+      const weight =
+        total > 0 ? (indBal.get(k) ?? 0) / total : 1 / accts.length;
+      credit(k, roundToCents(amount * weight), [indMatch, indBal]);
+    }
+  };
   for (const cat of ACCOUNT_CATEGORIES) {
     const catMatch = slots.find((s) => s.category === cat)?.employerMatch ?? 0;
     if (catMatch <= 0) continue;
     const parentCatMatchData = employerMatchByParentCat?.get(cat);
+    const catAccounts = indAccts.filter(
+      (ia) => ia.category === cat && !ia.projectedOnly,
+    );
     if (parentCatMatchData && parentCatMatchData.size > 0) {
       let totalMatch = 0;
       parentCatMatchData.forEach((v) => {
@@ -385,60 +384,13 @@ export function distributeContributions(
       });
       parentCatMatchData.forEach((baseMatch, pCat) => {
         const scaledMatch = roundToCents(catMatch * (baseMatch / totalMatch));
-        const allPCatAccts = indAccts.filter(
-          (ia) =>
-            ia.category === cat &&
-            !ia.projectedOnly &&
-            indParentCat.get(indKey(ia)) === pCat,
+        spreadMatch(
+          catAccounts.filter((ia) => indParentCat.get(indKey(ia)) === pCat),
+          scaledMatch,
         );
-        if (allPCatAccts.length === 0) return;
-        const preTaxPCatAccts = allPCatAccts.filter((ia) =>
-          isPreTaxType(ia.taxType),
-        );
-        const matchCandidates =
-          preTaxPCatAccts.length > 0 ? preTaxPCatAccts : allPCatAccts;
-        const pCatWithSpecs = matchCandidates.filter((ia) =>
-          accountsWithSpecs.has(indKey(ia)),
-        );
-        const pCatAccts =
-          pCatWithSpecs.length > 0 ? pCatWithSpecs : matchCandidates;
-        const pCatTotal = pCatAccts.reduce(
-          (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
-          0,
-        );
-        for (const ia of pCatAccts) {
-          const k = indKey(ia);
-          const weight =
-            pCatTotal > 0
-              ? (indBal.get(k) ?? 0) / pCatTotal
-              : 1 / pCatAccts.length;
-          const matchPortion = roundToCents(scaledMatch * weight);
-          indMatch.set(k, (indMatch.get(k) ?? 0) + matchPortion);
-          indBal.set(k, (indBal.get(k) ?? 0) + matchPortion);
-        }
       });
     } else {
-      const catAll = indAccts.filter(
-        (ia) => ia.category === cat && !ia.projectedOnly,
-      );
-      const catPreTax = catAll.filter((ia) => isPreTaxType(ia.taxType));
-      const catMatchPool = catPreTax.length > 0 ? catPreTax : catAll;
-      const catWithSpecs = catMatchPool.filter((ia) =>
-        accountsWithSpecs.has(indKey(ia)),
-      );
-      const catAccts = catWithSpecs.length > 0 ? catWithSpecs : catMatchPool;
-      const catTotal = catAccts.reduce(
-        (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
-        0,
-      );
-      for (const ia of catAccts) {
-        const k = indKey(ia);
-        const weight =
-          catTotal > 0 ? (indBal.get(k) ?? 0) / catTotal : 1 / catAccts.length;
-        const matchPortion = roundToCents(catMatch * weight);
-        indMatch.set(k, (indMatch.get(k) ?? 0) + matchPortion);
-        indBal.set(k, (indBal.get(k) ?? 0) + matchPortion);
-      }
+      spreadMatch(catAccounts, catMatch);
     }
   }
 
@@ -478,9 +430,7 @@ export function distributeContributions(
         const room = Math.max(0, spec.targetAnnual - currentContrib);
         const portion = roundToCents(Math.min(remaining, room));
         if (portion > 0) {
-          indContribs.set(acctName, currentContrib + portion);
-          indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
-          indOverflow.set(acctName, (indOverflow.get(acctName) ?? 0) + portion);
+          credit(acctName, portion, [indContribs, indBal, indOverflow]);
           remaining -= portion;
         }
       }
@@ -493,15 +443,7 @@ export function distributeContributions(
           for (const spec of noTargetSpecs) {
             const acctName = specToAccount.get(specKeyOf(spec));
             if (!acctName) continue;
-            indContribs.set(
-              acctName,
-              (indContribs.get(acctName) ?? 0) + perAccount,
-            );
-            indBal.set(acctName, (indBal.get(acctName) ?? 0) + perAccount);
-            indOverflow.set(
-              acctName,
-              (indOverflow.get(acctName) ?? 0) + perAccount,
-            );
+            credit(acctName, perAccount, [indContribs, indBal, indOverflow]);
           }
           // Routed in full — the fallback below must not hand it out again.
           remaining = 0;
@@ -510,15 +452,7 @@ export function distributeContributions(
           if (lastSpec) {
             const acctName = specToAccount.get(specKeyOf(lastSpec));
             if (acctName) {
-              indContribs.set(
-                acctName,
-                (indContribs.get(acctName) ?? 0) + remaining,
-              );
-              indBal.set(acctName, (indBal.get(acctName) ?? 0) + remaining);
-              indOverflow.set(
-                acctName,
-                (indOverflow.get(acctName) ?? 0) + remaining,
-              );
+              credit(acctName, remaining, [indContribs, indBal, indOverflow]);
               remaining = 0;
             }
           }
@@ -533,9 +467,7 @@ export function distributeContributions(
         const perAcct = roundToCents(remaining / fallbackAccts.length);
         for (const ia of fallbackAccts) {
           const k = indKey(ia);
-          indContribs.set(k, (indContribs.get(k) ?? 0) + perAcct);
-          indBal.set(k, (indBal.get(k) ?? 0) + perAcct);
-          indOverflow.set(k, (indOverflow.get(k) ?? 0) + perAcct);
+          credit(k, perAcct, [indContribs, indBal, indOverflow]);
         }
       }
     }
@@ -586,9 +518,7 @@ export function distributeContributions(
       const weight =
         brokTotal > 0 ? (indBal.get(k) ?? 0) / brokTotal : 1 / brokAccts.length;
       const portion = roundToCents(rampAmount * weight);
-      indContribs.set(k, (indContribs.get(k) ?? 0) + portion);
-      indBal.set(k, (indBal.get(k) ?? 0) + portion);
-      indRamp.set(k, (indRamp.get(k) ?? 0) + portion);
+      credit(k, portion, [indContribs, indBal, indRamp]);
     }
   }
 

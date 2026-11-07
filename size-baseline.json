@@ -137,7 +137,7 @@
     "src/lib/pure/debts/mortgage.ts": 422,
     "src/lib/pure/engine/aca-check.ts": 95,
     "src/lib/pure/engine/contribution-routing.ts": 624,
-    "src/lib/pure/engine/individual-account-tracking.ts": 1473,
+    "src/lib/pure/engine/individual-account-tracking.ts": 1403,
     "src/lib/pure/engine/irmaa-check.ts": 91,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 322,
     "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": 223,
@@ -877,7 +877,7 @@
     },
     "src/lib/pure/engine/individual-account-tracking.ts": {
       "buildIndividualYearBalances": 160,
-      "distributeContributions": 387
+      "distributeContributions": 319
     },
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
       "runAccumulationYear": 295
