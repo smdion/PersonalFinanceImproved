@@ -11,3 +11,5 @@ eslint-suppressions*.json
 tests/baseline/__baseline__/
 tests/baseline/__sync__/
 tests/baseline/__text__/
+# Written by the engine path pins (tests/pure/engine/unreached-paths.test.ts).
+tests/pure/engine/__pins__/

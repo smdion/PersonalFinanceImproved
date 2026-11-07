@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/pure/engine   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->711<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->712<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
@@ -34,6 +34,7 @@ pnpm vitest run tests/pure/engine   # one area — prefer this while working
 ## Suites worth knowing
 
 - **`pure/engine/engine-snapshot.test.ts`** — ~70 fixtures; each pins key figures (`toBe`) and a metrics snapshot. A failure reads "sustainable withdrawal changed from X to Y". Every fixture must have consistent starting money (see below).
+- **`pure/engine/unreached-paths.test.ts`** — invented-household cases for engine paths no baseline household reaches (RMD excess with a Social Security surplus, per-owner RMD rows, QCD, IRMAA on top, a conversion year with NIIT, the rate ceiling, a gap year 0, the rarer eligibility reasons); each proves it reached its branch, then pins the year and every account's draw in `pure/engine/__pins__/` (`LEDGR_BASELINE_WRITE=1` writes it).
 - **`pure/engine/engine-invariants.test.ts`** — property-based ([fast-check](https://github.com/dubzzz/fast-check)): balance conservation, limits never exceeded, phases never reverse, non-negative tax, generated inputs consistent with themselves. 20 runs by default; `FAST_CHECK_NUM_RUNS` for more.
 - **`pure/retirement/retirement-scope-invariance.test.ts`** — adding $1M of Portfolio money (or saving into it) changes no retirement answer.
 - **`lint/violations.test.ts`** — the RULES.md sweeps; numbered rules in its header.
