@@ -144,16 +144,25 @@ async function callPath(
   return (target as (input?: unknown) => Promise<unknown>)(input);
 }
 
-/** Wait until the page's text stops changing (lazy chunks, effects). */
+/** Wait until the page's text stops changing (lazy chunks, effects): the
+ *  same for three ticks, then still for STILL_MS more, since a lazy chunk's
+ *  module can take longer than three ticks to load on a busy host. */
+const STILL_MS = 100;
 export async function settle(container: HTMLElement): Promise<void> {
   let last = "";
   let same = 0;
-  for (let i = 0; i < 50 && same < 3; i++) {
+  let since = performance.now();
+  for (
+    let i = 0;
+    i < 50 && (same < 3 || performance.now() - since < STILL_MS);
+    i++
+  ) {
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, same < 3 ? 0 : 20));
     });
     const now = container.innerHTML;
-    same = now === last ? same + 1 : 0;
+    if (now === last) same++;
+    else [same, since] = [0, performance.now()];
     last = now;
   }
 }
