@@ -564,9 +564,6 @@
     }
   },
   "src/components/versions/create-version-dialog.tsx": {
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -578,9 +575,6 @@
     }
   },
   "src/components/versions/delete-version-dialog.tsx": {
-    "ratchet/no-fixed-inset-overlay": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }

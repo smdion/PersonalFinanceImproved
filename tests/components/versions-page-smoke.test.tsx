@@ -47,4 +47,13 @@ describe("Versions page", () => {
       { name: "Before the move", description: undefined },
     ]);
   });
+
+  it("closes the create dialog on Escape, not on its backdrop", async () => {
+    await page.mount();
+    fireEvent.click(screen.getByRole("button", { name: "Create Version" }));
+    fireEvent.click(screen.getByRole("presentation"));
+    expect(screen.getByRole("dialog", { name: "Create Version" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Create Version" })).toBeNull();
+  });
 });
