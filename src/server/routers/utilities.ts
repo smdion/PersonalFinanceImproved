@@ -154,7 +154,7 @@ export const utilitiesRouter = createTRPCRouter({
             year,
             readingCount: rows.length,
             totalCost,
-            avgCost: safeDivide(totalCost, costs.length) ?? 0,
+            avgCost: safeDivide(totalCost, costs.length),
             minCost: Math.min(...costs),
             maxCost: Math.max(...costs),
             totalUsage,

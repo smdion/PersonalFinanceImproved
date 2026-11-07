@@ -143,7 +143,7 @@ export function calculateHouseholdTax(
     ficaMedicare,
     additionalMedicare,
     totalTax,
-    effectiveRate: Number(safeDivide(federalTax, wageAgi) ?? 0),
+    effectiveRate: Number(safeDivide(federalTax, wageAgi)),
     warnings,
   };
 }

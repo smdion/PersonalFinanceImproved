@@ -6,7 +6,7 @@
   },
   "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 11
+      "count": 10
     }
   },
   "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
@@ -484,11 +484,6 @@
       "count": 2
     }
   },
-  "src/lib/pure/contributions/contribution-totals.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
   "src/lib/pure/contributions/display-specs.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -589,11 +584,6 @@
       "count": 2
     }
   },
-  "src/lib/pure/net-worth/net-worth.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
-    }
-  },
   "src/lib/pure/net-worth/snapshot-series.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -634,11 +624,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/savings/savings.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
@@ -657,11 +642,6 @@
   "src/lib/pure/sync/budget-preview.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 12
-    }
-  },
-  "src/lib/pure/tax/tax.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
     }
   },
   "src/lib/sec/connection.ts": {
@@ -820,11 +800,6 @@
     }
   },
   "src/server/routers/settings/earnings.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/routers/utilities.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

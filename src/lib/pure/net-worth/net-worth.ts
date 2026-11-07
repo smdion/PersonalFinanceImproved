@@ -58,7 +58,7 @@ function computeFiTarget(
   annualExpenses: number,
   withdrawalRate: number,
 ): number {
-  return Number(safeDivide(annualExpenses, withdrawalRate) ?? 0);
+  return Number(safeDivide(annualExpenses, withdrawalRate));
 }
 
 export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
@@ -108,10 +108,10 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   // Wealth Score: net worth as % of lifetime earnings (savings efficiency)
   // Computed for both market and cost basis views
   const wealthScoreMarket = Number(
-    safeDivide(netWorthMarket, lifetimeEarnings) ?? 0,
+    safeDivide(netWorthMarket, lifetimeEarnings),
   );
   const wealthScoreCostBasis = Number(
-    safeDivide(netWorthCostBasis, lifetimeEarnings) ?? 0,
+    safeDivide(netWorthCostBasis, lifetimeEarnings),
   );
 
   // AAW Score: Money Guy formula — (avgAge × income) / (10 + yearsUntil40)
@@ -121,16 +121,14 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   const expectedNetWorth =
     (averageAge * effectiveIncome) /
     (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40);
-  const aawScoreMarket = Number(
-    safeDivide(netWorthMarket, expectedNetWorth) ?? 0,
-  );
+  const aawScoreMarket = Number(safeDivide(netWorthMarket, expectedNetWorth));
   const aawScoreCostBasis = Number(
-    safeDivide(netWorthCostBasis, expectedNetWorth) ?? 0,
+    safeDivide(netWorthCostBasis, expectedNetWorth),
   );
 
   // FI Progress uses portfolio (investable assets, not home equity)
   const fiTarget = computeFiTarget(annualExpenses, withdrawalRate);
-  const fiProgress = Number(safeDivide(portfolioTotal + cash, fiTarget) ?? 0);
+  const fiProgress = Number(safeDivide(portfolioTotal + cash, fiTarget));
 
   return {
     netWorthMarket,

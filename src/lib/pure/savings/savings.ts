@@ -48,9 +48,7 @@ export function calculateSavings(input: SavingsInput): SavingsResult {
   // Uses essentialMonthlyExpenses from the budget calculator (not total expenses).
   const efundGoal = activeGoals.find((g) => g.isEmergencyFund);
   const efundMonthsCovered = efundGoal
-    ? Number(
-        safeDivide(efundGoal.currentBalance, essentialMonthlyExpenses) ?? 0,
-      )
+    ? Number(safeDivide(efundGoal.currentBalance, essentialMonthlyExpenses))
     : null;
 
   // Per-goal breakdown
@@ -76,7 +74,7 @@ export function calculateSavings(input: SavingsInput): SavingsResult {
       current: g.currentBalance,
       target: g.targetBalance,
       monthlyAllocation,
-      progress: Number(safeDivide(g.currentBalance, g.targetBalance) ?? 0),
+      progress: Number(safeDivide(g.currentBalance, g.targetBalance)),
       monthsToTarget,
     };
   });
