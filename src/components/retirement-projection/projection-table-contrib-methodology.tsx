@@ -144,44 +144,14 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                               )}
                             </td>
                             <td className="text-faint py-1 pl-2 whitespace-nowrap">
-                              {(() => {
-                                const scalesWithSalary =
-                                  spec.method === "percent_of_salary" ||
-                                  (spec.category in ACCOUNT_TYPE_CONFIG &&
-                                    ACCOUNT_TYPE_CONFIG[
-                                      spec.category as AccountCategory
-                                    ].fixedContribScalesWithSalary);
-                                const hasIrsLimit =
-                                  spec.category in ACCOUNT_TYPE_CONFIG &&
-                                  ACCOUNT_TYPE_CONFIG[
-                                    spec.category as AccountCategory
-                                  ].hasIrsLimit;
-                                if (scalesWithSalary && hasIrsLimit)
-                                  return "Salary + IRS cap";
-                                if (scalesWithSalary) return "Scales w/ salary";
-                                if (hasIrsLimit) return "Scales w/ IRS limits";
-                                return "Fixed";
-                              })()}
+                              {specScalingLabel(spec)}
                             </td>
                           </tr>
                         );
                       })}
                   </tbody>
                 </table>
-                {realDefaults &&
-                  (() => {
-                    const totalMatch = Object.values(
-                      realDefaults.employerMatchByCategory,
-                    ).reduce((s: number, v: number) => s + v, 0);
-                    if (totalMatch <= 0) return null;
-                    return (
-                      <div className="text-caption text-faint mt-2 border-t border-blue-100 pt-1.5">
-                        Match grows with salary. Look for{" "}
-                        <span className="font-bold text-green-600">+m</span> in
-                        the table and hover for breakdown.
-                      </div>
-                    );
-                  })()}
+                {realDefaults && renderMatchNote(realDefaults)}
                 {result.firstOverflowYear && (
                   <div className="mt-1.5 border-t border-blue-100 pt-1.5 font-medium text-amber-600">
                     Contributions exceed IRS limits starting{" "}
@@ -243,15 +213,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 >
                   Full methodology &rarr;
                 </button>
-                {(() => {
-                  const outcome = assessPlan(result);
-                  return outcome.succeeded ? null : (
-                    <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
-                      The plan {describePlanFailure(outcome)} (
-                      {outcome.failureYear})
-                    </div>
-                  );
-                })()}
+                {renderPlanFailure(result)}
               </div>
               <div className="rounded-lg border border-green-100 bg-green-50/50 p-3 text-xs">
                 <h5 className="text-secondary mb-1.5 font-medium uppercase">
@@ -291,5 +253,51 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
         </div>
       )}
     </>
+  );
+}
+
+/** How a contribution spec grows: with salary, with IRS limits, both, or fixed. */
+function specScalingLabel(
+  spec: NonNullable<ProjectionState["contribSpecs"]>[number],
+) {
+  const scalesWithSalary =
+    spec.method === "percent_of_salary" ||
+    (spec.category in ACCOUNT_TYPE_CONFIG &&
+      ACCOUNT_TYPE_CONFIG[spec.category as AccountCategory]
+        .fixedContribScalesWithSalary);
+  const hasIrsLimit =
+    spec.category in ACCOUNT_TYPE_CONFIG &&
+    ACCOUNT_TYPE_CONFIG[spec.category as AccountCategory].hasIrsLimit;
+  if (scalesWithSalary && hasIrsLimit) return "Salary + IRS cap";
+  if (scalesWithSalary) return "Scales w/ salary";
+  if (hasIrsLimit) return "Scales w/ IRS limits";
+  return "Fixed";
+}
+
+/** The employer-match note under the specs table, when any match exists. */
+function renderMatchNote(
+  realDefaults: NonNullable<ProjectionState["realDefaults"]>,
+) {
+  const totalMatch = Object.values(realDefaults.employerMatchByCategory).reduce(
+    (s: number, v: number) => s + v,
+    0,
+  );
+  if (totalMatch <= 0) return null;
+  return (
+    <div className="text-caption text-faint mt-2 border-t border-blue-100 pt-1.5">
+      Match grows with salary. Look for{" "}
+      <span className="font-bold text-green-600">+m</span> in the table and
+      hover for breakdown.
+    </div>
+  );
+}
+
+/** The plan's failure line, when the plan runs out. */
+function renderPlanFailure(result: NonNullable<ProjectionState["result"]>) {
+  const outcome = assessPlan(result);
+  return outcome.succeeded ? null : (
+    <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
+      The plan {describePlanFailure(outcome)} ({outcome.failureYear})
+    </div>
   );
 }
