@@ -16,10 +16,7 @@
  */
 "use client";
 
-import {
-  getStrategyMeta,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import {
   parseReturnFilingStatus,
   RETURN_FILING_STATUS_VALUES,
@@ -546,10 +543,8 @@ export function TaxesSection({
  *  up then. */
 function withdrawalSized(settings: Settings | undefined): boolean {
   if (!settings) return false;
-  const meta = getStrategyMeta(
-    settings.withdrawalStrategy as WithdrawalStrategyType,
-  );
-  const field = meta.paramFields.find((f) => f.key === "ssInAmount");
+  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const field = meta?.paramFields.find((f) => f.key === "ssInAmount");
   if (!field) return false;
   const stored = (settings as Record<string, unknown>)[field.column];
   return stored == null ? field.default !== true : stored !== true;

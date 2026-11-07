@@ -72,9 +72,9 @@
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 835,
     "src/components/portfolio/portfolio-chart.tsx": 476,
-    "src/components/retirement/assumptions-band.tsx": 452,
-    "src/components/retirement/retirement-profile-tab.tsx": 606,
-    "src/components/retirement/sections/taxes.tsx": 556,
+    "src/components/retirement/assumptions-band.tsx": 431,
+    "src/components/retirement/retirement-profile-tab.tsx": 552,
+    "src/components/retirement/sections/taxes.tsx": 551,
     "src/components/savings/all-transactions-tab.tsx": 1457,
     "src/components/savings/api-sync-section.tsx": 637,
     "src/components/savings/contribution-grid.tsx": 471,
@@ -685,13 +685,13 @@
       "useContributionAccountsMutations": 279
     },
     "src/components/retirement/assumptions-band.tsx": {
-      "AssumptionsBand": 343
+      "AssumptionsBand": 325
     },
     "src/components/retirement/retirement-profile-manager.tsx": {
       "RetirementProfileManager": 264
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 530
+      "RetirementProfileTab": 481
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 179
@@ -706,7 +706,7 @@
       "SocialSecuritySection": 242
     },
     "src/components/retirement/sections/strategy-params.tsx": {
-      "StrategyParamsSection": 219,
+      "StrategyParamsSection": 218,
       "StrategyParamsSection.renderField": 170
     },
     "src/components/retirement/sections/taxes.tsx": {

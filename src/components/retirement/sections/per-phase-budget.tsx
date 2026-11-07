@@ -22,10 +22,7 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Badge } from "@/components/ui/badge";
-import {
-  getStrategyMeta,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { formatCurrency } from "@/lib/utils/format";
 import type { Settings, BudgetProfileSummaries, IsEditable } from "./types";
 
@@ -52,10 +49,10 @@ export function PerPhaseBudgetSection({
   setDecBudgetCol,
   isEditable,
 }: Props) {
-  const activeStrategy = settings.withdrawalStrategy as WithdrawalStrategyType;
-  const strategyMeta = getStrategyMeta(activeStrategy);
-  const { incomeSource } = strategyMeta;
-  const { usesWithdrawalRate, usesPostRetirementRaise } = strategyMeta;
+  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  if (!meta) return null;
+  const { incomeSource } = meta;
+  const { usesWithdrawalRate, usesPostRetirementRaise } = meta;
   // Branch on usesWithdrawalRate, not incomeSource -- incomeSource labels
   // Guyton-Klinger "rate" (a UI-framing distinction), but GK's actual
   // year-1 spending IS budget-seeded (initialWithdrawalRate is DERIVED
@@ -82,7 +79,7 @@ export function PerPhaseBudgetSection({
     <div>
       {(budgetNotUsed || !usesPostRetirementRaise) && (
         <div className="mb-2 rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-600">
-          {`${strategyMeta.label} computes spending from ${
+          {`${meta.label} computes spending from ${
             incomeSource === "formula"
               ? "your portfolio balance using IRS/endowment formulas"
               : usesWithdrawalRate

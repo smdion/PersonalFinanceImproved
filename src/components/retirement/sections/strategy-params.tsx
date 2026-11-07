@@ -11,10 +11,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
-import {
-  getStrategyMeta,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
@@ -30,9 +27,8 @@ export function StrategyParamsSection({
   upsertSettings,
   isEditable,
 }: Props) {
-  const strategyKey = settings.withdrawalStrategy as WithdrawalStrategyType;
-  const meta = getStrategyMeta(strategyKey);
-  if (meta.paramFields.length === 0) return null;
+  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  if (!meta || meta.paramFields.length === 0) return null;
 
   // Partition fields into layout items: grouped pairs or standalone
   type LayoutItem =

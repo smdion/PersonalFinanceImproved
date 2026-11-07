@@ -43,11 +43,8 @@ import {
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import {
-  getAllStrategyKeys,
-  getStrategyMeta,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { StrategyChip } from "@/components/retirement/sections/strategy-picker";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import {
   decToWhole,
@@ -144,8 +141,8 @@ export function AssumptionsBand({
 
   if (settings.profileId == null) return null;
   const profileId = settings.profileId;
-  const strategyKey = settings.withdrawalStrategy as WithdrawalStrategyType;
-  const strategyMeta = getStrategyMeta(strategyKey);
+  const strategyMeta =
+    STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
   const isMultiPerson = perPersonSettings && perPersonSettings.length > 1;
 
   const chipCls =
@@ -260,7 +257,7 @@ export function AssumptionsBand({
           }
         />
 
-        {strategyMeta.usesWithdrawalRate && (
+        {strategyMeta?.usesWithdrawalRate && (
           <PercentChip
             chipCls={chipCls}
             labelCls={labelCls}
@@ -279,7 +276,7 @@ export function AssumptionsBand({
           />
         )}
 
-        {strategyMeta.usesPostRetirementRaise && (
+        {strategyMeta?.usesPostRetirementRaise && (
           <PercentChip
             chipCls={chipCls}
             labelCls={labelCls}
@@ -294,31 +291,13 @@ export function AssumptionsBand({
           />
         )}
 
-        <span className={chipCls}>
-          <span className={labelCls}>Strategy</span>
-          {editable ? (
-            <select
-              value={strategyKey}
-              onChange={(e) =>
-                upsertSettings.mutate(
-                  buildSettingsPatch(settings, {
-                    withdrawalStrategy: e.target
-                      .value as WithdrawalStrategyType,
-                  }),
-                )
-              }
-              className="text-caption bg-transparent"
-            >
-              {getAllStrategyKeys().map((key) => (
-                <option key={key} value={key}>
-                  {getStrategyMeta(key).label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="font-medium">{strategyMeta.label}</span>
-          )}
-        </span>
+        <StrategyChip
+          chipCls={chipCls}
+          labelCls={labelCls}
+          settings={settings}
+          upsertSettings={upsertSettings}
+          editable={editable}
+        />
 
         <span className={chipCls}>
           <span className={labelCls}>

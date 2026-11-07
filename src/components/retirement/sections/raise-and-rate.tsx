@@ -18,10 +18,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import {
-  getStrategyMeta,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings, IsEditable } from "./types";
 import { decToWhole } from "./helpers";
@@ -37,8 +34,8 @@ export function RaiseAndRateSection({
   handleSettingPercentUpdate,
   isEditable,
 }: Props) {
-  const s = settings.withdrawalStrategy as WithdrawalStrategyType;
-  const meta = getStrategyMeta(s);
+  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  if (!meta) return null;
   return (
     <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
       <div className={!meta.usesPostRetirementRaise ? "opacity-40" : ""}>
