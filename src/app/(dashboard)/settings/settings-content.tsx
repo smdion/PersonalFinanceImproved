@@ -32,7 +32,7 @@ const SECTION_PARAM_ONLY = [SETTINGS_SECTION_PARAM];
 // SK_SETTINGS_ACTIVE_TAB may still hold either.
 const OLD_GENERAL_TAB_KEYS = ["people", "api"];
 
-export default function SettingsPage() {
+export function SettingsContent() {
   const user = useUser();
   const admin = isAdmin(user);
   const tabs = admin

@@ -24,7 +24,7 @@ type SectionKey = (typeof SECTIONS)[number]["key"];
 
 /** Old top-level Settings tab keys (pre-consolidation) — see the matching
  *  OLD_TAX_TAB_KEYS in tax-data.tsx for why this lives next to the shell
- *  instead of in settings/page.tsx. */
+ *  instead of in settings/settings-content.tsx. */
 export const OLD_ACCESS_TAB_KEYS: readonly string[] = ["auth", "rbac"];
 
 export function AccessControlSettings() {

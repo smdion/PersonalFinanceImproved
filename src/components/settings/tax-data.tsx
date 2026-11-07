@@ -57,9 +57,9 @@ type TaxYearSectionKey = (typeof TAX_YEAR_SECTIONS)[number]["key"];
 /** Old top-level Settings tab keys (pre-consolidation) — still what
  *  SK_SETTINGS_ACTIVE_TAB may hold for an existing user, and what
  *  SK_SETTINGS_TAX_DATA_SECTION is seeded from the first time a user with
- *  one of these old values lands here (see settings/page.tsx). Identical
- *  to SectionKey today, but kept as its own type so the mapping stays
- *  explicit if either side's keys ever diverge. */
+ *  one of these old values lands here (see settings/settings-content.tsx).
+ *  Identical to SectionKey today, but kept as its own type so the mapping
+ *  stays explicit if either side's keys ever diverge. */
 export const OLD_TAX_TAB_KEYS: readonly string[] = [
   "limits",
   "tax",
