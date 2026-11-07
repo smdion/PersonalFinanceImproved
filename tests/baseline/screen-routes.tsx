@@ -66,7 +66,7 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
     route: "/house",
     file: "house",
     load: async () =>
-      (await import("@/app/(dashboard)/house/house-content")).default,
+      (await import("@/app/(dashboard)/house/house-content")).HouseContent,
   },
   {
     route: "/liabilities",

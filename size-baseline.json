@@ -337,7 +337,7 @@
       "HistoricalTable.map()": 362
     },
     "src/app/(dashboard)/house/house-content.tsx": {
-      "HousePage": 721
+      "HouseContent": 721
     },
     "src/app/(dashboard)/liabilities/page.tsx": {
       "LiabilitiesPage": 207

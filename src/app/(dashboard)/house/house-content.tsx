@@ -23,7 +23,7 @@ import { SyncBadge } from "@/components/ui/sync-badge";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 
-export default function HousePage() {
+export function HouseContent() {
   const targeting = useYearEndTargetingInput();
   const { data: assetData, isLoading: assetsLoading } =
     trpc.assets.computeSummary.useQuery(targeting);
