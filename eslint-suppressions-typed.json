@@ -659,34 +659,9 @@
       "count": 2
     }
   },
-  "src/server/routers/projection/_shared.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/routers/projection/monte-carlo.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/server/routers/projection/relocation.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 11
-    }
-  },
   "src/server/routers/projection/scenarios.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
-    }
-  },
-  "src/server/routers/projection/strategy.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    }
-  },
-  "src/server/routers/projection/tax-optimization.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
     }
   },
   "src/server/routers/retirement/overrides.ts": {

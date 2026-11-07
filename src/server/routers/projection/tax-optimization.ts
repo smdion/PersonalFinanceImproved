@@ -159,8 +159,7 @@ async function runProjection(
     result: calculateProjection(engineInput),
     taxDataYear: distributionTaxRates.taxDataYear,
     // The brackets' own year (they can be older than the limits year).
-    taxBracketsYear:
-      distributionTaxRates.taxBracketsYear ?? distributionTaxRates.taxDataYear,
+    taxBracketsYear: distributionTaxRates.taxBracketsYear,
     taxParamsVersion: distributionTaxRates.taxParamsVersion,
   };
 }
@@ -184,9 +183,9 @@ function lifetimeTax(years: EngineDecumulationYear[]): number {
   return years.reduce(
     (sum, y) =>
       sum +
-      (y.taxCost ?? 0) +
-      (y.rothConversionTaxCost ?? 0) +
-      (y.irmaaCost ?? 0) +
+      y.taxCost +
+      y.rothConversionTaxCost +
+      y.irmaaCost +
       (y.penaltyCost ?? 0),
     0,
   );

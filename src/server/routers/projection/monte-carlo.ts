@@ -429,7 +429,7 @@ export const monteCarloRouter = createTRPCRouter({
           blendedVol,
           inflationRisk: effectiveInflationRisk,
           withdrawalRate: toNumber(settings.withdrawalRate),
-          withdrawalStrategy: settings.withdrawalStrategy ?? "fixed",
+          withdrawalStrategy: settings.withdrawalStrategy,
           decumulationExpenseOverride: profiles.decumulationExpenseOverride,
           accumulationExpenseOverride: profiles.accumulationExpenseOverride,
           taxMode: input.taxMode,

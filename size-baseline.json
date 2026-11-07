@@ -232,13 +232,13 @@
     "src/server/routers/performance/finalize-year.ts": 36,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 12,
-    "src/server/routers/projection/_shared.ts": 235,
+    "src/server/routers/projection/_shared.ts": 234,
     "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 531,
-    "src/server/routers/projection/relocation.ts": 662,
+    "src/server/routers/projection/relocation.ts": 651,
     "src/server/routers/projection/scenarios.ts": 161,
-    "src/server/routers/projection/strategy.ts": 819,
-    "src/server/routers/projection/tax-optimization.ts": 527,
+    "src/server/routers/projection/strategy.ts": 815,
+    "src/server/routers/projection/tax-optimization.ts": 526,
     "src/server/routers/retirement/index.ts": 17,
     "src/server/routers/salary-profiles.ts": 599,
     "src/server/routers/savings/api-sync.ts": 243,
@@ -976,10 +976,10 @@
       "monteCarloRouter.computeMonteCarloProjection.query()": 304
     },
     "src/server/routers/projection/relocation.ts": {
-      "relocationProjectionRouter.computeRelocationFiProjection.query()": 486
+      "relocationProjectionRouter.computeRelocationFiProjection.query()": 476
     },
     "src/server/routers/projection/strategy.ts": {
-      "strategyRouter.analyzeStrategy.query()": 404,
+      "strategyRouter.analyzeStrategy.query()": 400,
       "strategyRouter.computeStrategyComparison.query()": 268
     },
     "src/server/routers/savings/api-sync.ts": {

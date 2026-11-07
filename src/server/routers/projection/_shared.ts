@@ -212,8 +212,7 @@ export function buildDecumulationDefaults(
       Record<AccountCategory, "traditional" | "roth">
     >,
     distributionTaxRates,
-    withdrawalStrategy:
-      (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed",
+    withdrawalStrategy: settings.withdrawalStrategy as WithdrawalStrategyType,
     strategyParams: buildStrategyParams(settings),
     rmdExcessHandling:
       settings.rmdExcessHandling === "spend" ? "spend" : "reinvest",
