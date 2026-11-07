@@ -5,12 +5,12 @@
  * depends on the withdrawal amount.
  *
  * Lives in its own file (split out of tax-estimation.ts)
- * because it needs to call withdrawal-routing.ts's routeForMode — and
- * withdrawal-routing.ts itself imports incomeCapForMarginalRate from
+ * because it needs to call withdrawal-routing/index.ts's routeForMode — and
+ * withdrawal-routing/caps.ts imports incomeCapForMarginalRate from
  * tax-estimation.ts, so estimateWithdrawalTaxCost living in tax-estimation.ts
  * would create an import cycle. This file sits above both: it imports the
  * pure tax math from tax-estimation.ts and the real router from
- * withdrawal-routing.ts, and neither of those needs to import this file back.
+ * withdrawal-routing/, and neither of those needs to import this file back.
  *
  * Before this split, the convergence loop hand-simulated bracket-filling and
  * waterfall routing separately from the real router — and had silently
@@ -95,13 +95,13 @@ interface TaxEstimationInput {
     brokerage: number;
     taxBrackets?: WithholdingBracket[];
     rothBracketTarget?: number;
-    /** See RouteBracketInfo.conversionTarget's docblock (withdrawal-routing.ts). */
+    /** See RouteBracketInfo.conversionTarget's docblock (withdrawal-routing/types.ts). */
     rothConversionTarget?: number;
     taxMultiplier?: number;
     ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     enableRothConversions?: boolean;
     /** Household's annual standard deduction — see `RouteBracketInfo.standardDeduction`
-     *  (withdrawal-routing.ts). Declared here (not just structurally passed
+     *  (withdrawal-routing/types.ts). Declared here (not just structurally passed
      *  through) so it's a documented contract, not a field the next reader
      *  could "clean up" by destructuring and dropping — this module's own
      *  header docblock is a record of exactly that failure mode happening

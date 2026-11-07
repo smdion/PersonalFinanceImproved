@@ -262,7 +262,7 @@ export type DecumulationDefaults = {
    * household's penalty-free money runs
    * out, the shortfall is left unfunded and surfaced as
    * `penaltyAvoidedShortfall` rather than silently drawing penalized money
-   * — see `RouteResult`'s docblock (`withdrawal-routing.ts`). Penalty
+   * — see `RouteResult`'s docblock (`withdrawal-routing/types.ts`). Penalty
    * COST itself (the 10% charged on any penalized dollar actually drawn,
    * e.g. when this is `false`) is NOT gated by this flag — it applies
    * unconditionally, a correctness floor rather than a preference.

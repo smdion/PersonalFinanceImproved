@@ -1,11 +1,9 @@
 import { describe, it, expect } from "vitest";
-import {
-  routeWithdrawals,
-  routeWithdrawalsPercentage,
-  routeWithdrawalsBracketFilling,
-  routeForMode,
-  computeBracketTraditionalCap,
-} from "@/lib/pure/engine/withdrawal-routing";
+import { routeWithdrawals } from "@/lib/pure/engine/withdrawal-routing/waterfall";
+import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing/percentage";
+import { routeWithdrawalsBracketFilling } from "@/lib/pure/engine/withdrawal-routing/bracket-filling";
+import { routeForMode } from "@/lib/pure/engine/withdrawal-routing";
+import { computeBracketTraditionalCap } from "@/lib/pure/engine/withdrawal-routing/caps";
 import {
   makeDecumulationConfig,
   makeAccountBalances,

@@ -4672,18 +4672,55 @@
       "count": 3
     }
   },
-  "src/lib/pure/engine/withdrawal-routing/index.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
+  "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 31
+      "count": 8
     },
     "ratchet/no-history-comment": {
-      "count": 7
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing/caps.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing/index.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing/percentage.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 3
+    }
+  },
+  "src/lib/pure/engine/withdrawal-routing/types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
     }
   },
   "src/lib/pure/engine/withdrawal-solver.ts": {

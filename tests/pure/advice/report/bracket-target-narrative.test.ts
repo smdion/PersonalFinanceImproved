@@ -222,7 +222,7 @@ describe("describeBracketCeilingMath", () => {
     // A household with high taxable SS and a low bracket target: the real
     // income cap for a 10% bracket might be, say, $30,000, but taxable SS
     // alone is $40,000 — computeBracketTraditionalCap
-    // (withdrawal-routing.ts) clamps bracketTraditionalCap to 0 in this
+    // (withdrawal-routing/caps.ts) clamps bracketTraditionalCap to 0 in this
     // case, discarding how far over the real cap SS actually pushed
     // things. Reconstructing incomeCap as 0 + 40,000 = $40,000 would
     // UNDER-state the true (higher) ceiling as exactly equal to taxable

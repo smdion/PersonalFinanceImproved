@@ -478,7 +478,7 @@ export type EngineDecumulationYear = {
   standardDeduction?: number;
   /** How the discretionary need beyond Traditional's bracket-fill target
    *  was actually sourced this year, in draw order, at each tier's real
-   *  cost — see `RouteResult.tierBreakdown` (withdrawal-routing.ts) for
+   *  cost — see `RouteResult.tierBreakdown` (withdrawal-routing/types.ts) for
    *  the full explanation. bracket_filling mode only; undefined/empty for
    *  waterfall/percentage (they don't rank by cost) or a year with no
    *  discretionary need. Powers the "why was this account used" UI
@@ -523,14 +523,14 @@ export type EngineDecumulationYear = {
   shortfallMaterialityFloor?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
    *  penalty-exposed money, not to the household being broke —
-   *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
+   *  see `RouteResult`'s docblock in `withdrawal-routing/types.ts` for the exact
    *  contract. A household can be short for both reasons, or either alone;
    *  this field isolates the penalty-avoidance portion so the two are
    *  never conflated. */
   penaltyAvoidedShortfall?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
    *  Portfolio-parented ("non-retirement") money — see
-   *  `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
+   *  `RouteResult`'s docblock in `withdrawal-routing/types.ts` for the exact
    *  contract. Same isolation principle as `penaltyAvoidedShortfall`: a
    *  household can be short for this reason, the penalty-avoidance reason,
    *  both, or neither. */

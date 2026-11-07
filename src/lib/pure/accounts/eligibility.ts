@@ -13,7 +13,7 @@
  * - Group 0 § Q0 ("soft/penalized-but-available") is SUPERSEDED. A
  *   penalty-exposed dollar is no longer treated as reachable-but-
  *   disfavored — by explicit user direction, the router (see
- *   `withdrawal-routing.ts`) now excludes it by default
+ *   `withdrawal-routing/`) now excludes it by default
  *   (`config.avoidPenalizedWithdrawals`, default true). This module still
  *   only computes the per-dollar partition; it does not itself gate
  *   anything — the router decides what to do with the partition.

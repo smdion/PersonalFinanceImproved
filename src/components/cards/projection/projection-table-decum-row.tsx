@@ -159,7 +159,7 @@ export function buildEligibilityNote(
  * directly for this: eligibility/basis info alone doesn't say
  * WHY a discretionary (beyond-Traditional-bracket-target) dollar came from
  * this account instead of another. Reads `discretionaryTierBreakdown`
- * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) filtered to this
+ * (`RouteResult.tierBreakdown`, withdrawal-routing/types.ts) filtered to this
  * account's source kind — see `formatDiscretionaryTierBreakdown`'s
  * docblock (utils.ts) for why this is read directly off routing's own
  * decision rather than re-derived.
@@ -192,7 +192,7 @@ function buildRoutingReasonClause(
   // not a cost comparison between sources). bracketTraditionalCap is the
   // resolved income cap (rothBracketTarget's marginal-rate threshold minus
   // taxable SS) the engine actually filled Traditional up to — see
-  // withdrawal-routing.ts's routeWithdrawalsBracketFilling.
+  // withdrawal-routing/bracket-filling.ts's routeWithdrawalsBracketFilling.
   if (
     catCfg?.supportsRothSplit &&
     !isTaxFreeBucket(ia.taxType) &&

@@ -8,7 +8,7 @@
  *   - computeTaxFromSlots: tax cost of a completed withdrawal routing result
  *
  * The SS-convergence gross-up loop that used to live here moved to
- * withdrawal-solver.ts — it needs to call withdrawal-routing.ts,
+ * withdrawal-solver.ts — it needs to call withdrawal-routing/,
  * which imports incomeCapForMarginalRate from this file, so it couldn't stay
  * here without creating an import cycle. See that file's header for why.
  *
@@ -286,7 +286,7 @@ export function taxableSSFor(
 // ---------------------------------------------------------------------------
 
 interface ComputeTaxFromSlotsInput {
-  /** The routed withdrawal, from any of withdrawal-routing.ts's route*
+  /** The routed withdrawal, from any of withdrawal-routing/'s route*
    *  functions — real execution or a candidate estimate, this function
    *  doesn't care which. */
   slots: DecumulationSlot[];

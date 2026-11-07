@@ -171,7 +171,13 @@
     "src/lib/pure/engine/types/projection-result.ts": 720,
     "src/lib/pure/engine/types/routing.ts": 136,
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 492,
-    "src/lib/pure/engine/withdrawal-routing/index.ts": 1435,
+    "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 506,
+    "src/lib/pure/engine/withdrawal-routing/caps.ts": 73,
+    "src/lib/pure/engine/withdrawal-routing/index.ts": 350,
+    "src/lib/pure/engine/withdrawal-routing/percentage.ts": 209,
+    "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 70,
+    "src/lib/pure/engine/withdrawal-routing/types.ts": 120,
+    "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
     "src/lib/pure/engine/withdrawal-solver.ts": 569,
     "src/lib/pure/household/compensation.ts": 369,
     "src/lib/pure/household/retirement-profile.ts": 104,
@@ -906,8 +912,10 @@
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
       "rankWithdrawalTiers": 265
     },
-    "src/lib/pure/engine/withdrawal-routing/index.ts": {
-      "routeWithdrawalsBracketFilling": 465,
+    "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
+      "routeWithdrawalsBracketFilling": 465
+    },
+    "src/lib/pure/engine/withdrawal-routing/percentage.ts": {
       "routeWithdrawalsPercentage": 189
     },
     "src/lib/pure/engine/withdrawal-solver.ts": {

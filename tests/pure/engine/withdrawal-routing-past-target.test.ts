@@ -4,10 +4,8 @@
  * warning. The household's own caps stay hard, across every pass.
  */
 import { describe, expect, it } from "vitest";
-import {
-  routeForMode,
-  routeWithdrawalsPercentage,
-} from "@/lib/pure/engine/withdrawal-routing";
+import { routeForMode } from "@/lib/pure/engine/withdrawal-routing";
+import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing/percentage";
 import { deriveBasisRankingInputs } from "@/lib/pure/engine/withdrawal-cost-ranking";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import {

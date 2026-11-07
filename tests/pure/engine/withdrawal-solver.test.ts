@@ -5,7 +5,7 @@
  * The 3 "diverges from real routing" describe blocks near the bottom are
  * regression tests for a specific bug class: the estimate previously
  * hand-simulated routing
- * separately from withdrawal-routing.ts's real functions and had silently
+ * separately from withdrawal-routing/'s real functions and had silently
  * drifted from them in percentage mode, waterfall + rothBracketTarget, and
  * bracket-filling account caps. Now both call routeForMode, so these tests
  * assert the estimate is actually SENSITIVE to the config fields that
