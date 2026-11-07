@@ -46,7 +46,7 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/components/cards/coast-fire-card.tsx",
+    "from": "src/components/retirement-projection/coast-fire-card.tsx",
     "to": "src/components/retirement-projection/projection-hero-kpis.tsx"
   },
   {

@@ -9,7 +9,7 @@ import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
+import { StrategyGuideButton } from "@/components/retirement/strategy-guide-panel";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import {
   formatCurrency,

@@ -11,7 +11,7 @@ import { render, screen } from "@testing-library/react";
 import {
   SimulationAssumptions,
   type SimulationInputs,
-} from "@/components/cards/mc-simulation-assumptions";
+} from "@/components/retirement-projection/mc-simulation-assumptions";
 
 // HelpTip needs a Radix TooltipProvider ancestor this component doesn't
 // supply on its own — stub it to render `text` as a queryable title, same

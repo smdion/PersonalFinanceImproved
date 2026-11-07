@@ -65,7 +65,7 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
+import { StrategyGuideButton } from "@/components/retirement/strategy-guide-panel";
 import { CardBoundary } from "@/components/dashboard/utils";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 

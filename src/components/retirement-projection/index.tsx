@@ -19,7 +19,7 @@ import { ValidationContent } from "@/components/validation-content";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
+import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanel } from "./overrides-panel";
 import { ProjectionTable } from "./projection-table";

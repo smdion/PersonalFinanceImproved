@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { NetWorthCompare } from "@/components/cards/net-worth-compare";
+import { NetWorthCompare } from "@/components/networth/net-worth-compare";
 import { NetWorthComposition } from "@/components/networth/net-worth-composition";
 import { AssetsLiabilitiesCards } from "@/components/networth/assets-liabilities-cards";
 import { MetricsRow } from "@/components/networth/metrics-row";

@@ -2234,7 +2234,7 @@ const SKELETON_RETURNS_KNOWN: Record<string, { count: number }> = {
     count: 1,
   },
   "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": { count: 1 },
-  "src/components/cards/brokerage-goals.tsx": { count: 1 },
+  "src/components/brokerage/brokerage-goals.tsx": { count: 1 },
   "src/components/retirement/retirement-profile-tab.tsx": { count: 1 },
   "src/components/settings/bracket-table-editor.tsx": { count: 1 },
   "src/components/settings/contribution-limits.tsx": { count: 1 },

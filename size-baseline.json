@@ -23,13 +23,13 @@
     "src/components/budget/contribution-profile-manager.tsx": 2041,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
-    "src/components/cards/coast-fire-card.tsx": 408,
+    "src/components/retirement-projection/coast-fire-card.tsx": 408,
     "src/components/dashboard/contributions-card.tsx": 654,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
     "src/components/dashboard/retirement-card.tsx": 437,
     "src/components/dashboard/savings-goals-card.tsx": 427,
-    "src/components/cards/mc-simulation-assumptions.tsx": 1071,
+    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 1071,
     "src/components/retirement-projection/decumulation-config.tsx": 478,
     "src/components/retirement-projection/index.tsx": 1509,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
@@ -45,7 +45,7 @@
     "src/components/retirement-projection/use-projection-derived.ts": 640,
     "src/components/retirement-projection/use-projection-queries.ts": 977,
     "src/components/retirement-projection/utils.ts": 870,
-    "src/components/cards/withdrawal-comparison.tsx": 559,
+    "src/components/retirement-projection/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 677,
@@ -428,7 +428,7 @@
       "SavingsAllocationPanel": 201,
       "SavingsAllocationTable": 290
     },
-    "src/components/cards/brokerage-goals.tsx": {
+    "src/components/brokerage/brokerage-goals.tsx": {
       "BrokerageGoalsSection": 287
     },
     "src/components/dashboard/contributions-card.tsx": {
@@ -451,10 +451,10 @@
     "src/components/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 407
     },
-    "src/components/cards/mc-simulation-assumptions.tsx": {
+    "src/components/retirement-projection/mc-simulation-assumptions.tsx": {
       "SimulationAssumptions": 999
     },
-    "src/components/cards/net-worth-compare.tsx": {
+    "src/components/networth/net-worth-compare.tsx": {
       "NetWorthCompare": 325
     },
     "src/components/retirement-projection/decumulation-config.tsx": {
@@ -527,7 +527,7 @@
     "src/components/retirement-projection/utils.ts": {
       "filterYearByParentCategory": 241
     },
-    "src/components/cards/withdrawal-comparison.tsx": {
+    "src/components/retirement-projection/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 490
     },
     "src/components/decumulation-methodology-content.tsx": {

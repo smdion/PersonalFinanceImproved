@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
+import { BrokerageGoalsSection } from "@/components/brokerage/brokerage-goals";
 import {
   holdMutation,
   mutationCalls,
   resetTrpcMock,
   setQuery,
   setQueryState,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
 // Smoke test for BrokerageGoalsSection — covers the loading state, the
 // mutation path (create goal), and the permission gate (canEdit via
@@ -30,7 +30,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 const mockGoals = [

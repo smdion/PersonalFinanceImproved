@@ -14,7 +14,7 @@ import { rowTotal } from "./utils";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
-import { CoastFireCard } from "@/components/cards/coast-fire-card";
+import { CoastFireCard } from "@/components/retirement-projection/coast-fire-card";
 import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,

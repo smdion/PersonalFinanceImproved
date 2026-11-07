@@ -30,13 +30,15 @@ import { AssumptionsBand } from "@/components/retirement/assumptions-band";
 // Recharts isn't SSR-friendly.
 const WithdrawalComparisonCard = dynamic(
   () =>
-    import("@/components/cards/withdrawal-comparison").then((m) => ({
-      default: m.WithdrawalComparisonCard,
-    })),
+    import("@/components/retirement-projection/withdrawal-comparison").then(
+      (m) => ({
+        default: m.WithdrawalComparisonCard,
+      }),
+    ),
   { loading: () => <SkeletonChart />, ssr: false },
 );
 import { CardBoundary } from "@/components/dashboard/utils";
-import { PlanHealthCard } from "@/components/cards/plan-health";
+import { PlanHealthCard } from "@/components/retirement/plan-health";
 import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
 
 export function RetirementContent() {

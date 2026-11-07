@@ -11,7 +11,7 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { trpc } from "@/lib/trpc";
-import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
+import { type AssetClassOverride } from "@/components/retirement-projection/mc-simulation-assumptions";
 import {
   defaultDecumulationConfig,
   getDefaultDecumulationOrder,

@@ -923,7 +923,7 @@
       "count": 1
     }
   },
-  "src/components/cards/brokerage-goals.tsx": {
+  "src/components/brokerage/brokerage-goals.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -937,7 +937,7 @@
       "count": 10
     }
   },
-  "src/components/cards/coast-fire-card.tsx": {
+  "src/components/retirement-projection/coast-fire-card.tsx": {
     "ratchet/max-comment-lines": {
       "count": 7
     },
@@ -1090,7 +1090,7 @@
       "count": 1
     }
   },
-  "src/components/cards/mc-simulation-assumptions.tsx": {
+  "src/components/retirement-projection/mc-simulation-assumptions.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1116,7 +1116,7 @@
       "count": 6
     }
   },
-  "src/components/cards/net-worth-compare.tsx": {
+  "src/components/networth/net-worth-compare.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -1130,7 +1130,7 @@
       "count": 4
     }
   },
-  "src/components/cards/plan-health.tsx": {
+  "src/components/retirement/plan-health.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
     }
@@ -1531,7 +1531,7 @@
       "count": 9
     }
   },
-  "src/components/cards/strategy-guide-panel.tsx": {
+  "src/components/retirement/strategy-guide-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -1539,7 +1539,7 @@
       "count": 1
     }
   },
-  "src/components/cards/withdrawal-comparison.tsx": {
+  "src/components/retirement-projection/withdrawal-comparison.tsx": {
     "max-lines-per-function": {
       "count": 1
     },

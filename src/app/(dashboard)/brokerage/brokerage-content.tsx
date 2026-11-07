@@ -22,7 +22,7 @@ import {
   budgetApiServiceLabel,
 } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
+import { BrokerageGoalsSection } from "@/components/brokerage/brokerage-goals";
 import {
   calculateBrokerageGoals,
   type BrokerageGoalYear,

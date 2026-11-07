@@ -65,7 +65,8 @@ describe("the shared disclaimer", () => {
   });
 
   it("Plan Health shows it", async () => {
-    const { PlanHealthCard } = await import("@/components/cards/plan-health");
+    const { PlanHealthCard } =
+      await import("@/components/retirement/plan-health");
     render(<PlanHealthCard retirementHorizonYears={30} />);
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();
   });

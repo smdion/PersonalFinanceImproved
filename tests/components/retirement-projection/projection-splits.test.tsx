@@ -48,7 +48,7 @@ vi.mock("@/lib/trpc", async () => ({
 // CoastFireCard uses trpc.projection.computeCoastFire.useQuery internally,
 // which requires a tRPC context we're not providing in this unit test.
 // Mock it out — its rendering is tested elsewhere.
-vi.mock("@/components/cards/coast-fire-card", () => ({
+vi.mock("@/components/retirement-projection/coast-fire-card", () => ({
   CoastFireCard: () => <div data-testid="coast-fire-card" />,
 }));
 

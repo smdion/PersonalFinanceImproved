@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ComponentProps } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { WithdrawalComparisonCard } from "@/components/cards/withdrawal-comparison";
-import { resetTrpcMock, setQuery, setQueryState } from "./trpc-mock";
+import { WithdrawalComparisonCard } from "@/components/retirement-projection/withdrawal-comparison";
+import { resetTrpcMock, setQuery, setQueryState } from "../trpc-mock";
 
 // Smoke test for WithdrawalComparisonCard. Follows the leaf-component smoke
 // pattern used elsewhere (e.g. networth-sections-smoke.test.tsx): mock
@@ -10,7 +10,7 @@ import { resetTrpcMock, setQuery, setQueryState } from "./trpc-mock";
 // happy-dom).
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
-vi.mock("@/components/cards/strategy-guide-panel", () => ({
+vi.mock("@/components/retirement/strategy-guide-panel", () => ({
   StrategyGuideButton: () => null,
 }));
 
@@ -30,7 +30,7 @@ vi.mock("recharts", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 
 const ANALYZE = "projection.analyzeStrategy";

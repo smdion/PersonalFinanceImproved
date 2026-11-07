@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { CoastFireCard } from "@/components/cards/coast-fire-card";
+import { CoastFireCard } from "@/components/retirement-projection/coast-fire-card";
 
 // Smoke test for CoastFireCard — covers its distinct deterministic-status
 // render branches (no data / unreachable / already_coast / found) plus the
@@ -8,9 +8,9 @@ import { CoastFireCard } from "@/components/cards/coast-fire-card";
 // FIRE Monte Carlo result is available.
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
-import { resetTrpcMock, setQuery, type MockOutput } from "./trpc-mock";
+import { resetTrpcMock, setQuery, type MockOutput } from "../trpc-mock";
 
 const COAST_FIRE = "projection.computeCoastFire";
 type CoastFireResult = NonNullable<MockOutput<typeof COAST_FIRE>>["result"];
