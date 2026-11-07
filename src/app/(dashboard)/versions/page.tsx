@@ -9,6 +9,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ReplacesNote } from "@/components/versions/replaces-note";
+import {
+  DataLossWarning,
+  ValueNotes,
+  type ValueNote,
+} from "@/components/versions/restore-notices";
 import { localDateStr } from "@/lib/utils/date";
 
 function formatBytes(bytes: number | null): string {
@@ -29,32 +34,28 @@ function formatDate(date: Date | string): string {
   });
 }
 
-/** Warns that a restore would empty tables the backup predates. */
-function DataLossWarning({
-  tables,
-}: {
-  tables: { tableName: string; currentRows: number }[] | undefined;
-}) {
-  if (!tables || tables.length === 0) return null;
-  return (
-    <div className="mb-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-      <p className="mb-1 font-medium">
-        This backup is older than some of your data.
-      </p>
-      <p className="mb-1">
-        These tables will be emptied, and synced history can&rsquo;t be fetched
-        again:
-      </p>
-      <ul className="list-disc pl-4">
-        {tables.map((t) => (
-          <li key={t.tableName}>
-            {t.tableName.replace(/_/g, " ")} ({t.currentRows.toLocaleString()}{" "}
-            {t.currentRows === 1 ? "row" : "rows"})
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+/** Downloads the export as a JSON file. */
+async function handleExport() {
+  try {
+    const res = await fetch("/api/versions/export");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      alert(`Export failed: ${err.error ?? res.statusText}`);
+      return;
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = disposition.match(/filename="(.+)"/);
+    const filename = match?.[1] ?? `ledgr-backup-${localDateStr()}.json`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    alert("Export failed: network error");
+  }
 }
 
 export default function VersionsPage() {
@@ -76,7 +77,8 @@ export default function VersionsPage() {
     onSuccess: () => utils.version.list.invalidate(),
   });
   const restoreMutation = trpc.version.restore.useMutation({
-    onSuccess: () => {
+    onSuccess: (restored) => {
+      setValueNotes(restored.valueNotes);
       utils.version.list.invalidate();
       setRestoreTarget(null);
       setRestoreConfirmText("");
@@ -127,6 +129,8 @@ export default function VersionsPage() {
   );
   const [cronExpression, setCronExpression] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [valueNotes, setValueNotes] = useState<ValueNote[]>([]);
 
   // Reset state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -184,29 +188,6 @@ export default function VersionsPage() {
     restoreMutation.mutate({ id: restoreTarget.id });
   };
 
-  const handleExport = async () => {
-    try {
-      const res = await fetch("/api/versions/export");
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        alert(`Export failed: ${err.error ?? res.statusText}`);
-        return;
-      }
-      const blob = await res.blob();
-      const disposition = res.headers.get("Content-Disposition") ?? "";
-      const match = disposition.match(/filename="(.+)"/);
-      const filename = match?.[1] ?? `ledgr-backup-${localDateStr()}.json`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("Export failed: network error");
-    }
-  };
-
   const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -242,6 +223,7 @@ export default function VersionsPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Import failed");
+      setValueNotes(json.valueNotes);
       utils.version.list.invalidate();
       setShowImportConfirm(false);
       setImportFile(null);
@@ -263,6 +245,8 @@ export default function VersionsPage() {
           Create Version
         </Button>
       </PageHeader>
+
+      <ValueNotes notes={valueNotes} onDismiss={() => setValueNotes([])} />
 
       {/* Upgrade banner */}
       {upgradeBanner && (

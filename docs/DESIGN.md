@@ -943,7 +943,7 @@ of a versioned table that holds a set the config defines (a test walks the
 schema's union-typed columns). A value outside its set takes the column's
 default where the owner named one (withdrawal strategy, routing mode,
 savings target mode, two parent-category columns), with a note in the
-restore or import result. In any other column it refuses the whole restore or
+restore or import result that the Versions page lists. In any other column it refuses the whole restore or
 import, naming each table, column and value, and today's data stays. A row
 without the column is left to the insert.
 
