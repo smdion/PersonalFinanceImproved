@@ -54,10 +54,7 @@ function NetWorthCardImpl() {
   }
   if (data.cashSource !== "manual" && syncStatus?.lastSynced) {
     const serviceLabel = syncStatus.service === "ynab" ? "YNAB" : "Actual";
-    const time = new Date(syncStatus.lastSynced).toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    const time = formatDate(new Date(syncStatus.lastSynced), "time");
     freshnessParts.push(`${serviceLabel} synced ${time}`);
   }
 

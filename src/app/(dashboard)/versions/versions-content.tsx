@@ -17,23 +17,13 @@ import {
   type ValueNote,
 } from "@/components/versions/restore-notices";
 import { localDateStr } from "@/lib/utils/date";
+import { formatDate } from "@/lib/utils/format";
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null || bytes === 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 /** Downloads the export as a JSON file. */
@@ -570,7 +560,7 @@ export function VersionsContent() {
                       {formatBytes(v.sizeEstimateBytes)}
                     </td>
                     <td className="text-muted px-3 py-2 whitespace-nowrap">
-                      {formatDate(v.createdAt)}
+                      {formatDate(new Date(v.createdAt), "dateTime")}
                     </td>
                     <td className="text-muted px-3 py-2">{v.createdBy}</td>
                     <td className="px-3 py-2 text-right">

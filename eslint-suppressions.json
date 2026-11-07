@@ -260,9 +260,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-hand-date-format": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -531,9 +528,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-hand-date-format": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -1012,9 +1006,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-hand-date-format": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -1095,16 +1086,10 @@
     }
   },
   "src/components/debts/debts-card.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-hand-date-format": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -1196,9 +1181,6 @@
     },
     "jsx-a11y/no-static-element-interactions": {
       "count": 3
-    },
-    "ratchet/no-hand-date-format": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 3
@@ -1470,11 +1452,6 @@
       "count": 2
     }
   },
-  "src/components/networth/spreadsheet/spreadsheet-health-stats.tsx": {
-    "ratchet/no-hand-date-format": {
-      "count": 1
-    }
-  },
   "src/components/networth/spreadsheet/spreadsheet-tax-location.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -1494,9 +1471,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-hand-date-format": {
-      "count": 1
     }
   },
   "src/components/onboarding/onboarding-wizard.tsx": {
@@ -1815,11 +1789,6 @@
       "count": 1
     }
   },
-  "src/components/performance/lifetime-summary-cards.tsx": {
-    "ratchet/no-hand-date-format": {
-      "count": 1
-    }
-  },
   "src/components/performance/past-year-edit-dialog.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -2059,9 +2028,6 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
-    "ratchet/no-hand-date-format": {
-      "count": 1
-    },
     "ratchet/no-history-comment": {
       "count": 4
     },
@@ -2089,9 +2055,6 @@
       "count": 3
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-hand-date-format": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -5765,11 +5728,6 @@
       "count": 2
     }
   },
-  "src/lib/pure/net-worth/short-day.ts": {
-    "ratchet/no-hand-date-format": {
-      "count": 1
-    }
-  },
   "src/lib/pure/net-worth/snapshot-flows.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -6152,11 +6110,6 @@
   },
   "src/lib/pure/sync/budget-preview.ts": {
     "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/sync/data-freshness.ts": {
-    "ratchet/no-hand-date-format": {
       "count": 1
     }
   },

@@ -9,8 +9,7 @@ import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { parseLocalDateOnly } from "@/lib/utils/date";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -350,10 +349,7 @@ function HistoricalTable({
   // Current-year row for performance"last updated" display
   const currentRow = rows.find((r) => r.isCurrent);
   const perfLastUpdatedDisplay = currentRow?.perfLastUpdated
-    ? parseLocalDateOnly(currentRow.perfLastUpdated).toLocaleDateString(
-        "en-US",
-        { month: "short", day: "numeric" },
-      )
+    ? formatDate(currentRow.perfLastUpdated, "monthDay")
     : null;
 
   return (

@@ -51,13 +51,7 @@ const blank = (): Draft => ({
   notes: "",
 });
 
-const monthLabel = (ym: string) => {
-  const [y, m] = ym.split("-").map(Number) as [number, number];
-  return new Date(y, m - 1, 1).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-};
+const monthLabel = (ym: string) => formatDate(`${ym}-01`, "short");
 
 export function DebtsCard() {
   const admin = isAdmin(useUser());

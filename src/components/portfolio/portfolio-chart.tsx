@@ -21,6 +21,7 @@ import {
   formatCurrency,
   formatPercent,
   compactCurrency,
+  formatDate,
 } from "@/lib/utils/format";
 import {
   CHART_COLORS,
@@ -61,12 +62,7 @@ type ChartPoint = {
 /** A day after the latest snapshot: change from it across fully linked accounts. */
 type LivePoint = { date: string; change: number; accounts: number };
 
-const shortLabel = (date: string) =>
-  new Date(date + "T00:00:00").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "2-digit",
-  });
+const shortLabel = (date: string) => formatDate(date, "dayShortYear");
 
 function getTimeFrameCutoff(tf: TimeFrame): string | null {
   if (tf === "All") return null;

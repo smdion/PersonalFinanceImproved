@@ -5,8 +5,7 @@
 
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { parseLocalDateOnly } from "@/lib/utils/date";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
 import {
   PERF_CATEGORY_DEFAULT,
@@ -120,9 +119,7 @@ export function SpreadsheetHealthStats({
 
   function fmtUpdated(iso: string | null): string | null {
     if (!iso) return null;
-    // date-only column — parse in local time, not UTC
-    const d = parseLocalDateOnly(iso);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return formatDate(iso, "monthDay");
   }
   const isStaleA =
     yearA.isCurrent &&
