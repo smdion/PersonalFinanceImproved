@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
-## [0.10.3] - unreleased
+## [0.10.3] - 2026-11-07
 
 v0.10.3 cuts Ledgr's longest functions into named stages, each in a file named for what it does: the projection engine's retirement and working years, the engine's input build, the Simulation, and the long services behind Performance, the sync preview, net-worth history, contributions and paychecks. No figure in the app changes: the test that records every figure the app shows keeps every value through this release. Two permission changes close what v0.10.2 left open (below): only an admin manages a YNAB or Actual connection, and a backup restored or imported by someone who isn't an admin keeps the installation's connection credentials.
 
