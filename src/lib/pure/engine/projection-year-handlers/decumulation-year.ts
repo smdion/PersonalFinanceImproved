@@ -19,7 +19,6 @@ import {
   nonMedicalPenaltyRate,
 } from "../../../config/account-types";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
-import { shortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
@@ -68,6 +67,7 @@ import {
   settleYearDraws,
   yearRothConversion,
 } from "./tax-year-settlement";
+import { fundingShortfallForYear } from "./funding-shortfall";
 import { yearNeed } from "./year-need";
 import { yearMagi } from "@/lib/pure/tax/year-income";
 
@@ -641,74 +641,21 @@ export function runDecumulationYear(
       ssIncome,
     );
 
-  // Funding-shortfall reconciliation (alongside
-  // the withdrawal-solver.ts secant-convergence fix). routedUnmetNeed only fires
-  // when the ROUTER itself couldn't deliver the requested targetWithdrawal
-  // (account caps, exclusion, genuine balance exhaustion) -- it structurally
-  // cannot catch a funding gap caused by the gross-up under-sizing
-  // targetWithdrawal in the first place, or by taxCost/penaltyCost growing
-  // AFTER routing (RMD enforcement, Roth conversions, brokerage LTCG
-  // recompute, NIIT -- all of which run after routeForMode and are accepted,
-  // documented residual-gap sources per this file's RMD/Roth-conversion
-  // notes, not fixable pre-routing). Comparing what was actually delivered
-  // against what was actually needed catches ALL of those sources in one
-  // place, not just the router's own. `unmetNeed` for the CURRENT year's
-  // output is the max of the two signals -- never double-counted, since
-  // they measure the same failure from different vantage points and a real
-  // shortfall should show up in at least one.
-  const deliveredAfterTax = roundToCents(
-    totalWithdrawal - taxCost - penaltyCost,
+  const {
+    deliveredAfterTax,
+    shortfallMaterialityFloor,
+    finalUnmetNeed,
+    unmetNeedMaterial,
+  } = fundingShortfallForYear(
+    totalWithdrawal,
+    taxCost,
+    penaltyCost,
+    state,
+    afterTaxNeed,
+    surplusCredit,
+    routedUnmetNeed,
+    taxRates,
   );
-  // A withdrawal-sized year (Social Security on top) has no spending need
-  // of its own: its shortfall is the part of the strategy's amount that
-  // couldn't leave the portfolio — not tax that changed after routing
-  // (conversion-year capital gains, NIIT), which only lowers what's spent.
-  // (Social Security's surplus paid part of the tax: it covers the need too.)
-  const fundingShortfall = roundToCents(
-    state.portfolioWithdrawal !== null
-      ? Math.max(0, state.portfolioWithdrawal - totalWithdrawal)
-      : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
-  );
-  // Materiality floor, not a correctness tolerance (SHORTFALL_MATERIALITY).
-  const shortfallMaterialityFloor = shortfallFloor(afterTaxNeed);
-  const finalUnmetNeed =
-    fundingShortfall > shortfallMaterialityFloor
-      ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
-      : routedUnmetNeed;
-  // Single canonical "is this a REAL shortfall worth alerting on" verdict
-  // `finalUnmetNeed` above intentionally
-  // preserves its existing byte-identical value/undefined-ness for
-  // existing consumers (an additive field), but its own two branches
-  // apply the materiality floor
-  // inconsistently: the `routedUnmetNeed` fallback branch is NEVER
-  // floor-filtered, so a rounding-scale routed residual could read as
-  // `unmetNeed > 0` without being material. Chart/table/KPI alerting
-  // should all key off THIS field, not re-derive materiality themselves
-  // (three independent re-derivations is how a chart marker and a table
-  // line end up disagreeing about the same year).
-  //
-  // grossUpForTaxes:false households net out the tax+penalty portion of
-  // fundingShortfall before checking materiality.
-  // With that setting off, the household has deliberately
-  // chosen to withdraw the raw need and let tax/penalty come out of it
-  // uncompensated -- fundingShortfall then equals ~taxCost+penaltyCost
-  // EVERY single year, by design, forever. That's not a real/unexpected
-  // shortfall the way a router failure or RMD-forced gap is; alerting on
-  // it every year for the life of the plan would drown out the genuine
-  // signal. routedUnmetNeed is untouched by this netting -- it's a
-  // separate, always-real "the router couldn't reach the money" signal,
-  // unrelated to the gross-up policy choice.
-  const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  const grossUpExplainedGap = shouldGrossUp
-    ? 0
-    : roundToCents(Math.min(taxCost + penaltyCost, fundingShortfall));
-  const netFundingShortfall = Math.max(
-    0,
-    roundToCents(fundingShortfall - grossUpExplainedGap),
-  );
-  const unmetNeedMaterial =
-    Math.max(routedUnmetNeed ?? 0, netFundingShortfall) >
-    shortfallMaterialityFloor;
 
   // --- IRMAA Awareness (Phase 6) ---
   // This year's income, for next years' lookbacks.
