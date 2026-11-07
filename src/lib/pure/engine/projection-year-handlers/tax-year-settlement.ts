@@ -237,7 +237,7 @@ export function settleYearDraws(
 }
 
 /** RMD smoothing's target, then the year's Roth conversion, its tax paid from
- *  retirement brokerage money (UD-08, undecided: today's tax source and sizing). */
+ *  retirement brokerage money (UD-08, pending D4: today's tax source and sizing). */
 export function yearRothConversion(
   config: ReturnType<typeof resolveDecumulationConfig>,
   hasIndividualAccounts: boolean,
