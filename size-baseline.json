@@ -374,7 +374,7 @@
       "TaxBucketsContent": 376
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
-      "ToolsPage": 537
+      "ToolsContent": 537
     },
     "src/app/(dashboard)/upkeep/utilities/page.tsx": {
       "UtilityCard": 338,

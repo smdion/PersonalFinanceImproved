@@ -1,6 +1,6 @@
 /** Shared prop types for relocation sub-components extracted from
- *  tools/page.tsx, read from what `retirement.computeRelocationAnalysis`
- *  returns.
+ *  tools/tools-content.tsx, read from what
+ *  `retirement.computeRelocationAnalysis` returns.
  */
 // The calculator-side result type lives in `lib/` and is the authoritative
 // shape for `relocQuery.data.result`. Re-exporting lets us keep lib imports

@@ -41,7 +41,7 @@ import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
-export default function ToolsPage() {
+export function ToolsContent() {
   const user = useUser();
 
   // Relocation analysis state

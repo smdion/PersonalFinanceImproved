@@ -177,9 +177,9 @@ describe("ToolsPage smoke", () => {
   });
 
   it("renders relocation form fields and key section headers", async () => {
-    const { default: ToolsPage } =
+    const { ToolsContent } =
       await import("@/app/(dashboard)/tools/tools-content");
-    render(<ToolsPage />);
+    render(<ToolsContent />);
 
     // Page header
     expect(screen.getByText("Relocation")).toBeInTheDocument();
@@ -200,9 +200,9 @@ describe("ToolsPage smoke", () => {
   });
 
   it("invokes the save-scenario mutation path", async () => {
-    const { default: ToolsPage } =
+    const { ToolsContent } =
       await import("@/app/(dashboard)/tools/tools-content");
-    render(<ToolsPage />);
+    render(<ToolsContent />);
 
     // Click the top-level Save button (no selectedScenarioId → opens dialog)
     fireEvent.click(screen.getByRole("button", { name: /^Save$/i }));
