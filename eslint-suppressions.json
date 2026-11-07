@@ -1034,16 +1034,13 @@
       "count": 6
     },
     "ratchet/max-comment-lines": {
-      "count": 23
+      "count": 22
     },
     "ratchet/no-history-comment": {
       "count": 3
     },
     "ratchet/no-jsx-iife": {
       "count": 13
-    },
-    "ratchet/no-text-includes": {
-      "count": 2
     }
   },
   "src/components/cards/projection/projection-table-mc-cell.tsx": {

@@ -82,20 +82,17 @@ export function buildEligibilityNote(
   deflate: (v: number, yr: number) => number,
 ): { note?: string; noteLocked?: boolean } {
   const parts: string[] = [];
-  const reasonText = ia.draw?.reason && describeEligibility(ia.draw.reason);
+  const reason = ia.draw?.reason;
+  // A Roth IRA's basis reason. `no_basis` counts too: such an account is
+  // locked unless its balance is under half a cent.
   const isBasisRemainingReason =
     ia.roth?.basisRemaining != null &&
     !ia.draw?.eligibilityLocked &&
-    (reasonText?.includes("basis remaining") ?? false);
-  // Age-59½ qualification (tax-free growth) is a DIFFERENT test than the
-  // Rule-of-55 wording above — Rule of 55 exempts the 10% penalty, never
-  // taxability (splitRothWithdrawalForTax only ever checks age 59½). Both
-  // the IRA (basis_first) and 401k/403b (pro_rata) branches of
-  // withdrawal-eligibility.ts emit this exact string when age-qualified,
-  // so checking for it (rather than reusing isBasisRemainingReason, which
-  // is IRA-reason-text-specific) correctly flags non-qualified growth as
-  // taxable for BOTH account types.
-  const isAgeQualified = reasonText?.includes("age 59½ or older") ?? false;
+    (reason?.kind === "basis_remaining" || reason?.kind === "no_basis");
+  // Age 59½ reached (IRA or employer plan): Roth growth is tax-free. The
+  // Rule of 55 lifts the penalty, never the tax, so it doesn't count.
+  const isAgeQualified =
+    reason?.kind === "age_reached" && reason.gate === "age_59_half";
   const basisDrawn = ia.roth?.basisDrawn ?? 0;
   const totalWithdrawn = ia.draw?.withdrawal ?? 0;
   // Basis-first ordering draws basis before growth. Under the
@@ -113,8 +110,8 @@ export function buildEligibilityNote(
     parts.push(
       `${label} — ${formatCurrency(deflate(startBasis, year.year))} basis remaining, always penalty-free${flag}`,
     );
-  } else if (reasonText) {
-    parts.push(reasonText);
+  } else if (reason) {
+    parts.push(describeEligibility(reason));
   }
   if (basisDrawn > 0.01) {
     const drawn = formatCurrency(deflate(basisDrawn, year.year));
