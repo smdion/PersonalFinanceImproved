@@ -20,6 +20,7 @@ import {
   type ProfileTabKey,
 } from "@/lib/config/profile-tabs";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
@@ -121,7 +122,7 @@ export function BudgetContent({
     }),
     [activeContribProfileId, activeSalaryProfileIdSetting],
   );
-  const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
+  const summary = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     selection: paySelection,
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
@@ -238,7 +239,7 @@ export function BudgetContent({
     effectiveNameColWidth,
     onResizeStart,
   } = useBudgetPageState({
-    data,
+    data: summary.data,
     nameColWidth,
     setNameColWidth,
     updateBatch,
@@ -263,7 +264,7 @@ export function BudgetContent({
     buildPushPreviewItems,
     buildPullPreviewItems,
   } = useBudgetDerivedData({
-    data,
+    data: summary.data,
     savingsGoals,
     apiActualsData,
     contribProfileId: activeContribProfileId,
@@ -308,22 +309,21 @@ export function BudgetContent({
   );
 
   // ---- Loading / error / empty states ----
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/4" />
-        <SkeletonChart height={256} />
-      </div>
+      <QueryBoundary
+        query={summary}
+        what="budget"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/4" />
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load budget: {error.message}
-      </p>
-    );
-  }
-  if (!data?.result) {
+  if (!summary.data?.result) {
     return (
       <div>
         <PageHeader title="Budget" />

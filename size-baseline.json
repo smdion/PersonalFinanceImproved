@@ -6,12 +6,12 @@
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
-    "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
+    "src/app/(dashboard)/contributions/contributions-content.tsx": 979,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
     "src/app/(dashboard)/historical/historical-content.tsx": 1026,
     "src/app/(dashboard)/house/house-content.tsx": 746,
     "src/app/(dashboard)/networth/networth-content.tsx": 461,
-    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 685,
+    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 684,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 871,
     "src/app/(dashboard)/savings/savings-content.tsx": 930,
@@ -311,7 +311,7 @@
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 585
+      "BudgetContent": 584
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
       "useBudgetDerivedData": 320
@@ -328,7 +328,7 @@
       "WhatIfTab": 830
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
-      "ContributionsContent": 887,
+      "ContributionsContent": 875,
       "ContributionsContent.map()": 234,
       "ContributionsContent.map().map()": 169
     },
@@ -356,7 +356,7 @@
       "NetWorthContent": 396
     },
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
-      "PaycheckContent": 645,
+      "PaycheckContent": 643,
       "PaycheckContent.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
@@ -373,7 +373,7 @@
       "RetirementContent": 299
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
-      "SavingsContent": 849
+      "SavingsContent": 848
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
@@ -853,7 +853,7 @@
       "convertV0810ProfileSets": 260
     },
     "src/lib/hooks/use-paycheck-person-views.ts": {
-      "usePaycheckPersonViews": 245
+      "usePaycheckPersonViews": 243
     },
     "src/lib/pure/accounts/eligibility.ts": {
       "computeWithdrawalEligibility": 182

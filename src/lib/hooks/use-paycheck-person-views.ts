@@ -193,14 +193,11 @@ export function usePaycheckPersonViews({
     ],
   );
 
-  const {
-    data: rawData,
-    isLoading,
-    error,
-  } = trpc.paycheck.computeSummary.useQuery(
+  const summary = trpc.paycheck.computeSummary.useQuery(
     Object.keys(queryInput).length > 0 ? queryInput : undefined,
     { placeholderData: (prev) => prev },
   );
+  const { data: rawData, isLoading, error } = summary;
 
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
@@ -391,6 +388,7 @@ export function usePaycheckPersonViews({
     rawData,
     isLoading,
     error,
+    refetch: summary.refetch,
     sharedContribGroupOrder,
   };
 }

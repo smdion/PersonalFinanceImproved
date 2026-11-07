@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import { useFocusMatch, useFocusedState } from "@/lib/hooks/use-focus";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
@@ -115,8 +116,8 @@ export function SavingsContent() {
     efundBudgetColumn >= 0
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
-  const { data, isLoading, error } =
-    trpc.savings.computeSummary.useQuery(efundTierInput);
+  const summary = trpc.savings.computeSummary.useQuery(efundTierInput);
+  const { data } = summary;
   const { data: reimbursementsData } =
     trpc.savings.listEfundReimbursements.useQuery();
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
@@ -227,21 +228,20 @@ export function SavingsContent() {
   const fundCallbacksRef = useRef<FundManagementCallbacks | null>(null);
 
   // ── Loading / error states ──
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <SkeletonChart height={256} />
-      </div>
+      <QueryBoundary
+        query={summary}
+        what="savings data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
-
-  if (error)
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load savings data: {error.message}
-      </p>
-    );
   if (!data)
     return (
       <EmptyState

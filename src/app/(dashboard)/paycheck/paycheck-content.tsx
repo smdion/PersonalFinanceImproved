@@ -7,6 +7,7 @@ import { useFocusReveal } from "@/lib/hooks/use-focus";
 import { DEDUCTION_PRESETS } from "@/lib/config/paycheck-presets";
 import React from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -201,12 +202,12 @@ export function PaycheckContent() {
 
   // One shared derivation for the whole page — the same hook the Budget
   // page's What-If tab uses.
-  const { views, rawData, isLoading, error, sharedContribGroupOrder } =
-    usePaycheckPersonViews({
-      contributionProfileId: displayContribId,
-      salaryProfileId: displaySalaryId,
-      taxYearOverride,
-    });
+  const personViews = usePaycheckPersonViews({
+    contributionProfileId: displayContribId,
+    salaryProfileId: displaySalaryId,
+    taxYearOverride,
+  });
+  const { views, rawData, sharedContribGroupOrder } = personViews;
   // People with no job now and one that hasn't started (no paycheck yet).
   const upcomingJobs = (rawData?.people ?? []).flatMap((d) =>
     "upcomingJob" in d && d.upcomingJob
@@ -264,23 +265,21 @@ export function PaycheckContent() {
     },
   });
 
-  if (isLoading) {
+  if (queryPending(personViews)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <SkeletonChart height={384} />
-          <SkeletonChart height={384} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load paycheck data: {error.message}
-      </p>
+      <QueryBoundary
+        query={personViews}
+        what="paycheck data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <SkeletonChart height={384} />
+              <SkeletonChart height={384} />
+            </div>
+          </div>
+        }
+      />
     );
   }
 
