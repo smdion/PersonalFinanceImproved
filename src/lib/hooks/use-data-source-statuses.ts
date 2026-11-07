@@ -48,12 +48,12 @@ export function useDataSourceStatuses() {
           : undefined,
         basis: data.basisDate ? { lastUpdated: data.basisDate } : undefined,
         budgetApi: budgetApiCanSync
-          ? { lastUpdated: toIso(syncStatus?.lastSynced) }
+          ? { lastUpdated: toIso(syncStatus.lastSynced) }
           : undefined,
         simplefin: simplefinCanSync
           ? {
-              lastUpdated: toIso(simplefinStatus?.lastSyncedAt),
-              error: simplefinStatus?.lastError ?? null,
+              lastUpdated: toIso(simplefinStatus.lastSyncedAt),
+              error: simplefinStatus.lastError ?? null,
               warnings: investmentHealth?.issues.map((i) => i.message),
             }
           : undefined,

@@ -231,7 +231,7 @@ async function ingestTransactions(
   label: string,
 ): Promise<void> {
   const redacted = new Set<string>();
-  const incoming = (account.transactions ?? []).map((t) => {
+  const incoming = account.transactions.map((t) => {
     const c = classifySimplefinTransaction(
       account.orgName,
       { amount: t.amount, description: t.description },

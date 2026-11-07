@@ -26,6 +26,7 @@ export async function getSecConnection(db: Db) {
 export async function getSecContact(db: Db): Promise<string | null> {
   const conn = await getSecConnection(db);
   if (!conn) return null;
+  // Stored config, cast: a saved one may lack the field.
   return readMaybeEncrypted<SecConfig>(conn.config).contactEmail ?? null;
 }
 

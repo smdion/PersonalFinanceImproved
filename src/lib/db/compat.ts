@@ -151,6 +151,8 @@ function buildValidColumnsCache(): Map<string, Set<string>> {
       const cols = getTableColumns(
         value as Parameters<typeof getTableColumns>[0],
       );
+      // The schema module exports enums and relations too: not every value
+      // is a table, whatever the cast says.
       if (cols && typeof cols === "object") {
         const firstCol = Object.values(cols)[0];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Drizzle column objects are not publicly typed; `any` is needed to access the internal `.table[Symbol.for("drizzle:Name")]` property

@@ -449,11 +449,6 @@
       "count": 3
     }
   },
-  "src/lib/hooks/use-data-source-statuses.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
   "src/lib/hooks/use-paycheck-person-views.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -577,16 +572,6 @@
   "src/lib/sec/connection.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
-    }
-  },
-  "src/lib/simplefin/ingest.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/lib/simplefin/sync.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
     }
   },
   "src/lib/tax-data/signature.ts": {

@@ -66,7 +66,7 @@ function readSchemaVersion(): string {
     const journal = JSON.parse(readFileSync(journalPath, "utf-8")) as {
       entries: { tag: string }[];
     };
-    const entries = journal.entries;
+    const entries = journal.entries; // parsed from disk, cast: kept guarded
     if (!entries || entries.length === 0) {
       throw new Error("No entries in drizzle journal");
     }
@@ -491,7 +491,7 @@ async function importBackupPg(
     }
 
     for (const tableEntry of sortedTables) {
-      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
+      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
       const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Set();
@@ -575,7 +575,7 @@ async function importBackupSqlite(
     await truncateTables(tx, VERSION_TABLE_NAMES);
 
     for (const tableEntry of sortedTables) {
-      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
+      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
       restoredRows += await insertRows(tx, tableEntry.name, rows);

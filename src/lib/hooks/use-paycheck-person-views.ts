@@ -328,7 +328,7 @@ export function usePaycheckPersonViews({
         accountType: c.accountType as AccountCategory,
         subType: c.subType ?? null,
         label: c.label ?? null,
-        contributionValue: String(c.contributionValue ?? "0"),
+        contributionValue: String(c.contributionValue ?? "0"), // The value comes from the profile's stored jsonb: a null is legal.
         contributionMethod: c.contributionMethod,
         taxTreatment: c.taxTreatment,
         ownerName: "Joint",
