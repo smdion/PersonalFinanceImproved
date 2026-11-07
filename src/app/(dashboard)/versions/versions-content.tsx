@@ -58,7 +58,7 @@ async function handleExport() {
   }
 }
 
-export default function VersionsPage() {
+export function VersionsContent() {
   const utils = trpc.useUtils();
   const { data: versions, isLoading } = trpc.version.list.useQuery();
   const { data: retentionData } = trpc.version.getRetention.useQuery();

@@ -22,7 +22,8 @@ vi.mock("@/lib/trpc", async () => ({
 const page = seededPage(
   "e2e-b",
   async () =>
-    (await import("@/app/(dashboard)/versions/versions-content")).default,
+    (await import("@/app/(dashboard)/versions/versions-content"))
+      .VersionsContent,
 );
 
 describe("Versions page", () => {

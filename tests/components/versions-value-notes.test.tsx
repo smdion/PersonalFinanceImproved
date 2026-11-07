@@ -31,9 +31,9 @@ const NOTE_LINE =
   'retirement settings, withdrawal strategy: "retired_strategy" became fixed (1 row)';
 
 async function renderPage() {
-  const { default: VersionsPage } =
-    await import("@/app/(dashboard)/versions/page");
-  return render(<VersionsPage />);
+  const { VersionsContent } =
+    await import("@/app/(dashboard)/versions/versions-content");
+  return render(<VersionsContent />);
 }
 
 describe("Versions page: values a restore or import set to their default", () => {

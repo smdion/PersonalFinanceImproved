@@ -381,7 +381,7 @@
       "UtilityCard.map()": 184
     },
     "src/app/(dashboard)/versions/versions-content.tsx": {
-      "VersionsPage": 874
+      "VersionsContent": 874
     },
     "src/app/login/login-form.tsx": {
       "LoginForm": 162

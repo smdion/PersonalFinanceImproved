@@ -134,7 +134,8 @@ export const SCREEN_ROUTES: ScreenRoute[] = [
     route: "/versions",
     file: "versions",
     load: async () =>
-      (await import("@/app/(dashboard)/versions/versions-content")).default,
+      (await import("@/app/(dashboard)/versions/versions-content"))
+        .VersionsContent,
   },
 ];
 
