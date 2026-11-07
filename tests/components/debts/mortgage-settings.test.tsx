@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Smoke tests for src/components/mortgage/mortgage-settings.tsx — loan
+// Smoke tests for src/components/debts/mortgage-settings.tsx — loan
 // CRUD + extra-payment CRUD settings tab. src/components/mortgage/ had no
 // tests at all prior to this. confirm() is mocked to auto-resolve true (the
 // pattern used in tests/components/portfolio-content-smoke.test.tsx),
@@ -69,16 +69,16 @@ const mockExtraPayments = [
 ];
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
 import {
   mutationCalls,
   resetTrpcMock,
   setQuery,
   utilsCalls,
-} from "./trpc-mock";
+} from "../trpc-mock";
 
-import { MortgageSettings } from "@/components/mortgage/mortgage-settings";
+import { MortgageSettings } from "@/components/debts/mortgage-settings";
 
 describe("MortgageSettings smoke", () => {
   beforeEach(() => {

@@ -158,7 +158,7 @@ function countBudgetComponents(): number {
 }
 
 function countMortgageComponents(): number {
-  return listFiles(path.join(ROOT, "src/components/mortgage"), /\.tsx$/).length;
+  return listFiles(path.join(ROOT, "src/components/debts"), /\.tsx$/).length;
 }
 
 function countSavingsComponents(): number {

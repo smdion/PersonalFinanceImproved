@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { RefinanceCalculator } from "@/components/mortgage/refinance-calculator";
-import type { LoanSummary } from "@/components/mortgage/types";
+import { RefinanceCalculator } from "@/components/debts/refinance-calculator";
+import type { LoanSummary } from "@/components/debts/types";
 
 vi.mock("@/components/ui/card", () => ({
   Card: ({

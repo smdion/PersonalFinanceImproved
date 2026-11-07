@@ -1,19 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Smoke tests for src/components/mortgage/historical-loans.tsx — paid-off /
+// Smoke tests for src/components/debts/historical-loans.tsx — paid-off /
 // refinanced loan history cards with toggleable amortization schedules.
 // src/components/mortgage/ had no tests prior to this.
 
-vi.mock("@/components/mortgage/amortization-table", () => ({
+vi.mock("@/components/debts/amortization-table", () => ({
   AmortizationTable: () => <div data-testid="amortization-table" />,
 }));
 
-import { HistoricalLoans } from "@/components/mortgage/historical-loans";
-import type {
-  LoanSummary,
-  LoanHistoryEntry,
-} from "@/components/mortgage/types";
+import { HistoricalLoans } from "@/components/debts/historical-loans";
+import type { LoanSummary, LoanHistoryEntry } from "@/components/debts/types";
 
 const mkLoan = (overrides: Partial<LoanSummary>): LoanSummary => ({
   loanId: 1,

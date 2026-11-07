@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Smoke tests for src/components/mortgage/what-if-section.tsx — extra
+// Smoke tests for src/components/debts/what-if-section.tsx — extra
 // principal / one-time-payment scenario comparison table with inline
 // add/edit/delete/reorder. src/components/mortgage/ had no tests prior.
 
@@ -14,15 +14,15 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 }));
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("./trpc-mock")).trpc,
+  trpc: (await import("../trpc-mock")).trpc,
 }));
-import { mutationCalls, resetTrpcMock } from "./trpc-mock";
+import { mutationCalls, resetTrpcMock } from "../trpc-mock";
 
-import { WhatIfSection } from "@/components/mortgage/what-if-section";
+import { WhatIfSection } from "@/components/debts/what-if-section";
 import type {
   WhatIfResultRow,
   WhatIfScenarioRow,
-} from "@/components/mortgage/types";
+} from "@/components/debts/types";
 
 const scenarios: WhatIfScenarioRow[] = [
   {

@@ -54,9 +54,9 @@
     "src/components/investments/holdings-section.tsx": 793,
     "src/components/layout/scenario-bar.tsx": 497,
     "src/components/layout/sidebar.tsx": 525,
-    "src/components/liabilities/debts-card.tsx": 536,
+    "src/components/debts/debts-card.tsx": 536,
     "src/components/methodology/methodology-content.tsx": 555,
-    "src/components/mortgage/mortgage-settings.tsx": 728,
+    "src/components/debts/mortgage-settings.tsx": 728,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
     "src/components/onboarding/onboarding-wizard.tsx": 1020,
     "src/components/paycheck/contrib-account-form.tsx": 624,
@@ -564,23 +564,23 @@
     "src/components/layout/sidebar.tsx": {
       "Sidebar": 200
     },
-    "src/components/liabilities/debts-card.tsx": {
+    "src/components/debts/debts-card.tsx": {
       "DebtsCard": 475
     },
     "src/components/methodology/methodology-content.tsx": {
       "MethodologyContent": 551
     },
-    "src/components/mortgage/mortgage-settings.tsx": {
+    "src/components/debts/mortgage-settings.tsx": {
       "LoanFormFields": 172,
       "MortgageSettings": 501
     },
-    "src/components/mortgage/refinance-calculator.tsx": {
+    "src/components/debts/refinance-calculator.tsx": {
       "RefinanceCalculator": 175
     },
-    "src/components/mortgage/refinance-impact.tsx": {
+    "src/components/debts/refinance-impact.tsx": {
       "RefinanceImpact": 182
     },
-    "src/components/mortgage/what-if-section.tsx": {
+    "src/components/debts/what-if-section.tsx": {
       "WhatIfSection": 301
     },
     "src/components/networth/assets-liabilities-cards.tsx": {

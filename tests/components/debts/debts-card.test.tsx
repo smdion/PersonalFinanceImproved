@@ -4,22 +4,22 @@
  * queries answered by the router (tests/baseline/screen-mount.tsx): the
  * debt's row renders, and a new debt sends debts.create.
  */
-import "../routers/setup-mocks";
-import "../baseline/mocks";
+import "../../routers/setup-mocks";
+import "../../baseline/mocks";
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, screen, within } from "@testing-library/react";
-import { seededPage } from "../baseline/screen-mount";
-import { mutationCalls } from "./trpc-mock";
+import { seededPage } from "../../baseline/screen-mount";
+import { mutationCalls } from "../trpc-mock";
 
 vi.mock("@/lib/trpc", async () => ({
-  trpc: (await import("../baseline/screen-mount")).screenTrpc(
-    (await import("./trpc-mock")).trpc,
+  trpc: (await import("../../baseline/screen-mount")).screenTrpc(
+    (await import("../trpc-mock")).trpc,
   ),
 }));
 
 const page = seededPage(
   "ws-h2",
-  async () => (await import("@/components/liabilities/debts-card")).DebtsCard,
+  async () => (await import("@/components/debts/debts-card")).DebtsCard,
 );
 
 describe("DebtsCard", () => {
