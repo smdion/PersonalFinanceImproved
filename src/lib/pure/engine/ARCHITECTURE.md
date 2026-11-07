@@ -34,6 +34,8 @@ projection-year-handlers/    one year of work
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
+individual-accounts/         the per-account ledger: ledger, contributions, withdrawals, reconcile
+withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling
 <modules below>              called by the handlers
 ```
 
@@ -107,7 +109,7 @@ projection-year-handlers/    one year of work
 
 **Every year** — `runPreYearSetup`: return rate, profile switches, the spending strategy's target (from the retirement balance), the Portfolio exclusion for the year.
 
-**Accumulation** — `runAccumulationYear`: route contributions (specs, limits, overflow), match, lump sums, goal draws from Portfolio brokerages, growth, then `reconcileIndividualToAggregate` and `syncAggregateBasis`.
+**Accumulation** — `runAccumulationYear`, in this order: `yearZeroBasis` and `yearContributionTarget` (`contribution-target.ts`: year 0's basis, the target, the employer match), `yearContributionLimits` and `routeYearSlots` (`contribution-slots.ts`, with `applyRateCeiling`), `yearContributionTotals`, `creditYearContributions` (lump sums) and `distributeYearContributions` (`contribution-credits.ts`), `yearGapDraw` (`goal-draws.ts`), `applyGrowth`, `brokerageGoalDraws` (Portfolio brokerages), then `closeYearAccounts` (`year-end-accounts.ts`: the per-account rows, `reconcileIndividualToAggregate`, `syncAggregateBasis`).
 
 **When the phases change** — dates come from `lib/pure/household/household-timeline.ts`: plan dates (retirement year, end year) count from the primary person; per-person rules (catch-up, RMDs, 59½, the senior deduction) use that person's age; withdrawals start when the last person with a job retires (`retirementYear`), and the projection's last row is the year before `projectionEndYear` (the last person's end age): the end year itself isn't run, so a Projection to 95 stops at 94 (RULES.md § Known Gaps). Nothing averages the people.
 
@@ -115,19 +117,36 @@ projection-year-handlers/    one year of work
 
 **Budget lines that end** — `expense-endings.ts`: a loan's line leaves as a share of each phase's budget the year after payoff. Typed figures and rate-seeded retirements are left alone.
 
-**Decumulation** — `runDecumulationYear`, in this order:
+**Decumulation** — `runDecumulationYear` (`decumulation-year.ts`) calls its stages in this order:
 
-1. `resolveDecumulationConfig` — the year's settings
-2. `computeQcdAmounts` — charitable distributions against the RMD
-3. `estimateWithdrawalTaxCost` — size and route the withdrawal (gross-up), against the year's indexed figures (`bracket-growth.ts`: brackets, standard deduction with the 65+ add-on, LTCG thresholds)
-4. `enforceRmd` — top up to the required minimum
-5. per-account distribution, `deductWithdrawals`, `clampBalances`, `reinvestRmdExcess`, `trackDepletions`
-6. `computeRmdSmoothingTargets`, `performRothConversion`
-7. `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
-8. `applyGrowth`
-9. `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`
+1. `resolveDecumulationConfig` — the year's settings; `computeWithdrawalEligibility` for each account
+2. `rmdIncomeByOwner` (`decumulation-income.ts`) — each owner's RMD for the year
+3. `qcdStep` (`rmd-step.ts`) — charitable distributions against the RMD
+4. `growYearTaxTables` (`year-tax-tables.ts`, with `yearStandardDeduction` from `year-deduction.ts`) — the year's brackets, standard deduction with the 65+ and senior add-ons, LTCG thresholds, each grown from its own table year
+5. `yearNeed` (`year-need.ts`) — the after-tax need (IRMAA in it) and `estimateWithdrawalTaxCost`, which sizes the withdrawal to cover its own tax (`met`, or `capped` with its shortfall)
+6. `routeYearDraw` (`year-draws.ts`) — `routeForMode` routes the draw
+7. `enforceYearRmd` (`rmd-step.ts`) — each RMD enforced on the routed draw
+8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty)
+9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced
+10. `settleYearDraws` — `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
+11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` re-prices the year's tax after it
+12. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine) and whether it's material
+13. `yearCliffChecks` (`year-cliffs.ts`) — `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
+14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
+15. `closeDecumulationYear` (`year-end.ts`) — `applyGrowth`, `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
 
 The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`lib/pure/retirement/plan-outcome.ts`) judges the run.
+
+## Undecided engine decisions
+
+Four behaviours the engine spec leaves undecided have one named home each, with today's behaviour in its docblock. Each id is the spec's `UD-` number and the pending decision that settles it; changing the behaviour is that decision's work, not a refactor.
+
+| Id         | What                     | Home                                                                                   | Today                                                                                     |
+| ---------- | ------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| UD-01 (D2) | Year-0 proration         | `pre-year-setup.ts` `seedRetirementSpending`; `contribution-target.ts` `yearZeroBasis` | Only a working year 0 is pro-rated (contributions, match, growth, a gap year's draw)      |
+| UD-02 (D3) | Mid-year retirement      | `pre-year-setup.ts` `yearPhase`                                                        | Retiring in year 0 after its start runs it as a pro-rated working year; else whole        |
+| UD-04 (D1) | The RMD top-up           | `rmd-step.ts` `enforceYearRmd`; `tax-year-settlement.ts` `settleYearDraws`             | A short RMD adds Traditional on top of the routed draw; the excess is reinvested or spent |
+| UD-08 (D4) | What pays conversion tax | `tax-year-settlement.ts` `yearRothConversion`                                          | The tax is paid from retirement brokerage money                                           |
 
 ## Types
 
