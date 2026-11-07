@@ -75,7 +75,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -144,7 +146,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -251,7 +255,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -354,7 +360,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -457,7 +465,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -560,7 +570,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -638,7 +650,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -763,7 +777,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -888,7 +904,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1013,7 +1031,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1138,7 +1158,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1263,7 +1285,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1388,7 +1412,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1513,7 +1539,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1653,7 +1681,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1793,7 +1823,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1933,7 +1965,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2073,7 +2107,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2213,7 +2249,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2353,7 +2391,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2493,7 +2533,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2633,7 +2675,9 @@
      "name": "Quinn 401k (Plan Co 401(k))",
      "ownerName": "Quinn",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {

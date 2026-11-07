@@ -2136,9 +2136,9 @@ describe("buildIndividualYearBalances — tracked basis fields", () => {
       "decumulation",
       { withdrawal: new Map([[k, 1500]]), basis: indBasis, draws },
     );
-    expect(result[0]!.rothBasisRemaining).toBe(6000);
-    expect(result[0]!.rothBasisDrawn).toBe(1000);
-    expect(result[0]!.rothBasisUncertain).toBe(true);
+    expect(result[0]!.roth?.basisRemaining).toBe(6000);
+    expect(result[0]!.roth?.basisDrawn).toBe(1000);
+    expect(result[0]!.roth?.basisUncertain).toBe(true);
   });
 
   it("leaves basis fields absent when no basis map is supplied (byte-identity for non-Roth callers)", () => {
@@ -2156,8 +2156,6 @@ describe("buildIndividualYearBalances — tracked basis fields", () => {
       "decumulation",
       { withdrawal: new Map([[k, 1500]]) },
     );
-    expect(result[0]!.rothBasisRemaining).toBeUndefined();
-    expect(result[0]!.rothBasisDrawn).toBeUndefined();
-    expect(result[0]!.rothBasisUncertain).toBeUndefined();
+    expect(result[0]!.roth).toBeUndefined();
   });
 });

@@ -80,7 +80,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -167,7 +169,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -254,7 +258,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -341,7 +347,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -428,7 +436,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -515,7 +525,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -602,7 +614,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -689,7 +703,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -776,7 +792,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -863,7 +881,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -950,7 +970,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1037,7 +1059,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1124,7 +1148,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1211,7 +1237,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1298,7 +1326,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1385,7 +1415,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1472,7 +1504,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1559,7 +1593,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1687,7 +1723,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1814,7 +1852,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1916,7 +1956,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2060,7 +2102,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2204,7 +2248,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2348,7 +2394,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2492,7 +2540,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2636,7 +2686,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2780,7 +2832,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2929,7 +2983,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -3078,7 +3134,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -3227,7 +3285,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -3376,7 +3436,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -3525,7 +3587,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -3677,7 +3741,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -3826,161 +3892,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
-     "taxType": "taxFree"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "brokerage",
-     "eligibilityLocked": false,
-     "eligibilityReason": "No individual eligibility rule (joint account)",
-     "name": "Joint Brokerage (Schwab)",
-     "parentCategory": "Portfolio",
-     "taxType": "afterTax"
-    }
-   ],
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdByPerson": [
-    {
-     "personName": "Jordan"
-    }
-   ],
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": true,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jordan"
-    },
-    {
-     "personName": "Riley"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
-    {
-     "source": "hsa"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "individualAccountBalances": [
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
-     "name": "Jordan 401k (Contoso 401(k) plan)",
-     "ownerName": "Jordan",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "401k",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
-     "name": "Riley 401k (Fabrikam 401(k) plan)",
-     "ownerName": "Riley",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "hsa",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 65 or older",
-     "name": "Jordan HSA (HealthEquity)",
-     "ownerName": "Jordan",
-     "parentCategory": "Retirement",
-     "taxType": "hsa"
-    },
-    {
-     "allowPenalizedWithdrawals": false,
-     "category": "ira",
-     "eligibilityLocked": false,
-     "eligibilityReason": "Eligible — age 59½ or older",
-     "name": "Riley IRA (Vanguard)",
-     "ownerName": "Riley",
-     "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -4134,7 +4048,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -4168,9 +4084,6 @@
    "rmdByPerson": [
     {
      "personName": "Jordan"
-    },
-    {
-     "personName": "Riley"
     }
    ],
    "rmdOverrodeRouting": false,
@@ -4291,7 +4204,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -4448,7 +4363,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -4605,7 +4522,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -4762,7 +4681,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -4919,7 +4840,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -5076,7 +4999,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -5233,7 +5158,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -5390,7 +5317,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -5547,7 +5476,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -5704,7 +5635,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -5861,7 +5794,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6018,7 +5953,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6175,7 +6112,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6332,7 +6271,168 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "brokerage",
+     "eligibilityLocked": false,
+     "eligibilityReason": "No individual eligibility rule (joint account)",
+     "name": "Joint Brokerage (Schwab)",
+     "parentCategory": "Portfolio",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": true,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jordan"
+    },
+    {
+     "personName": "Riley"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "hsa"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2044)",
+     "name": "Jordan 401k (Contoso 401(k) plan)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "401k",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — Rule of 55 met (separated 2046)",
+     "name": "Riley 401k (Fabrikam 401(k) plan)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "hsa",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 65 or older",
+     "name": "Jordan HSA (HealthEquity)",
+     "ownerName": "Jordan",
+     "parentCategory": "Retirement",
+     "taxType": "hsa"
+    },
+    {
+     "allowPenalizedWithdrawals": false,
+     "category": "ira",
+     "eligibilityLocked": false,
+     "eligibilityReason": "Eligible — age 59½ or older",
+     "name": "Riley IRA (Vanguard)",
+     "ownerName": "Riley",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6490,7 +6590,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6648,7 +6750,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6806,7 +6910,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -6964,7 +7070,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -7117,7 +7225,9 @@
      "name": "Riley IRA (Vanguard)",
      "ownerName": "Riley",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {

@@ -65,7 +65,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -134,7 +136,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -203,7 +207,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -272,7 +278,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -341,7 +349,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -410,7 +420,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -479,7 +491,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -548,7 +562,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -617,7 +633,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -686,7 +704,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -755,7 +775,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -824,7 +846,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -893,7 +917,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -972,7 +998,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1089,7 +1117,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1206,7 +1236,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1323,7 +1355,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1440,7 +1474,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1557,7 +1593,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1674,7 +1712,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1791,7 +1831,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -1908,7 +1950,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2025,7 +2069,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2142,7 +2188,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2259,7 +2307,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2376,7 +2426,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2493,7 +2545,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2610,7 +2664,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2727,7 +2783,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {
@@ -2844,7 +2902,9 @@
      "name": "Emery 401k (Plan Co 401(k))",
      "ownerName": "Emery",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     },
     {

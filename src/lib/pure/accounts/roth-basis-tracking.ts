@@ -55,7 +55,7 @@ export type RothBasisState = {
    *  between the basis row and the projection's own year 0 are not
    *  modeled by the engine, so tracked basis understates real basis by
    *  whatever was contributed in that unmodeled gap. Surfaced, never
-   *  silently swallowed — see `IndividualAccountYearBalance.rothBasisUncertain`. */
+   *  silently swallowed — see `IndividualAccountYearBalance.roth.basisUncertain`. */
   stale: boolean;
 };
 

@@ -167,20 +167,26 @@ export type IndividualAccountYearBalance = {
   penaltyExposedAmount?: number;
   /** The household lets this account take penalized draws. */
   allowPenalizedWithdrawals?: boolean;
-  /** Tracked Roth basis remaining at END of this year, both phases
-   *  (see `@/lib/pure/accounts/roth-basis-tracking`). Contribution + conversion basis
-   *  combined. Present only for taxFree-bucket accounts; absent (not
-   *  zero) for everything else, so "no data" is never confused with
+  /** Tracked Roth basis: present only for taxFree-bucket accounts with
+   *  tracked basis (see `@/lib/pure/accounts/roth-basis-tracking`); absent
+   *  (not zero) for everything else, so "no data" is never confused with
    *  "$0 left". */
-  rothBasisRemaining?: number;
-  /** `rothBasisRemaining`'s two parts, as the engine tracked them. */
-  rothContributionBasisRemaining?: number;
-  rothConversionBasisRemaining?: number;
+  roth?: AccountYearRothBasis;
+};
+
+/** One account's tracked Roth basis (`IndividualAccountYearBalance.roth`). */
+export type AccountYearRothBasis = {
+  /** Tracked Roth basis remaining at END of this year, both phases.
+   *  Contribution + conversion basis combined. */
+  basisRemaining?: number;
+  /** `basisRemaining`'s two parts, as the engine tracked them. */
+  contributionBasisRemaining?: number;
+  conversionBasisRemaining?: number;
   /** Basis dollars THIS year's withdrawal actually consumed (retirement
    *  years and gap years) — the portion that was basis, not growth. */
-  rothBasisDrawn?: number;
-  /** True when `rothBasisRemaining` rests on a stale (pre-projection) or
+  basisDrawn?: number;
+  /** True when `basisRemaining` rests on a stale (pre-projection) or
    *  auto-seeded, never-reviewed `account_basis` row — the figure may
    *  understate real basis, never overstate it. */
-  rothBasisUncertain?: boolean;
+  basisUncertain?: boolean;
 };

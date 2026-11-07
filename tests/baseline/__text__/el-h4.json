@@ -76,7 +76,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -146,7 +148,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -263,7 +267,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -380,7 +386,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -497,7 +505,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -614,7 +624,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -731,7 +743,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -848,7 +862,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -965,7 +981,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1082,7 +1100,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1199,7 +1219,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1316,7 +1338,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1433,7 +1457,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1550,7 +1576,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1667,7 +1695,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1784,7 +1814,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -1901,7 +1933,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2018,7 +2052,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2135,7 +2171,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2252,7 +2290,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2369,7 +2409,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2486,7 +2528,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2603,7 +2647,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2720,7 +2766,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2837,7 +2885,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -2954,7 +3004,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -3071,7 +3123,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],
@@ -3188,7 +3242,9 @@
      "name": "Rowan IRA (Index Funds IRA)",
      "ownerName": "Rowan",
      "parentCategory": "Retirement",
-     "rothBasisUncertain": false,
+     "roth": {
+      "basisUncertain": false
+     },
      "taxType": "taxFree"
     }
    ],

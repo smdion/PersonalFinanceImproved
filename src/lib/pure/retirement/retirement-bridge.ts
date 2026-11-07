@@ -205,7 +205,7 @@ export function retirementBridge(
     penaltyCost: roundToCents(sumBy(bridge, (y) => y.penaltyCost ?? 0)),
     conversionsDuring: bridge.some((y) => (y.rothConversionAmount ?? 0) > 0),
     rothBasisUncertain: counted.some(
-      (a) => isTaxFreeBucket(a.taxType) && a.rothBasisUncertain === true,
+      (a) => isTaxFreeBucket(a.taxType) && a.roth?.basisUncertain === true,
     ),
     unownedAccounts: counted
       .filter(

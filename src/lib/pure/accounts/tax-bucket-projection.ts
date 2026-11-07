@@ -106,23 +106,23 @@ function projectContributionBasis(
  *  falls back to `projectContributionBasis`. */
 function transitionRothBasis(
   rothBasisMeta: RothBasisMeta | null,
-  projected: {
-    rothContributionBasisRemaining?: number;
-    rothConversionBasisRemaining?: number;
-  },
+  projectedRoth: {
+    contributionBasisRemaining?: number;
+    conversionBasisRemaining?: number;
+  } = {},
   contributionByYear: Map<number, number> | undefined,
   transitionYear: number,
 ): { contributionBasis: number; conversionBasis: number } {
   return {
     contributionBasis:
-      projected.rothContributionBasisRemaining ??
+      projectedRoth.contributionBasisRemaining ??
       projectContributionBasis(
         rothBasisMeta,
         contributionByYear,
         transitionYear,
       ),
     conversionBasis:
-      projected.rothConversionBasisRemaining ??
+      projectedRoth.conversionBasisRemaining ??
       rothBasisMeta?.conversionBasis ??
       0,
   };
@@ -417,7 +417,7 @@ export function computeTaxBucketProjection(input: {
           conversionBasis: projectedConversionBasis,
         } = transitionRothBasis(
           now.rothBasisMeta,
-          projected,
+          projected.roth,
           contributionsByKey.get(key),
           transitionYear,
         );
@@ -462,7 +462,7 @@ export function computeTaxBucketProjection(input: {
           conversionBasis: projectedConversionBasis,
         } = transitionRothBasis(
           now.rothBasisMeta,
-          projected,
+          projected.roth,
           contributionsByKey.get(key),
           transitionYear,
         );

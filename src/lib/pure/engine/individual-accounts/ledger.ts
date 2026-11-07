@@ -132,7 +132,7 @@ export function accrueIndividualBasis(
  * both the pre-withdrawal balance (for the pro-rata ratio) and the actual
  * per-account withdrawal amount it returned. Mutates `indBasis` in place.
  * Returns the per-account `BasisDraw`s for the caller to attach to
- * `buildIndividualYearBalances`'s output (`rothBasisDrawn`).
+ * `buildIndividualYearBalances`'s output (`roth.basisDrawn`).
  */
 export function depleteIndividualBasis(input: {
   indAccts: IndividualAccountInput[];

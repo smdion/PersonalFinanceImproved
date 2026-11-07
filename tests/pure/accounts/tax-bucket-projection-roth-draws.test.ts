@@ -55,16 +55,17 @@ describe("Roth basis at the transition", () => {
   it("reads the engine's two figures, whatever the draw order was", () => {
     expect(
       meta({
-        rothContributionBasisRemaining: 6000,
-        rothConversionBasisRemaining: 7000,
+        roth: {
+          contributionBasisRemaining: 6000,
+          conversionBasisRemaining: 7000,
+        },
       }),
     ).toMatchObject({ contributionBasis: 6000, conversionBasis: 7000 });
   });
   it("zero left is zero, not the starting basis", () => {
     expect(
       meta({
-        rothContributionBasisRemaining: 0,
-        rothConversionBasisRemaining: 0,
+        roth: { contributionBasisRemaining: 0, conversionBasisRemaining: 0 },
       }),
     ).toMatchObject({ contributionBasis: 0, conversionBasis: 0 });
   });

@@ -4,6 +4,7 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
   AccountBalances,
+  AccountYearRothBasis,
 } from "../../accounts/account-balances.types";
 import { roundToCents } from "../../../utils/math";
 import {
@@ -38,8 +39,8 @@ import {
  * itself (see `@/lib/pure/accounts/eligibility`).
  *
  * `maps.basis`/`maps.draws` (tracked Roth basis follow-up) — when
- * provided, populate `rothBasisRemaining`/`rothBasisDrawn`/
- * `rothBasisUncertain`. Called AFTER accrual (accumulation) or depletion
+ * provided, populate `roth.basisRemaining`/`basisDrawn`/
+ * `basisUncertain`. Called AFTER accrual (accumulation) or depletion
  * (decumulation) has already run for this year, so this reads end-of-year
  * state directly out of `indBasis` — no `start − drawn` recomputation to
  * drift out of sync with it.
@@ -67,7 +68,6 @@ export function buildIndividualYearBalances(
 ): IndividualAccountYearBalance[] {
   const withdrawalFields = (k: string) => {
     const acctEligibility = eligibility?.byKey.get(k);
-    const draw = maps.draws?.get(k);
     return {
       withdrawal: maps.withdrawal?.get(k) ?? 0,
       ...(acctEligibility
@@ -82,15 +82,11 @@ export function buildIndividualYearBalances(
               acctEligibility.allowPenalizedWithdrawals,
           }
         : {}),
-      ...(draw != null
-        ? {
-            rothBasisDrawn: roundToCents(
-              draw.contributionDrawn + draw.conversionDrawn,
-            ),
-          }
-        : {}),
     };
   };
+  // The roth group, when this account has any of its fields.
+  const rothFields = (roth: AccountYearRothBasis) =>
+    Object.keys(roth).length > 0 ? { roth } : {};
   const rows = indAccts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
@@ -98,18 +94,16 @@ export function buildIndividualYearBalances(
     const balance =
       Math.abs(indBal.get(k) ?? 0) < 1 ? 0 : roundToCents(indBal.get(k) ?? 0);
     const basisState = maps.basis?.get(k);
-    const basisFields = basisState
+    const basisFields: AccountYearRothBasis = basisState
       ? {
-          rothBasisRemaining: roundToCents(
+          basisRemaining: roundToCents(
             basisState.contributionBasis + basisState.conversionBasis,
           ),
-          rothContributionBasisRemaining: roundToCents(
+          contributionBasisRemaining: roundToCents(
             basisState.contributionBasis,
           ),
-          rothConversionBasisRemaining: roundToCents(
-            basisState.conversionBasis,
-          ),
-          rothBasisUncertain: basisState.stale || basisState.isSeeded,
+          conversionBasisRemaining: roundToCents(basisState.conversionBasis),
+          basisUncertain: basisState.stale || basisState.isSeeded,
         }
       : {};
     const brokerageBasis = maps.brokerageBasis?.get(k);
@@ -117,12 +111,12 @@ export function buildIndividualYearBalances(
       brokerageBasis != null
         ? { costBasis: roundToCents(Math.min(brokerageBasis, balance)) }
         : {};
-    const draw = maps.draws?.get(k);
-    const drawnFields =
-      draw != null
+    const basisDraw = maps.draws?.get(k);
+    const drawnFields: AccountYearRothBasis =
+      basisDraw != null
         ? {
-            rothBasisDrawn: roundToCents(
-              draw.contributionDrawn + draw.conversionDrawn,
+            basisDrawn: roundToCents(
+              basisDraw.contributionDrawn + basisDraw.conversionDrawn,
             ),
           }
         : {};
@@ -146,12 +140,14 @@ export function buildIndividualYearBalances(
               rampContribution: maps.ramp?.get(k) ?? 0,
             }
           : {}),
-        ...basisFields,
         ...costBasisFields,
         ...projectedFields,
         // A year a paycheck is gone draws too (gap-year-draw.ts): the same
         // withdrawal, eligibility and basis fields a retirement year has.
         ...(maps.withdrawal ? withdrawalFields(k) : {}),
+        ...rothFields(
+          maps.withdrawal ? { ...basisFields, ...drawnFields } : basisFields,
+        ),
       };
     }
 
@@ -188,9 +184,8 @@ export function buildIndividualYearBalances(
               acctEligibility.allowPenalizedWithdrawals,
           }
         : {}),
-      ...basisFields,
+      ...rothFields({ ...basisFields, ...drawnFields }),
       ...costBasisFields,
-      ...drawnFields,
       ...projectedFields,
     };
   });

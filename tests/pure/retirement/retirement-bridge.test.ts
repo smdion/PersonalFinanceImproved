@@ -31,6 +31,14 @@ const acct = (
   ...o,
 });
 
+/** An account in the engine's row shape: Roth basis under `roth`. */
+const asRow = ({ rothBasisUncertain, ...rest }: Acct) => ({
+  ...rest,
+  ...(rothBasisUncertain !== undefined
+    ? { roth: { basisUncertain: rothBasisUncertain } }
+    : {}),
+});
+
 const year = (
   y: number,
   age: number,
@@ -56,7 +64,7 @@ const year = (
     )
       ? 1
       : 0,
-    individualAccountBalances: accounts,
+    individualAccountBalances: accounts.map(asRow),
     ...o,
   }) as never;
 

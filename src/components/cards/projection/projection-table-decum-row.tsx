@@ -78,12 +78,12 @@ const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
  * `eligibilityReason` string bakes its "$X basis remaining" figure as plain
  * NOMINAL dollars (it's built deep in withdrawal-eligibility.ts, which has
  * no access to the page's real/nominal dollar-mode toggle) — but the
- * rothBasisDrawn/rothBasisRemaining figures merged onto the same line ARE
+ * roth.basisDrawn/basisRemaining figures merged onto the same line ARE
  * deflated. In real-dollar view mode the two halves of one line disagreed
  * by exactly the household's cumulative inflation factor (confirmed:
  * ratio was identical, ~1.99, across both the reason string's figure and
  * the year's own withdrawal/growth figures). Reconstructs the basis-
- * remaining clause from `rothBasisRemaining + rothBasisDrawn` (this year's
+ * remaining clause from `roth.basisRemaining + basisDrawn` (this year's
  * start-of-year basis, tautologically consistent with the drawn/left
  * figures since both add up from the same already-deflated fields) instead
  * of reusing the engine string's embedded dollar figure — so every number
@@ -98,7 +98,7 @@ export function buildEligibilityNote(
 ): { note?: string; noteLocked?: boolean } {
   const parts: string[] = [];
   const isBasisRemainingReason =
-    ia.rothBasisRemaining != null &&
+    ia.roth?.basisRemaining != null &&
     !ia.eligibilityLocked &&
     (ia.eligibilityReason?.includes("basis remaining") ?? false);
   // Age-59½ qualification (tax-free growth) is a DIFFERENT test than the
@@ -111,7 +111,7 @@ export function buildEligibilityNote(
   // taxable for BOTH account types.
   const isAgeQualified =
     ia.eligibilityReason?.includes("age 59½ or older") ?? false;
-  const basisDrawn = ia.rothBasisDrawn ?? 0;
+  const basisDrawn = ia.roth?.basisDrawn ?? 0;
   const totalWithdrawn = ia.withdrawal ?? 0;
   // Basis-first ordering draws basis before growth. Under the
   // penalty-hard-exclusion model, growth this account hasn't earned
@@ -123,8 +123,8 @@ export function buildEligibilityNote(
   // age-59½-qualified is flagged taxable and penalty-exposed.
   const growthDrawn = Math.max(0, roundToCents(totalWithdrawn - basisDrawn));
   if (isBasisRemainingReason) {
-    const startBasis = (ia.rothBasisRemaining ?? 0) + basisDrawn;
-    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    const startBasis = (ia.roth?.basisRemaining ?? 0) + basisDrawn;
+    const flag = ia.roth?.basisUncertain ? " (est.)" : "";
     const label = growthDrawn > 0.01 ? "Partially eligible" : "Eligible";
     parts.push(
       `${label} — ${formatCurrency(deflate(startBasis, year.year))} basis remaining, always penalty-free${flag}`,
@@ -135,9 +135,9 @@ export function buildEligibilityNote(
   if (basisDrawn > 0.01) {
     const drawn = formatCurrency(deflate(basisDrawn, year.year));
     const remaining = formatCurrency(
-      deflate(ia.rothBasisRemaining ?? 0, year.year),
+      deflate(ia.roth?.basisRemaining ?? 0, year.year),
     );
-    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    const flag = ia.roth?.basisUncertain ? " (est.)" : "";
     if (growthDrawn > 0.01) {
       const growth = formatCurrency(deflate(growthDrawn, year.year));
       const taxNote = !isAgeQualified
