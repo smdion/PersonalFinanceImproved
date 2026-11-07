@@ -16,7 +16,6 @@ import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
-import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
 import {
   bonusCheckContribution,
@@ -25,8 +24,6 @@ import {
   countPeriodsElapsed,
   withheldThroughPeriod,
 } from "@/lib/pure/paycheck/paycheck";
-import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
-import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import {
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
@@ -49,29 +46,20 @@ import {
   applyActiveBonusTerms,
   contributionPay,
 } from "@/lib/pure/household/compensation";
-import type {
-  DeductionLine,
-  TaxBracketInput,
-} from "@/lib/pure/paycheck/paycheck.types";
+import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household/household-income";
 import {
-  rothIraRouteOf,
-  rothIraSummary,
-} from "@/lib/pure/contributions/roth-ira";
-import {
   deductionLine,
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
-import { medicareLiabilityKey } from "@/lib/config/tax-params";
-import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
-import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
+import { householdTotals } from "@/server/services/paycheck/household-totals";
 import {
   checkPaychecks,
   yearEarnings,
@@ -98,30 +86,6 @@ export const zPaycheckSummaryInput = z
     sandboxContribAdditions: zSandboxContribAdditions,
   })
   .optional();
-
-/**
- * Annual-liability variant of buildBracketInput: same limits, but brackets
- * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (calculateHouseholdTax's own standardDeduction
- * subtraction was double-counting against the un-reshaped Pub 15-T
- * withholding brackets). Requires the standard (non-2c) row — the 2(c)
- * half-tables have no 1040 analogue.
- */
-export function buildLiabilityBracketInput(
-  bracketRow: typeof schema.taxBrackets.$inferSelect,
-  limits: Map<string, number>,
-): TaxBracketInput {
-  if (bracketRow.w4Checkbox) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message:
-        "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
-    });
-  }
-  // No yearBrackets: the liability path never reads w4Adjustment.
-  const base = buildBracketInput(bracketRow, limits, []);
-  return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
-}
 
 export async function computePaycheckSummary(
   ctx: { db: Db; scope: RequestScope },
@@ -683,69 +647,20 @@ export async function computePaycheckSummary(
   const jointContribs = effectiveContribs.filter(
     (c) => c.isActive && c.ownership === "joint",
   );
-
-  // Household annual income and tax. Federal on the combined income
-  // with ONE standard deduction; FICA per person on FICA wages;
-  // Additional Medicare on the household's combined Medicare wages
-  // above the filing status's liability threshold.
-  // Everyone with pay this year — a current job, or one that ended.
-  const earners = results.filter((r) => r.earnings);
-  const householdIncome =
-    earners.length > 0
-      ? sumHouseholdIncome(earners.map((r) => r.earnings!))
-      : null;
-  // The household's tax-return filing status — the one the caps use
-  // (loadCapHousehold), never a W-4 on its own: a W-4 status is a
-  // withholding choice (married couples often pick Single).
-  const householdFilingStatus = capHousehold.filingStatus || null;
-  let householdTax = null;
-  if (earners.length > 0 && householdFilingStatus) {
-    const filingStatus = householdFilingStatus;
-    const bracketRow = allBrackets.find(
-      (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
-    );
-    if (bracketRow) {
-      householdTax = calculateHouseholdTax({
-        people: earners.map((r) => r.earnings!),
-        taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
-        medicareLiabilityThreshold:
-          limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
-      });
-    }
-  }
-
-  const rothIra = rothIraSummary({
-    // No one with a job → no Roth IRA view, as before.
-    filingStatus: earners.length > 0 ? householdFilingStatus : null,
+  const {
+    householdIncome,
+    householdFilingStatus,
+    householdTax,
+    rothIra,
+    hsaBuffers,
+  } = householdTotals(
+    results,
+    capHousehold,
+    allBrackets,
+    limitsMap,
+    limitsRecord,
     taxYear,
-    limits: limitsRecord,
-    people: results.map((r) => ({
-      personId: r.person.id,
-      name: r.person.name,
-      birthYear: Number(r.person.dateOfBirth.slice(0, 4)),
-      earnings: r.earnings,
-      jobAccountTypes: r.rawContribs
-        .filter((c) => c.jobId !== null)
-        .map((c) => c.accountType),
-      iraRoom:
-        r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)?.cap
-          ?.maxEmployee ?? null,
-      rothRoute: rothIraRouteOf(r.rawContribs),
-    })),
-  });
-
-  // Default cash to keep in each person's HSA: the year's HDHP minimum
-  // deductible for their coverage (from their HSA contribution account).
-  const hsaBuffers = hsaCashBuffers({
-    limits: limitsRecord,
-    people: results.map((r) => ({
-      personId: r.person.id,
-      hsaCoverageType:
-        r.rawContribs.find(
-          (c) => isHsaCategory(c.accountType) && c.hsaCoverageType,
-        )?.hsaCoverageType ?? null,
-    })),
-  });
+  );
 
   return {
     people: results,

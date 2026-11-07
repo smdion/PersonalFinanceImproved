@@ -6483,7 +6483,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 10
     }
   },
   "src/server/services/performance/finalize-year.ts": {
@@ -6793,6 +6793,11 @@
   "src/workers/monte-carlo-worker.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/server/services/paycheck/household-totals.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
     }
   }
 }
