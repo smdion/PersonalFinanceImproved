@@ -2,7 +2,9 @@
 
 /** The confirmation before a saved version replaces the household's data. */
 
+import { useState } from "react";
 import type { trpc } from "@/lib/trpc";
+import { localDateStr } from "@/lib/utils/date";
 import { ReplacesNote } from "@/components/versions/replaces-note";
 import { DataLossWarning } from "@/components/versions/restore-notices";
 import { Modal } from "@/components/ui/modal";
@@ -14,9 +16,8 @@ type RestoreDialogProps = {
   setRestoreCreateBackup: (backup: boolean) => void;
   restoreConfirmText: string;
   setRestoreConfirmText: (text: string) => void;
-  handleRestore: () => Promise<void>;
   restoreMutation: ReturnType<typeof trpc.version.restore.useMutation>;
-  createMutation: { isPending: boolean };
+  createMutation: ReturnType<typeof trpc.version.create.useMutation>;
   setRestoreTarget: (target: null) => void;
 };
 
@@ -27,13 +28,29 @@ export function RestoreDialog({
   setRestoreCreateBackup,
   restoreConfirmText,
   setRestoreConfirmText,
-  handleRestore,
   restoreMutation,
   createMutation,
   setRestoreTarget,
 }: RestoreDialogProps) {
+  // One run: the pre-restore backup (if asked for), then the restore.
+  const [restoring, setRestoring] = useState(false);
   if (!restoreTarget) return null;
-  const restoring = restoreMutation.isPending || createMutation.isPending;
+  const target = restoreTarget;
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      if (restoreCreateBackup) {
+        await createMutation.mutateAsync({
+          name: `Pre-restore backup (${localDateStr()})`,
+          description: `Auto-created before restoring"${target.name}"`,
+        });
+      }
+      // As mutate() does: a failure shows from restoreMutation's own state.
+      await restoreMutation.mutateAsync({ id: target.id }).catch(() => {});
+    } finally {
+      setRestoring(false);
+    }
+  };
   const cancel = () => {
     setRestoreTarget(null);
     setRestoreConfirmText("");

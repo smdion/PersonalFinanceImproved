@@ -178,18 +178,6 @@ export function VersionsContent() {
     setDeleteTarget(null);
   };
 
-  const handleRestore = async () => {
-    if (!restoreTarget) return;
-    // Optionally create a backup before restoring
-    if (restoreCreateBackup) {
-      await createMutation.mutateAsync({
-        name: `Pre-restore backup (${localDateStr()})`,
-        description: `Auto-created before restoring"${restoreTarget.name}"`,
-      });
-    }
-    restoreMutation.mutate({ id: restoreTarget.id });
-  };
-
   const handleImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -730,7 +718,6 @@ export function VersionsContent() {
         setRestoreCreateBackup={setRestoreCreateBackup}
         restoreConfirmText={restoreConfirmText}
         setRestoreConfirmText={setRestoreConfirmText}
-        handleRestore={handleRestore}
         restoreMutation={restoreMutation}
         createMutation={createMutation}
         setRestoreTarget={setRestoreTarget}
