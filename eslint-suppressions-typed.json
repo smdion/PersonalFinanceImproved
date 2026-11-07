@@ -74,9 +74,19 @@
       "count": 4
     }
   },
+  "src/components/retirement-projection/projection-table-decum-balances.model.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
+    }
+  },
   "src/components/retirement-projection/projection-table-decum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 27
+      "count": 16
+    }
+  },
+  "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/components/retirement-projection/spending-stability-chart.tsx": {

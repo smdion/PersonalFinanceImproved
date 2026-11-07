@@ -13,10 +13,21 @@ import type {
   EngineDecumulationYear,
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import {
+  accountTextColor,
+  taxTypeLabel,
+  taxTypeTextColor,
+} from "@/lib/utils/colors";
 import type { ProjectionState } from "./projection-table-types";
 import type { TooltipLineItem } from "./types";
-import { catDisplayLabel, itemTaxType } from "./utils";
+import {
+  catDisplayLabel,
+  itemTaxType,
+  lumpSumTotal,
+  lumpSumsForBucket,
+  lumpSumsForCategory,
+} from "./utils";
+import { formatCurrency } from "@/lib/utils/format";
 import { ownerAccountLabel } from "./account-notes";
 
 type AccountBalances = NonNullable<
@@ -206,4 +217,115 @@ export function totalWithdrawalItems(
     });
   }
   return items;
+}
+
+/** Each person's age in this year. */
+export function decumYearAgesTooltip(
+  people: { id: number; name: string; birthYear: number }[] | undefined,
+  enginePeople: ProjectionState["enginePeople"],
+  renderTooltip: ProjectionState["renderTooltip"],
+  yr: EngineDecumulationYear,
+) {
+  const pp = people ?? enginePeople;
+  if (!pp || pp.length === 0) return undefined;
+  return renderTooltip({
+    kind: "info",
+    lines: pp.map((p) => ({
+      text: `${p.name}: ${yr.year - p.birthYear}`,
+      style: "header" as const,
+    })),
+  });
+}
+
+/** A category cell's color: green when lump sums outweigh the draw. */
+export function categoryCellColor(
+  yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
+  cat: AccountCategory,
+  wd: number,
+) {
+  const catLumps = lumpSumsForCategory(yearLumpSums, cat);
+  const catLumpTotal = lumpSumTotal(catLumps);
+  if (catLumpTotal > 0 && catLumpTotal > wd) return "text-green-600";
+  return accountTextColor(cat);
+}
+
+/** A category cell's net figure: lump sums less the draw, signed. */
+export function categoryCellText(
+  yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
+  cat: AccountCategory,
+  wd: number,
+  deflate: ProjectionState["deflate"],
+  yr: EngineDecumulationYear,
+) {
+  const catLumps = lumpSumsForCategory(yearLumpSums, cat);
+  const catLumpTotal = lumpSumTotal(catLumps);
+  if (catLumpTotal > 0 && wd > 0) {
+    const net = catLumpTotal - wd;
+    return net >= 0
+      ? `+${formatCurrency(deflate(net, yr.year))}`
+      : `-${formatCurrency(deflate(Math.abs(net), yr.year))}`;
+  }
+  if (catLumpTotal > 0)
+    return `+${formatCurrency(deflate(catLumpTotal, yr.year))}`;
+  if (wd > 0) return `-${formatCurrency(deflate(wd, yr.year))}`;
+  return "---";
+}
+
+/** A tax-type cell's color: green when lump sums outweigh the draw. */
+export function taxTypeCellColor(
+  yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
+  bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
+  bucketWd: number,
+) {
+  const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
+  const bucketLumpTotal = lumpSumTotal(bucketLumps);
+  if (bucketLumpTotal > 0 && bucketLumpTotal > bucketWd)
+    return "text-green-600";
+  return taxTypeTextColor(bucket);
+}
+
+/** A tax-type cell's net figure: lump sums less the draw, signed. */
+export function taxTypeCellText(
+  yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
+  bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
+  bucketWd: number,
+  deflate: ProjectionState["deflate"],
+  yr: EngineDecumulationYear,
+) {
+  const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
+  const bucketLumpTotal = lumpSumTotal(bucketLumps);
+  if (bucketLumpTotal > 0 && bucketWd > 0) {
+    const net = bucketLumpTotal - bucketWd;
+    return net >= 0
+      ? `+${formatCurrency(deflate(net, yr.year))}`
+      : `-${formatCurrency(deflate(Math.abs(net), yr.year))}`;
+  }
+  if (bucketLumpTotal > 0)
+    return `+${formatCurrency(deflate(bucketLumpTotal, yr.year))}`;
+  if (bucketWd > 0) return `-${formatCurrency(deflate(bucketWd, yr.year))}`;
+  return "---";
+}
+
+/** The withdrawal total's figure: net of lump sums, or depleted. */
+export function totalWithdrawalText(
+  deflate: ProjectionState["deflate"],
+  totalLumpSum: number,
+  dyr: EngineDecumulationYear,
+  yr: EngineDecumulationYear,
+) {
+  const net = deflate(totalLumpSum - dyr.totalWithdrawal, yr.year);
+  if (totalLumpSum > 0 && dyr.totalWithdrawal > 0) {
+    return net >= 0
+      ? `+${formatCurrency(net)}`
+      : `-${formatCurrency(Math.abs(net))}`;
+  }
+  if (totalLumpSum > 0) {
+    return `+${formatCurrency(deflate(totalLumpSum, yr.year))}`;
+  }
+  if (dyr.totalWithdrawal > 0) {
+    return `-${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`;
+  }
+  return dyr.retirementBalance < 1 && dyr.projectedExpenses > 0
+    ? "depleted"
+    : "---";
 }
