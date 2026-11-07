@@ -17,6 +17,11 @@
  * threw is recorded as `{ "$threw": <message> }`. These pin today's
  * behavior, bugs included. The baseline rule in router-baseline.test.ts
  * governs these files too; `LEDGR_BASELINE_WRITE=1` writes them.
+ *
+ * One variant (v0.10.4 plan commit 27a, owner Q2: added as pins) takes
+ * the paths the households don't: no snapshot, next year's account and
+ * annual rows already there, a stored year-end row to update, and the
+ * same year finalized twice (pin-runs.ts finalizeVariantWrites).
  */
 // First: the SQLite harness's mocks, then the baseline's.
 import "../routers/setup-mocks";
@@ -29,7 +34,13 @@ import { seedHousehold } from "./seed";
 import { HOUSEHOLDS } from "./households";
 import { BASELINE_NOW, REGENERATE } from "./router-suite";
 import { tableRows } from "./table-rows";
-import { PIN_DIRS, finalizeWrites } from "./pin-runs";
+import {
+  FINALIZE_VARIANT,
+  PIN_DIRS,
+  finalizeVariantHousehold,
+  finalizeVariantWrites,
+  finalizeWrites,
+} from "./pin-runs";
 
 const DIR = PIN_DIRS.finalize;
 
@@ -44,6 +55,21 @@ afterAll(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+
+/** The written rows must equal `<key>.json` (or are written to it). */
+function expectPinned(key: string, written: Record<string, unknown>) {
+  const file = path.join(DIR, `${key}.json`);
+  if (REGENERATE) {
+    fs.mkdirSync(DIR, { recursive: true });
+    fs.writeFileSync(file, `${JSON.stringify(written, null, 1)}\n`);
+    return;
+  }
+  expect(
+    fs.existsSync(file),
+    `no baseline file ${path.relative(process.cwd(), file)}`,
+  ).toBe(true);
+  expect(written).toEqual(JSON.parse(fs.readFileSync(file, "utf8")));
+}
 
 describe.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
   "finalize writes: %s",
@@ -63,17 +89,58 @@ describe.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
     afterAll(() => ctx?.cleanup());
 
     it("writes the pinned rows", () => {
-      const file = path.join(DIR, `${key}.json`);
-      if (REGENERATE) {
-        fs.mkdirSync(DIR, { recursive: true });
-        fs.writeFileSync(file, `${JSON.stringify(written, null, 1)}\n`);
-        return;
-      }
-      expect(
-        fs.existsSync(file),
-        `no baseline file ${path.relative(process.cwd(), file)}`,
-      ).toBe(true);
-      expect(written).toEqual(JSON.parse(fs.readFileSync(file, "utf8")));
+      expectPinned(key, written);
     });
   },
 );
+
+describe(`finalize writes: ${FINALIZE_VARIANT.key}`, () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  let written: Record<string, unknown> = {};
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    const base = HOUSEHOLDS.find((h) => h.key === FINALIZE_VARIANT.base)!;
+    const ids = await seedHousehold(ctx.caller, finalizeVariantHousehold(base));
+    written = await finalizeVariantWrites(
+      ctx.caller,
+      base,
+      ids,
+      async () => tableRows(ctx.db),
+      ctx.rawDb,
+    );
+  }, 120_000);
+
+  afterAll(() => ctx?.cleanup());
+
+  it("writes the pinned rows", () => {
+    expectPinned(FINALIZE_VARIANT.key, written);
+  });
+
+  it("reaches each path it is for", () => {
+    const first = written["2025"] as Record<
+      string,
+      { written: Record<string, unknown>[]; replacedOrRemoved: number }
+    >;
+    // No snapshot: the breakdown read none; the stored row was updated.
+    const nw = first.net_worth_annual!;
+    expect(nw.replacedOrRemoved).toBe(1);
+    expect(nw.written).toHaveLength(1);
+    expect(nw.written[0]).toMatchObject({
+      combinedAgi: "98765",
+      taxesPaid: "12345",
+      portfolioByTaxLocation: { retirement: {}, portfolio: {} },
+    });
+    // 2026's existing account row and annual rows were kept, not added.
+    const next = (table: string) =>
+      first[table]!.written.filter((r) => r.year === 2026);
+    expect(next("account_performance")).toHaveLength(2);
+    expect(next("annual_performance").map((r) => r.category)).not.toContain(
+      "Portfolio",
+    );
+    // The second finalize was refused and wrote nothing.
+    const again = written["2025 again"] as { $threw: string; wrote: object };
+    expect(again.$threw).toContain("already finalized");
+    expect(again.wrote).toEqual({});
+  });
+});
