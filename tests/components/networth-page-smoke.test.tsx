@@ -21,7 +21,8 @@ vi.mock("@/lib/trpc", async () => ({
 
 const page = seededPage(
   "e2e-b",
-  async () => (await import("@/app/(dashboard)/networth/page")).default,
+  async () =>
+    (await import("@/app/(dashboard)/networth/networth-content")).default,
 );
 
 describe("Net worth page", () => {

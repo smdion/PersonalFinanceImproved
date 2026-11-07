@@ -10,7 +10,7 @@
     "src/app/(dashboard)/expenses/expenses-content.tsx": 819,
     "src/app/(dashboard)/historical/historical-content.tsx": 1026,
     "src/app/(dashboard)/house/house-content.tsx": 746,
-    "src/app/(dashboard)/networth/page.tsx": 461,
+    "src/app/(dashboard)/networth/networth-content.tsx": 461,
     "src/app/(dashboard)/paycheck/page.tsx": 685,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
@@ -345,7 +345,7 @@
     "src/app/(dashboard)/milestones/milestones-content.tsx": {
       "MilestonesContent": 223
     },
-    "src/app/(dashboard)/networth/page.tsx": {
+    "src/app/(dashboard)/networth/networth-content.tsx": {
       "NetWorthPage": 396
     },
     "src/app/(dashboard)/paycheck/page.tsx": {

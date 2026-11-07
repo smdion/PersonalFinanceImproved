@@ -306,7 +306,7 @@
       "count": 2
     }
   },
-  "src/app/(dashboard)/networth/page.tsx": {
+  "src/app/(dashboard)/networth/networth-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
