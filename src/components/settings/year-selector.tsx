@@ -1,5 +1,7 @@
 "use client";
 
+import { Tabs } from "@/components/ui/tabs";
+
 /** Shared year-tab bar + "+ Year" trigger, used by the bracket/limit editors in settings. */
 
 type YearSelectorProps = {
@@ -26,31 +28,28 @@ export function YearSelector({
 }: YearSelectorProps) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex gap-1" role="tablist" aria-label={ariaLabel}>
-        {years.map((yr) => (
-          <button
-            key={yr}
-            role="tab"
-            aria-selected={yr === activeYear}
-            onClick={() => onSelectYear(yr)}
-            className={`rounded-full px-3 py-1 text-sm transition-colors ${
-              yr === activeYear
-                ? "bg-blue-600 text-white"
-                : "bg-surface-elevated text-muted hover:bg-surface-strong"
-            }`}
-          >
-            {yr}
-            {coverage?.[yr] && (
-              <span
-                className={yr === activeYear ? "text-blue-100" : "text-faint"}
-              >
-                {" "}
-                · {coverage[yr]}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        look="chip"
+        ariaLabel={ariaLabel}
+        value={activeYear}
+        onChange={onSelectYear}
+        tabs={years.map((yr) => ({
+          value: yr,
+          label: (
+            <>
+              {yr}
+              {coverage?.[yr] && (
+                <span
+                  className={yr === activeYear ? "text-blue-100" : "text-faint"}
+                >
+                  {" "}
+                  · {coverage[yr]}
+                </span>
+              )}
+            </>
+          ),
+        }))}
+      />
       {admin && (
         <button
           onClick={onAddYearClick}

@@ -2,7 +2,7 @@
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 429,
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1058,
-    "src/app/(dashboard)/budget/budget-content.tsx": 663,
+    "src/app/(dashboard)/budget/budget-content.tsx": 656,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
@@ -36,7 +36,7 @@
     "src/components/investments/fund-holding-row.tsx": 498,
     "src/components/investments/holding-history-section.tsx": 522,
     "src/components/investments/holdings-section.tsx": 793,
-    "src/components/layout/scenario-bar.tsx": 497,
+    "src/components/layout/scenario-bar.tsx": 487,
     "src/components/layout/sidebar.tsx": 525,
     "src/components/methodology/decumulation-content.tsx": 880,
     "src/components/methodology/methodology-content.tsx": 555,
@@ -311,7 +311,7 @@
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 584
+      "BudgetContent": 576
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
       "useBudgetDerivedData": 320
@@ -496,7 +496,7 @@
       "DataFreshness": 231
     },
     "src/components/layout/scenario-bar.tsx": {
-      "ScenarioBar": 444
+      "ScenarioBar": 433
     },
     "src/components/layout/sidebar.tsx": {
       "Sidebar": 200

@@ -44,6 +44,7 @@ import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal"
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
 import { ExtraPaycheckBudgetNote } from "@/components/budget/extra-paycheck-budget-note";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
+import { Tabs } from "@/components/ui/tabs";
 import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
@@ -423,22 +424,14 @@ export function BudgetContent({
                 these, and What-If previews combinations of them, so they
                 come last. */}
             <div className="mb-4 flex items-center justify-between border-b">
-              <div role="tablist" className="flex gap-1 overflow-x-auto">
-                {PROFILE_TABS.filter(
+              <Tabs
+                look="underline-xs"
+                value={profileTab}
+                onChange={setActiveTab}
+                tabs={PROFILE_TABS.filter(
                   (t) => t.key !== "savings" || hasPermission(user, "savings"),
-                ).map((t) => (
-                  <button
-                    key={t.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === t.key}
-                    onClick={() => setActiveTab(t.key)}
-                    className={`border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-colors ${activeTab === t.key ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+                ).map((t) => ({ value: t.key, label: t.label }))}
+              />
               {/* One padlock for every profile tab (EDIT_LOCK_KEYS
                   .profileEditLocked) — locking any one locks them all.
                   What-If is a sandbox with nothing to lock. */}
