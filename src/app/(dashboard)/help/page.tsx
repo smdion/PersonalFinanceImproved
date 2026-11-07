@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { HelpContent } from "@/components/help-content";
+import { HelpContent } from "@/components/help/help-content";
 
 export default function HelpPage() {
   return (

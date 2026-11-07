@@ -15,7 +15,7 @@ import {
   ControlZone,
   ZoneSecondaryRow,
 } from "./pill-btn";
-import { ValidationContent } from "@/components/validation-content";
+import { ValidationContent } from "@/components/methodology/validation-content";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
@@ -49,17 +49,17 @@ const SpendingStabilityChart = dynamic(
 // The methodology write-ups (~1,900 lines of prose) load only when one of
 // their slide panels is opened (closed panels render nothing).
 const MethodologyContent = dynamic(() =>
-  import("@/components/methodology-content").then((m) => ({
+  import("@/components/methodology/methodology-content").then((m) => ({
     default: m.MethodologyContent,
   })),
 );
 const AccumulationMethodologyContent = dynamic(() =>
-  import("@/components/accumulation-methodology-content").then((m) => ({
+  import("@/components/methodology/accumulation-content").then((m) => ({
     default: m.AccumulationMethodologyContent,
   })),
 );
 const DecumulationMethodologyContent = dynamic(() =>
-  import("@/components/decumulation-methodology-content").then((m) => ({
+  import("@/components/methodology/decumulation-content").then((m) => ({
     default: m.DecumulationMethodologyContent,
   })),
 );

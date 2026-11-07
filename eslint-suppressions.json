@@ -615,7 +615,7 @@
       "count": 2
     }
   },
-  "src/components/accumulation-methodology-content.tsx": {
+  "src/components/methodology/accumulation-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     }
@@ -1555,7 +1555,7 @@
       "count": 2
     }
   },
-  "src/components/decumulation-methodology-content.tsx": {
+  "src/components/methodology/decumulation-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     }
@@ -1573,7 +1573,7 @@
       "count": 2
     }
   },
-  "src/components/help-content.tsx": {
+  "src/components/help/help-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     }
@@ -1812,7 +1812,7 @@
       "count": 11
     }
   },
-  "src/components/methodology-content.tsx": {
+  "src/components/methodology/methodology-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     }
@@ -3808,7 +3808,7 @@
       "count": 1
     }
   },
-  "src/components/validation-content.tsx": {
+  "src/components/methodology/validation-content.tsx": {
     "max-lines-per-function": {
       "count": 1
     }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { AccumulationMethodologyContent } from "@/components/accumulation-methodology-content";
+import { AccumulationMethodologyContent } from "@/components/methodology/accumulation-content";
 
 export default function AccumulationMethodologyPage() {
   return (

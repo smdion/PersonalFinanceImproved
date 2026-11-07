@@ -396,7 +396,7 @@ export function SimulationAssumptions({
                 // control), but GK's actual spending IS budget-seeded and
                 // guardrail-adjusted every year, same as Fixed/Forgo/
                 // Spending-Decline (verified against guyton-klinger.ts and
-                // decumulation-methodology-content.tsx's grouping).
+                // methodology/decumulation-content.tsx's grouping).
                 // `usesWithdrawalRate` correctly groups GK with the other 3
                 // budget-continuation strategies; only RMD/Constant %/
                 // Endowment/Vanguard Dynamic are truly balance-derived.

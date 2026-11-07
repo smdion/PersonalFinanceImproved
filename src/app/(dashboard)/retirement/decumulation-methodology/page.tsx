@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { DecumulationMethodologyContent } from "@/components/decumulation-methodology-content";
+import { DecumulationMethodologyContent } from "@/components/methodology/decumulation-content";
 
 export default function DecumulationMethodologyPage() {
   return (

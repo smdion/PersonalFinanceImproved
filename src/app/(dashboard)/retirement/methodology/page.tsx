@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { MethodologyContent } from "@/components/methodology-content";
+import { MethodologyContent } from "@/components/methodology/methodology-content";
 
 export default function MethodologyPage() {
   return (

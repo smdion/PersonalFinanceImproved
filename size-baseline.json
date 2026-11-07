@@ -46,8 +46,8 @@
     "src/components/retirement-projection/use-projection-queries.ts": 977,
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 559,
-    "src/components/decumulation-methodology-content.tsx": 880,
-    "src/components/help-content.tsx": 1030,
+    "src/components/methodology/decumulation-content.tsx": 880,
+    "src/components/help/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 677,
     "src/components/investments/fund-holding-row.tsx": 498,
     "src/components/investments/holding-history-section.tsx": 522,
@@ -55,7 +55,7 @@
     "src/components/layout/scenario-bar.tsx": 497,
     "src/components/layout/sidebar.tsx": 525,
     "src/components/liabilities/debts-card.tsx": 536,
-    "src/components/methodology-content.tsx": 555,
+    "src/components/methodology/methodology-content.tsx": 555,
     "src/components/mortgage/mortgage-settings.tsx": 728,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
     "src/components/onboarding/onboarding-wizard.tsx": 1020,
@@ -89,7 +89,7 @@
     "src/components/settings/integrations/budget-section.tsx": 691,
     "src/components/settings/integrations/portfolio-section.tsx": 657,
     "src/components/tools/relocation/projection-table.tsx": 416,
-    "src/components/validation-content.tsx": 552,
+    "src/components/methodology/validation-content.tsx": 552,
     "src/lib/budget-api/actual-client.ts": 820,
     "src/lib/budget-api/ynab-client.ts": 540,
     "src/lib/config/account-types.ts": 858,
@@ -386,7 +386,7 @@
     "src/app/login/login-form.tsx": {
       "LoginForm": 162
     },
-    "src/components/accumulation-methodology-content.tsx": {
+    "src/components/methodology/accumulation-content.tsx": {
       "AccumulationMethodologyContent": 373
     },
     "src/components/budget/api-category-picker.tsx": {
@@ -530,10 +530,10 @@
     "src/components/retirement-projection/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 490
     },
-    "src/components/decumulation-methodology-content.tsx": {
+    "src/components/methodology/decumulation-content.tsx": {
       "DecumulationMethodologyContent": 867
     },
-    "src/components/help-content.tsx": {
+    "src/components/help/help-content.tsx": {
       "HelpContent": 978
     },
     "src/components/historical/jobs.tsx": {
@@ -567,7 +567,7 @@
     "src/components/liabilities/debts-card.tsx": {
       "DebtsCard": 475
     },
-    "src/components/methodology-content.tsx": {
+    "src/components/methodology/methodology-content.tsx": {
       "MethodologyContent": 551
     },
     "src/components/mortgage/mortgage-settings.tsx": {
@@ -844,7 +844,7 @@
     "src/components/upkeep/utility-feed-card.tsx": {
       "UtilityFeedCard": 219
     },
-    "src/components/validation-content.tsx": {
+    "src/components/methodology/validation-content.tsx": {
       "ValidationContent": 548
     },
     "src/lib/db/backup-transforms.ts": {
