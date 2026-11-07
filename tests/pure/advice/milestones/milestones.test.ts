@@ -10,11 +10,11 @@ import {
   nextUpMilestones,
   parseMilestoneSettings,
   sinceLastYear,
-  classesUnderTarget,
   extraPrincipalToPayOffBy,
   type MilestoneInput,
   type MilestoneResult,
 } from "@/lib/pure/advice/milestones/milestones";
+import { classesUnderTarget } from "@/lib/pure/advice/milestones/investing";
 import type { MilestoneDebt } from "@/lib/pure/advice/milestones/milestones";
 import {
   firstReachedYear,

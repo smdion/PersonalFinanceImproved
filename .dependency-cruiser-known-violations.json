@@ -176,11 +176,6 @@
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/components/investments/hsa-cash-buffer.tsx",
-    "to": "src/lib/pure/accounts/cash-positions.ts"
-  },
-  {
-    "rule": "ui-never-bundles-zod",
     "from": "src/components/milestones/foo-ladder.tsx",
     "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
@@ -206,11 +201,6 @@
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/lib/hooks/use-investing-findings.ts",
-    "to": "src/lib/pure/accounts/cash-positions.ts"
-  },
-  {
-    "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-milestones.ts",
     "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
@@ -218,11 +208,6 @@
     "rule": "ui-never-bundles-zod",
     "from": "src/lib/hooks/use-recommendation-dismissals.ts",
     "to": "src/lib/pure/advice/recommendation-dismissals.ts"
-  },
-  {
-    "rule": "ui-never-bundles-zod",
-    "from": "src/lib/hooks/use-recommendations.ts",
-    "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
   {
     "rule": "ui-never-bundles-zod",

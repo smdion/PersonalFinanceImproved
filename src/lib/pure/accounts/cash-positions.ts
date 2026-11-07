@@ -28,7 +28,7 @@ import {
   portfolioBuckets,
   type ValuedHolding,
 } from "@/lib/pure/investments/fund-facts";
-import { outsideRebalanceBand } from "@/lib/pure/advice/milestones/milestones";
+import { outsideRebalanceBand } from "@/lib/pure/advice/milestones/investing";
 
 export type CashAccountInput = {
   simplefinAccountId: number;

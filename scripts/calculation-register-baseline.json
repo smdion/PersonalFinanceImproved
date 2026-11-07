@@ -420,7 +420,7 @@
     "src/lib/pure/advice/milestones/milestones.shared.ts:meetsRateTarget",
     "src/lib/pure/advice/milestones/milestones.shared.ts:reachedNote",
     "src/lib/pure/advice/milestones/milestones.shared.ts:result",
-    "src/lib/pure/advice/milestones/milestones.ts:classesUnderTarget",
+    "src/lib/pure/advice/milestones/investing.ts:classesUnderTarget",
     "src/lib/pure/advice/milestones/milestones.ts:extraPrincipalToPayOffBy",
     "src/lib/pure/advice/milestones/milestones.ts:milestoneTimeline",
     "src/lib/pure/advice/milestones/milestones.ts:sinceLastYear",
