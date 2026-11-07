@@ -72,7 +72,14 @@ const mockProjectionData = {
   settings: mockSettings,
   people: [{ id: 1, name: "Alice", birthYear: 1990 }],
   perPersonSettings: null,
-  returnRateSummary: null,
+  // The server always sends a summary; an empty schedule is the least one.
+  returnRateSummary: {
+    currentRate: null,
+    retirementRate: null,
+    postRetirementRate: null,
+    avgAccumulation: 0.07,
+    schedule: [],
+  },
   selectedScenario: null,
   combinedSalary: 100000,
   salaryByPerson: { 1: 100000 },

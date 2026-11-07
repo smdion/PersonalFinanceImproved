@@ -74,7 +74,7 @@
     "src/components/portfolio/portfolio-chart.tsx": 476,
     "src/components/retirement/assumptions-band.tsx": 453,
     "src/components/retirement/retirement-profile-tab.tsx": 606,
-    "src/components/retirement/sections/taxes.tsx": 569,
+    "src/components/retirement/sections/taxes.tsx": 556,
     "src/components/savings/all-transactions-tab.tsx": 1457,
     "src/components/savings/api-sync-section.tsx": 637,
     "src/components/savings/contribution-grid.tsx": 471,
@@ -700,7 +700,7 @@
       "PerPhaseBudgetSection": 161
     },
     "src/components/retirement/sections/rmd-handling.tsx": {
-      "RmdHandlingSection": 220
+      "RmdHandlingSection": 215
     },
     "src/components/retirement/sections/social-security.tsx": {
       "SocialSecuritySection": 242
@@ -710,7 +710,7 @@
       "StrategyParamsSection.renderField": 171
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 483
+      "TaxesSection": 470
     },
     "src/components/savings/all-transactions-tab.tsx": {
       "AllTransactionsTab": 1408,

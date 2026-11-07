@@ -119,7 +119,7 @@ export function TimelineSection({
           </span>
           <div className="flex items-baseline gap-1 font-medium">
             <InlineEdit
-              value={String(settings.ownEndAge ?? settings.endAge)}
+              value={String(settings.ownEndAge)}
               onSave={(v) => handleRetirementSettingUpdate("endAge", v)}
               type="number"
               className="text-sm"
@@ -135,7 +135,7 @@ export function TimelineSection({
         </span>
         <div className="mt-1 flex flex-col gap-1">
           <Toggle
-            isChecked={!(settings.gapYearStopSaving ?? false)}
+            isChecked={!settings.gapYearStopSaving}
             onChange={(checked) =>
               handleGapYearSetting({ gapYearStopSaving: !checked })
             }
@@ -145,7 +145,7 @@ export function TimelineSection({
             title="Off: nobody contributes in these years, employer match included, so pay goes to spending first."
           />
           <Toggle
-            isChecked={settings.gapYearDraws ?? true}
+            isChecked={settings.gapYearDraws}
             onChange={(checked) =>
               handleGapYearSetting({ gapYearDraws: checked })
             }

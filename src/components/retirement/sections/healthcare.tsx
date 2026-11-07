@@ -40,28 +40,25 @@ export function HealthcareSection({
           <div className="font-medium">
             <button
               onClick={() => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
-                    enableIrmaaAwareness: !(
-                      settings.enableIrmaaAwareness ?? false
-                    ),
+                    enableIrmaaAwareness: !settings.enableIrmaaAwareness,
                   }),
                 );
               }}
               disabled={!isEditable}
               className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
-                (settings?.enableIrmaaAwareness ?? false)
+                settings.enableIrmaaAwareness
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
               }`}
             >
-              {(settings?.enableIrmaaAwareness ?? false) ? "On" : "Off"}
+              {settings.enableIrmaaAwareness ? "On" : "Off"}
             </button>
           </div>
         </div>
         {/* Without awareness there's no surcharge to place. */}
-        {(settings?.enableIrmaaAwareness ?? false) && (
+        {settings.enableIrmaaAwareness && (
           <div>
             <span className="text-muted">
               IRMAA surcharge
@@ -70,19 +67,16 @@ export function HealthcareSection({
             <div className="font-medium">
               <button
                 onClick={() => {
-                  if (!settings) return;
                   upsertSettings.mutate(
                     buildSettingsPatch(settings, {
-                      irmaaOnTopOfBudget: !(
-                        settings.irmaaOnTopOfBudget ?? false
-                      ),
+                      irmaaOnTopOfBudget: !settings.irmaaOnTopOfBudget,
                     }),
                   );
                 }}
                 disabled={!isEditable}
                 className="bg-surface-elevated text-secondary rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {(settings?.irmaaOnTopOfBudget ?? false)
+                {settings.irmaaOnTopOfBudget
                   ? "On top of my budget"
                   : "In my budget"}
               </button>
@@ -97,32 +91,30 @@ export function HealthcareSection({
           <div className="font-medium">
             <button
               onClick={() => {
-                if (!settings) return;
                 upsertSettings.mutate(
                   buildSettingsPatch(settings, {
-                    enableAcaAwareness: !(settings.enableAcaAwareness ?? false),
+                    enableAcaAwareness: !settings.enableAcaAwareness,
                   }),
                 );
               }}
               disabled={!isEditable}
               className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
-                (settings?.enableAcaAwareness ?? false)
+                settings.enableAcaAwareness
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
               }`}
             >
-              {(settings?.enableAcaAwareness ?? false) ? "On" : "Off"}
+              {settings.enableAcaAwareness ? "On" : "Off"}
             </button>
           </div>
         </div>
-        {(settings?.enableAcaAwareness ?? false) && (
+        {settings.enableAcaAwareness && (
           <div>
             <span className="text-muted">Household Size</span>
             <div className="font-medium">
               <select
-                value={String(settings?.householdSize ?? 2)}
+                value={String(settings.householdSize)}
                 onChange={(e) => {
-                  if (!settings) return;
                   upsertSettings.mutate(
                     buildSettingsPatch(settings, {
                       householdSize: parseInt(e.target.value, 10),

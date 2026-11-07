@@ -364,16 +364,6 @@
       "count": 7
     }
   },
-  "src/components/retirement/sections/glide-path.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/retirement/sections/healthcare.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 23
-    }
-  },
   "src/components/retirement/sections/income.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -389,27 +379,12 @@
       "count": 2
     }
   },
-  "src/components/retirement/sections/rmd-handling.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 14
-    }
-  },
-  "src/components/retirement/sections/settings-patch.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/components/retirement/sections/strategy-params.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }
   },
   "src/components/retirement/sections/taxes.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 41
-    }
-  },
-  "src/components/retirement/sections/timeline.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }
