@@ -1884,9 +1884,6 @@
   "src/components/performance/editable-cell.tsx": {
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/performance/filtered-account-table.tsx": {
@@ -3203,9 +3200,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/settings/integrations-types.ts": {
@@ -3239,9 +3233,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 15
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/settings/integrations/connection-card.tsx": {

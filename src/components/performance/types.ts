@@ -105,6 +105,8 @@ export type EditableCellProps = {
   onKeyDown: (e: React.KeyboardEvent) => void;
   className?: string;
   annotation?: React.ReactNode;
+  /** The input's screen-reader name: its column and row. */
+  label: string;
 };
 
 export type YearRowProps = {

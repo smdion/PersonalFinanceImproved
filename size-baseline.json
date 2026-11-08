@@ -104,7 +104,7 @@
     "src/components/paycheck/contributions-section.tsx": 429,
     "src/components/paycheck/person-paycheck.tsx": 453,
     "src/components/performance/update-performance-form.tsx": 852,
-    "src/components/performance/year-row.tsx": 749,
+    "src/components/performance/year-row.tsx": 765,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 666,
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": 662,
@@ -156,9 +156,9 @@
     "src/components/savings/transactions/row.tsx": 591,
     "src/components/savings/transactions/tab.tsx": 667,
     "src/components/settings/general.tsx": 450,
-    "src/components/settings/integrations-simplefin.tsx": 437,
+    "src/components/settings/integrations-simplefin.tsx": 438,
     "src/components/settings/integrations.tsx": 707,
-    "src/components/settings/integrations/budget-section.tsx": 689,
+    "src/components/settings/integrations/budget-section.tsx": 690,
     "src/components/settings/integrations/portfolio-mapping-lists.tsx": 353,
     "src/components/settings/integrations/portfolio-section.tsx": 337,
     "src/components/tools/relocation/large-purchase-fields.tsx": 214,
@@ -617,8 +617,8 @@
       "YearRangePicker": 158
     },
     "src/components/performance/year-row.tsx": {
-      "YearRow": 719,
-      "YearRow.map()": 379
+      "YearRow": 735,
+      "YearRow.map()": 388
     },
     "src/components/portfolio/account-balance-overview.tsx": {
       "AccountBalanceOverview": 238
@@ -818,7 +818,7 @@
       "SecCard": 188
     },
     "src/components/settings/integrations-simplefin.tsx": {
-      "AccountRow": 158,
+      "AccountRow": 159,
       "SimplefinCard": 234
     },
     "src/components/settings/integrations.tsx": {
@@ -826,7 +826,7 @@
       "ServiceCard": 455
     },
     "src/components/settings/integrations/budget-section.tsx": {
-      "BudgetSection": 635,
+      "BudgetSection": 636,
       "BudgetSection.map()": 206,
       "BudgetSection.map().map()": 171
     },

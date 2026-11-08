@@ -574,6 +574,7 @@ export function BudgetSection({
                     )) && (
                     <div className="flex items-center gap-1 pl-14">
                       <select
+                        aria-label={`Link to existing, ${c.groupName} › ${c.name}`}
                         value={apiToExisting[c.id] ?? ""}
                         onChange={(e) =>
                           setApiToExisting((prev) => ({

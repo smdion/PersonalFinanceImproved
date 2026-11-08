@@ -81,6 +81,7 @@ function AccountRow({
       </label>
       <div className="mt-1 flex items-center justify-between gap-2 pl-6">
         <select
+          aria-label={`Tracked account, ${account.accountName}`}
           value={
             account.linkedLoanId != null
               ? `loan:${account.linkedLoanId}`

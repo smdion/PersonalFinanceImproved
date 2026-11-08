@@ -23,6 +23,7 @@ function Harness({ onCommit }: { onCommit: (v: string) => void }) {
             onEditValueChange={edit.setEditValue}
             onSaveEdit={edit.commit}
             onKeyDown={edit.handleKeyDown}
+            label="Fees, 2025"
           />
         </tr>
       </tbody>
@@ -36,7 +37,9 @@ describe("EditableCell", () => {
     const button = screen.getByRole("button", { name: "$1,250.00" });
     expect(button).toHaveAttribute("type", "button");
     fireEvent.click(button);
-    expect(screen.getByRole("textbox")).toHaveValue("1250");
+    expect(screen.getByRole("textbox", { name: "Fees, 2025" })).toHaveValue(
+      "1250",
+    );
   });
 
   it.each([["Enter" as const], [" " as const]])(

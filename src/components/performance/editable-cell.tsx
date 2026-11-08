@@ -15,6 +15,7 @@ export function EditableCell({
   onKeyDown,
   className = "",
   annotation,
+  label,
 }: EditableCellProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,6 +32,7 @@ export function EditableCell({
         <input
           ref={inputRef}
           type="text"
+          aria-label={label}
           value={editValue}
           onChange={(e) => onEditValueChange(e.target.value)}
           onBlur={onSaveEdit}
