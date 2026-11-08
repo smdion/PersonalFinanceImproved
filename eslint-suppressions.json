@@ -973,17 +973,16 @@
     }
   },
   "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/components/contributions/profile-manager/use-inline-editor.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 2
     }
   },
   "src/components/dashboard/contributions-card.tsx": {

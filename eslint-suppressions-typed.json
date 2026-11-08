@@ -34,7 +34,7 @@
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
+  "src/components/contributions/profile-manager/use-inline-editor.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
