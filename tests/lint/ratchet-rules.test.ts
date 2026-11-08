@@ -7,6 +7,7 @@ import { ESLint, Linter } from "eslint";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ratchetPlugin } from "../../eslint-ratchet.mjs";
+import { sitesIn } from "../../scripts/fallback-inventory";
 
 const linter = new Linter({ configType: "flat" });
 
@@ -219,6 +220,71 @@ describe("ratchet/no-clock-read", () => {
     expect(await counted("src/lib/utils/clock.ts")).toBe(false);
     expect(await counted("src/lib/hooks/use-demo.ts")).toBe(false);
     expect(await counted("src/components/demo/part.tsx")).toBe(false);
+  }, 30_000);
+});
+
+describe("ratchet/no-unregistered-fallback (docs/FALLBACKS.md)", () => {
+  const code = [
+    "const a = row.amount ?? 0;",
+    "const b = row.amount || 0;",
+    "const c = byId.get(id) ?? 0;",
+    "const d = amounts[i] ?? 0;",
+    "total.sum = (total.sum ?? 0) + v;",
+    "const e = row.name ?? '';",
+    "try { f(); } catch { return null; }",
+    "try { f(); } catch (e) { log(e); throw e; }",
+    "try { f(); } catch { const g = () => 1; }",
+    "p.catch(() => null);",
+    "p.catch((e) => log(e));",
+    "const h = readMaybeEncrypted(row.config);",
+  ].join("\n");
+  const lines = (zeroDefaults: boolean) =>
+    linter
+      .verify(
+        `function wrap() {\n${code}\n}`,
+        [
+          {
+            files: ["**/*.ts"],
+            plugins: { ratchet: ratchetPlugin },
+            rules: {
+              "ratchet/no-unregistered-fallback": ["error", { zeroDefaults }],
+            },
+          },
+        ],
+        "part.ts",
+      )
+      .map((m) => m.line - 1);
+
+  it("counts ?? 0 and || 0 in money code, not index reads or seeds", () => {
+    expect(lines(true)).toEqual([1, 2, 7, 10, 12]);
+  });
+
+  it("counts value-returning catches and readMaybe* calls everywhere", () => {
+    expect(lines(false)).toEqual([7, 10, 12]);
+  });
+
+  it("agrees with scripts/fallback-inventory.ts on what is counted", () => {
+    const counted = sitesIn("src/lib/pure/demo/part.ts", code)
+      .filter((s) => s.counted)
+      .map((s) => s.line);
+    expect(counted).toEqual(lines(true));
+  });
+
+  it("counts zero defaults in money paths only", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const zero = "export const f = (x?: number) => x ?? 0;\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(zero, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-unregistered-fallback",
+      );
+    };
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/services/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/routers/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/data/demo/part.ts")).toBe(true);
+    expect(await counted("src/components/demo/part.tsx")).toBe(false);
+    expect(await counted("src/lib/db/demo.ts")).toBe(false);
   }, 30_000);
 });
 

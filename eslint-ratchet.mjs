@@ -254,6 +254,64 @@ const jsxAttr = (opening, name) =>
     (a) => a.type === "JSXAttribute" && a.name.name === name,
   );
 
+// --- Fallbacks (docs/FALLBACKS.md) -----------------------------------------
+
+/** The expression under TS-only wrappers (`x!`, `x as T`). */
+function unwrapTs(node) {
+  let n = node;
+  while (n.type === "TSNonNullExpression" || n.type === "TSAsExpression")
+    n = n.expression;
+  return n.type === "ChainExpression" ? n.expression : n;
+}
+
+/** `a[i]` or `m.get(k)`: the read noUncheckedIndexedAccess makes nullable. */
+function isIndexRead(node) {
+  const n = unwrapTs(node);
+  if (n.type === "MemberExpression") return n.computed;
+  return (
+    n.type === "CallExpression" &&
+    n.callee.type === "MemberExpression" &&
+    !n.callee.computed &&
+    n.callee.property.name === "get"
+  );
+}
+
+/** `x = (x ?? 0) + v`: the seed of a running total. */
+function isAccumulatorSeed(node, sourceCode) {
+  const sum = node.parent;
+  if (sum?.type !== "BinaryExpression" || !/^[+-]$/.test(sum.operator))
+    return false;
+  const assign = sum.parent;
+  return (
+    assign?.type === "AssignmentExpression" &&
+    sourceCode.getText(assign.left) === sourceCode.getText(node.left)
+  );
+}
+
+/** A return with a value directly in `block`, not in a nested function. */
+function returnsValue(block) {
+  let found = false;
+  const visit = (node) => {
+    if (found || !node || typeof node.type !== "string") return;
+    if (/Function/.test(node.type) || node.type === "ClassBody") return;
+    if (node.type === "ReturnStatement" && node.argument) {
+      found = true;
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      if (key === "parent") continue;
+      const child = node[key];
+      if (Array.isArray(child)) child.forEach(visit);
+      else if (child && typeof child.type === "string") visit(child);
+    }
+  };
+  visit(block);
+  return found;
+}
+
+const FALLBACK_MESSAGE =
+  "Unregistered fallback. Register its pattern in docs/FALLBACKS.md, or make the absent state real (RULES review rule 4).";
+
 const customRules = {
   "no-unlabeled-control": {
     meta: {
@@ -579,6 +637,54 @@ export const ratchetPlugin = {
       "ImportSpecifier[imported.name=/^is(Hsa|Ira)Category$/]",
       "isHsaCategory/isIraCategory outside Tax Buckets. Read the account type's behavior field in lib/config/account-types.ts (RULES § Data-Driven Architecture rule 10).",
     ),
+    "no-unregistered-fallback": {
+      meta: {
+        type: "suggestion",
+        docs: {
+          description:
+            "A new fallback is registered in docs/FALLBACKS.md (owner FQ10).",
+        },
+        schema: [
+          {
+            type: "object",
+            properties: { zeroDefaults: { type: "boolean" } },
+            additionalProperties: false,
+          },
+        ],
+      },
+      create(context) {
+        const zeroDefaults = context.options[0]?.zeroDefaults === true;
+        const sourceCode = context.sourceCode;
+        const report = (node, what) =>
+          context.report({ node, message: `${what}: ${FALLBACK_MESSAGE}` });
+        return {
+          LogicalExpression(node) {
+            if (!zeroDefaults || !/^(\?\?|\|\|)$/.test(node.operator)) return;
+            if (node.right.type !== "Literal" || node.right.value !== 0) return;
+            if (isIndexRead(node.left) || isAccumulatorSeed(node, sourceCode))
+              return;
+            report(node, `\`${node.operator} 0\` in money code`);
+          },
+          CatchClause(node) {
+            if (returnsValue(node.body)) report(node, "catch returns a value");
+          },
+          "CallExpression[callee.property.name='catch']"(node) {
+            const handler = node.arguments[0];
+            if (!handler || !/Function/.test(handler.type)) return;
+            const body = handler.body;
+            const valued =
+              body.type === "BlockStatement"
+                ? returnsValue(body)
+                : body.type !== "CallExpression" &&
+                  body.type !== "UnaryExpression";
+            if (valued) report(node, ".catch returns a value");
+          },
+          "CallExpression[callee.name=/^readMaybe[A-Z]/]"(node) {
+            report(node, "plaintext-or-encrypted reader");
+          },
+        };
+      },
+    },
     "no-text-includes": {
       meta: {
         type: "suggestion",
@@ -679,6 +785,23 @@ export const ratchetConfig = [
       "src/lib/hooks/**",
     ],
     rules: { "ratchet/no-clock-read": "error" },
+  },
+  {
+    // Fallbacks (owner FQ10): a value-returning catch and a
+    // plaintext-or-encrypted reader anywhere; `?? 0` / `|| 0` in money paths.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: { "ratchet/no-unregistered-fallback": "error" },
+  },
+  {
+    files: [
+      "src/lib/pure/**/*.{ts,tsx}",
+      "src/server/services/**/*.{ts,tsx}",
+      "src/server/data/**/*.{ts,tsx}",
+      "src/server/routers/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "ratchet/no-unregistered-fallback": ["error", { zeroDefaults: true }],
+    },
   },
   {
     // The helpers themselves.
