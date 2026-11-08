@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # pnpm check:release: the CI checks check:batch doesn't run, for a release
 # branch before its PR: commit rules over the branch, migrations, tax
-# parameters and the PostgreSQL job's suites (TEST_DATABASE_URL must point at
-# a throwaway PostgreSQL database). E2E, the Docker image and the compose boot
-# stay CI's. It runs every step, prints a report and exits non-zero on a
+# parameters, the dependency audit and the PostgreSQL job's suites
+# (TEST_DATABASE_URL must point at a throwaway PostgreSQL database). E2E, the
+# Docker image and the compose boot stay CI's. It runs every step, prints a report and exits non-zero on a
 # failure.
 set -uo pipefail
 
@@ -25,6 +25,7 @@ step "commit rules ($base..HEAD)" pnpm -s tsx scripts/check-commit.ts --strict -
 step "migrations" pnpm -s check:migrations
 step "tax parameters (blocking when tax data changed since $base)" pnpm -s check:tax-params --base "$base"
 step "tax-data dataVersion raised where tax data changed" pnpm -s tsx scripts/check-tax-data-version.ts "$base"
+step "dependency audit (production, high and above)" pnpm -s audit --prod --audit-level=high
 if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
   step "migrations from empty (PostgreSQL)" env DATABASE_URL="$TEST_DATABASE_URL" bash -c 'pnpm -s build:migrator && node db-migrate.js'
   step "constraint snapshot" pnpm -s check:constraints

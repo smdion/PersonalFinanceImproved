@@ -30,6 +30,7 @@ Thanks for your interest in contributing! Here's how to get started.
 - Lint with ESLint (`pnpm lint`)
 - Component files use kebab-case (`my-component.tsx`)
 - Database columns use snake_case, TypeScript properties use camelCase
+- `saxes` is pinned exactly (no caret): it parses SEC's XML filings, outside input, and releases rarely, so a new version comes only as a reviewed Dependabot pull request; watch it for that pull request and for a `pnpm audit` advisory
 
 ## Before you write code
 
