@@ -46,6 +46,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    paysMedicalExpenses: false,
+    rothIncomeLimited: false,
+    fundChoiceOpen: false,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -102,6 +105,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    paysMedicalExpenses: false,
+    rothIncomeLimited: false,
+    fundChoiceOpen: false,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -158,6 +164,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: true,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    paysMedicalExpenses: false,
     rothIncomeLimited: true,
     fundChoiceOpen: true,
     hasIrsLimit: true,
@@ -214,6 +221,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
     tripleTaxAdvantaged: true,
     paysMedicalExpenses: true,
+    rothIncomeLimited: false,
+    fundChoiceOpen: false,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -275,6 +284,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    paysMedicalExpenses: false,
+    rothIncomeLimited: false,
     fundChoiceOpen: true,
     hasIrsLimit: false,
     irsLimitGroup: null,

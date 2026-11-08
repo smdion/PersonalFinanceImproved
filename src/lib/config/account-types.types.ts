@@ -79,14 +79,14 @@ export type AccountTypeConfig = {
   tripleTaxAdvantaged: boolean;
   /** Its money is for qualified medical expenses (IRC 223(d)(2)): card spending
    *  through it is medical, and it keeps a cash buffer for those bills (by
-   *  default the HDHP deductible). Set only where true. */
-  paysMedicalExpenses?: true;
+   *  default the HDHP deductible). */
+  paysMedicalExpenses: boolean;
   /** Roth contributions to it are income-limited: they phase out by MAGI
-   *  (IRC 408A(c)(3)). Set only where true. */
-  rothIncomeLimited?: true;
+   *  (IRC 408A(c)(3)). */
+  rothIncomeLimited: boolean;
   /** The household picks any fund in it (no plan's fixed menu), so a cheaper
-   *  fund can replace a costly one. Set only where true. */
-  fundChoiceOpen?: true;
+   *  fund can replace a costly one. */
+  fundChoiceOpen: boolean;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;
