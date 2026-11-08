@@ -17,10 +17,9 @@
  */
 import {
   getAllCategories,
-  isHsaCategory,
-  isIraCategory,
-  isPayrollDeductibleCategory,
+  hasEarlyAccessRule,
   isPreTaxType,
+  isRothIncomeLimited,
   isTaxFree,
 } from "@/lib/config/account-types";
 import type { RothIraRoute } from "@/lib/config/enum-values";
@@ -194,7 +193,8 @@ export function preTaxIraByPerson(
   const byPerson = new Map<number, number>();
   let unowned = 0;
   for (const a of accounts) {
-    if (!isIraCategory(a.accountType) || !isPreTaxType(a.taxType)) continue;
+    if (!isRothIncomeLimited(a.accountType) || !isPreTaxType(a.taxType))
+      continue;
     if (a.amount <= 0) continue;
     if (a.ownerPersonId === null) {
       unowned += a.amount;
@@ -368,12 +368,10 @@ type RothIraSummary = {
   }[];
 };
 
-/** A workplace retirement plan (payroll-deducted, not an HSA) — where a
- *  pre-tax IRA balance could be rolled to clear the pro-rata pool. */
+/** A workplace retirement plan (the employer-plan early-access rule) —
+ *  where a pre-tax IRA balance could be rolled to clear the pro-rata pool. */
 function isEmployerPlanType(accountType: string): boolean {
-  return (
-    isPayrollDeductibleCategory(accountType) && !isHsaCategory(accountType)
-  );
+  return hasEarlyAccessRule(accountType, "employer_plan");
 }
 
 /**
@@ -399,7 +397,7 @@ export function rothIraSummary(args: {
     rothRoute?: RothIraRoute | null;
   }[];
 }): RothIraSummary | null {
-  const iraCategory = getAllCategories().find(isIraCategory);
+  const iraCategory = getAllCategories().find(isRothIncomeLimited);
   if (!args.filingStatus || !iraCategory) return null;
   const keys = rothIraPhaseoutKeys(args.filingStatus);
   const start = args.limits[keys.start];
@@ -431,7 +429,7 @@ export function isRothIraContribution(c: {
   accountType: string;
   taxTreatment: string;
 }): boolean {
-  return isIraCategory(c.accountType) && isTaxFree(c.taxTreatment);
+  return isRothIncomeLimited(c.accountType) && isTaxFree(c.taxTreatment);
 }
 
 /** A person's Roth IRA route from their effective contribution rows: the

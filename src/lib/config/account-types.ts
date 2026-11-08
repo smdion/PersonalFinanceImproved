@@ -158,6 +158,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: true,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    rothIncomeLimited: true,
+    fundChoiceOpen: true,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -211,6 +213,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
     tripleTaxAdvantaged: true,
+    paysMedicalExpenses: true,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -272,6 +275,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    fundChoiceOpen: true,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -515,9 +519,7 @@ export function isOverflowTarget(category: AccountCategory): boolean {
   return ACCOUNT_TYPE_CONFIG[category].isOverflowTarget;
 }
 
-/**
- * Get the limit group for a category (for shared IRS limits like 401k/403b).
- */
+/** Get the limit group for a category (for shared IRS limits like 401k/403b). */
 export function getLimitGroup(category: string): string | null {
   return CONFIG_BY_TEXT[category]?.irsLimitGroup ?? null;
 }
@@ -552,12 +554,17 @@ export function isIraCategory(category: string): boolean {
 /** Rule of 55 can apply (IRC §72(t)(2)(A)(v)): the employer-plan
  *  early-access rule. False for a category not in the config. */
 export function isRuleOf55EligibleCategory(category: string): boolean {
-  return CONFIG_BY_TEXT[category]?.earlyAccessRule === "employer_plan";
+  return hasEarlyAccessRule(category, "employer_plan");
 }
 
 /** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */
 export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
   return ACCOUNT_TYPE_CONFIG[category].earlyAccessRule;
+}
+
+/** Withdrawals follow this early-access rule; false for an unknown category. */
+export function hasEarlyAccessRule(category: string, rule: EarlyAccessRule) {
+  return CONFIG_BY_TEXT[category]?.earlyAccessRule === rule;
 }
 
 /** A QCD can come from this category (`qcdEligible`). */
@@ -577,6 +584,21 @@ export function nonMedicalPenaltyRate(
   return ACCOUNT_TYPE_CONFIG[category].nonMedicalPenaltyRate;
 }
 
+/** `paysMedicalExpenses`; false for a category not in the config. */
+export function paysMedicalExpenses(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.paysMedicalExpenses === true;
+}
+
+/** `rothIncomeLimited`; false for a category not in the config. */
+export function isRothIncomeLimited(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.rothIncomeLimited === true;
+}
+
+/** `fundChoiceOpen`; false for a category not in the config. */
+export function hasOpenFundChoice(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.fundChoiceOpen === true;
+}
+
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
 export const PARENT_CATEGORY_VALUES = ["Retirement", "Portfolio"] as const;
 export type ParentCategory = (typeof PARENT_CATEGORY_VALUES)[number];
@@ -585,16 +607,12 @@ export function parentCategoryEnum(): typeof PARENT_CATEGORY_VALUES {
   return PARENT_CATEGORY_VALUES;
 }
 
-/**
- * Get the parent category for classification.
- */
+/** Get the parent category for classification. */
 export function getParentCategory(category: AccountCategory): ParentCategory {
   return ACCOUNT_TYPE_CONFIG[category].parentCategory;
 }
 
-/**
- * Get the display group for paycheck/contribution views.
- */
+/** Get the display group for paycheck/contribution views. */
 export function getDisplayGroup(category: AccountCategory): DisplayGroup {
   return ACCOUNT_TYPE_CONFIG[category].displayGroup;
 }
@@ -707,15 +725,6 @@ export function isTaxableCategory(category: string | null): boolean {
   return isAfterTaxType(ACCOUNT_TYPE_CONFIG[category].taxBucketKey);
 }
 
-/** Whether contributions to a category come out of the paycheck (config
- *  `isPayrollDeductible`). Unknown categories: false. */
-export function isPayrollDeductibleCategory(category: string): boolean {
-  return (
-    isKnownCategory(category) &&
-    ACCOUNT_TYPE_CONFIG[category].isPayrollDeductible
-  );
-}
-
 /** Whether a category's payroll contributions skip FICA (config
  *  `payrollFicaExempt`, §125 — HSA). Unknown categories: false. */
 export function isPayrollFicaExemptCategory(category: string): boolean {
@@ -747,9 +756,7 @@ export function getDefaultTaxTreatment(category: AccountCategory): string {
 // UI helpers — replace scattered label maps and column key builders
 // ---------------------------------------------------------------------------
 
-/**
- * Get the column segments for all engine categories.
- */
+/** Get the column segments for all engine categories. */
 export function getAccountSegments(): AccountSegment<AccountCategory>[] {
   const segments: AccountSegment<AccountCategory>[] = [];
   for (const cat of getEngineCategories()) {
@@ -801,9 +808,7 @@ export function parseColumnKey(
   return null;
 }
 
-/**
- * Get the display label for a column key.
- */
+/** Get the display label for a column key. */
 export function getColumnLabel(key: string): string {
   const parsed = parseColumnKey(key);
   if (!parsed) return key;
@@ -813,16 +818,12 @@ export function getColumnLabel(key: string): string {
   return cfg.displayLabel;
 }
 
-/**
- * Get the default accumulation order (engine categories only).
- */
+/** Get the default accumulation order (engine categories only). */
 export function getDefaultAccumulationOrder(): AccountCategory[] {
   return getEngineCategories();
 }
 
-/**
- * Get the default decumulation order.
- */
+/** Get the default decumulation order. */
 export function getDefaultDecumulationOrder(): AccountCategory[] {
   return getEngineCategories().sort(
     (a, b) =>
@@ -846,9 +847,7 @@ export function defaultDecumulationConfig(): {
   };
 }
 
-/**
- * Build an empty record keyed by all engine categories with a factory.
- */
+/** Build an empty record keyed by all engine categories with a factory. */
 export function buildCategoryRecord<T>(
   factory: () => T,
 ): Record<AccountCategory, T> {

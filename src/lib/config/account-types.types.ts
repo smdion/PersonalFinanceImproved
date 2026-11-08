@@ -77,6 +77,17 @@ export type AccountTypeConfig = {
    *  (IRC 223): the best treatment, so it's funded before any other
    *  tax-advantaged type. */
   tripleTaxAdvantaged: boolean;
+  /** Its money is for qualified medical expenses (IRC 223(d)(2)): card spending
+   *  through it is medical, and it keeps a cash buffer for those bills (by
+   *  default the HDHP deductible). Set only where true. */
+  paysMedicalExpenses?: true;
+  /** Roth contributions phase out by income (IRC 408A(c)(3)), so the backdoor
+   *  route runs through it: a Traditional contribution converted, taxed pro
+   *  rata over its pre-tax balances (IRC 408(d)(2)). Set only where true. */
+  rothIncomeLimited?: true;
+  /** The household picks any fund in it (no plan's fixed menu), so a cheaper
+   *  fund can replace a costly one. Set only where true. */
+  fundChoiceOpen?: true;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;

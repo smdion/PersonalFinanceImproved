@@ -11,10 +11,8 @@
  */
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import {
-  isHsaCategory,
-  isIraCategory,
+  hasEarlyAccessRule,
   isRetirementMoney,
-  isRuleOf55EligibleCategory,
   isTaxableCategory,
   isTaxFreeBucket,
 } from "@/lib/config/account-types";
@@ -99,10 +97,14 @@ function bridgeAccounts(y: EngineDecumulationYear) {
 function sourceKind(a: IndividualAccountYearBalance): BridgeSourceKind {
   if (isTaxableCategory(a.category)) return "brokerage";
   if (isTaxFreeBucket(a.taxType)) return "roth";
-  if (isRuleOf55EligibleCategory(a.category)) return "workplacePlan";
-  if (isIraCategory(a.category)) return "traditionalIra";
+  if (hasEarlyAccessRule(a.category, "employer_plan")) return "workplacePlan";
+  if (hasEarlyAccessRule(a.category, "ira_59_half")) return "traditionalIra";
   return "other";
 }
+
+/** HSA money is set apart: medical only before its non-medical age. */
+const isMedicalOnly = (a: IndividualAccountYearBalance) =>
+  hasEarlyAccessRule(a.category, "hsa_non_medical");
 
 const lockedFor = (a: IndividualAccountYearBalance) =>
   (a.draw?.penaltyExposedAmount ?? 0) > 0 &&
@@ -148,7 +150,7 @@ export function retirementBridge(
   });
 
   const startAccounts = bridgeAccounts(first);
-  const counted = startAccounts.filter((a) => !isHsaCategory(a.category));
+  const counted = startAccounts.filter((a) => !isMedicalOnly(a));
   const bySource = new Map<BridgeSourceKind, number>();
   for (const a of counted) {
     const free = a.draw?.penaltyFreeAmount ?? 0;
@@ -161,7 +163,7 @@ export function retirementBridge(
   const lastLocked = new Map<string, number>();
   for (const y of bridge)
     for (const a of bridgeAccounts(y))
-      if (!isHsaCategory(a.category) && lockedFor(a) && a.ownerName)
+      if (!isMedicalOnly(a) && lockedFor(a) && a.ownerName)
         lastLocked.set(a.ownerName, y.year);
   const unlocks = Array.from(lastLocked, ([name, year]) => ({
     name,
@@ -172,7 +174,7 @@ export function retirementBridge(
   let cushion: { amount: number; year: number } | null = null;
   for (const y of bridge) {
     const left = sumBy(
-      bridgeAccounts(y).filter((a) => !isHsaCategory(a.category)),
+      bridgeAccounts(y).filter((a) => !isMedicalOnly(a)),
       (a) =>
         Math.max(
           0,
@@ -195,10 +197,7 @@ export function retirementBridge(
       amount: roundToCents(amount),
     })).sort((a, b) => b.amount - a.amount),
     hsa: roundToCents(
-      sumBy(
-        startAccounts.filter((a) => isHsaCategory(a.category)),
-        (a) => a.balance,
-      ),
+      sumBy(startAccounts.filter(isMedicalOnly), (a) => a.balance),
     ),
     unlocks,
     cushion,

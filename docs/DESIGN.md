@@ -647,7 +647,9 @@ about the account, and read the config field that says it (RULES.md
 2. If not, add a field to `AccountTypeConfig` named for the behavior (as
    `earlyAccessRule` and `qcdEligible` are), set it on every entry, and add
    its helper in `src/lib/config/account-types.ts` with a one-line doc
-   comment naming the field.
+   comment naming the field. A flag true for few types may instead be an
+   optional `true` set only where it holds (`paysMedicalExpenses`), its
+   helper reading absent as false; its docblock says so.
 3. Update every call site to use it.
 
 Never add a predicate that names an account type (`isHsaCategory`,

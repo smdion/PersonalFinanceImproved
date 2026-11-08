@@ -13,7 +13,10 @@
  * yearly saving is measured to that line (proxy fees aren't stored, so the
  * line — not a proxy figure — is what the saving is counted against).
  */
-import { isIraCategory, isTaxableCategory } from "@/lib/config/account-types";
+import {
+  hasOpenFundChoice,
+  isTaxableCategory,
+} from "@/lib/config/account-types";
 import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
@@ -91,10 +94,7 @@ function singleClass(facts: EffectiveFacts): CompositionBucket | null {
 /** An account whose funds the household chooses freely (an IRA, a taxable
  *  account) — workplace-plan and HSA menus are fixed. */
 export function canSwitchFunds(accountType: string | null): boolean {
-  return (
-    accountType !== null &&
-    (isIraCategory(accountType) || isTaxableCategory(accountType))
-  );
+  return accountType !== null && hasOpenFundChoice(accountType);
 }
 
 export function judgeCheaperFunds(

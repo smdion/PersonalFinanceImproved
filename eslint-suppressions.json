@@ -5513,9 +5513,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 2
     }
   },
   "src/lib/pure/accounts/cost-basis.ts": {
@@ -6085,9 +6082,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 8
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 8
@@ -6827,9 +6821,6 @@
   "src/lib/pure/investments/fund-findings.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 1
     }
   },
   "src/lib/pure/investments/fund-prices.ts": {
@@ -7150,9 +7141,6 @@
   "src/lib/pure/retirement/retirement-bridge.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 2
     }
   },
   "src/lib/pure/retirement/rmd-excess-target.ts": {
