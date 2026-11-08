@@ -1,10 +1,12 @@
 {
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 429,
-    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 413,
+    "src/app/(dashboard)/brokerage/brokerage-content.tsx": 255,
     "src/app/(dashboard)/brokerage/brokerage-funding.tsx": 291,
     "src/app/(dashboard)/brokerage/brokerage-goal-status.tsx": 64,
-    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 306,
+    "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 291,
+    "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
+    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 278,
     "src/app/(dashboard)/budget/budget-content.tsx": 656,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 574,
@@ -358,10 +360,7 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
-      "BrokerageContent": 374
-    },
-    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": {
-      "YearByYearTable": 162
+      "BrokerageContent": 229
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
       "BudgetContent": 576

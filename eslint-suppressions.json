@@ -32,9 +32,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-raw-button": {
-      "count": 2
     }
   },
   "src/app/(dashboard)/brokerage/brokerage-funding.tsx": {
@@ -54,11 +51,13 @@
       "count": 2
     }
   },
+  "src/app/(dashboard)/brokerage/brokerage-sections.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    }
+  },
   "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
       "count": 1
     }
   },
