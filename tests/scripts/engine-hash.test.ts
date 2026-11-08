@@ -135,4 +135,15 @@ describe("engine-hash reads code, not comments (owner v0.10.3 Q2)", () => {
       ENGINE_HASH,
     );
   });
+
+  it("hashes the formatters the engine reads, not lib/utils/format.ts: a display-only edit there keeps ENGINE_HASH", async () => {
+    const paths = await closure();
+    expect(paths).not.toContain("src/lib/utils/format.ts");
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        "src/lib/utils/percent.ts",
+        "src/lib/utils/account-name.ts",
+      ]),
+    );
+  });
 });
