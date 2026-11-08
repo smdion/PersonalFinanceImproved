@@ -15,8 +15,14 @@
  * one mega-hook fails here rather than silently.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
-import { resetTrpcMock, utilsCalls } from "./trpc-mock";
+import { act, renderHook } from "@testing-library/react";
+import {
+  mutationCalls,
+  resetTrpcMock,
+  utilsCalledPaths,
+  utilsCalls,
+  type MutationPath,
+} from "./trpc-mock";
 
 // Mock tRPC before importing the hooks. trpc-mock's useUtils() returns one
 // stable object across renders, as tRPC's real one does: the
@@ -108,6 +114,78 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     expect(second).toBe(first);
     first();
     expect(utilsCalls("sync.getPreview.invalidate")).toHaveLength(1);
+  });
+
+  it("every mutation calls its procedure and invalidates only the preview", async () => {
+    const [drift, budget, savings, contrib, portfolio] = await Promise.all([
+      import("@/components/settings/integrations/use-drift-mutations"),
+      import("@/components/settings/integrations/use-budget-mutations"),
+      import("@/components/settings/integrations/use-savings-mutations"),
+      import("@/components/settings/integrations/use-contrib-mutations"),
+      import("@/components/settings/integrations/use-portfolio-mutations"),
+    ]);
+    const table: [() => object, [string, MutationPath][]][] = [
+      [
+        drift.useDriftMutations,
+        [
+          ["syncAllNames", "sync.syncAllNames"],
+          ["setLinkedProfile", "sync.setLinkedProfile"],
+          ["setLinkedColumn", "sync.setLinkedColumn"],
+        ],
+      ],
+      [
+        budget.useBudgetIntegrationsMutations,
+        [
+          ["linkBudget", "budget.linkToApi"],
+          ["unlinkBudget", "budget.unlinkFromApi"],
+          ["createItem", "budget.createItem"],
+          ["skipCategory", "sync.skipCategory"],
+          ["unskipCategory", "sync.unskipCategory"],
+          ["renameBudgetToApi", "sync.renameBudgetItemToApi"],
+          ["renameBudgetApiName", "sync.renameBudgetItemApiName"],
+          ["moveBudgetToApiGroup", "sync.moveBudgetItemToApiGroup"],
+          ["setBudgetSyncDir", "budget.setSyncDirection"],
+        ],
+      ],
+      [
+        savings.useSavingsMutations,
+        [
+          ["linkSavings", "savings.linkGoalToApi"],
+          ["unlinkSavings", "savings.unlinkGoalFromApi"],
+          ["renameSavingsToApi", "sync.renameSavingsGoalToApi"],
+          ["renameSavingsApiName", "sync.renameSavingsGoalApiName"],
+          ["linkReimbursement", "savings.linkReimbursementCategory"],
+          ["createGoal", "savings.savingsGoals.create"],
+        ],
+      ],
+      [
+        contrib.useContribMutations,
+        [
+          ["linkContrib", "budget.linkContributionAccount"],
+          ["unlinkContrib", "budget.unlinkContributionAccount"],
+        ],
+      ],
+      [
+        portfolio.usePortfolioMutations,
+        [
+          ["updateMappings", "sync.updateAccountMappings"],
+          ["createAssetAndMap", "sync.createAssetAndMap"],
+        ],
+      ],
+    ];
+    for (const [hook, rows] of table) {
+      for (const [key, path] of rows) {
+        resetTrpcMock();
+        const { result } = renderHook(hook);
+        const mutation = (result.current as Record<string, unknown>)[key] as {
+          mutate: (input: never) => void;
+        };
+        act(() => mutation.mutate({} as never));
+        expect(mutationCalls(path), `${key} → ${path}`).toHaveLength(1);
+        expect(utilsCalledPaths(), key).toEqual(["sync.getPreview.invalidate"]);
+        expect(utilsCalls("sync.getPreview.invalidate"), key).toHaveLength(1);
+      }
+    }
   });
 
   it("every section hook returns a flat mutation bundle, not a { mutations, invalidate } wrapper", async () => {

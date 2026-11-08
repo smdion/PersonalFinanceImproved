@@ -261,6 +261,15 @@ export function utilsCalls(path: string): unknown[][] {
   return mockFor(utilsMocks, path).mock.calls;
 }
 
+/** Every `utils` path called since the last reset, sorted, e.g. to pin a
+ *  mutation's whole invalidation set. */
+export function utilsCalledPaths(): string[] {
+  return [...utilsMocks]
+    .filter(([, m]) => m.mock.calls.length > 0)
+    .map(([path]) => path)
+    .sort();
+}
+
 /** Clears registered data and recorded calls (call in beforeEach). */
 export function resetTrpcMock(): void {
   for (const m of [
