@@ -85,8 +85,11 @@
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1258,
-    "src/components/savings/fund-card-progress.tsx": 27,
-    "src/components/savings/fund-card.tsx": 1007,
+    "src/components/savings/fund-card-menu.tsx": 143,
+    "src/components/savings/fund-card-progress.tsx": 303,
+    "src/components/savings/fund-card-sub-goals.tsx": 214,
+    "src/components/savings/fund-card-summary.tsx": 147,
+    "src/components/savings/fund-card.tsx": 554,
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 437,
     "src/components/savings/savings-trajectory-table.tsx": 550,
@@ -731,7 +734,7 @@
       "ExtraPaycheckJobPanel": 776
     },
     "src/components/savings/fund-card.tsx": {
-      "FundCard": 823
+      "FundCard": 364
     },
     "src/components/savings/fund-management-section.tsx": {
       "FundManagementSection": 498
