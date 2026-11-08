@@ -48,7 +48,7 @@ export function NetWorthLineChart({
       title={
         <>
           Net Worth Over Time{" "}
-          <HelpTip text="Multi-line view: Net Worth (green), Portfolio (red), House (blue), Cash (amber), Liabilities (purple). Current year marked with *." />
+          <HelpTip text="Multi-line view: Net Worth (thick indigo line), Portfolio (red line), House (blue line), Cash (amber line), Liabilities (dashed purple line). Current year marked with *." />
         </>
       }
       className="mb-8"
