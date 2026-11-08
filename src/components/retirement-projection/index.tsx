@@ -29,7 +29,7 @@ import {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export function ProjectionCard(props: {
+type ProjectionCardProps = {
   people?: { id: number; name: string; birthYear: number }[];
   onContributionRates?: (rates: EngineContribRate[]) => void;
   withdrawalRate: number;
@@ -42,18 +42,16 @@ export function ProjectionCard(props: {
   parentCategoryFilter?: string;
   contributionProfileId?: number;
   salaryProfileId?: number;
-  /** View a non-active Retirement Profile (AssumptionsBand) — threaded to
-   *  every engine query so the chart/table this card renders agrees with
-   *  whichever profile the band above it is showing. Previously accepted
-   *  nowhere in this card's query layer, so the band's "view a non-active
-   *  profile" silently never reached the chart — it kept showing the
-   *  globally-active profile regardless. */
+  /** The Retirement Profile the AssumptionsBand above shows, threaded to
+   *  every engine query so the chart and table agree with it. */
   retirementProfileId?: number | null;
   snapshotId?: number;
   /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
   dollarMode?: DollarBasis;
   onDollarModeChange?: (mode: DollarBasis) => void;
-}) {
+};
+
+export function ProjectionCard(props: ProjectionCardProps) {
   const state = useProjectionState({
     people: props.people,
     onContributionRates: props.onContributionRates,
@@ -71,7 +69,6 @@ export function ProjectionCard(props: {
     snapshotId: props.snapshotId,
   });
 
-  // Destructure for the toolbar and stats row (kept inline since they're tightly coupled to layout)
   const {
     dollarMode: internalDollarMode,
     setDollarMode: internalSetDollarMode,
@@ -173,35 +170,32 @@ export function ProjectionCard(props: {
               {/* The toolbar, once there is a result: Compute (what to run)
                   and Display (how to show it), outside the chart so it
                   stays usable while the engine loads. */}
-              {result &&
-                (() => {
-                  return (
-                    <div className="space-y-2 print:hidden">
-                      {/* COMPUTE zone — decisions that change what gets
+              {result && (
+                <div className="space-y-2 print:hidden">
+                  {/* COMPUTE zone — decisions that change what gets
                           calculated. Scenario is the primary control
                           (bigger, colored active state); everything else
                           is secondary, below the dashed rule. */}
-                      <ComputeControls
-                        state={state}
-                        people={people}
-                        result={result}
-                        engineSettings={engineSettings}
-                      />
+                  <ComputeControls
+                    state={state}
+                    people={people}
+                    result={result}
+                    engineSettings={engineSettings}
+                  />
 
-                      {/* DISPLAY zone — lenses on results already computed.
+                  {/* DISPLAY zone — lenses on results already computed.
                           Chart type is the primary control; Dollars rides
                           alongside it since it's the other frequently-
                           touched one. Everything else is secondary. */}
-                      <DisplayControls
-                        chartView={chartView}
-                        setChartView={setChartView}
-                        dollarMode={dollarMode}
-                        setDollarMode={setDollarMode}
-                        state={state}
-                      />
-                    </div>
-                  );
-                })()}
+                  <DisplayControls
+                    chartView={chartView}
+                    setChartView={setChartView}
+                    dollarMode={dollarMode}
+                    setDollarMode={setDollarMode}
+                    state={state}
+                  />
+                </div>
+              )}
 
               {/* Chart area — engine skeleton, then real chart (with MC skeleton
                   if MC is still pending after engine completes). The advisor

@@ -67,7 +67,7 @@ export function ReportControls({
       )}
 
       {/* Advisor-report-only root: hidden on screen, print-visible,
-              reached only once the gate passed. */}
+          reached only once the gate passed. */}
       {reportMode === "advisor" && result && mcQuery.data?.result && (
         <div className="hidden print:block">
           <ReportRoot
