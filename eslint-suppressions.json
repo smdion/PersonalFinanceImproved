@@ -8266,7 +8266,7 @@
   },
   "src/server/routers/contribution-profiles.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 12
+      "count": 6
     },
     "max-lines-per-function": {
       "count": 1
@@ -8275,7 +8275,7 @@
       "count": 10
     },
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -8992,9 +8992,6 @@
     }
   },
   "src/server/services/contributions/caps.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 4
     },
@@ -9035,13 +9032,13 @@
   },
   "src/server/services/contributions/profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 10
+      "count": 8
     },
     "ratchet/max-comment-lines": {
       "count": 11
     },
     "ratchet/no-abbreviation": {
-      "count": 14
+      "count": 13
     },
     "ratchet/no-history-comment": {
       "count": 5
@@ -9204,9 +9201,6 @@
     }
   },
   "src/server/services/paycheck/job-net-pay.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -9221,9 +9215,6 @@
     }
   },
   "src/server/services/paycheck/summary.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 2
     },

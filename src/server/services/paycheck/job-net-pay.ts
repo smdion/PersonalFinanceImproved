@@ -4,6 +4,7 @@ import { getAllPeople } from "@/server/data/people";
 import { eq, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
   mergeSalaryProfileJobFields,
@@ -144,19 +145,18 @@ export async function computeJobNetPayPerCheck(
     (b) => b.taxYear === resolvedTax.resolvedYear,
   );
 
-  // Accounts carry no contribution value of their own — resolve against the
-  // ACTIVE Contribution Profile, matching this function's "recorded fact" philosophy for salary above.
+  // Accounts carry no contribution value: the active Contribution Profile's.
   const activeContribProfileId = Number(activeContribSetting[0]?.value ?? NaN);
   const contribProfile = Number.isFinite(activeContribProfileId)
     ? await fetchContributionProfile(db, activeContribProfileId)
     : null;
-  const contribActiveFieldsRoot = (contribProfile?.contributionActiveFields ??
-    {}) as {
-    contributionAccounts?: Record<string, Record<string, unknown>>;
-    deductions?: Record<string, Record<string, unknown>>;
-  };
-  const accountActiveFields =
-    contribActiveFieldsRoot.contributionAccounts ?? {};
+  const contribActiveFieldsRoot = contribProfile
+    ? readContributionActiveFields(
+        contribProfile.contributionActiveFields,
+        contribProfile.id,
+      )
+    : { contributionAccounts: {}, deductions: {} };
+  const accountActiveFields = contribActiveFieldsRoot.contributionAccounts;
   const jobContribs = applyContribActiveFields(
     rawJobContribs,
     accountActiveFields,
@@ -167,7 +167,7 @@ export async function computeJobNetPayPerCheck(
   );
   const jobDeductions = applyDeductionActiveFields(
     rawJobDeductions,
-    contribActiveFieldsRoot.deductions ?? {},
+    contribActiveFieldsRoot.deductions,
   );
 
   // Job tax-inputs (filing status, withholding, schedule) come from the

@@ -5,6 +5,7 @@ import type {
 } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import {
   type AccountCategory,
   getParentCategory,
@@ -52,12 +53,9 @@ export function resolveProfile<
   liveJobSalaries: S[],
   salaryProfileActiveMap: SalaryProfileActiveMap,
 ) {
-  const contribActiveFieldsRoot = profile.contributionActiveFields as Record<
-    string,
-    Record<string, Record<string, unknown>>
-  >;
-  const accountActiveFields =
-    contribActiveFieldsRoot.contributionAccounts ?? {};
+  const accountActiveFields = readContributionActiveFields(
+    profile.contributionActiveFields,
+  ).contributionAccounts;
 
   // The merge applyContribActiveFields does: an account with no value in
   // this profile has none anywhere, so it is excluded.
@@ -366,17 +364,14 @@ export function applyContribProfileRow(
       contribActiveFields: {},
     };
   }
-  const activeFieldsRoot = profile.contributionActiveFields as Record<
-    string,
-    Record<string, Record<string, unknown>>
-  >;
-  const contribActiveFields = activeFieldsRoot.contributionAccounts ?? {};
+  const activeFieldsRoot = readContributionActiveFields(
+    profile.contributionActiveFields,
+    profile.id,
+  );
+  const contribActiveFields = activeFieldsRoot.contributionAccounts;
   const contribs = applyContribActiveFields(allContribs, contribActiveFields);
   const deductions = allDeductions
-    ? applyDeductionActiveFields(
-        allDeductions,
-        activeFieldsRoot.deductions ?? {},
-      )
+    ? applyDeductionActiveFields(allDeductions, activeFieldsRoot.deductions)
     : [];
   return { contribs, jobs, deductions, contribActiveFields };
 }

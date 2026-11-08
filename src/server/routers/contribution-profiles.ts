@@ -31,6 +31,7 @@ import { createTRPCRouter } from "../trpc";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
@@ -224,13 +225,10 @@ export const contributionProfileRouter = createTRPCRouter({
         0,
       );
 
-      const accountActiveFields =
-        (
-          profile.contributionActiveFields as Record<
-            string,
-            Record<string, Record<string, unknown>>
-          >
-        ).contributionAccounts ?? {};
+      const accountActiveFields = readContributionActiveFields(
+        profile.contributionActiveFields,
+        profile.id,
+      ).contributionAccounts;
 
       return {
         id: profile.id,
@@ -357,17 +355,14 @@ export const contributionProfileRouter = createTRPCRouter({
 
     return {
       accounts,
-      profiles: profiles.map((p) => {
-        const root = p.contributionActiveFields as Record<
-          string,
-          Record<string, Record<string, unknown>>
-        >;
-        return {
-          id: p.id,
-          name: p.name,
-          accountActiveFields: root.contributionAccounts ?? {},
-        };
-      }),
+      profiles: profiles.map((p) => ({
+        id: p.id,
+        name: p.name,
+        accountActiveFields: readContributionActiveFields(
+          p.contributionActiveFields,
+          p.id,
+        ).contributionAccounts,
+      })),
     };
   }),
 
@@ -407,18 +402,13 @@ export const contributionProfileRouter = createTRPCRouter({
       );
 
       // Build per-account detail for the editor UI
-      const contribActiveFieldsRoot =
-        profile.contributionActiveFields as Record<
-          string,
-          Record<string, Record<string, unknown>>
-        >;
-      const accountActiveFields =
-        (contribActiveFieldsRoot.contributionAccounts ?? {}) as Record<
-          string,
-          Record<string, unknown>
-        >;
-      const deductionActiveFields = (contribActiveFieldsRoot.deductions ??
-        {}) as Record<string, Record<string, unknown>>;
+      const {
+        contributionAccounts: accountActiveFields,
+        deductions: deductionActiveFields,
+      } = readContributionActiveFields(
+        profile.contributionActiveFields,
+        profile.id,
+      );
       // Convert perfAccountMap to array for fallback matching
       const allPerfAccounts = Array.from(perfAccountMap.values());
 
@@ -639,12 +629,10 @@ export const contributionProfileRouter = createTRPCRouter({
       // Over the limits on a future switch: saved, with a warning.
       const { asOf } = ctx.scope;
       let limitWarning: string | null = null;
-      const before =
-        (
-          existing[0].contributionActiveFields as {
-            contributionAccounts?: Record<string, Record<string, unknown>>;
-          }
-        ).contributionAccounts ?? {};
+      const before = readContributionActiveFields(
+        existing[0].contributionActiveFields,
+        input.id,
+      ).contributionAccounts;
       const incoming =
         input.contributionActiveFields &&
         (await activeFieldsWithMatchRates(

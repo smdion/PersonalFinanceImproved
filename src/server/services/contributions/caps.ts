@@ -14,6 +14,7 @@ import type {
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import {
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
@@ -173,11 +174,10 @@ async function irsLimitJudge(
           .from(schema.contributionProfiles)
           .where(eq(schema.contributionProfiles.id, judgedProfileId))
       : [];
-    profileFields =
-      (
-        judged?.contributionActiveFields as
-          { contributionAccounts?: AccountFields } | undefined
-      )?.contributionAccounts ?? {};
+    profileFields = judged
+      ? readContributionActiveFields(judged.contributionActiveFields, judged.id)
+          .contributionAccounts
+      : {};
   }
   const household = await loadCapHousehold(db, people, null, asOf);
   if (Object.keys(household.limits).length === 0)

@@ -17,6 +17,7 @@ import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
@@ -176,15 +177,14 @@ export async function computePaycheckSummary(
     ctx.db,
     input?.contributionProfileId,
   );
-  const accountActiveFields =
-    (
-      contribProfileRow?.contributionActiveFields as
-        | { contributionAccounts?: Record<string, Record<string, unknown>> }
-        | undefined
-    )?.contributionAccounts ?? {};
-  // The What-If tab's sandbox edits are the highest-precedence tier,
-  // applied AFTER the picked profile's own overrides — same merge
-  // function, one more layer, never a second resolution path.
+  const accountActiveFields = contribProfileRow
+    ? readContributionActiveFields(
+        contribProfileRow.contributionActiveFields,
+        contribProfileRow.id,
+      ).contributionAccounts
+    : {};
+  // The What-If tab's sandbox edits apply last, through the same merge
+  // function: one more layer, never a second resolution path.
   const sandboxed = applyContribActiveFields(
     profileResult.contribs,
     input?.sandboxContribActiveFields ?? {},

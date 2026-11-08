@@ -355,7 +355,7 @@
     "src/server/data/snapshots.ts": 107,
     "src/server/routers/assets.ts": 454,
     "src/server/routers/budget/index.ts": 21,
-    "src/server/routers/contribution-profiles.ts": 799,
+    "src/server/routers/contribution-profiles.ts": 787,
     "src/server/routers/demo.ts": 83,
     "src/server/routers/milestones.ts": 53,
     "src/server/routers/networth/comparison.ts": 245,
@@ -393,7 +393,7 @@
     "src/server/services/contributions/account-edits.ts": 255,
     "src/server/services/contributions/caps.ts": 346,
     "src/server/services/contributions/live-data.ts": 98,
-    "src/server/services/contributions/profile.ts": 382,
+    "src/server/services/contributions/profile.ts": 377,
     "src/server/services/contributions/summary.ts": 732,
     "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 467,
@@ -1025,7 +1025,7 @@
       "assetsRouter.computeSummary.query()": 171
     },
     "src/server/routers/contribution-profiles.ts": {
-      "contributionProfileRouter.getById.query()": 186
+      "contributionProfileRouter.getById.query()": 181
     },
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 215
@@ -1084,10 +1084,10 @@
       "buildYearEndHistory": 514
     },
     "src/server/services/paycheck/job-net-pay.ts": {
-      "computeJobNetPayPerCheck": 224
+      "computeJobNetPayPerCheck": 223
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 596,
+      "computePaycheckSummary": 595,
       "computePaycheckSummary.results.map()": 213
     },
     "src/server/services/performance/finalize-year.ts": {
