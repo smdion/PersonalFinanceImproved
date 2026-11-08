@@ -100,7 +100,7 @@ export function PerPhaseBudgetSection({
         <div>
           <span className="text-muted">
             Budget Source
-            <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set an amount yourself or use a budget profile." />
+            <HelpTip text={budgetTip(meta, "source")} />
           </span>
           <div className="flex flex-col gap-1 font-medium">
             {decExpenseOverride ? (
@@ -162,7 +162,7 @@ export function PerPhaseBudgetSection({
         <div>
           <span className="text-muted">
             Set amount
-            <HelpTip text="Set a flat annual amount as your starting retirement salary, used instead of the budget profile. Grows by the Post-Retirement Raise rate each year." />
+            <HelpTip text={budgetTip(meta, "amount")} />
           </span>
           <div className="flex items-center gap-1 font-medium">
             <InlineEdit
@@ -208,4 +208,24 @@ function dimmedSettingsNote(
   return dimmed.length > 0
     ? ` Dimmed settings (${dimmed.join(", ")}) are not used by this strategy.`
     : "";
+}
+
+/** The Budget Source and Set amount tips: what the budget is, and what the
+ *  chosen strategy does with it (config flags, not strategy names). */
+function budgetTip(
+  meta: {
+    label: string;
+    usesWithdrawalRate: boolean;
+    usesPostRetirementRaise: boolean;
+  },
+  field: "source" | "amount",
+): string {
+  const use = !meta.usesWithdrawalRate
+    ? `${meta.label} sizes its withdrawals from your balance; this is the need its spending is checked against.`
+    : meta.usesPostRetirementRaise
+      ? "Grows by the Post-Retirement Raise."
+      : "Grows with inflation less the strategy's decline rate.";
+  return field === "source"
+    ? `What you need each year in retirement, Social Security included. ${use} Set an amount yourself or use a budget profile.`
+    : `Set a flat yearly amount as your Retirement budget, used instead of the budget profile. ${use}`;
 }

@@ -41,7 +41,13 @@ export function RaiseAndRateSection({
       <div className={!meta.usesPostRetirementRaise ? "opacity-40" : ""}>
         <span className="text-muted">
           Post-Retirement Raise
-          <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Set apart from the Inflation rate; in the Simulation it moves with each trial's inflation, keeping your gap between the two." />
+          <HelpTip
+            text={
+              meta.usesPostRetirementRaise
+                ? "Your annual 'raise' in retirement. The base is your Retirement budget — this rate grows it each year, like a cost-of-living adjustment. Set apart from the Inflation rate; in the Simulation it moves with each trial's inflation, keeping your gap between the two."
+                : `Not used by ${meta.label}: its spending ${meta.usesWithdrawalRate ? "grows with inflation less its decline rate" : "is sized from your balance"}.`
+            }
+          />
         </span>
         <div className="font-medium">
           <InlineEdit
@@ -69,8 +75,8 @@ export function RaiseAndRateSection({
               !meta.usesWithdrawalRate
                 ? `Not used by ${meta.label} — this strategy computes spending from its own formula (${meta.incomeSource === "formula" ? "IRS factors" : "base percentage of portfolio"}).`
                 : meta.incomeSource === "rate"
-                  ? `Starting withdrawal rate for ${meta.label}. Sets the initial withdrawal amount, which the strategy then adjusts yearly based on portfolio performance.`
-                  : "Your withdrawal rate applied to the projected retirement balance. Determines the annual withdrawal amount, which grows by the Post-Retirement Raise rate each year."
+                  ? `Not used by ${meta.label}: it sets its own starting rate from your Retirement budget (less Social Security, over the balance) and defends it. Used only by the Initial Rate scenario and the FI target.`
+                  : `Not used by ${meta.label}: your Retirement budget sets year 1. Used only by the Initial Rate scenario and the FI target.`
             }
           />
         </span>

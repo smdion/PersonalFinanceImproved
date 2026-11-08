@@ -274,7 +274,7 @@ Full validation evidence →
 Withdrawal Routing
 ?Bracket Filling · 401k → 403b → IRA → Roth/Brokerage/HSA (cost-ranked)
 Configure
-Spending Decline sets HOW MUCH to withdraw from your budget. This section determines FROM WHICH accounts.
+Spending Decline spends your Retirement budget. This section determines FROM WHICH accounts pay for it.
 Changes by year
 ?
 + Add a change

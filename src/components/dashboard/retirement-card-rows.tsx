@@ -28,8 +28,8 @@ export function renderWithdrawalRow(
         <HelpTip
           text={
             isDynamic
-              ? `${strategyLabel} strategy — withdrawal varies year-to-year based on portfolio performance. This is a projected starting amount in today's dollars.`
-              : "Your projected nest egg × withdrawal rate in today's dollars. Does not account for volatility or taxes — see Simulation on the Retirement page for a realistic range."
+              ? `${strategyLabel} strategy — withdrawal varies year to year. This is your first retirement year's withdrawal in today's dollars: spending less Social Security, plus the tax on the withdrawal.`
+              : "Your first retirement year's withdrawal in today's dollars: spending less Social Security, plus the tax on the withdrawal. Does not account for volatility — see Simulation on the Retirement page for a realistic range."
           }
           learnMoreHref="/retirement/decumulation-methodology"
         />

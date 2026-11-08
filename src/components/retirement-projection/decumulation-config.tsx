@@ -250,7 +250,7 @@ export function DecumulationConfig({
             ? " determines HOW MUCH to withdraw. This section determines FROM WHICH accounts."
             : strategyCfg?.incomeSource === "rate"
               ? " adjusts HOW MUCH to withdraw each year. This section determines FROM WHICH accounts."
-              : " sets HOW MUCH to withdraw from your budget. This section determines FROM WHICH accounts."}
+              : " spends your Retirement budget. This section determines FROM WHICH accounts pay for it."}
         </div>
       )}
 

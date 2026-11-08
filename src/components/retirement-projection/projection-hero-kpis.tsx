@@ -270,7 +270,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
     const longHorizonTip =
       strategyMeta.incomeSource === "formula"
-        ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower RMD Multiplier in Strategy Params if you want to slow spending.`
+        ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "Strategy Params setting"} in Strategy Params if you want to slow spending.`
         : strategyMeta.usesWithdrawalRate
           ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
           : `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
@@ -281,7 +281,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         <KpiCard
           label="Portfolio Survival"
           tooltip={[
-            `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings.endAge} — a ${retSpan}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
+            `Percentage of simulated futures where every retirement year is funded — money doesn't run out or fall short — through age ${engineSettings.endAge} — a ${retSpan}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
             "90%+ — Strong. Most planners consider this the target.",
             "75–89% — Moderate. Workable but with meaningful risk.",
             "Below 75% — Elevated risk. Review your assumptions.",
@@ -323,7 +323,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 '% of simulated futures where income NEVER dropped below the 75% floor, in ANY year, across your entire retirement — a much stricter bar than "how does a typical year look," since it only takes one bad year, in one simulated future, to fail. See the Yearly Income Stability chart for the year-by-year detail behind this number.',
                 '"vs Strategy": compares against the strategy\'s own target for each year. Measures self-consistency.',
                 '"vs Budget": compares against your stated retirement budget. Measures whether your actual needs are met.',
-                "For budget-based strategies (Fixed, Forgo, G-K), both donuts converge — spending IS the budget. For portfolio-linked strategies (Const %, Vanguard), the gap tells the story.",
+                "Fixed and Forgo track your Retirement budget, so the rings stay close; Guardrails and Spending Decline move away from it by design. Balance-based strategies (RMD-Based, Constant %, Endowment, Vanguard, VPW) follow the balance; the gap shows how often they cover your Retirement budget.",
                 ...(strategyGapUrgent
                   ? [
                       `⚠ Your money survives in ${(mc.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(mc.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year target the whole way through. In the other ${((mc.successRate - mc.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off target — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,

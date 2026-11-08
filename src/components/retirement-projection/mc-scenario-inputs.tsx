@@ -9,7 +9,7 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
   const strategy = inputs.withdrawalStrategy as WithdrawalStrategyType;
   const cfg = STRATEGY_CONFIG_BY_STORED_KEY[strategy];
   const isDynamic = strategy !== "fixed";
-  // None of the 8 strategies actually
+  // None of the 9 strategies actually
   // read this rate to compute spending (Finding 0) — the old
   // copy here claimed Fixed uses it directly (`isDynamic`
   // false branch) and every dynamic strategy "adjusts this
@@ -47,7 +47,7 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
         <AssumptionRow
           label="Spending Strategy"
           value={cfg?.label ?? strategy}
-          tip={`${cfg?.label ?? strategy}: withdrawal amount adjusts each year based on portfolio performance, guardrails, or IRS factors. See Strategy Params for this strategy's own parameters — not the rate above.`}
+          tip={`${cfg?.label ?? strategy}: ${cfg?.description ?? "its own yearly rule"}. See Strategy Params for this strategy's own parameters — not the rate above.`}
           highlight
         />
       )}
@@ -60,8 +60,8 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
           tip={
             isDynamic
               ? isBudgetSeeded
-                ? `Starting retirement budget — your ${cfg.label} strategy adjusts actual spending from this figure each year.`
-                : `Starting retirement budget — ${cfg?.label ?? strategy} doesn't read this figure once it takes over (spending is computed from your portfolio balance instead); only used before that strategy fully applies, if at all.`
+                ? `Starting Retirement budget — your ${cfg.label} strategy starts from this figure and adjusts it each year.`
+                : `Starting Retirement budget — ${cfg?.label ?? strategy} sizes spending from your balance (RMD-Based only from the RMD age); this is the need its spending is checked against.`
               : undefined
           }
           highlight

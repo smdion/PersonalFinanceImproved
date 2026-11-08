@@ -193,7 +193,7 @@ export function ReportAssumptionsSummary({
           }
         />
         <Row
-          label="Inflation (post-retirement)"
+          label="Post-retirement raise"
           value={
             postRetirementInflation != null
               ? formatPercent(postRetirementInflation, 1)
@@ -230,7 +230,7 @@ export function ReportAssumptionsSummary({
           }
         />
         <p className="text-faint mt-0.5 text-xs">
-          {strategyLabel} doesn&apos;t spend based on this rate — none of the 8
+          {strategyLabel} doesn&apos;t spend based on this rate — none of the 9
           withdrawal strategies do. It&apos;s a reference figure only (also used
           to size the &ldquo;years to FI&rdquo; estimate elsewhere in the app).
         </p>

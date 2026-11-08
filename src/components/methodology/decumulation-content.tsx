@@ -36,12 +36,12 @@ export function DecumulationMethodologyContent() {
         </h4>
         <p className="text-caption text-faint">
           Steps 1–2 below work differently depending on your selected strategy —
-          4 of the 8 strategies (Fixed, Forgo Inflation After Loss, Spending
-          Decline, Guardrails) start from your stated budget and adjust it; the
-          other 4 (RMD-Based, Constant Percentage, Endowment, Vanguard Dynamic)
-          compute spending directly from your portfolio balance and never read
-          the budget figure at all. See the per-strategy descriptions further
-          down this page for exactly how each one works.
+          4 of the 9 (Fixed, Forgo Inflation After Loss, Spending Decline,
+          Guardrails) start from your Retirement budget; the other 5 (RMD-Based,
+          Constant Percentage, Endowment, Vanguard Dynamic, VPW) size spending
+          from your balance (RMD-Based uses the budget until the RMD age). Each
+          is measured against your Retirement budget. See the per-strategy
+          descriptions further down this page for how each one works.
         </p>
         <ol className="list-decimal space-y-1.5 pl-5">
           <li>
@@ -54,17 +54,17 @@ export function DecumulationMethodologyContent() {
             by inflation minus its own decline rate instead, never reading the
             raise rate; Forgo Inflation After Loss grows it like Fixed except
             skips the raise the year after a loss. A budget change by year
-            (carries forward) can change the base amount at any point for all
-            four.
+            (carries forward) changes the base at any point for Fixed, Forgo and
+            Guardrails; Spending Decline uses only year 1.
           </li>
           <li>
             <strong>
               Portfolio-derived spending (balance-based strategies)
             </strong>{" "}
-            — RMD-Based Spending, Constant Percentage, Endowment, and Vanguard
-            Dynamic compute the year&apos;s spending directly from your current
+            — RMD-Based Spending, Constant Percentage, Endowment, Vanguard
+            Dynamic and VPW compute the year&apos;s spending from your current
             portfolio balance (or a rolling average, for Endowment) each year —
-            the Retirement Budget figure is not read at all for these four;
+            the Retirement budget is not spent by these five, only measured;
             it&apos;s replaced outright by each strategy&apos;s own formula, not
             adjusted from it. RMD-Based falls back to budget-seeded spending
             only before RMD age (72–75).
@@ -162,16 +162,15 @@ export function DecumulationMethodologyContent() {
 
         <ul className="list-disc space-y-3 pl-5">
           <li>
-            <strong>Fixed Real (SWR ~3.9%)</strong> — your initial withdrawal
-            amount is set by your configured withdrawal rate applied to your
-            portfolio balance at retirement, then adjusted for inflation each
-            year regardless of portfolio performance. No feedback loop —
-            spending never changes based on how the portfolio is doing.
+            <strong>Fixed Real (SWR ~3.9%)</strong> — year 1 spends your
+            Retirement budget; each year after grows it by the Post-Retirement
+            Raise, whatever the market does. No feedback loop — spending never
+            changes based on how the portfolio is doing.
             <br />
             <span className="text-faint text-label">
               Best for: retirees who need perfectly predictable income and are
-              comfortable with a lower starting rate. Pair with a conservative
-              withdrawal rate (3-4%).
+              comfortable with a lower starting rate. Set a Retirement budget
+              that is a conservative share of the balance (3-4%).
             </span>
           </li>
           <li>
@@ -337,7 +336,7 @@ export function DecumulationMethodologyContent() {
                 <td className="pr-3">Decimal</td>
                 <td>
                   A reference rate (e.g. 0.04 = 4%) used to size the &ldquo;FI
-                  target&rdquo; estimate on other pages. None of the 8
+                  target&rdquo; estimate on other pages. None of the 9
                   withdrawal strategies below read this field to compute actual
                   spending — see &ldquo;What it computes each year&rdquo; above
                   for what really drives the withdrawal amount for your selected
