@@ -22,7 +22,8 @@
     "src/components/budget/budget-summary-table.tsx": 570,
     "src/components/budget/salary-profile-create-panel.tsx": 82,
     "src/components/budget/salary-profile-detail.tsx": 109,
-    "src/components/budget/salary-profile-edit-panel.tsx": 210,
+    "src/components/budget/salary-profile-edit-actions.ts": 83,
+    "src/components/budget/salary-profile-edit-panel.tsx": 168,
     "src/components/budget/salary-profile-edit-rows.tsx": 137,
     "src/components/budget/salary-profile-entry.tsx": 259,
     "src/components/budget/salary-profile-list.tsx": 190,
@@ -460,9 +461,6 @@
     },
     "src/components/budget/budget-summary-table.tsx": {
       "BudgetSummaryTable": 517
-    },
-    "src/components/budget/salary-profile-edit-panel.tsx": {
-      "ProfileEditPanel": 187
     },
     "src/components/budget/savings-allocation-panel.tsx": {
       "SavingsAllocationPanel": 201,

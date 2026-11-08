@@ -3,16 +3,13 @@ import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
-import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
-import { toast } from "@/lib/hooks/use-toast";
 import {
-  Detail,
   detailForJob,
   SalaryTableHead,
   TotalsFooter,
 } from "./salary-profile-entry";
 import { SalaryEditRows } from "./salary-profile-edit-rows";
+import { salaryEntryActions } from "./salary-profile-edit-actions";
 
 /**
  * Unlocked, in-place editor for an existing profile. There is no Save button:
@@ -81,60 +78,21 @@ export function ProfileEditPanel({
 
   // Name is renamed from the profile list (click-to-edit on the row) — the
   // one rename gesture shared by every profile manager.
-  const commitDescription = () => {
-    const draft = drafts.description;
-    if (draft === undefined) return;
-    clearDraft("description");
-    const trimmed = draft.trim();
-    if (trimmed === (profile.description ?? "")) return;
-    updateMutation.mutate({ id: profileId, description: trimmed || null });
-  };
-
-  /** Add this job to the profile with a blank entry — the explicit action
-   *  that turns a "—" row into an editable one. */
-  const addEntry = (jobId: number | null) => {
-    if (jobId === null) return;
-    patchEntryMutation.mutate({
-      id: profileId,
-      jobId,
-      fields: BLANK_SALARY_ENTRY,
-    });
-  };
-
-  /** Remove this job's entry entirely — it goes back to contributing $0,
-   *  the same as a job that was never added. */
-  const removeEntry = (jobId: number | null) => {
-    if (jobId === null) return;
-    removeEntryMutation.mutate({ id: profileId, jobId });
-  };
-
-  /** Save one field edit to a job's entry — the same parse and save path
-   *  as the Paycheck page (salaryEntryEdit → patchEntry). Entries are always
-   *  complete, so this only runs for a job that already has one. */
-  const updateEntry = (sd: Detail) => (field: string, value: string) => {
-    if (sd.jobId === null || !profile.salaries[String(sd.jobId)]) return;
-    const edit = salaryEntryEdit(field, value, {
-      otherEarnings: Object.fromEntries(
-        sd.earningRows.map((r) => [String(r.id), r.amount]),
-      ),
-    });
-    if (edit === null) toast.error("That value isn't valid here.");
-    else if (edit)
-      patchEntryMutation.mutate({
-        id: profileId,
-        jobId: sd.jobId,
-        fields: edit,
-      });
-  };
-
-  const commitSalary = (sd: Detail) => {
-    const key = `${sd.personId}:salary`;
-    const draft = drafts[key];
-    if (draft === undefined) return;
-    clearDraft(key);
-    if (Number(draft) === sd.salary) return;
-    updateEntry(sd)("annualSalary", draft);
-  };
+  const {
+    commitDescription,
+    addEntry,
+    removeEntry,
+    updateEntry,
+    commitSalary,
+  } = salaryEntryActions(
+    drafts,
+    clearDraft,
+    profile,
+    updateMutation,
+    profileId,
+    patchEntryMutation,
+    removeEntryMutation,
+  );
 
   return (
     <div className="bg-surface-sunken rounded-lg p-4">

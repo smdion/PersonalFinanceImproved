@@ -787,9 +787,6 @@
     }
   },
   "src/components/budget/salary-profile-edit-panel.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 5
     },
