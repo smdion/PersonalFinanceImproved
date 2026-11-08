@@ -33,6 +33,8 @@ export interface RotationCounts {
   versionCredentials: number;
   /** Plaintext configs (stored before encryption), left for the app's next write. */
   plaintext: number;
+  /** Credentials already under the new key (a re-run finishing a mixed state). */
+  alreadyNew: number;
 }
 
 interface StoredConnection {
@@ -53,13 +55,14 @@ interface RotationPlan {
   counts: RotationCounts;
 }
 
-/** Thrown when a credential doesn't decrypt with the old key; nothing is written. */
+/** Thrown when a credential decrypts with neither key; nothing is written. */
 export class RotationRefused extends Error {}
 
 type Rotated =
   | { kind: "rotated"; value: unknown }
   | { kind: "plaintext" }
-  | { kind: "refused"; underNewKey: boolean };
+  | { kind: "alreadyNew" }
+  | { kind: "refused" };
 
 function decrypts(key: Buffer, envelope: EncryptedEnvelope): boolean {
   try {
@@ -81,6 +84,7 @@ function parseJsonText(text: string): unknown {
 /** A stored config re-encrypted under the new key, kept in its stored shape (an envelope, or JSON text of one). */
 function rotateValue(value: unknown, keys: RotationKeys): Rotated {
   if (typeof value === "string") {
+    // SQLite snapshots hold the config as JSON text: rotate inside, write back as text.
     const inner = rotateValue(parseJsonText(value), keys);
     return inner.kind === "rotated"
       ? { kind: "rotated", value: JSON.stringify(inner.value) }
@@ -91,7 +95,9 @@ function rotateValue(value: unknown, keys: RotationKeys): Rotated {
   try {
     plaintext = decryptStringWithKey(keys.oldKey, value);
   } catch {
-    return { kind: "refused", underNewKey: decrypts(keys.newKey, value) };
+    return decrypts(keys.newKey, value)
+      ? { kind: "alreadyNew" }
+      : { kind: "refused" };
   }
   return {
     kind: "rotated",
@@ -110,15 +116,12 @@ function planRotation(
     connections: 0,
     versionCredentials: 0,
     plaintext: 0,
+    alreadyNew: 0,
   };
   const rotate = (value: unknown, where: string): Rotated => {
     const result = rotateValue(value, keys);
-    if (result.kind === "refused")
-      refusals.push(
-        result.underNewKey
-          ? `${where} (already under ENCRYPTION_KEY_NEW)`
-          : where,
-      );
+    if (result.kind === "refused") refusals.push(where);
+    else if (result.kind === "alreadyNew") counts.alreadyNew++;
     return result;
   };
 
@@ -155,7 +158,7 @@ function planRotation(
 
   if (refusals.length > 0) {
     throw new RotationRefused(
-      `${refusals.length} stored credential(s) don't decrypt with ENCRYPTION_KEY (the old key): ${refusals.join("; ")}. Nothing was changed.`,
+      `${refusals.length} stored credential(s) decrypt with neither ENCRYPTION_KEY nor ENCRYPTION_KEY_NEW: ${refusals.join("; ")}. Nothing was changed.`,
     );
   }
   return {
@@ -306,7 +309,7 @@ async function run() {
 
   const verb = dryRun ? "Would re-encrypt" : "Re-encrypted";
   console.error(
-    `${verb} ${counts.connections} integration credential(s) and ${counts.versionCredentials} in stored versions; ${counts.plaintext} plaintext config(s) left for Ledgr to encrypt on its next save.`,
+    `${verb} ${counts.connections} integration credential(s) and ${counts.versionCredentials} in stored versions; ${counts.alreadyNew} already under the new key; ${counts.plaintext} plaintext config(s) left for Ledgr to encrypt on its next save.`,
   );
   if (dryRun) console.error("No changes made (--dry-run).");
   else

@@ -75,6 +75,7 @@ export function keyRotationCases(
       connections: 2,
       versionCredentials: 1,
       plaintext: 1,
+      alreadyNew: 0,
     });
 
     const configs = await db.configs();
@@ -108,6 +109,7 @@ export function keyRotationCases(
       connections: 1,
       versionCredentials: 1,
       plaintext: 0,
+      alreadyNew: 0,
     });
     expect({
       configs: await db.configs(),
@@ -115,7 +117,7 @@ export function keyRotationCases(
     }).toEqual(before);
   });
 
-  it(`${label}: a credential the old key can't open changes nothing`, async () => {
+  it(`${label}: a credential neither key opens changes nothing`, async () => {
     const keys = { oldKey: newKey(), newKey: newKey() };
     const db = await fresh();
     await db.addConnection(1, "ynab", encryptStringWithKey(keys.oldKey, YNAB));
@@ -129,16 +131,55 @@ export function keyRotationCases(
     expect(await db.configs()).toEqual(before);
   });
 
-  it(`${label}: a second run says the credentials are already under the new key`, async () => {
+  it(`${label}: a second run finds everything done and changes nothing`, async () => {
     const keys = { oldKey: newKey(), newKey: newKey() };
     const db = await fresh();
     await db.addConnection(1, "ynab", encryptStringWithKey(keys.oldKey, YNAB));
     await db.rotate(keys, false);
     const after = await db.configs();
 
-    await expect(db.rotate(keys, false)).rejects.toThrow(
-      "api_connections id 1 (ynab) (already under ENCRYPTION_KEY_NEW)",
-    );
+    expect(await db.rotate(keys, false)).toEqual({
+      connections: 0,
+      versionCredentials: 0,
+      plaintext: 0,
+      alreadyNew: 1,
+    });
     expect(await db.configs()).toEqual(after);
+  });
+
+  it(`${label}: a re-run finishes a mixed state (some old, some new) under the new key`, async () => {
+    const keys = { oldKey: newKey(), newKey: newKey() };
+    const db = await fresh();
+    await db.addConnection(1, "ynab", encryptStringWithKey(keys.newKey, YNAB));
+    await db.addConnection(
+      2,
+      "tiingo",
+      encryptStringWithKey(keys.oldKey, TIINGO),
+    );
+    await db.addVersion(1, [
+      {
+        id: 1,
+        service: "ynab",
+        config: versionConfig(encryptStringWithKey(keys.oldKey, YNAB)),
+      },
+      {
+        id: 2,
+        service: "tiingo",
+        config: versionConfig(encryptStringWithKey(keys.newKey, TIINGO)),
+      },
+    ]);
+
+    expect(await db.rotate(keys, false)).toEqual({
+      connections: 1,
+      versionCredentials: 1,
+      plaintext: 0,
+      alreadyNew: 2,
+    });
+    const configs = await db.configs();
+    expect(open(keys.newKey, configs[1])).toBe(YNAB);
+    expect(open(keys.newKey, configs[2])).toBe(TIINGO);
+    const [ynabRow, tiingoRow] = await db.versionRows();
+    expect(open(keys.newKey, ynabRow!.config)).toBe(YNAB);
+    expect(open(keys.newKey, tiingoRow!.config)).toBe(TIINGO);
   });
 }

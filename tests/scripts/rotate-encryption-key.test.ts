@@ -163,7 +163,8 @@ describe("ENCRYPTION_KEY rotation (SQLite)", () => {
     expect(decryptStringWithKey(nextKey, stored())).toBe(token);
 
     const again = run([]);
-    expect(again.status).toBe(1);
-    expect(again.stderr).toContain("already under ENCRYPTION_KEY_NEW");
+    expect(again.status, again.stderr).toBe(0);
+    expect(again.stderr).toContain("1 already under the new key");
+    expect(decryptStringWithKey(nextKey, stored())).toBe(token);
   });
 });
