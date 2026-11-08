@@ -1,10 +1,10 @@
 /**
  * Every no-input query the dashboard shell loads (sidebar, header, the
- * hooks they use) is prefetched with each page — prefetchShellQueries in
- * server/trpc-server.ts — and nothing else is. A shell query the
- * server doesn't load is cached in the browser before a page's section
- * hydrates, so a page reading it renders differently on the server
- * (a hydration mismatch).
+ * hooks they use) is hydrated by the dashboard layout — prefetchShellQueries
+ * in server/trpc-server.ts, through prefetchForShell — and nothing else is.
+ * A shell query the server doesn't load is fetched by the browser while a
+ * page is still streaming in, so a page reading it renders differently on
+ * the server (a hydration mismatch).
  */
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
@@ -50,7 +50,7 @@ function shellFiles(): string[] {
   return [...seen];
 }
 
-describe("shell queries are prefetched with every page", () => {
+describe("the layout hydrates the shell's queries", () => {
   it("prefetchShellQueries lists exactly the shell's no-input queries", () => {
     const loaded = new Set<string>();
     for (const file of shellFiles())

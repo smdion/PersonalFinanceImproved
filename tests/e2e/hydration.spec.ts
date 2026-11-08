@@ -6,8 +6,11 @@ import { useOwnRateLimitBucket } from "./rate-limit-bucket";
 test.describe("page load", () => {
   useOwnRateLimitBucket(test, "hydration");
 
-  for (const path of ["/", "/budget"]) {
-    test(`${path} loads without a page error`, async ({ page }) => {
+  // Repeat loads of /, since a mismatch is a race; the index in each title
+  // keeps every load in its own rate-limit bucket.
+  const loads = ["/", "/", "/", "/", "/budget"];
+  for (const [i, path] of loads.entries()) {
+    test(`${path} loads without a page error (${i + 1})`, async ({ page }) => {
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.goto(path);

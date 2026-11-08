@@ -1,8 +1,8 @@
 /**
  * prefetchForShell loads the dashboard shell's queries for the layout, so
  * the shell and the page read the same saved settings and freshness dates
- * on the server as in the browser (no hydration mismatch). prefetchForPage
- * carries them too; a shell query failing never costs the page its own
+ * on the server as in the browser (no hydration mismatch); a shell query
+ * failing never costs the others. prefetchForPage loads only the page's own
  * data. Each load is one request against the rate limit — its queries run
  * as internal calls.
  */
@@ -77,36 +77,17 @@ beforeEach(() => {
 });
 
 describe("prefetchForPage", () => {
-  it("prefetches the shell's queries alongside the page's own data", async () => {
-    const called = vi.fn(async () => undefined);
-    settingsPrefetch = called;
+  it("prefetches only the page's own data", async () => {
     const state = await prefetchForPage(pagePrefetch);
-    expect(called).toHaveBeenCalledTimes(1);
-    expect(shellCalls).toEqual(
-      expect.arrayContaining([
-        "settings.appSettings.list",
-        "settings.getDataFreshness",
-        "contributionProfile.list",
-      ]),
-    );
+    expect(shellCalls).toEqual([]);
     expect(state?.queries.map((q) => q.queryKey)).toEqual([["page"]]);
-  });
-
-  it("a shell query failing still returns the page's data", async () => {
-    settingsPrefetch = async () => {
-      throw new Error("down");
-    };
-    const state = await prefetchForPage(pagePrefetch);
-    expect(state?.queries).toHaveLength(1);
   });
 
   it("privacy mode prefetches nothing", async () => {
     privacy = true;
-    const called = vi.fn(async () => undefined);
-    settingsPrefetch = called;
-    expect(await prefetchForPage(pagePrefetch)).toBeUndefined();
-    expect(called).not.toHaveBeenCalled();
-    expect(shellCalls).toEqual([]);
+    const page = vi.fn(pagePrefetch);
+    expect(await prefetchForPage(page)).toBeUndefined();
+    expect(page).not.toHaveBeenCalled();
   });
 
   it("a page load costs one rate-limit token; its queries run as internal calls", async () => {
@@ -117,8 +98,9 @@ describe("prefetchForPage", () => {
 
   it("when the budget is spent, prefetches nothing (the browser's fetch reports it)", async () => {
     state.tokensLeft = 0;
-    expect(await prefetchForPage(pagePrefetch)).toBeUndefined();
-    expect(shellCalls).toEqual([]);
+    const page = vi.fn(pagePrefetch);
+    expect(await prefetchForPage(page)).toBeUndefined();
+    expect(page).not.toHaveBeenCalled();
   });
 });
 

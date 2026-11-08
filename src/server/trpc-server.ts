@@ -44,9 +44,8 @@ type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>["helpers"];
 /**
  * The no-input queries the dashboard shell loads on every page — the
  * sidebar's data indicator (useDataSourceStatuses), the header's profile
- * pickers (scenario-bar), saved settings (usePersistedSetting). The layout
- * hydrates them above the shell (prefetchForShell); pages carry them too, so
- * a client-side navigation refreshes them.
+ * pickers (scenario-bar), saved settings (usePersistedSetting). Only the
+ * layout loads them (prefetchForShell), above the shell and the page.
  * tests/lint/shell-prefetch.test.ts keeps this list equal to what the shell
  * actually loads.
  */
@@ -77,18 +76,14 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
  * data would be rendered on the server, where the privacy flag is never set
  * (see setPrivacyMode), so real amounts would reach the first HTML before
  * the browser masks them. Skipping it costs a loading state on first paint.
- *
- * The shell's own queries are prefetched too (prefetchShellQueries), so a
- * client-side navigation brings them up to date with the page.
+ * The shell's queries come from the layout (prefetchForShell), not here.
  *
  * Prefetch failures never block rendering — any error also yields undefined.
  */
 export async function prefetchForPage(
   prefetch: (helpers: ServerHelpers) => Promise<unknown>,
 ): Promise<DehydratedState | undefined> {
-  return prefetchDehydrated("page.prefetch", (helpers) =>
-    Promise.all([prefetch(helpers), ...prefetchShellQueries(helpers)]),
-  );
+  return prefetchDehydrated("page.prefetch", prefetch);
 }
 
 /** The shell's queries, hydrated by the dashboard layout above the shell and
