@@ -7,7 +7,7 @@ import {
   mappingsWithTypedIds,
 } from "@/lib/pure/sync/account-mapping";
 import type { PreviewData, Service } from "../integrations-types";
-import type { PortfolioMutations } from "./use-portfolio-mutations";
+import type { IntegrationPortfolioMutations } from "./use-integration-portfolio-mutations";
 
 /** A mapping's Ledgr-side label: the debt's or mortgage's name, or its own. */
 export function mappedLocalLabel(
@@ -86,9 +86,9 @@ export function renderRollupSummary(
 export function renderUnmappedTracking(
   portfolio: NonNullable<PreviewData["portfolio"]>,
   mappedRemoteIds: Set<string>,
-  createAssetAndMapMut: PortfolioMutations["createAssetAndMap"],
+  createAssetAndMapMut: IntegrationPortfolioMutations["createAssetAndMap"],
   service: Service,
-  updateMappingsMut: PortfolioMutations["updateMappings"],
+  updateMappingsMut: IntegrationPortfolioMutations["updateMappings"],
 ) {
   const unmappedTracking = portfolio.trackingAccounts.filter(
     (a) => !mappedRemoteIds.has(a.id),

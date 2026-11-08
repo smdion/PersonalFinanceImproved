@@ -21,7 +21,7 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { SavingsMutations } from "./use-savings-mutations";
+import type { IntegrationSavingsMutations } from "./use-integration-savings-mutations";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,
@@ -31,7 +31,7 @@ type Props = {
   service: Service;
   savings: NonNullable<PreviewData["savings"]>;
   allApiCats: ApiCategoryOption[];
-  mutations: SavingsMutations;
+  mutations: IntegrationSavingsMutations;
   savingsOverrides: Record<number, string>;
   setSavingsOverrides: React.Dispatch<
     React.SetStateAction<Record<number, string>>

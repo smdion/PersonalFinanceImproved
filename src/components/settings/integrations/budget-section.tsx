@@ -30,14 +30,14 @@ import {
   SectionSummaryRow,
 } from "./section-summary-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { BudgetMutations } from "./use-budget-mutations";
+import type { IntegrationBudgetMutations } from "./use-integration-budget-mutations";
 
 type Props = {
   service: Service;
   budget: NonNullable<PreviewData["budget"]>;
   savings: PreviewData["savings"];
   allApiCats: ApiCategoryOption[];
-  mutations: BudgetMutations;
+  mutations: IntegrationBudgetMutations;
   onLinkSavings: (goalId: number, apiCategoryId: string) => void;
   onCreateSavingsGoalFromApi: (apiCat: {
     id: string;

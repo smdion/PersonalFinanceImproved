@@ -49,10 +49,10 @@ import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
 } from "@/components/budget";
-import { useProfileMutations } from "@/components/budget/use-profile-mutations";
-import { useColumnMutations } from "@/components/budget/use-column-mutations";
-import { useSyncMutations } from "@/components/budget/use-sync-mutations";
-import { useItemMutations } from "@/components/budget/use-item-mutations";
+import { useBudgetProfileMutations } from "@/components/budget/use-budget-profile-mutations";
+import { useBudgetColumnMutations } from "@/components/budget/use-budget-column-mutations";
+import { useBudgetSyncMutations } from "@/components/budget/use-budget-sync-mutations";
+import { useBudgetItemMutations } from "@/components/budget/use-budget-item-mutations";
 import { CardBoundary } from "@/components/dashboard/utils";
 import {
   BudgetPageContext,
@@ -155,17 +155,17 @@ export function BudgetContent({
     deleteProfile,
     renameProfile,
     duplicateProfile,
-  } = useProfileMutations();
+  } = useBudgetProfileMutations();
   const { clone: cloneProfile } = useCloneProfile(duplicateProfile);
   const handleActivateBudgetProfile = (id: number) => {
     setActiveProfile.mutate({ id });
   };
   const { addColumn, removeColumn, renameColumn, updateColumnMonths } =
-    useColumnMutations();
-  const { syncFromApi, syncToApi } = useSyncMutations();
+    useBudgetColumnMutations();
+  const { syncFromApi, syncToApi } = useBudgetSyncMutations();
 
   // selectedColumnRef lives here to break the circular dep between
-  // useBudgetPageState (needs updateBatch) and useItemMutations (needs the ref).
+  // useBudgetPageState (needs updateBatch) and useBudgetItemMutations (needs the ref).
   const selectedColumnRef = useRef(activeColumn);
   useEffect(() => {
     selectedColumnRef.current = activeColumn;
@@ -181,7 +181,7 @@ export function BudgetContent({
     reorderCategory,
     createItem,
     convertToGoal,
-  } = useItemMutations({ selectedColumnRef });
+  } = useBudgetItemMutations({ selectedColumnRef });
 
   // ---- Local UI state ----
   // Profiles: the tab follows the URL (?tab=), so links and the back button

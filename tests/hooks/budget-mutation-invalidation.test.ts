@@ -30,10 +30,10 @@ vi.mock("@/lib/hooks/use-toast", () => ({
   },
 }));
 
-import { useItemMutations } from "@/components/budget/use-item-mutations";
-import { useProfileMutations } from "@/components/budget/use-profile-mutations";
-import { useColumnMutations } from "@/components/budget/use-column-mutations";
-import { useSyncMutations } from "@/components/budget/use-sync-mutations";
+import { useBudgetItemMutations } from "@/components/budget/use-budget-item-mutations";
+import { useBudgetProfileMutations } from "@/components/budget/use-budget-profile-mutations";
+import { useBudgetColumnMutations } from "@/components/budget/use-budget-column-mutations";
+import { useBudgetSyncMutations } from "@/components/budget/use-budget-sync-mutations";
 
 const SUMMARY = [
   "budget.computeActiveSummary.invalidate",
@@ -87,10 +87,10 @@ const SYNC: Row[] = [
 
 const selectedColumnRef: MutableRefObject<number> = { current: 0 };
 const HOOKS: [name: string, hook: () => object, rows: Row[]][] = [
-  ["item", () => useItemMutations({ selectedColumnRef }), ITEM],
-  ["profile", useProfileMutations, PROFILE],
-  ["column", useColumnMutations, COLUMN],
-  ["sync", useSyncMutations, SYNC],
+  ["item", () => useBudgetItemMutations({ selectedColumnRef }), ITEM],
+  ["profile", useBudgetProfileMutations, PROFILE],
+  ["column", useBudgetColumnMutations, COLUMN],
+  ["sync", useBudgetSyncMutations, SYNC],
 ];
 
 beforeEach(() => {
@@ -140,7 +140,7 @@ describe("budget mutation hooks — invalidation sets", () => {
 describe("budget sync toasts", () => {
   it("a pull names the active budget service", async () => {
     setQuery("sync.getActiveBudgetApi", "ynab");
-    const { result } = renderHook(() => useSyncMutations());
+    const { result } = renderHook(() => useBudgetSyncMutations());
     await act(async () => {
       result.current.syncFromApi.mutate({});
       await settle();
@@ -149,7 +149,7 @@ describe("budget sync toasts", () => {
   });
 
   it("a push to Actual says it lands as a goal template", async () => {
-    const { result } = renderHook(() => useSyncMutations());
+    const { result } = renderHook(() => useBudgetSyncMutations());
     await act(async () => {
       result.current.syncToApi.mutate({});
       await settle();

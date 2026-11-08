@@ -11,17 +11,17 @@
  *   2. A profile + column selector (YNAB/Actual), only shown when the active
  *      service exposes multiple profiles.
  *
- * Mutations live in `useDriftMutations` so that a pending flip here does not
+ * Mutations live in `useIntegrationDriftMutations` so that a pending flip here does not
  * re-render any of the other four sections.
  */
 import type { PreviewData, Service } from "../integrations-types";
-import type { DriftMutations } from "./use-drift-mutations";
+import type { IntegrationDriftMutations } from "./use-integration-drift-mutations";
 
 type Props = {
   service: Service;
   profile: PreviewData["profile"];
   totalDrifted: number;
-  mutations: DriftMutations;
+  mutations: IntegrationDriftMutations;
 };
 
 export function DriftBanner({

@@ -18,7 +18,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useItemMutations } from "@/components/budget/use-item-mutations";
+import { useBudgetItemMutations } from "@/components/budget/use-budget-item-mutations";
 import type { MutableRefObject } from "react";
 import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
 import {
@@ -54,7 +54,7 @@ beforeEach(() => {
 
 function setup() {
   const selectedColumnRef: MutableRefObject<number> = { current: 0 };
-  return renderHook(() => useItemMutations({ selectedColumnRef }));
+  return renderHook(() => useBudgetItemMutations({ selectedColumnRef }));
 }
 
 async function flush() {
@@ -65,7 +65,7 @@ async function flush() {
   await Promise.resolve();
 }
 
-describe("useItemMutations — updateCell optimistic patch for linked items", () => {
+describe("useBudgetItemMutations — updateCell optimistic patch for linked items", () => {
   it("patches contribAmounts[col], not just contribAmount, for a linked complete item", async () => {
     cache({
       rawItems: [

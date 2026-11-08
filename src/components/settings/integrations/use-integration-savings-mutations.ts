@@ -12,7 +12,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";
 
-export function useSavingsMutations() {
+export function useIntegrationSavingsMutations() {
   const invalidate = useInvalidatePreview();
 
   const linkSavings = trpc.savings.linkGoalToApi.useMutation({
@@ -44,4 +44,6 @@ export function useSavingsMutations() {
   };
 }
 
-export type SavingsMutations = ReturnType<typeof useSavingsMutations>;
+export type IntegrationSavingsMutations = ReturnType<
+  typeof useIntegrationSavingsMutations
+>;

@@ -11,7 +11,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";
 
-export function useContribMutations() {
+export function useIntegrationContributionAccountMutations() {
   const invalidate = useInvalidatePreview();
 
   const linkContrib = trpc.budget.linkContributionAccount.useMutation({
@@ -24,4 +24,6 @@ export function useContribMutations() {
   return { linkContrib, unlinkContrib };
 }
 
-export type ContribMutations = ReturnType<typeof useContribMutations>;
+export type IntegrationContributionAccountMutations = ReturnType<
+  typeof useIntegrationContributionAccountMutations
+>;

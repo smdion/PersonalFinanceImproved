@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PortfolioSection } from "@/components/settings/integrations/portfolio-section";
 import type { PreviewData } from "@/components/settings/integrations-types";
-import type { PortfolioMutations } from "@/components/settings/integrations/use-portfolio-mutations";
+import type { IntegrationPortfolioMutations } from "@/components/settings/integrations/use-integration-portfolio-mutations";
 
 // Regression test for a live bug: two people sharing the same
 // performanceAccountId (e.g. both have an IRA at the same institution) —
@@ -52,7 +52,7 @@ function makePortfolio(
 
 function makeMutations(
   updateMappingsMutate: (input: unknown) => void,
-): PortfolioMutations {
+): IntegrationPortfolioMutations {
   return {
     updateMappings: {
       mutate: updateMappingsMutate,
@@ -63,7 +63,7 @@ function makeMutations(
       isPending: false,
     },
     // eslint-disable-next-line no-restricted-syntax -- minimal mock of tRPC's full useMutation return shape, only the fields the component reads are needed
-  } as unknown as PortfolioMutations;
+  } as unknown as IntegrationPortfolioMutations;
 }
 
 describe("PortfolioSection — shared performanceAccountId across owners", () => {

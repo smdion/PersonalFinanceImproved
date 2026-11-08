@@ -30,13 +30,13 @@ import { trpc } from "@/lib/trpc";
 import { useOptimisticMutation } from "@/components/budget/use-optimistic-mutation";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
-type UseItemMutationsOpts = {
+type Options = {
   /** Live-read of the selected column. Kept as a ref so the mutations
    *  don't need to re-bind on every column change. */
   selectedColumnRef: MutableRefObject<number>;
 };
 
-export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
+export function useBudgetItemMutations({ selectedColumnRef }: Options) {
   const utils = trpc.useUtils();
   const { invalidateSummary, invalidateSummaryAndContributions } =
     useInvalidateBudget();

@@ -18,7 +18,7 @@ import {
 } from "@/lib/utils/format";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
-export function useSyncMutations() {
+export function useBudgetSyncMutations() {
   const { invalidateSummary } = useInvalidateBudget();
   const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
 

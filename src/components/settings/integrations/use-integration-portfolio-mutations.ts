@@ -11,7 +11,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";
 
-export function usePortfolioMutations() {
+export function useIntegrationPortfolioMutations() {
   const invalidate = useInvalidatePreview();
 
   const updateMappings = trpc.sync.updateAccountMappings.useMutation({
@@ -24,4 +24,6 @@ export function usePortfolioMutations() {
   return { updateMappings, createAssetAndMap };
 }
 
-export type PortfolioMutations = ReturnType<typeof usePortfolioMutations>;
+export type IntegrationPortfolioMutations = ReturnType<
+  typeof useIntegrationPortfolioMutations
+>;

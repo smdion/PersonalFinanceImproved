@@ -11,7 +11,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";
 
-export function useDriftMutations() {
+export function useIntegrationDriftMutations() {
   const invalidate = useInvalidatePreview();
 
   const syncAllNames = trpc.sync.syncAllNames.useMutation({
@@ -27,4 +27,6 @@ export function useDriftMutations() {
   return { syncAllNames, setLinkedProfile, setLinkedColumn };
 }
 
-export type DriftMutations = ReturnType<typeof useDriftMutations>;
+export type IntegrationDriftMutations = ReturnType<
+  typeof useIntegrationDriftMutations
+>;

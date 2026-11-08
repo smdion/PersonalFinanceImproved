@@ -37,20 +37,20 @@ beforeEach(() => {
 });
 
 describe("integrations per-section mutation hooks — re-render guard", () => {
-  it("useDriftMutations returns the expected 3-mutation shape", async () => {
-    const { useDriftMutations } =
-      await import("@/components/settings/integrations/use-drift-mutations");
-    const { result } = renderHook(() => useDriftMutations());
+  it("useIntegrationDriftMutations returns the expected 3-mutation shape", async () => {
+    const { useIntegrationDriftMutations } =
+      await import("@/components/settings/integrations/use-integration-drift-mutations");
+    const { result } = renderHook(() => useIntegrationDriftMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       ["setLinkedColumn", "setLinkedProfile", "syncAllNames"].sort(),
     );
   });
 
-  it("useBudgetMutations returns the expected 9-mutation shape", async () => {
-    const { useBudgetIntegrationsMutations } =
-      await import("@/components/settings/integrations/use-budget-mutations");
-    const { result } = renderHook(() => useBudgetIntegrationsMutations());
+  it("useIntegrationBudgetMutations returns the expected 9-mutation shape", async () => {
+    const { useIntegrationBudgetMutations } =
+      await import("@/components/settings/integrations/use-integration-budget-mutations");
+    const { result } = renderHook(() => useIntegrationBudgetMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       [
@@ -67,10 +67,10 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     );
   });
 
-  it("useSavingsMutations returns the expected 6-mutation shape", async () => {
-    const { useSavingsMutations } =
-      await import("@/components/settings/integrations/use-savings-mutations");
-    const { result } = renderHook(() => useSavingsMutations());
+  it("useIntegrationSavingsMutations returns the expected 6-mutation shape", async () => {
+    const { useIntegrationSavingsMutations } =
+      await import("@/components/settings/integrations/use-integration-savings-mutations");
+    const { result } = renderHook(() => useIntegrationSavingsMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       [
@@ -84,18 +84,20 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     );
   });
 
-  it("useContribMutations returns the expected 2-mutation shape", async () => {
-    const { useContribMutations } =
-      await import("@/components/settings/integrations/use-contrib-mutations");
-    const { result } = renderHook(() => useContribMutations());
+  it("useIntegrationContributionAccountMutations returns the expected 2-mutation shape", async () => {
+    const { useIntegrationContributionAccountMutations } =
+      await import("@/components/settings/integrations/use-integration-contribution-account-mutations");
+    const { result } = renderHook(() =>
+      useIntegrationContributionAccountMutations(),
+    );
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["linkContrib", "unlinkContrib"].sort());
   });
 
-  it("usePortfolioMutations returns the expected 2-mutation shape", async () => {
-    const { usePortfolioMutations } =
-      await import("@/components/settings/integrations/use-portfolio-mutations");
-    const { result } = renderHook(() => usePortfolioMutations());
+  it("useIntegrationPortfolioMutations returns the expected 2-mutation shape", async () => {
+    const { useIntegrationPortfolioMutations } =
+      await import("@/components/settings/integrations/use-integration-portfolio-mutations");
+    const { result } = renderHook(() => useIntegrationPortfolioMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["createAssetAndMap", "updateMappings"].sort());
   });
@@ -118,15 +120,15 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("every mutation calls its procedure and invalidates only the preview", async () => {
     const [drift, budget, savings, contrib, portfolio] = await Promise.all([
-      import("@/components/settings/integrations/use-drift-mutations"),
-      import("@/components/settings/integrations/use-budget-mutations"),
-      import("@/components/settings/integrations/use-savings-mutations"),
-      import("@/components/settings/integrations/use-contrib-mutations"),
-      import("@/components/settings/integrations/use-portfolio-mutations"),
+      import("@/components/settings/integrations/use-integration-drift-mutations"),
+      import("@/components/settings/integrations/use-integration-budget-mutations"),
+      import("@/components/settings/integrations/use-integration-savings-mutations"),
+      import("@/components/settings/integrations/use-integration-contribution-account-mutations"),
+      import("@/components/settings/integrations/use-integration-portfolio-mutations"),
     ]);
     const table: [() => object, [string, MutationPath][]][] = [
       [
-        drift.useDriftMutations,
+        drift.useIntegrationDriftMutations,
         [
           ["syncAllNames", "sync.syncAllNames"],
           ["setLinkedProfile", "sync.setLinkedProfile"],
@@ -134,7 +136,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
         ],
       ],
       [
-        budget.useBudgetIntegrationsMutations,
+        budget.useIntegrationBudgetMutations,
         [
           ["linkBudget", "budget.linkToApi"],
           ["unlinkBudget", "budget.unlinkFromApi"],
@@ -148,7 +150,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
         ],
       ],
       [
-        savings.useSavingsMutations,
+        savings.useIntegrationSavingsMutations,
         [
           ["linkSavings", "savings.linkGoalToApi"],
           ["unlinkSavings", "savings.unlinkGoalFromApi"],
@@ -159,14 +161,14 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
         ],
       ],
       [
-        contrib.useContribMutations,
+        contrib.useIntegrationContributionAccountMutations,
         [
           ["linkContrib", "budget.linkContributionAccount"],
           ["unlinkContrib", "budget.unlinkContributionAccount"],
         ],
       ],
       [
-        portfolio.usePortfolioMutations,
+        portfolio.useIntegrationPortfolioMutations,
         [
           ["updateMappings", "sync.updateAccountMappings"],
           ["createAssetAndMap", "sync.createAssetAndMap"],
@@ -190,11 +192,11 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
 
   it("every section hook returns a flat mutation bundle, not a { mutations, invalidate } wrapper", async () => {
     const [drift, budget, savings, contrib, portfolio] = await Promise.all([
-      import("@/components/settings/integrations/use-drift-mutations"),
-      import("@/components/settings/integrations/use-budget-mutations"),
-      import("@/components/settings/integrations/use-savings-mutations"),
-      import("@/components/settings/integrations/use-contrib-mutations"),
-      import("@/components/settings/integrations/use-portfolio-mutations"),
+      import("@/components/settings/integrations/use-integration-drift-mutations"),
+      import("@/components/settings/integrations/use-integration-budget-mutations"),
+      import("@/components/settings/integrations/use-integration-savings-mutations"),
+      import("@/components/settings/integrations/use-integration-contribution-account-mutations"),
+      import("@/components/settings/integrations/use-integration-portfolio-mutations"),
     ]);
     // Smoke: every hook exports a factory whose return is flat — each value
     // is a mutation object (has `.mutate`), and neither `mutations` nor

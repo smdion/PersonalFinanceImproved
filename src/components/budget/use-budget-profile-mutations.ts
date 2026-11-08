@@ -12,7 +12,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
-export function useProfileMutations() {
+export function useBudgetProfileMutations() {
   const { invalidateProfiles, invalidateSummaryAndProfiles } =
     useInvalidateBudget();
 

@@ -5,11 +5,11 @@ import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import type { PreviewData, Service } from "./integrations-types";
-import { useDriftMutations } from "./integrations/use-drift-mutations";
-import { useBudgetIntegrationsMutations } from "./integrations/use-budget-mutations";
-import { useSavingsMutations } from "./integrations/use-savings-mutations";
-import { useContribMutations } from "./integrations/use-contrib-mutations";
-import { usePortfolioMutations } from "./integrations/use-portfolio-mutations";
+import { useIntegrationDriftMutations } from "./integrations/use-integration-drift-mutations";
+import { useIntegrationBudgetMutations } from "./integrations/use-integration-budget-mutations";
+import { useIntegrationSavingsMutations } from "./integrations/use-integration-savings-mutations";
+import { useIntegrationContributionAccountMutations } from "./integrations/use-integration-contribution-account-mutations";
+import { useIntegrationPortfolioMutations } from "./integrations/use-integration-portfolio-mutations";
 import { DriftBanner } from "./integrations/drift-banner";
 import { BudgetSection } from "./integrations/budget-section";
 import { SavingsSection } from "./integrations/savings-section";
@@ -41,11 +41,11 @@ export function PreviewPanel({
   // Per-section mutation hooks — each hook owns a bundle for its section
   // only so a pending flip in one section will not re-render the other four
   // once the section components use `React.memo`.
-  const driftMutations = useDriftMutations();
-  const budgetMutations = useBudgetIntegrationsMutations();
-  const savingsMutations = useSavingsMutations();
-  const contribMutations = useContribMutations();
-  const portfolioMutations = usePortfolioMutations();
+  const driftMutations = useIntegrationDriftMutations();
+  const budgetMutations = useIntegrationBudgetMutations();
+  const savingsMutations = useIntegrationSavingsMutations();
+  const contribMutations = useIntegrationContributionAccountMutations();
+  const portfolioMutations = useIntegrationPortfolioMutations();
 
   // `savingsOverrides` lives here (not inside SavingsSection) because
   // BudgetSection's "Apply all suggested matches" counter needs the count.
