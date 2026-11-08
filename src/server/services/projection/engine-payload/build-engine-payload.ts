@@ -146,12 +146,8 @@ export async function buildEnginePayload(
   const primaryPerson = getPrimaryPerson(people);
   if (!primaryPerson) return null;
 
-  // Household assumptions now come from the ACTIVE PROFILE's row, not from
-  // whichever person happens to be primary. Same values today (step A's
-  // backfill pointed every existing row at the first profile), but it's what
-  // makes profiles swappable — and it removes the trap where a household
-  // field edited against a non-primary person wrote successfully and was
-  // then never read.
+  // Household assumptions come from the active profile's row, not from
+  // whichever person is primary, so profiles are swappable.
   const activeProfileId =
     opts.retirementProfileId != null &&
     retProfiles.some((p) => p.id === opts.retirementProfileId)
@@ -419,10 +415,9 @@ export async function buildEnginePayload(
     value: toNumber(o.overrideSalary),
   }));
 
-  const { switchProfileMap, switchSalaryProfileMap } = await loadSwitchProfiles(
-    db,
-    profileSwitchOverrides,
-  );
+  const { switchProfileMap, switchSalaryProfileMap, switchWarnings } =
+    await loadSwitchProfiles(db, profileSwitchOverrides);
+  inputWarnings.push(...switchWarnings);
 
   // Budget overrides from DB (stored as monthly, engine expects monthly too)
   const dbBudgetOverrides = budgetOverrideRows

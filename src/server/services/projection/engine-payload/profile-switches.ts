@@ -35,6 +35,7 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { FALLBACK_CONTRIBUTION_RATE } from "@/lib/constants";
 import type { fetchRetirementData } from "./load";
 import { retirementContributions } from "./retirement-contributions";
+import { missingSwitchProfileWarnings } from "./missing-switch-profiles";
 import type { Db } from "@/lib/db";
 
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
@@ -44,7 +45,6 @@ export async function loadSwitchProfiles(
   db: Db,
   profileSwitchOverrides: readonly SalaryOverrideRow[],
 ) {
-  // Pre-resolve contribution profiles for profile-switch overrides
   const profileSwitchProfileIds = Array.from(
     new Set(
       profileSwitchOverrides
@@ -63,7 +63,6 @@ export async function loadSwitchProfiles(
       : [];
   const switchProfileMap = new Map(switchProfileRows.map((p) => [p.id, p]));
 
-  // Same pre-resolution for the salary axis of a profile switch.
   const switchSalaryProfileIds = Array.from(
     new Set(
       profileSwitchOverrides.map((o) => o.salaryProfileId!).filter(Boolean),
@@ -80,7 +79,15 @@ export async function loadSwitchProfiles(
     switchSalaryProfileRows.map((p) => [p.id, p]),
   );
 
-  return { switchProfileMap, switchSalaryProfileMap };
+  return {
+    switchProfileMap,
+    switchSalaryProfileMap,
+    switchWarnings: missingSwitchProfileWarnings(
+      profileSwitchOverrides,
+      switchProfileMap,
+      switchSalaryProfileMap,
+    ),
+  };
 }
 
 export function buildProfileSwitches<
@@ -225,15 +232,8 @@ export function buildProfileSwitches<
     const switchSalaryEntriesByJob = (salaryProfile?.salaries ??
       {}) as SalaryEntryMap;
     const ownJob = activeJobs.find((j) => j.personId === override.personId);
-    // `ownEntry` here is intentionally read loosely (no completeness
-    // requirement) — a retirement_salary_overrides row only ever cares
-    // whether THIS entry pins a `salary`/bonus terms to grow, the same
-    // narrow presence rule this override mechanism has always used
-    // (predates Stage B). A real Salary Profile entry saved through the
-    // app is always complete-or-absent (salaryEntrySchema is `.strict()`),
-    // but nothing here depends on that for the salary-injection math below
-    // — see ownEntryNormalized further down for where completeness of the
-    // OTHER 11 fields actually matters.
+    // Read loosely: the salary math needs only `salary`/bonus terms;
+    // ownEntryNormalized below is where the other fields' completeness counts.
     const ownEntry = ownJob
       ? switchSalaryEntriesByJob[String(ownJob.id)]
       : undefined;
