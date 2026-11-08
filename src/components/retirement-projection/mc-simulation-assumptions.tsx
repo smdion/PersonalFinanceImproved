@@ -2,19 +2,20 @@
 
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
 import type {
   SimulationInputs,
   AssetClassOverride,
   OutcomeDistribution,
 } from "./mc-simulation-types";
 import { AssumptionRow } from "./assumption-row";
-import { InflationRiskRow, withdrawalRateRows } from "./mc-scenario-inputs";
-import { AssetClassTable } from "./mc-asset-classes";
-import { GlidePathTable } from "./mc-glide-path";
-import { correlationMatrix, ReturnClampSection } from "./mc-bounds";
+import { ReturnClampSection } from "./mc-bounds";
 import { OutcomeDistributionPanel } from "./mc-outcome-distribution";
 import { AssumptionsOverview } from "./mc-assumptions-overview";
+import { ScenarioInputs } from "./mc-scenario-section";
+import { AssetClassSection } from "./mc-asset-class-section";
+import { GlidePathSection } from "./mc-glide-path-section";
+import { CorrelationSection } from "./mc-correlation-section";
 
 export function SimulationAssumptions({
   inputs,
@@ -170,205 +171,42 @@ export function SimulationAssumptions({
           />
 
           {/* Key scenario inputs — 2 columns on mobile, 4 on desktop */}
-          <div>
-            <div className="text-label text-muted mb-1 font-medium">
-              Scenario Inputs
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs md:grid-cols-4">
-              <AssumptionRow
-                label="Withdrawals Start"
-                value={String(
-                  new Date().getFullYear() +
-                    inputs.retirementAge -
-                    inputs.currentAge,
-                )}
-              />
-              <AssumptionRow
-                label="Plan Through"
-                value={String(
-                  new Date().getFullYear() + inputs.endAge - inputs.currentAge,
-                )}
-              />
-              <AssumptionRow
-                label="Trials"
-                value={numTrials.toLocaleString()}
-                tip="Number of simulated market futures. More trials = more stable results. 1,000+ recommended; 2,500+ for precise tail estimates."
-              />
-              <AssumptionRow
-                label="Starting Balance"
-                value={formatCurrency(inputs.startingBalance)}
-                tip="Total portfolio value across all accounts at the start of the projection."
-              />
-              <AssumptionRow
-                label="Income (Salary + Bonus)"
-                value={formatCurrency(inputs.salary)}
-              />
-              <AssumptionRow
-                label="Base-Year Contributions"
-                value={formatCurrency(inputs.annualContributions)}
-              />
-              <AssumptionRow
-                label="Annual Expenses"
-                value={formatCurrency(inputs.annualExpenses)}
-                highlight={inputs.accumulationExpenseOverride != null}
-              />
-              <AssumptionRow
-                label="Deterministic Inflation"
-                value={formatPercent(inputs.inflationRate, 1)}
-                tip="Fixed annual inflation rate used in the deterministic projection. The Fed targets 2%; historical US average is ~3%."
-              />
-              <InflationRiskRow
-                draftInflStdDev={draftInflStdDev}
-                editingInflation={editingInflation}
-                inputs={inputs}
-                onInflationRiskChange={onInflationRiskChange}
-                setDraftInflStdDev={setDraftInflStdDev}
-                setEditingInflation={setEditingInflation}
-              />
-              <AssumptionRow
-                label="Blended Return"
-                value={formatPercent(inputs.blendedReturn, 1)}
-                tip="Weighted average expected return across all asset classes based on this year's allocation on the simulation's glide path. Typical range: 5-10% (bonds-heavy to equity-heavy)."
-              />
-              <AssumptionRow
-                label="Blended Volatility"
-                value={formatPercent(inputs.blendedVol, 1)}
-                tip="Weighted average standard deviation of returns. Higher = wider range of outcomes. Typical range: 8-16% (diversified to all-equity)."
-              />
-              {withdrawalRateRows(inputs)}
-            </div>
-          </div>
+          <ScenarioInputs
+            draftInflStdDev={draftInflStdDev}
+            editingInflation={editingInflation}
+            inputs={inputs}
+            numTrials={numTrials}
+            onInflationRiskChange={onInflationRiskChange}
+            setDraftInflStdDev={setDraftInflStdDev}
+            setEditingInflation={setEditingInflation}
+          />
 
           {/* Asset classes */}
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <div className="text-label text-muted font-medium">
-                Asset Classes (Return / Volatility)
-                {hasOverrides && (
-                  <span className="ml-1 text-amber-600">(your own values)</span>
-                )}
-              </div>
-              {onAssetClassOverridesChange && !editing && (
-                <div className="flex gap-1.5">
-                  {hasOverrides && (
-                    <button
-                      type="button"
-                      onClick={resetOverrides}
-                      className="text-caption text-amber-600 underline hover:text-amber-800"
-                    >
-                      Reset
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={startEditing}
-                    className="text-caption text-blue-600 underline hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                </div>
-              )}
-              {editing && (
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={cancelEditing}
-                    className="text-caption text-muted hover:text-secondary underline"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={applyEdits}
-                    className="text-caption font-medium text-blue-600 underline hover:text-blue-800"
-                  >
-                    Apply
-                  </button>
-                </div>
-              )}
-            </div>
-            <AssetClassTable
-              assetClassOverrides={assetClassOverrides}
-              draftReturns={draftReturns}
-              draftVols={draftVols}
-              editing={editing}
-              inputs={inputs}
-              setDraftReturns={setDraftReturns}
-              setDraftVols={setDraftVols}
-            />
-          </div>
+          <AssetClassSection
+            applyEdits={applyEdits}
+            assetClassOverrides={assetClassOverrides}
+            cancelEditing={cancelEditing}
+            draftReturns={draftReturns}
+            draftVols={draftVols}
+            editing={editing}
+            hasOverrides={hasOverrides}
+            inputs={inputs}
+            onAssetClassOverridesChange={onAssetClassOverridesChange}
+            resetOverrides={resetOverrides}
+            setDraftReturns={setDraftReturns}
+            setDraftVols={setDraftVols}
+            startEditing={startEditing}
+          />
 
           {/* Glide path table */}
-          {inputs.glidePath.length > 0 && (
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <div className="text-label text-muted font-medium">
-                  Glide Path (allocation shifts with age)
-                </div>
-                {onGlidePathChange && !editingGlidePath && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraftGlidePath(
-                        inputs.glidePath.map((gp) => ({
-                          age: gp.age,
-                          allocations: Object.fromEntries(
-                            inputs.assetClasses.map((ac) => [
-                              ac.id,
-                              ((gp.allocations[ac.id] ?? 0) * 100).toFixed(0),
-                            ]),
-                          ),
-                        })),
-                      );
-                      setEditingGlidePath(true);
-                    }}
-                    className="text-caption text-blue-600 underline hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                )}
-                {editingGlidePath && (
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setEditingGlidePath(false)}
-                      className="text-caption text-muted hover:text-secondary underline"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onGlidePathChange) {
-                          onGlidePathChange(
-                            draftGlidePath.map((gp) => ({
-                              age: gp.age,
-                              allocations: Object.fromEntries(
-                                Object.entries(gp.allocations).map(([k, v]) => [
-                                  k,
-                                  (parseFloat(v) || 0) / 100,
-                                ]),
-                              ),
-                            })),
-                          );
-                        }
-                        setEditingGlidePath(false);
-                      }}
-                      className="text-caption font-medium text-blue-600 underline hover:text-blue-800"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                )}
-              </div>
-              <GlidePathTable
-                draftGlidePath={draftGlidePath}
-                editingGlidePath={editingGlidePath}
-                inputs={inputs}
-                setDraftGlidePath={setDraftGlidePath}
-              />
-            </div>
-          )}
+          <GlidePathSection
+            draftGlidePath={draftGlidePath}
+            editingGlidePath={editingGlidePath}
+            inputs={inputs}
+            onGlidePathChange={onGlidePathChange}
+            setDraftGlidePath={setDraftGlidePath}
+            setEditingGlidePath={setEditingGlidePath}
+          />
 
           {/* Preset multipliers */}
           {inputs.preset !== "custom" && (
@@ -403,15 +241,7 @@ export function SimulationAssumptions({
           />
 
           {/* Correlation matrix */}
-          {inputs.correlations.length > 0 && (
-            <div>
-              <div className="text-label text-muted mb-1 font-medium">
-                Asset Class Correlations
-                <HelpTip text="Pairwise correlations used to generate correlated random returns across asset classes each simulation year. Values range from -1 (perfectly inverse) to +1 (perfectly correlated)." />
-              </div>
-              {correlationMatrix(inputs)}
-            </div>
-          )}
+          <CorrelationSection inputs={inputs} />
         </div>
       )}
 

@@ -2324,7 +2324,17 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 8
+      "count": 1
+    }
+  },
+  "src/components/retirement-projection/mc-asset-class-section.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 4
+    }
+  },
+  "src/components/retirement-projection/mc-glide-path-section.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/components/retirement-projection/mc-scenario-inputs.tsx": {
