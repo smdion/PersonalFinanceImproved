@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
-import type { ActiveFieldsRoot, DeductionRow } from "./profile-types";
+import type { ActiveFieldsRoot, DeductionRow } from "./account-row-types";
 import type { ProfileDetail } from "./account-row-types";
 
 export function useInlineEditorState(profileId: number, onSaved: () => void) {

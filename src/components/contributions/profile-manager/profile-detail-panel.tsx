@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { renderDetailAccountRows } from "./profile-detail-rows";
-import type { ActiveFieldsRoot, DeductionRow } from "./profile-types";
+import type { ActiveFieldsRoot, DeductionRow } from "./account-row-types";
 import { AccountFieldHeaders } from "./account-fields";
 
 export function ProfileDetailPanel({ profileId }: { profileId: number }) {

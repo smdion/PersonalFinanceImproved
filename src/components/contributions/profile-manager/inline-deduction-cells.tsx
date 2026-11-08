@@ -1,4 +1,4 @@
-import type { DeductionRow } from "./profile-types";
+import type { DeductionRow } from "./account-row-types";
 
 export function InlineDeductionNameCell({
   drafts,

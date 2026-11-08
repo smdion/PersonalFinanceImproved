@@ -61,7 +61,6 @@
     "src/components/contributions/profile-manager/profile-editor.tsx": 108,
     "src/components/contributions/profile-manager/profile-inline-editor.tsx": 140,
     "src/components/contributions/profile-manager/profile-manager-parts.tsx": 317,
-    "src/components/contributions/profile-manager/profile-types.ts": 15,
     "src/components/contributions/profile-manager/use-inline-editor.ts": 213,
     "src/components/contributions/profile-manager/use-new-profile-save.ts": 121,
     "src/components/contributions/profile-manager/use-profile-manager-state.ts": 101,

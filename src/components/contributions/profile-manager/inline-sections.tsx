@@ -11,7 +11,7 @@ import {
   type DeductionFormValues,
 } from "@/components/paycheck/deduction-form";
 import { groupSharedMatchAccounts } from "./match-groups";
-import type { DeductionRow } from "./profile-types";
+import type { DeductionRow } from "./account-row-types";
 import type { InlineRowProps, ProfileDetail } from "./account-row-types";
 import { ACCOUNT_FIELDS, type AccountFieldKey } from "./account-fields";
 import {

@@ -1,9 +1,9 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { FormField, FormInput } from "@/components/forms";
-import type { DeductionRow } from "./profile-types";
 import type {
   ContribDraft,
+  DeductionRow,
   MatchDraft,
   ProfileDetail,
 } from "./account-row-types";
