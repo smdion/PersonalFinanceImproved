@@ -109,7 +109,7 @@ export function MethodologyContent() {
           coincide with a downturn.
         </p>
         <p>
-          <strong>How our engine models it:</strong> Each MC trial draws
+          <strong>How our engine models it:</strong> Each Simulation trial draws
           independent annual returns from a log-normal distribution. Unlike
           historical sequence tools (which replay ~150 overlapping 30-year
           periods from history), our parametric approach generates millions of
@@ -474,9 +474,9 @@ export function MethodologyContent() {
           Data) are best for quick validation using historical data.{" "}
           <strong>Paid tools</strong> (Boldin, ProjectionLab) offer
           comprehensive planning features but limited simulation transparency.{" "}
-          <strong>This engine</strong> combines parametric MC rigor with full
-          tax-aware modeling and open-source transparency. Use Simple mode for
-          closest comparison with free historical tools.
+          <strong>This engine</strong> combines a parametric Simulation&apos;s
+          rigor with full tax-aware modeling and open-source transparency. Use
+          Simple mode for closest comparison with free historical tools.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">

@@ -103,7 +103,7 @@ function DiagnosticsSection() {
           </span>
           <p className="text-muted text-xs">
             Show diagnostic tooltips and debug data on projection tables
-            (withdrawal routing, MC proof notes, etc.)
+            (withdrawal routing, Simulation proof notes, etc.)
           </p>
         </div>
       </label>

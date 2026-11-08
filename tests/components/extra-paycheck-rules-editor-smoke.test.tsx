@@ -198,9 +198,7 @@ describe("ExtraPaycheckRulesEditor smoke", () => {
     );
     fireEvent.click(within(months).getByRole("button", { name: "×" }));
     fireEvent.click(within(months).getByRole("button", { name: "Edit" }));
-    expect(text(months)).toMatch(
-      /^Specific monthsOverride — May 2026Fund splits/,
-    );
+    expect(text(months)).toMatch(/^Specific monthsEditing May 2026Fund splits/);
     const [goal] = within(months).getAllByRole("combobox");
     fireEvent.change(goal!, { target: { value: "31" } });
     fireEvent.click(within(months).getByRole("button", { name: "Save month" }));

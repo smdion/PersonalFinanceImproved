@@ -1747,9 +1747,6 @@
   "src/components/methodology/methodology-content.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-retired-ui-word": {
-      "count": 2
     }
   },
   "src/components/methodology/validation-content.tsx": {
@@ -3469,9 +3466,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-retired-ui-word": {
-      "count": 1
     }
   },
   "src/components/retirement/sections/timeline.tsx": {
@@ -3588,9 +3582,6 @@
       "count": 5
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    },
-    "ratchet/no-retired-ui-word": {
       "count": 1
     },
     "ratchet/no-unlabeled-control": {
@@ -3931,9 +3922,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-retired-ui-word": {
-      "count": 1
     }
   },
   "src/components/settings/fpl-by-household.tsx": {
@@ -4177,9 +4165,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-retired-ui-word": {
-      "count": 1
     },
     "ratchet/no-unlabeled-control": {
       "count": 2

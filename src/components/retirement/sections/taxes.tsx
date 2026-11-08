@@ -397,7 +397,7 @@ export function TaxesSection({
           <label htmlFor={`${id}-routing`} className="text-muted">
             Withdrawal Routing
             <HelpTip
-              text={`WHICH accounts fund a year's withdrawal (separate from your spending strategy above, which decides HOW MUCH). ${WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS.bracket_filling} This is your saved default — the Retirement page's Configure toggle can customize it for one session without changing what's saved here.`}
+              text={`WHICH accounts fund a year's withdrawal (separate from your spending strategy above, which decides HOW MUCH). ${WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS.bracket_filling} This is your saved default — the Retirement page's Configure toggle can change it for one session without changing what's saved here.`}
             />
           </label>
           <div className="font-medium">

@@ -153,7 +153,7 @@ export function RbacGroupsSettings() {
 
       <Card title="Authentik Group Mapping">
         <p className="text-muted mb-4 text-xs">
-          Map Authentik group names to app permissions. Customize if your
+          Map Authentik group names to app permissions. Change these if your
           Authentik groups use different naming conventions.
         </p>
 

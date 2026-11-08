@@ -11,6 +11,7 @@ import {
   isHsaCategory,
   isIraCategory,
   tracksRothBasis,
+  getDisplayConfig,
 } from "@/lib/config/account-types";
 import { RuleOf55Badge } from "./tax-buckets-account-badges";
 
@@ -30,13 +31,12 @@ export type AccountEntry = AccountAnalysisEntry;
  *  differently to avoid a same-name, different-signature collision with
  *  that function. */
 export function bucketTaxTypeLabel(category: string, taxType: string): string {
+  const label = getDisplayConfig(category).displayLabel;
   if (isTaxFreeBucket(taxType)) {
-    return isIraCategory(category) ? "Roth IRA" : `Roth ${category}`;
+    return isIraCategory(category) ? "Roth IRA" : `Roth ${label}`;
   }
   if (isPreTaxType(taxType)) {
-    return isIraCategory(category)
-      ? "Traditional IRA"
-      : `Traditional ${category}`;
+    return isIraCategory(category) ? "Traditional IRA" : `Traditional ${label}`;
   }
   if (isAfterTaxType(taxType)) return "Brokerage";
   if (isHsaTaxType(taxType)) return "HSA";
