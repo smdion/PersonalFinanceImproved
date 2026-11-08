@@ -221,7 +221,7 @@
     "src/components/tools/relocation/projection-table.tsx": 416,
     "src/lib/budget-api/actual-client.ts": 820,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/config/account-types.ts": 866,
+    "src/lib/config/account-types.ts": 842,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 771,
     "src/lib/constants.ts": 370,

@@ -4641,7 +4641,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 21
+      "count": 20
     }
   },
   "src/lib/config/account-types.types.ts": {
