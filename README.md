@@ -43,7 +43,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Versioning & backup** — Automatic database snapshots on startup, plus a backup before each migration. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. An import or restore by a viewer with the `version` permission keeps today's integration credentials and Server URLs, and takes each integration's account links and last sync time from the backup; an admin's carries them whole. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
 - **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, pagination, and JSON export.
 - **Help & Guide** — A walkthrough of every feature by section, plus an in-app glossary for finance jargon.
-- **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats and integration status.
+- **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats, integration status and each scheduled job's last result.
 
 ## Quick Start
 
@@ -116,6 +116,12 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 | `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                                                                                                                                                                  |
 | `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                                                                                                                                                                   |
 | `TRUSTED_PROXY_HEADER`  | Which header names the client for rate limits and the sign-in throttle: unset uses X-Real-IP, else the last X-Forwarded-For hop (safe only behind a proxy that overwrites them, like SWAG); `x-real-ip` or `x-forwarded-for` trusts only that one; `none` (no proxy in front) puts every visitor in one shared bucket, so 5 failed sign-ins from anyone lock every visitor out for 15 minutes |
+
+### Optional — alerts
+
+| Variable                  | Description                                                                                                                                                                                                                                                    | Default        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `LEDGR_ALERT_WEBHOOK_URL` | An `http` or `https` URL that gets a JSON POST (`source`, `job`, `ok: false`, `message`, `startedAt`; no figures or secrets) when a scheduled job fails. Any service that takes a JSON webhook works. Each job's last result is also in `/api/health/detailed` | _(none — off)_ |
 
 ### Integrations
 
