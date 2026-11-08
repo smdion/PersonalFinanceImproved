@@ -43,7 +43,8 @@
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
     "src/components/dashboard/retirement-card-rows.tsx": 111,
-    "src/components/dashboard/retirement-card.tsx": 354,
+    "src/components/dashboard/retirement-card-stats.tsx": 197,
+    "src/components/dashboard/retirement-card.tsx": 256,
     "src/components/dashboard/savings-goals-card.tsx": 420,
     "src/components/debts/debts-card.tsx": 530,
     "src/components/debts/mortgage-settings.tsx": 800,
@@ -467,7 +468,7 @@
       "LivingCostsCardImpl": 581
     },
     "src/components/dashboard/retirement-card.tsx": {
-      "RetirementCardImpl": 308
+      "RetirementCardImpl": 207
     },
     "src/components/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 399

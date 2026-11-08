@@ -6,8 +6,6 @@ import {
 } from "@/lib/pure/household/household-timeline";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
-import { FocusLink } from "@/components/ui/focus-link";
-import { focusHref } from "@/lib/config/focus-topics";
 import {
   baselineNestEgg,
   simulatedOrBaseline,
@@ -22,12 +20,9 @@ import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { DEFAULT_CHECKPOINT_SOURCE } from "@/lib/config/milestones";
-import { Card, Metric } from "@/components/ui/card";
-import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { Card } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
-import { STATUS_COLORS } from "@/lib/utils/colors";
-import { simulationRateTone } from "@/lib/config/simulation-tones";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -39,6 +34,14 @@ import {
   renderCoastFireRow,
   renderLastRunRow,
 } from "./retirement-card-rows";
+import {
+  ContributionsRow,
+  DurationRow,
+  NestEggFigure,
+  RetirementAccountsBreakdown,
+  SimulatedSuccessRow,
+  TaxRoomRow,
+} from "./retirement-card-stats";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
@@ -182,31 +185,11 @@ function RetirementCardImpl() {
     <Card title="Retirement" href="/retirement">
       <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
         <div>
-          {nestEggDisplay.kind === "simulated" ? (
-            <>
-              <Metric
-                value={formatCurrency(nestEggDisplay.median)}
-                label={`Nest egg in ${yearOf(nestEggAge)} (today's $, simulated median)`}
-              />
-              <div className="text-caption text-faint mt-1 leading-tight">
-                Range {formatCurrency(nestEggDisplay.low)} –{" "}
-                {formatCurrency(nestEggDisplay.high)} · Baseline:{" "}
-                {formatCurrency(nestEggDisplay.baseline)} (fixed returns)
-              </div>
-            </>
-          ) : (
-            <>
-              <Metric
-                value={formatCurrency(nestEggDisplay.baseline)}
-                label={`Nest egg in ${yearOf(nestEggAge)} (today's $, baseline — fixed returns)`}
-              />
-              {/* The whole card links to /retirement — no nested link. */}
-              <div className="text-caption text-faint mt-1 leading-tight">
-                Run a simulation on the Retirement page to see the simulated
-                range.
-              </div>
-            </>
-          )}
+          <NestEggFigure
+            nestEggDisplay={nestEggDisplay}
+            yearOf={yearOf}
+            nestEggAge={nestEggAge}
+          />
           <div className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-muted">Years to retirement</span>
@@ -223,62 +206,17 @@ function RetirementCardImpl() {
                 {formatCurrency(portfolioTotal)}
               </span>
             </div>
-            {retPortfolio && portfolioTotal > 0 && (
-              <div className="text-faint ml-3 space-y-0.5 text-xs">
-                {retPortfolio.preTax > 0 && (
-                  <div className="flex justify-between">
-                    <span>Pre-tax</span>
-                    <span>{formatCurrency(retPortfolio.preTax)}</span>
-                  </div>
-                )}
-                {retPortfolio.taxFree > 0 && (
-                  <div className="flex justify-between">
-                    <span>Roth</span>
-                    <span>{formatCurrency(retPortfolio.taxFree)}</span>
-                  </div>
-                )}
-                {retPortfolio.hsa > 0 && (
-                  <div className="flex justify-between">
-                    <span>HSA</span>
-                    <span>{formatCurrency(retPortfolio.hsa)}</span>
-                  </div>
-                )}
-                {retPortfolio.afterTax > 0 && (
-                  <div className="flex justify-between">
-                    <span>After-tax</span>
-                    <span>{formatCurrency(retPortfolio.afterTax)}</span>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-muted">Contributions</span>
-              <span className="text-primary">
-                {formatCurrency(
-                  excludeMatch ? annualContributions : totalWithMatch,
-                )}
-                /yr
-                {employerContributions > 0 && (
-                  <span className="text-caption text-faint ml-1">
-                    {excludeMatch
-                      ? `(+ ${formatCurrency(employerContributions)} match)`
-                      : `(${formatCurrency(annualContributions)} + ${formatCurrency(employerContributions)} match)`}
-                  </span>
-                )}
-              </span>
-            </div>
-            {taxAdvSpace > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted">Tax-advantaged room</span>
-                <FocusLink
-                  focus={{ topic: "contributionElections" }}
-                  className="text-amber-600 hover:underline"
-                  title="See contribution elections on Paycheck"
-                >
-                  {formatCurrency(taxAdvSpace)}/yr
-                </FocusLink>
-              </div>
-            )}
+            <RetirementAccountsBreakdown
+              retPortfolio={retPortfolio}
+              portfolioTotal={portfolioTotal}
+            />
+            <ContributionsRow
+              excludeMatch={excludeMatch}
+              annualContributions={annualContributions}
+              totalWithMatch={totalWithMatch}
+              employerContributions={employerContributions}
+            />
+            <TaxRoomRow taxAdvSpace={taxAdvSpace} />
             <div className="border-subtle my-1 border-t" />
             {retirementBudget > 0 && (
               <div className="flex justify-between">
@@ -291,45 +229,9 @@ function RetirementCardImpl() {
             {sustainableWd > 0 && renderWithdrawalRow(settings, sustainableWd)}
             {coastFireData?.result &&
               renderCoastFireRow(coastFireMcPeek, ageLabel, coastFireData)}
-            {mcPeek?.result && (
-              <div className="flex justify-between">
-                <span className="text-muted">
-                  Simulated success
-                  <HelpTip
-                    text="The share of simulated market outcomes in which your plan doesn't run out of money, from the last Simulation you ran on the Retirement page. Not re-run automatically from the dashboard — visit the Retirement page's Plan Health tab to refresh it."
-                    learnMoreHref={focusHref({ topic: "planHealth" })}
-                  />
-                </span>
-                <FocusLink
-                  focus={{ topic: "planHealth" }}
-                  className={`font-medium hover:underline ${
-                    STATUS_COLORS[simulationRateTone(mcPeek.result.successRate)]
-                      .text
-                  }`}
-                >
-                  {formatPercent(mcPeek.result.successRate, 0)}
-                </FocusLink>
-              </div>
-            )}
+            <SimulatedSuccessRow mcPeek={mcPeek} />
             {renderLastRunRow(mcPeek, coastFireMcPeek)}
-            <div className="flex justify-between">
-              <span className="text-muted">Duration</span>
-              {outcome.succeeded ? (
-                <span className="font-medium text-green-600">
-                  Lasts to {endAge}+
-                </span>
-              ) : (
-                // The year it fails, in the projection.
-                <FocusLink
-                  focus={{ topic: "projectionYear", year: outcome.failureYear }}
-                  className="font-medium text-red-600 hover:underline"
-                >
-                  {outcome.failureReason === "depleted"
-                    ? `Runs out ${outcome.failureYear}`
-                    : `Falls short ${outcome.failureYear}`}
-                </FocusLink>
-              )}
-            </div>
+            <DurationRow endAge={endAge} outcome={outcome} />
           </div>
         </div>
         <div className="md:border-subtle md:border-l md:pl-8">
