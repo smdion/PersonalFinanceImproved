@@ -50,9 +50,9 @@ export function renderDetailAccountRows(profile: ProfileDetail) {
           rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
         } ${isProfileDisabled ? "opacity-40" : ""}`}
       >
-        {ACCOUNT_FIELDS.map(({ key, readOnly }) => {
-          const Cell = DETAIL_CELLS[key];
-          return readOnly && Cell ? <Cell key={key} {...row} /> : null;
+        {ACCOUNT_FIELDS.map((field) => {
+          const Cell = field.readOnly ? DETAIL_CELLS[field.key] : null;
+          return Cell ? <Cell key={field.key} {...row} /> : null;
         })}
       </tr>
     );

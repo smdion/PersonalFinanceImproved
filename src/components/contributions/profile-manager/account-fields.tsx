@@ -2,16 +2,16 @@
  *  table for every view's headers and the order of a row's cells. */
 export type AccountFieldKey =
   "enabled" | "account" | "method" | "value" | "matchType" | "match" | "cap";
+export type ReadOnlyFieldKey = "account" | "method" | "value" | "match";
 
 type AccountField = {
-  key: AccountFieldKey;
   label: string;
   title?: string;
   align: "text-left" | "text-right";
   width: string;
-  /** The read-only panel's column for this field, when it shows one. */
+  /** The read-only panel's column, for a ReadOnlyFieldKey field only. */
   readOnly?: { label: string; width: string; nowrap?: boolean };
-};
+} & ({ key: ReadOnlyFieldKey } | { key: AccountFieldKey; readOnly?: never });
 
 export const ACCOUNT_FIELDS: readonly AccountField[] = [
   {

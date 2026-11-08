@@ -4,7 +4,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
 import type { ContribAccountActiveFields } from "@/lib/pure/household/profiles";
 import type { AccountDetail } from "./account-row-types";
-import type { AccountFieldKey } from "./account-fields";
+import type { ReadOnlyFieldKey } from "./account-fields";
 
 /** One account row's values, as each read-only cell reads them. */
 export type DetailRowProps = {
@@ -108,14 +108,12 @@ function DetailMatchCell({ matchSource, isCombined }: DetailRowProps) {
 }
 
 /** The read-only panel's cell for each field it shows. */
-export const DETAIL_CELLS: Partial<
-  Record<AccountFieldKey, ComponentType<DetailRowProps>>
-> = {
+export const DETAIL_CELLS = {
   account: DetailAccountCell,
   method: DetailMethodCell,
   value: DetailValueCell,
   match: DetailMatchCell,
-};
+} satisfies Record<ReadOnlyFieldKey, ComponentType<DetailRowProps>>;
 
 function renderDetailMatch(matchSource: AccountDetail, isCombined: boolean) {
   const matchText = formatEmployerMatch(
