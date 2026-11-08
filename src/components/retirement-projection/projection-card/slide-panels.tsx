@@ -25,46 +25,32 @@ const DecumulationMethodologyContent = dynamic(() =>
 );
 
 export function ProjectionSlidePanels({
-  showMethodology,
-  setShowMethodology,
-  showAccumMethodology,
-  setShowAccumMethodology,
-  showDecumMethodology,
-  setShowDecumMethodology,
-  showValidation,
-  setShowValidation,
-  showAssumptions,
-  setShowAssumptions,
-  mcQuery,
-  setMcAssetClassOverrides,
-  updateAssetClassOverrides,
-  mcAssetClassOverrides,
-  fanBandRange,
-  updateGlidePath,
-  updateInflationOverrides,
-  updateClampBounds,
+  state,
   dollarMode,
 }: {
-  showMethodology: ProjectionState["showMethodology"];
-  setShowMethodology: ProjectionState["setShowMethodology"];
-  showAccumMethodology: ProjectionState["showAccumMethodology"];
-  setShowAccumMethodology: ProjectionState["setShowAccumMethodology"];
-  showDecumMethodology: ProjectionState["showDecumMethodology"];
-  setShowDecumMethodology: ProjectionState["setShowDecumMethodology"];
-  showValidation: ProjectionState["showValidation"];
-  setShowValidation: ProjectionState["setShowValidation"];
-  showAssumptions: ProjectionState["showAssumptions"];
-  setShowAssumptions: ProjectionState["setShowAssumptions"];
-  mcQuery: ProjectionState["mcQuery"];
-  setMcAssetClassOverrides: ProjectionState["setMcAssetClassOverrides"];
-  updateAssetClassOverrides: ProjectionState["updateAssetClassOverrides"];
-  mcAssetClassOverrides: ProjectionState["mcAssetClassOverrides"];
-  fanBandRange: ProjectionState["fanBandRange"];
-  updateGlidePath: ProjectionState["updateGlidePath"];
-  updateInflationOverrides: ProjectionState["updateInflationOverrides"];
-  updateClampBounds: ProjectionState["updateClampBounds"];
+  state: ProjectionState;
   dollarMode: DollarBasis;
 }) {
+  const {
+    showMethodology,
+    setShowMethodology,
+    showAccumMethodology,
+    setShowAccumMethodology,
+    showDecumMethodology,
+    setShowDecumMethodology,
+    showValidation,
+    setShowValidation,
+    showAssumptions,
+    setShowAssumptions,
+    mcQuery,
+    setMcAssetClassOverrides,
+    updateAssetClassOverrides,
+    mcAssetClassOverrides,
+    fanBandRange,
+    updateGlidePath,
+    updateInflationOverrides,
+    updateClampBounds,
+  } = state;
   return (
     <>
       <SlidePanel

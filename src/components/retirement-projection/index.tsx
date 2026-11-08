@@ -74,50 +74,19 @@ export function ProjectionCard(props: {
 
   // Destructure for the toolbar and stats row (kept inline since they're tightly coupled to layout)
   const {
-    withdrawalRoutingMode,
-    setWithdrawalRoutingMode,
-    withdrawalRoutingModeTouched,
-    withdrawalOrder,
-    setWithdrawalOrder,
-    withdrawalOrderTouched,
-    withdrawalSplits,
-    setWithdrawalSplits,
-    withdrawalSplitsTouched,
-    withdrawalTaxPref,
-    setWithdrawalTaxPref,
     mcTaxMode,
-    mcAssetClassOverrides,
-    setMcAssetClassOverrides,
     dollarMode: internalDollarMode,
     setDollarMode: internalSetDollarMode,
     chartView,
     setChartView,
-    fanBandRange,
     scenarioView,
-    showMethodology,
-    setShowMethodology,
-    showAccumMethodology,
-    setShowAccumMethodology,
-    showDecumMethodology,
-    setShowDecumMethodology,
-    showValidation,
-    setShowValidation,
-    showAssumptions,
-    setShowAssumptions,
-    showDecumConfig,
-    setShowDecumConfig,
     setPersonFilter,
     isPersonFiltered,
-    updateGlidePath,
-    updateClampBounds,
-    updateAssetClassOverrides,
-    updateInflationOverrides,
     engineQuery,
     mcPrefetchQuery,
     mcQuery,
     sharedInput,
     debouncedInput,
-    personFilterName,
     mcChartPending,
     result,
     hasIndividualAccountData,
@@ -378,24 +347,7 @@ export function ProjectionCard(props: {
           />
 
           {/* DECUMULATION DEFAULTS */}
-          <DecumulationPanel
-            isPersonFiltered={isPersonFiltered}
-            personFilterName={personFilterName}
-            showDecumConfig={showDecumConfig}
-            setShowDecumConfig={setShowDecumConfig}
-            withdrawalRoutingMode={withdrawalRoutingMode}
-            setWithdrawalRoutingMode={setWithdrawalRoutingMode}
-            withdrawalRoutingModeTouched={withdrawalRoutingModeTouched}
-            withdrawalOrder={withdrawalOrder}
-            setWithdrawalOrder={setWithdrawalOrder}
-            withdrawalOrderTouched={withdrawalOrderTouched}
-            engineSettings={engineSettings}
-            withdrawalSplits={withdrawalSplits}
-            setWithdrawalSplits={setWithdrawalSplits}
-            withdrawalSplitsTouched={withdrawalSplitsTouched}
-            withdrawalTaxPref={withdrawalTaxPref}
-            setWithdrawalTaxPref={setWithdrawalTaxPref}
-          />
+          <DecumulationPanel state={state} />
 
           {/* UNIFIED OVERRIDES */}
           <div className="print:hidden">
@@ -406,27 +358,7 @@ export function ProjectionCard(props: {
           </div>
         </div>
       </div>
-      <ProjectionSlidePanels
-        showMethodology={showMethodology}
-        setShowMethodology={setShowMethodology}
-        showAccumMethodology={showAccumMethodology}
-        setShowAccumMethodology={setShowAccumMethodology}
-        showDecumMethodology={showDecumMethodology}
-        setShowDecumMethodology={setShowDecumMethodology}
-        showValidation={showValidation}
-        setShowValidation={setShowValidation}
-        showAssumptions={showAssumptions}
-        setShowAssumptions={setShowAssumptions}
-        mcQuery={mcQuery}
-        setMcAssetClassOverrides={setMcAssetClassOverrides}
-        updateAssetClassOverrides={updateAssetClassOverrides}
-        mcAssetClassOverrides={mcAssetClassOverrides}
-        fanBandRange={fanBandRange}
-        updateGlidePath={updateGlidePath}
-        updateInflationOverrides={updateInflationOverrides}
-        updateClampBounds={updateClampBounds}
-        dollarMode={dollarMode}
-      />
+      <ProjectionSlidePanels state={state} dollarMode={dollarMode} />
     </>
   );
 }
