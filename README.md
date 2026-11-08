@@ -119,9 +119,9 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 ### Optional — alerts
 
-| Variable                  | Description                                                                                                                                                                                                                                                    | Default        |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `LEDGR_ALERT_WEBHOOK_URL` | An `http` or `https` URL that gets a JSON POST (`source`, `job`, `ok: false`, `message`, `startedAt`; no figures or secrets) when a scheduled job fails. Any service that takes a JSON webhook works. Each job's last result is also in `/api/health/detailed` | _(none — off)_ |
+| Variable                  | Description                                                                                                                                                                                                                                                                                                                                                                     | Default        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `LEDGR_ALERT_WEBHOOK_URL` | An `http` or `https` URL that gets a JSON POST (`source`, `job`, `event`, `ok`, `message`, `startedAt`; no figures or secrets) when a scheduled job starts failing (`failed`), every 24 h while it still fails (`still_failing`) and once when it recovers (`recovered`). Any service that takes a JSON webhook works. Each job's last result is also in `/api/health/detailed` | _(none — off)_ |
 
 ### Integrations
 
