@@ -186,7 +186,7 @@ export function subtractExcluded(
     // Never more than the category's tracked accounts can give: money no
     // tracked account holds is not penalty-free by default
     // (EligibilityRecord.reachableByCategory).
-    const reachable = exposure?.reachableByCategory?.[cat];
+    const reachable = exposure?.reachableByCategory[cat];
     const total = getTotalBalance(bal);
     if (reachable != null && total > reachable) {
       const keep = total > 0 ? Math.max(0, reachable) / total : 0;

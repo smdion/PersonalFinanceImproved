@@ -155,6 +155,7 @@ describe("the last-resort pass and the household's caps", () => {
       penaltyExposedRothStillExcluded: {},
       penaltyExposedTotalStillExcluded: {},
       totalPenaltyExposedStillExcluded: 0,
+      reachableByCategory: {},
     }) as unknown as EligibilityRecord; // eslint-disable-line no-restricted-syntax -- only the fields routing reads
 
   it("an account cap covers both passes", () => {
