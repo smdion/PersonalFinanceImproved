@@ -26,7 +26,9 @@
  * split's part wrapper and mount, or a stage's or UI cut's function lines
  * around what it took and its call: once check-commit's moves are cut out,
  * the code lines left rise by exactly the import lines. Every excused rise
- * is printed. A re-recorded baseline file needs
+ * is printed. In a `Mechanical:` commit whose `Rename:` check-commit
+ * proves (owner Q2), a size entry rises by the lines prettier's re-wrap of
+ * the renamed lines adds. A re-recorded baseline file needs
  * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
  * A known-list entry whose key changes and nothing else is excused by that
  * commit's `Known-renamed:` trailer (scripts/ratchets/known-renamed.ts).
@@ -59,8 +61,10 @@ import {
   listRises,
 } from "./ratchets/code-limits";
 import {
+  RENAME,
   commitsIn,
   gitIn,
+  mechanicalProblem,
   parseNumstat,
   structuralMoves,
   trailerValues,
@@ -453,6 +457,23 @@ function functionsTakenOver(
   return `${what} don't explain ${problems.join("; ")}`;
 }
 
+/**
+ * Owner Q2: in a `Mechanical:` commit whose `Rename:` check-commit proves, a
+ * size entry may rise by the lines prettier adds re-wrapping the longer
+ * names (listed under `Ratchet-raise:`); nothing else changed.
+ */
+function notRewrapped(git: Git, sha: string, rise: Rise): string | undefined {
+  if (rise.file !== SIZE_FILE) return undefined;
+  const problem = mechanicalProblem(
+    git("log", "-1", "--format=%B", sha),
+    parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+    git("show", "-M", "-U1000000", "--format=", sha),
+  );
+  return problem === undefined
+    ? undefined
+    : `rose +${rise.by ?? 0} in a Rename: commit check-commit doesn't prove (${problem})`;
+}
+
 /** The import-lines rule alone (before owner Q14). */
 function importLinesOnly(
   git: Git,
@@ -499,6 +520,7 @@ export function checkRatchets(
     renamedKeys = new Map<string, KnownRename>(),
   ) => {
     const mechanical = trailerValues(message, "Mechanical").length > 0;
+    const renamed = trailerValues(message, RENAME).length > 0;
     let read: Moves | undefined;
     const moves = () => (read ??= movesOf(git, sha));
     const undone = reverted(message);
@@ -533,7 +555,9 @@ export function checkRatchets(
         continue;
       }
       const imports = mechanical
-        ? notImportLines(git, sha, rise, moves)
+        ? renamed
+          ? notRewrapped(git, sha, rise)
+          : notImportLines(git, sha, rise, moves)
         : undefined;
       if (imports) failures.push(`${where}: ${imports}`);
       else excused.push(`${where}, by "${verdict.trailer}"`);

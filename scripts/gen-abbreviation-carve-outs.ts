@@ -77,8 +77,19 @@ function jsonKeys(value: unknown, out: Set<string>): void {
     }
 }
 
-/** The carve-out list for the tree at `root`, sorted. */
-export function abbreviationCarveOuts(root = ROOT): string[] {
+/** Whether a repo-relative path holds a stored or external shape. */
+export function isShapeFile(file: string): boolean {
+  return (
+    SHAPE_FILES.includes(file) ||
+    SHAPE_DIRS.some((d) => file.startsWith(`${d}/`))
+  );
+}
+
+/**
+ * Every stored, external and response key of the tree at `root`: the names a
+ * proven rename (check-commit's `Rename:`, owner Q2) may not change as keys.
+ */
+export function storedAndResponseKeys(root = ROOT): Set<string> {
   const names = new Set<string>();
   const files = [
     ...SHAPE_DIRS.flatMap((d) => filesIn(root, d, /\.ts$/)),
@@ -87,8 +98,13 @@ export function abbreviationCarveOuts(root = ROOT): string[] {
   for (const file of files) shapeNames(file, names);
   for (const file of filesIn(root, RESPONSE_DIR, /\.json$/))
     jsonKeys(JSON.parse(fs.readFileSync(file, "utf8")), names);
-  return [...names]
-    .filter((n) => NAME.test(n) && abbreviationIn(n) !== undefined)
+  return new Set([...names].filter((n) => NAME.test(n)));
+}
+
+/** The carve-out list for the tree at `root`, sorted. */
+export function abbreviationCarveOuts(root = ROOT): string[] {
+  return [...storedAndResponseKeys(root)]
+    .filter((n) => abbreviationIn(n) !== undefined)
     .sort();
 }
 

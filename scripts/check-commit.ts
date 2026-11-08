@@ -14,7 +14,9 @@
  * in order, a function body moved whole into a new top-level function and
  * called from where it was, router procedures moved whole into a new
  * part mounted where they were, or a UI cut: an IIFE's body into a named
- * function, a JSX run into a component), and the
+ * function, a JSX run into a component; with `Rename: old → new, …`, every
+ * changed code line is its old line with those names renamed, owner Q2:
+ * notARename), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
@@ -26,6 +28,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import {
+  isShapeFile,
+  storedAndResponseKeys,
+} from "./gen-abbreviation-carve-outs";
 
 export const SUBJECT_PREFIX =
   /^(feat|fix|refactor|perf|test|docs|build|ci|chore|style|revert|release)(\([^)]+\))?!?: \S/;
@@ -3395,6 +3401,276 @@ export function notAMove(
   return undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Proven renames (owner Q2, v0.10.5): `Mechanical:` with `Rename: a → b, …`
+// ---------------------------------------------------------------------------
+
+export const RENAME = "Rename";
+const RENAME_PAIR = /^([A-Za-z_$][\w$]*)\s*(?:→|->)\s*([A-Za-z_$][\w$]*)$/;
+
+/** `Rename: a → b, c → d` trailers as one map, and any malformed pair. */
+export function readRenames(raw: string): {
+  map: Map<string, string>;
+  problems: string[];
+} {
+  const map = new Map<string, string>();
+  const problems: string[] = [];
+  for (const value of trailerValues(raw, RENAME))
+    for (const part of value.split(",").map((s) => s.trim())) {
+      const [, from, to] = RENAME_PAIR.exec(part) ?? [];
+      if (!from || !to || from === to)
+        problems.push(`"${RENAME}: ${part}": write ${RENAME}: <old> → <new>`);
+      else if (map.has(from) && map.get(from) !== to)
+        problems.push(`${RENAME}: ${from} is renamed twice`);
+      else map.set(from, to);
+    }
+  return { map, problems };
+}
+
+/** A leaf token of the tree, kept with its node to read where it stands. */
+type Leaf = { node: ts.Node; text: string };
+
+const isName = (n: ts.Node) =>
+  n.kind === ts.SyntaxKind.Identifier ||
+  n.kind === ts.SyntaxKind.PrivateIdentifier;
+const isJsx = (n: ts.Node) =>
+  ts.isJsxElement(n) || ts.isJsxFragment(n) || ts.isJsxSelfClosingElement(n);
+
+/**
+ * A file's leaf tokens without comments and layout: prettier's re-wrap of a
+ * longer name adds or drops a trailing comma, a union's leading `|` or `&`,
+ * and the parentheses around multi-line JSX, and nothing else.
+ */
+function renameLeaves(source: ts.SourceFile): Leaf[] {
+  const out: Leaf[] = [];
+  const visit = (n: ts.Node) => {
+    if (
+      n.kind >= ts.SyntaxKind.FirstJSDocNode &&
+      n.kind <= ts.SyntaxKind.LastJSDocNode
+    )
+      return;
+    const children = n.getChildren(source);
+    if (children.length > 0) {
+      const jsxParens = ts.isParenthesizedExpression(n) && isJsx(n.expression);
+      for (const c of children)
+        if (!(jsxParens && c !== n.expression)) visit(c);
+      return;
+    }
+    if (n.kind === ts.SyntaxKind.EndOfFileToken) return;
+    const text =
+      n.kind === ts.SyntaxKind.JsxText
+        ? jsxTextValue(n.getText(source))
+        : n.getText(source);
+    if (text !== "") out.push({ node: n, text });
+  };
+  visit(source);
+  return out.filter(
+    (leaf, i) =>
+      !(leaf.text === "," && CLOSER.has(out[i + 1]?.text ?? "")) &&
+      !(
+        (leaf.text === "|" || leaf.text === "&") &&
+        ["=", "(", "<", ",", ":", "[", undefined].includes(out[i - 1]?.text)
+      ),
+  );
+}
+
+/** Every comment in a file, each line trimmed: a re-indent keeps them. */
+function commentTexts(source: ts.SourceFile): string[] {
+  const text = source.getFullText();
+  const seen = new Set<number>();
+  const out: string[] = [];
+  const take = (ranges: ts.CommentRange[] | undefined) => {
+    for (const r of ranges ?? []) {
+      if (seen.has(r.pos)) continue;
+      seen.add(r.pos);
+      out.push(
+        text
+          .slice(r.pos, r.end)
+          .split("\n")
+          .map((l) => l.trim())
+          .join("\n"),
+      );
+    }
+  };
+  const visit = (n: ts.Node) => {
+    const children = n.getChildren(source);
+    if (children.length > 0 && !ts.isJSDoc(n)) {
+      children.forEach(visit);
+      return;
+    }
+    if (n.kind === ts.SyntaxKind.JsxText || ts.isJSDoc(n)) return;
+    take(ts.getTrailingCommentRanges(text, n.pos));
+    take(ts.getLeadingCommentRanges(text, n.pos));
+  };
+  visit(source);
+  return out;
+}
+
+/** A key a name stands for: a property, a destructured key, a JSX prop. */
+function isKey(id: ts.Node): boolean {
+  const p = id.parent;
+  if (ts.isShorthandPropertyAssignment(p)) return true;
+  if (ts.isBindingElement(p))
+    return (
+      p.propertyName === id ||
+      (!p.propertyName && ts.isObjectBindingPattern(p.parent))
+    );
+  return (
+    (ts.isPropertyAssignment(p) ||
+      ts.isPropertySignature(p) ||
+      ts.isPropertyDeclaration(p) ||
+      ts.isMethodDeclaration(p) ||
+      ts.isMethodSignature(p) ||
+      ts.isGetAccessorDeclaration(p) ||
+      ts.isSetAccessorDeclaration(p) ||
+      ts.isEnumMember(p) ||
+      ts.isJsxAttribute(p) ||
+      ts.isPropertyAccessExpression(p)) &&
+    p.name === id
+  );
+}
+
+/** A zod object's schema call: its keys are a parsed shape. */
+const ZOD_SHAPE =
+  /^z\.(object|strictObject|looseObject)$|\.(extend|safeExtend|pick|omit|partial|required)$/;
+
+/** Why a key renamed at `id` changes a stored, external or response shape. */
+function shapeKeyProblem(
+  id: ts.Node,
+  file: string,
+  from: string,
+  shapes: { keys: Set<string>; isShapeFile: (file: string) => boolean },
+): string | undefined {
+  if (!isKey(id)) return undefined;
+  if (shapes.keys.has(from))
+    return `${from} is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+  if (shapes.isShapeFile(file)) return `${file} defines a stored shape`;
+  const literalKey =
+    ts.isPropertyAssignment(id.parent) ||
+    ts.isShorthandPropertyAssignment(id.parent);
+  if (!literalKey) return undefined;
+  if (file.startsWith("src/server/routers/"))
+    return "a router's object key can be its input or output";
+  for (let n: ts.Node | undefined = id.parent; n; n = n.parent)
+    if (
+      ts.isCallExpression(n) &&
+      ZOD_SHAPE.test(n.expression.getText()) &&
+      n.arguments.some((a) => a.pos <= id.pos && id.end <= a.end)
+    )
+      return "a z.object key is a parsed shape";
+  return undefined;
+}
+
+/** Why one code file's change is more than `map` applied to its names. */
+function codeRenameProblem(
+  file: string,
+  oldText: string,
+  newText: string,
+  map: Map<string, string>,
+  shapes: Parameters<typeof shapeKeyProblem>[3],
+  used: Set<string>,
+): string | undefined {
+  const parse = (text: string) =>
+    ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const [was, now] = [parse(oldText), parse(newText)];
+  const at = (leaf: Leaf | undefined, source: ts.SourceFile) =>
+    leaf
+      ? `${file}:${source.getLineAndCharacterOfPosition(leaf.node.getStart(source)).line + 1}`
+      : `${file} (end)`;
+  const [a, b] = [renameLeaves(was), renameLeaves(now)];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const [x, y] = [a[i], b[i]];
+    if (x?.text === y?.text) continue;
+    if (!x || !y) return `${at(y ?? x, y ? now : was)}: code added or removed`;
+    if (!isName(x.node) || !isName(y.node))
+      return `${at(y, now)}: "${x.text}" → "${y.text}" changes ${STRING_TOKEN.has(x.node.kind) || x.node.kind === ts.SyntaxKind.JsxText ? "a string" : "code"}, not a name`;
+    if (map.get(x.text) !== y.text)
+      return `${at(y, now)}: ${x.text} → ${y.text} is not in the ${RENAME}: list`;
+    const key = shapeKeyProblem(y.node, file, x.text, shapes);
+    if (key) return `${at(y, now)}: ${x.text} as a key: ${key}`;
+    used.add(x.text);
+  }
+  const [c, d] = [commentTexts(was), commentTexts(now)];
+  const differs = c.findIndex((t, i) => t !== d[i]);
+  if (differs >= 0 || c.length !== d.length)
+    return `${file}: a comment changed (a rename changes code only; reword comments in their own commit)`;
+  return undefined;
+}
+
+/**
+ * Why a `Mechanical:` commit with `Rename:` is more than those renames: every
+ * changed code line equals its old line once the map is applied to its name
+ * tokens (prettier's re-wrap allowed); strings, comments, stored, external
+ * and response keys, a router's object keys and z.object keys stay. The
+ * register's code references follow the names; the ratchet files keep their
+ * own checks. Undefined: proven.
+ */
+export function notARename(
+  numstat: FileChange[],
+  diff: string,
+  raw: string,
+  shapes: Parameters<typeof shapeKeyProblem>[3],
+): string | undefined {
+  const { map, problems } = readRenames(raw);
+  if (problems.length > 0) return problems.join("; ");
+  if (numstat.some((c) => c.file.includes(" => ")))
+    return `a ${RENAME}: commit moves no file (move it in its own Mechanical: commit)`;
+  const used = new Set<string>();
+  const words = (line: string) =>
+    line.replace(/[A-Za-z_$][\w$]*/g, (w) => {
+      const to = map.get(w);
+      if (to !== undefined) used.add(w);
+      return to ?? w;
+    });
+  for (const entry of readDiff(diff)) {
+    const { file } = entry;
+    if (MOVE_BOOKKEEPING.test(file)) continue;
+    if (entry.wholeFile)
+      return `${file}: a ${RENAME}: commit creates or deletes no file`;
+    const [oldText, newText] = [entry.old, entry.new].map((s) =>
+      s.lines.join("\n"),
+    );
+    if (CODE_FILE.test(file)) {
+      const problem = codeRenameProblem(
+        file,
+        oldText!,
+        newText!,
+        map,
+        shapes,
+        used,
+      );
+      if (problem) return problem;
+    } else if (file === REGISTER_DOC) {
+      const [was, now] = [entry.old, entry.new].map((s) =>
+        s.changed.map(({ at }) => s.lines[at]!),
+      );
+      if (
+        was!.length !== now!.length ||
+        was!.some((l, i) => words(l) !== now![i])
+      )
+        return `${file}: a changed line is more than the renamed names`;
+    } else
+      return `${file}: a ${RENAME}: commit changes code and the register only`;
+  }
+  const unused = [...map.keys()].filter((k) => !used.has(k));
+  if (unused.length > 0)
+    return `${RENAME}: ${unused.join(", ")} renamed nowhere in this commit`;
+  return undefined;
+}
+
+/** Why a `Mechanical:` commit isn't one: a proven rename, else a move. */
+export function mechanicalProblem(
+  raw: string,
+  numstat: FileChange[],
+  diff: string,
+): string | undefined {
+  if (trailerValues(raw, RENAME).length === 0) return notAMove(numstat, diff);
+  return notARename(numstat, diff, raw, {
+    keys: storedAndResponseKeys(),
+    isShapeFile,
+  });
+}
+
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
@@ -3541,7 +3817,8 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
   const message = parseMessage(git("log", "-1", "--format=%B", sha));
   const notMechanical =
     "Mechanical" in message.trailers
-      ? notAMove(
+      ? mechanicalProblem(
+          git("log", "-1", "--format=%B", sha),
           parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
           git("show", "-M", FULL_CONTEXT, "--format=", sha),
         )
@@ -3575,7 +3852,8 @@ function runMessageFile(file: string): Warning[] {
   const history = readHistory(now - FIX_WINDOW_DAYS * DAY_SECONDS);
   const notMechanical =
     "Mechanical" in message.trailers
-      ? notAMove(
+      ? mechanicalProblem(
+          readFileSync(file, "utf8"),
           parseNumstat(git("diff", "--cached", "-M", "--numstat")),
           git("diff", "--cached", "-M", FULL_CONTEXT),
         )

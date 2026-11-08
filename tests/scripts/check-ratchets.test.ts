@@ -684,6 +684,36 @@ describe("checkRatchets in a repository", () => {
     expect(report.failures).toEqual([]);
     expect(report.excused).toHaveLength(1);
   });
+  it("passes a proven rename's re-wrap rise and fails one check-commit doesn't prove (owner Q2)", () => {
+    const renamed = (label: string) =>
+      [
+        `const a0 = computeTheValue(\n  0,\n);`,
+        ...lines("a", 300).slice(1),
+        ...lines("b", 300),
+      ]
+        .join("\n")
+        .replaceAll("compute(", "computeTheValue(")
+        .replace("const b0", `const ${label}`);
+    const message = (body: string) =>
+      `refactor: compute is computeTheValue\n\n${body}\n\nMechanical: rename\nRename: compute → computeTheValue\nRatchet-raise: size-baseline.json — src/r.ts +2, the re-wrap of the longer name`;
+    git("checkout", "-q", "-B", "proven-rename", base);
+    write("src/r.ts", renamed("b0"));
+    write("size-baseline.json", size({ "src/r.ts": 602 }));
+    commit(message("A longer name."));
+    const report = checkRatchets(base, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toHaveLength(1);
+
+    git("checkout", "-q", "-B", "unproven-rename", base);
+    write("src/r.ts", renamed("bZero"));
+    write("size-baseline.json", size({ "src/r.ts": 602 }));
+    commit(message("A longer name, and another."));
+    expect(checkRatchets(base, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(
+        /files src\/r\.ts: 602 .*rose \+2 in a Rename: commit check-commit doesn't prove \(src\/r\.ts:303: b0 → bZero is not in the Rename: list\)/,
+      ),
+    ]);
+  });
   const sha = () => git("rev-parse", "--short=8", "HEAD");
   const rBody = (aCount: number, bFrom = 0) =>
     [...lines("a", aCount), ...lines("b", 300).slice(bFrom)].join("\n");
