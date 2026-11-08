@@ -79,9 +79,9 @@
     "src/components/retirement-projection/use-projection-queries.ts": 977,
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
-    "src/components/retirement/assumptions-band.tsx": 431,
+    "src/components/retirement/assumptions-band.tsx": 432,
     "src/components/retirement/retirement-profile-tab.tsx": 552,
-    "src/components/retirement/sections/taxes.tsx": 551,
+    "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/all-transactions-tab.tsx": 1442,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
@@ -684,32 +684,32 @@
       "WithdrawalComparisonCard": 477
     },
     "src/components/retirement/assumptions-band.tsx": {
-      "AssumptionsBand": 325
+      "AssumptionsBand": 326
     },
     "src/components/retirement/retirement-profile-manager.tsx": {
-      "RetirementProfileManager": 264
+      "RetirementProfileManager": 270
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
       "RetirementProfileTab": 480
     },
     "src/components/retirement/sections/income.tsx": {
-      "IncomeSection": 179
+      "IncomeSection": 182
     },
     "src/components/retirement/sections/per-phase-budget.tsx": {
       "PerPhaseBudgetSection": 156
     },
     "src/components/retirement/sections/rmd-handling.tsx": {
-      "RmdHandlingSection": 215
+      "RmdHandlingSection": 218
     },
     "src/components/retirement/sections/social-security.tsx": {
       "SocialSecuritySection": 242
     },
     "src/components/retirement/sections/strategy-params.tsx": {
-      "StrategyParamsSection": 218,
-      "StrategyParamsSection.renderField": 170
+      "StrategyParamsSection": 222,
+      "StrategyParamsSection.renderField": 173
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 470
+      "TaxesSection": 476
     },
     "src/components/savings/all-transactions-tab.tsx": {
       "AllTransactionsTab": 1387,

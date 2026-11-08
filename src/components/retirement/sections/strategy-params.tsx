@@ -10,6 +10,7 @@
  */
 "use client";
 
+import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { formatPercent } from "@/lib/utils/format";
@@ -27,6 +28,7 @@ export function StrategyParamsSection({
   upsertSettings,
   isEditable,
 }: Props) {
+  const id = useId();
   const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
   if (!meta || meta.paramFields.length === 0) return null;
 
@@ -99,12 +101,13 @@ export function StrategyParamsSection({
         currentVal != null ? Number(currentVal) : Number(field.default);
       return (
         <div key={field.key}>
-          <span className="text-muted">
+          <label htmlFor={`${id}-${field.key}`} className="text-muted">
             {field.label}
             {field.tooltip && <HelpTip text={field.tooltip} />}
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-${field.key}`}
               value={String(numVal)}
               onChange={(e) => {
                 upsertSettings.mutate(
@@ -142,12 +145,13 @@ export function StrategyParamsSection({
         currentVal != null ? Number(currentVal) : Number(field.default);
       return (
         <div key={field.key}>
-          <span className="text-muted">
+          <label htmlFor={`${id}-${field.key}`} className="text-muted">
             {field.label}
             {field.tooltip && <HelpTip text={field.tooltip} />}
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-${field.key}`}
               value={String(numVal)}
               onChange={(e) => {
                 upsertSettings.mutate(
@@ -188,12 +192,13 @@ export function StrategyParamsSection({
       currentVal != null ? Number(currentVal) : Number(field.default);
     return (
       <div key={field.key}>
-        <span className="text-muted">
+        <label htmlFor={`${id}-${field.key}`} className="text-muted">
           {field.label}
           {field.tooltip && <HelpTip text={field.tooltip} />}
-        </span>
+        </label>
         <div className="font-medium">
           <select
+            id={`${id}-${field.key}`}
             value={String(pctVal)}
             onChange={(e) => {
               upsertSettings.mutate(

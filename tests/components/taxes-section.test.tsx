@@ -15,6 +15,7 @@ import { TaxesSection } from "@/components/retirement/sections/taxes";
 import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type { Settings } from "@/components/retirement/sections/types";
 import { makeSettings } from "./fixtures/retirement-settings";
+import { expectLabelReachesControl } from "./label-click";
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: ({ text }: { text?: string }) => (
@@ -237,5 +238,13 @@ describe("TaxesSection — Withdrawal Order / Splits (persisted defaults)", () =
     const patch = mutate.mock.calls[0]![0];
     expect(patch.withdrawalSplits["401k"]).toBeCloseTo(0.4);
     expect(patch.withdrawalSplits.ira).toBeCloseTo(0.25);
+  });
+});
+
+describe("TaxesSection — labels", () => {
+  it("clicking Bracket Ceiling and Withdrawal Routing reaches their selects", () => {
+    renderTaxesSection();
+    expectLabelReachesControl("Bracket Ceiling");
+    expectLabelReachesControl("Withdrawal Routing");
   });
 });

@@ -312,6 +312,7 @@ export function AssumptionsBand({
           </span>
           {editable ? (
             <select
+              aria-label="Bracket ceiling"
               value={String(rothTargetOf(settings.rothBracketTarget))}
               onChange={(e) =>
                 upsertSettings.mutate(

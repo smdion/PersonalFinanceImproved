@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -92,6 +92,7 @@ export function RetirementProfileManager({
     null,
   );
   const [duplicateName, setDuplicateName] = useState("");
+  const id = useId();
   const [error, setError] = useState<string | null>(null);
 
   const invalidate = () => {
@@ -239,6 +240,7 @@ export function RetirementProfileManager({
                 />{" "}
                 {admin ? (
                   <select
+                    aria-label={`Tax law year for ${profile.name}`}
                     value={profile.taxParamsYear ?? ""}
                     onChange={(e) =>
                       updateTaxYearMut.mutate({
@@ -268,10 +270,14 @@ export function RetirementProfileManager({
 
       {admin && duplicating && (
         <div className="border-subtle mt-1.5 flex items-center gap-2 rounded-md border border-dashed px-3 py-2">
-          <span className="text-caption text-muted whitespace-nowrap">
+          <label
+            htmlFor={`${id}-duplicate-name`}
+            className="text-caption text-muted whitespace-nowrap"
+          >
             New profile name
-          </span>
+          </label>
           <input
+            id={`${id}-duplicate-name`}
             autoFocus
             value={duplicateName}
             onChange={(e) => setDuplicateName(e.target.value)}

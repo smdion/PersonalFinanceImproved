@@ -2522,9 +2522,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/retirement/plan-health.tsx": {
@@ -2544,9 +2541,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/retirement/retirement-profile-tab.tsx": {
@@ -2592,9 +2586,6 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/retirement/sections/per-phase-budget.tsx": {
@@ -2634,9 +2625,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/retirement/sections/settings-patch.ts": {
@@ -2667,9 +2655,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/retirement/sections/taxes.tsx": {
@@ -2687,9 +2672,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 5
     }
   },
   "src/components/retirement/sections/timeline.tsx": {

@@ -9,6 +9,7 @@
  */
 "use client";
 
+import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -72,6 +73,7 @@ export function IncomeSection({
   setSalaryProfileId,
   isEditable,
 }: Props) {
+  const id = useId();
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
@@ -185,12 +187,13 @@ export function IncomeSection({
           </div>
         </div>
         <div>
-          <span className="text-muted">
+          <label htmlFor={`${id}-salary`} className="text-muted">
             Salary Profile
             <HelpTip text="Which Salary Profile the salaries in this projection come from. Each profile sets every person to either follow their job record or a fixed amount. Independent of the Contribution Profile beside it — the two are separate selections. This selection is saved as your active Salary Profile and applies on every page until you change it back; it is not a one-off preview." />
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-salary`}
               className="bg-surface-primary w-full rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               value={salaryProfileId ?? ""}
               onChange={(e) =>
@@ -208,12 +211,13 @@ export function IncomeSection({
           </div>
         </div>
         <div>
-          <span className="text-muted">
+          <label htmlFor={`${id}-contrib`} className="text-muted">
             Contribution Profile
             <HelpTip text="Which Contribution Profile the contribution assumptions in this projection come from. Salary is a separate selection — see Salary Profile. This selection is saved as your active Contribution Profile and applies on every page until you change it back; it is not a one-off preview." />
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-contrib`}
               className="bg-surface-primary w-full rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               value={contribProfileId ?? ""}
               onChange={(e) =>
