@@ -73,15 +73,15 @@ const shared = new WeakMap<
   { at: number; result: ReturnType<typeof computeCurrentBalances> }
 >();
 
-export function loadCurrentBalances(db: Db) {
+export function loadCurrentBalances(db: Db, asOf: Date) {
   const hit = shared.get(db);
   const fresh = hit && Date.now() - hit.at < SHARE_MS;
-  const result = fresh ? hit.result : computeCurrentBalances(db);
+  const result = fresh ? hit.result : computeCurrentBalances(db, asOf);
   if (!fresh) shared.set(db, { at: Date.now(), result });
   return result.then(withNoHoldings);
 }
 
-async function computeCurrentBalances(db: Db) {
+async function computeCurrentBalances(db: Db, asOf: Date) {
   const f = schema.simplefinAccounts;
   const [context, accounts, holdings, reports, names, latestSnapshot, loose] =
     await Promise.all([
@@ -146,7 +146,7 @@ async function computeCurrentBalances(db: Db) {
     ...allFeeds.map((x) => valuationDateFor(seenAt(x))),
     ...(snapshotDay ? [snapshotDay] : []),
   ].sort()[0];
-  const today = valuationDateFor(new Date());
+  const today = valuationDateFor(asOf);
   const closesFrom = addDays(
     [earliest ?? today, addDays(today, -MOVEMENT_WINDOW_DAYS)].sort()[0]!,
     -CLOSE_WINDOW_DAYS,
@@ -164,7 +164,7 @@ async function computeCurrentBalances(db: Db) {
       await Promise.all(
         tickers.map(
           async (t) =>
-            [t, await getDailyMarketCloses(db, t, closesFrom)] as const,
+            [t, await getDailyMarketCloses(db, t, closesFrom, today)] as const,
         ),
       )
     ).flatMap(([t, c]) => (c ? ([[t, c]] as const) : [])),

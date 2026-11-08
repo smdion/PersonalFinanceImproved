@@ -201,7 +201,10 @@ export const investmentComparisonRouter = createTRPCRouter({
       );
       const currentYear = ctx.scope.asOf.getFullYear();
 
-      const retirementYear = await householdRetirementYear(ctx.db);
+      const retirementYear = await householdRetirementYear(
+        ctx.db,
+        ctx.scope.asOf,
+      );
       const benchmarks = await Promise.all(
         BENCHMARKS.map(async (def) => {
           const b = resolveBenchmark(def, retirementYear) ?? {

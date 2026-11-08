@@ -49,8 +49,9 @@ const dayDate = (day: string) => new Date(`${day}T12:00:00Z`);
 
 export async function loadLiveContributions(
   db: Db,
-  today: string = localDateStr(),
+  asOf: Date,
 ): Promise<LiveContribution[]> {
+  const today = localDateStr(asOf);
   const year = Number(today.slice(0, 4));
   const recentSince = addDays(today, -RECENT_ACTIVITY_DAYS);
   const [rows, pending, names, context, recent] = await Promise.all([
@@ -67,7 +68,7 @@ export async function loadLiveContributions(
           eq(schema.accountPerformance.isActive, true),
         ),
       ),
-    loadPerformanceSuggestions(db, year),
+    loadPerformanceSuggestions(db, year, asOf),
     loadTrackedAccountNames(db),
     loadFeedContext(db),
     loadClassifiedTransactions(db, { since: recentSince }),

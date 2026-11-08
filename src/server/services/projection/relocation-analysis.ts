@@ -341,15 +341,15 @@ export async function computeRelocationAnalysis(
     };
   };
 
-  // Resolve contribution profiles for each scenario. No profile
-  // (or a stale id that no longer exists) resolves against an empty
-  // active-fields map — accounts carry no value of their own anymore,
-  // so this correctly yields zero contributions rather than falling
-  // back to a "live" reading of the raw account rows.
+  // Resolve contribution profiles for each scenario. No profile (or a
+  // stale id that no longer exists) resolves against an empty active-fields
+  // map — accounts carry no value of their own anymore, so this correctly
+  // yields zero contributions rather than a "live" reading of the raw rows.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
     null,
+    ctx.scope.asOf,
     referenceDate.getFullYear(),
   );
   const resolveContribProfile = async (profileId: number | null) => {
@@ -402,7 +402,7 @@ export async function computeRelocationAnalysis(
   );
   const yearRates: number[] = [];
   // When the plan's withdrawals start, as the primary person's age.
-  const plannedYear = await householdRetirementYear(ctx.db);
+  const plannedYear = await householdRetirementYear(ctx.db, ctx.scope.asOf);
   const retirementAge =
     plannedYear !== null
       ? age + plannedYear - referenceDate.getFullYear()

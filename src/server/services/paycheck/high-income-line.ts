@@ -15,7 +15,7 @@ import {
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import type { Db } from "@/lib/db";
 
-export async function householdHighIncomeLine(db: Db) {
+export async function householdHighIncomeLine(db: Db, asOf: Date) {
   const [appSettings, retSettings, retProfiles, people] = await Promise.all([
     db.select().from(schema.appSettings),
     db.select().from(schema.retirementSettings),
@@ -34,6 +34,7 @@ export async function householdHighIncomeLine(db: Db) {
     appSettings,
     profileStatus: settings?.filingStatus,
     people,
+    asOf,
   });
   return defaultHighIncomeLine(status, people.length);
 }

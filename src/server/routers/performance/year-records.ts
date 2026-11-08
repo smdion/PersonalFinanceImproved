@@ -352,7 +352,12 @@ export const yearRecordProcedures = {
         for (const b of before) await syncYearRollups(tx, b);
         await stampPerformanceUpdated(tx);
         if (input.simplefinFill)
-          await recordFill(tx, "performance", input.simplefinFill);
+          await recordFill(
+            tx,
+            "performance",
+            input.simplefinFill,
+            ctx.scope.asOf,
+          );
       });
       return { ok: true };
     }),

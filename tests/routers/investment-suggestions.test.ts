@@ -562,7 +562,7 @@ describe("investment suggestions", () => {
         (a) => a.accountPerformanceId === ap.brokerage,
       )!;
       const live = (
-        await loadLiveContributions(ctx.db as never, "2026-10-12")
+        await loadLiveContributions(ctx.db as never, new Date())
       ).find((c) => c.performanceAccountId === row.performanceAccountId)!;
       // Performance's figures split employee / employer, plus exactly what
       // the Performance fill would add now (the same loader).

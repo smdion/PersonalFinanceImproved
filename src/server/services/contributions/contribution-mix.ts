@@ -47,7 +47,7 @@ import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(
   db: Db,
-  asOf: Date = new Date(),
+  asOf: Date,
   /** Tracked account → the day its latest contribution actually arrived (live data). */
   contributedThrough?: ReadonlyMap<number, string>,
 ): Promise<Map<number, AccountContributionMix>> {
@@ -76,12 +76,7 @@ export async function loadContributionMix(
   // Capped over a person's rows (a limit spans accounts), then the tracked.
   const rows = capForRequest(
     effective,
-    await loadCapHousehold(
-      db,
-      await getAllPeople(db),
-      null,
-      asOf.getFullYear(),
-    ),
+    await loadCapHousehold(db, await getAllPeople(db), null, asOf),
     jobs,
     salaryMap,
     new Map(),

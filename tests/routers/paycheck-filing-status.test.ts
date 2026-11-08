@@ -47,7 +47,8 @@ describe("paycheck: the household's filing status", () => {
     expect(s.rothIra?.filingStatus).toBe("Single");
     const people = ctx.db.select().from(schema.people).all();
     expect(
-      (await loadCapHousehold(ctx.db as never, people, {}, 2026)).filingStatus,
+      (await loadCapHousehold(ctx.db as never, people, {}, new Date(), 2026))
+        .filingStatus,
     ).toBe("Single");
   });
 
@@ -79,7 +80,8 @@ describe("paycheck: the household's filing status", () => {
     expect(s.rothIra?.filingStatus).toBe("HOH");
     const people = ctx.db.select().from(schema.people).all();
     expect(
-      (await loadCapHousehold(ctx.db as never, people, {}, 2026)).filingStatus,
+      (await loadCapHousehold(ctx.db as never, people, {}, new Date(), 2026))
+        .filingStatus,
     ).toBe("HOH");
     // Cleared: back to the profile's.
     await ctx.caller.settings.appSettings.upsert({
@@ -112,7 +114,8 @@ describe("loadCapHousehold: no setting and no job", () => {
   it("is unknown, never assumed married", async () => {
     const people = ctx.db.select().from(schema.people).all();
     expect(
-      (await loadCapHousehold(ctx.db as never, people, {}, 2026)).filingStatus,
+      (await loadCapHousehold(ctx.db as never, people, {}, new Date(), 2026))
+        .filingStatus,
     ).toBe("");
   });
 });
@@ -218,12 +221,14 @@ describe("w4FilingStatusOf: the request's Salary Profile", () => {
   afterAll(() => ctx.cleanup());
 
   it("reads a What-If's W-4 when given its map, else the active profile's", async () => {
-    expect(await w4FilingStatusOf(ctx.db as never, [personId])).toBe("Single");
+    expect(
+      await w4FilingStatusOf(ctx.db as never, [personId], new Date()),
+    ).toBe("Single");
     const whatIf = new Map([
       [jobId, { w4FilingStatus: "HOH" } as never],
     ]) as SalaryProfileActiveMap;
-    expect(await w4FilingStatusOf(ctx.db as never, [personId], whatIf)).toBe(
-      "HOH",
-    );
+    expect(
+      await w4FilingStatusOf(ctx.db as never, [personId], new Date(), whatIf),
+    ).toBe("HOH");
   });
 });

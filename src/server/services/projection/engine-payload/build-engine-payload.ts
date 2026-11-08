@@ -176,6 +176,7 @@ export async function buildEnginePayload(
     appSettings: allAppSettings,
     profileStatus,
     people,
+    asOf: opts.asOf,
     salaryProfileActiveMap,
   });
   const filingStatus = retirementFilingStatus(
@@ -227,7 +228,6 @@ export async function buildEnginePayload(
     ? new Date(data.snapshotData.snapshot.snapshotDate)
     : opts.asOf;
   const currentYear = asOfDate.getFullYear();
-
   const { budgetProfileSummaries } = await budgetSummaries(
     allBudgetProfiles,
     allBudgetItems,

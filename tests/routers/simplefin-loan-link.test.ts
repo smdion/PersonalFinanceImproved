@@ -68,7 +68,7 @@ const pull = (apiBalance: number) =>
     },
     apiBalance,
     service: "actual",
-    currentYear: 2026,
+    pulledAt: new Date(2026, 5, 15),
   });
 
 beforeEach(async () => {

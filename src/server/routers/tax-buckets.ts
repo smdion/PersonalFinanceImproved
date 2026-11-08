@@ -291,7 +291,7 @@ export const taxBucketsRouter = createTRPCRouter({
         }
         await stampBasisUpdated(tx);
         if (input.simplefinFill)
-          await recordFill(tx, "basis", input.simplefinFill);
+          await recordFill(tx, "basis", input.simplefinFill, ctx.scope.asOf);
       });
       return { ok: true };
     }),

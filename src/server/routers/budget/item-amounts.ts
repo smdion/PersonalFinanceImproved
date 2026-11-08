@@ -81,7 +81,7 @@ export const itemAmountProcedures = {
             accountId,
             input.amount,
             contribProfileId,
-            assertWithinIrsLimits,
+            (db, check) => assertWithinIrsLimits(db, check, ctx.scope.asOf),
           );
         });
         return item;
@@ -234,7 +234,7 @@ export const itemAmountProcedures = {
         await applyContributionAccountEditsBatch(
           tx,
           contributionEdits,
-          assertWithinIrsLimits,
+          (db, check) => assertWithinIrsLimits(db, check, ctx.scope.asOf),
         );
       });
       const appliedCells = toApply.reduce((n, t) => n + t.changes.length, 0);

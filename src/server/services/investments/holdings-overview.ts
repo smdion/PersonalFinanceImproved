@@ -56,7 +56,10 @@ async function loadBucketLinks(
  * household's current glide path when it has set one, otherwise the
  * retirement simulation's glide path (the engine's own interpolation).
  */
-async function targetByAssetClass(db: Db): Promise<{
+async function targetByAssetClass(
+  db: Db,
+  asOf: Date,
+): Promise<{
   age: number | null;
   target: Record<number, number>;
   source: "current" | "retirement";
@@ -113,7 +116,7 @@ async function targetByAssetClass(db: Db): Promise<{
       currentGlidePath,
       currentGlidePathStale,
     };
-  const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
+  const age = getAge(new Date(`${person.dob}T00:00:00`), asOf);
   return {
     age,
     target: interpolateAllocations(glidePath, age),
@@ -132,6 +135,7 @@ async function targetByAssetClass(db: Db): Promise<{
 export async function valueHoldings(
   db: Db,
   holdings: Awaited<ReturnType<typeof loadLatestHoldings>>,
+  asOf: Date,
 ) {
   const securityIds = [...new Set(holdings.map((h) => h.securityId))];
   const [securities, facts] = securityIds.length
@@ -146,7 +150,7 @@ export async function valueHoldings(
           .where(inArray(schema.securityFacts.securityId, securityIds)),
       ])
     : [[], []];
-  const today = localDateStr();
+  const today = localDateStr(asOf);
   const securityById = new Map(securities.map((s) => [s.id, s]));
   const factsBySecurity = new Map(
     securityIds.map((id) => [
@@ -213,8 +217,8 @@ function uninvestedCash(
 }
 
 /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
-export async function loadHoldingsOverview(db: Db) {
-  const year = Number(localDateStr().slice(0, 4));
+export async function loadHoldingsOverview(db: Db, asOf: Date) {
+  const year = asOf.getFullYear();
   const [holdings, accounts, sec, assetClasses, target] = await Promise.all([
     loadLatestHoldings(db),
     loadAccounts(db),
@@ -229,10 +233,10 @@ export async function loadHoldingsOverview(db: Db) {
       .from(schema.assetClassParams)
       .where(eq(schema.assetClassParams.isActive, true))
       .orderBy(schema.assetClassParams.sortOrder),
-    targetByAssetClass(db),
+    targetByAssetClass(db, asOf),
   ]);
   const [allValued, links] = await Promise.all([
-    valueHoldings(db, holdings),
+    valueHoldings(db, holdings, asOf),
     loadBucketLinks(db),
   ]);
   // Only SimpleFIN accounts linked to a Ledgr account count — an unlinked

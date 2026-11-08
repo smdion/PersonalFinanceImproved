@@ -159,7 +159,7 @@ describe("materializeExtraPaycheckSavings", () => {
   }
 
   it("materializes rows for the desired months", async () => {
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
     const rows = ruleRows();
     expect(rows.map((r) => r.transactionDate).sort()).toEqual([
       "2026-06-01",
@@ -170,7 +170,7 @@ describe("materializeExtraPaycheckSavings", () => {
 
   it("materializes nothing for a job paused via the Savings/Budget toggle (enabled: false), and cleans up rows from a prior enabled run", async () => {
     // First confirm rows exist while enabled (today's default).
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
     expect(ruleRows().length).toBeGreaterThan(0);
 
     // Pause routing without touching the configured rule — same shape the
@@ -187,7 +187,7 @@ describe("materializeExtraPaycheckSavings", () => {
       enabled: false,
     });
 
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
     expect(ruleRows()).toEqual([]);
   });
 
@@ -205,7 +205,7 @@ describe("materializeExtraPaycheckSavings", () => {
       })
       .run();
 
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
 
     const rows = ruleRows();
     const jan = rows.find((r) => r.transactionDate === "2026-01-01");
@@ -213,7 +213,7 @@ describe("materializeExtraPaycheckSavings", () => {
   });
 
   it("preserves a settled current-month row instead of duplicating it", async () => {
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
     const juneRow = ruleRows().find((r) => r.transactionDate === "2026-06-01");
     expect(juneRow).toBeDefined();
 
@@ -236,7 +236,7 @@ describe("materializeExtraPaycheckSavings", () => {
       ],
     });
 
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
 
     const juneRows = ruleRows().filter(
       (r) => r.transactionDate === "2026-06-01",
@@ -253,15 +253,15 @@ describe("materializeExtraPaycheckSavings", () => {
   });
 
   it("a settlement on a rule row survives regeneration (not cascade-deleted)", async () => {
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
     const juneRow = ruleRows().find((r) => r.transactionDate === "2026-06-01");
     ctx.db
       .insert(ctx.schema.savingsPlannedTxSettlements)
       .values({ plannedTxId: juneRow!.id, occurrenceMonth: "2026-06-01" })
       .run();
 
-    await materializeExtraPaycheckSavings(ctx.db as never);
-    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
+    await materializeExtraPaycheckSavings(ctx.db as never, new Date());
 
     const settlements = ctx.db
       .select()

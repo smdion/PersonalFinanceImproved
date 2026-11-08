@@ -199,7 +199,7 @@ export const extraPaycheckRoutingProcedures = {
           netPayPerCheck: baseNetPayPerCheck,
           payPeriod,
           anchorPayDate,
-        } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
+        } = await computeJobNetPayPerCheck(ctx.db, input.jobId, ctx.scope.asOf);
         const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(
           ctx.db,
@@ -220,8 +220,8 @@ export const extraPaycheckRoutingProcedures = {
             : null,
         );
 
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };
       }),
 
@@ -250,7 +250,7 @@ export const extraPaycheckRoutingProcedures = {
           netPayPerCheck: baseNetPayPerCheck,
           payPeriod,
           anchorPayDate,
-        } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
+        } = await computeJobNetPayPerCheck(ctx.db, input.jobId, ctx.scope.asOf);
         const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
           ...existing,
@@ -261,8 +261,8 @@ export const extraPaycheckRoutingProcedures = {
           yearlyGrowth: input.yearlyGrowth,
         });
 
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };
       }),
 
@@ -291,8 +291,8 @@ export const extraPaycheckRoutingProcedures = {
           enabled: input.enabled,
         });
 
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };
       }),
 
@@ -360,8 +360,8 @@ export const extraPaycheckRoutingProcedures = {
           overrides,
         });
 
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };
       }),
   }),

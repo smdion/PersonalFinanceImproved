@@ -62,13 +62,12 @@ import type { DbOrTx } from "@/lib/db";
 export async function computeJobNetPayPerCheck(
   db: DbOrTx,
   jobId: number,
+  asOfDate: Date,
 ): Promise<{
   netPayPerCheck: number;
   payPeriod: PayPeriod;
   anchorPayDate: string | null;
 }> {
-  const asOfDate = new Date();
-
   const [job] = await db
     .select()
     .from(schema.jobs)
@@ -233,6 +232,7 @@ export async function computeJobNetPayPerCheck(
         db,
         await getAllPeople(db),
         limitsRecord,
+        asOfDate,
         resolvedTax.resolvedYear,
       ),
       mergeSalaryProfileJobFields(

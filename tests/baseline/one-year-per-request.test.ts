@@ -38,13 +38,11 @@ const NEW_YEAR = new Date(LAST_MOMENT.getTime() + 1);
 /** A household with jobs, contributions, a mortgage and a portfolio. */
 const KEY = "ws-h3";
 
-/** Queries that still read the clock themselves (v0.10.5 12a's second
- *  part and 12b); only shrinks. */
+/** Queries that still read the clock themselves, through library
+ *  helpers (v0.10.5 12b); only shrinks. */
 const STILL_READ_THE_CLOCK: string[] = [
   "settings.taxData.status",
   "contribution.computeSummary",
-  "investments.getHoldingsOverview",
-  "investments.getSavingsThisYear",
 ];
 
 const ISO_INSTANT = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)"/g;

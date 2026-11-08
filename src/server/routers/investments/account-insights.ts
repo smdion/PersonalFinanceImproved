@@ -37,7 +37,7 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       await Promise.all([
         loadFeedContext(ctx.db),
         loadAccounts(ctx.db),
-        loadContributionMix(ctx.db),
+        loadContributionMix(ctx.db, ctx.scope.asOf),
         loadLatestHoldings(ctx.db),
         getTransactionCoverageStart(ctx.db),
         ctx.db
@@ -54,8 +54,8 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       snapshotDate !== null && snapshotDate < since ? snapshotDate : since;
     const [rows, valued, current] = await Promise.all([
       loadClassifiedTransactions(ctx.db, { since: loadFrom }),
-      valueHoldings(ctx.db, holdings),
-      loadCurrentBalances(ctx.db),
+      valueHoldings(ctx.db, holdings, ctx.scope.asOf),
+      loadCurrentBalances(ctx.db, ctx.scope.asOf),
     ]);
     const behindFeeds = new Set(
       current.feeds.filter((f) => f.behindSnapshot).map((f) => f.id),
@@ -125,7 +125,7 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       return { snapshotDate, points: [], estimate: null };
     const [history, current] = await Promise.all([
       loadBalanceHistory(ctx.db),
-      loadCurrentBalances(ctx.db),
+      loadCurrentBalances(ctx.db, ctx.scope.asOf),
     ]);
     // A feed behind the snapshot shows lag, not money that moved.
     const behind = new Set(

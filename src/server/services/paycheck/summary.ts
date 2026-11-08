@@ -199,13 +199,13 @@ export async function computePaycheckSummary(
     sandboxed.push(buildSandboxContribRow(addition, -(i + 1)));
   }
   const effectiveJobs = profileResult.jobs;
-
   const asOfDate = ctx.scope.asOf;
   // The IRS-limit cap pass: every figure below reads the capped value.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
     limitsRecord,
+    asOfDate,
     taxYear,
     salaryProfileActiveMap,
   );

@@ -53,7 +53,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
     const [context, accounts, mix, perfAccounts] = await Promise.all([
       loadFeedContext(ctx.db),
       loadAccounts(ctx.db),
-      loadContributionMix(ctx.db),
+      loadContributionMix(ctx.db, ctx.scope.asOf),
       ctx.db
         .select({
           id: schema.performanceAccounts.id,
@@ -140,7 +140,11 @@ export const investmentSuggestionsRouter = createTRPCRouter({
     .input(z.object({ year: z.number().int() }))
     .query(async ({ ctx, input }) => ({
       year: input.year,
-      accounts: await loadPerformanceSuggestions(ctx.db, input.year),
+      accounts: await loadPerformanceSuggestions(
+        ctx.db,
+        input.year,
+        ctx.scope.asOf,
+      ),
     })),
 
   /**
@@ -148,7 +152,9 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * and for the household (Dashboard).
    */
   getSavingsThisYear: portfolioProcedure.query(async ({ ctx }) =>
-    savingsPace((await loadLiveContributions(ctx.db)).map(toPaceInput)),
+    savingsPace(
+      (await loadLiveContributions(ctx.db, ctx.scope.asOf)).map(toPaceInput),
+    ),
   ),
 
   /**
@@ -173,7 +179,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
             ),
           getTransactionCoverageStart(ctx.db),
           loadFeedContext(ctx.db),
-          loadContributionMix(ctx.db),
+          loadContributionMix(ctx.db, ctx.scope.asOf),
           loadFillRecord(ctx.db, "basis", input.year),
           loadYearRows(ctx.db, input.year),
           ctx.db

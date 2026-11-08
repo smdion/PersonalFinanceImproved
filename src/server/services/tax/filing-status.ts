@@ -37,6 +37,8 @@ export async function thisYearFilingStatus(
     /** The active Retirement Profile's (null = Auto / none). */
     profileStatus: ReturnFilingStatus | null | undefined;
     people: readonly { id: number; isPrimaryUser: boolean }[];
+    /** The request's date: the jobs held this year. */
+    asOf: Date;
     /** The request's Salary Profile (What-If included); absent = active. */
     salaryProfileActiveMap?: SalaryProfileActiveMap;
   },
@@ -51,6 +53,7 @@ export async function thisYearFilingStatus(
   const w4 = await w4FilingStatusOf(
     db,
     primaryFirst(args.people),
+    args.asOf,
     args.salaryProfileActiveMap,
   );
   return w4

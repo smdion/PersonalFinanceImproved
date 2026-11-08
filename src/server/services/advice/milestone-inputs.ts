@@ -336,10 +336,12 @@ export async function activeMilestoneInput(ctx: {
         : undefined,
     ),
     computeMortgageActiveSummary(ctx),
-    portfolio ? orNull("holdings", loadHoldingsOverview(ctx.db)) : null,
+    portfolio
+      ? orNull("holdings", loadHoldingsOverview(ctx.db, ctx.scope.asOf))
+      : null,
     portfolio ? orNull("buyingMonths", loadBuyingMonths(ctx)) : null,
     orNull("brokerageGoals", listBrokerageGoals(ctx)),
-    householdHighIncomeLine(ctx.db),
+    householdHighIncomeLine(ctx.db, ctx.scope.asOf),
   ]);
   const efund = savings.efund;
   return buildMilestoneInput({

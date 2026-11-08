@@ -36,7 +36,7 @@ describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
       },
       apiBalance: 3000,
       service: "actual",
-      currentYear: new Date().getFullYear(),
+      pulledAt: new Date(),
     });
 
     expect(result).toEqual({ applied: false });
@@ -54,7 +54,7 @@ describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
       },
       apiBalance: -1200,
       service: "actual",
-      currentYear: new Date().getFullYear(),
+      pulledAt: new Date(),
     });
 
     expect(result).toEqual({ applied: false });
@@ -72,7 +72,7 @@ describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
       },
       apiBalance: 8000,
       service: "actual",
-      currentYear: new Date().getFullYear(),
+      pulledAt: new Date(),
     });
 
     // assetId 999 doesn't exist locally — this exercises the "typed
@@ -114,7 +114,7 @@ describe("applyPullMapping — only known target kinds are written", () => {
         mapping,
         apiBalance: 50000,
         service: "actual",
-        currentYear: year,
+        pulledAt: new Date(year, 5, 15),
       });
       expect(result).toEqual({ applied: false });
     }
@@ -132,7 +132,7 @@ describe("applyPullMapping — only known target kinds are written", () => {
       },
       apiBalance: 10,
       service: "actual",
-      currentYear: year,
+      pulledAt: new Date(year, 5, 15),
     });
     expect(result).toEqual({ applied: false });
   });
@@ -146,7 +146,7 @@ describe("applyPullMapping — only known target kinds are written", () => {
       },
       apiBalance: 700,
       service: "actual",
-      currentYear: year,
+      pulledAt: new Date(year, 5, 15),
     });
     expect(result).toEqual({ applied: true, kind: "asset" });
     const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
@@ -165,7 +165,7 @@ describe("applyPullMapping — only known target kinds are written", () => {
           },
           apiBalance,
           service: "actual",
-          currentYear: year,
+          pulledAt: new Date(year, 5, 15),
         }),
       ).rejects.toThrow("Refused to store an asset value from the budget app");
       const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
@@ -209,7 +209,7 @@ describe("applyPullMapping — debts, and clearing what nothing pulls", () => {
       },
       apiBalance: -12345.67,
       service: "ynab",
-      currentYear: new Date().getFullYear(),
+      pulledAt: new Date(),
     });
     expect(result).toEqual({ applied: true, kind: "debt" });
     const row = ctx.db
@@ -233,7 +233,7 @@ describe("applyPullMapping — debts, and clearing what nothing pulls", () => {
       },
       apiBalance: -1,
       service: "ynab",
-      currentYear: new Date().getFullYear(),
+      pulledAt: new Date(),
     });
     expect(result).toEqual({ applied: false });
   });

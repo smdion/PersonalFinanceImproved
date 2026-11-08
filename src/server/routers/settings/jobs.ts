@@ -52,8 +52,8 @@ export const jobsProcedures = {
           .values(jobData)
           .returning()
           .then(firstRow);
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return result;
       }),
     update: adminProcedure
@@ -65,8 +65,8 @@ export const jobsProcedures = {
           .where(eq(schema.jobs.id, id))
           .returning()
           .then(firstRow);
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return result;
       }),
     delete: adminProcedure
@@ -84,8 +84,8 @@ export const jobsProcedures = {
           });
         }
         await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };
       }),
   }),

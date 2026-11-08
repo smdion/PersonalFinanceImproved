@@ -35,8 +35,8 @@ import {
 
 /**
  * The household's cap context for a request: who (birth years), the year's
- * limits, and this year's filing status (lib/pure/tax/filing-status.ts — a W-4
- * status is a withholding choice, only a last stand-in). The paycheck's
+ * limits, and `asOf`'s year's filing status (lib/pure/tax/filing-status.ts — a
+ * W-4 status is a withholding choice, only a last stand-in). The paycheck's
  * household tax and Roth IRA view read it from here too, so there is one
  * answer.
  */
@@ -49,7 +49,8 @@ export async function loadCapHousehold(
   }[],
   /** The year's limits; null = load the tax year's contribution limits. */
   limits: Record<string, number> | null,
-  taxYear: number,
+  asOf: Date,
+  taxYear = asOf.getFullYear(),
   /** The request's Salary Profile (What-If included) for a W-4 stand-in. */
   salaryProfileActiveMap?: SalaryProfileActiveMap,
 ): Promise<
@@ -74,12 +75,12 @@ export async function loadCapHousehold(
     resolveRetirementProfileIdFrom(appSettings, retProfiles),
     getPrimaryPerson([...people])?.id ?? null,
   );
-  // This year's return (server/services/tax/filing-status.ts); unknown —
-  // married rules off, never assumed.
+  // This year's return; unknown: married rules off, never assumed.
   const thisYear = await thisYearFilingStatus(db, {
     appSettings,
     profileStatus: settings?.filingStatus,
     people,
+    asOf,
     salaryProfileActiveMap,
   });
   return {
@@ -155,6 +156,7 @@ async function irsLimitJudge(
   db: Db,
   check: ContribSaveCheck,
   judgedProfileId: number,
+  asOf: Date,
 ): Promise<(agesAsOf: number) => string[]> {
   const [allContribs, allJobs, people, salaryMap] = await Promise.all([
     db.select().from(schema.contributionAccounts),
@@ -176,12 +178,11 @@ async function irsLimitJudge(
           { contributionAccounts?: AccountFields } | undefined
       )?.contributionAccounts ?? {};
   }
-  const taxYear = new Date().getFullYear();
-  const household = await loadCapHousehold(db, people, null, taxYear);
+  const household = await loadCapHousehold(db, people, null, asOf);
   if (Object.keys(household.limits).length === 0)
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `The ${taxYear} IRS contribution limits aren't in the tax data yet, so this contribution can't be checked against them.`,
+      message: `The ${asOf.getFullYear()} IRS contribution limits aren't in the tax data yet, so this contribution can't be checked against them.`,
     });
   const jobs = mergeSalaryProfileJobFields(allJobs, salaryMap);
   const nameOf = new Map(people.map((p) => [p.id, p.name]));
@@ -234,43 +235,42 @@ async function irsLimitJudge(
 }
 
 /**
- * Refuse a save that makes a contribution over its IRS limit, or more over
- * it — the household's rule: over the limit is an error to fix, never
- * modelled (irsLimitJudge). Only the active Contribution Profile is
- * refused; one used as a future switch gets a warning instead
- * (switchProfileLimitWarning).
+ * Refuse a save that makes a contribution over its IRS limit, or more over it —
+ * the household's rule: over the limit is an error to fix, never modelled
+ * (irsLimitJudge). Only the active Contribution Profile is refused; one used as
+ * a future switch gets a warning instead (switchProfileLimitWarning).
  */
 export async function assertWithinIrsLimits(
   db: Db,
   check: ContribSaveCheck,
+  asOf: Date,
 ): Promise<void> {
   if (check.touched.length === 0) return;
   const activeId = await activeContribProfileId(db);
   if (check.profileId !== null && check.profileId !== activeId) return;
-  const problems = (await irsLimitJudge(db, check, activeId))(
-    new Date().getFullYear(),
-  );
+  const judge = await irsLimitJudge(db, check, activeId, asOf);
+  const problems = judge(asOf.getFullYear());
   if (problems.length > 0)
     throw new TRPCError({ code: "BAD_REQUEST", message: problems.join(" ") });
 }
 
 /**
- * A save to a Contribution Profile that isn't active but is a switch in
- * the Retirement settings ("Changes by year"): what it leaves over the IRS
- * limits in the years it's in effect, as a warning — it still saves. Each
- * year is judged at that year's ages on today's limits and pay, as the
- * projection caps it (buildProfileSwitches). A switch is in effect from its
- * year until the next Contribution Profile switch, through the last
- * working year. Null when the profile is active, not used as a switch, or
- * within the limits every year.
+ * A save to a Contribution Profile that isn't active but is a switch in the
+ * Retirement settings ("Changes by year"): what it leaves over the IRS limits
+ * in the years it's in effect, as a warning — it still saves. Each year is
+ * judged at that year's ages on today's limits and pay, as the projection caps
+ * it (buildProfileSwitches). A switch is in effect from its year until the next
+ * Contribution Profile switch, through the last working year. Null when the
+ * profile is active, not used as a switch, or within the limits every year.
  */
 export async function switchProfileLimitWarning(
   db: Db,
   check: ContribSaveCheck & { profileId: number },
+  asOf: Date,
 ): Promise<string | null> {
   if (check.touched.length === 0) return null;
   if (check.profileId === (await activeContribProfileId(db))) return null;
-  const thisYear = new Date().getFullYear();
+  const thisYear = asOf.getFullYear();
   const [switchRows, profiles, retirementYear] = await Promise.all([
     db
       .select({
@@ -281,7 +281,7 @@ export async function switchProfileLimitWarning(
     db
       .select({ id: schema.contributionProfiles.id })
       .from(schema.contributionProfiles),
-    householdRetirementYear(db),
+    householdRetirementYear(db, asOf),
   ]);
   const lastWorkingYear =
     retirementYear !== null ? retirementYear - 1 : thisYear;
@@ -304,7 +304,7 @@ export async function switchProfileLimitWarning(
       years.add(y);
   }
   if (years.size === 0) return null;
-  const judge = await irsLimitJudge(db, check, check.profileId);
+  const judge = await irsLimitJudge(db, check, check.profileId, asOf);
   const over = [...years]
     .sort((a, b) => a - b)
     .map((y) => ({ year: y, problems: judge(y) }))

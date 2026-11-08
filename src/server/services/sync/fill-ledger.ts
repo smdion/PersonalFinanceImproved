@@ -71,6 +71,7 @@ export async function recordFill(
   tx: DbOrTx,
   scope: FillScope,
   fill: z.infer<typeof zFillRecord>,
+  asOf: Date,
 ) {
   const ids = Object.keys(fill.counted).map(Number).filter(Number.isInteger);
   const known = ids.length
@@ -103,7 +104,7 @@ export async function recordFill(
         record.baselines[row] = baseline;
     for (const { id } of known) record.counted[id] = fill.counted[id]!;
     // Only forward, and never past today or the year.
-    const today = utcDayOf(new Date());
+    const today = utcDayOf(asOf);
     const through = (record.estimatedThrough ??= {});
     for (const [row, d] of Object.entries(fill.estimatedThrough ?? {}))
       if (

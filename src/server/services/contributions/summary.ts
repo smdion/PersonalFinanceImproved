@@ -156,7 +156,7 @@ export async function computeContributionSummary(
   // SimpleFIN has seen since + what's on its way, through today) — see
   // investments/live-contributions. Those accounts need no stale-gap fill.
   const live = ctx.scope.can("portfolio")
-    ? await loadLiveContributions(ctx.db)
+    ? await loadLiveContributions(ctx.db, ctx.scope.asOf)
     : null;
   const liveThroughToday = new Set<number>();
   // The day each live account's latest contribution actually arrived —
@@ -246,7 +246,7 @@ export async function computeContributionSummary(
     ctx.db,
     people,
     limitsRecord,
-    asOfDate.getFullYear(),
+    asOfDate,
   );
   const effectiveContribs = capForRequest(
     sandboxed,

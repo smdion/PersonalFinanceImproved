@@ -55,6 +55,7 @@ let materializerLock: Promise<void> = Promise.resolve();
 
 export async function materializeBudgetIncomeAdjustments(
   db: Db,
+  asOf: Date,
 ): Promise<void> {
   const prev = materializerLock;
   let unlock!: () => void;
@@ -64,15 +65,13 @@ export async function materializeBudgetIncomeAdjustments(
   await prev;
 
   try {
-    await _materialize(db);
+    await _materialize(db, asOf);
   } finally {
     unlock();
   }
 }
 
-async function _materialize(db: Db): Promise<void> {
-  const now = new Date();
-
+async function _materialize(db: Db, now: Date): Promise<void> {
   const jobsInBudgetMode = await loadExtraPaycheckJobs(db, now, "budget");
 
   type Row = { jobId: number; monthDate: string; amount: string };

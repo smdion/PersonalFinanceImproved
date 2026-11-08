@@ -36,14 +36,16 @@ export async function applyPullMapping(
     mapping,
     apiBalance,
     service,
-    currentYear,
+    pulledAt,
   }: {
     mapping: AccountMapping;
     apiBalance: number;
     service: string;
-    currentYear: number;
+    /** When the sync read the balance: its date and year. */
+    pulledAt: Date;
   },
 ): Promise<ApplyPullMappingResult> {
+  const currentYear = pulledAt.getFullYear();
   const localId = mapping.localId ?? mapping.localName; // backward compat
 
   // "cash" / "creditCard" are fixed pseudo-accounts (see AccountMapping's
@@ -68,7 +70,7 @@ export async function applyPullMapping(
           Math.abs(apiBalance),
           "a balance from the budget app",
         ),
-        apiBalanceDate: localDateStr(),
+        apiBalanceDate: localDateStr(pulledAt),
       })
       .where(eq(schema.debts.id, debtId))
       .returning({ id: schema.debts.id });
@@ -107,7 +109,7 @@ export async function applyPullMapping(
             Math.abs(apiBalance),
             "a balance from the budget app",
           ),
-          apiBalanceDate: localDateStr(),
+          apiBalanceDate: localDateStr(pulledAt),
         })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgageLoanBalance" };

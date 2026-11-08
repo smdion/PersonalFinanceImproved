@@ -53,7 +53,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
   ),
   /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   getHoldingsOverview: portfolioProcedure.query(({ ctx }) =>
-    loadHoldingsOverview(ctx.db),
+    loadHoldingsOverview(ctx.db, ctx.scope.asOf),
   ),
 
   /** Use the suggested stand-in's SEC filings for this fund, and fetch them now. */

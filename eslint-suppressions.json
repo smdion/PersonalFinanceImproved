@@ -8567,9 +8567,6 @@
   "src/server/services/budget/budget-income-materializer.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     }
   },
   "src/server/services/budget/extra-paycheck-materializer.ts": {
@@ -8578,17 +8575,11 @@
     },
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     }
   },
   "src/server/services/budget/linked-items.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 1
@@ -8617,9 +8608,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 8
-    },
-    "ratchet/no-clock-read": {
-      "count": 3
     }
   },
   "src/server/services/contributions/contribution-mix.ts": {
@@ -8627,9 +8615,6 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-clock-read": {
       "count": 1
     },
     "ratchet/no-guarded-division": {
@@ -8648,9 +8633,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 5
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -8731,12 +8713,7 @@
       "count": 1
     },
     "ratchet/no-clock-read": {
-      "count": 3
-    }
-  },
-  "src/server/services/investments/fill-suggestions.ts": {
-    "ratchet/no-clock-read": {
-      "count": 1
+      "count": 2
     }
   },
   "src/server/services/investments/holdings-overview.ts": {
@@ -8749,9 +8726,6 @@
     "ratchet/no-abbreviation": {
       "count": 1
     },
-    "ratchet/no-clock-read": {
-      "count": 3
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -8763,9 +8737,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-clock-read": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
@@ -8775,7 +8746,7 @@
       "count": 2
     },
     "ratchet/no-clock-read": {
-      "count": 9
+      "count": 8
     }
   },
   "src/server/services/net-worth/other-assets.ts": {
@@ -8831,9 +8802,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 9
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -8914,17 +8882,9 @@
       "count": 2
     }
   },
-  "src/server/services/profiles/retirement-year.ts": {
-    "ratchet/no-clock-read": {
-      "count": 1
-    }
-  },
   "src/server/services/profiles/salary-profile.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -9142,9 +9102,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-clock-read": {
-      "count": 2
-    },
     "ratchet/no-history-comment": {
       "count": 2
     }
@@ -9165,9 +9122,6 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-clock-read": {
       "count": 1
     }
   },

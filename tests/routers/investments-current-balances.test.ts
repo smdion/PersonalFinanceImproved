@@ -111,7 +111,7 @@ describe("investments.getCurrentBalances", () => {
   afterAll(() => ctx.cleanup());
 
   it("a feed proven older than the snapshot gives way to it, and leaves the comparison", async () => {
-    const r = await loadCurrentBalances(ctx.db as never);
+    const r = await loadCurrentBalances(ctx.db as never, new Date());
     const old = r.feeds.find((f) => f.behindSnapshot)!;
     expect(old).toMatchObject({ dataDay: "2026-10-27", basis: "proven" });
     expect(r.snapshotDay).toBe("2026-10-29");

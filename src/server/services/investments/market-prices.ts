@@ -18,7 +18,6 @@ import {
 import { getTiingoApiKey } from "@/lib/tiingo/connection";
 import { log } from "@/lib/logger";
 import type { DailyClose } from "@/lib/pure/accounts/current-balances";
-import { valuationDateFor } from "@/lib/pure/investments/market-calendar";
 import { totalReturnSeries } from "@/lib/pure/investments/total-return";
 import { addDays } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";
@@ -106,16 +105,18 @@ const inFlight = new Map<string, Promise<DailySeries | null>>();
  * restart or a rate limit never loses them. Tiingo is asked only for what's
  * missing — the latest close, or an older start — and at most every half
  * hour per ticker. Null when nothing is stored and Tiingo can't be asked.
+ * `latest` is the request's valuation date: the close it expects stored.
  */
 export async function getDailyMarketCloses(
   db: Db,
   ticker: string,
   from: string,
+  latest: string,
 ): Promise<DailySeries | null> {
   const key = `${ticker}:${from}`;
   const running = inFlight.get(key);
   if (running) return running;
-  const work = loadDailyCloses(db, ticker, from).finally(() =>
+  const work = loadDailyCloses(db, ticker, from, latest).finally(() =>
     inFlight.delete(key),
   );
   inFlight.set(key, work);
@@ -141,9 +142,9 @@ async function loadDailyCloses(
   db: Db,
   ticker: string,
   from: string,
+  latest: string,
 ): Promise<DailySeries | null> {
   const stored = await storedCloses(db, ticker, from);
-  const latest = valuationDateFor(new Date());
   const missingStart =
     stored.length === 0 || stored[0]!.date > addDays(from, MAX_MARKET_GAP_DAYS);
   const missingLatest = stored.length > 0 && stored.at(-1)!.date < latest;

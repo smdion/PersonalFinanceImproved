@@ -31,7 +31,11 @@ export async function loadYearRows(db: Db, year: number) {
  * since each was last filled — shared by the Performance fill and the
  * "saved this year" pace so both count new money the same way.
  */
-export async function loadPerformanceSuggestions(db: Db, year: number) {
+export async function loadPerformanceSuggestions(
+  db: Db,
+  year: number,
+  asOf: Date,
+) {
   const [perfRows, stamp, coverage, context, mix, ledger, flows] =
     await Promise.all([
       db
@@ -50,7 +54,7 @@ export async function loadPerformanceSuggestions(db: Db, year: number) {
         .where(eq(schema.appSettings.key, "performance_last_updated")),
       getTransactionCoverageStart(db),
       loadFeedContext(db),
-      loadContributionMix(db),
+      loadContributionMix(db, asOf),
       loadFillRecord(db, "performance", year),
       loadYearRows(db, year),
     ]);
@@ -67,7 +71,7 @@ export async function loadPerformanceSuggestions(db: Db, year: number) {
     ledger,
     flows,
     coverageStart: coverage ? utcDayOf(coverage) : null,
-    today: utcDayOf(new Date()),
+    today: utcDayOf(asOf),
   };
   const accounts = perfRows.map((r) => {
     const rowsOnAccount = perAccount.get(r.performanceAccountId) ?? 1;

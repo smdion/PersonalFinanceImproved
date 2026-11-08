@@ -49,22 +49,22 @@ export async function loadEffectiveSalaryProfile(
 }
 
 /**
- * The W-4 filing status of the first of `personIds` (in order) with an
- * non-speculative job held this year (current first, then one that ended
- * this year), from the request's Salary Profile (its
- * What-If included) when given, else the active one — null when none has
- * one. Only a stand-in for the household's filing status: a W-4 status is
- * a withholding choice.
+ * The W-4 filing status of the first of `personIds` (in order) with a
+ * non-speculative job held in `asOf`'s year (current first, then one that
+ * ended that year), from the request's Salary Profile (What-If included)
+ * when given, else the active one; null when none has one. Only a stand-in
+ * for the household's filing status: a W-4 status is a withholding choice.
  */
 export async function w4FilingStatusOf(
   db: Db,
   personIds: readonly number[],
+  asOf: Date,
   salaryProfileActiveMap?: SalaryProfileActiveMap,
 ): Promise<W4FilingStatus | null> {
   if (personIds.length === 0) return null;
   // Jobs held this year: current ones, then any that ended this year
   // (latest first) — someone retired mid-year still filed that way.
-  const yearStart = `${new Date().getFullYear()}-01-01`;
+  const yearStart = `${asOf.getFullYear()}-01-01`;
   const jobs = (
     await db
       .select({

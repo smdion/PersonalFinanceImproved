@@ -193,12 +193,12 @@ export const contributionProfileRouter = createTRPCRouter({
       jobSalaries,
       rawContribRows,
       salaryProfileActiveMap,
-    } = await loadLiveContribData(ctx.db);
+    } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
     const capHousehold = await loadCapHousehold(
       ctx.db,
       await getAllPeople(ctx.db),
       null,
-      ctx.scope.asOf.getFullYear(),
+      ctx.scope.asOf,
     );
 
     const resolved = profiles.map((profile) => {
@@ -272,10 +272,8 @@ export const contributionProfileRouter = createTRPCRouter({
       .orderBy(schema.contributionProfiles.createdAt);
 
     const { rawContribRows, peopleMap, jobs, perfAccountMap } =
-      await loadLiveContribData(ctx.db);
-    // portfolioAccountLabel wants id → name, but loadLiveContribData's
-    // peopleMap is id → full person row (shared with other resolution here
-    // that needs more than the name) — derive once rather than twice below.
+      await loadLiveContribData(ctx.db, ctx.scope.asOf);
+    // portfolioAccountLabel wants id → name; peopleMap is id → person row.
     const nameMap = new Map(
       Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
     );
@@ -394,7 +392,7 @@ export const contributionProfileRouter = createTRPCRouter({
         peopleMap,
         perfAccountMap,
         salaryProfileActiveMap,
-      } = await loadLiveContribData(ctx.db);
+      } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
       // portfolioAccountLabel wants id → name; peopleMap here is id → full
       // person row (still needed below for the fuzzy-suggestion matcher).
       const nameMap = new Map(
@@ -638,8 +636,8 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-      // Over the limits on a profile used as a future switch: saved, with
-      // a warning (switchProfileLimitWarning).
+      // Over the limits on a future switch: saved, with a warning.
+      const { asOf } = ctx.scope;
       let limitWarning: string | null = null;
       const before =
         (
@@ -662,8 +660,8 @@ export const contributionProfileRouter = createTRPCRouter({
           after,
           touched: touchedContribAccounts(before, after),
         };
-        await assertWithinIrsLimits(ctx.db, check);
-        limitWarning = await switchProfileLimitWarning(ctx.db, check);
+        await assertWithinIrsLimits(ctx.db, check, asOf);
+        limitWarning = await switchProfileLimitWarning(ctx.db, check, asOf);
       }
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
@@ -711,6 +709,7 @@ export const contributionProfileRouter = createTRPCRouter({
         }
       }
 
+      const { asOf } = ctx.scope;
       let limitWarning: string | null = null;
       const row = await ctx.db.transaction((tx) =>
         patchProfileSubEntry(
@@ -730,8 +729,8 @@ export const contributionProfileRouter = createTRPCRouter({
               after,
               touched: touchedContribAccounts(before, after),
             };
-            await assertWithinIrsLimits(tx, check);
-            limitWarning = await switchProfileLimitWarning(tx, check);
+            await assertWithinIrsLimits(tx, check, asOf);
+            limitWarning = await switchProfileLimitWarning(tx, check, asOf);
           },
           (entry, before) =>
             entriesWithMatchRates(

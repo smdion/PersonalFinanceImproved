@@ -87,7 +87,7 @@ function summarizeEntries(salaries: SalaryEntryMap) {
  * (not active, or no job had routing configured).
  */
 async function refreshExtraPaycheckRoutingIfActive(
-  db: typeof import("@/lib/db").db,
+  { db, scope }: { db: typeof import("@/lib/db").db; scope: { asOf: Date } },
   profileId: number,
 ): Promise<typeof schema.salaryProfiles.$inferSelect | undefined> {
   try {
@@ -115,7 +115,7 @@ async function refreshExtraPaycheckRoutingIfActive(
         const routing = entry.extraPaycheckRouting;
         if (!routing?.rules?.length) continue; // a stored entry is cast, not parsed
         const jobId = Number(jobIdStr);
-        const refreshed = await computeJobNetPayPerCheck(tx, jobId);
+        const refreshed = await computeJobNetPayPerCheck(tx, jobId, scope.asOf);
         salaries[jobIdStr] = {
           ...entry,
           extraPaycheckRouting: {
@@ -139,7 +139,7 @@ async function refreshExtraPaycheckRoutingIfActive(
     // A new net pay per check changes what the routing rules put into each
     // fund, so the planned transactions they generate follow — as
     // extraPaycheckRouting.save does.
-    if (refreshedRow) await materializeExtraPaycheckSavings(db);
+    if (refreshedRow) await materializeExtraPaycheckSavings(db, scope.asOf);
     return refreshedRow;
   } catch (err) {
     // The caller's actual edit (already written before this runs) must not
@@ -445,7 +445,7 @@ export const salaryProfileRouter = createTRPCRouter({
 
       if (input.salaries !== undefined) {
         const refreshed = await refreshExtraPaycheckRoutingIfActive(
-          ctx.db,
+          ctx,
           input.id,
         );
         if (refreshed) return refreshed;
@@ -524,7 +524,7 @@ export const salaryProfileRouter = createTRPCRouter({
       });
 
       const refreshed = await refreshExtraPaycheckRoutingIfActive(
-        ctx.db,
+        ctx,
         input.id,
       );
       return refreshed ?? updated;
@@ -567,7 +567,7 @@ export const salaryProfileRouter = createTRPCRouter({
       });
 
       const refreshed = await refreshExtraPaycheckRoutingIfActive(
-        ctx.db,
+        ctx,
         input.id,
       );
       return refreshed ?? updated;

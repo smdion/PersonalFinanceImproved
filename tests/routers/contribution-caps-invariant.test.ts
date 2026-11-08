@@ -331,7 +331,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
           iraId,
           1000, // 12,000 a year against a 7,500 IRA limit
           profileId,
-          assertWithinIrsLimits,
+          (db, check) => assertWithinIrsLimits(db, check, new Date()),
         ),
       ).rejects.toThrow(/over the IRS limit/);
     });

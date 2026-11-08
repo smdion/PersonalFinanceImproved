@@ -46,6 +46,8 @@ import { computeAnnualContribution } from "@/lib/pure/contributions/contribution
  * or contribution world, so a linked item's amount is the same in every
  * column.
  *
+ * `scope.asOf` is the request's date: this year's limits and jobs.
+ *
  * `opts.sandboxContribActiveFields`/`sandboxSalaryEntries` are the What-If
  * sandbox's own hand-edited values — the highest-precedence tier, layered
  * on top of the Contribution Profile's resolved values exactly the way `budget.computeActiveSummary` needs them to be
@@ -116,12 +118,7 @@ export async function resolveLinkedBudgetItemAmounts<
       opts?.sandboxContribActiveFields ?? {},
       true,
     ),
-    await loadCapHousehold(
-      db,
-      await getAllPeople(db),
-      null,
-      scope.asOf.getFullYear(),
-    ),
+    await loadCapHousehold(db, await getAllPeople(db), null, scope.asOf),
     profileResult.jobs,
     salaryProfileActiveMap,
     effectiveSalaryMap,

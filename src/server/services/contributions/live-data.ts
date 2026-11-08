@@ -44,14 +44,14 @@ type LiveContribRow = Omit<
  * this always uses whichever Salary Profile is globally active, never a
  * specific one a caller picked.
  */
-export async function loadLiveContribData(db: Db) {
+export async function loadLiveContribData(db: Db, asOf: Date) {
   const [allJobs, allContribs, allPeople, allPerfAccounts] = await Promise.all([
     db.select().from(schema.jobs),
     db.select().from(schema.contributionAccounts),
     db.select().from(schema.people),
     db.select().from(schema.performanceAccounts),
   ]);
-  const activeJobsRaw = filterActiveJobs(allJobs, new Date());
+  const activeJobsRaw = filterActiveJobs(allJobs, asOf);
   const activeContribs = allContribs.filter((c) => c.isActive);
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 

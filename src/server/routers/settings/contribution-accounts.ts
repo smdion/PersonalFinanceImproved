@@ -244,11 +244,15 @@ export const contributionAccountsProcedures = {
         // A change to the account itself (type, owner, coverage, job,
         // bonus or payroll election) can push its contribution over the
         // IRS limit — refused like a value change.
-        await assertWithinIrsLimits(ctx.db, {
-          profileId: null,
-          rowsAfter: new Map([[id, resolvedData as ContribRowPatch]]),
-          touched: [id],
-        });
+        await assertWithinIrsLimits(
+          ctx.db,
+          {
+            profileId: null,
+            rowsAfter: new Map([[id, resolvedData as ContribRowPatch]]),
+            touched: [id],
+          },
+          ctx.scope.asOf,
+        );
         return ctx.db.transaction(async (tx) => {
           const updated = await tx
             .update(schema.contributionAccounts)
@@ -277,11 +281,15 @@ export const contributionAccountsProcedures = {
         // Turning an account back on brings its contribution back — refused
         // if that puts it over its IRS limit.
         if (input.isActive)
-          await assertWithinIrsLimits(ctx.db, {
-            profileId: null,
-            rowsAfter: new Map([[input.id, { isActive: true }]]),
-            touched: [input.id],
-          });
+          await assertWithinIrsLimits(
+            ctx.db,
+            {
+              profileId: null,
+              rowsAfter: new Map([[input.id, { isActive: true }]]),
+              touched: [input.id],
+            },
+            ctx.scope.asOf,
+          );
         return ctx.db
           .update(schema.contributionAccounts)
           .set({ isActive: input.isActive })
