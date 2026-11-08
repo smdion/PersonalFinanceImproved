@@ -42,6 +42,22 @@ function readSchemaVersion(): string {
   }
 }
 
+/** The SQLite file the import opens, and names as its target. */
+function sqlitePath(): string {
+  return process.env.SQLITE_PATH ?? "data/ledgr.db";
+}
+
+/** Where the import writes, without the password: `.env` may have chosen it. */
+function describeTarget(): string {
+  if (getDialect() === "sqlite") return `SQLite ${path.resolve(sqlitePath())}`;
+  try {
+    const url = new URL(process.env.DATABASE_URL ?? "");
+    return `PostgreSQL ${url.host}${url.pathname}`;
+  } catch {
+    return "PostgreSQL (DATABASE_URL doesn't parse as a URL)";
+  }
+}
+
 async function run() {
   loadEnvFile();
   const args = process.argv.slice(2);
@@ -67,6 +83,7 @@ async function run() {
   }
 
   const currentVersion = readSchemaVersion();
+  console.error(`Target: ${describeTarget()}`);
   console.error(`Backup schema: ${backup.schemaVersion}`);
   console.error(`Current schema: ${currentVersion}`);
 
@@ -151,7 +168,7 @@ async function run() {
     const { drizzle } = await import("drizzle-orm/better-sqlite3");
     const schemaSqlite = await import("../src/lib/db/schema-sqlite");
 
-    const dbPath = process.env.SQLITE_PATH ?? "data/ledgr.db";
+    const dbPath = sqlitePath();
     if (!fs.existsSync(dbPath)) {
       console.error(`SQLite database not found: ${dbPath}`);
       process.exit(1);

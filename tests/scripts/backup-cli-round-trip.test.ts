@@ -78,7 +78,8 @@ function runWithEnvFile(script: string, envFile: string, args: string[]) {
 }
 
 /** A database that `.env` names but nothing listens on. */
-const UNREACHABLE_POSTGRES = "postgresql://ledgr@127.0.0.1:1/nowhere_test";
+const UNREACHABLE_POSTGRES =
+  "postgresql://ledgr:invented-password@127.0.0.1:1/nowhere_test";
 
 function household(dbPath: string) {
   const db = new Database(dbPath, { readonly: true });
@@ -125,6 +126,7 @@ describe("backup CLI round trip (SQLite)", () => {
       backupFile,
     ]);
     expect(dryRun.status, dryRun.stderr).toBe(0);
+    expect(dryRun.stderr).toContain(`Target: SQLite ${target}`);
     expect(household(target).people).toEqual([]);
 
     const imported = runScript("import-backup.ts", target, [backupFile]);
@@ -229,6 +231,10 @@ describe("backup CLI safety", () => {
       backupFile,
     ]);
     expect(imported.stderr).toContain("ECONNREFUSED");
+    expect(imported.stderr).toContain(
+      "Target: PostgreSQL 127.0.0.1:1/nowhere_test",
+    );
+    expect(imported.stderr).not.toContain("invented-password");
     expect(imported.status).toBe(1);
 
     const migrated = runWithEnvFile("db-migrate.ts", envFile, []);
