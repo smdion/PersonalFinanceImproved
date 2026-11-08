@@ -15,8 +15,7 @@ import { HoldingHistorySection } from "@/components/investments/holding-history-
 import { useFocusReveal } from "@/lib/hooks/use-focus";
 import { FocusTarget } from "@/components/ui/focus-target";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { formatDate, budgetApiServiceLabel } from "@/lib/utils/format";
-import { PageHeader } from "@/components/ui/page-header";
+import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import dynamic from "next/dynamic";
 import { EDIT_LOCK_KEYS, useEditLock } from "@/components/ui/edit-lock-toggle";
@@ -31,6 +30,8 @@ import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look"
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { usePortfolioSnapshotMutations } from "@/components/portfolio/use-portfolio-snapshot-mutations";
 import { SnapshotTable, SnapshotFilters } from "./snapshot-history";
+import { SnapshotPagination } from "./snapshot-pagination";
+import { PortfolioSyncBanner, PortfolioHeader } from "./portfolio-sections";
 
 // Code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
@@ -229,83 +230,24 @@ export function PortfolioContent() {
 
   return (
     <div>
-      <PageHeader
-        title="Portfolio Snapshots"
-        subtitle={
-          snapshotDate
-            ? `Last snapshot: ${formatDate(snapshotDate)}`
-            : undefined
-        }
-      >
-        <span className="inline-flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowQuickLook(!showQuickLook)}
-            className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-              showQuickLook
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "bg-surface-strong text-secondary hover:bg-surface-strong"
-            }`}
-          >
-            {showQuickLook ? "Hide Stats" : "Quick Look"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowChart(!showChart)}
-            className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-              showChart
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "bg-surface-strong text-secondary hover:bg-surface-strong"
-            }`}
-          >
-            {showChart ? "Hide Chart" : "Chart"}
-          </button>
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => setShowNewSnapshot(true)}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-            >
-              New Snapshot
-            </button>
-          )}
-        </span>
-      </PageHeader>
+      <PortfolioHeader
+        canEdit={canEdit}
+        setShowChart={setShowChart}
+        setShowNewSnapshot={setShowNewSnapshot}
+        setShowQuickLook={setShowQuickLook}
+        showChart={showChart}
+        showQuickLook={showQuickLook}
+        snapshotDate={snapshotDate}
+      />
 
-      {/* Un-synced balance edits — persists across visits (localStorage)
-          so a closed tab mid-edit doesn't silently drift from the budget
-          API. Nothing syncs on its own; you push it here or in the
-          expanded snapshot row. */}
-      {canEdit && syncPending && (
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
-          <span className="font-medium">
-            {syncPending.count} balance change
-            {syncPending.count === 1 ? "" : "s"} on the{" "}
-            {formatDate(syncPending.snapshotDate, "medium")} snapshot{" "}
-            {syncPending.count === 1 ? "hasn't" : "haven't"} been pushed to{" "}
-            {syncServiceLabel} yet.
-          </span>
-          <span className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              disabled={resyncPush.isPending}
-              onClick={() => void syncPendingSnapshot(syncPending.snapshotId)}
-              className="rounded bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-            >
-              {resyncPush.isPending
-                ? "Syncing…"
-                : `Sync to ${syncServiceLabel}`}
-            </button>
-            <button
-              type="button"
-              onClick={() => clearSyncPending()}
-              className="text-amber-700 hover:underline"
-            >
-              Dismiss
-            </button>
-          </span>
-        </div>
-      )}
+      <PortfolioSyncBanner
+        canEdit={canEdit}
+        clearSyncPending={clearSyncPending}
+        resyncPush={resyncPush}
+        syncPending={syncPending}
+        syncPendingSnapshot={syncPendingSnapshot}
+        syncServiceLabel={syncServiceLabel}
+      />
 
       {/* Change since the latest snapshot: added vs markets */}
       <SinceSnapshotBanner />
@@ -387,35 +329,12 @@ export function PortfolioContent() {
               toggleSort={toggleSort}
             />
 
-            {/* Pagination controls (hidden when showing all) */}
-            {!showAll && paginatedSnapshots.totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between border-t pt-3">
-                <button
-                  type="button"
-                  onClick={() => setSnapshotPage((p) => Math.max(1, p - 1))}
-                  disabled={snapshotPage <= 1}
-                  className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Prev
-                </button>
-                <span className="text-muted text-sm">
-                  Page {paginatedSnapshots.page} of{" "}
-                  {paginatedSnapshots.totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSnapshotPage((p) =>
-                      Math.min(paginatedSnapshots.totalPages, p + 1),
-                    )
-                  }
-                  disabled={snapshotPage >= paginatedSnapshots.totalPages}
-                  className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+            <SnapshotPagination
+              paginatedSnapshots={paginatedSnapshots}
+              setSnapshotPage={setSnapshotPage}
+              showAll={showAll}
+              snapshotPage={snapshotPage}
+            />
           </CollapsibleSection>
         )}
       </CardBoundary>
