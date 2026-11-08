@@ -48,7 +48,6 @@ ENV APP_VERSION=$APP_VERSION
 LABEL org.opencontainers.image.title="Ledgr"
 LABEL org.opencontainers.image.description="Personal finance dashboard"
 LABEL org.opencontainers.image.version="${APP_VERSION}"
-LABEL org.opencontainers.image.source="https://github.com/seandion/ledgr"
 LABEL org.opencontainers.image.licenses="MIT"
 
 RUN addgroup --system --gid 1001 nodejs && \
