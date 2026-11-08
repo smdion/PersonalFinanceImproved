@@ -18,7 +18,7 @@
     "src/app/(dashboard)/historical/historical-content.tsx": 935,
     "src/app/(dashboard)/house/house-content.tsx": 733,
     "src/app/(dashboard)/networth/networth-content.tsx": 460,
-    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 684,
+    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 679,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 364,
     "src/app/(dashboard)/portfolio/portfolio-sections.tsx": 127,
@@ -419,7 +419,7 @@
       "NetWorthContent": 394
     },
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
-      "PaycheckContent": 643,
+      "PaycheckContent": 638,
       "PaycheckContent.map()": 321
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {

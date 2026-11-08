@@ -81,14 +81,9 @@ export function PaycheckContent() {
     utils.contributionProfile.invalidate();
     utils.projection.invalidate();
   };
-  // Field-level patch procedures — a transactional read-merge-write of one
-  // sub-entry off the freshest profile row. NOT `contributionProfile.update`
-  // with a client-rebuilt blob: that rebuild reads from a `getById` snapshot
-  // that goes stale the instant an invalidation (e.g. a profile rename)
-  // fires, and PUTting the whole `contributionActiveFields` column back then
-  // silently wipes every entry the snapshot didn't have. Same clobber class
-  // contribution-profile-manager.tsx already moved off (see its patchAccount
-  // comment) — this page was the last caller still doing it the old way.
+  // Field-level patches merge one sub-entry into the freshest profile row in
+  // one transaction. A whole-blob `contributionProfile.update` rebuilt from a
+  // stale `getById` snapshot would wipe every entry the snapshot lacked.
   const setAccountFields =
     trpc.contributionProfile.setAccountActiveFields.useMutation({
       onSuccess: invalidateProfileWrite,

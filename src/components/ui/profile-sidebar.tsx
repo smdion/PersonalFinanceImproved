@@ -2,16 +2,9 @@
 
 /**
  * Shared left-rail profile list — the `grid-cols-[240px_1fr]` master-detail
- * shell every profile-manager surface (Budget, Contribution, Salary, and
- * now Retirement) uses, with a list of profiles on the left and the
- * selected one's editor on the right.
- *
- * Extracted from three near-identical, independently-maintained
- * copies (`budget-profile-sidebar.tsx`'s inline row markup, and a
- * `ProfileListItem` locally defined in both `contribution-profile-manager.tsx`
- * and `salary-profile-manager.tsx`) after Retirement Profiles' own manager
- * was built as a one-off flat pill row instead of matching this pattern —
- * the fourth divergent copy was the last straw.
+ * shell every profile-manager surface (Budget, Contribution, Salary and
+ * Retirement) uses, with a list of profiles on the left and the selected
+ * one's editor on the right.
  *
  * Rename is one gesture everywhere: the name renders as a click-to-edit
  * `InlineEdit` — the same always-visible affordance the app

@@ -129,8 +129,8 @@ export function ScenarioBar() {
     },
   });
 
-  // Warn before a swap silently drops an account's active value — same
-  // treatment as contribution-profile-manager.tsx's handleActivate.
+  // Warn before a swap silently drops an account's active value, as the
+  // contribution profile manager's Activate does.
   const handleActivateContrib = async (id: number) => {
     const outgoing = contribCompareData?.profiles.find(
       (p) => p.id === activeIds.contribution,
