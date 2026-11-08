@@ -24,7 +24,7 @@ A version is deployed before it is released, so a deploy problem is fixed on the
 ## Backups
 
 - **On startup** the migrator writes a JSON backup before applying any migration (in the data volume).
-- **On demand:** the Versions page exports and imports backups; `pnpm backup:export` / `pnpm backup:import` do the same headless (`--dry-run` to check an import first).
+- **On demand:** the Versions page exports and imports backups; `pnpm backup:export` / `pnpm backup:import` do the same headless (`--dry-run` to check an import first). They and `pnpm db:migrate` read `.env` from the working directory (a variable already set wins). An export fails, naming the table, when a table can't be read; backup files are written owner-only (`0600`).
 - **Off-site:** `scripts/encrypted-backup.sh` encrypts an export at rest and can copy it elsewhere; run it from the host's scheduler.
 - **Before a release with a migration:** a full database dump (`pg_dump -Fc` on PostgreSQL, a copy of the database file on SQLite), checked to list its tables. It is the primary rollback.
 

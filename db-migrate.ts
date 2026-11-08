@@ -22,6 +22,8 @@ import {
   type TaxDataFile,
 } from "./src/lib/db/reference-reconcile-core";
 import { VERSION_TABLE_NAMES } from "./src/lib/db/version-tables";
+import { loadEnvFile } from "./src/lib/db/env-file";
+import { restrictBackupFile, writeBackupFile } from "./src/lib/db/backup-file";
 import {
   MIGRATION_CONVERTERS,
   runConverterPg,
@@ -399,7 +401,7 @@ async function writePreMigrationBackupPg(
       backupDir,
       `pre-upgrade-backup-${timestamp}.json`,
     );
-    fs.writeFileSync(backupPath, JSON.stringify(backup));
+    writeBackupFile(backupPath, JSON.stringify(backup));
     log("info", "pre_migration_backup_complete", {
       path: backupPath,
       tableCount: Object.keys(tables).length,
@@ -1354,6 +1356,7 @@ function writePreMigrationBackupSqlite(
   const backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.db`);
   try {
     sqlite.exec(`VACUUM INTO '${backupPath.replaceAll("'", "''")}'`);
+    restrictBackupFile(backupPath);
     log("info", "pre_migration_backup_complete", { path: backupPath });
     warnIfEphemeral(backupPath);
     prunePreUpgradeBackups(backupDir);
@@ -1914,6 +1917,7 @@ export function runSQLite() {
 }
 
 async function run() {
+  loadEnvFile();
   const dialect = getDialect();
   log("info", "migration_start", { dialect });
 

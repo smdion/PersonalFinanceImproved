@@ -36,10 +36,16 @@ function freshDatabase(name: string): string {
   return dbPath;
 }
 
-/** Run a backup script against `dbPath` (SQLite: no DATABASE_URL). */
+/**
+ * Run a backup script against `dbPath` (SQLite). DATABASE_URL is set empty,
+ * not unset: a set variable wins over the checkout's own `.env`.
+ */
 function runScript(script: string, dbPath: string, args: string[]) {
-  const childEnv: NodeJS.ProcessEnv = { ...process.env, SQLITE_PATH: dbPath };
-  delete childEnv.DATABASE_URL;
+  const childEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    SQLITE_PATH: dbPath,
+    DATABASE_URL: "",
+  };
   return spawnSync(TSX, [path.join("scripts", script), ...args], {
     cwd: process.cwd(),
     env: childEnv,
@@ -47,6 +53,32 @@ function runScript(script: string, dbPath: string, args: string[]) {
     timeout: 120_000,
   });
 }
+
+/**
+ * Run a script (repo-relative) from `cwd`, whose `.env` holds `envFile`; the
+ * database settings come from that file alone. VITEST is unset so
+ * db-migrate.ts runs.
+ */
+function runWithEnvFile(script: string, envFile: string, args: string[]) {
+  const cwd = path.join(dir, "install");
+  fs.mkdirSync(cwd, { recursive: true });
+  fs.writeFileSync(path.join(cwd, ".env"), envFile);
+  const childEnv: NodeJS.ProcessEnv = { ...process.env };
+  for (const name of ["DATABASE_URL", "SQLITE_PATH", "VITEST"]) {
+    delete childEnv[name];
+  }
+  const tsconfig = path.join(process.cwd(), "tsconfig.json");
+  const entry = path.join(process.cwd(), script);
+  return spawnSync(TSX, ["--tsconfig", tsconfig, entry, ...args], {
+    cwd,
+    env: childEnv,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+}
+
+/** A database that `.env` names but nothing listens on. */
+const UNREACHABLE_POSTGRES = "postgresql://ledgr@127.0.0.1:1/nowhere_test";
 
 function household(dbPath: string) {
   const db = new Database(dbPath, { readonly: true });
@@ -99,5 +131,108 @@ describe("backup CLI round trip (SQLite)", () => {
     expect(imported.status, imported.stderr).toBe(0);
     expect(household(target)).toEqual(household(source));
     expect(household(target).people).toHaveLength(2);
+  });
+});
+
+describe("backup CLI safety", () => {
+  it("writes the backup file readable by its owner only", () => {
+    const source = freshDatabase("source.db");
+    const backupFile = path.join(dir, "backup.json");
+    fs.writeFileSync(backupFile, "old", { mode: 0o644 });
+
+    const exported = runScript("export-backup.ts", source, [
+      "--out",
+      backupFile,
+    ]);
+    expect(exported.status, exported.stderr).toBe(0);
+    expect(fs.statSync(backupFile).mode & 0o777).toBe(0o600);
+  });
+
+  it("fails the export, naming the table, when a table can't be read", () => {
+    const source = freshDatabase("source.db");
+    const db = new Database(source);
+    db.pragma("foreign_keys = OFF");
+    db.exec(
+      "DROP TABLE savings_goals; CREATE VIEW savings_goals AS SELECT json('{') AS broken",
+    );
+    db.close();
+    const backupFile = path.join(dir, "backup.json");
+
+    const exported = runScript("export-backup.ts", source, [
+      "--out",
+      backupFile,
+    ]);
+    expect(exported.status).toBe(1);
+    expect(exported.stderr).toContain('Reading table "savings_goals" failed');
+    expect(fs.existsSync(backupFile)).toBe(false);
+  });
+
+  it("exports a table this schema doesn't have yet as empty", () => {
+    const source = freshDatabase("source.db");
+    const db = new Database(source);
+    db.pragma("foreign_keys = OFF");
+    db.exec("DROP TABLE savings_goals");
+    db.close();
+    const backupFile = path.join(dir, "backup.json");
+
+    const exported = runScript("export-backup.ts", source, [
+      "--out",
+      backupFile,
+    ]);
+    expect(exported.status, exported.stderr).toBe(0);
+    const backup = JSON.parse(fs.readFileSync(backupFile, "utf8"));
+    expect(backup.tables.savings_goals).toEqual([]);
+  });
+
+  it("reads the SQLite path from .env", () => {
+    const source = freshDatabase("source.db");
+    const db = new Database(source);
+    db.exec(
+      "INSERT INTO people (name, date_of_birth, is_primary_user) VALUES ('Robin', '1984-02-29', 1)",
+    );
+    db.close();
+    const backupFile = path.join(dir, "backup.json");
+
+    const exported = runWithEnvFile(
+      "scripts/export-backup.ts",
+      `SQLITE_PATH=${source}\n`,
+      ["--out", backupFile],
+    );
+    expect(exported.status, exported.stderr).toBe(0);
+    expect(exported.stderr).toContain("dialect: sqlite");
+    const backup = JSON.parse(fs.readFileSync(backupFile, "utf8"));
+    expect(backup.tables.people).toHaveLength(1);
+  });
+
+  it("export, import and migrate reach the PostgreSQL that .env names", () => {
+    // The app's own variables come from the same file, as on an install.
+    const envFile = [
+      `DATABASE_URL=${UNREACHABLE_POSTGRES}`,
+      `NEXTAUTH_SECRET=${"invented-secret-".repeat(3)}`,
+    ].join("\n");
+    const backupFile = path.join(dir, "backup.json");
+
+    const exported = runWithEnvFile("scripts/export-backup.ts", envFile, [
+      "--out",
+      backupFile,
+    ]);
+    expect(exported.stderr).toContain("dialect: postgresql");
+    expect(exported.stderr).toContain("ECONNREFUSED");
+    expect(exported.status).toBe(1);
+    expect(fs.existsSync(backupFile)).toBe(false);
+
+    fs.writeFileSync(
+      backupFile,
+      JSON.stringify({ schemaVersion: "unknown", tables: {} }),
+    );
+    const imported = runWithEnvFile("scripts/import-backup.ts", envFile, [
+      backupFile,
+    ]);
+    expect(imported.stderr).toContain("ECONNREFUSED");
+    expect(imported.status).toBe(1);
+
+    const migrated = runWithEnvFile("db-migrate.ts", envFile, []);
+    expect(migrated.stdout).toContain('"dialect":"postgresql"');
+    expect(migrated.status).toBe(1);
   });
 });

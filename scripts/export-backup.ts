@@ -9,6 +9,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { VERSION_TABLE_NAMES } from "../src/lib/db/version-tables";
+import { writeBackupFile } from "../src/lib/db/backup-file";
+import { loadEnvFile } from "../src/lib/db/env-file";
 
 function getDialect(): "postgresql" | "sqlite" {
   const url = process.env.DATABASE_URL;
@@ -41,6 +43,12 @@ function readSchemaVersion(): string {
 
 // VERSION_TABLE_NAMES imported from src/lib/db/version-tables.ts (canonical registry)
 
+/** A table this schema doesn't have yet exports empty; any other read error fails the export. */
+function tableReadError(tableName: string, err: unknown): Error {
+  const reason = err instanceof Error ? err.message : String(err);
+  return new Error(`Reading table "${tableName}" failed: ${reason}`);
+}
+
 async function exportPostgres(): Promise<Record<string, unknown[]>> {
   const { Pool } = await import("pg");
   const pool = new Pool({
@@ -55,11 +63,19 @@ async function exportPostgres(): Promise<Record<string, unknown[]>> {
   const client = await pool.connect();
   try {
     for (const tableName of VERSION_TABLE_NAMES) {
+      const { rows: found } = await client.query<{ present: boolean }>(
+        "SELECT to_regclass($1) IS NOT NULL AS present",
+        [`"${tableName}"`],
+      );
+      if (!found[0]?.present) {
+        tables[tableName] = [];
+        continue;
+      }
       try {
         const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
         tables[tableName] = rows;
-      } catch {
-        tables[tableName] = [];
+      } catch (err) {
+        throw tableReadError(tableName, err);
       }
     }
   } finally {
@@ -78,20 +94,30 @@ function exportSqlite(): Record<string, unknown[]> {
   const sqlite = new Database(dbPath, { readonly: true });
   sqlite.pragma("journal_mode = WAL");
 
+  const lookup = sqlite.prepare("SELECT 1 FROM sqlite_master WHERE name = ?");
   const tables: Record<string, unknown[]> = {};
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      tables[tableName] = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
-    } catch {
-      tables[tableName] = [];
+  try {
+    for (const tableName of VERSION_TABLE_NAMES) {
+      if (lookup.get(tableName) === undefined) {
+        tables[tableName] = [];
+        continue;
+      }
+      try {
+        tables[tableName] = sqlite
+          .prepare(`SELECT * FROM "${tableName}"`)
+          .all();
+      } catch (err) {
+        throw tableReadError(tableName, err);
+      }
     }
+  } finally {
+    sqlite.close();
   }
-
-  sqlite.close();
   return tables;
 }
 
 async function run() {
+  loadEnvFile();
   const args = process.argv.slice(2);
   const outIndex = args.indexOf("--out");
   const outPath = outIndex >= 0 ? args[outIndex + 1] : null;
@@ -119,7 +145,7 @@ async function run() {
   const json = JSON.stringify(backup);
 
   if (outPath) {
-    fs.writeFileSync(outPath, json);
+    writeBackupFile(outPath, json);
     const totalRows = Object.values(tables).reduce(
       (sum, rows) => sum + rows.length,
       0,

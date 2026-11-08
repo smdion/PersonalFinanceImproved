@@ -11,6 +11,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { withAsyncTransactions } from "../src/lib/db/sqlite-transactions";
+import { loadEnvFile } from "../src/lib/db/env-file";
 
 function getDialect(): "postgresql" | "sqlite" {
   const url = process.env.DATABASE_URL;
@@ -42,6 +43,7 @@ function readSchemaVersion(): string {
 }
 
 async function run() {
+  loadEnvFile();
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const filePath = args.find((a) => !a.startsWith("--"));
