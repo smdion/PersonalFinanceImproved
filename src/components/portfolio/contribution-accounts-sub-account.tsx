@@ -2,7 +2,7 @@
 
 /** Sub-account UI: renders individual sub-account rows with owner/active controls, a collapsible inactive section, and an add-sub-account form. */
 
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel, TAX_TYPE_COLORS } from "@/lib/utils/colors";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
@@ -54,6 +54,7 @@ export function SubAccountRow({
         <span className="text-secondary flex min-w-0 items-center gap-1 truncate font-medium">
           {editingLabel ? (
             <input
+              aria-label="Sub-account label"
               autoFocus
               value={labelDraft}
               onChange={(e) => setLabelDraft(e.target.value)}
@@ -90,6 +91,7 @@ export function SubAccountRow({
       <div className="mt-1 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <select
+            aria-label={`Owner of ${subLabel}`}
             value={sub.ownerPersonId ?? ""}
             onChange={(e) =>
               onUpdate?.(sub.id, {
@@ -111,6 +113,7 @@ export function SubAccountRow({
           </select>
           <span className="text-faint text-caption">·</span>
           <select
+            aria-label={`Tax type of ${subLabel}`}
             value={sub.taxType}
             onChange={(e) => onUpdate?.(sub.id, { taxType: e.target.value })}
             disabled={!onUpdate}
@@ -216,6 +219,7 @@ export function AddSubAccountForm({
   const [subType, setSubType] = useState("");
   const [label, setLabel] = useState("");
   const [owner, setOwner] = useState<number | null>(ownerPersonId);
+  const id = useId();
 
   return (
     <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50/30 p-3">
@@ -224,8 +228,11 @@ export function AddSubAccountForm({
       </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <div>
-          <label className="text-caption text-muted">Tax Type</label>
+          <label htmlFor={`${id}-tax`} className="text-caption text-muted">
+            Tax Type
+          </label>
           <select
+            id={`${id}-tax`}
             value={taxType}
             onChange={(e) => setTaxType(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
@@ -238,8 +245,11 @@ export function AddSubAccountForm({
           </select>
         </div>
         <div>
-          <label className="text-caption text-muted">Amount</label>
+          <label htmlFor={`${id}-amount`} className="text-caption text-muted">
+            Amount
+          </label>
           <input
+            id={`${id}-amount`}
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -248,8 +258,11 @@ export function AddSubAccountForm({
           />
         </div>
         <div>
-          <label className="text-caption text-muted">Sub-Type</label>
+          <label htmlFor={`${id}-subtype`} className="text-caption text-muted">
+            Sub-Type
+          </label>
           <input
+            id={`${id}-subtype`}
             type="text"
             value={subType}
             onChange={(e) => setSubType(e.target.value)}
@@ -258,8 +271,11 @@ export function AddSubAccountForm({
           />
         </div>
         <div>
-          <label className="text-caption text-muted">Label</label>
+          <label htmlFor={`${id}-label`} className="text-caption text-muted">
+            Label
+          </label>
           <input
+            id={`${id}-label`}
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
@@ -268,8 +284,11 @@ export function AddSubAccountForm({
           />
         </div>
         <div>
-          <label className="text-caption text-muted">Owner</label>
+          <label htmlFor={`${id}-owner`} className="text-caption text-muted">
+            Owner
+          </label>
           <select
+            id={`${id}-owner`}
             value={owner ?? ""}
             onChange={(e) =>
               setOwner(e.target.value ? parseInt(e.target.value, 10) : null)

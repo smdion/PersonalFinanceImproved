@@ -1952,9 +1952,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/portfolio/contribution-accounts-sub-account.tsx": {
@@ -1966,9 +1963,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 7
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 8
     }
   },
   "src/components/portfolio/contribution-accounts-types.ts": {
@@ -2061,9 +2055,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/portfolio/use-contribution-accounts-mutations.ts": {

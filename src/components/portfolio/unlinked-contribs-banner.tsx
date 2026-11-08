@@ -92,6 +92,7 @@ export function UnlinkedContribsBanner({
           return (
             <div key={c.id} className="flex flex-wrap items-center gap-2">
               <select
+                aria-label={`Owner of ${taxLabel} ${acctType} (${employer})`}
                 value={c.ownership === "joint" ? "joint" : String(c.personId)}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -121,6 +122,7 @@ export function UnlinkedContribsBanner({
                 {matchDetail} ({employer})
               </span>
               <select
+                aria-label={`Link ${taxLabel} ${acctType} (${employer}) to an account`}
                 value=""
                 onChange={(e) => {
                   const val = e.target.value;

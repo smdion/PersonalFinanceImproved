@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { SubAccountRow } from "@/components/portfolio/contribution-accounts-sub-account";
+import {
+  AddSubAccountForm,
+  SubAccountRow,
+} from "@/components/portfolio/contribution-accounts-sub-account";
+import { expectLabelReachesControl } from "./label-click";
 import type { PortfolioSub } from "@/components/portfolio/contribution-accounts-types";
 
 // First direct coverage for SubAccountRow's label editor. Written
@@ -68,5 +72,23 @@ describe("SubAccountRow label editor", () => {
 
     expect(onUpdate).not.toHaveBeenCalled();
     expect(screen.getByText("My Custom Label")).toBeInTheDocument();
+  });
+});
+
+describe("AddSubAccountForm labels", () => {
+  it("clicking a field's label focuses its control", () => {
+    render(
+      <AddSubAccountForm
+        institution="Fidelity"
+        accountType="401k"
+        parentCategory="Retirement"
+        ownerPersonId={null}
+        people={people}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    for (const name of ["Tax Type", "Amount", "Sub-Type", "Label", "Owner"])
+      expectLabelReachesControl(name);
   });
 });
