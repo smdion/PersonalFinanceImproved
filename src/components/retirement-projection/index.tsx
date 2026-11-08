@@ -6,8 +6,6 @@ import dynamic from "next/dynamic";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { ValidationContent } from "@/components/methodology/validation-content";
 import type { DollarBasis } from "@/lib/config/enum-values";
-import { formatPercent } from "@/lib/utils/format";
-import { safeDivide } from "@/lib/utils/math";
 import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanel } from "./overrides-panel";
@@ -19,6 +17,8 @@ import {
 import { HeroKpisPanel } from "./projection-card/hero-panel";
 import { ComputeControls } from "./projection-card/compute-controls";
 import { DisplayControls } from "./projection-card/display-controls";
+import { RecalculatingBanner } from "./projection-card/recalculating-banner";
+import { ProjectionLoaderStrip } from "./projection-card/loader-strip";
 import { ChartArea } from "./projection-card/chart-area";
 import { TableArea } from "./projection-card/table-area";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
@@ -43,7 +43,6 @@ const DecumulationMethodologyContent = dynamic(() =>
   })),
 );
 import { McResultsSection } from "./projection-mc-results";
-import { ProjectionLoader } from "./projection-loader";
 import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import {
   useProjectionState,
@@ -118,7 +117,6 @@ export function ProjectionCard(props: {
     setChartView,
     fanBandRange,
     scenarioView,
-    coastFireProbeLoading,
     showMethodology,
     setShowMethodology,
     showAccumMethodology,
@@ -151,20 +149,10 @@ export function ProjectionCard(props: {
     enginePerPersonSettings,
     deflate,
     autoloadEnabled,
-    runSimulation,
     mcAutoloadEnabled,
     runMonteCarlo,
-    runCoastFireMc,
-    coastFireMcQuery,
-    coastFireMcQueryEnabled,
     coastFireAge: deterministicCoastFireAge,
     bracketOptimizerResult,
-    mcProgressQuery,
-    mcPrefetchProgressQuery,
-    coastFireMcProgressQuery,
-    rateSeededMcProgressQuery,
-    coastFireProbeProgressQuery,
-    rateSeededMcQuery,
     isRerunning,
   } = state;
 
@@ -177,54 +165,6 @@ export function ProjectionCard(props: {
     if (!result || !isPersonFiltered) return;
     if (!hasIndividualAccountData) setPersonFilter("all");
   }, [result, isPersonFiltered, hasIndividualAccountData, setPersonFilter]);
-
-  // "Recalculating…" indicator. Previously a corner toast (bottom-right,
-  // easy to miss and easy to scroll past) that also only covered 4 of the
-  // queries that can actually trigger a real recalculation — Rate-Seeded
-  // and the Coast FIRE Custom Age probe could run with NO visible
-  // indicator at all. Replaced with a fixed banner pinned to the top of
-  // the viewport (impossible to miss regardless of scroll position, same
-  // z-index precedent as ToastContainer) that now covers every query that
-  // can trigger a real wait, consistently.
-  //
-  // Shows real "N / total trials" progress once available — see
-  // mcProgressQuery in use-projection-queries.ts, backed by the Monte
-  // Carlo worker's own progress messages (monte-carlo-worker-client.ts).
-  // Only the main mcQuery carries a trackable runId today; every other
-  // query here still shows the plain indeterminate state, which is
-  // honest — they're either fast (engine-only) or don't yet report
-  // sub-progress (Coast FIRE's multi-probe binary search).
-  const isRecalculating =
-    engineQuery.isFetching ||
-    mcPrefetchQuery.isFetching ||
-    mcQuery.isFetching ||
-    coastFireMcQuery.isFetching ||
-    rateSeededMcQuery.isFetching ||
-    coastFireProbeLoading ||
-    isRerunning;
-  // Whichever MC-ish job is actually running right now, in priority order
-  // — the ones tied to what the user is actively viewing/doing outrank
-  // the passive background prefetch, so switching to (say) Coast FIRE
-  // while the baseline prefetch happens to also be mid-run shows YOUR
-  // progress, not a random one. Each *ProgressQuery only polls (and thus
-  // only has data) while its OWN query/action is in flight — see each
-  // one's `enabled` clause in use-projection-queries.ts — so at most one
-  // of these should ever be non-null in practice; the fallback chain
-  // exists for the rare moment two overlap (e.g. "Re-run" fires both
-  // baseline and Coast FIRE MC together via Promise.all).
-  const mcProgress = mcQuery.isFetching
-    ? (mcProgressQuery.data ?? null)
-    : coastFireMcQuery.isFetching
-      ? (coastFireMcProgressQuery.data ?? null)
-      : rateSeededMcQuery.isFetching
-        ? (rateSeededMcProgressQuery.data ?? null)
-        : coastFireProbeLoading
-          ? (coastFireProbeProgressQuery.data ?? null)
-          : mcPrefetchQuery.isFetching
-            ? (mcPrefetchProgressQuery.data ?? null)
-            : isRerunning
-              ? (mcProgressQuery.data ?? coastFireMcProgressQuery.data ?? null)
-              : null;
 
   // Allow page-level dollarMode override (for shared toggle across tabs).
   // Sync the prop into internal state so derived data (deflate) reads the correct value.
@@ -323,42 +263,7 @@ export function ProjectionCard(props: {
 
   return (
     <>
-      {isRecalculating && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-3 bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md print:hidden"
-        >
-          <span
-            className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white"
-            aria-hidden="true"
-          />
-          {mcProgress && mcProgress.total > 0 ? (
-            <>
-              <span>
-                Running simulation… {mcProgress.done.toLocaleString()}
-                {" / "}
-                {mcProgress.total.toLocaleString()} trials (
-                {formatPercent(
-                  safeDivide(mcProgress.done, mcProgress.total, 0),
-                  0,
-                )}
-                )
-              </span>
-              <span className="h-1.5 w-32 shrink-0 overflow-hidden rounded-full bg-white/25">
-                <span
-                  className="block h-full rounded-full bg-white transition-[width]"
-                  style={{
-                    width: `${Math.min(100, safeDivide(mcProgress.done, mcProgress.total, 0) * 100)}%`,
-                  }}
-                />
-              </span>
-            </>
-          ) : (
-            <span>Recalculating…</span>
-          )}
-        </div>
-      )}
+      <RecalculatingBanner state={state} />
       <div className="mb-6 space-y-6">
         <div className="space-y-6">
           {/* ================================================================= */}
@@ -529,53 +434,7 @@ export function ProjectionCard(props: {
 
           {/* LOADER — full skeleton card during engine loading / action state;
               slim progress strip during MC-only loading (real content visible above) */}
-          {(() => {
-            const enginePhase = engineQuery.isLoading
-              ? ("active" as const)
-              : engineQuery.isSuccess
-                ? ("done" as const)
-                : ("pending" as const);
-
-            const mcInitialLoading =
-              !mcPrefetchQuery.data && mcPrefetchQuery.isFetching;
-            const mcPhase = !mcAutoloadEnabled
-              ? ("disabled" as const)
-              : mcInitialLoading
-                ? ("active" as const)
-                : mcPrefetchQuery.data
-                  ? ("done" as const)
-                  : ("pending" as const);
-
-            // "disabled" here means the strip hides entirely (see the
-            // !== "disabled" guards below). coastFireMcQueryEnabled comes
-            // from use-projection-queries.ts — the same value that gates
-            // coastFireMcQuery's own `enabled` there, so this can't drift
-            // out of sync with it the way a locally re-derived copy could.
-            const coastFireMcPhase = !coastFireMcQueryEnabled
-              ? ("disabled" as const)
-              : coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
-                ? ("active" as const)
-                : coastFireMcQuery.data
-                  ? ("done" as const)
-                  : ("pending" as const);
-
-            const showActionState =
-              !autoloadEnabled && !engineQuery.data && !engineQuery.isLoading;
-
-            return (
-              <div className="print:hidden">
-                <ProjectionLoader
-                  enginePhase={enginePhase}
-                  mcPhase={mcPhase}
-                  coastFireMcPhase={coastFireMcPhase}
-                  showActionState={showActionState}
-                  onRunSimulation={runSimulation}
-                  onRunMonteCarlo={runMonteCarlo}
-                  onRunCoastFireMc={runCoastFireMc}
-                />
-              </div>
-            );
-          })()}
+          <ProjectionLoaderStrip state={state} />
 
           {/* TABLE — skeleton while engine is loading or in action state,
               real table otherwise. Same DOM position always. The advisor
