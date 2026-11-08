@@ -4,8 +4,7 @@ import type { ReactNode } from "react";
 import { moveChoice, rovingTabIndex } from "./arrow-keys";
 
 /**
- * Each look is one of today's tab strips, class for class (owner Q8: one
- * component, today's looks as variants; v0.13 picks one). `list` is the
+ * Each look is the class set of one tab strip in the app. `list` is the
  * strip's own element; a tab's classes are `tab` plus `on` or `off`.
  */
 const LOOKS = {

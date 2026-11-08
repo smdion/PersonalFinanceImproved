@@ -3,9 +3,8 @@
 import { moveChoice, rovingTabIndex } from "./arrow-keys";
 
 /**
- * Each look is one of the option groups it replaced, class for class.
- * `bordered` is the blue-filled box; the others are a tray with a raised
- * chosen option.
+ * Each look is the class set of one option group in the app. `bordered` is
+ * the blue-filled box; the others are a tray with a raised chosen option.
  */
 const LOOKS = {
   /** Bonus and extra-paycheck destinations, the contribution period. */
