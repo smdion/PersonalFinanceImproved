@@ -58,6 +58,7 @@ import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/lib/db";
 import { mergeSettingAtomically, upsertSetting } from "@/server/data/settings";
 import { firstRow } from "@/lib/utils/first-row";
+import { writeStamp } from "@/lib/utils/clock";
 
 // --- Zod schemas ---
 
@@ -108,8 +109,6 @@ async function assertPlanNameFree(
       message: `A Plan named "${name}" already exists.`,
     });
 }
-
-// --- Procedures ---
 
 export const adminProcedures = {
   // ══ DATA FRESHNESS ══
@@ -357,7 +356,7 @@ export const adminProcedures = {
           await assertPlanNameFree(ctx.db, data.name, id);
         return ctx.db
           .update(schema.scenarios)
-          .set({ ...data, updatedAt: new Date() })
+          .set({ ...data, updatedAt: writeStamp() })
           .where(eq(schema.scenarios.id, id))
           .returning()
           .then(firstRow);

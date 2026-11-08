@@ -206,7 +206,7 @@ describe("ratchet/no-clock-read", () => {
     ).toEqual([1, 2, 3]);
   });
 
-  it("covers server and lib code, not the scope's clock, client hooks or the UI", async () => {
+  it("covers server and lib code, not the scope's clock, the stamp helper, client hooks or the UI", async () => {
     const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
     const code = "export const today = () => new Date();\n";
     const counted = async (filePath: string) => {
@@ -216,6 +216,7 @@ describe("ratchet/no-clock-read", () => {
     expect(await counted("src/server/services/demo/part.ts")).toBe(true);
     expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
     expect(await counted("src/server/trpc.ts")).toBe(false);
+    expect(await counted("src/lib/utils/clock.ts")).toBe(false);
     expect(await counted("src/lib/hooks/use-demo.ts")).toBe(false);
     expect(await counted("src/components/demo/part.tsx")).toBe(false);
   }, 30_000);

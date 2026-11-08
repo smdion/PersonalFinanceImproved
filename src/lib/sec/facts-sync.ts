@@ -38,6 +38,7 @@ import {
 import type { EdgarFiling } from "./schemas";
 import { userMessageFor } from "@/lib/budget-api/errors";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 const CHECK_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_LOOK_THROUGH_DEPTH = 2;
@@ -229,7 +230,6 @@ export async function syncSecurityFacts(
   };
   const contact = await getSecContact(db);
   if (!contact) return summary;
-
   const s = schema.securities;
   const due = await db
     .select()
@@ -580,6 +580,6 @@ async function upsertFact(
     .values(values)
     .onConflictDoUpdate({
       target: [f.securityId, f.source, f.asOf],
-      set: { ...values, fetchedAt: new Date() },
+      set: { ...values, fetchedAt: writeStamp() },
     });
 }

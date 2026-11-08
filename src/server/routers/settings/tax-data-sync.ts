@@ -32,6 +32,7 @@ import {
   taxDataSyncOffReason,
 } from "@/lib/tax-data/sync";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** The waiting update (the newest pending one above everything this
  *  install has applied or ships), or null. */
@@ -150,7 +151,7 @@ export const taxDataSyncProcedures = {
           .set({
             status: "applied",
             decidedBy: getSessionUserLabel(ctx.session),
-            decidedAt: new Date(),
+            decidedAt: writeStamp(),
           })
           .where(
             and(
@@ -169,7 +170,7 @@ export const taxDataSyncProcedures = {
           .set({
             status: "dismissed",
             decidedBy: getSessionUserLabel(ctx.session),
-            decidedAt: new Date(),
+            decidedAt: writeStamp(),
           })
           .where(
             and(

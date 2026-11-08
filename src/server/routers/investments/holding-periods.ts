@@ -32,6 +32,7 @@ import {
   loadObservedPeriods,
 } from "@/server/data/investments";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 const PROBLEM_TEXT: Record<string, string> = {
   weightsDontSum: "The funds' shares must add up to 100%",
@@ -222,7 +223,7 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
           endDate: input.end,
           basis: "user" as const,
           notes: input.notes,
-          updatedAt: new Date(),
+          updatedAt: writeStamp(),
         };
         let id = input.id;
         if (id === null) {

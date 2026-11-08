@@ -378,7 +378,7 @@
     "src/server/routers/savings/api-sync.ts": 243,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 407,
-    "src/server/routers/settings/admin.ts": 412,
+    "src/server/routers/settings/admin.ts": 411,
     "src/server/routers/settings/paycheck.ts": 13,
     "src/server/routers/settings/tax-limits.ts": 783,
     "src/server/routers/simplefin/accounts.ts": 254,
@@ -1040,7 +1040,7 @@
       "summaryProcedures.computeSummary.query()": 245
     },
     "src/server/routers/projection/coast-fire.ts": {
-      "coastFireRouter.computeCoastFireMC.query()": 248
+      "coastFireRouter.computeCoastFireMC.query()": 247
     },
     "src/server/routers/projection/monte-carlo.ts": {
       "monteCarloRouter.computeMonteCarloProjection.query()": 304
@@ -1116,7 +1116,7 @@
       "computeSyncPreview": 422
     },
     "src/server/services/sync/sync-all.ts": {
-      "syncAll": 242,
+      "syncAll": 241,
       "syncAll.assetsPulled.transaction()": 154
     }
   }

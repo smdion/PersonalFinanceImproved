@@ -25,6 +25,7 @@ import { valuationDateFor } from "@/lib/pure/investments/market-calendar";
 import { paysMedical } from "@/lib/config/account-types";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 export const REDACTED_MEDICAL_DESCRIPTION = "Medical withdrawal";
 /** Look back this far before the requested window when loading stored rows (pending matching). */
@@ -298,7 +299,6 @@ async function ingestTransactions(
     windowStart,
     accountHasError,
   });
-
   for (const t of plan.inserts) {
     const lock = redacted.has(t.externalId);
     await db
@@ -394,7 +394,7 @@ async function lockAsMedicalWithdrawal(
     .set({
       description: REDACTED_MEDICAL_DESCRIPTION,
       kindOverride: "withdrawal",
-      updatedAt: new Date(),
+      updatedAt: writeStamp(),
     })
     .where(inArray(schema.investmentTransactions.id, [...transactionIds]));
 }

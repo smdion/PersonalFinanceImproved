@@ -20,6 +20,7 @@ import { applyPullMapping } from "@/server/services/sync/apply-pull-mapping";
 import { loadSavingsGoalLinks } from "@/server/data/category-links";
 import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
 import { toDecimalColumn } from "@/lib/utils/math";
+import { writeStamp } from "@/lib/utils/clock";
 
 export async function syncAll(
   ctx: { db: Db; scope: { asOf: Date } },
@@ -80,10 +81,9 @@ export async function syncAll(
     const driftReport = detectDrift(cachedAccountsBefore, accounts, mappings);
 
     // ── Phase 2: Single-transaction commit ──
-    // Cache writes + lastSyncedAt + asset-pull loop share one
-    // transaction. If ANY asset write fails (unmapped type, DB
-    // constraint, missing row), the entire sync rolls back and the
-    // sync returns failure to the user.
+    // Cache writes + lastSyncedAt + asset-pull loop share one transaction. If
+    // ANY asset write fails (unmapped type, DB constraint, missing row), the
+    // entire sync rolls back and the sync returns failure to the user.
     const assetsPulled = await ctx.db.transaction(async (tx) => {
       await cacheSet(tx, service, "accounts", accounts);
       await cacheSet(tx, service, "categories", categories);
@@ -92,7 +92,7 @@ export async function syncAll(
 
       await tx
         .update(schema.apiConnections)
-        .set({ lastSyncedAt: new Date() })
+        .set({ lastSyncedAt: writeStamp() })
         .where(eq(schema.apiConnections.service, service));
 
       // ── Record savings_monthly from budget category balances ─────────

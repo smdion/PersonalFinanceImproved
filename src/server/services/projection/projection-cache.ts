@@ -39,6 +39,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
 import { ENGINE_HASH } from "@/lib/generated/engine-hash";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** The version cached rows are read and written under: a hash of the code
  *  the cached projections run (scripts/engine-hash.ts). */
@@ -49,12 +50,11 @@ const MAX_ROWS = 500;
 
 function canonicalize(value: unknown): unknown {
   if (value instanceof Date) {
-    // Day granularity — finer precision doesn't change engine output and
-    // would otherwise make every request a miss (asOfDate is resolved
-    // fresh, to the millisecond, on every request). Local day (not UTC via
-    // `.toISOString()`): the engine reasons about `asOfDate` in local time
-    // everywhere else, so the key must agree or an evening request keys on
-    // tomorrow.
+    // Day granularity — finer precision doesn't change engine output and would
+    // otherwise make every request a miss (asOfDate is resolved fresh, to the
+    // millisecond, on every request). Local day (not UTC via `.toISOString()`):
+    // the engine reasons about `asOfDate` in local time everywhere else, so the
+    // key must agree or an evening request keys on tomorrow.
     return localDateStr(value);
   }
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -110,7 +110,7 @@ export async function readProjectionCache<TResult = unknown>(
       ),
     );
   if (!row) return null;
-  if (row.expiresAt.getTime() < Date.now()) {
+  if (row.expiresAt.getTime() < writeStamp().getTime()) {
     await db
       .delete(schema.projectionCache)
       .where(eq(schema.projectionCache.id, row.id));
@@ -120,7 +120,7 @@ export async function readProjectionCache<TResult = unknown>(
   // Best-effort freshness touch — an eviction/read-order signal, not load-
   // bearing for correctness, so a failure here must never fail the read.
   db.update(schema.projectionCache)
-    .set({ lastReadAt: new Date() })
+    .set({ lastReadAt: writeStamp() })
     .where(eq(schema.projectionCache.id, row.id))
     .catch((err) =>
       log("warn", "projection_cache_touch_failed", { error: String(err) }),
@@ -142,7 +142,7 @@ export async function writeProjectionCache(
   result: unknown,
   seed: number | null,
 ): Promise<void> {
-  const now = new Date();
+  const now = writeStamp();
   const expiresAt = new Date(now.getTime() + TTL_MS);
   await db
     .insert(schema.projectionCache)
@@ -198,7 +198,7 @@ export async function clearProjectionCache(db: Db): Promise<number> {
 async function evictProjectionCache(db: Db): Promise<void> {
   await db
     .delete(schema.projectionCache)
-    .where(lt(schema.projectionCache.expiresAt, new Date()));
+    .where(lt(schema.projectionCache.expiresAt, writeStamp()));
 
   const [countRow] = await db
     .select({ count: sql<number>`count(*)` })

@@ -36,6 +36,7 @@ import { withInstallationRows } from "./installation-rows";
 import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
 import { transformBackupToCurrentSchema } from "./backup-transforms";
+import { writeStamp } from "@/lib/utils/clock";
 
 /**
  * Column list for an INSERT built from a row set — the UNION of every
@@ -177,7 +178,6 @@ export async function createVersion(
 
 async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
   try {
-    // Read retention setting
     const settings = await database.select().from(schema.appSettings);
     const retentionSetting = settings.find(
       (s) => s.key === "version_retention_count",
@@ -369,7 +369,7 @@ export async function exportBackup(
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    exportedAt: new Date().toISOString(),
+    exportedAt: writeStamp().toISOString(),
     tables,
     sourceDialect: isPostgres() ? "postgres" : "sqlite",
   };

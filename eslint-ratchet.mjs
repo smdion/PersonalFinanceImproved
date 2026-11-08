@@ -671,10 +671,14 @@ export const ratchetConfig = [
     rules: { "ratchet/no-identity-predicate-import": "off" },
   },
   {
-    // The request scope's own clock is server/trpc.ts; client hooks read the
-    // browser's today.
+    // The request scope's own clock is server/trpc.ts, write stamps read
+    // lib/utils/clock.ts, and client hooks read the browser's today.
     files: ["src/server/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
-    ignores: ["src/server/trpc.ts", "src/lib/hooks/**"],
+    ignores: [
+      "src/server/trpc.ts",
+      "src/lib/utils/clock.ts",
+      "src/lib/hooks/**",
+    ],
     rules: { "ratchet/no-clock-read": "error" },
   },
   {

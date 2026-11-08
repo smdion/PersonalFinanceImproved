@@ -8,6 +8,7 @@ import type { BudgetApiService } from "./types";
 import type { BudgetAPIClient } from "./interface";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import type { Db, DbOrTx } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** Read a cached value. Returns null if not found or expired. */
 export async function cacheGet<T>(
@@ -35,7 +36,7 @@ export async function cacheGet<T>(
   if (!row) return null;
 
   if (maxAgeMs) {
-    const age = Date.now() - row.fetchedAt.getTime();
+    const age = writeStamp().getTime() - row.fetchedAt.getTime();
     if (age > maxAgeMs) return null;
   }
 
@@ -61,14 +62,14 @@ export async function cacheSet(
       cacheKey: key,
       data,
       serverKnowledge: serverKnowledge ?? null,
-      fetchedAt: new Date(),
+      fetchedAt: writeStamp(),
     })
     .onConflictDoUpdate({
       target: [schema.budgetApiCache.service, schema.budgetApiCache.cacheKey],
       set: {
         data,
         serverKnowledge: serverKnowledge ?? null,
-        fetchedAt: new Date(),
+        fetchedAt: writeStamp(),
       },
     });
 }

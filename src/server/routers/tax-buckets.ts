@@ -30,13 +30,14 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** Stamp basis_last_updated in app_settings — mirrors stampPerformanceUpdated
  *  (services/performance/last-updated.ts). Called on every real basis write
  *  (single or batch) so the sidebar Data Freshness display and the
  *  Performance page subtitle stay current automatically. */
 async function stampBasisUpdated(db: DbOrTx) {
-  const now = new Date().toISOString();
+  const now = writeStamp().toISOString();
   await upsertSetting(db, "basis_last_updated", now);
 }
 
@@ -214,7 +215,7 @@ export const taxBucketsRouter = createTRPCRouter({
           conversionBasis: input.conversionBasis,
           latestConversionYear: input.latestConversionYear,
           isSeeded: false,
-          updatedAt: new Date(),
+          updatedAt: writeStamp(),
           notes: input.notes ?? null,
         })
         .onConflictDoUpdate({
@@ -228,7 +229,7 @@ export const taxBucketsRouter = createTRPCRouter({
             conversionBasis: input.conversionBasis,
             latestConversionYear: input.latestConversionYear,
             isSeeded: false,
-            updatedAt: new Date(),
+            updatedAt: writeStamp(),
             notes: input.notes ?? null,
           },
         });
@@ -272,7 +273,7 @@ export const taxBucketsRouter = createTRPCRouter({
               conversionBasis: e.conversionBasis,
               latestConversionYear: e.latestConversionYear,
               isSeeded: false,
-              updatedAt: new Date(),
+              updatedAt: writeStamp(),
             })
             .onConflictDoUpdate({
               target: [
@@ -285,7 +286,7 @@ export const taxBucketsRouter = createTRPCRouter({
                 conversionBasis: e.conversionBasis,
                 latestConversionYear: e.latestConversionYear,
                 isSeeded: false,
-                updatedAt: new Date(),
+                updatedAt: writeStamp(),
               },
             });
         }

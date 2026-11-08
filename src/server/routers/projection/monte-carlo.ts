@@ -67,6 +67,7 @@ import {
 } from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";
+import { writeStamp } from "@/lib/utils/clock";
 
 export const monteCarloRouter = createTRPCRouter({
   /**
@@ -360,7 +361,7 @@ export const monteCarloRouter = createTRPCRouter({
           },
           input.runId,
         );
-        computedAt = new Date();
+        computedAt = writeStamp();
         await writeProjectionCache(ctx.db, mcInputHash, result, usedSeed);
       }
 
@@ -450,14 +451,13 @@ export const monteCarloRouter = createTRPCRouter({
     }),
 
   /**
-   * Live progress for an in-flight `computeMonteCarloProjection` (or any
-   * other `runMonteCarloOffThread` call passed the same `runId`). Cheap,
-   * meant to be polled every ~500ms by the client while a simulation is
-   * running — see monte-carlo-worker-client.ts's module docblock for why
-   * this is an in-memory Map rather than a DB table or a subscription.
-   * Returns null once the job is done or if the runId is unknown (e.g. the
-   * job hasn't reached the worker's queue front yet, or the poll started
-   * after the run already finished).
+   * Live progress for an in-flight `computeMonteCarloProjection` (or any other
+   * `runMonteCarloOffThread` call passed the same `runId`). Cheap, meant to be
+   * polled every ~500ms by the client while a simulation is running — see
+   * monte-carlo-worker-client.ts's module docblock for why this is an in-memory
+   * Map rather than a DB table or a subscription. Returns null once the job is
+   * done or if the runId is unknown (e.g. the job hasn't reached the worker's
+   * queue front yet, or the poll started after the run already finished).
    */
   getMonteCarloProgress: protectedProcedure
     .input(z.object({ runId: z.string() }))

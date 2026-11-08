@@ -49,6 +49,7 @@ import {
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
  *  search. A not-configured state (no preset, classes or glide path)
@@ -288,9 +289,8 @@ export const coastFireRouter = createTRPCRouter({
         };
       }
       if (input.peekOnly) {
-        // Cache-read-only path for dashboard tiles: never runs the
-        // (expensive) binary search, just reports a prior real run if one
-        // exists.
+        // Cache-read-only path for dashboard tiles: never runs the (expensive)
+        // binary search, just reports a prior real run if one exists.
         return { result: null, computedAt: null };
       }
 
@@ -353,7 +353,7 @@ export const coastFireRouter = createTRPCRouter({
           stopNowMcResult: null,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
-        return { result, computedAt: new Date().toISOString() };
+        return { result, computedAt: writeStamp().toISOString() };
       }
 
       // Probe stopping today — captured for every branch so the client can
@@ -380,7 +380,7 @@ export const coastFireRouter = createTRPCRouter({
           stopNowMcResult: null,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
-        return { result, computedAt: new Date().toISOString() };
+        return { result, computedAt: writeStamp().toISOString() };
       }
 
       // Probe stopping the year before retirement — is the plan reachable at all?
@@ -404,7 +404,7 @@ export const coastFireRouter = createTRPCRouter({
           stopNowMcResult: stopNowResult,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
-        return { result, computedAt: new Date().toISOString() };
+        return { result, computedAt: writeStamp().toISOString() };
       }
 
       // Binary search for earliest passing age.
@@ -452,6 +452,6 @@ export const coastFireRouter = createTRPCRouter({
         stopNowMcResult: stopNowResult,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
-      return { result, computedAt: new Date().toISOString() };
+      return { result, computedAt: writeStamp().toISOString() };
     }),
 });

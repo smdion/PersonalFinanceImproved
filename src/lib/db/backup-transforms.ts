@@ -15,6 +15,7 @@ import { renameDisplayNameActive } from "./v0102-display-name-custom";
 import { dropDeadHoldingLinkAndSettings } from "./v0102-dead-data";
 import { convertBackupInOrder } from "./migration-converters";
 import pgJournal from "../../../drizzle/meta/_journal.json";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
 const CURRENT_LINE_TAGS = pgJournal.entries.map((e) => e.tag);
@@ -72,11 +73,10 @@ const V08_SCHEMA_TAGS = [
   "0010_v0810_holding_period_parts", // PG + SQLite: holding_periods.sub_key (the part of an account whose feeds are linked per part; null = whole account) — nullable, older backups restore as whole-account periods
   "0011_v0811_rmd_excess_target", // PG + SQLite: retirement_settings.rmd_excess_target_performance_account_id (nullable FK, SET NULL) — older backups restore as "spread across Retirement brokerages"
   "0012_v0814_perf_annotations", // PG + SQLite: account_performance.note (nullable), estimated_fields ([]), accepted_checks ({}) — older backups restore with no notes, estimates or accepted gaps
-  // The v0.9 line continues this list (one ordered list — indexOf-based
-  // checks like predatesAssetClassBuckets compare positions in it).
-  // 0013–0016 are the four v0.9.0 migrations as numbered before the v0.9.0
-  // squash renumbered them 0001–0004: only dev databases (and their
-  // backups) carry these tags.
+  // The v0.9 line continues this list (one ordered list — indexOf-based checks
+  // like predatesAssetClassBuckets compare positions in it). 0013–0016 are the
+  // four v0.9.0 migrations as numbered before the v0.9.0 squash renumbered them
+  // 0001–0004: only dev databases (and their backups) carry these tags.
   "0013_v090_tax_data_origin",
   "0014_v090_tax_data_updates",
   "0015_v090_utility_feed",
@@ -849,7 +849,7 @@ function transformV07xToCurrent(tables: TableData): TableData {
         name: "Current Plan",
         description:
           "Your existing retirement assumptions, carried over when Retirement Profiles were introduced.",
-        created_at: new Date().toISOString(),
+        created_at: writeStamp().toISOString(),
       });
       for (const row of settingsRows) {
         if (row["profile_id"] == null) row["profile_id"] = profileId;

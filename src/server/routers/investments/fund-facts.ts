@@ -16,6 +16,7 @@ import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "@/server/services/investments/holdings-overview";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** How far a hand-entered mix may stray from 100% (rounding). */
 const MIX_TOTAL_TOLERANCE = 0.005;
@@ -64,7 +65,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
       const updated = await ctx.db
         .update(s)
         .set({
-          standinConfirmedAt: new Date(),
+          standinConfirmedAt: writeStamp(),
           standinPreview: null,
           factsCheckedAt: null,
         })
@@ -267,7 +268,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
         .values(values)
         .onConflictDoUpdate({
           target: [f.securityId, f.source, f.asOf],
-          set: { ...values, fetchedAt: new Date() },
+          set: { ...values, fetchedAt: writeStamp() },
         });
       return { ok: true as const };
     }),

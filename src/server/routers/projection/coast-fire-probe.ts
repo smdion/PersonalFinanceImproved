@@ -51,6 +51,7 @@ import {
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { writeStamp } from "@/lib/utils/clock";
 
 /**
  * Deliberately NOT `CoastFireMcResult` (computeCoastFireMC's shape).
@@ -228,6 +229,6 @@ export const coastFireProbeRouter = createTRPCRouter({
         mcResult,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
-      return { result, computedAt: new Date().toISOString() };
+      return { result, computedAt: writeStamp().toISOString() };
     }),
 });

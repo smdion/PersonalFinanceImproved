@@ -23,6 +23,7 @@ import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import type { BudgetMonthDetail, PreparedGoalWrite } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
+import { writeStamp } from "@/lib/utils/clock";
 
 export const apiSyncProcedures = {
   /** Pull budgeted amounts from API for all linked items (API -> Ledgr). */
@@ -123,7 +124,7 @@ export const apiSyncProcedures = {
           categoryId: item.apiCategoryId,
           categoryName: item.apiCategoryName,
           syncDirection: item.apiSyncDirection,
-          lastSyncedAt: new Date(),
+          lastSyncedAt: writeStamp(),
         });
         updated++;
       }
@@ -245,7 +246,7 @@ export const apiSyncProcedures = {
             categoryId: item.apiCategoryId!,
             categoryName: item.apiCategoryName,
             syncDirection: item.apiSyncDirection,
-            lastSyncedAt: new Date(),
+            lastSyncedAt: writeStamp(),
           });
         }
       } catch (err) {

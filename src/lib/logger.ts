@@ -1,3 +1,5 @@
+import { writeStamp } from "@/lib/utils/clock";
+
 type LogLevel = "info" | "warn" | "error";
 
 export function log(
@@ -6,7 +8,7 @@ export function log(
   data?: Record<string, unknown>,
 ) {
   const entry = {
-    timestamp: new Date().toISOString(),
+    timestamp: writeStamp().toISOString(),
     level,
     event,
     ...data,

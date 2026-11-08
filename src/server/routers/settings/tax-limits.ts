@@ -31,6 +31,7 @@ import { pendingUpdate } from "./tax-data-sync";
 import { localDateStr } from "@/lib/utils/date";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
+import { writeStamp } from "@/lib/utils/clock";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
 
@@ -65,12 +66,11 @@ const keyText = (vals: unknown[]) =>
     .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
     .join("|");
 
-/** What Ledgr ships here: every row of the shipped file and of a newer
- *  approved community update (both are applied, so neither's rows may be
- *  deleted), and each IRS limit's value by `"year|type"` — the community
- *  file's where it has one, with the documents it cites (a link each,
- *  from the year's `sources`). Rebuilt only when the approved version
- *  changes. */
+/** What Ledgr ships here: every row of the shipped file and of a newer approved
+ *  community update (both are applied, so neither's rows may be deleted), and
+ *  each IRS limit's value by `"year|type"` — the community file's where it has
+ *  one, with the documents it cites (a link each, from the year's `sources`).
+ *  Rebuilt only when the approved version changes. */
 type Citation = { name: string; url: string | null };
 type Shipped = {
   keys: Set<string>;
@@ -168,7 +168,7 @@ function editProvenance(
   const changed =
     !before || !sameReferenceValue(before[spec.value], next, spec.json);
   return {
-    confirmedAt: new Date(),
+    confirmedAt: writeStamp(),
     ...(changed && { origin: "user" as const }),
   };
 }
@@ -196,7 +196,7 @@ const carriedInput = { carried: z.boolean().optional() };
 const createProvenance = (carried: boolean | undefined) =>
   carried
     ? { origin: "carried" as const }
-    : { origin: "user" as const, confirmedAt: new Date() };
+    : { origin: "user" as const, confirmedAt: writeStamp() };
 
 const contributionLimitInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
@@ -372,7 +372,7 @@ export const taxLimitsProcedures = {
         const table = YEARLY_TABLES[input.table];
         await ctx.db
           .update(table)
-          .set({ confirmedAt: new Date() } as never)
+          .set({ confirmedAt: writeStamp() } as never)
           .where(eq(table.id, input.id));
       }),
   }),

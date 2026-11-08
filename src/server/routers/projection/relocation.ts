@@ -39,6 +39,7 @@ import type {
 } from "@/lib/pure/engine/types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** Router's large-purchase input is zod-nullable, not optional-undefined like
  *  `RelocationPurchaseInput` — convert once so every call site shares the
@@ -72,12 +73,11 @@ export const relocationProjectionRouter = createTRPCRouter({
    * Engine-backed relocation projection.
    *
    * Uses the full retirement projection engine (same data sources as the
-   * retirement page) to compare current vs. relocation scenarios and find
-   * the earliest year when the user can safely relocate and still retire
-   * at their configured retirementAge. Also returns year-by-year projection
-   * rows for the comparison table, and — when moveYear is provided — a
-   * blended projection switching from current path to relocation path at
-   * that year.
+   * retirement page) to compare current vs. relocation scenarios and find the
+   * earliest year when the user can safely relocate and still retire at their
+   * configured retirementAge. Also returns year-by-year projection rows for the
+   * comparison table, and — when moveYear is provided — a blended projection
+   * switching from current path to relocation path at that year.
    */
   computeRelocationFiProjection: protectedProcedure
     .input(
@@ -627,7 +627,7 @@ export const relocationProjectionRouter = createTRPCRouter({
             .set({
               name: input.name,
               params: input.params,
-              updatedAt: new Date(),
+              updatedAt: writeStamp(),
             })
             .where(eq(schema.relocationScenarios.id, input.id))
             .returning()
