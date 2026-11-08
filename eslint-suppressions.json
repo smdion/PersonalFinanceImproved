@@ -3314,18 +3314,20 @@
       "count": 2
     }
   },
+  "src/components/tools/relocation/large-purchase-fields.tsx": {
+    "ratchet/no-raw-input": {
+      "count": 9
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 8
+    }
+  },
   "src/components/tools/relocation/large-purchases.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 2
-    },
-    "ratchet/no-raw-input": {
-      "count": 9
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 8
     }
   },
   "src/components/tools/relocation/metrics-and-banner.tsx": {

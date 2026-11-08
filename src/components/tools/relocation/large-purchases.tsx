@@ -14,18 +14,13 @@ import {
   DEFAULT_LOAN_TERM_YEARS,
 } from "@/lib/constants";
 import type { LargePurchaseRow, RelocationResult } from "./types";
+import {
+  PurchaseBasicsFields,
+  PurchaseCostFields,
+  type PurchaseFormState,
+} from "./large-purchase-fields";
 
-export type PurchaseFormState = {
-  name: string;
-  purchasePrice: string;
-  purchaseYear: string;
-  financed: boolean;
-  downPaymentPercent: string;
-  loanRate: string;
-  loanTermYears: string;
-  ongoingMonthlyCost: string;
-  saleProceeds: string;
-};
+export type { PurchaseFormState } from "./large-purchase-fields";
 
 type Props = {
   result: RelocationResult;
@@ -148,162 +143,15 @@ export function RelocationLargePurchases({
 
         {showPurchaseForm && (
           <div className="bg-surface-sunken mb-2 space-y-2 rounded-lg p-3">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <div>
-                <label className="text-muted block text-xs">Name</label>
-                <input
-                  type="text"
-                  className="w-full rounded border px-2 py-1 text-sm"
-                  placeholder="e.g. New Home"
-                  value={purchaseForm.name}
-                  onChange={(e) =>
-                    setPurchaseForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-muted block text-xs">
-                  Purchase Price ($)
-                </label>
-                <input
-                  type="number"
-                  className="w-full rounded border px-2 py-1 text-sm"
-                  placeholder="e.g. 500000"
-                  value={purchaseForm.purchasePrice}
-                  onChange={(e) =>
-                    setPurchaseForm((f) => ({
-                      ...f,
-                      purchasePrice: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-muted block text-xs">
-                  Purchase Year
-                </label>
-                <input
-                  type="number"
-                  className="w-full rounded border px-2 py-1 text-sm"
-                  value={purchaseForm.purchaseYear}
-                  onChange={(e) =>
-                    setPurchaseForm((f) => ({
-                      ...f,
-                      purchaseYear: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
+            <PurchaseBasicsFields
+              purchaseForm={purchaseForm}
+              setPurchaseForm={setPurchaseForm}
+            />
 
-            <div className="flex items-center gap-2">
-              <label className="text-muted flex cursor-pointer items-center gap-1 text-xs">
-                <input
-                  type="checkbox"
-                  checked={purchaseForm.financed}
-                  onChange={(e) =>
-                    setPurchaseForm((f) => ({
-                      ...f,
-                      financed: e.target.checked,
-                    }))
-                  }
-                />
-                Financed
-              </label>
-            </div>
-
-            {purchaseForm.financed && (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <div>
-                  <label className="text-muted block text-xs">
-                    Down Payment %
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full rounded border px-2 py-1 text-sm"
-                    value={purchaseForm.downPaymentPercent}
-                    onChange={(e) =>
-                      setPurchaseForm((f) => ({
-                        ...f,
-                        downPaymentPercent: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-muted block text-xs">
-                    Loan Rate %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="w-full rounded border px-2 py-1 text-sm"
-                    value={purchaseForm.loanRate}
-                    onChange={(e) =>
-                      setPurchaseForm((f) => ({
-                        ...f,
-                        loanRate: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-muted block text-xs">
-                    Loan Term (years)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full rounded border px-2 py-1 text-sm"
-                    value={purchaseForm.loanTermYears}
-                    onChange={(e) =>
-                      setPurchaseForm((f) => ({
-                        ...f,
-                        loanTermYears: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div>
-                <label className="text-muted block text-xs">
-                  Ongoing Monthly Cost ($)
-                  <HelpTip text="Property tax, HOA, insurance, maintenance — any recurring monthly cost from this purchase" />
-                </label>
-                <input
-                  type="number"
-                  className="w-full rounded border px-2 py-1 text-sm"
-                  placeholder="0"
-                  value={purchaseForm.ongoingMonthlyCost}
-                  onChange={(e) =>
-                    setPurchaseForm((f) => ({
-                      ...f,
-                      ongoingMonthlyCost: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-muted block text-xs">
-                  Sale Proceeds ($)
-                  <HelpTip text="Net proceeds from selling an existing asset (e.g. current home equity minus closing costs). Offsets the cash outlay." />
-                </label>
-                <input
-                  type="number"
-                  className="w-full rounded border px-2 py-1 text-sm"
-                  placeholder="0"
-                  value={purchaseForm.saleProceeds}
-                  onChange={(e) =>
-                    setPurchaseForm((f) => ({
-                      ...f,
-                      saleProceeds: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
+            <PurchaseCostFields
+              purchaseForm={purchaseForm}
+              setPurchaseForm={setPurchaseForm}
+            />
 
             <Button
               size="xs"
