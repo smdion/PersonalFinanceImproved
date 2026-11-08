@@ -25,16 +25,24 @@
   },
   "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 3
+      "count": 2
+    }
+  },
+  "src/app/(dashboard)/brokerage/brokerage-funding.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -44,6 +52,14 @@
     },
     "ratchet/no-unlabeled-control": {
       "count": 2
+    }
+  },
+  "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/brokerage/page.tsx": {
