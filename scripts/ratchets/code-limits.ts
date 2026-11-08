@@ -11,6 +11,7 @@ export const COVERAGE_FILE = "vitest.config.ts";
 export const LIST_FILES = [
   "tests/lint/violations.test.ts",
   "tests/baseline/router-baseline-postgres.test.ts",
+  "tests/lint/procedure-verbs.test.ts",
 ];
 /** Top-level consts in LIST_FILES that hold a shrink-only list. */
 const LIST_NAME = /EXEMPT|KNOWN|BUILT_AT_LOAD/;

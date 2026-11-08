@@ -8,7 +8,8 @@
  *   scripts/calculation-register-baseline.json (lists and risk labels),
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
- *   tests/lint/violations.test.ts and tests/baseline/router-baseline-postgres.test.ts,
+ *   tests/lint/violations.test.ts, tests/lint/procedure-verbs.test.ts and
+ *   tests/baseline/router-baseline-postgres.test.ts,
  *   and tests/baseline/__baseline__/**, __sync__/** and __text__/** (only
  *   deletions pass).
  *
