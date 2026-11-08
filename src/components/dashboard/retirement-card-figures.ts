@@ -1,0 +1,130 @@
+import {
+  planAgeLabel,
+  yearOfPlanAge,
+} from "@/lib/pure/household/household-timeline";
+import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
+import {
+  baselineNestEgg,
+  simulatedOrBaseline,
+} from "@/lib/pure/retirement/nest-egg-display";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
+import type { RouterOutputs } from "@/lib/trpc";
+import type { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
+import { sumBy } from "@/lib/utils/math";
+import { categoriesWithIrsLimit } from "@/lib/config/account-types";
+import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
+import type { AccountCategory } from "@/lib/config/account-types";
+import { filterYearByParentCategory } from "@/components/retirement-projection/utils";
+
+export function retirementCardFigures(
+  data: Extract<
+    NonNullable<ReturnType<typeof useDashboardProjection>["data"]>,
+    { settings: unknown }
+  > & {
+    result: NonNullable<
+      Extract<
+        NonNullable<ReturnType<typeof useDashboardProjection>["data"]>,
+        { settings: unknown }
+      >["result"]
+    >;
+  },
+  mcPeek: RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+) {
+  const { settings, irsGroupLimits, portfolioByTaxTypeByParentCat } = data;
+  // Retirement accounts only, filtered by parent category as on Retirement.
+  const result = {
+    ...data.result,
+    projectionByYear: data.result.projectionByYear.map((yr) =>
+      filterYearByParentCategory(yr, PERF_CATEGORY_RETIREMENT),
+    ),
+  };
+  const retirementSpecs = data.contributionSpecs.filter(
+    (s) => s.parentCategory === PERF_CATEGORY_RETIREMENT,
+  );
+  const retPortfolio = portfolioByTaxTypeByParentCat[PERF_CATEGORY_RETIREMENT];
+  const retAge = settings.retirementAge;
+  const endAge = settings.endAge;
+  const currentAge = result.projectionByYear[0]?.age ?? 0;
+  const firstRow = result.projectionByYear[0] ?? {
+    year: new Date().getFullYear(),
+    age: currentAge,
+  };
+  const yearOf = (age: number) => yearOfPlanAge(firstRow, age);
+  const ageLabel = (age: number) =>
+    planAgeLabel(
+      firstRow,
+      data.people.find((p) => p.id === data.primaryPersonId)?.name,
+      age,
+    );
+  const portfolioTotal = retPortfolio
+    ? retPortfolio.preTax +
+      retPortfolio.taxFree +
+      retPortfolio.hsa +
+      retPortfolio.afterTax
+    : 0;
+  const annualContributions = sumBy(retirementSpecs, (s) => s.baseAnnual);
+  const employerContributions = sumBy(retirementSpecs, (s) => s.matchAnnual);
+  // Room is measured against what goes into limited accounts only.
+  const limitedContributions = sumBy(
+    retirementSpecs.filter((s) =>
+      categoriesWithIrsLimit().includes(s.category as AccountCategory),
+    ),
+    (s) => s.baseAnnual,
+  );
+  // The household's limits, each shared limit counted once.
+  const retLimits = sumBy(Object.values(irsGroupLimits), (v) => v);
+  // The plan judge: retirement money runs out, or a year falls short.
+  const outcome = assessPlan(result);
+  // Sustainable withdrawal in today's dollars, indexed by age from today's.
+  const yearsToRet = Math.max(0, retAge - currentAge);
+  const inflRate = Math.max(0, Number(settings.annualInflation) || 0);
+  const sustainableWd = toTodaysDollars(
+    result.sustainableWithdrawal,
+    retAge,
+    flatDeflator(currentAge, inflRate),
+  );
+  // Already retired: the figure is today's, so the label says today's age.
+  const nestEggAge = Math.max(retAge, currentAge);
+  // Simulated when the Retirement page has run one for these inputs, else
+  // the baseline — the same rule and figure the page's hero uses.
+  const byYear = flatDeflator(result.projectionByYear[0]?.year ?? 0, inflRate);
+  const baseline = baselineNestEgg(result.projectionByYear, nestEggAge);
+  const nestEgg = baseline
+    ? toTodaysDollars(baseline.nominal, baseline.year, byYear)
+    : portfolioTotal;
+  const nestEggDisplay = simulatedOrBaseline({
+    // Today's dollars, from the Simulation's own per-trial deflation.
+    bands: mcPeek?.result?.todayBands,
+    baseline: nestEgg,
+    targetAge: nestEggAge,
+    personFiltered: false,
+  });
+  const totalWithMatch = annualContributions + employerContributions;
+  const retirementBudget = data.decumulationExpenses;
+  const taxAdvSpace =
+    retLimits > 0 && limitedContributions < retLimits
+      ? retLimits - limitedContributions
+      : 0;
+
+  return {
+    settings,
+    result,
+    retPortfolio,
+    retAge,
+    endAge,
+    currentAge,
+    yearOf,
+    ageLabel,
+    portfolioTotal,
+    annualContributions,
+    employerContributions,
+    outcome,
+    yearsToRet,
+    sustainableWd,
+    nestEggAge,
+    nestEggDisplay,
+    totalWithMatch,
+    retirementBudget,
+    taxAdvSpace,
+  };
+}
