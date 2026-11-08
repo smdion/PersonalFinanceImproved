@@ -2265,11 +2265,8 @@
     }
   },
   "src/components/retirement-projection/index.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 2
     }
   },
   "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": {
@@ -2288,6 +2285,11 @@
   "src/components/retirement-projection/projection-card/person-view-pills.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    }
+  },
+  "src/components/retirement-projection/projection-card/projection-results.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 3
     }
   },
   "src/components/retirement-projection/projection-card/report-controls.tsx": {
