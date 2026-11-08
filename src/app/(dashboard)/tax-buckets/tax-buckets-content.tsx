@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useFocusedState } from "@/lib/hooks/use-focus";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -10,18 +10,15 @@ import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { formatCurrency } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
-import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
-import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 import { BulkRothBasisForm } from "./tax-buckets-bulk-basis";
 import { TaxBucketSummary } from "./tax-buckets-sections";
 import { TaxBucketKpis } from "./tax-buckets-sections";
 import { TaxBucketsRetirementNotes } from "./tax-buckets-sections";
 import { TaxBucketsHeader } from "./tax-buckets-sections";
 import { buildBuckets } from "./tax-buckets-grouping";
+import { useTaxBucketsProjection } from "./use-tax-buckets-projection";
 
 export function TaxBucketsContent() {
   const user = useUser();
@@ -45,70 +42,13 @@ export function TaxBucketsContent() {
   // profile to resolve to, so every contribution account silently gets $0
   // configured value and the whole target contribution overflows to
   // brokerage.
-  const { queryInput: contribPick } = useEffectiveContribProfileId();
-  const { queryInput: salaryPick } = useEffectiveSalaryProfileId();
-  // Only fetched when the user actually switches to "At Retirement" — the
-  // "now" view stays free of any projected bleed-through, and the page
-  // doesn't pay for the heavier call on every visit.
-  const projectionQuery = trpc.projection.computeProjection.useQuery(
-    { selection: profileSelectionFrom({ ...contribPick, ...salaryPick }) },
-    { enabled: view === "atRetirement" },
-  );
-
-  const updateRothBasis = trpc.taxBuckets.updateRothBasis.useMutation({
-    onSuccess: () => utils.taxBuckets.computeBreakdown.invalidate(),
-  });
-  const updateSeparationDate = trpc.taxBuckets.updateSeparationDate.useMutation(
-    {
-      onSuccess: () => utils.taxBuckets.computeBreakdown.invalidate(),
-    },
-  );
-  const batchUpdateRothBasis = trpc.taxBuckets.batchUpdateRothBasis.useMutation(
-    {
-      onSuccess: () => {
-        utils.taxBuckets.computeBreakdown.invalidate();
-        setShowBulkBasis(false);
-      },
-    },
-  );
-
-  const projection = useMemo(() => {
-    if (!data || !projectionQuery.data?.result) return null;
-    // Rule of 55 forecasting override -- must read the SAME
-    // per-person setting the retirement engine reads, or this page and the
-    // retirement projection would disagree about the same account's
-    // eligibility. `perPersonSettings` rides on the same query result.
-    const ruleOf55OverrideByPersonId =
-      "perPersonSettings" in projectionQuery.data
-        ? new Map(
-            projectionQuery.data.perPersonSettings.map((ps) => [
-              ps.personId,
-              ps.ruleOf55Override,
-            ]),
-          )
-        : undefined;
-    // Each person's retirement year — the same figure the engine uses for
-    // when a still-active job ends.
-    const birthYears = new Map(data.people.map((p) => [p.id, p.birthYear]));
-    const retirementYearByPersonId =
-      "perPersonSettings" in projectionQuery.data
-        ? new Map(
-            projectionQuery.data.perPersonSettings.flatMap((ps) => {
-              const by = birthYears.get(ps.personId);
-              return by != null
-                ? [[ps.personId, by + ps.retirementAge] as const]
-                : [];
-            }),
-          )
-        : undefined;
-    return computeTaxBucketProjection({
-      nowEntries: data.accounts,
-      projectionByYear: projectionQuery.data.result.projectionByYear,
-      people: data.people,
-      ruleOf55OverrideByPersonId,
-      retirementYearByPersonId,
-    });
-  }, [data, projectionQuery.data]);
+  const {
+    projectionQuery,
+    updateRothBasis,
+    updateSeparationDate,
+    batchUpdateRothBasis,
+    projection,
+  } = useTaxBucketsProjection(view, utils, setShowBulkBasis, data);
 
   // Same deflation formula as the Retirement page's own dollarMode —
   // real (today's $) divides out inflation between now and the

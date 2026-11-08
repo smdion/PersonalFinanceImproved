@@ -475,11 +475,8 @@
     }
   },
   "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     }
   },
   "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts": {
@@ -493,6 +490,11 @@
     },
     "ratchet/no-raw-button": {
       "count": 2
+    }
+  },
+  "src/app/(dashboard)/tax-buckets/use-tax-buckets-projection.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/tax-optimization/page.tsx": {
