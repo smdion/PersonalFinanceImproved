@@ -2406,7 +2406,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
+    }
+  },
+  "src/components/retirement-projection/override-field-parts.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     }
