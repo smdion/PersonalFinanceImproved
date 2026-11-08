@@ -67,7 +67,7 @@ export function DecumulationMethodologyContent() {
             the Retirement budget is not spent by these five, only measured;
             it&apos;s replaced outright by each strategy&apos;s own formula, not
             adjusted from it. RMD-Based falls back to budget-seeded spending
-            only before RMD age (72–75).
+            only before the RMD age (73, or 75 if born 1960 or later).
           </li>
           <li>
             <strong>Tax estimation</strong> — the engine estimates the tax cost
@@ -206,7 +206,7 @@ export function DecumulationMethodologyContent() {
             spending that responds to portfolio performance. When your current
             withdrawal rate drops below the upper guardrail (portfolio grew),
             spending increases. When it rises above the lower guardrail
-            (portfolio shrank), spending decreases. The prosperity rule skips
+            (portfolio shrank), spending decreases. The withdrawal rule skips
             inflation adjustments after a loss year. The withdrawal rate is what
             the portfolio pays — spending less Social Security — over its
             balance, and a raise or cut is 10% of that portfolio draw. When
@@ -239,8 +239,8 @@ export function DecumulationMethodologyContent() {
             <strong>Constant Percentage (SWR ~5.7%)</strong> — withdraw a fixed
             percentage of the current portfolio balance each year. A floor
             (default 90% of initial amount) prevents severe cuts. The portfolio
-            can mathematically never fully deplete — you&apos;re always taking a
-            percentage of what&apos;s left.
+            only runs out if the floor holds withdrawals up — otherwise you take
+            a percentage of what&apos;s left.
             <br />
             <span className="text-faint text-label">
               Best for: retirees comfortable with spending that rises and falls
@@ -513,7 +513,7 @@ export function DecumulationMethodologyContent() {
                   skipInflationAfterLoss
                 </td>
                 <td className="pr-3">true</td>
-                <td>Prosperity rule: skip inflation after a loss year</td>
+                <td>Withdrawal rule: skip inflation after a loss year</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3 font-medium" colSpan={4}>

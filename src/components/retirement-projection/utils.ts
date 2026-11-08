@@ -834,7 +834,7 @@ export function buildStrategyEventStyle(
       color: CHART_COLORS.guardrailSkipInflationMarker,
       label: "⏸ no raise",
       tooltipText:
-        "Prosperity rule — inflation raise skipped after a loss year",
+        "Withdrawal rule — inflation raise skipped after a loss year",
     },
     ceiling_applied: {
       color: CHART_COLORS.guardrailIncreaseMarker,

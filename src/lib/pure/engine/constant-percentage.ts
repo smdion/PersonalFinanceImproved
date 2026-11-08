@@ -3,7 +3,7 @@
  *
  * Withdraw a fixed percentage of the current portfolio balance each year.
  * A floor prevents severe spending cuts — minimum is floorPercent of the
- * initial withdrawal amount. Self-correcting: can never fully deplete.
+ * initial withdrawal amount. Self-correcting: only the floor can run it out.
  * SWR: 5.7% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";

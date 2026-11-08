@@ -94,7 +94,7 @@ withdrawal-routing/          one year's withdrawal by mode: waterfall, percentag
 
 | Module                   | Strategy                                                 |
 | ------------------------ | -------------------------------------------------------- |
-| `guyton-klinger.ts`      | Guardrails with the prosperity rule                      |
+| `guyton-klinger.ts`      | Guardrails with the withdrawal and prosperity rules      |
 | `vanguard-dynamic.ts`    | Base % with a ceiling and floor on year-over-year change |
 | `constant-percentage.ts` | Fixed % of the current balance, with a floor             |
 | `endowment.ts`           | Fixed % of a rolling average balance, with a floor       |

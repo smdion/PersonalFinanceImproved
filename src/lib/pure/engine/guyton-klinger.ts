@@ -2,7 +2,7 @@
  * Guyton-Klinger — dynamic spending guardrails.
  *
  * Adjusts spending dynamically based on portfolio performance during
- * decumulation. Implements upper/lower guardrails and the prosperity rule
+ * decumulation. Implements upper/lower guardrails and the withdrawal rule
  * (skip inflation after a loss year).
  *
  * The guardrails judge the WITHDRAWAL rate — what the portfolio pays
@@ -182,7 +182,7 @@ export function applyGuytonKlinger(
   }
 
   // A year the portfolio pays nothing (Social Security covers all of
-  // spending) has no rate to judge — and no prosperity rule, as in the
+  // spending) has no rate to judge — and no withdrawal rule, as in the
   // years before the first anchor. The anchor carries through unchanged,
   // and so does the Social Security it reflects (`ssIncomeJudged`): the
   // first year the portfolio pays again rescales from the pre-cover level,
@@ -198,7 +198,7 @@ export function applyGuytonKlinger(
   });
   if (portfolioShare(projectedExpenses) <= 0) return covered(projectedExpenses);
 
-  // Prosperity rule: skip inflation adjustment after a loss year
+  // Withdrawal rule: skip inflation adjustment after a loss year
   if (
     gk.skipInflationAfterLoss &&
     input.priorYearReturn != null &&
@@ -222,7 +222,7 @@ export function applyGuytonKlinger(
 
   // Check guardrails — moves are a share of the portfolio draw.
   const draw = portfolioShare(projectedExpenses);
-  // The prosperity rule took spending under Social Security: covered too.
+  // The withdrawal rule took spending under Social Security: covered too.
   if (draw <= 0) return covered(projectedExpenses);
   const currentRate = draw / portfolioBalance;
   if (currentRate < initialWithdrawalRate * gk.upperGuardrail) {

@@ -216,7 +216,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: [],
     guide: {
-      how: "Each year after RMD age (72–75), withdraw your portfolio balance divided by the IRS life expectancy factor, times an optional multiplier. Before RMD age, spending tracks your retirement budget with inflation.",
+      how: "Each year from the RMD age (73, or 75 if born 1960 or later), withdraw your portfolio balance divided by the IRS life expectancy factor, times an optional multiplier. Before RMD age, spending tracks your retirement budget with inflation.",
       strengths: [
         "Mathematically self-correcting — can never fully deplete the portfolio",
         "Spending naturally increases as time horizon shortens (higher % in later years)",
@@ -224,7 +224,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       ],
       weaknesses: [
         "Spending is volatile year-to-year (directly tied to portfolio balance)",
-        "Early retirement gap — no RMD guidance before age 72, falls back to fixed spending",
+        "Early retirement gap — no RMD guidance before the RMD age, falls back to fixed spending",
         "Rising withdrawal percentages in very old age (10%+ at 95) may exceed needs",
       ],
       bestFor:
@@ -306,7 +306,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         type: "boolean",
         default: true,
         tooltip:
-          "Skip inflation adjustment in years following a portfolio loss (prosperity rule).",
+          "Skip inflation adjustment in years following a portfolio loss (Guyton and Klinger's withdrawal rule).",
       },
     ],
     crossYearStateKeys: [
@@ -325,7 +325,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       weaknesses: [
         "Spending cuts can compound — multiple 10% cuts stack multiplicatively",
         "Very conservative on the upside — massive portfolio growth may produce only modest spending increases",
-        "The prosperity rule (skip inflation after loss) adds to real spending erosion",
+        "The withdrawal rule (skip inflation after loss) adds to real spending erosion",
         "Can leave very large unspent legacies while restricting current spending",
       ],
       bestFor:
@@ -433,10 +433,10 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: ["initialWithdrawalAmount"],
     guide: {
-      how: "Each year, withdraw 5% of whatever your portfolio is worth. A nominal floor at 90% of your initial withdrawal prevents the most severe cuts. Because you only take a percentage, the portfolio can never reach zero.",
+      how: "Each year, withdraw 5% of whatever your portfolio is worth. A nominal floor at 90% of your initial withdrawal prevents the most severe cuts. Taking a percentage of what's left keeps the portfolio from running out, unless the floor holds withdrawals up after deep losses.",
       strengths: [
         "Self-correcting — spending automatically adjusts to portfolio performance",
-        "Can never fully deplete the portfolio (mathematically impossible without the floor binding)",
+        "Rarely runs out: only the floor can draw the portfolio down to zero",
         "Simple to understand and implement",
       ],
       weaknesses: [
@@ -585,7 +585,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.005,
         default: 0.025,
         tooltip:
-          "Maximum year-over-year decrease in nominal dollars, before inflation (e.g. 2.5% = spending can fall at most 2.5% per year; at 3% inflation that's about 5.4% in real terms).",
+          "Maximum year-over-year decrease in nominal dollars, before inflation (e.g. 2.5% = spending can fall at most 2.5% per year; at 3% inflation that's about 5.3% in real terms).",
         lever: { delta: -0.4, unit: "relative", targets: ["smoothness"] },
       },
       {
@@ -601,7 +601,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: ["priorYearSpending"],
     guide: {
-      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year, in nominal dollars. This creates a smoother income stream than pure Constant Percentage. The limits are nominal like every percentage-based strategy's floor, so at 3% inflation the 2.5% cut is about 5.4% in real terms and the 5% raise about 1.9%. The published method applies them to inflation-adjusted spending, so results won't match its 4.7% figure exactly.",
+      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year, in nominal dollars. This creates a smoother income stream than pure Constant Percentage. The limits are nominal like every percentage-based strategy's floor, so at 3% inflation the 2.5% cut is about 5.3% in real terms and the 5% raise about 1.9%. The published method applies them to inflation-adjusted spending, so results won't match its 4.7% figure exactly.",
       strengths: [
         "Excellent downside protection — spending can only fall 2.5% per year in nominal dollars, not 30%+",
         "Asymmetric guardrails favor stability (tighter floor than ceiling)",
@@ -682,7 +682,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     guide: {
       how: "Each year, withdraw a percentage of the portfolio that depends on your age (the younger spouse's, for a couple) and how much is in stocks — the payment that would spend the balance by age 100 at 5% real for stocks and 1.9% for bonds. At 65 with 60% stocks it's 5.0%; it rises every year, and stops growing at 10%. Social Security comes on top.",
       strengths: [
-        "Spends the portfolio on purpose — no large unspent balance at the end",
+        "Spends the portfolio down on purpose; with the 10% limit on, some balance remains at the end",
         "Self-correcting: the withdrawal follows the balance, so it can't run out before the end age",
         "Simple yearly rule with a published table to check against",
       ],
