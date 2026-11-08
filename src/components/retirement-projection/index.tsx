@@ -3,9 +3,6 @@
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { settingsHref } from "@/lib/config/settings-sections";
-import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/simulation/return-rate-breakpoints";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
@@ -22,30 +19,19 @@ import { safeDivide } from "@/lib/utils/math";
 import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanel } from "./overrides-panel";
-import { ProjectionTable } from "./projection-table";
-import { ProjectionHeroKpis } from "./projection-hero-kpis";
-import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
-import { ProjectionTableSkeleton } from "./projection-table-skeleton";
 import { ReportRoot } from "./report/report-root";
+import {
+  EngineNotices,
+  SimulationOffNotice,
+} from "./projection-card/engine-notices";
+import { HeroKpisPanel } from "./projection-card/hero-panel";
+import { ScenarioPills } from "./projection-card/compute-zone";
+import { ChartArea } from "./projection-card/chart-area";
+import { TableArea } from "./projection-card/table-area";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
 import type { ReportGateFailure } from "@/lib/pure/advice/report/mc-freshness";
 import { ReportGateModal } from "./report/report-gate-modal";
 
-// Code-split Recharts-heavy children. Each chart is
-// ~250KB of recharts payload that loads only when the projection card mounts.
-// ssr:false because Recharts isn't SSR-friendly.
-const ProjectionChart = dynamic(
-  () =>
-    import("./projection-chart").then((m) => ({ default: m.ProjectionChart })),
-  { loading: () => <ProjectionChartSkeleton />, ssr: false },
-);
-const SpendingStabilityChart = dynamic(
-  () =>
-    import("./spending-stability-chart").then((m) => ({
-      default: m.SpendingStabilityChart,
-    })),
-  { loading: () => <ProjectionChartSkeleton />, ssr: false },
-);
 // The methodology write-ups (~1,900 lines of prose) load only when one of
 // their slide panels is opened (closed panels render nothing).
 const MethodologyContent = dynamic(() =>
@@ -410,22 +396,7 @@ export function ProjectionCard(props: {
           {/* RESULTS */}
           {/* ================================================================= */}
 
-          {engineQuery.error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              Failed to run engine: {engineQuery.error.message}
-            </div>
-          )}
-          {engineQuery.data && "notConfigured" in engineQuery.data && (
-            <div className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-600">
-              {NO_RETURN_RATE_MESSAGE}
-              <Link
-                href={settingsHref("taxdata", "returns")}
-                className="ml-1 underline"
-              >
-                Set return rates
-              </Link>
-            </div>
-          )}
+          <EngineNotices engineQuery={engineQuery} />
 
           {/* Print/export report controls. print:hidden so the
               buttons themselves never appear in the printed output. */}
@@ -506,47 +477,19 @@ export function ProjectionCard(props: {
               {/* Hero KPIs (headline numbers) — always shown on screen;
                   print-visible only in the "advisor" report tier (basic
                   tier prints just the chart+table). */}
-              <div
-                className={
-                  reportMode === "advisor" ? undefined : "print:hidden"
-                }
-              >
-                {engineQuery.isLoading ? (
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className="border-subtle bg-surface-primary/40 min-h-[128px] animate-pulse rounded-lg border p-3"
-                        style={{
-                          animationDelay: `${i * 80}ms`,
-                          animationDuration: "1.8s",
-                        }}
-                      >
-                        <div className="bg-surface-strong/20 h-2.5 w-20 rounded" />
-                        <div className="bg-surface-strong/20 mt-4 h-8 w-24 rounded" />
-                        <div className="bg-surface-strong/20 mt-2 h-2 w-16 rounded" />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <ProjectionHeroKpis state={state} />
-                )}
-              </div>
+              <HeroKpisPanel
+                reportMode={reportMode}
+                engineQuery={engineQuery}
+                state={state}
+              />
 
               {/* MC auto-load disabled notice — only when real data */}
-              {result && !mcAutoloadEnabled && !mcPrefetchQuery.data && (
-                <div className="border-subtle bg-surface-sunken flex items-center justify-between rounded-lg border px-3 py-2 print:hidden">
-                  <span className="text-muted text-xs">
-                    Simulation auto-load is off — chart bands unavailable.
-                  </span>
-                  <button
-                    onClick={() => runMonteCarlo()}
-                    className="text-xs font-medium text-blue-500 hover:text-blue-400"
-                  >
-                    Run Simulation
-                  </button>
-                </div>
-              )}
+              <SimulationOffNotice
+                result={result}
+                mcAutoloadEnabled={mcAutoloadEnabled}
+                mcPrefetchQuery={mcPrefetchQuery}
+                runMonteCarlo={runMonteCarlo}
+              />
 
               {/* MC assumptions summary — only when real data */}
               {result && (
@@ -639,72 +582,13 @@ export function ProjectionCard(props: {
                         title="Compute"
                         why="what gets run"
                       >
-                        <LabeledPillGroup
-                          label="Scenario"
-                          size="lg"
-                          helpTip={
-                            <HelpTip
-                              maxWidth={380}
-                              lines={[
-                                "Active Plan: your plan as configured, with contributions continuing through retirement.",
-                                coastFireAvailable
-                                  ? `Coast FIRE (${state.ageLabel(coastFireAge!)}): contributions zeroed from then on — the earliest year that still passes.`
-                                  : "Coast FIRE: contributions zeroed from your Coast FIRE year on — the earliest year that still passes. Not yet available.",
-                                "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
-                                'Coast FIRE (Custom): check any age you pick, not just the earliest passing one or today — pick an age and press "Check this age" to see whether it passes.',
-                                "Initial Rate: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate setting × starting balance instead of your stated budget or the amount you set — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
-                              ]}
-                            />
-                          }
-                        >
-                          <PillBtn
-                            size="lg"
-                            tone="compute"
-                            active={scenarioView === "baseline"}
-                            onClick={() => setScenarioView("baseline")}
-                            label="Active Plan"
-                          />
-                          <PillBtn
-                            size="lg"
-                            tone="compute"
-                            active={scenarioView === "coastFire"}
-                            onClick={() => {
-                              if (coastFireAvailable)
-                                setScenarioView("coastFire");
-                            }}
-                            label={
-                              coastFireAvailable
-                                ? `Coast FIRE (${state.ageLabel(coastFireAge!)})`
-                                : "Coast FIRE"
-                            }
-                            disabled={!coastFireAvailable}
-                          />
-                          <PillBtn
-                            size="lg"
-                            tone="compute"
-                            active={scenarioView === "coastFireToday"}
-                            onClick={() => {
-                              if (coastFireAvailable)
-                                setScenarioView("coastFireToday");
-                            }}
-                            label="Coast FIRE (Today)"
-                            disabled={!coastFireAvailable}
-                          />
-                          <PillBtn
-                            size="lg"
-                            tone="compute"
-                            active={scenarioView === "coastFireCustom"}
-                            onClick={() => setScenarioView("coastFireCustom")}
-                            label="Coast FIRE (Custom)"
-                          />
-                          <PillBtn
-                            size="lg"
-                            tone="compute"
-                            active={scenarioView === "rateSeeded"}
-                            onClick={() => setScenarioView("rateSeeded")}
-                            label="Initial Rate"
-                          />
-                        </LabeledPillGroup>
+                        <ScenarioPills
+                          coastFireAvailable={coastFireAvailable}
+                          state={state}
+                          coastFireAge={coastFireAge}
+                          scenarioView={scenarioView}
+                          setScenarioView={setScenarioView}
+                        />
                         {scenarioView === "coastFireCustom" &&
                           (() => {
                             const currentAge =
@@ -1296,28 +1180,13 @@ export function ProjectionCard(props: {
                   report is a purpose-built document, not a printout of the
                   interactive chart — print:hidden whenever "advisor" mode
                   is active. */}
-              <div
-                className={
-                  reportMode === "advisor" ? "print:hidden" : undefined
-                }
-              >
-                {engineQuery.isLoading ? (
-                  <ProjectionChartSkeleton phase="engine" />
-                ) : chartView === "strategy" || chartView === "budget" ? (
-                  <SpendingStabilityChart state={state} view={chartView} />
-                ) : mcChartPending ? (
-                  <ProjectionChartSkeleton phase="simulation" />
-                ) : (
-                  <ProjectionChart state={state} />
-                )}
-                {engineQuery.data &&
-                  "jobYearsNote" in engineQuery.data &&
-                  engineQuery.data.jobYearsNote && (
-                    <p className="text-caption text-faint mt-1">
-                      {engineQuery.data.jobYearsNote}
-                    </p>
-                  )}
-              </div>
+              <ChartArea
+                reportMode={reportMode}
+                engineQuery={engineQuery}
+                chartView={chartView}
+                state={state}
+                mcChartPending={mcChartPending}
+              />
             </div>
           )}
 
@@ -1376,26 +1245,20 @@ export function ProjectionCard(props: {
               report is a purpose-built document, not a printout of the
               interactive table — print:hidden whenever "advisor" mode is
               active (it renders its own simplified table instead). */}
-          <div
-            className={reportMode === "advisor" ? "print:hidden" : undefined}
-          >
-            {engineQuery.isLoading ||
-            (!autoloadEnabled && !engineQuery.data) ? (
-              <ProjectionTableSkeleton />
-            ) : (
-              <ProjectionTable
-                state={state}
-                people={people}
-                parentCategoryFilter={parentCategoryFilter}
-                accumulationBudgetProfileId={accumulationBudgetProfileId}
-                accumulationBudgetColumn={accumulationBudgetColumn}
-                accumulationExpenseOverride={accumulationExpenseOverride}
-                decumulationBudgetProfileId={decumulationBudgetProfileId}
-                decumulationBudgetColumn={decumulationBudgetColumn}
-                decumulationExpenseOverride={decumulationExpenseOverride}
-              />
-            )}
-          </div>
+          <TableArea
+            reportMode={reportMode}
+            engineQuery={engineQuery}
+            autoloadEnabled={autoloadEnabled}
+            state={state}
+            people={people}
+            parentCategoryFilter={parentCategoryFilter}
+            accumulationBudgetProfileId={accumulationBudgetProfileId}
+            accumulationBudgetColumn={accumulationBudgetColumn}
+            accumulationExpenseOverride={accumulationExpenseOverride}
+            decumulationBudgetProfileId={decumulationBudgetProfileId}
+            decumulationBudgetColumn={decumulationBudgetColumn}
+            decumulationExpenseOverride={decumulationExpenseOverride}
+          />
 
           {/* DECUMULATION DEFAULTS */}
           <div className="print:hidden">

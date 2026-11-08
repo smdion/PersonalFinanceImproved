@@ -114,9 +114,14 @@
     "src/components/retirement-projection/account-notes.ts": 260,
     "src/components/retirement-projection/coast-fire-card.tsx": 408,
     "src/components/retirement-projection/decumulation-config.tsx": 468,
-    "src/components/retirement-projection/index.tsx": 1509,
+    "src/components/retirement-projection/index.tsx": 1372,
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": 1071,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
+    "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
+    "src/components/retirement-projection/projection-card/compute-zone.tsx": 84,
+    "src/components/retirement-projection/projection-card/engine-notices.tsx": 61,
+    "src/components/retirement-projection/projection-card/hero-panel.tsx": 37,
+    "src/components/retirement-projection/projection-card/table-area.tsx": 45,
     "src/components/retirement-projection/projection-chart.tsx": 1130,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 504,
     "src/components/retirement-projection/projection-mc-results.tsx": 120,
@@ -657,8 +662,8 @@
       "DecumulationConfig": 351
     },
     "src/components/retirement-projection/index.tsx": {
-      "ProjectionCard": 1432,
-      "ProjectionCard.iife()": 719
+      "ProjectionCard": 1309,
+      "ProjectionCard.iife()": 660
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 158
