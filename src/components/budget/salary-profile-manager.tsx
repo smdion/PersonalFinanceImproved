@@ -2,21 +2,14 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils/format";
-import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
-import { ProfileViewingBadge } from "./profile-viewing-badge";
-import {
-  ProfileListRow,
-  ProfileSidebarHeader,
-} from "@/components/ui/profile-sidebar";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/components/budget/use-clone-profile";
-import { ProfileDetail } from "./salary-profile-detail";
-import { ProfileCreatePanel } from "./salary-profile-create-panel";
-import { ProfileEditPanel } from "./salary-profile-edit-panel";
+import { SalaryProfilePane } from "./salary-profile-list";
+import { SalaryProfileList } from "./salary-profile-list";
+import { SalaryProfileBar } from "./salary-profile-list";
 
 /**
  * Salary Profiles tab — the "what if I earned X" axis.
@@ -133,108 +126,44 @@ export function SalaryProfileManager({
 
   return (
     <div>
-      {displayedProfile && !creatingNew && (
-        <div className="bg-surface-sunken mb-4 flex items-center justify-between rounded-lg px-4 py-3">
-          <div className="flex items-center gap-6">
-            <ProfileViewingBadge
-              profileName={displayedProfile.name}
-              activeProfileName={activeProfileName}
-              isViewingNonActive={isViewingNonActive}
-              onActivate={
-                canEdit ? () => handleActivate(displayedProfile.id) : undefined
-              }
-            />
-            <div className="flex items-center gap-5 text-xs">
-              {displayedProfile.pinnedSalaryTotal > 0 && (
-                <div>
-                  <span className="text-faint">Salary total </span>
-                  <span className="text-secondary font-semibold">
-                    {formatCurrency(displayedProfile.pinnedSalaryTotal)}
-                    <span className="text-faint font-normal">/yr</span>
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Each job either has a complete entry in this profile — salary, bonus %, and multiplier — or it isn't in the profile at all and contributes $0. There's no fallback to a job record: if you want a different number, use a different profile. It is independent of the Contribution Profile — set either, both, or neither. The Paycheck page edits the active Salary Profile." />
-        </div>
-      )}
+      <SalaryProfileBar
+        activeProfileName={activeProfileName}
+        canEdit={canEdit}
+        creatingNew={creatingNew}
+        displayedProfile={displayedProfile}
+        handleActivate={handleActivate}
+        isViewingNonActive={isViewingNonActive}
+      />
 
       {deleteError && <FormError message={deleteError} />}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
         {/* Left: profile list */}
-        <div className="space-y-1.5">
-          <ProfileSidebarHeader
-            onCreate={
-              canEdit
-                ? () => {
-                    setSelectedProfileId(null);
-                    setCreatingNew(true);
-                  }
-                : undefined
-            }
-          />
-
-          {profiles.map((p) => (
-            <ProfileListRow
-              key={p.id}
-              name={p.name}
-              isSelected={!creatingNew && effectiveSelectedId === p.id}
-              isActive={globalActiveSalaryId === p.id}
-              onSelect={() => {
-                setCreatingNew(false);
-                setSelectedProfileId(p.id);
-              }}
-              onRename={
-                canEdit
-                  ? (name) => renameMutation.mutate({ id: p.id, name })
-                  : undefined
-              }
-              onDelete={
-                canEdit && canDeleteAny
-                  ? () => handleDelete(p.id, p.name)
-                  : undefined
-              }
-              onClone={canEdit ? () => cloneProfile(p.id, p.name) : undefined}
-              meta={
-                p.description ??
-                (p.pinnedCount === 0
-                  ? "Empty"
-                  : `${p.pinnedCount} ${p.pinnedCount === 1 ? "job" : "jobs"} set`)
-              }
-            />
-          ))}
-        </div>
+        <SalaryProfileList
+          canDeleteAny={canDeleteAny}
+          canEdit={canEdit}
+          cloneProfile={cloneProfile}
+          creatingNew={creatingNew}
+          effectiveSelectedId={effectiveSelectedId}
+          globalActiveSalaryId={globalActiveSalaryId}
+          handleDelete={handleDelete}
+          profiles={profiles}
+          renameMutation={renameMutation}
+          setCreatingNew={setCreatingNew}
+          setSelectedProfileId={setSelectedProfileId}
+        />
 
         {/* Right: detail / inline editor */}
-        <div>
-          {creatingNew ? (
-            <ProfileCreatePanel
-              onCancel={() => setCreatingNew(false)}
-              onSaved={(newId) => {
-                setCreatingNew(false);
-                invalidateProfileDeps();
-                if (newId !== undefined) setSelectedProfileId(newId);
-              }}
-            />
-          ) : effectiveSelectedId != null ? (
-            !canEdit || locked ? (
-              <ProfileDetail
-                profileId={effectiveSelectedId}
-                isActiveProfile={effectiveSelectedId === globalActiveSalaryId}
-              />
-            ) : (
-              <ProfileEditPanel
-                profileId={effectiveSelectedId}
-                isActiveProfile={effectiveSelectedId === globalActiveSalaryId}
-                onSaved={() => invalidateProfileDeps()}
-              />
-            )
-          ) : (
-            <div className="text-faint text-xs">Select a profile.</div>
-          )}
-        </div>
+        <SalaryProfilePane
+          canEdit={canEdit}
+          creatingNew={creatingNew}
+          effectiveSelectedId={effectiveSelectedId}
+          globalActiveSalaryId={globalActiveSalaryId}
+          invalidateProfileDeps={invalidateProfileDeps}
+          locked={locked}
+          setCreatingNew={setCreatingNew}
+          setSelectedProfileId={setSelectedProfileId}
+        />
       </div>
     </div>
   );

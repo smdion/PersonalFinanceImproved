@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils/format";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
-import { confirm } from "@/components/ui/confirm-dialog";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
 import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
@@ -11,14 +9,10 @@ import { toast } from "@/lib/hooks/use-toast";
 import {
   Detail,
   detailForJob,
-  SalaryCell,
   SalaryTableHead,
-  TABLE_COLUMNS,
-  rowClass,
   TotalsFooter,
-  JobPicker,
-  EntrySections,
 } from "./salary-profile-entry";
+import { SalaryEditRows } from "./salary-profile-edit-rows";
 
 /**
  * Unlocked, in-place editor for an existing profile. There is no Save button:
@@ -189,100 +183,20 @@ export function ProfileEditPanel({
                       removeEntryMutation.variables.jobId === sd.jobId));
                 return (
                   <React.Fragment key={rawSd.personId}>
-                    <tr
-                      aria-busy={isSaving}
-                      className={`${rowClass(rowIdx)} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
-                    >
-                      <td className="text-secondary py-1.5 pr-3 pl-4 font-medium">
-                        {sd.personName}
-                      </td>
-                      <td className="text-muted px-3 py-1.5">
-                        <JobPicker
-                          sd={sd}
-                          rawSd={rawSd}
-                          onChange={(jobId) =>
-                            setJobOverride((prev) => ({
-                              ...prev,
-                              [rawSd.personId]: jobId,
-                            }))
-                          }
-                        />
-                      </td>
-                      {sd.hasEntry ? (
-                        <>
-                          <td className="px-3 py-1.5">
-                            <SalaryCell
-                              sd={sd}
-                              draft={drafts[`${sd.personId}:salary`]}
-                              onDraft={(v) =>
-                                setDraft(`${sd.personId}:salary`, v)
-                              }
-                              onCommit={() => commitSalary(sd)}
-                            />
-                          </td>
-                          <td className="text-secondary px-3 py-1.5 text-right tabular-nums">
-                            {formatCurrency(sd.estimatedBonus)}
-                          </td>
-                          <td className="py-1.5 pr-4 pl-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-secondary font-medium tabular-nums">
-                                {formatCurrency(
-                                  sd.effectiveSalary + sd.estimatedBonus,
-                                )}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (
-                                    await confirm(
-                                      `Remove ${sd.employerName ?? "this job"} from this profile? It then contributes $0 here.`,
-                                    )
-                                  )
-                                    removeEntry(sd.jobId);
-                                }}
-                                title="Remove this job from the profile"
-                                aria-label={`Remove ${sd.employerName ?? "this job"} from this profile`}
-                                className="text-caption text-faint shrink-0 hover:text-red-500"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          </td>
-                        </>
-                      ) : (
-                        <td
-                          colSpan={TABLE_COLUMNS - 2}
-                          className="text-faint px-3 py-1.5 text-right"
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Not in this profile</span>
-                            <button
-                              type="button"
-                              onClick={() => addEntry(sd.jobId)}
-                              disabled={sd.jobId === null}
-                              className="text-caption font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                            >
-                              + Add
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                    {sd.hasEntry && (
-                      <tr className={rowClass(rowIdx)}>
-                        <td
-                          colSpan={TABLE_COLUMNS}
-                          className="bg-surface-sunken/60 px-4 py-3"
-                        >
-                          <EntrySections
-                            sd={sd}
-                            editable
-                            onUpdate={updateEntry(sd)}
-                            isActiveProfile={isActiveProfile}
-                          />
-                        </td>
-                      </tr>
-                    )}
+                    <SalaryEditRows
+                      addEntry={addEntry}
+                      commitSalary={commitSalary}
+                      drafts={drafts}
+                      isActiveProfile={isActiveProfile}
+                      isSaving={isSaving}
+                      rawSd={rawSd}
+                      removeEntry={removeEntry}
+                      rowIdx={rowIdx}
+                      sd={sd}
+                      setDraft={setDraft}
+                      setJobOverride={setJobOverride}
+                      updateEntry={updateEntry}
+                    />
                   </React.Fragment>
                 );
               })}
