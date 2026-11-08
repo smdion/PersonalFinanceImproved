@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { renderDetailAccountRows } from "./profile-detail-rows";
 import type { ActiveFieldsRoot, DeductionRow } from "./profile-types";
+import { AccountFieldHeaders } from "./account-fields";
 
 export function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
@@ -41,18 +42,7 @@ export function ProfileDetailPanel({ profileId }: { profileId: number }) {
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-strong border-b-2">
-              <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
-                Account
-              </th>
-              <th className="text-muted w-20 px-3 py-2 text-left font-medium whitespace-nowrap">
-                Method
-              </th>
-              <th className="text-muted w-24 px-3 py-2 text-right font-medium">
-                Value
-              </th>
-              <th className="text-muted w-28 px-3 py-2 text-right font-medium">
-                Match
-              </th>
+              <AccountFieldHeaders view="readOnly" />
             </tr>
           </thead>
           <tbody>{renderDetailAccountRows(profile)}</tbody>

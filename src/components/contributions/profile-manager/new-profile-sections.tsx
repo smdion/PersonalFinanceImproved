@@ -7,15 +7,8 @@ import type {
   MatchDraft,
   ProfileDetail,
 } from "./account-row-types";
-import {
-  NewProfileCapCell,
-  NewProfileEnabledCell,
-  NewProfileMatchCell,
-  NewProfileMatchTypeCell,
-  NewProfileMethodCell,
-  NewProfileNameCell,
-  NewProfileValueCell,
-} from "./new-profile-cells";
+import { NEW_PROFILE_CELLS } from "./new-profile-cells";
+import { ACCOUNT_FIELDS, AccountFieldHeaders } from "./account-fields";
 export function NewProfileHeader({
   name,
   setName,
@@ -110,24 +103,7 @@ export function NewProfileAccounts({
           <table className="w-full text-xs">
             <thead>
               <tr className="text-muted border-b">
-                <th
-                  className="w-6 py-1.5 text-left font-medium"
-                  title="Enabled in this profile"
-                >
-                  On
-                </th>
-                <th className="py-1.5 text-left font-medium">Account</th>
-                <th className="w-28 py-1.5 text-left font-medium">Method</th>
-                <th className="w-24 py-1.5 text-right font-medium">Value</th>
-                <th className="w-28 py-1.5 text-left font-medium">
-                  Match Type
-                </th>
-                <th className="w-24 py-1.5 text-right font-medium">
-                  Employer Match
-                </th>
-                <th className="w-24 py-1.5 text-right font-medium">
-                  Match Cap
-                </th>
+                <AccountFieldHeaders view="create" />
               </tr>
             </thead>
             <tbody>
@@ -142,54 +118,31 @@ export function NewProfileAccounts({
                 const effectiveMethod =
                   contribVal.method ?? "percent_of_salary";
                 const isPercent = effectiveMethod === "percent_of_salary";
+                const row = {
+                  isDisabled,
+                  ad,
+                  setDisabledAccounts,
+                  nameValues,
+                  setNameValues,
+                  effectiveMethod,
+                  setContribValues,
+                  isPercent,
+                  contribVal,
+                  effectiveMatchType,
+                  setMatchValues,
+                  hasMatch,
+                  mVal,
+                  isPercentMatch,
+                };
                 return (
                   <tr
                     key={ad.id}
                     className={`border-subtle border-b ${isDisabled ? "opacity-40" : ""}`}
                   >
-                    <NewProfileEnabledCell
-                      isDisabled={isDisabled}
-                      ad={ad}
-                      setDisabledAccounts={setDisabledAccounts}
-                    />
-                    <NewProfileNameCell
-                      isDisabled={isDisabled}
-                      ad={ad}
-                      nameValues={nameValues}
-                      setNameValues={setNameValues}
-                    />
-                    <NewProfileMethodCell
-                      isDisabled={isDisabled}
-                      effectiveMethod={effectiveMethod}
-                      setContribValues={setContribValues}
-                      ad={ad}
-                    />
-                    <NewProfileValueCell
-                      isDisabled={isDisabled}
-                      isPercent={isPercent}
-                      contribVal={contribVal}
-                      setContribValues={setContribValues}
-                      ad={ad}
-                    />
-                    <NewProfileMatchTypeCell
-                      effectiveMatchType={effectiveMatchType}
-                      setMatchValues={setMatchValues}
-                      ad={ad}
-                    />
-                    <NewProfileMatchCell
-                      hasMatch={hasMatch}
-                      effectiveMatchType={effectiveMatchType}
-                      mVal={mVal}
-                      setMatchValues={setMatchValues}
-                      ad={ad}
-                    />
-                    <NewProfileCapCell
-                      hasMatch={hasMatch}
-                      isPercentMatch={isPercentMatch}
-                      mVal={mVal}
-                      setMatchValues={setMatchValues}
-                      ad={ad}
-                    />
+                    {ACCOUNT_FIELDS.map(({ key }) => {
+                      const Cell = NEW_PROFILE_CELLS[key];
+                      return <Cell key={key} {...row} />;
+                    })}
                   </tr>
                 );
               })}

@@ -2,6 +2,7 @@ import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 import { InlineDeductions, renderInlineAccountRows } from "./inline-sections";
 import { inlineEditorCommits, useInlineEditorState } from "./use-inline-editor";
+import { AccountFieldHeaders } from "./account-fields";
 
 /**
  * Same fields as ProfileDetailPanel, rendered as inputs. There is no Save
@@ -90,30 +91,7 @@ export function ProfileInlineEditor({
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-strong border-b-2">
-                <th
-                  className="text-muted w-6 py-2 pl-4 text-left font-medium"
-                  title="Enabled in this profile"
-                >
-                  On
-                </th>
-                <th className="text-muted px-3 py-2 text-left font-medium">
-                  Account
-                </th>
-                <th className="text-muted w-28 px-3 py-2 text-left font-medium">
-                  Method
-                </th>
-                <th className="text-muted w-24 px-3 py-2 text-right font-medium">
-                  Value
-                </th>
-                <th className="text-muted w-28 px-3 py-2 text-left font-medium">
-                  Match Type
-                </th>
-                <th className="text-muted w-24 px-3 py-2 text-right font-medium">
-                  Employer Match
-                </th>
-                <th className="text-muted w-24 px-3 py-2 text-right font-medium">
-                  Match Cap
-                </th>
+                <AccountFieldHeaders view="inline" />
               </tr>
             </thead>
             <tbody>

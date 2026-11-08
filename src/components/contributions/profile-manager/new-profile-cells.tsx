@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { ComponentType, Dispatch, SetStateAction } from "react";
 import {
   CONTRIBUTION_METHOD_LABELS,
   EMPLOYER_MATCH_LABELS,
@@ -9,16 +9,31 @@ import type {
   ContribDraft,
   MatchDraft,
 } from "./account-row-types";
+import type { AccountFieldKey } from "./account-fields";
 
-export function NewProfileEnabledCell({
-  isDisabled,
-  ad,
-  setDisabledAccounts,
-}: {
+/** One account row's values and setters, as each create-form cell reads them. */
+export type NewProfileRowProps = {
   isDisabled: boolean;
   ad: AccountDetail;
   setDisabledAccounts: Dispatch<SetStateAction<Record<string, boolean>>>;
-}) {
+  nameValues: Record<string, string>;
+  setNameValues: Dispatch<SetStateAction<Record<string, string>>>;
+  effectiveMethod: string;
+  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
+  isPercent: boolean;
+  contribVal: ContribDraft;
+  effectiveMatchType: string;
+  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
+  hasMatch: boolean;
+  mVal: MatchDraft;
+  isPercentMatch: boolean;
+};
+
+function NewProfileEnabledCell({
+  isDisabled,
+  ad,
+  setDisabledAccounts,
+}: NewProfileRowProps) {
   return (
     <td className="py-1.5 align-top">
       <input
@@ -53,17 +68,12 @@ export function NewProfileEnabledCell({
   );
 }
 
-export function NewProfileNameCell({
+function NewProfileNameCell({
   isDisabled,
   ad,
   nameValues,
   setNameValues,
-}: {
-  isDisabled: boolean;
-  ad: AccountDetail;
-  nameValues: Record<string, string>;
-  setNameValues: Dispatch<SetStateAction<Record<string, string>>>;
-}) {
+}: NewProfileRowProps) {
   return (
     <td className="text-secondary py-1.5">
       <div className={isDisabled ? "line-through" : ""}>
@@ -97,17 +107,12 @@ export function NewProfileNameCell({
   );
 }
 
-export function NewProfileMethodCell({
+function NewProfileMethodCell({
   isDisabled,
   effectiveMethod,
   setContribValues,
   ad,
-}: {
-  isDisabled: boolean;
-  effectiveMethod: string;
-  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
-  ad: AccountDetail;
-}) {
+}: NewProfileRowProps) {
   return (
     <td className="px-1.5 py-1.5">
       {!isDisabled && (
@@ -135,19 +140,13 @@ export function NewProfileMethodCell({
   );
 }
 
-export function NewProfileValueCell({
+function NewProfileValueCell({
   isDisabled,
   isPercent,
   contribVal,
   setContribValues,
   ad,
-}: {
-  isDisabled: boolean;
-  isPercent: boolean;
-  contribVal: ContribDraft;
-  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
-  ad: AccountDetail;
-}) {
+}: NewProfileRowProps) {
   return (
     <td className="py-1.5 text-right">
       {!isDisabled && (
@@ -179,15 +178,11 @@ export function NewProfileValueCell({
   );
 }
 
-export function NewProfileMatchTypeCell({
+function NewProfileMatchTypeCell({
   effectiveMatchType,
   setMatchValues,
   ad,
-}: {
-  effectiveMatchType: string;
-  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
-  ad: AccountDetail;
-}) {
+}: NewProfileRowProps) {
   return (
     <td className="px-1.5 py-1.5">
       <select
@@ -213,19 +208,13 @@ export function NewProfileMatchTypeCell({
   );
 }
 
-export function NewProfileMatchCell({
+function NewProfileMatchCell({
   hasMatch,
   effectiveMatchType,
   mVal,
   setMatchValues,
   ad,
-}: {
-  hasMatch: boolean;
-  effectiveMatchType: string;
-  mVal: MatchDraft;
-  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
-  ad: AccountDetail;
-}) {
+}: NewProfileRowProps) {
   return (
     <td className="py-1.5 text-right">
       {hasMatch ? (
@@ -261,19 +250,13 @@ export function NewProfileMatchCell({
   );
 }
 
-export function NewProfileCapCell({
+function NewProfileCapCell({
   hasMatch,
   isPercentMatch,
   mVal,
   setMatchValues,
   ad,
-}: {
-  hasMatch: boolean;
-  isPercentMatch: boolean;
-  mVal: MatchDraft;
-  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
-  ad: AccountDetail;
-}) {
+}: NewProfileRowProps) {
   return (
     <td className="py-1.5 text-right">
       {hasMatch && isPercentMatch ? (
@@ -301,3 +284,17 @@ export function NewProfileCapCell({
     </td>
   );
 }
+
+/** The create form's cell for each field of ACCOUNT_FIELDS. */
+export const NEW_PROFILE_CELLS: Record<
+  AccountFieldKey,
+  ComponentType<NewProfileRowProps>
+> = {
+  enabled: NewProfileEnabledCell,
+  account: NewProfileNameCell,
+  method: NewProfileMethodCell,
+  value: NewProfileValueCell,
+  matchType: NewProfileMatchTypeCell,
+  match: NewProfileMatchCell,
+  cap: NewProfileCapCell,
+};
