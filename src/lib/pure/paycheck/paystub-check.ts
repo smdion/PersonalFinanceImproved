@@ -340,19 +340,15 @@ export function checkPaystub(
 
 /** Which check of `year` a pay date is (1-based), counted from the job's
  *  anchor payday — the same anchor the paycheck's year schedule is built
- *  from (its anchor payday, else its start date). The latest check so far
- *  when no date is given. */
+ *  from (its anchor payday, else its start date). Today's date gives the
+ *  latest check so far. */
 export function paystubCheckNumber(
-  payDate: Date | null,
+  payDate: Date,
   payPeriod: string,
   anchor: string | Date,
   periodsPerYear: number,
 ): number {
-  const n = countPeriodsElapsed(
-    payDate ?? new Date(),
-    payPeriod,
-    new Date(anchor),
-  );
+  const n = countPeriodsElapsed(payDate, payPeriod, new Date(anchor));
   return Math.min(Math.max(n, 1), periodsPerYear);
 }
 

@@ -72,7 +72,7 @@ export function PaystubCheck({
   // year's.
   const otherYear = date !== null && date.getUTCFullYear() !== taxYear;
   const n = paystubCheckNumber(
-    date,
+    date ?? new Date(),
     payPeriod,
     anchor,
     paycheck.periodsPerYear,

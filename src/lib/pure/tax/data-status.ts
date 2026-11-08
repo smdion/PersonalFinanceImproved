@@ -57,7 +57,7 @@ export function taxDataStatus(
     yearsByTable: Partial<Record<TaxDataSection["table"], readonly number[]>>;
     carried?: readonly CarriedFigure[];
   },
-  now: Date = new Date(),
+  now: Date,
 ): TaxDataStatus {
   const sections = TAX_DATA_SECTIONS.map((s) => {
     const years = input.yearsByTable[s.table] ?? [];

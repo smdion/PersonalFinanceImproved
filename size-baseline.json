@@ -329,7 +329,7 @@
     "src/lib/pure/paycheck/bonus.ts": 255,
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 133,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 273,
-    "src/lib/pure/paycheck/paystub-check.ts": 460,
+    "src/lib/pure/paycheck/paystub-check.ts": 456,
     "src/lib/pure/paycheck/per-check.ts": 382,
     "src/lib/pure/paycheck/person-paycheck.ts": 197,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,

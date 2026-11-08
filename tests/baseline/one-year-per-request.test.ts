@@ -38,10 +38,6 @@ const NEW_YEAR = new Date(LAST_MOMENT.getTime() + 1);
 /** A household with jobs, contributions, a mortgage and a portfolio. */
 const KEY = "ws-h3";
 
-/** Queries that still read the clock themselves, through library
- *  helpers (v0.10.5 12b); only shrinks. */
-const STILL_READ_THE_CLOCK: string[] = ["settings.taxData.status"];
-
 const ISO_INSTANT = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)"/g;
 
 /** Each query's result, or the message it threw, with what moves on its
@@ -110,6 +106,6 @@ describe(`one year per request: ${KEY}`, () => {
     }
     expect(Object.keys(turned).length).toBeGreaterThan(50);
     const moved = Object.keys(held).filter((n) => turned[n] !== held[n]);
-    expect(moved).toEqual(STILL_READ_THE_CLOCK);
+    expect(moved).toEqual([]);
   }, 600_000);
 });

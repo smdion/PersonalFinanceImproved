@@ -7071,9 +7071,6 @@
     "ratchet/max-comment-lines": {
       "count": 3
     },
-    "ratchet/no-clock-read": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -7429,9 +7426,6 @@
   "src/lib/pure/tax/data-status.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     }
   },
   "src/lib/pure/tax/distribution-tax-rates.ts": {
@@ -7597,7 +7591,7 @@
       "count": 1
     },
     "ratchet/no-clock-read": {
-      "count": 4
+      "count": 3
     }
   },
   "src/lib/tax-data/validate.ts": {

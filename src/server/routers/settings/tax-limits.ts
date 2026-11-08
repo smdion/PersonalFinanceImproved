@@ -296,7 +296,7 @@ export const taxLimitsProcedures = {
             });
           }
       }
-      const base = taxDataStatus({ yearsByTable, carried });
+      const base = taxDataStatus({ yearsByTable, carried }, ctx.scope.asOf);
       // A community update waiting for review needs attention too.
       const pending = await pendingUpdate(ctx.db);
       const status = pending

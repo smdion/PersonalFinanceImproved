@@ -246,10 +246,7 @@ export async function checkForTaxDataUpdate(
 }
 
 /** Is the scheduled check due? Weekly; a day after a failed one. */
-export async function taxDataCheckDue(
-  db: Db,
-  now = new Date(),
-): Promise<boolean> {
+export async function taxDataCheckDue(db: Db, now: Date): Promise<boolean> {
   const last = await lastTaxDataCheck(db);
   if (!last) return true;
   const failed = last.result === "error" || last.result === "rate-limited";
