@@ -8,7 +8,6 @@ import { SlidePanel } from "@/components/ui/slide-panel";
 import {
   PillBtn,
   LabeledPillGroup,
-  LabeledSelect,
   ControlZone,
   ZoneSecondaryRow,
 } from "./pill-btn";
@@ -26,6 +25,8 @@ import {
 } from "./projection-card/engine-notices";
 import { HeroKpisPanel } from "./projection-card/hero-panel";
 import { ScenarioPills } from "./projection-card/compute-zone";
+import { PersonViewPills } from "./projection-card/person-view-pills";
+import { SimulationSettings } from "./projection-card/simulation-settings";
 import { ChartArea } from "./projection-card/chart-area";
 import { TableArea } from "./projection-card/table-area";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
@@ -118,12 +119,7 @@ export function ProjectionCard(props: {
     setWithdrawalTaxPref,
     projectionMode,
     // setProjectionMode removed — MC is always active
-    mcTrials,
-    setMcTrials,
-    mcPreset,
-    setMcPreset,
     mcTaxMode,
-    setMcTaxMode,
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
     dollarMode: internalDollarMode,
@@ -161,7 +157,6 @@ export function ProjectionCard(props: {
     setShowAssumptions,
     showDecumConfig,
     setShowDecumConfig,
-    personFilter,
     setPersonFilter,
     isPersonFiltered,
     updateGlidePath,
@@ -515,7 +510,6 @@ export function ProjectionCard(props: {
                   convention instead of four separate hand-rolled ones. */}
               {result &&
                 (() => {
-                  const pp = people ?? enginePeople;
                   const isMc = projectionMode === "monteCarlo";
                   // AVAILABILITY (can the pill be clicked at all) is sourced
                   // from the cheap deterministic `coastFireQuery`, which
@@ -550,18 +544,6 @@ export function ProjectionCard(props: {
                         : deterministicCoastFireAge;
                   const coastFireAvailable = deterministicCoastFireAge != null;
                   const hasMc = mcBandsByYear != null;
-                  // hasIndividualAccountData computed once in
-                  // use-projection-derived.ts — MC "Simple" tax mode (the
-                  // default) collapses per-account balances into one
-                  // fictional bucket server-side, so a scenario sourced
-                  // from an MC result (Rate-Seeded, and any future
-                  // Simple-tax-mode scenario) has NO real per-person data
-                  // to filter by — offering Alex/Sam views would
-                  // silently show $0 everywhere instead of an honest "not
-                  // available."
-                  const personViewDisabledTitle = hasIndividualAccountData
-                    ? undefined
-                    : "Per-person breakdown isn't available for this scenario — it uses Simple tax mode, which doesn't track individual accounts. Switch to Advanced tax mode or view Joint totals.";
                   // The Balance chart's stacked bars are built from real
                   // per-account tax-type/account data — a Simple-tax-mode
                   // scenario has none, so there's nothing for this toggle
@@ -685,153 +667,8 @@ export function ProjectionCard(props: {
                             );
                           })()}
                         <ZoneSecondaryRow>
-                          {pp && pp.length > 1 && (
-                            <LabeledPillGroup label="View">
-                              <PillBtn
-                                active={personFilter === "all"}
-                                onClick={() => setPersonFilter("all")}
-                                label="Joint"
-                              />
-                              {pp.map((p) => (
-                                <PillBtn
-                                  key={p.id}
-                                  active={personFilter === p.id}
-                                  onClick={() => setPersonFilter(p.id)}
-                                  label={p.name}
-                                  disabled={!!personViewDisabledTitle}
-                                  title={personViewDisabledTitle}
-                                />
-                              ))}
-                            </LabeledPillGroup>
-                          )}
-                          {isMc && (
-                            <>
-                              <LabeledSelect
-                                label="Preset"
-                                value={mcPreset}
-                                onChange={(e) =>
-                                  setMcPreset(e.target.value as typeof mcPreset)
-                                }
-                                title="Simulation preset"
-                                helpTip={
-                                  <HelpTip
-                                    maxWidth={420}
-                                    lines={[
-                                      <span key="det">
-                                        <strong className="text-blue-300">
-                                          Deterministic
-                                        </strong>{" "}
-                                        — Single fixed-rate projection using
-                                        your configured return rates. Shows one
-                                        possible future, no randomness.
-                                      </span>,
-                                      <span key="agg">
-                                        <strong className="text-red-300">
-                                          Aggressive
-                                        </strong>{" "}
-                                        — Full historical returns, 0.9× vol,
-                                        high equity (95%→35%). Money Guy /
-                                        Bogleheads &quot;age - 20&quot; bonds
-                                        rule.
-                                      </span>,
-                                      <span key="def">
-                                        <strong className="text-green-300">
-                                          Default
-                                        </strong>{" "}
-                                        — Historical returns, standard vol,
-                                        hybrid FIRE glide path (90%→50% floor).
-                                        Vanguard TDF accumulation + Kitces
-                                        rising equity.
-                                      </span>,
-                                      <span key="con">
-                                        <strong className="text-amber-300">
-                                          Conservative
-                                        </strong>{" "}
-                                        — Forward-looking returns (~5% equity),
-                                        +15% vol, heavy bonds (75%→15%).
-                                        Vanguard VCMM / JP Morgan LTCMA.
-                                      </span>,
-                                      <span key="cus">
-                                        <strong className="text-purple-300">
-                                          Custom
-                                        </strong>{" "}
-                                        — Your own returns, volatility and glide
-                                        path, with no preset adjustments.
-                                      </span>,
-                                    ]}
-                                  />
-                                }
-                              >
-                                <option value="aggressive">Aggressive</option>
-                                <option value="default">Default</option>
-                                <option value="conservative">
-                                  Conservative
-                                </option>
-                                <option value="custom">Custom</option>
-                              </LabeledSelect>
-                              <span className="text-caption text-faint basis-full">
-                                Sets the Simulation and strategy comparison. The
-                                year-by-year projection, Coast FIRE and the
-                                glide-path check stay on Default.
-                              </span>
-                              <LabeledSelect
-                                label="Trials"
-                                value={mcTrials}
-                                onChange={(e) =>
-                                  setMcTrials(Number(e.target.value))
-                                }
-                                title="Number of simulation trials"
-                              >
-                                <option value={500}>500</option>
-                                <option value={1000}>1,000</option>
-                                <option value={2500}>2,500</option>
-                                <option value={5000}>5,000</option>
-                              </LabeledSelect>
-                              <LabeledPillGroup
-                                label="Tax Mode"
-                                helpTip={
-                                  <HelpTip
-                                    maxWidth={360}
-                                    lines={[
-                                      <span key="simple">
-                                        <strong className="text-blue-300">
-                                          Simple
-                                        </strong>{" "}
-                                        — Single portfolio, no tax. Comparable
-                                        to cFIREsim/FireCalc.
-                                      </span>,
-                                      <span key="advanced">
-                                        <strong className="text-orange-300">
-                                          Advanced
-                                        </strong>{" "}
-                                        — Full multi-account tax-aware
-                                        simulation with gross-up and bracket
-                                        filling.
-                                      </span>,
-                                    ]}
-                                  />
-                                }
-                              >
-                                <PillBtn
-                                  active={mcTaxMode === "simple"}
-                                  onClick={() => setMcTaxMode("simple")}
-                                  label="Simple"
-                                />
-                                <PillBtn
-                                  active={mcTaxMode === "advanced"}
-                                  onClick={() => setMcTaxMode("advanced")}
-                                  label="Advanced"
-                                />
-                              </LabeledPillGroup>
-                              <button
-                                type="button"
-                                onClick={() => setShowMethodology(true)}
-                                className="text-caption whitespace-nowrap text-blue-500 underline hover:text-blue-600"
-                              >
-                                How does this work?
-                              </button>
-                            </>
-                          )}
+                          <PersonViewPills state={state} people={people} />
+                          {isMc && <SimulationSettings state={state} />}
                         </ZoneSecondaryRow>
                       </ControlZone>
 
