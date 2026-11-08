@@ -142,6 +142,7 @@ fi
 
 echo ""
 echo -e "${BOLD}Setup complete!${NC} Next steps:"
+echo "  pnpm seed              # Load an invented demo household (empty database only)"
 echo "  pnpm dev               # Start the dev server on http://localhost:3000"
 echo "  pnpm test              # Run the full test suite"
 echo "  pnpm test --run <path> # Run a single test file"

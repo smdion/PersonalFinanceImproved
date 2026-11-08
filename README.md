@@ -196,6 +196,7 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll see 
 | `pnpm format`        | Auto-format with Prettier                                   |
 | `pnpm db:generate`   | Generate a migration from schema changes                    |
 | `pnpm db:migrate`    | Run pending migrations                                      |
+| `pnpm seed [name]`   | Load an invented demo household into an empty dev database  |
 | `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)                     |
 | `pnpm backup:export` | Export all data to JSON (stdout or `--out`)                 |
 | `pnpm backup:import` | Import a JSON backup (supports `--dry-run`)                 |
