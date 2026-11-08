@@ -10,9 +10,9 @@
  * same way. Each page's violations, counted by rule in elements, must
  * equal `axe-baseline.json`, which only shrinks: a fix lowers its count in
  * the same commit; a new violation is fixed, not recorded. (The file has
- * eslint-suppressions.json's shape, for check:ratchets to hold once it is
- * at the merge base.) `color-contrast` stays off: happy-dom can't compute
- * it.
+ * eslint-suppressions.json's shape, and check:ratchets holds it: a rise
+ * needs a `Ratchet-raise:` line naming the page and rule.) `color-contrast`
+ * stays off: happy-dom can't compute it.
  *
  *   LEDGR_BASELINE_WRITE=1 pnpm test tests/accessibility/axe.test.tsx
  *

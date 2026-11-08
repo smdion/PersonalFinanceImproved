@@ -17,6 +17,8 @@ import {
   listRises,
 } from "../../scripts/ratchets/code-limits";
 import {
+  AXE_FILE,
+  SUPPRESSION_FILES,
   registerRises,
   sizeRises,
   suppressionRises,
@@ -214,6 +216,33 @@ describe("suppressionRises", () => {
       "src/r/a.ts": { "max-lines": { count: 2 }, "no-x": { count: 1 } },
     };
     expect(suppressionRises("s.json", base, more, split)).toHaveLength(1);
+  });
+
+  it("holds the axe baseline, a rise named by its page and rule", () => {
+    expect(SUPPRESSION_FILES).toContain(AXE_FILE);
+    const page = { "e2e-b/budget": { "heading-order": { count: 1 } } };
+    expect(suppressionRises(AXE_FILE, page, page, alone)).toEqual([]);
+    const rises = suppressionRises(
+      AXE_FILE,
+      page,
+      { "e2e-b/budget": { "heading-order": { count: 2 } } },
+      alone,
+    );
+    expect(texts(rises)).toEqual([
+      "heading-order in e2e-b/budget: 2, 1 at the base",
+    ]);
+    const raise = (v: string) =>
+      excuse(
+        rises[0]!,
+        `test: x\n\nWhy.\n\nRatchet-raise: ${AXE_FILE} — ${v}\n`,
+      );
+    expect(raise("e2e-b/budget heading-order +1, why")).toMatchObject({
+      ok: true,
+    });
+    expect(raise("e2e-b/savings heading-order +1, why")).toMatchObject({
+      ok: false,
+    });
+    expect(raise("e2e-b/budget label +1, why")).toMatchObject({ ok: false });
   });
 });
 

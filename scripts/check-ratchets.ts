@@ -4,6 +4,7 @@
  * a commit can't loosen the rule it is checked by:
  *
  *   size-baseline.json, eslint-suppressions.json, eslint-suppressions-typed.json,
+ *   tests/accessibility/axe-baseline.json (counts per page and rule),
  *   scripts/calculation-register-baseline.json (lists and risk labels),
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
