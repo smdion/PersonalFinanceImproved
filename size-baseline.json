@@ -28,9 +28,10 @@
     "src/components/contributions/profile-manager/new-profile-sections.tsx": 284,
     "src/components/contributions/profile-manager/profile-detail-panel.tsx": 135,
     "src/components/contributions/profile-manager/profile-detail-rows.tsx": 122,
-    "src/components/contributions/profile-manager/profile-editor.tsx": 204,
+    "src/components/contributions/profile-manager/profile-editor.tsx": 108,
     "src/components/contributions/profile-manager/profile-inline-editor.tsx": 819,
     "src/components/contributions/profile-manager/profile-types.ts": 15,
+    "src/components/contributions/profile-manager/use-new-profile-save.ts": 121,
     "src/components/dashboard/contributions-card.tsx": 653,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
@@ -446,9 +447,6 @@
     },
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": {
       "ContributionProfileManager": 332
-    },
-    "src/components/contributions/profile-manager/profile-editor.tsx": {
-      "ProfileEditor": 187
     },
     "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
       "ProfileInlineEditor": 784,

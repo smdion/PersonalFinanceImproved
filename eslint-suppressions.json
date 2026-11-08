@@ -924,11 +924,8 @@
     }
   },
   "src/components/contributions/profile-manager/profile-editor.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1
