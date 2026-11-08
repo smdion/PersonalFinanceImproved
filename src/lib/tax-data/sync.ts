@@ -34,6 +34,7 @@ import { unpackSignedTaxData, verifyTaxDataSignature } from "./signature";
 import { validateTaxDataFile } from "./validate";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 const TIMEOUT_MS = 15_000;
 const MAX_BYTES = 1024 * 1024;
@@ -161,13 +162,13 @@ export async function checkForTaxDataUpdate(
   }: { source?: TaxDataSource; force?: boolean } = {},
 ): Promise<TaxDataLastCheck> {
   const done = async (r: Omit<TaxDataLastCheck, "at">) => {
-    const result = { at: new Date().toISOString(), ...r };
+    const result = { at: writeStamp().toISOString(), ...r };
     await setSetting(db, SK_TAX_DATA_LAST_CHECK, result);
     return result;
   };
   const off = await taxDataSyncOffReason(db);
   if (off && !(force && off === "setting"))
-    return { at: new Date().toISOString(), result: "off" };
+    return { at: writeStamp().toISOString(), result: "off" };
 
   try {
     const url =
@@ -230,7 +231,7 @@ export async function checkForTaxDataUpdate(
         status,
         ...(status === "applied" && {
           decidedBy: "automatic (no changes)",
-          decidedAt: new Date(),
+          decidedAt: writeStamp(),
         }),
       })
       .onConflictDoNothing();

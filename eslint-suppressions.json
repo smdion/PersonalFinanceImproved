@@ -7560,9 +7560,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-clock-read": {
-      "count": 3
     }
   },
   "src/lib/tax-data/validate.ts": {
