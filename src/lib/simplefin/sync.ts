@@ -1,14 +1,6 @@
-// Shared SimpleFIN sync logic — the single code path for pulling balances
-// and writing a daily snapshot. Called by both the CRON_SECRET-guarded
-// daily route (src/app/api/simplefin/daily/route.ts) and the "Sync Now"
-// tRPC mutation, so both behave identically (single computation path).
-//
-// Deliberately does NOT go through lib/budget-api/factory.ts's
-// getApiConnection/getClientForService — those are hard-typed to
-// "ynab" | "actual" and reserved for the BudgetAPIClient contract.
-// SimpleFIN is a parallel, read-only balance integration with no
-// transaction/category/budget concepts, so it queries api_connections
-// directly instead of widening that union.
+// SimpleFIN sync for the daily cron route and the "Sync Now" mutation: pulls
+// balances and writes the day's snapshot. A read-only balance feed, not a
+// budget app (`BudgetApiService`), so it reads api_connections directly.
 
 import "server-only";
 import { eq, sql } from "drizzle-orm";
@@ -59,14 +51,14 @@ const WINDOW_OVERLAP_DAYS = 5;
  * SimpleFIN keeps 90 days of transactions and answers a request for more
  * than that with a "capped" notice — and an exact 90 can already exceed it
  * by the time the provider evaluates it. Ask for a day less; if the
- * provider ever reports a smaller limit, use that instead (learned, see
+ * provider ever reports a smaller limit, use that instead (learnWindowLimit,
  * getWindowLimitDays).
  */
 const DEFAULT_MAX_WINDOW_DAYS = 89;
 const WINDOW_LIMIT_KEY = "simplefin_window_limit_days";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Start of the transaction window to request: last success minus the overlap, at most 90 days back. */
+/** Start of the transaction window to request: last success minus the overlap, at most `maxDays` back. */
 export function transactionWindowStart(
   lastSyncedAt: Date | null,
   now: Date,

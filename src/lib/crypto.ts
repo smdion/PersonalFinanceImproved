@@ -23,7 +23,7 @@
  *   NOT defend against an attacker with code execution on the running app
  *   (they have ENCRYPTION_KEY and can decrypt). It moves credentials from
  *   "anyone with a backup" to "anyone with the running container" — a
- *   meaningful reduction in blast radius for a self-hosted homelab.
+ *   meaningful reduction in blast radius for a self-hosted install.
  */
 
 import "server-only";

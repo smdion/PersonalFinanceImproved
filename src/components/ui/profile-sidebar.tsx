@@ -11,9 +11,6 @@
  * uses for quick value edits elsewhere — driven by a single `onRename`
  * callback. A consumer that omits `onRename` (Savings, whose rail reuses
  * Budget profiles and is select-only) renders a plain, non-editable name.
- * This replaced a hover-reveal "rename" button that three of the four
- * managers wired and the fourth (Salary) didn't, plus two managers'
- * separate editor-body "Name" fields.
  */
 
 import { Badge } from "@/components/ui/badge";

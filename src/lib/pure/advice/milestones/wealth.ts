@@ -24,7 +24,7 @@ import type {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-/** Config for a stored account-type key; null for sub-types and unknown keys. */
+/** A multiple to one decimal, e.g. `1.5×`. */
 const multiple = (n: number) => `${formatNumber(n, 1)}×`;
 
 // ---------------------------------------------------------------------------

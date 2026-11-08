@@ -25,17 +25,8 @@ export async function loadAndApplySalaryProfile(
 }
 
 /**
- * Same as loadAndApplySalaryProfile, but falls back to the globally-ACTIVE
- * Salary Profile when no explicit id is given — the "viewing a specific
- * profile" callers (Paycheck/Contribution pages) always pass their own
- * resolved id, so this only matters when a caller genuinely has no
- * preference (historical.ts, savings.ts, retirement.ts, services/contributions/
- * live-data.ts's loadLiveContribData all call this with `null` for
- * exactly that reason — call this instead of hand-rolling the app_settings
- * lookup again). services/net-worth/year-end-history.ts's buildYearEndHistory is the one
- * deliberate exception: it already has app_settings batch-fetched as part
- * of a larger Promise.all, so re-deriving the active id from that
- * in-memory array avoids a redundant query on a hot path.
+ * loadAndApplySalaryProfile, falling back to the active Salary Profile when
+ * no id is given: for callers that aren't showing a profile of their own.
  */
 export async function loadEffectiveSalaryProfile(
   db: Db,

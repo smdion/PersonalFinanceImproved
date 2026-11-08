@@ -253,9 +253,8 @@ export function matchSavingsGoals(
       usedSavingsApiIds.add(goal.apiCategoryId);
       const currentApiName = apiCat?.name ?? goal.apiCategoryName;
       if (!apiCat) {
-        // See the matching budget-item comment above — a stored id that
-        // no longer resolves to any current API category must not be
-        // reported as "linked".
+        // A stored id that resolves to no current API category is "orphaned",
+        // never "linked", as in matchBudgetItems.
         savingsMatches.push({
           goalId: goal.id,
           goalName: goal.name,

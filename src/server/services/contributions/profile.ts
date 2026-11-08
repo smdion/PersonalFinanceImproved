@@ -262,17 +262,8 @@ export function applyDeductionActiveFields(
 }
 
 /**
- * Fetch a contribution profile by ID, returning null when no profile is
- * selected (null/undefined id) or the row no longer exists.
- *
- * There is no `isDefault` concept any more: a profile whose
- * contributionActiveFields are empty is simply a profile with nothing
- * customized, and applying it is a no-op by content rather than by flag.
- * Was duplicated between this file's loadAndApplyContribProfile and
- * retirement.ts's own scenario-comparison resolver — retirement.ts applies
- * salary overrides with different layering semantics (no existing-override
- * priority), so it
- * keeps its own override-application logic and only shares this fetch.
+ * Fetch a contribution profile by id; null when no id is given or the row is
+ * gone. A profile with empty contributionActiveFields applies nothing.
  */
 export async function fetchContributionProfile(
   db: Db,

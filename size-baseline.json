@@ -191,7 +191,7 @@
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 430,
-    "src/components/retirement/retirement-profile-tab.tsx": 552,
+    "src/components/retirement/retirement-profile-tab.tsx": 549,
     "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
@@ -219,7 +219,7 @@
     "src/components/settings/integrations/portfolio-section.tsx": 337,
     "src/components/tools/relocation/large-purchase-fields.tsx": 214,
     "src/components/tools/relocation/projection-table.tsx": 416,
-    "src/lib/budget-api/actual-client.ts": 819,
+    "src/lib/budget-api/actual-client.ts": 813,
     "src/lib/budget-api/ynab-client.ts": 540,
     "src/lib/config/account-types.ts": 842,
     "src/lib/config/milestones.ts": 691,
@@ -340,11 +340,11 @@
     "src/lib/pure/simulation/stress-test-run.ts": 121,
     "src/lib/pure/simulation/trial-run.ts": 332,
     "src/lib/pure/simulation/trial-summary.ts": 299,
-    "src/lib/pure/sync/budget-preview.ts": 359,
+    "src/lib/pure/sync/budget-preview.ts": 358,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 472,
     "src/lib/simplefin/ingest.ts": 530,
-    "src/lib/simplefin/sync.ts": 607,
+    "src/lib/simplefin/sync.ts": 604,
     "src/lib/tax-data/validate.ts": 411,
     "src/lib/utils/colors.ts": 431,
     "src/server/data/budget-profiles.ts": 44,
@@ -393,7 +393,7 @@
     "src/server/services/contributions/account-edits.ts": 255,
     "src/server/services/contributions/caps.ts": 346,
     "src/server/services/contributions/live-data.ts": 98,
-    "src/server/services/contributions/profile.ts": 376,
+    "src/server/services/contributions/profile.ts": 373,
     "src/server/services/contributions/summary.ts": 732,
     "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 467,
@@ -407,18 +407,18 @@
     "src/server/services/performance/summary.ts": 167,
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
-    "src/server/services/profiles/salary-profile.ts": 98,
+    "src/server/services/profiles/salary-profile.ts": 89,
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 911,
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
-    "src/server/services/projection/relocation-analysis.ts": 480,
+    "src/server/services/projection/relocation-analysis.ts": 477,
     "src/server/services/savings/summary.ts": 370,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/services/sync/preview.ts": 455,
     "src/server/services/sync/sync-all.ts": 264,
-    "src/server/trpc.ts": 580
+    "src/server/trpc.ts": 572
   },
   "functions": {
     "src/app/(dashboard)/assets/assets-content.tsx": {
@@ -772,7 +772,7 @@
       "RetirementProfileManager": 270
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 480
+      "RetirementProfileTab": 477
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 182
@@ -1104,7 +1104,7 @@
       "buildProfileSwitches": 327
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 381
+      "computeRelocationAnalysis": 378
     },
     "src/server/services/savings/summary.ts": {
       "computeSavingsSummary": 349

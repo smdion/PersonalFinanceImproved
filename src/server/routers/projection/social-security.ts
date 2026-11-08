@@ -1,22 +1,7 @@
 /**
- * Social Security claiming-age sweep — router endpoint.
- *
- * Modeled directly on `withdrawal-bracket-optimizer.ts`/`coast-fire.ts`
- * (same `fetchRetirementData`/`buildEnginePayload` input shape,
- * `protectedProcedure.query`, no server-side cache). Split into its own
- * file rather than added to `retirement.ts` for the same CONTRIBUTING.md § Composed Router Convention
- * Composed Router size reason.
- *
- * `pia` is caller-supplied (a real what-if axis the client already has
- * from `perPersonSettings`) — `birthYear` is NOT, despite an earlier
- * version accepting it from the client too: birthYear is authoritative DB
- * data (`perPersonSettings[].birthYear`), and accepting a client-supplied
- * copy would create two independent sources of truth for FRA that could
- * silently disagree with what `build-engine-payload.ts` actually used for
- * this household's real projection. Resolved server-side from
- * `payload.perPersonSettings` by `personId` instead, which also lets this
- * endpoint validate `personId` against the real household (a stale/wrong
- * id is a `BAD_REQUEST`, not a silent no-op or a 500).
+ * Social Security claiming-age sweep. `pia` comes from the caller (a what-if
+ * axis); the birth year is the projection's own, found by `personId` in
+ * `perPersonSettings` (an unknown id is a BAD_REQUEST).
  */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";

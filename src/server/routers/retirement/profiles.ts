@@ -13,18 +13,9 @@ import * as schema from "@/lib/db/schema";
 import { firstRow } from "@/lib/utils/first-row";
 
 export const profileProcedures = {
-  // retirementScenarios CRUD removed.
-  // It had ZERO UI callers while the table it wrote was read on every engine
-  // build, so it could silently change every projection with no way to see
-  // or undo it. The four distribution tax rates it carried now live on
-  // retirement_settings and are read from there; leaving a writable router
-  // pointed at the now-ignored columns would be a second, invisible answer
-  // to "what drives my projection" — the exact thing this work removes.
-  //
-  // The TABLE survives for now: retirement.ts's relocation comparison still
-  // reads its withdrawal_rate, which is deliberately NOT relocated (see the
-  // schema docblock — retirement_settings.withdrawal_rate already exists and
-  // collapsing the two is a user-visible change needing its own commit).
+  // retirement_scenarios has no write procedures: nothing in the app edits
+  // it, so it can't change a projection unseen. Its selected row is read by
+  // build-engine-payload and the relocation analysis.
 
   /**
    * Retirement Profiles CRUD (Retirement Profiles step D — "multiple

@@ -25,10 +25,9 @@ export function buildSettingsPatch(
 ): UpsertSettingsInput {
   return {
     personId: current.personId,
-    // Always forwarded so the write scopes to the profile these values
-    // came from, not the household's globally-active one — see
-    // retirementSettings.upsert's docblock (retirement.ts) on why key
-    // PRESENCE (not just value) matters here.
+    // Always forwarded so the write scopes to the profile these values came
+    // from, not the active one; retirementSettings.upsert
+    // (routers/retirement/settings.ts) says why the key's presence matters.
     profileId: current.profileId,
     retirementAge: current.ownRetirementAge,
     endAge: current.ownEndAge,

@@ -1,6 +1,6 @@
 /**
  * Simple in-memory FIXED-window rate limiter.
- * Suitable for a single-process homelab deployment — no Redis needed.
+ * Suitable for a single-process deployment — no Redis needed.
  *
  * Fixed-window, not sliding: a key's `resetTime` is set once (on its first
  * hit) and `count` accumulates until that instant passes, then resets to 1.

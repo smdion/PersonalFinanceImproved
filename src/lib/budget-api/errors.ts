@@ -1,11 +1,7 @@
 /**
- * Typed errors for budget API integrations.
- *
- * The concern: ynab-client and actual-client both threw generic
- * Error on 401, 403, 429, 500, etc. Sync code couldn't distinguish auth
- * errors (re-auth needed) from rate limits (back off + retry) from server
- * errors (might be transient). This module gives every error a typed
- * subclass so the sync layer + UI can react appropriately.
+ * Typed errors for budget API integrations: each failure carries a code, so
+ * the sync layer and UI can tell auth (re-auth) from a rate limit (back off)
+ * from a server error (may be transient).
  */
 
 export type BudgetApiErrorCode =

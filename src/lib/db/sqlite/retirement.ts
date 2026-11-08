@@ -103,8 +103,8 @@ export const retirementSettings = sqliteTable(
      *  only fills in when the caller sends none (Tax Optimization's
      *  comparison + "your current plan" baseline, and any future caller
      *  that wants the household's real default rather than a hardcoded
-     *  one). Validated as an enum in zod (retirement.ts's
-     *  retirementSettingsInput), not a CHECK constraint — see
+     *  one). Validated as an enum in zod (`retirementSettingsInput`,
+     *  routers/retirement/settings.ts), not a CHECK constraint — see
      *  gen-sqlite-schema.ts's header on why a CHECK forces the SQLite
      *  recreate path this schema otherwise avoids. */
     withdrawalRoutingMode: text("withdrawal_routing_mode")
@@ -120,8 +120,8 @@ export const retirementSettings = sqliteTable(
      *  NULL = "use `getDefaultDecumulationOrder()`" — never store a copy of
      *  the config default (same "null means absent" convention
      *  `distributionTaxRateTraditional` documents in this table). Element
-     *  type + no-duplicates enforced in zod (retirement.ts's
-     *  retirementSettingsInput); a partial list is allowed (the engine's
+     *  type + no-duplicates enforced in zod (`retirementSettingsInput`,
+     *  routers/retirement/settings.ts); a partial list is allowed (the engine's
      *  `ensureCompleteWithdrawalOrder` backfills the rest). jsonb array,
      *  auto-converted to SQLite `text({ mode: "json" })` by
      *  gen-sqlite-schema.ts, matching `budgetProfileColumns.columnLabels`. */
@@ -132,7 +132,7 @@ export const retirementSettings = sqliteTable(
      *  withdrawal divides across accounts. Same DB-fallback role and NULL
      *  convention as `withdrawalOrder` above; NULL = "use
      *  `DEFAULT_WITHDRAWAL_SPLITS`." Per-account fractions, roughly summing
-     *  to 1.0 (loose bound checked in zod, retirement.ts); a partial record
+     *  to 1.0 (loose bound checked in zod, retirementSettingsInput); a partial record
      *  is legal — a missing account resolves to 0 and the engine
      *  redistributes proportionally. */
     withdrawalSplits: text("withdrawal_splits", { mode: "json" }).$type<
@@ -272,7 +272,7 @@ export const retirementSettings = sqliteTable(
      *  genuinely different household settings.
      *
      *  Still nullable, not NOT NULL — `retirementSettings.upsert`
-     *  (server/routers/retirement.ts) explicitly resolves and sets it on
+     *  (server/routers/retirement/settings.ts) explicitly resolves and sets it on
      *  every write (falling back to `isNull` scoping, never a bare
      *  personId match, when no profile resolves), and a null value can't
      *  weaken the unique index (Postgres/SQLite both treat NULL as

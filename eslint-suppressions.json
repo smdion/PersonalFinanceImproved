@@ -3428,7 +3428,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 6
     },
     "ratchet/no-abbreviation": {
       "count": 12
@@ -3518,7 +3518,7 @@
   },
   "src/components/retirement/sections/settings-patch.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/retirement/sections/social-security.tsx": {
@@ -4619,12 +4619,9 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 9
     },
     "ratchet/no-abbreviation": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
@@ -4657,7 +4654,7 @@
   },
   "src/lib/budget-api/errors.ts": {
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-clock-read": {
       "count": 1
@@ -7697,9 +7694,6 @@
     }
   },
   "src/lib/pure/sync/budget-preview.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
@@ -7888,7 +7882,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -8556,7 +8550,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/projection/strategy.ts": {
@@ -8628,7 +8622,7 @@
   },
   "src/server/routers/retirement/profiles.ts": {
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/routers/retirement/settings.ts": {
@@ -9046,7 +9040,7 @@
       "count": 8
     },
     "ratchet/max-comment-lines": {
-      "count": 11
+      "count": 10
     },
     "ratchet/no-abbreviation": {
       "count": 13
@@ -9297,7 +9291,7 @@
   },
   "src/server/services/profiles/salary-profile.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -9453,7 +9447,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-abbreviation": {
       "count": 9
@@ -9615,7 +9609,7 @@
       "count": 5
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 6
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4

@@ -459,19 +459,15 @@ export class ActualClient implements BudgetAPIClient {
     return accounts;
   }
 
-  /**
-   * The wrapper's `GET /accounts/:id/balance` returns the balance as the
-   * bare `data` value (`res.json({ data: balance || 0 })` — verified
-   * against actual-http-api's literal route source, 26.8.1), NOT nested
-   * under `data.balance`. Reading `res.data.balance` (the old code here)
-   * silently produced NaN on every call — pushSnapshotToBudgetApi's
-   * delta-vs-live-balance math was broken for every Actual household. */
+  /** The wrapper's `GET /accounts/:id/balance` returns the balance as the
+   *  bare `data` value (`res.json({ data: balance || 0 })`), not nested
+   *  under `data.balance`. */
   async getAccountBalance(
     accountId: string,
     asOfDate?: string,
   ): Promise<number> {
     // cutoff_date is inclusive and read as a local date by the wrapper, so
-    // the wrapper's time zone no longer moves the figure; without it the
+    // the wrapper's time zone doesn't move the figure; without it the
     // balance is "up to the wrapper's today".
     const res = await this.request(
       `/accounts/${accountId}/balance${asOfDate ? `?cutoff_date=${asOfDate}` : ""}`,
@@ -493,11 +489,9 @@ export class ActualClient implements BudgetAPIClient {
       this.getMonthDetail(currentMonth),
     ]);
 
-    // monthDetail.categories already carries this month's real numbers AND
-    // the note-goal overlay (getMonthDetail applies both) — reuse it
-    // instead of a second raw /months/:id fetch plus a second
-    // overlayNoteGoals pass over every category (previously fetched the
-    // month and ran the per-category note overlay twice).
+    // monthDetail.categories already carries this month's numbers and the
+    // note-goal overlay (getMonthDetail applies both), so the month is
+    // fetched and overlaid once.
     const currentByCatId = new Map(
       monthDetail.categories.map((c) => [c.id, c]),
     );
@@ -674,10 +668,9 @@ export class ActualClient implements BudgetAPIClient {
           ),
         );
       } catch (err) {
-        // Only a 404 (the account no longer exists) may be skipped. Any
-        // other failure (auth, timeout, network) stops the sync: a dropped
-        // account would be cached as a complete transaction list. The sync's
-        // network phase throwing changes nothing locally.
+        // Only a 404 (the account is gone) may be skipped. Any other failure
+        // stops the sync, which changes nothing locally: a dropped account
+        // would be cached as a complete transaction list.
         if (err instanceof BudgetApiError && err.status === 404) continue;
         log("warn", "actual_client.transactions_fetch_failed", {
           accountId: acct.id,

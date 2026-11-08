@@ -203,12 +203,9 @@ export function RetirementProfileTab({
     }, 1000);
   }, []);
 
-  // Per-person / household-but-per-person-stored fields (Retirement Age,
-  // Rule of 55, Projection Through, SS Start Age, SS Benefit) write through these
-  // two mutations, NOT retirementSettings.upsert — build-engine-payload.ts
-  // reads them from `retirement_profile_people`, not `retirement_settings`,
-  // as of the Retirement Profiles migration step B. See
-  // retirementProfilePeople.upsertPerson's docblock (retirement.ts).
+  // Retirement Age, Rule of 55, Projection Through, SS Start Age and SS Benefit
+  // live in `retirement_profile_people`, so they write through these two
+  // mutations (routers/retirement/profile-people.ts), not retirementSettings.upsert.
   const upsertProfilePerson =
     trpc.retirement.retirementProfilePeople.upsertPerson.useMutation({
       onSuccess: () => {

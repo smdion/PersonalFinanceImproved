@@ -269,15 +269,13 @@ async function detectSchemaEra(
 /**
  * First directory that actually accepts a write, from an ordered candidate
  * list. The pre-upgrade backup is the safety net before a destructive
- * squash / DROP, so "the directory exists" (the old `fs.existsSync`
- * heuristic) is not enough — on the hardened homelab stack the container
- * rootfs is read-only and `/app/data` is present but not a writable mount,
- * so `writeFileSync` there throws EROFS and the backup silently never
- * happened (R18).
+ * squash / DROP, so "the directory exists" is not enough: in a container
+ * with a read-only rootfs `/app/data` can be present but not a writable
+ * mount, and `writeFileSync` there throws EROFS.
  *
  *  1. `LEDGR_BACKUP_DIR` — point this at a writable volume mount in the
- *     deployment (the fix for a read-only-rootfs container).
- *  2. `/app/data` — the historical location; works when it IS a writable
+ *     deployment (what a read-only-rootfs container needs).
+ *  2. `/app/data` — the default data directory; works when it IS a writable
  *     mount.
  *  3. `/tmp` — last resort that still beats no backup: it survives the
  *     migration run (long enough for an operator to copy the file out),

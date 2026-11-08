@@ -357,11 +357,8 @@ export async function computeRelocationAnalysis(
       ? await fetchContributionProfile(ctx.db, profileId)
       : null;
 
-    // Shared resolver (was a near-duplicate re-implementation inline
-    // here). jobSalaries already reflects the globally-active
-    // Salary Profile — this is the control/comparison arm of the
-    // relocation analysis, so it stays un-overridden by any
-    // Plan-specific salary the way it always has.
+    // jobSalaries already reflects the active Salary Profile: this is the
+    // relocation analysis's comparison arm, so no Plan-specific salary applies.
     const resolved = resolveProfile(
       profile ?? { contributionActiveFields: {} },
       activeContribs,

@@ -40,17 +40,9 @@ export type Context = {
   db: typeof db;
   session: Session | null;
   demoSchema: string | null;
-  /** Set ONLY by `internalCaller()` below, for a server-side nested tRPC
-   *  call made on behalf of an already-authenticated request (e.g.
-   *  `peekMonteCarloSummary` calling into the Simulation router for its
-   *  cached run). Skips ONLY the authenticated rate-limit middleware —
-   *  every other middleware (auth check, permission check, demo guards,
-   *  error logging) still runs unchanged, so this is not a second
-   *  computation path, just an exemption from double-charging the calling
-   *  request's own rate-limit budget for work the server does on its
-   *  behalf. `createContext()` takes no arguments and ignores any
-   *  request-supplied input, so this can only ever become `true` via
-   *  `internalCaller()` — never from request-derived data. */
+  /** Set only by `internalCtx()` below, never from request data: a nested
+   *  call for a signed-in request (e.g. `peekMonteCarloSummary`) skips the
+   *  authenticated rate limit; every other middleware still runs. */
   internal?: boolean;
   /** The HTTP request's shared reads (`scope.load`); none in a mutation. */
   reads?: ReadMemo;
@@ -362,7 +354,7 @@ export async function takeAuthenticatedRateToken(
 const authenticatedRateLimitMiddleware = t.middleware(
   async ({ ctx, next, path }) => {
     // Server-side nested call on behalf of an already-authenticated
-    // request (see internalCaller()) — every other middleware still runs,
+    // request (see internalCtx()) — every other middleware still runs,
     // only the throttle is skipped.
     if (ctx.internal) return next({ ctx });
 
