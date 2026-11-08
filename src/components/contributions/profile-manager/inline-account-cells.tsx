@@ -2,19 +2,14 @@ import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
-import type { trpc } from "@/lib/trpc";
 import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";
-import type { AccountDetail } from "./account-row-types";
+import type { InlineRowProps } from "./account-row-types";
 
 export function InlineEnabledCell({
   isDisabled,
   ad,
   patchAccount,
-}: {
-  isDisabled: boolean;
-  ad: AccountDetail;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-}) {
+}: InlineRowProps) {
   return (
     <td className="py-1.5 pl-4 align-top">
       <input
@@ -56,23 +51,7 @@ export function InlineNameCell({
   commitText,
   patchAccount,
   af,
-}: {
-  isDisabled: boolean;
-  ad: AccountDetail;
-  setAccountActive: ReturnType<
-    typeof trpc.settings.contributionAccounts.setActive.useMutation
-  >;
-  drafts: Record<string, string>;
-  storedName: string;
-  setDraft: (key: string, value: string) => void;
-  commitText: (
-    draftKey: string,
-    stored: string,
-    apply: (value: unknown) => void,
-  ) => void;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-  af: Record<string, unknown>;
-}) {
+}: InlineRowProps) {
   return (
     <td className="text-secondary px-3 py-1.5">
       <div className={isDisabled ? "line-through" : ""}>
@@ -156,13 +135,7 @@ export function InlineMethodCell({
   patchAccount,
   ad,
   setDraft,
-}: {
-  effectiveMethod: string;
-  storedValue: string;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-  ad: AccountDetail;
-  setDraft: (key: string, value: string) => void;
-}) {
+}: InlineRowProps) {
   return (
     <td className="px-3 py-1.5">
       <select
@@ -203,22 +176,7 @@ export function InlineValueCell({
   patchAccount,
   effectiveMethod,
   clearDraft,
-}: {
-  isPercent: boolean;
-  drafts: Record<string, string>;
-  ad: AccountDetail;
-  storedValue: string;
-  setDraft: (key: string, value: string) => void;
-  commitNumeric: (
-    draftKey: string,
-    stored: string,
-    apply: (value: unknown) => void,
-    toValue: (num: number) => unknown,
-  ) => void;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-  effectiveMethod: string;
-  clearDraft: (key: string) => void;
-}) {
+}: InlineRowProps) {
   return (
     <td className="px-3 py-1.5 text-right">
       <div className="flex items-center justify-end gap-0.5">

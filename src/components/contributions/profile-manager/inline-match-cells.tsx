@@ -3,17 +3,13 @@ import {
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
 import { matchValueToStore } from "@/lib/pure/contributions/match-display";
-import type { AccountDetail } from "./account-row-types";
+import type { InlineRowProps } from "./account-row-types";
 
 export function InlineMatchTypeCell({
   effectiveMatchType,
   patchAccount,
   ad,
-}: {
-  effectiveMatchType: string;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-  ad: AccountDetail;
-}) {
+}: InlineRowProps) {
   return (
     <td className="px-3 py-1.5">
       <select
@@ -46,23 +42,7 @@ export function InlineMatchCell({
   patchAccount,
   ownMatch,
   sharedFrom,
-}: {
-  hasMatch: boolean;
-  effectiveMatchType: string;
-  drafts: Record<string, string>;
-  ad: AccountDetail;
-  storedMatch: string;
-  setDraft: (key: string, value: string) => void;
-  commitNumeric: (
-    draftKey: string,
-    stored: string,
-    apply: (value: unknown) => void,
-    toValue: (num: number) => unknown,
-  ) => void;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-  ownMatch: string | null;
-  sharedFrom: AccountDetail | undefined;
-}) {
+}: InlineRowProps) {
   return (
     <td className="px-3 py-1.5 text-right">
       {hasMatch ? (
@@ -127,22 +107,7 @@ export function InlineCapCell({
   commitNumeric,
   patchAccount,
   af,
-}: {
-  hasMatch: boolean;
-  isPercentMatch: boolean;
-  drafts: Record<string, string>;
-  ad: AccountDetail;
-  storedCap: string;
-  setDraft: (key: string, value: string) => void;
-  commitNumeric: (
-    draftKey: string,
-    stored: string,
-    apply: (value: unknown) => void,
-    toValue: (num: number) => unknown,
-  ) => void;
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
-  af: Record<string, unknown>;
-}) {
+}: InlineRowProps) {
   return (
     <td className="px-3 py-1.5 text-right">
       {hasMatch && isPercentMatch ? (

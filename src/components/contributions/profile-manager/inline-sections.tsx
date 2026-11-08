@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { ComponentType, Dispatch, SetStateAction } from "react";
 import type { trpc } from "@/lib/trpc";
 import {
   entryMatchFigure,
@@ -12,7 +12,8 @@ import {
 } from "@/components/paycheck/deduction-form";
 import { groupSharedMatchAccounts } from "./match-groups";
 import type { DeductionRow } from "./profile-types";
-import type { ProfileDetail } from "./account-row-types";
+import type { InlineRowProps, ProfileDetail } from "./account-row-types";
+import { ACCOUNT_FIELDS, type AccountFieldKey } from "./account-fields";
 import {
   InlineEnabledCell,
   InlineMethodCell,
@@ -30,6 +31,17 @@ import {
   InlineDeductionPretaxCell,
   InlineDeductionRemoveCell,
 } from "./inline-deduction-cells";
+
+/** The inline editor's cell for each field of ACCOUNT_FIELDS. */
+const INLINE_CELLS: Record<AccountFieldKey, ComponentType<InlineRowProps>> = {
+  enabled: InlineEnabledCell,
+  account: InlineNameCell,
+  method: InlineMethodCell,
+  value: InlineValueCell,
+  matchType: InlineMatchTypeCell,
+  match: InlineMatchCell,
+  cap: InlineCapCell,
+};
 
 export function renderInlineAccountRows(
   profile: ProfileDetail,
@@ -100,6 +112,29 @@ export function renderInlineAccountRows(
         : contribHasValue && ad.liveMaxMatchPct != null
           ? String(Number(ad.liveMaxMatchPct) * 100)
           : "";
+    const row = {
+      isDisabled,
+      ad,
+      af,
+      drafts,
+      setDraft,
+      clearDraft,
+      patchAccount,
+      setAccountActive,
+      commitText,
+      commitNumeric,
+      storedName,
+      effectiveMethod,
+      storedValue,
+      isPercent,
+      effectiveMatchType,
+      hasMatch,
+      storedMatch,
+      ownMatch,
+      sharedFrom,
+      isPercentMatch,
+      storedCap,
+    };
     return (
       <tr
         key={ad.id}
@@ -108,68 +143,10 @@ export function renderInlineAccountRows(
           rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
         } ${isDisabled ? "opacity-40" : ""} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
       >
-        <InlineEnabledCell
-          isDisabled={isDisabled}
-          ad={ad}
-          patchAccount={patchAccount}
-        />
-        <InlineNameCell
-          isDisabled={isDisabled}
-          ad={ad}
-          setAccountActive={setAccountActive}
-          drafts={drafts}
-          storedName={storedName}
-          setDraft={setDraft}
-          commitText={commitText}
-          patchAccount={patchAccount}
-          af={af}
-        />
-        <InlineMethodCell
-          effectiveMethod={effectiveMethod}
-          storedValue={storedValue}
-          patchAccount={patchAccount}
-          ad={ad}
-          setDraft={setDraft}
-        />
-        <InlineValueCell
-          isPercent={isPercent}
-          drafts={drafts}
-          ad={ad}
-          storedValue={storedValue}
-          setDraft={setDraft}
-          commitNumeric={commitNumeric}
-          patchAccount={patchAccount}
-          effectiveMethod={effectiveMethod}
-          clearDraft={clearDraft}
-        />
-        <InlineMatchTypeCell
-          effectiveMatchType={effectiveMatchType}
-          patchAccount={patchAccount}
-          ad={ad}
-        />
-        <InlineMatchCell
-          hasMatch={hasMatch}
-          effectiveMatchType={effectiveMatchType}
-          drafts={drafts}
-          ad={ad}
-          storedMatch={storedMatch}
-          setDraft={setDraft}
-          commitNumeric={commitNumeric}
-          patchAccount={patchAccount}
-          ownMatch={ownMatch}
-          sharedFrom={sharedFrom}
-        />
-        <InlineCapCell
-          hasMatch={hasMatch}
-          isPercentMatch={isPercentMatch}
-          drafts={drafts}
-          ad={ad}
-          storedCap={storedCap}
-          setDraft={setDraft}
-          commitNumeric={commitNumeric}
-          patchAccount={patchAccount}
-          af={af}
-        />
+        {ACCOUNT_FIELDS.map(({ key }) => {
+          const Cell = INLINE_CELLS[key];
+          return <Cell key={key} {...row} />;
+        })}
       </tr>
     );
   });
