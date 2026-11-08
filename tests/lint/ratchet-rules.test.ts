@@ -255,6 +255,53 @@ describe("ratchet/no-identity-predicate-import", () => {
   }, 30_000);
 });
 
+describe("ratchet/no-retired-ui-word", () => {
+  it("counts MC, pin, override and customize in JSX text and shown string props", () => {
+    expect(
+      reported(
+        "no-retired-ui-word",
+        [
+          "const a = <p>Each MC trial draws</p>;",
+          "const b = <p>Pinned profile</p>;",
+          "const c = <HelpTip text='You can override it' />;",
+          "const d = <HelpTip text={`Customize ${x} here`} />;",
+          "const e = <p>{'Overrides apply'}</p>;",
+          "const f = <Tab label='Customization' />;",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("passes other words, lowercase mc, hidden props and code", () => {
+    expect(
+      reported(
+        "no-retired-ui-word",
+        [
+          "const a = <p>Simulation trials, active profile, spinning, mcdonald</p>;",
+          "const b = <div className='pin-1' data-testid='override-row' id='mc' />;",
+          "const c = <button onClick={() => setOverride(null)}>Reset</button>;",
+          "const d = overrides.map((o) => <Row key={o.id} />);",
+          "const e = <p>{mcResult.median}</p>;",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("covers components and app, not lib", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code = "export const P = () => <p>MC results</p>;\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-retired-ui-word",
+      );
+    };
+    expect(await counted("src/components/demo/part.tsx")).toBe(true);
+    expect(await counted("src/app/demo/part.tsx")).toBe(true);
+    expect(await counted("src/lib/demo/part.tsx")).toBe(false);
+  }, 30_000);
+});
+
 describe("the repo config's scopes (owner Q4, v0.10.4)", () => {
   const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
   /** The rules the repo config reports for `code` written at `file`. */

@@ -70,6 +70,24 @@ export function abbreviationIn(name) {
   );
 }
 
+/** Words the UI doesn't say: "Simulation", not "MC"; a profile is
+ *  "active", never pinned, overridden or customized. */
+const RETIRED_UI_WORD =
+  /\bMC\b|\b(?:pin(?:s|ned|ning)?|overrid(?:e|es|den|ing)|customi[sz](?:e|ed|es|ing|ation|ations))\b/i;
+const RETIRED_UI_WORD_CASED = /\bMC\b/;
+/** Attributes that never reach the screen. */
+const HIDDEN_ATTRIBUTE =
+  /^(?:className|key|id|href|src|htmlFor|name|type|role|value|data-.*|on[A-Z].*)$/;
+
+/** The retired word in `text`, if any: "MC" in capitals only. */
+function retiredUiWord(text) {
+  const match = RETIRED_UI_WORD.exec(text);
+  if (!match) return undefined;
+  if (match[0].toLowerCase() === "mc")
+    return RETIRED_UI_WORD_CASED.exec(text)?.[0];
+  return match[0];
+}
+
 /** A rule that reports every node a selector matches. */
 function selectorRule(description, selector, message) {
   return {
@@ -429,6 +447,53 @@ const customRules = {
       };
     },
   },
+  "no-retired-ui-word": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "The UI uses the product's words." },
+      schema: [],
+    },
+    create(context) {
+      const report = (node, text) => {
+        const word = retiredUiWord(text);
+        if (word)
+          context.report({
+            node,
+            message: `"${word}" on screen. Say "Simulation" for MC, and "active" for a profile, never pin, override or customize.`,
+          });
+      };
+      const stringOf = (node) => {
+        if (node?.type === "Literal" && typeof node.value === "string")
+          return node.value;
+        if (node?.type === "TemplateLiteral")
+          return node.quasis.map((q) => q.value.cooked ?? "").join(" ");
+        return undefined;
+      };
+      return {
+        JSXText: (node) => report(node, node.value),
+        JSXAttribute(node) {
+          const name =
+            node.name.type === "JSXNamespacedName"
+              ? node.name.name.name
+              : node.name.name;
+          if (HIDDEN_ATTRIBUTE.test(name)) return;
+          const value =
+            node.value?.type === "JSXExpressionContainer"
+              ? node.value.expression
+              : node.value;
+          const text = stringOf(value);
+          if (text !== undefined) report(node.value, text);
+        },
+        "JSXExpressionContainer > Literal, JSXExpressionContainer > TemplateLiteral"(
+          node,
+        ) {
+          if (node.parent.parent.type === "JSXAttribute") return;
+          const text = stringOf(node);
+          if (text !== undefined) report(node, text);
+        },
+      };
+    },
+  },
   "no-guarded-division": {
     meta: {
       type: "suggestion",
@@ -590,6 +655,10 @@ export const ratchetConfig = [
       "ratchet/no-abbreviation": "error",
       "ratchet/no-identity-predicate-import": "error",
     },
+  },
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    rules: { "ratchet/no-retired-ui-word": "error" },
   },
   {
     // Tax Buckets still branches on the predicates until v0.11.
