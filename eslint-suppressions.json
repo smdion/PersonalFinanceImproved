@@ -2763,9 +2763,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/savings/all-transactions-tab.tsx": {
@@ -3484,9 +3481,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/tools/relocation/year-adjustments.tsx": {
@@ -3620,9 +3614,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/versions/delete-version-dialog.tsx": {
@@ -3636,9 +3627,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/versions/restore-dialog.tsx": {
@@ -3647,9 +3635,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/instrumentation.node.ts": {

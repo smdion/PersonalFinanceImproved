@@ -85,7 +85,7 @@
       "count": 1
     },
     "select-name": {
-      "count": 5
+      "count": 4
     }
   },
   "e2e-b/versions": {
@@ -172,7 +172,7 @@
       "count": 1
     },
     "select-name": {
-      "count": 5
+      "count": 4
     }
   },
   "e2e-d/versions": {
@@ -264,7 +264,7 @@
       "count": 1
     },
     "select-name": {
-      "count": 5
+      "count": 4
     }
   },
   "ws-h2/versions": {

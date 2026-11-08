@@ -13,6 +13,7 @@ import {
 } from "@testing-library/react";
 import { RestoreDialog } from "@/components/versions/restore-dialog";
 import { ImportDialog } from "@/components/versions/import-dialog";
+import { expectLabelReachesControl } from "./label-click";
 
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ permissions: ["admin"] }),
@@ -186,5 +187,17 @@ describe("ImportDialog", () => {
     fireEvent.click(cancel);
     expect(setShowImportConfirm).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Import Backup" })).toBeTruthy();
+  });
+});
+
+describe("typed confirmation labels", () => {
+  it("clicking the restore label reaches the name field", () => {
+    renderRestore();
+    expectLabelReachesControl("Type the version name to confirm:");
+  });
+
+  it("clicking the import label reaches the IMPORT field", () => {
+    renderImport(false);
+    expectLabelReachesControl("Type IMPORT to confirm:");
   });
 });

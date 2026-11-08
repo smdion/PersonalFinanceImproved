@@ -2,6 +2,7 @@
 
 /** The confirmation before a backup file replaces the household's data. */
 
+import { useId } from "react";
 import { ReplacesNote } from "@/components/versions/replaces-note";
 import { DataLossWarning } from "@/components/versions/restore-notices";
 import { Modal } from "@/components/ui/modal";
@@ -33,6 +34,7 @@ export function ImportDialog({
   setImportFile,
   setImportError,
 }: ImportDialogProps) {
+  const id = useId();
   if (!showImportConfirm) return null;
   const cancel = () => {
     setShowImportConfirm(false);
@@ -57,10 +59,14 @@ export function ImportDialog({
       <DataLossWarning tables={importDataLoss} />
 
       <div className="mb-4">
-        <label className="text-secondary mb-1 block text-sm font-medium">
+        <label
+          htmlFor={`${id}-confirm`}
+          className="text-secondary mb-1 block text-sm font-medium"
+        >
           Type IMPORT to confirm:
         </label>
         <input
+          id={`${id}-confirm`}
           type="text"
           value={importConfirmText}
           onChange={(e) => setImportConfirmText(e.target.value)}

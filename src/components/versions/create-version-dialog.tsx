@@ -2,6 +2,7 @@
 
 /** The form that saves the household's data now as a named version. */
 
+import { useId } from "react";
 import type { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -27,6 +28,7 @@ export function CreateVersionDialog({
   handleCreate,
   createMutation,
 }: CreateVersionDialogProps) {
+  const id = useId();
   if (!showCreateForm) return null;
   const cancelCreate = () => {
     setShowCreateForm(false);
@@ -45,10 +47,14 @@ export function CreateVersionDialog({
       </h3>
       <div className="space-y-3">
         <div>
-          <label className="text-secondary mb-1 block text-sm font-medium">
+          <label
+            htmlFor={`${id}-name`}
+            className="text-secondary mb-1 block text-sm font-medium"
+          >
             Name
           </label>
           <input
+            id={`${id}-name`}
             type="text"
             value={createName}
             onChange={(e) => setCreateName(e.target.value)}
@@ -58,11 +64,15 @@ export function CreateVersionDialog({
           />
         </div>
         <div>
-          <label className="text-secondary mb-1 block text-sm font-medium">
+          <label
+            htmlFor={`${id}-description`}
+            className="text-secondary mb-1 block text-sm font-medium"
+          >
             Description{" "}
             <span className="text-faint font-normal">(optional)</span>
           </label>
           <textarea
+            id={`${id}-description`}
             value={createDescription}
             onChange={(e) => setCreateDescription(e.target.value)}
             placeholder="What changes are you about to make?"

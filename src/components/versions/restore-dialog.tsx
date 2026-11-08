@@ -2,7 +2,7 @@
 
 /** The confirmation before a saved version replaces the household's data. */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { trpc } from "@/lib/trpc";
 import { localDateStr } from "@/lib/utils/date";
 import { ReplacesNote } from "@/components/versions/replaces-note";
@@ -34,6 +34,7 @@ export function RestoreDialog({
 }: RestoreDialogProps) {
   // One run: the pre-restore backup (if asked for), then the restore.
   const [restoring, setRestoring] = useState(false);
+  const id = useId();
   if (!restoreTarget) return null;
   const target = restoreTarget;
   const handleRestore = async () => {
@@ -86,10 +87,14 @@ export function RestoreDialog({
       </label>
 
       <div className="mb-4">
-        <label className="text-secondary mb-1 block text-sm font-medium">
+        <label
+          htmlFor={`${id}-confirm`}
+          className="text-secondary mb-1 block text-sm font-medium"
+        >
           Type the version name to confirm:
         </label>
         <input
+          id={`${id}-confirm`}
           type="text"
           value={restoreConfirmText}
           onChange={(e) => setRestoreConfirmText(e.target.value)}
