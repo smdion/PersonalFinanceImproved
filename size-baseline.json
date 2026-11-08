@@ -321,7 +321,7 @@
     "src/lib/pure/investments/returns.ts": 599,
     "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/net-worth/year-end-metrics.ts": 135,
-    "src/lib/pure/net-worth/year-end-rows.ts": 524,
+    "src/lib/pure/net-worth/year-end-rows.ts": 522,
     "src/lib/pure/paycheck/bonus.ts": 255,
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 133,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 273,

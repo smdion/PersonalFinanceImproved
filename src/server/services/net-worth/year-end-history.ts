@@ -276,7 +276,7 @@ export async function buildYearEndHistory(
   );
 
   // Map net_worth_annual rows to unified YearEndRow
-  const { history } = storedYearEndRows(
+  const { history } = storedYearEndRows({
     nwRows,
     perfPortfolioByYear,
     perfSummaryByYear,
@@ -286,7 +286,7 @@ export async function buildYearEndHistory(
     perfByAccountByYear,
     perfByCategoryByYear,
     perfByParentCategoryByYear,
-  );
+  });
 
   // Append current year from live data if not already in history
   const currentYear = asOfDate.getFullYear();

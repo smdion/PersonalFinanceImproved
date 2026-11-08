@@ -392,7 +392,17 @@ export function mortgageBalanceByYearFrom(
   return { mortgageBalanceByYear };
 }
 
-export function storedYearEndRows(
+export function storedYearEndRows({
+  nwRows,
+  perfPortfolioByYear,
+  perfSummaryByYear,
+  mortgageBalanceByYear,
+  homeImprovementsCumulativeByYear,
+  propTaxByYear,
+  perfByAccountByYear,
+  perfByCategoryByYear,
+  perfByParentCategoryByYear,
+}: {
   nwRows: {
     yearEndDate: string;
     portfolioTotal: string | null;
@@ -413,26 +423,14 @@ export function storedYearEndRows(
     taxesPaid: string | null;
     propertyTaxes: string | null;
     portfolioByTaxLocation: unknown;
-  }[],
-  perfPortfolioByYear: ReturnType<
-    typeof yearEndPerformance
-  >["perfPortfolioByYear"],
-  perfSummaryByYear: ReturnType<
-    typeof yearEndPerformanceSummary
-  >["perfSummaryByYear"],
-  mortgageBalanceByYear: Map<number, number>,
-  homeImprovementsCumulativeByYear: Map<number, number>,
-  propTaxByYear: Map<number, number>,
-  perfByAccountByYear: ReturnType<
-    typeof yearEndPerformance
-  >["perfByAccountByYear"],
-  perfByCategoryByYear: ReturnType<
-    typeof yearEndPerformance
-  >["perfByCategoryByYear"],
-  perfByParentCategoryByYear: ReturnType<
-    typeof yearEndPerformanceSummary
-  >["perfByParentCategoryByYear"],
-) {
+  }[];
+} & Pick<
+  ReturnType<typeof yearEndPerformance>,
+  "perfPortfolioByYear" | "perfByAccountByYear" | "perfByCategoryByYear"
+> &
+  ReturnType<typeof yearEndPerformanceSummary> &
+  ReturnType<typeof homeFiguresByYear> &
+  ReturnType<typeof mortgageBalanceByYearFrom>) {
   const history: YearEndRow[] = nwRows.map((r) => {
     const year = calendarYear(r.yearEndDate);
     const perf = perfPortfolioByYear.get(year);

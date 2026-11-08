@@ -185,17 +185,13 @@ describe("storedYearEndRows", () => {
       new Date(2026, 0, 1),
     );
     expect(mortgageBalanceByYear.size).toBe(0);
-    const { history } = storedYearEndRows(
-      [nwRow("2019-12-31"), nwRow("2024-12-31")],
-      perf.perfPortfolioByYear,
-      perf.perfSummaryByYear,
+    const { history } = storedYearEndRows({
+      ...perf,
+      nwRows: [nwRow("2019-12-31"), nwRow("2024-12-31")],
       mortgageBalanceByYear,
-      new Map([[2024, 4000]]),
-      new Map([[2024, 150]]),
-      perf.perfByAccountByYear,
-      perf.perfByCategoryByYear,
-      perf.perfByParentCategoryByYear,
-    );
+      homeImprovementsCumulativeByYear: new Map([[2024, 4000]]),
+      propTaxByYear: new Map([[2024, 150]]),
+    });
     const [old, finalized] = history;
     expect(old).toMatchObject({
       year: 2019,
@@ -218,5 +214,37 @@ describe("storedYearEndRows", () => {
       ssaEarnings: null,
       ytdRatio: 1,
     });
+  });
+  it("reads each by-year figure from its own field (a swapped pair moves a figure)", () => {
+    const perf = performance();
+    const { history } = storedYearEndRows({
+      ...perf,
+      nwRows: [nwRow("2024-12-31")],
+      mortgageBalanceByYear: new Map([[2024, 300]]),
+      homeImprovementsCumulativeByYear: new Map([[2024, 4000]]),
+      propTaxByYear: new Map([[2024, 150]]),
+    });
+    const [row] = history;
+    // Each of the three same-typed maps lands in its own field only.
+    expect(row).toMatchObject({
+      mortgageBalance: 300,
+      homeImprovements: 4000,
+      propertyTaxes: 150,
+      netWorth: 1500 + 100 + 0 + 25 - 300 - 5,
+    });
+    // The by-category and by-parent-category maps share a type: each
+    // keeps its own keys.
+    expect(Object.keys(row!.performanceByCategory)).toEqual(["401k/IRA"]);
+    expect(Object.keys(row!.performanceByParentCategory).sort()).toEqual([
+      "Portfolio",
+      "Retirement",
+    ]);
+    // The portfolio total and the summary come from their own maps.
+    expect(row!.portfolioTotal).toBe(1500);
+    expect(row!.perfEndingBalance).toBe(1500.5);
+    expect(row!.perfByAccount.map((a) => a.label)).toEqual([
+      "Acme — Acct 1",
+      "Acme — Acct 2",
+    ]);
   });
 });
