@@ -81,7 +81,6 @@ export function ProjectionCard(props: ProjectionCardProps) {
     mcChartPending,
     result,
     hasIndividualAccountData,
-    engineSettings,
     autoloadEnabled,
     mcAutoloadEnabled,
     runMonteCarlo,
@@ -176,12 +175,7 @@ export function ProjectionCard(props: ProjectionCardProps) {
                           calculated. Scenario is the primary control
                           (bigger, colored active state); everything else
                           is secondary, below the dashed rule. */}
-                  <ComputeControls
-                    state={state}
-                    people={people}
-                    result={result}
-                    engineSettings={engineSettings}
-                  />
+                  <ComputeControls state={state} people={people} />
 
                   {/* DISPLAY zone — lenses on results already computed.
                           Chart type is the primary control; Dollars rides
