@@ -9,9 +9,10 @@
  * Seam: `usePaycheckPersonViews` (a whole paycheck.computeSummary and
  * contribution.computeSummary per person) is stood in by two invented
  * people's views, and the paycheck summary table (own file) is a stub.
- * budget.computeActiveSummary has no answer, so step 3 shows its picked
- * profile without a budget table. The tab's pickers, sandbox state, reset and save actions run for
- * real on mocked tRPC.
+ * budget.computeActiveSummary answers with one column, and the budget table
+ * (own file) is a stub that reads and writes one item's draft through the
+ * row handlers. The tab's pickers, sandbox state, reset and save actions run
+ * for real on mocked tRPC.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
@@ -60,6 +61,23 @@ vi.mock("@/lib/hooks/use-paycheck-person-views", () => ({
 vi.mock("@/app/(dashboard)/budget/what-if-paycheck-summary", () => ({
   WhatIfPaycheckSummary: () => <div data-testid="paycheck-summary" />,
 }));
+type StubRowHandlers = {
+  getDraft: (id: number, colIndex: number, original: number) => number;
+  setDraft: (id: number, colIndex: number, amount: number) => void;
+};
+vi.mock("@/components/budget", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/budget")>()),
+  BudgetTable: ({ rowHandlers }: { rowHandlers: StubRowHandlers }) => (
+    <div>
+      <span data-testid="groceries-draft">
+        {rowHandlers.getDraft(11, 0, 500)}
+      </span>
+      <button type="button" onClick={() => rowHandlers.setDraft(11, 0, 640)}>
+        Draft groceries
+      </button>
+    </div>
+  ),
+}));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WhatIfTab } from "@/app/(dashboard)/budget/what-if-tab";
@@ -88,6 +106,11 @@ beforeEach(() => {
   setQuery("retirement.retirementProfiles.list", [
     { id: 9, name: "Retire at 60" },
   ]);
+  setQuery("budget.computeActiveSummary", {
+    columnLabels: ["Standard"],
+    allColumnResults: [{ totalMonthly: 4000 }],
+    rawItems: [],
+  });
 });
 
 const renderTab = () =>
@@ -149,5 +172,77 @@ describe("WhatIfTab smoke", () => {
         retirementProfileId: 9,
       },
     ]);
+  });
+
+  /** One draft of each kind: Priya's salary, the groceries amount and a
+   *  hand-added deduction for Priya. */
+  const draftEverything = () => {
+    fireEvent.change(salaryInput("Priya"), { target: { value: "130000" } });
+    fireEvent.click(screen.getByRole("button", { name: "Draft groceries" }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "+ Add deduction" })[0]!,
+    );
+    expect(screen.getByTestId("groceries-draft")).toHaveTextContent("640");
+    expect(screen.getByDisplayValue("New deduction")).toBeInTheDocument();
+  };
+  const pick = (label: string, id: number) =>
+    fireEvent.change(
+      screen.getByRole("combobox", { name: `${label} profile` }),
+      {
+        target: { value: String(id) },
+      },
+    );
+
+  it("switching the salary profile clears the salary edits and keeps every other draft", () => {
+    renderTab();
+    draftEverything();
+    pick("Salary", 8);
+
+    expect(salaryInput("Priya")).toHaveValue(118000);
+    expect(paycheckViews.mock.lastCall![0]).toMatchObject({
+      salaryProfileId: 8,
+    });
+    expect(
+      (paycheckViews.mock.lastCall![0] as { sandboxSalaryEntries: unknown })
+        .sandboxSalaryEntries,
+    ).toEqual({});
+    expect(screen.getByTestId("groceries-draft")).toHaveTextContent("640");
+    expect(
+      screen.getByRole("button", { name: /\(1 edited amount\)/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("New deduction")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /reset sandbox/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("switching the budget profile clears the budget amounts and keeps every other draft", () => {
+    renderTab();
+    draftEverything();
+    pick("Budget", 2);
+
+    expect(screen.getByTestId("groceries-draft")).toHaveTextContent("500");
+    expect(
+      screen.getByRole("button", { name: "Duplicate Profile" }),
+    ).toBeInTheDocument();
+    expect(salaryInput("Priya")).toHaveValue(130000);
+    expect(paycheckViews.mock.lastCall![0]).toMatchObject({
+      sandboxSalaryEntries: { "1": { salary: 130000 } },
+    });
+    expect(screen.getByDisplayValue("New deduction")).toBeInTheDocument();
+  });
+
+  it("switching the contribution profile clears no draft", () => {
+    renderTab();
+    draftEverything();
+    pick("Contribution", 5);
+
+    expect(salaryInput("Priya")).toHaveValue(130000);
+    expect(paycheckViews.mock.lastCall![0]).toMatchObject({
+      contributionProfileId: 5,
+      sandboxSalaryEntries: { "1": { salary: 130000 } },
+    });
+    expect(screen.getByTestId("groceries-draft")).toHaveTextContent("640");
+    expect(screen.getByDisplayValue("New deduction")).toBeInTheDocument();
   });
 });
