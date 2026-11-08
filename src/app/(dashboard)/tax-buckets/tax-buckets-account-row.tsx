@@ -12,6 +12,7 @@ import {
   isIraCategory,
   tracksRothBasis,
 } from "@/lib/config/account-types";
+import { RuleOf55Badge } from "./tax-buckets-account-badges";
 
 // The pure type, not a tRPC-inferred one — inferRouterOutputs types
 // `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
@@ -98,33 +99,7 @@ export function AccountDetailRow({
         <span className="font-semibold tabular-nums">{fmt(entry.balance)}</span>
       </div>
 
-      {entry.ruleOf55 && (
-        <div className="text-caption mt-1 flex items-center gap-2">
-          <Badge
-            color={
-              entry.ruleOf55.eligible
-                ? "green"
-                : entry.ruleOf55.eligible === false
-                  ? "amber"
-                  : "gray"
-            }
-          >
-            Rule of 55:{" "}
-            {entry.ruleOf55.eligible == null
-              ? "unknown"
-              : entry.ruleOf55.eligible
-                ? "eligible"
-                : "not yet"}
-          </Badge>
-          {entry.ruleOf55.separationYear != null && (
-            <span className="text-faint">
-              separation year {entry.ruleOf55.separationYear} (
-              {entry.ruleOf55.source})
-            </span>
-          )}
-          <HelpTip text="Rule of 55: separating from that plan's employer in or after the year you turn 55 grants permanent penalty-free access to that specific plan — even if it later sits dormant. Rolling it into an IRA forfeits this for that money. Many plans only permit a lump-sum withdrawal, not partial, once separated." />
-        </div>
-      )}
+      <RuleOf55Badge entry={entry} />
 
       {entry.ageThresholdStatus && (
         <div className="text-caption mt-1 flex items-center gap-2">

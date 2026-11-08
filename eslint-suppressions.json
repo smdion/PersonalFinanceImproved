@@ -454,9 +454,6 @@
     }
   },
   "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 3
     },
@@ -468,12 +465,11 @@
     }
   },
   "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
-    },
+    }
+  },
+  "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-groups.tsx": {
     "ratchet/no-raw-input": {
       "count": 3
     }
@@ -483,7 +479,17 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 3
+    }
+  },
+  "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    }
+  },
+  "src/app/(dashboard)/tax-buckets/tax-buckets-sections.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 2

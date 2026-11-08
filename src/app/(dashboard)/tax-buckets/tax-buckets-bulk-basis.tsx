@@ -1,18 +1,7 @@
 import { useState } from "react";
 import { isTaxFreeBucket, tracksRothBasis } from "@/lib/config/account-types";
 import { AccountEntry, bucketTaxTypeLabel } from "./tax-buckets-account-row";
-
-type BulkRow = {
-  performanceAccountId: number;
-  ownerPersonId: number;
-  year: number;
-  displayName: string;
-  ownerName: string | null;
-  taxTypeLabel: string;
-  contributionBasis: string;
-  conversionBasis: string;
-  latestConversionYear: string;
-};
+import { BulkBasisGroups, type BulkRow } from "./tax-buckets-bulk-groups";
 
 /** All Roth-basis-editable accounts in one screen — mirrors
  *  UpdatePerformanceForm's shape (grouped rows, one Save for everything). */
@@ -115,72 +104,7 @@ export function BulkRothBasisForm({
 
   return (
     <div className="space-y-4">
-      {Array.from(groups.entries()).map(([owner, groupRows]) => (
-        <div key={owner}>
-          <div className="border-strong text-primary mb-3 border-b-2 pb-1.5 text-sm font-semibold">
-            {owner}
-          </div>
-          <div className="space-y-3">
-            {groupRows.map((row) => {
-              const key = `${row.performanceAccountId}-${row.ownerPersonId}`;
-              return (
-                <div
-                  key={key}
-                  className="border-subtle border-b pb-3 last:border-0 last:pb-0"
-                >
-                  <div className="mb-1.5 text-sm font-medium">
-                    {row.displayName}{" "}
-                    <span className="text-caption text-faint">
-                      {row.taxTypeLabel} · {row.year}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <label className="block w-40">
-                      <span className="text-caption text-muted mb-0.5 block">
-                        Basis (contributions)
-                      </span>
-                      <input
-                        type="number"
-                        className="border-default w-full rounded border px-1.5 py-1 text-sm"
-                        value={row.contributionBasis}
-                        onChange={(e) =>
-                          updateRow(key, "contributionBasis", e.target.value)
-                        }
-                      />
-                    </label>
-                    <label className="block w-40">
-                      <span className="text-caption text-muted mb-0.5 block">
-                        Conversion basis
-                      </span>
-                      <input
-                        type="number"
-                        className="border-default w-full rounded border px-1.5 py-1 text-sm"
-                        value={row.conversionBasis}
-                        onChange={(e) =>
-                          updateRow(key, "conversionBasis", e.target.value)
-                        }
-                      />
-                    </label>
-                    <label className="block w-32">
-                      <span className="text-caption text-muted mb-0.5 block">
-                        Latest conversion yr
-                      </span>
-                      <input
-                        type="number"
-                        className="border-default w-full rounded border px-1.5 py-1 text-sm"
-                        value={row.latestConversionYear}
-                        onChange={(e) =>
-                          updateRow(key, "latestConversionYear", e.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+      <BulkBasisGroups groups={groups} updateRow={updateRow} />
 
       <div className="flex items-center gap-3 pt-2">
         <div className="flex-1" />
