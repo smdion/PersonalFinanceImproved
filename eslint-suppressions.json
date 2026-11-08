@@ -2266,10 +2266,10 @@
   },
   "src/components/retirement-projection/index.tsx": {
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 13
     },
     "ratchet/no-hand-date-format": {
       "count": 1
