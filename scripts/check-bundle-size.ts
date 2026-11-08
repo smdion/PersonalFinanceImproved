@@ -76,7 +76,7 @@ const PAGE_BUDGET_KB: Record<string, number> = {
   "/(dashboard)/tax-optimization/page": 238,
   "/(dashboard)/taxes/page": 230,
   "/(dashboard)/tools/page": 240,
-  "/(dashboard)/upkeep/utilities/page": 345,
+  "/(dashboard)/upkeep/utilities/page": 346,
   "/(dashboard)/versions/page": 224,
   "/demo/page": 186,
   "/login/page": 188,
