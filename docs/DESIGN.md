@@ -1011,6 +1011,15 @@ This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels
 
 ---
 
+## Time Resolution
+
+How a date is resolved (the rules: RULES § Time Resolution).
+
+- **One request, one date.** The tRPC middleware makes `ctx.scope` per call (`server/trpc.ts`): `asOf`, the call's instant, and `today`, its household day (`calendarDateOf`). Services take the date as a parameter; a sync job reads the clock once at its run's start; a step after a network fetch may read it again, with a comment. `tests/baseline/one-year-per-request.test.ts` turns the clock to Jan 1 right after a Dec 31 scope is made and checks every query returns the same.
+- **Write stamps** read `writeStamp()` (`lib/utils/clock.ts`), the one other clock read: when a row was written, when a cache entry expires, a log line's time.
+- **Local days** are the household's: the server runs in the household time zone (Settings → General → Household, `server/data/household-timezone.ts`; `TZ` until it's set, as `.env.example` says). `calendarDateOf`, `ctx.scope.today`, snapshot dates, paycheck and budget dates and year boundaries are local days.
+- **UTC days** are SimpleFIN's: its `posted` and `transacted` timestamps (`lib/simplefin/ingest.ts` `postedDay`), balance dates, the transaction window, the Performance fill's `today` and the fill ledger use `utcDayOf`. They're compared only with each other, never with a local day. Merging the two moves an evening's transactions to the next day (v0.11, RULES § Known Gaps).
+
 ## Settings Belong on Their Pages
 
 > All settings should be controlled on the individual pages that use them, not on a centralized Settings page.

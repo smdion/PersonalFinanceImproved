@@ -84,6 +84,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Missing data still becomes $0 in many money paths** (`?? 0`, `return 0`), until each gets a real absent state (§ The Holistic Rule, rule 1). Don't add one.
 - **A few older reads compare a UTC day with a local day** (live contributions, the mortgage's payoff check), until v0.11.
 - **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11). The Simulation's colour tones (`simulationRateTone`) also mark 75% amber and colour the stability rates.
+- **There are two kinds of calendar day,** the household's local day and SimpleFIN's UTC day (DESIGN § Time Resolution), until one day rules both (v0.11: merging them moves dates). Never compare one with the other.
 
 ## Data-Driven Architecture
 
@@ -192,11 +193,12 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 
 ### Rules
 
-1. **Routers resolve once.** Each tRPC procedure takes its date from the request scope (`ctx.scope.asOf`, `ctx.scope.today`, read once per procedure call in `server/trpc.ts`), or from a snapshot date. All downstream function calls receive this date as a parameter. [lint: `ratchet/no-clock-read`]
+1. **Routers resolve once.** The tRPC middleware resolves each call's date once, as `ctx.scope.asOf` and its household day `ctx.scope.today` (`server/trpc.ts`); a procedure may take a selected snapshot's date instead. All downstream function calls receive this date as a parameter. A sync job outside a request reads the clock once at its run's start. [lint: `ratchet/no-clock-read`]
 2. **Helpers require asOfDate.** Functions like `buildYearEndHistory()`, `getEffectiveOtherAssets()`, and `isPriorYearContribWindow()` take `asOfDate` as a required parameter, with no `= new Date()` default: a default guards a state that shouldn't exist. They never call `new Date()` internally. [lint: `ratchet/no-clock-read`; type]
 3. **Calculator inputs require asOfDate.** All calculator input types already include `asOfDate: Date`. This is enforced by TypeScript — maintain it. [type]
 4. **No stray `new Date()` in called functions.** If a function is called from a router that already resolved a date, the function must use the passed date — not create its own. [lint: `ratchet/no-clock-read`]
 5. **After a fetch.** A step that means now, after a network fetch, may read the clock again, with a one-line comment. [human; `ratchet/no-clock-read` counts the read]
+6. **Write stamps.** When something happened (a row's `updatedAt`, a cache entry's expiry, a log line) reads `writeStamp()` (`lib/utils/clock.ts`), never a business date. `ratchet/no-clock-read` counts every other clock read in `src/server` and `src/lib`. [lint: `ratchet/no-clock-read`; human]
 
 ## Permission & Security Gates
 
