@@ -1,13 +1,10 @@
-/**
- * Pure business logic extracted from the performance router's finalizeYear transaction.
- * These functions compute values without any DB or I/O dependency.
- */
+/** Investment returns, linked returns and the performance rollups. Pure. */
 import { toNumber } from "@/lib/utils/numbers";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { HALF_CENT } from "@/lib/constants";
 
 /**
- * Modified Dietz return: gainLoss / (beginBal + netFlows/2).
+ * Simple Dietz return: gainLoss / (beginBal + netFlows/2).
  * contribs = totalContributions (employee + employer combined).
  * Returns null when denominator is zero (no capital at risk).
  */

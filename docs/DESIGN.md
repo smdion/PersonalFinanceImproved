@@ -284,6 +284,8 @@ implementation.
 
 On finalized rollup (`annual_performance`) rows the stored value is trusted and nulls are computed; per-account returns are always computed. Division-by-zero returns null.
 
+An edit to a finalized year's account rows keeps the stored return's basis (`rebaseLockedReturn`): the capital it was measured against (gain ÷ return) moves only by the capital the edit moved, weighted as above. With no stored return, a zero return or a zero gain, the return is computed from the new figures.
+
 ### Finalization Flow
 
 1. Review all data

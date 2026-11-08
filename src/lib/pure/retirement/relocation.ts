@@ -229,8 +229,8 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   const savingsRateDrop =
     roundToCents((currentSavingsRate - relocationSavingsRate) * 100) / 100;
 
-  // FI targets: annual expenses / withdrawal rate
-  // Relocation FI target includes ongoing purchase costs (they're permanent expenses in retirement)
+  // FI targets: annual expenses / withdrawal rate. Relocation's adds the steady-state
+  // purchase costs (ongoing costs plus loans still running): permanent expenses.
   const currentFiTarget = roundToCents(
     safeDivide(currentAnnual, withdrawalRate, 0),
   );

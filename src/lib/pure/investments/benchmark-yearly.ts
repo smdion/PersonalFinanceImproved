@@ -8,7 +8,7 @@
  * (rollovers, transfers recorded outside the yearly totals) at the start of
  * that year. What remains different is only what the money was invested in.
  *
- * Returns are money-weighted (Modified Dietz per year — the same
+ * Returns are money-weighted (Simple Dietz per year — the same
  * `computeReturn` the Performance page uses; IRR over a window). A window
  * shorter than a year is never annualized.
  */

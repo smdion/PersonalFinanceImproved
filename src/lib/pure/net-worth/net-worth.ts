@@ -15,7 +15,7 @@
  *    - Measures what fraction of cumulative earnings you've retained
  *    - Displayed as a percentage (e.g. 56% = kept 56% of everything earned)
  *
- * 2. **AAW Score** (Money Guy Show "Wealth Accumulator" formula):
+ * 2. **AAW Score** (Money Guy Show's "enhanced Millionaire Next Door" formula):
  *    Expected Net Worth = (Average Age × Effective Income) / (10 + max(0, 40 - Age))
  *    - Uses average age across all household members
  *    - Uses gross pretax income (optionally 3-year averaged) — see wealthFormulaIncome

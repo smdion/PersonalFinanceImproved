@@ -96,9 +96,9 @@ export type YearEndRow = {
   wealthScoreMarket: number;
   /** Net worth / lifetime earnings (savings efficiency %) — cost basis. */
   wealthScoreCostBasis: number;
-  /** Money Guy Wealth Accumulator — market value. */
+  /** Money Guy's enhanced Millionaire Next Door score — market value. */
   aawScoreMarket: number;
-  /** Money Guy Wealth Accumulator — cost basis. */
+  /** Money Guy's enhanced Millionaire Next Door score — cost basis. */
   aawScoreCostBasis: number;
   /** (portfolioTotal + cash) / fiTarget. */
   fiProgress: number;

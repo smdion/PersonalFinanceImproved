@@ -18,7 +18,7 @@
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. (Engine imports past the barrel: now the dependency-cruiser rule
  *       engine-through-index, `pnpm check:layers`, which sees relative imports too.)
- *   12. Hand-rolled Modified-Dietz denominators outside lib/pure/investments/returns.ts
+ *   12. Hand-rolled Simple Dietz denominators outside lib/pure/investments/returns.ts
  *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
  *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
  *   15. `import { z } from "zod"` instead of "zod/v4"
@@ -629,13 +629,9 @@ function findStringEnumFieldViolations(): Violation[] {
   );
 }
 
-// Rule 12: hand-rolled Modified-Dietz denominators outside computeReturn().
-// The shape `beginBal + (... - distributions - fees) / 2` must live in
-// exactly one place — src/lib/pure/investments/returns.ts — so a formula fix (e.g.
-// adding a missing term like rollovers) doesn't need to be applied in N
-// places again. This regex is name-dependent (keyed on `beginBal`), not
-// structural — it catches the exact shape previously duplicated in
-// year-end-history.ts, not a differently-named future reimplementation.
+// Rule 12: hand-rolled Simple Dietz denominators outside computeReturn().
+// The shape `beginBal + (... - distributions - fees) / 2` lives only in
+// lib/pure/investments/returns.ts. Keyed on the name `beginBal`, not the shape.
 function findHandRolledDietzDenominatorViolations(): Violation[] {
   return findPatternViolations(
     /\bbeginBal\s*\+\s*\([^)]*distributions[^)]*fees[^)]*\)\s*\/\s*2/,
