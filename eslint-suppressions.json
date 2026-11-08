@@ -453,18 +453,40 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
+  "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": {
     "max-lines-per-function": {
-      "count": 3
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 3
     },
     "ratchet/no-raw-button": {
-      "count": 5
+      "count": 2
     },
     "ratchet/no-raw-input": {
-      "count": 7
+      "count": 4
+    }
+  },
+  "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-raw-input": {
+      "count": 3
+    }
+  },
+  "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/app/(dashboard)/tax-optimization/page.tsx": {

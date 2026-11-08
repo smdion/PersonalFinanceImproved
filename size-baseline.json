@@ -22,7 +22,9 @@
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 870,
     "src/app/(dashboard)/savings/savings-content.tsx": 918,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1010,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 324,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": 199,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 500,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
@@ -426,9 +428,13 @@
     "src/app/(dashboard)/savings/savings-content.tsx": {
       "SavingsContent": 835
     },
+    "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": {
+      "AccountDetailRow": 155
+    },
+    "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": {
+      "BulkRothBasisForm": 181
+    },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
-      "AccountDetailRow": 155,
-      "BulkRothBasisForm": 181,
       "TaxBucketsContent": 364
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
