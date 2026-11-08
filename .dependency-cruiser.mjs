@@ -238,6 +238,13 @@ const config = {
       to: { path: `^src/server/|${L.data}` },
     },
     {
+      name: "server-never-imports-ui",
+      severity: "error",
+      comment: "Type-only too: shared shapes live in lib/pure or lib/db.",
+      from: { path: `^src/server/|${L.pure}` },
+      to: { path: L.ui },
+    },
+    {
       name: "ui-never-runs-infra",
       severity: "error",
       comment: "lib/db and other infrastructure at runtime; types are allowed.",
