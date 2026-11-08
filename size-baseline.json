@@ -408,7 +408,7 @@
     "src/server/services/profiles/first-retirement-profile.ts": 129,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 98,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 915,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 911,
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 509,
     "src/server/services/projection/projection-cache.ts": 221,
@@ -1095,7 +1095,7 @@
       "finalizePerformanceYear.transaction()": 383
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 829
+      "buildEnginePayload": 825
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
       "buildIndividualAccounts": 238

@@ -187,6 +187,7 @@ export async function buildEnginePayload(
     irmaaBracketData,
     fplByHouseholdData,
     bracketData,
+    missingLimitsWarning,
   } = resolveTaxYear(
     filingStatus,
     retProfiles,
@@ -249,13 +250,8 @@ export async function buildEnginePayload(
       return w ? [[j.personId, w] as const] : [];
     }),
   );
-  // Uses getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
-  // Post-process to compute totalComp. A Salary Profile entry is now a complete, all-or-nothing
-  // number (see resolveCompensation's docblock) — there is no more
-  // "resolved actual vs full-formula" distinction to adjust for (job_bonus_
-  // overrides is gone), so currentYearBonusAdjustment is always empty; kept
-  // in the payload shape as a no-op rather than removed, since the engine
-  // still reads it defensively.
+  // Each job's totalComp. A Salary Profile entry is complete, so
+  // currentYearBonusAdjustment stays empty in the payload shape the engine reads.
   const currentYearBonusAdjustmentByPerson = new Map<number, number>();
   const jobSalaries = activeJobs.map((job) => {
     const comp = resolveCompensation(salaryProfileActiveMap, job.id);
@@ -417,7 +413,7 @@ export async function buildEnginePayload(
 
   const { switchProfileMap, switchSalaryProfileMap, switchWarnings } =
     await loadSwitchProfiles(db, profileSwitchOverrides);
-  inputWarnings.push(...switchWarnings);
+  inputWarnings.push(...switchWarnings, ...missingLimitsWarning);
 
   // Budget overrides from DB (stored as monthly, engine expects monthly too)
   const dbBudgetOverrides = budgetOverrideRows

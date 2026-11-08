@@ -295,10 +295,17 @@ const OTHER_KEYS: TaxLimitKey[] = [
   },
 ];
 
+const ACCOUNT_KEYS = accountKeys();
+
 export const TAX_LIMIT_KEYS: readonly TaxLimitKey[] = [
-  ...accountKeys(),
+  ...ACCOUNT_KEYS,
   ...OTHER_KEYS,
 ];
+
+/** The limits the account config's `irsLimitKeys` name. */
+export const ACCOUNT_LIMIT_KEYS: ReadonlySet<string> = new Set(
+  ACCOUNT_KEYS.map((k) => k.key),
+);
 
 const BY_KEY = new Map(TAX_LIMIT_KEYS.map((k) => [k.key, k]));
 

@@ -1,6 +1,7 @@
 /** The engine payload's tax year. */
 import type { retirementFilingStatus } from "@/lib/pure/tax/filing-status";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
+import { ACCOUNT_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import type { fetchRetirementData } from "./load";
 
 /**
@@ -84,9 +85,37 @@ export function resolveTaxYear(
   return {
     resolvedTax,
     latestTaxYear,
+    missingLimitsWarning: missingLimitsWarning(
+      resolvedTax.limits,
+      allLimits,
+      latestTaxYear,
+    ),
     ltcgBracketData,
     irmaaBracketData,
     fplByHouseholdData,
     bracketData,
   };
+}
+
+/** An account-type IRS limit an earlier year has and the resolved year
+ *  lacks reads as a $0 limit in the contribution caps: say which. */
+export function missingLimitsWarning(
+  limits: Record<string, number>,
+  allLimits: readonly { taxYear: number; limitType: string }[],
+  taxYear: number,
+): string[] {
+  const missing = new Set(
+    allLimits
+      .filter((r) => r.taxYear < taxYear && ACCOUNT_LIMIT_KEYS.has(r.limitType))
+      .map((r) => r.limitType)
+      .filter((key) => !(key in limits)),
+  );
+  if (missing.size === 0) return [];
+  const names = [...missing].map((key) => {
+    const entry = taxLimitKey(key);
+    return entry ? `${entry.group} ${entry.label.toLowerCase()}` : key;
+  });
+  return [
+    `The ${taxYear} tax data has no ${names.join(", ")} limit, so it counts as $0. Add it in Settings → Reference Data.`,
+  ];
 }
