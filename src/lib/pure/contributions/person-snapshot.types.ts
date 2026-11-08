@@ -5,8 +5,8 @@ import type { ContribAccountRow } from "./contrib-account-row";
 /** contribAccountsFor's input, by name: several of its figures share a
  *  type (salary and total compensation; this year's and last year's IRS
  *  limits), so a positional swap would compile and move a figure. */
-export type ContribAccountsForInput<R extends ContribAccountRow> = {
-  effectiveContribs: R[];
+export type PersonContributionAccountsInput<R extends ContribAccountRow> = {
+  effectiveContributions: R[];
   activeJob: {
     id: number;
     bonusMonth?: number | null;

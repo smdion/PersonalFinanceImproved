@@ -342,7 +342,7 @@ export async function computeContributionSummary(
         resolveContribLimit,
         resolveContribPriorYearLimit,
       } = contribAccountsFor({
-        effectiveContribs,
+        effectiveContributions: effectiveContribs,
         activeJob,
         person,
         pay,

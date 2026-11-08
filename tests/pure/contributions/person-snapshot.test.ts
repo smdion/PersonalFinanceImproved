@@ -61,7 +61,7 @@ const lastYear = {
 
 const snapshot = () =>
   contribAccountsFor({
-    effectiveContribs: [base, ira],
+    effectiveContributions: [base, ira],
     activeJob: { id: 10, bonusMonth: null, bonusDayOfMonth: null },
     person: { id: 1, dateOfBirth: "1974-06-01" },
     pay: { salary: 100000, bonusGross: 0 },
