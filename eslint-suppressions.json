@@ -2269,10 +2269,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
-    },
-    "ratchet/no-hand-date-format": {
-      "count": 1
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -2307,6 +2304,14 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/components/retirement-projection/projection-card/use-projection-report.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-hand-date-format": {
       "count": 1
     }
   },
