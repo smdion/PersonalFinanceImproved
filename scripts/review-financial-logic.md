@@ -5,7 +5,7 @@
 
 ---
 
-Validate the financial logic in /workspace/dev/personalfinance.
+Validate the financial logic in this repository.
 
 1. Run the full test suite: `pnpm test` — report any failures
 2. Run the validation script: `pnpm validate` — report any diffs vs spreadsheet
