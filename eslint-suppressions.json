@@ -2408,7 +2408,17 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 9
+      "count": 2
+    }
+  },
+  "src/components/retirement-projection/overrides-list.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 3
+    }
+  },
+  "src/components/retirement-projection/override-wizard-steps.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 4
     },
     "ratchet/no-raw-input": {
       "count": 1

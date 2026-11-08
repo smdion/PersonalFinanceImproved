@@ -8,7 +8,6 @@
  * Saved overrides display as clean, scannable cards.
  */
 import { useState, useMemo } from "react";
-import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 import type { AccumOverride, DecumOverride } from "./types";
@@ -25,6 +24,13 @@ import {
   pushAccumOverrideItems,
   pushDecumOverrideItems,
 } from "./override-items";
+import { OverridesHeader, OverrideList } from "./overrides-list";
+import {
+  WizardProgress,
+  WizardYearStep,
+  WizardTypeStep,
+  WizardFieldsStep,
+} from "./override-wizard-steps";
 
 type OverridesPanelProps = {
   state: ProjectionState;
@@ -377,218 +383,57 @@ export function OverridesPanel({
   return (
     <div className="space-y-3 rounded-lg border p-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
-            Changes by year
-          </h4>
-          <HelpTip text="Change contributions, withdrawals, salary, budget, or add lump sums at specific future years. Changes carry forward until the next change." />
-          {totalCount > 0 && (
-            <span className="text-caption text-faint">{totalCount} active</span>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (showWizard) {
-              resetWizard();
-            } else {
-              setShowWizard(true);
-              setWizardStep("year");
-            }
-          }}
-          className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-            showWizard
-              ? "bg-surface-strong text-muted hover:text-primary"
-              : "bg-indigo-600 text-white hover:bg-indigo-700"
-          }`}
-        >
-          {showWizard ? "Cancel" : "+ Add a change"}
-        </button>
-      </div>
+      <OverridesHeader
+        resetWizard={resetWizard}
+        setShowWizard={setShowWizard}
+        setWizardStep={setWizardStep}
+        showWizard={showWizard}
+        totalCount={totalCount}
+      />
 
       {/* Wizard */}
       {showWizard && (
         <div className="bg-surface-sunken space-y-3 rounded-lg p-3">
           {/* Step indicator */}
-          {editingOverride && (
-            <div className="text-caption font-medium text-indigo-600">
-              Editing the change for {selectedYear}
-            </div>
-          )}
-          <div className="text-caption text-muted flex items-center gap-2">
-            <span
-              className={
-                wizardStep === "year" ? "font-semibold text-indigo-600" : ""
-              }
-            >
-              1. Year
-            </span>
-            <span>→</span>
-            <span
-              className={
-                wizardStep === "type" ? "font-semibold text-indigo-600" : ""
-              }
-            >
-              2. What to change
-            </span>
-            <span>→</span>
-            <span
-              className={
-                wizardStep === "fields" ? "font-semibold text-indigo-600" : ""
-              }
-            >
-              3. New value
-            </span>
-          </div>
+          <WizardProgress
+            editingOverride={editingOverride}
+            selectedYear={selectedYear}
+            wizardStep={wizardStep}
+          />
 
           {/* Step 1: Year */}
-          {wizardStep === "year" && (
-            <div className="flex items-end gap-3">
-              <label className="block">
-                <span className="text-muted text-xs">Starting Year</span>
-                <input
-                  type="number"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="border-strong mt-0.5 block w-24 rounded border px-2 py-1.5 text-sm"
-                />
-              </label>
-              {retYear && (
-                <span className="text-caption text-faint pb-2">
-                  {isPostRetirement
-                    ? "Post-retirement (withdrawal phase)"
-                    : `Pre-retirement (saving phase, retires ${retYear})`}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => setWizardStep("type")}
-                className="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700"
-              >
-                Next
-              </button>
-            </div>
-          )}
+          <WizardYearStep
+            isPostRetirement={isPostRetirement}
+            retYear={retYear}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            setWizardStep={setWizardStep}
+            wizardStep={wizardStep}
+          />
 
           {/* Step 2: Pick type */}
-          {wizardStep === "type" && (
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setWizardStep("year")}
-                  className="text-caption text-indigo-600 hover:underline"
-                >
-                  ← Back
-                </button>
-                <span className="text-muted text-xs">
-                  Year {selectedYear} —{" "}
-                  {isPostRetirement ? "post-retirement" : "pre-retirement"}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                {availableOptions.map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => {
-                      setSelectedType(opt.key);
-                      setWizardStep("fields");
-                    }}
-                    className="border-subtle rounded-lg border p-2.5 text-left transition-colors hover:border-indigo-400 hover:bg-indigo-50"
-                  >
-                    <div className="text-sm">
-                      {opt.icon} {opt.label}
-                    </div>
-                    <div className="text-caption text-faint mt-0.5">
-                      {opt.description}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <WizardTypeStep
+            availableOptions={availableOptions}
+            isPostRetirement={isPostRetirement}
+            selectedYear={selectedYear}
+            setSelectedType={setSelectedType}
+            setWizardStep={setWizardStep}
+            wizardStep={wizardStep}
+          />
 
           {/* Step 3: Fields */}
-          {wizardStep === "fields" && selectedType && (
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setWizardStep("type")}
-                  className="text-caption text-indigo-600 hover:underline"
-                >
-                  ← Back
-                </button>
-                <span className="text-muted text-xs">
-                  Year {selectedYear} —{" "}
-                  {OVERRIDE_OPTIONS.find((o) => o.key === selectedType)?.label}
-                </span>
-              </div>
-              {renderFields()}
-            </div>
-          )}
+          <WizardFieldsStep
+            renderFields={renderFields}
+            selectedType={selectedType}
+            selectedYear={selectedYear}
+            setWizardStep={setWizardStep}
+            wizardStep={wizardStep}
+          />
         </div>
       )}
 
       {/* Saved overrides list */}
-      {allOverrides.length > 0 && (
-        <div className="space-y-1">
-          {allOverrides.map((item) => (
-            <div
-              key={item.id}
-              className={`flex items-center justify-between rounded px-3 py-1.5 text-xs ${
-                item.color === "emerald"
-                  ? "bg-emerald-50 text-emerald-800"
-                  : item.color === "amber"
-                    ? "bg-amber-50 text-amber-800"
-                    : item.color === "blue"
-                      ? "bg-blue-50 text-blue-800"
-                      : "bg-indigo-50 text-indigo-800"
-              }`}
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="shrink-0 font-semibold">{item.year}</span>
-                <span
-                  className={`text-micro shrink-0 rounded px-1.5 py-0.5 font-medium ${
-                    item.color === "emerald"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : item.color === "amber"
-                        ? "bg-amber-100 text-amber-700"
-                        : item.color === "blue"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-indigo-100 text-indigo-700"
-                  }`}
-                >
-                  {item.type}
-                </span>
-                <span className="truncate">{item.summary}</span>
-              </div>
-              <span className="ml-2 flex shrink-0 items-center gap-1">
-                {item.onEdit && (
-                  <button
-                    type="button"
-                    className="text-muted hover:text-primary"
-                    onClick={item.onEdit}
-                    aria-label="Edit"
-                  >
-                    &#9998;
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="text-muted hover:text-red-500"
-                  onClick={item.onDelete}
-                  aria-label="Delete"
-                >
-                  ×
-                </button>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <OverrideList allOverrides={allOverrides} />
 
       {totalCount === 0 && !showWizard && (
         <p className="text-faint py-2 text-center text-xs">
