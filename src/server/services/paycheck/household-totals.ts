@@ -13,34 +13,28 @@ import {
   sumHouseholdIncome,
 } from "@/lib/pure/household/household-income";
 import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
-import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
+import {
+  buildLiabilityBracketInput,
+  StandardW4BracketsRequiredError,
+} from "@/lib/pure/paycheck/liability-brackets";
+import type { WithholdingTableRow } from "@/lib/pure/paycheck/withholding";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
-import { toTaxableIncomeBrackets } from "@/lib/pure/tax/tax-brackets";
 import type { loadCapHousehold } from "@/server/services/contributions/caps";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
 
-/**
- * Annual-liability variant of buildBracketInput: same limits, but brackets
- * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (calculateHouseholdTax's own standardDeduction
- * subtraction was double-counting against the un-reshaped Pub 15-T
- * withholding brackets). Requires the standard (non-2c) row — the 2(c)
- * half-tables have no 1040 analogue.
- */
-export function buildLiabilityBracketInput(
-  bracketRow: typeof schema.taxBrackets.$inferSelect,
+/** buildLiabilityBracketInput for a service: its domain error answered as
+ *  the client's BAD_REQUEST, with the same message. */
+export function liabilityBracketInput(
+  bracketRow: WithholdingTableRow,
   limits: Map<string, number>,
 ): TaxBracketInput {
-  if (bracketRow.w4Checkbox) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message:
-        "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
-    });
+  try {
+    return buildLiabilityBracketInput(bracketRow, limits);
+  } catch (e) {
+    if (e instanceof StandardW4BracketsRequiredError)
+      throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
+    throw e;
   }
-  // No yearBrackets: the liability path never reads w4Adjustment.
-  const base = buildBracketInput(bracketRow, limits, []);
-  return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
 }
 
 export function householdTotals(
@@ -78,7 +72,7 @@ export function householdTotals(
     if (bracketRow) {
       householdTax = calculateHouseholdTax({
         people: earners.map((r) => r.earnings!),
-        taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
+        taxBrackets: liabilityBracketInput(bracketRow, limitsMap),
         medicareLiabilityThreshold:
           limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
       });

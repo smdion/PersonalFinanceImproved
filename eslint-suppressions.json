@@ -6040,6 +6040,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/contributions/paycheck-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 6
+    }
+  },
   "src/lib/pure/contributions/profile-contrib-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 7
@@ -8670,14 +8678,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/contributions/paycheck-accounts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
-    }
-  },
   "src/server/services/contributions/person-snapshot.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
@@ -8866,7 +8866,7 @@
   },
   "src/server/services/paycheck/household-totals.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-identity-predicate-import": {
       "count": 2

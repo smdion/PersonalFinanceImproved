@@ -399,7 +399,7 @@
     "src/server/services/investments/current-balances.ts": 467,
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 623,
-    "src/server/services/paycheck/household-totals.ts": 128,
+    "src/server/services/paycheck/household-totals.ts": 122,
     "src/server/services/paycheck/job-net-pay.ts": 285,
     "src/server/services/paycheck/person-paycheck.ts": 202,
     "src/server/services/paycheck/summary.ts": 685,
