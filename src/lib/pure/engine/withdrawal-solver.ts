@@ -66,9 +66,9 @@ interface TaxEstimationInput {
   ssIncome: number;
   /** Social Security beyond this year's spending. It pays the year's tax
    *  first, so only the rest needs a withdrawal; never banked past that.
-   *  Omitted or 0 in a `fixedGrossWithdrawal` year (Social Security is on
-   *  top of the amount by definition). */
-  ssSurplus?: number;
+   *  0 in a `fixedGrossWithdrawal` year (Social Security is on top of the
+   *  amount by definition). */
+  ssSurplus: number;
   /** Filing status for SS taxation thresholds */
   filingStatus: ReturnFilingStatus | null | undefined;
   /** Resolved decumulation config for this year */
@@ -293,7 +293,7 @@ function evaluateCost(
   const totalCost = roundToCents(taxCost + taxResult.penaltyCost);
   // What the withdrawal itself must cover (Social Security's surplus pays
   // the tax first, decumulation-year.ts credits the same amount).
-  const surplusCredit = Math.min(input.ssSurplus ?? 0, taxCost);
+  const surplusCredit = Math.min(input.ssSurplus, taxCost);
   return {
     taxCost,
     taxableSS,

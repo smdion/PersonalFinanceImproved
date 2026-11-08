@@ -50,6 +50,7 @@ function zeroedBalances(): AccountBalances {
 describe("estimateWithdrawalTaxCost", () => {
   it("returns zero tax for zero after-tax need", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 0,
       ssIncome: 20000,
       filingStatus: "MFJ",
@@ -78,6 +79,7 @@ describe("estimateWithdrawalTaxCost", () => {
 
   it("computes gross-up factor for bracket_filling mode", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 24000,
       filingStatus: "MFJ",
@@ -112,6 +114,7 @@ describe("estimateWithdrawalTaxCost", () => {
 
   it("caps target withdrawal at total balance", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 500000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -154,6 +157,7 @@ describe("estimateWithdrawalTaxCost", () => {
 
   it("disables gross-up when grossUpForTaxes is false", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 0,
       filingStatus: null,
@@ -181,6 +185,7 @@ describe("estimateWithdrawalTaxCost", () => {
 
   it("handles waterfall routing mode", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 24000,
       filingStatus: "MFJ",
@@ -205,6 +210,7 @@ describe("estimateWithdrawalTaxCost", () => {
 
   it("handles percentage routing mode", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 24000,
       filingStatus: "MFJ",
@@ -228,6 +234,7 @@ describe("estimateWithdrawalTaxCost", () => {
 
   it("runs SS convergence with filing status and SS income", () => {
     const result = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 30000,
       filingStatus: "MFJ",
@@ -287,6 +294,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     });
 
     const mostlyTraditional = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -307,6 +315,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     });
 
     const mostlyRoth = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 60000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -343,6 +352,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     });
 
     const withOverlay = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 40000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -354,6 +364,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     });
 
     const withoutOverlay = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 40000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -384,6 +395,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     });
 
     const uncapped = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 50000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -397,6 +409,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     });
 
     const capped = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 50000,
       ssIncome: 0,
       filingStatus: "MFJ",
@@ -442,6 +455,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     const balances = makeTaxBuckets();
 
     const est = estimateWithdrawalTaxCost({
+      ssSurplus: 0,
       afterTaxNeed: 45000,
       ssIncome: 0,
       filingStatus: null,
@@ -459,6 +473,8 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       taxableSS: 0,
     });
     const taxResult = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots: routeResult.slots,
       taxableSS: 0,
       balances,
@@ -474,6 +490,7 @@ describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Securit
   const base = {
     afterTaxNeed: 999_999, // ignored when the withdrawal is fixed
     ssIncome: 30000,
+    ssSurplus: 0,
     filingStatus: "MFJ" as const,
     config: makeDecumulationConfig({
       withdrawalRoutingMode: "bracket_filling",
@@ -538,6 +555,7 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
   const base = {
     afterTaxNeed: 60000,
     ssIncome: 0,
+    ssSurplus: 0,
     filingStatus: "MFJ" as const,
     config: makeDecumulationConfig({
       withdrawalRoutingMode: "bracket_filling",

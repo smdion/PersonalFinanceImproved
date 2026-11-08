@@ -190,6 +190,8 @@ describe("computeTaxFromSlots", () => {
 
   it("returns zero tax cost for empty slots", () => {
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots: [],
       taxableSS: 0,
       balances: makeTaxBuckets(),
@@ -205,6 +207,8 @@ describe("computeTaxFromSlots", () => {
     // $87,100: $2,480 + 12% of $43,000 = $7,640 — all of it owed, not the
     // withdrawal's $4,584 share.
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots: [
         makeSlot("401k", { withdrawal: 60000, traditionalWithdrawal: 60000 }),
       ],
@@ -228,6 +232,8 @@ describe("computeTaxFromSlots", () => {
 
   it("with no brackets, taxable Social Security pays the flat fallback rate", () => {
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots: [],
       taxableSS: 10000,
       balances: makeTaxBuckets(),
@@ -248,6 +254,8 @@ describe("computeTaxFromSlots", () => {
       balances: makeTaxBuckets(),
       taxRates: baseTaxRates,
       filingStatus: "MFJ" as const,
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
     };
     const plain = computeTaxFromSlots(base);
     const repriced = computeTaxFromSlots({
@@ -263,6 +271,8 @@ describe("computeTaxFromSlots", () => {
       makeSlot("401k", { withdrawal: 25000, traditionalWithdrawal: 25000 }),
     ];
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots,
       taxableSS: 0,
       balances: makeTaxBuckets(),
@@ -278,6 +288,8 @@ describe("computeTaxFromSlots", () => {
   it("splits brokerage withdrawal into basis (tax-free) and gains (taxed)", () => {
     const slots = [makeSlot("brokerage", { withdrawal: 10000 })];
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots,
       taxableSS: 0,
       // afterTax 100k, basis 40k -> 40% of any brokerage withdrawal is basis
@@ -297,6 +309,8 @@ describe("computeTaxFromSlots", () => {
       makeSlot("hsa", { withdrawal: 5000 }),
     ];
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots,
       taxableSS: 0,
       balances: makeTaxBuckets(),
@@ -313,6 +327,8 @@ describe("computeTaxFromSlots", () => {
       makeSlot("brokerage", { withdrawal: 8000 }),
     ];
     const result = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
       slots,
       taxableSS: 0,
       balances: { afterTax: 80000, afterTaxBasis: 0 }, // 0 basis -> all gains
@@ -329,28 +345,22 @@ describe("computeTaxFromSlots", () => {
   });
 
   describe("rothTaxableGrowth (v0.7.8 Roth-tax-basis follow-up)", () => {
-    it("undefined rothTaxableGrowth reduces to today's flat-rate behavior (acceptance criterion 1)", () => {
+    it("no taxable growth taxes the whole Roth withdrawal at taxRates.roth (acceptance criterion 1)", () => {
       const slots = [
         makeSlot("403b", { withdrawal: 10000, rothWithdrawal: 10000 }),
       ];
-      const withField = computeTaxFromSlots({
+      const result = computeTaxFromSlots({
+        rothTaxableGrowth: 0,
+        penaltyCost: 0,
         slots,
         taxableSS: 0,
         balances: makeTaxBuckets(),
         taxRates: { ...baseTaxRates, roth: 0.1 },
         filingStatus: "MFJ",
       });
-      const withoutField = computeTaxFromSlots({
-        slots,
-        taxableSS: 0,
-        balances: makeTaxBuckets(),
-        taxRates: { ...baseTaxRates, roth: 0.1 },
-        filingStatus: "MFJ",
-        rothTaxableGrowth: undefined,
-      });
-      expect(withField.taxCost).toBe(withoutField.taxCost);
-      expect(withField.rothTaxableGrowth).toBe(0);
-      expect(withField.rothTaxFreePortion).toBe(10000);
+      expect(result.rothTaxableGrowth).toBe(0);
+      expect(result.rothTaxFreePortion).toBe(10000);
+      expect(result.taxCost).toBeCloseTo(10000 * 0.1, 2);
     });
 
     it("taxes the taxable-growth portion at the traditional rate, and the rest at taxRates.roth", () => {
@@ -358,6 +368,7 @@ describe("computeTaxFromSlots", () => {
         makeSlot("403b", { withdrawal: 10000, rothWithdrawal: 10000 }),
       ];
       const result = computeTaxFromSlots({
+        penaltyCost: 0,
         slots,
         taxableSS: 0,
         balances: makeTaxBuckets(),
@@ -370,6 +381,8 @@ describe("computeTaxFromSlots", () => {
       // No traditional withdrawal, so actualTaxableIncome = rothTaxableGrowth (4000).
       expect(result.actualTraditionalRate).toBeCloseTo(
         computeTaxFromSlots({
+          rothTaxableGrowth: 0,
+          penaltyCost: 0,
           slots: [
             makeSlot("401k", {
               withdrawal: 4000,
@@ -394,6 +407,7 @@ describe("computeTaxFromSlots", () => {
         makeSlot("403b", { withdrawal: 15000, rothWithdrawal: 15000 }),
       ];
       const result = computeTaxFromSlots({
+        penaltyCost: 0,
         slots,
         taxableSS: 0,
         balances: makeTaxBuckets(),
@@ -413,6 +427,8 @@ describe("computeTaxFromSlots", () => {
         makeSlot("403b", { withdrawal: 20000, rothWithdrawal: 20000 }),
       ];
       const withoutGrowth = computeTaxFromSlots({
+        rothTaxableGrowth: 0,
+        penaltyCost: 0,
         slots,
         taxableSS: 0,
         balances: makeTaxBuckets(),
@@ -420,6 +436,7 @@ describe("computeTaxFromSlots", () => {
         filingStatus: "MFJ",
       });
       const withGrowth = computeTaxFromSlots({
+        penaltyCost: 0,
         slots,
         taxableSS: 0,
         balances: makeTaxBuckets(),

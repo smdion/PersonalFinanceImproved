@@ -307,18 +307,16 @@ interface ComputeTaxFromSlotsInput {
   totalRothWithdrawal?: number;
   /** Growth drawn from NON-QUALIFIED Roth distributions this year — ordinary
    *  income (from
-   *  `roth-distribution-tax.ts`'s `splitRothWithdrawalForTax`). Omitted or
-   *  undefined ⇒ the arithmetic reduces exactly to treating the whole Roth
-   *  withdrawal at `taxRates.roth` (today's behavior). */
-  rothTaxableGrowth?: number;
+   *  `roth-distribution-tax.ts`'s `splitRothWithdrawalForTax`). 0 taxes the
+   *  whole Roth withdrawal at `taxRates.roth`. */
+  rothTaxableGrowth: number;
   /** 10%/20% early-withdrawal penalty cost this year, from
    *  `early-withdrawal-penalty.ts`'s `computeEarlyWithdrawalPenalty`.
    *  An EXCISE, not income tax —
    *  must NOT enter `actualTaxableIncome` (would inflate the marginal rate
    *  and the LTCG stacking base) and must NOT be summed into `taxCost`
-   *  (every downstream consumer reads `taxCost` as income tax only).
-   *  Omitted or undefined ⇒ the arithmetic reduces exactly to today's. */
-  penaltyCost?: number;
+   *  (every downstream consumer reads `taxCost` as income tax only). */
+  penaltyCost: number;
   /** The brokerage withdrawal's tax when the caller has re-priced it (the
    *  post-conversion recompute in decumulation-year.ts, where a Roth
    *  conversion raised the LTCG stacking base). Omitted: computed here. */
@@ -371,7 +369,7 @@ interface ComputeTaxFromSlotsResult {
   totalRothWithdrawal: number;
   hsaWithdrawal: number;
   brokerageWithdrawal: number;
-  /** Echoes `input.rothTaxableGrowth`, defaulted to 0 — the portion of
+  /** Echoes `input.rothTaxableGrowth` — the portion of
    *  `totalRothWithdrawal` taxed as ordinary income this year. */
   rothTaxableGrowth: number;
   /** `totalRothWithdrawal - rothTaxableGrowth` — taxed at `taxRates.roth`
@@ -379,7 +377,7 @@ interface ComputeTaxFromSlotsResult {
    *  `brokerageBasisPortion` is: callers must not reverse-derive an
    *  already-rounded component. */
   rothTaxFreePortion: number;
-  /** Echoes `input.penaltyCost`, defaulted to 0. NOT included in `taxCost`
+  /** Echoes `input.penaltyCost`. NOT included in `taxCost`
    *  — a separate output field for the same reason it's a separate input
    *  (see `ComputeTaxFromSlotsInput.penaltyCost`'s docblock). */
   penaltyCost: number;
@@ -414,9 +412,8 @@ export function computeTaxFromSlots(
   // income — it must enter
   // actualTaxableIncome BEFORE bracket/LTCG stacking below, not just get
   // summed into taxCost afterward, or the marginal rate and the LTCG
-  // stacking base would both understate real taxable income. Undefined
-  // input reduces this to exactly 0, matching today's behavior.
-  const rothTaxableGrowth = roundToCents(input.rothTaxableGrowth ?? 0);
+  // stacking base would both understate real taxable income.
+  const rothTaxableGrowth = roundToCents(input.rothTaxableGrowth);
   const rothTaxFreePortion = roundToCents(
     totalRothWithdrawal - rothTaxableGrowth,
   );
@@ -501,6 +498,6 @@ export function computeTaxFromSlots(
     brokerageWithdrawal,
     rothTaxableGrowth,
     rothTaxFreePortion,
-    penaltyCost: roundToCents(input.penaltyCost ?? 0),
+    penaltyCost: roundToCents(input.penaltyCost),
   };
 }

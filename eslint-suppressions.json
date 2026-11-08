@@ -6787,7 +6787,7 @@
       "count": 17
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 6
+      "count": 4
     }
   },
   "src/lib/pure/engine/types/accumulation.ts": {
@@ -6955,7 +6955,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/pure/household/compensation.ts": {

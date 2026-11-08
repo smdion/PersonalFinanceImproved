@@ -139,6 +139,7 @@ function grossUp(
   const { acctBal, buckets, total } = holdings(h);
   const config = o.config ?? bracketConfig();
   const est = estimateWithdrawalTaxCost({
+    ssSurplus: 0,
     afterTaxNeed: need,
     ssIncome: 0,
     filingStatus: "MFJ",
@@ -451,6 +452,8 @@ describe("answer key: Bracket filling", () => {
         bracketInfo({ target: 0.12, otherIncome: 60_000, basisRatio: 0.75 }),
       );
       const tax = computeTaxFromSlots({
+        rothTaxableGrowth: 0,
+        penaltyCost: 0,
         slots: r.slots,
         taxableSS: 60_000,
         balances: { afterTax: 500_000, afterTaxBasis: 375_000 },

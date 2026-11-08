@@ -157,6 +157,8 @@ function yearTax(c: {
     ...o,
   });
   return computeTaxFromSlots({
+    rothTaxableGrowth: 0,
+    penaltyCost: 0,
     slots: [
       slot("401k", {
         withdrawal: c.ordinary,
