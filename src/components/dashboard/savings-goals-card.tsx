@@ -5,6 +5,7 @@ import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { sumBy } from "@/lib/utils/math";
@@ -223,24 +224,17 @@ function SavingsGoalsCardImpl() {
             <p className="text-muted text-xs font-medium tracking-wide uppercase">
               Income Replacement
             </p>
-            <div className="bg-surface-elevated flex rounded p-0.5">
-              {budgetTierLabels.map((label: string, idx: number) => (
-                <button
-                  key={label}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setEfundBudgetColumn(idx);
-                  }}
-                  className={`text-caption rounded px-2 py-0.5 transition-colors ${
-                    efundTierIndex === idx
-                      ? "bg-surface-primary text-primary font-medium shadow-sm"
-                      : "text-muted hover:text-secondary"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              look="tray-caption"
+              ariaLabel="Budget column for income replacement"
+              reselect
+              value={efundTierIndex}
+              onChange={setEfundBudgetColumn}
+              options={budgetTierLabels.map((label: string, idx: number) => ({
+                value: idx,
+                label,
+              }))}
+            />
           </div>
           <ProgressBar
             value={efund.progress}

@@ -7,6 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
 import { Badge } from "@/components/ui/badge";
 import { CellButton } from "@/components/ui/cell-button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -27,6 +28,10 @@ interface EditForm {
 }
 
 type ActiveCellField = "goalId" | "transactionDate" | "description" | "amount";
+const ADD_MODES = [
+  { value: "transaction", label: "Transaction" },
+  { value: "transfer", label: "Transfer" },
+] as const;
 
 const defaultAddForm = {
   goalId: 0,
@@ -391,28 +396,13 @@ export function AllTransactionsTab({
       {canEdit !== false && adding && (
         <div className="bg-surface-elevated space-y-3 rounded-lg border p-3">
           {/* Mode toggle */}
-          <div className="bg-surface-sunken flex w-fit items-center gap-1 rounded p-0.5">
-            <button
-              onClick={() => setAddMode("transaction")}
-              className={`rounded px-2.5 py-1 text-xs transition-colors ${
-                addMode === "transaction"
-                  ? "bg-surface-primary text-primary font-medium shadow-sm"
-                  : "text-faint hover:text-muted"
-              }`}
-            >
-              Transaction
-            </button>
-            <button
-              onClick={() => setAddMode("transfer")}
-              className={`rounded px-2.5 py-1 text-xs transition-colors ${
-                addMode === "transfer"
-                  ? "bg-surface-primary text-primary font-medium shadow-sm"
-                  : "text-faint hover:text-muted"
-              }`}
-            >
-              Transfer
-            </button>
-          </div>
+          <SegmentedControl
+            look="tray-sunken"
+            ariaLabel="New entry type"
+            value={addMode}
+            onChange={setAddMode}
+            options={ADD_MODES}
+          />
 
           {addMode === "transaction" ? (
             <>

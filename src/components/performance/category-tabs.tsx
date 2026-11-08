@@ -2,6 +2,7 @@
 
 import React from "react";
 import { HelpTip } from "@/components/ui/help-tip";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   PERF_CATEGORY_DEFAULT,
   PERF_CATEGORY_HSA,
@@ -40,22 +41,17 @@ export function TabGroup({
         {label}
         <HelpTip text={helpText} />
       </span>
-      <div className="bg-surface-elevated flex gap-1 rounded-lg p-1">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => onCategoryChange(cat)}
-            title={CATEGORY_HELP[cat]}
-            className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
-              activeCategory === cat
-                ? "bg-surface-primary text-primary font-medium shadow-sm"
-                : "text-muted hover:text-primary"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        look="tray-lg"
+        ariaLabel={label}
+        value={activeCategory}
+        onChange={onCategoryChange}
+        options={categories.map((cat) => ({
+          value: cat,
+          label: cat,
+          title: CATEGORY_HELP[cat],
+        }))}
+      />
     </div>
   );
 }

@@ -1046,9 +1046,6 @@
     },
     "ratchet/no-jsx-iife": {
       "count": 1
-    },
-    "ratchet/no-raw-button": {
-      "count": 1
     }
   },
   "src/components/dashboard/savings-rate-breakdown.tsx": {
@@ -1724,7 +1721,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 4
+      "count": 3
     }
   },
   "src/components/performance/check-badge.tsx": {
@@ -2034,9 +2031,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-raw-button": {
-      "count": 2
     }
   },
   "src/components/portfolio/portfolio-quick-look-stats.ts": {
@@ -2803,7 +2797,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 11
+      "count": 9
     },
     "ratchet/no-raw-input": {
       "count": 13
@@ -2875,7 +2869,7 @@
       "count": 4
     },
     "ratchet/no-raw-button": {
-      "count": 19
+      "count": 17
     },
     "ratchet/no-raw-input": {
       "count": 6
@@ -2971,11 +2965,8 @@
     }
   },
   "src/components/savings/new-fund-form-card.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
-      "count": 5
+      "count": 2
     }
   },
   "src/components/savings/pool-distribution-editor.tsx": {

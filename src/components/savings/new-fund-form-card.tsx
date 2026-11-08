@@ -4,6 +4,13 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { NewFundForm } from "./types";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+
+const GOAL_TYPES = [
+  { value: "fixed", label: "Fixed Goal" },
+  { value: "ongoing", label: "Ongoing" },
+  { value: "bucket", label: "Bucket" },
+] as const;
 
 export function NewFundFormCard({
   newFund,
@@ -37,54 +44,26 @@ export function NewFundFormCard({
         </FormField>
         <div>
           <label className="text-muted mb-1 block text-xs">Goal Type</label>
-          <div className="bg-surface-elevated flex rounded p-0.5">
-            <button
-              type="button"
-              onClick={() => setNewFund({ ...newFund, targetMode: "fixed" })}
-              className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
-                isFixed
-                  ? "bg-surface-primary text-primary font-medium shadow-sm"
-                  : "text-muted hover:text-secondary"
-              }`}
-            >
-              Fixed Goal
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setNewFund({
-                  ...newFund,
-                  targetMode: "ongoing",
-                  targetDate: "",
-                })
-              }
-              className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
-                isOngoing
-                  ? "bg-surface-primary text-primary font-medium shadow-sm"
-                  : "text-muted hover:text-secondary"
-              }`}
-            >
-              Ongoing
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setNewFund({
-                  ...newFund,
-                  targetMode: "bucket",
-                  targetDate: "",
-                  targetAmount: "",
-                })
-              }
-              className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
-                isBucket
-                  ? "bg-surface-primary text-primary font-medium shadow-sm"
-                  : "text-muted hover:text-secondary"
-              }`}
-            >
-              Bucket
-            </button>
-          </div>
+          <SegmentedControl
+            look="tray-fill"
+            ariaLabel="Goal Type"
+            value={newFund.targetMode}
+            onChange={(targetMode) =>
+              setNewFund(
+                targetMode === "fixed"
+                  ? { ...newFund, targetMode }
+                  : targetMode === "ongoing"
+                    ? { ...newFund, targetMode, targetDate: "" }
+                    : {
+                        ...newFund,
+                        targetMode,
+                        targetDate: "",
+                        targetAmount: "",
+                      },
+              )
+            }
+            options={GOAL_TYPES}
+          />
         </div>
       </div>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">

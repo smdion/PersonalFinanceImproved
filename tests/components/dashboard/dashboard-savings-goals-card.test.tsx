@@ -124,8 +124,8 @@ describe("SavingsGoalsCard smoke", () => {
     setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
     expect(screen.getByText("Income Replacement")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Lean" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Fat" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Lean" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Fat" })).toBeInTheDocument();
     expect(screen.getByText("Current Fund")).toBeInTheDocument();
     // neededAfterRepay = 5000 > 0.005 -> shows the raw currency amount
     expect(screen.getByText("$5,000.00")).toBeInTheDocument();

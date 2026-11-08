@@ -36,6 +36,10 @@ import type {
 
 type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 type YearlyGrowth = Record<number, YearlyGrowthEntry>;
+const GROWTH_TYPES = [
+  { value: "pct", label: "%" },
+  { value: "dollar", label: "$" },
+] as const;
 
 /**
  * extraPaycheckRouting now lives inside the Salary Profile entry, not a
@@ -127,20 +131,14 @@ function PaycheckGrowthEditor({
         return (
           <div key={yr} className="flex items-center gap-2">
             <span className="text-faint w-10 shrink-0">{yr}</span>
-            <div className="bg-surface-elevated flex rounded p-0.5">
-              <button
-                onClick={() => updateEntry(yr, { type: "pct" })}
-                className={`text-caption rounded px-1.5 py-0.5 ${!entry || entry.type === "pct" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
-              >
-                %
-              </button>
-              <button
-                onClick={() => updateEntry(yr, { type: "dollar" })}
-                className={`text-caption rounded px-1.5 py-0.5 ${entry?.type === "dollar" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
-              >
-                $
-              </button>
-            </div>
+            <SegmentedControl
+              look="tray-strong"
+              ariaLabel={`${yr} growth in`}
+              reselect
+              value={entry?.type === "dollar" ? "dollar" : "pct"}
+              onChange={(type) => updateEntry(yr, { type })}
+              options={GROWTH_TYPES}
+            />
             <div className="flex items-center gap-0.5">
               {entry?.type === "dollar" && (
                 <span className="text-caption text-muted">+$</span>

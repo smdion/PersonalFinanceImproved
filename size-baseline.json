@@ -28,7 +28,7 @@
     "src/components/dashboard/living-costs-card.tsx": 677,
     "src/components/dashboard/retirement-card-rows.tsx": 111,
     "src/components/dashboard/retirement-card.tsx": 354,
-    "src/components/dashboard/savings-goals-card.tsx": 426,
+    "src/components/dashboard/savings-goals-card.tsx": 420,
     "src/components/debts/debts-card.tsx": 530,
     "src/components/debts/mortgage-settings.tsx": 728,
     "src/components/help/help-content.tsx": 1030,
@@ -55,7 +55,7 @@
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": 636,
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 833,
-    "src/components/portfolio/portfolio-chart.tsx": 472,
+    "src/components/portfolio/portfolio-chart.tsx": 460,
     "src/components/retirement-projection/account-notes.ts": 260,
     "src/components/retirement-projection/coast-fire-card.tsx": 408,
     "src/components/retirement-projection/decumulation-config.tsx": 468,
@@ -82,10 +82,10 @@
     "src/components/retirement/assumptions-band.tsx": 431,
     "src/components/retirement/retirement-profile-tab.tsx": 552,
     "src/components/retirement/sections/taxes.tsx": 551,
-    "src/components/savings/all-transactions-tab.tsx": 1452,
+    "src/components/savings/all-transactions-tab.tsx": 1442,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 471,
-    "src/components/savings/extra-paycheck-rules-editor.tsx": 1260,
+    "src/components/savings/extra-paycheck-rules-editor.tsx": 1258,
     "src/components/savings/fund-card.tsx": 1036,
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 413,
@@ -452,7 +452,7 @@
       "RetirementCardImpl": 308
     },
     "src/components/dashboard/savings-goals-card.tsx": {
-      "SavingsGoalsCardImpl": 406
+      "SavingsGoalsCardImpl": 399
     },
     "src/components/debts/debts-card.tsx": {
       "DebtsCard": 475
@@ -606,7 +606,7 @@
       "NewSnapshotForm.iife().map()": 164
     },
     "src/components/portfolio/portfolio-chart.tsx": {
-      "PortfolioChart": 278
+      "PortfolioChart": 261
     },
     "src/components/portfolio/portfolio-quick-look-stats.ts": {
       "derivePortfolioQuickLookStats": 265
@@ -712,7 +712,7 @@
       "TaxesSection": 470
     },
     "src/components/savings/all-transactions-tab.tsx": {
-      "AllTransactionsTab": 1402,
+      "AllTransactionsTab": 1387,
       "AllTransactionsTab.map()": 325
     },
     "src/components/savings/api-sync-section.tsx": {
@@ -747,9 +747,6 @@
     },
     "src/components/savings/month-override-modal.tsx": {
       "MonthOverrideModal": 333
-    },
-    "src/components/savings/new-fund-form-card.tsx": {
-      "NewFundFormCard": 152
     },
     "src/components/savings/pool-distribution-editor.tsx": {
       "PoolDistributionEditor": 298

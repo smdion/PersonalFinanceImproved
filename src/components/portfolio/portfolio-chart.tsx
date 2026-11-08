@@ -13,6 +13,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Card } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   stackedSeries,
   type StackedSnapshot,
@@ -46,6 +47,10 @@ type SnapshotPoint = {
 };
 
 type ChartMode = "total" | "account";
+const CHART_MODES = [
+  { value: "total", label: "Total" },
+  { value: "account", label: "By account" },
+] as const;
 
 type ChartPoint = {
   date: string;
@@ -183,38 +188,21 @@ export function PortfolioChart({
             </span>
           </span>
           {canStack && (
-            <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
-              {(["total", "account"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  aria-pressed={mode === m}
-                  className={`text-label rounded px-2 py-0.5 transition-colors ${
-                    mode === m
-                      ? "bg-surface-primary text-primary font-medium shadow-sm"
-                      : "text-muted hover:text-secondary"
-                  }`}
-                >
-                  {m === "total" ? "Total" : "By account"}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              look="tray-label"
+              ariaLabel="Chart view"
+              value={mode}
+              onChange={setMode}
+              options={CHART_MODES}
+            />
           )}
-          <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
-            {TIME_FRAMES.map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeFrame(tf)}
-                className={`text-label rounded px-2 py-0.5 transition-colors ${
-                  timeFrame === tf
-                    ? "bg-surface-primary text-primary font-medium shadow-sm"
-                    : "text-muted hover:text-secondary"
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            look="tray-label"
+            ariaLabel="Time frame"
+            value={timeFrame}
+            onChange={setTimeFrame}
+            options={TIME_FRAMES.map((tf) => ({ value: tf, label: tf }))}
+          />
         </div>
       }
       className="mb-6"
