@@ -23,13 +23,16 @@
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 524,
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 363,
+    "src/components/contributions/profile-manager/inline-account-cells.tsx": 271,
+    "src/components/contributions/profile-manager/inline-deduction-cells.tsx": 168,
+    "src/components/contributions/profile-manager/inline-match-cells.tsx": 185,
     "src/components/contributions/profile-manager/match-groups.ts": 51,
     "src/components/contributions/profile-manager/new-profile-cells.tsx": 303,
     "src/components/contributions/profile-manager/new-profile-sections.tsx": 284,
     "src/components/contributions/profile-manager/profile-detail-panel.tsx": 135,
     "src/components/contributions/profile-manager/profile-detail-rows.tsx": 122,
     "src/components/contributions/profile-manager/profile-editor.tsx": 108,
-    "src/components/contributions/profile-manager/profile-inline-editor.tsx": 819,
+    "src/components/contributions/profile-manager/profile-inline-editor.tsx": 531,
     "src/components/contributions/profile-manager/profile-types.ts": 15,
     "src/components/contributions/profile-manager/use-new-profile-save.ts": 121,
     "src/components/dashboard/contributions-card.tsx": 653,
@@ -449,9 +452,7 @@
       "ContributionProfileManager": 332
     },
     "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
-      "ProfileInlineEditor": 784,
-      "ProfileInlineEditor.iife()": 370,
-      "ProfileInlineEditor.iife().map()": 366
+      "ProfileInlineEditor": 489
     },
     "src/components/dashboard/contributions-card.tsx": {
       "ContributionsCardImpl": 529,

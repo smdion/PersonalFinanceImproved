@@ -877,6 +877,42 @@
       "count": 1
     }
   },
+  "src/components/contributions/profile-manager/inline-account-cells.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-raw-input": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
+    }
+  },
+  "src/components/contributions/profile-manager/inline-deduction-cells.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
+    }
+  },
+  "src/components/contributions/profile-manager/inline-match-cells.tsx": {
+    "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 3
+    }
+  },
   "src/components/contributions/profile-manager/match-groups.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -933,13 +969,13 @@
   },
   "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
-      "count": 3
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -948,13 +984,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 3
-    },
-    "ratchet/no-raw-input": {
-      "count": 7
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 9
+      "count": 1
     }
   },
   "src/components/dashboard/contributions-card.tsx": {
