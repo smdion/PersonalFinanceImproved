@@ -42,295 +42,35 @@
 import { useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
-import {
-  getAllCategories,
-  getParentCategory,
-  getDefaultTaxTreatment,
-} from "@/lib/config/account-types";
+import { accountDisplayName } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { PROJECTION_DEBOUNCE_MS } from "@/lib/constants";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import {
-  usePaycheckPersonViews,
-  type SandboxSalaryEntries,
-} from "@/lib/hooks/use-paycheck-person-views";
+import { usePaycheckPersonViews } from "@/lib/hooks/use-paycheck-person-views";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { BudgetTable, SavingsAllocationPanel } from "@/components/budget";
-import { BudgetPageContext } from "@/components/budget/budget-page-context";
-import { HelpTip } from "@/components/ui/help-tip";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FormError } from "@/components/ui/form-error";
-import { SlidePanel } from "@/components/ui/slide-panel";
-import {
-  ContribAccountForm,
-  type ContribAccountFormValues,
-} from "@/components/paycheck/contrib-account-form";
+import { type ContribAccountFormValues } from "@/components/paycheck/contrib-account-form";
 import {
   useBudgetDerivedData,
   type SavingsGoalEntry,
 } from "./use-budget-derived-data";
-import { WhatIfPaycheckSummary } from "./what-if-paycheck-summary";
 import {
-  WhatIfContributionsEditor,
-  WhatIfDeductionsEditor,
   type ContribAddition,
   type DeductionAddition,
 } from "./what-if-editors";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
-import { ProfilePicker } from "./what-if-profile-picker";
-import { WhatIfStep } from "./what-if-step";
-import {
-  WhatIfSalaryEditor,
-  type SandboxSalaryEntry,
-} from "./what-if-salary-editor";
-
-/**
- * Sandbox-local edit state: salary/bonus entries, deduction edits/
- * additions, and budget item amount drafts. None of it is ever persisted —
- * see this file's docblock point 4 for why the profile-scoped pieces (salary
- * entries, budget drafts) reset when their owning picker changes. Deduction
- * edits/additions are keyed by real deduction id / personId, which don't
- * change when a picker changes, so they persist until "Reset sandbox."
- */
-function useSandboxState(salaryId: number | null, budgetId: number | null) {
-  const [salaryEntries, setSalaryEntries] = useState<SandboxSalaryEntries>({});
-  const [budgetDrafts, setBudgetDrafts] = useState<Map<string, number>>(
-    new Map(),
-  );
-  const [deductionEdits, setDeductionEdits] = useState<Map<number, number>>(
-    new Map(),
-  );
-  const [deductionAdditions, setDeductionAdditions] = useState<
-    DeductionAddition[]
-  >([]);
-  const [contribActiveFields, setContribActiveFields] = useState<
-    Map<number, string>
-  >(new Map());
-  const [contribAdditions, setContribAdditions] = useState<ContribAddition[]>(
-    [],
-  );
-  const nextLocalId = useRef(-1);
-
-  // A picker switch clears its drafts in the render that first sees the new
-  // id (React's "adjust state when a prop changes"), not in an effect after
-  // it, so no render pairs the new profile with the old profile's drafts.
-  const [salaryDraftsFor, setSalaryDraftsFor] = useState(salaryId);
-  if (salaryDraftsFor !== salaryId) {
-    setSalaryDraftsFor(salaryId);
-    setSalaryEntries({});
-  }
-
-  const [budgetDraftsFor, setBudgetDraftsFor] = useState(budgetId);
-  if (budgetDraftsFor !== budgetId) {
-    setBudgetDraftsFor(budgetId);
-    setBudgetDrafts(new Map());
-  }
-
-  const setSalaryField = (
-    personId: number,
-    field: keyof SandboxSalaryEntry,
-    value: number | undefined,
-  ) => {
-    setSalaryEntries((prev) => {
-      const next = { ...prev };
-      const entry = { ...next[String(personId)] };
-      if (value === undefined) delete entry[field];
-      else entry[field] = value;
-      if (Object.keys(entry).length === 0) delete next[String(personId)];
-      else next[String(personId)] = entry;
-      return next;
-    });
-  };
-
-  const getDraft = (id: number, colIndex: number, original: number) =>
-    budgetDrafts.get(`${id}:${colIndex}`) ?? original;
-  const setDraft = (id: number, colIndex: number, amount: number) =>
-    setBudgetDrafts((prev) => {
-      const next = new Map(prev);
-      next.set(`${id}:${colIndex}`, amount);
-      return next;
-    });
-
-  const setDeductionEdit = (id: number, amountPerPeriod: number) =>
-    setDeductionEdits((prev) => new Map(prev).set(id, amountPerPeriod));
-  const resetDeductionEdit = (id: number) =>
-    setDeductionEdits((prev) => {
-      const next = new Map(prev);
-      next.delete(id);
-      return next;
-    });
-
-  const addDeduction = (personId: number) => {
-    const localId = nextLocalId.current--;
-    setDeductionAdditions((prev) => [
-      ...prev,
-      {
-        localId,
-        personId,
-        name: "New deduction",
-        amountPerPeriod: 0,
-        isPretax: false,
-        ficaExempt: false,
-      },
-    ]);
-  };
-  const updateDeductionAddition = (
-    localId: number,
-    patch: Partial<Omit<DeductionAddition, "localId" | "personId">>,
-  ) =>
-    setDeductionAdditions((prev) =>
-      prev.map((d) => (d.localId === localId ? { ...d, ...patch } : d)),
-    );
-  const removeDeductionAddition = (localId: number) =>
-    setDeductionAdditions((prev) => prev.filter((d) => d.localId !== localId));
-
-  const setContribActiveField = (
-    accountId: number,
-    contributionValue: string,
-  ) =>
-    setContribActiveFields((prev) =>
-      new Map(prev).set(accountId, contributionValue),
-    );
-  const resetContribActiveField = (accountId: number) =>
-    setContribActiveFields((prev) => {
-      const next = new Map(prev);
-      next.delete(accountId);
-      return next;
-    });
-
-  const addContribAddition = (personId: number) => {
-    const localId = nextLocalId.current--;
-    setContribAdditions((prev) => [
-      ...prev,
-      {
-        localId,
-        personId,
-        accountType: getAllCategories()[0]!,
-        contributionMethod: "percent_of_salary",
-        contributionValue: "0",
-      },
-    ]);
-  };
-  const updateContribAddition = (
-    localId: number,
-    patch: Partial<Omit<ContribAddition, "localId" | "personId">>,
-  ) =>
-    setContribAdditions((prev) =>
-      prev.map((c) => (c.localId === localId ? { ...c, ...patch } : c)),
-    );
-  const removeContribAddition = (localId: number) =>
-    setContribAdditions((prev) => prev.filter((c) => c.localId !== localId));
-
-  const resetSandbox = () => {
-    setSalaryEntries({});
-    setBudgetDrafts(new Map());
-    setDeductionEdits(new Map());
-    setDeductionAdditions([]);
-    setContribActiveFields(new Map());
-    setContribAdditions([]);
-  };
-
-  const itemAmountActiveFields = useMemo(
-    () =>
-      Array.from(budgetDrafts.entries()).map(([key, amount]) => {
-        const [itemId, colIndex] = key.split(":").map(Number);
-        return { itemId: itemId!, colIndex: colIndex!, amount };
-      }),
-    [budgetDrafts],
-  );
-
-  const sandboxDeductionEdits = useMemo(
-    () =>
-      Array.from(deductionEdits.entries()).map(([id, amountPerPeriod]) => ({
-        id,
-        amountPerPeriod,
-      })),
-    [deductionEdits],
-  );
-
-  const sandboxDeductionAdditions = useMemo(
-    () =>
-      deductionAdditions
-        .filter((d) => d.name.trim() !== "" && d.amountPerPeriod !== 0)
-        .map(({ personId, name, amountPerPeriod, isPretax, ficaExempt }) => ({
-          personId,
-          name,
-          amountPerPeriod,
-          isPretax,
-          ficaExempt,
-        })),
-    [deductionAdditions],
-  );
-
-  const sandboxContribActiveFields = useMemo(() => {
-    const out: Record<string, { contributionValue: string }> = {};
-    for (const [accountId, contributionValue] of contribActiveFields) {
-      out[String(accountId)] = { contributionValue };
-    }
-    return out;
-  }, [contribActiveFields]);
-
-  const sandboxContribAdditions = useMemo(
-    () =>
-      contribAdditions
-        .filter((c) => parseFloat(c.contributionValue) !== 0)
-        .map(
-          ({
-            personId,
-            accountType,
-            contributionMethod,
-            contributionValue,
-          }) => ({
-            personId,
-            accountType,
-            contributionMethod,
-            contributionValue,
-          }),
-        ),
-    [contribAdditions],
-  );
-
-  return {
-    salaryEntries,
-    setSalaryField,
-    budgetDrafts,
-    getDraft,
-    setDraft,
-    itemAmountActiveFields,
-    deductionEdits,
-    setDeductionEdit,
-    resetDeductionEdit,
-    deductionAdditions,
-    addDeduction,
-    updateDeductionAddition,
-    removeDeductionAddition,
-    sandboxDeductionEdits,
-    sandboxDeductionAdditions,
-    contribActiveFields,
-    setContribActiveField,
-    resetContribActiveField,
-    sandboxContribActiveFields,
-    contribAdditions,
-    addContribAddition,
-    updateContribAddition,
-    removeContribAddition,
-    sandboxContribAdditions,
-    resetSandbox,
-    hasEdits:
-      Object.keys(salaryEntries).length > 0 ||
-      budgetDrafts.size > 0 ||
-      deductionEdits.size > 0 ||
-      deductionAdditions.length > 0 ||
-      contribActiveFields.size > 0 ||
-      contribAdditions.length > 0,
-  };
-}
+import { useSandboxState } from "./use-what-if-sandbox";
+import { WhatIfPickers } from "./what-if-pickers";
+import { WhatIfSalaryStep } from "./what-if-salary-step";
+import { WhatIfContributionsStep } from "./what-if-contributions-step";
+import { WhatIfBudgetStep } from "./what-if-budget-step";
+import { WhatIfSavingsStep } from "./what-if-savings-step";
+import { WhatIfSaveActions } from "./what-if-save-actions";
+import { WhatIfMakeRealPanel } from "./what-if-make-real-panel";
 
 export function WhatIfTab({
   canDuplicateProfile,
@@ -776,389 +516,107 @@ export function WhatIfTab({
   return (
     <div className="space-y-5">
       {/* ── Pickers ── */}
-      <div className="border-default bg-surface-sunken/40 rounded-lg border px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <span className="text-muted text-xs font-semibold tracking-wide uppercase">
-            Starting point
-            <HelpTip text="Nothing on this tab changes what's active for your household. Pick any combination of profiles, edit salary/bonus and budget amounts to preview them, then use Duplicate Profile or Save as Plan below if you want to keep it." />
-          </span>
-          <ProfilePicker
-            label="Salary"
-            value={salaryId}
-            options={salaryProfiles ?? []}
-            onChange={setPickedSalaryId}
-          />
-          <ProfilePicker
-            label="Contribution"
-            value={contribId}
-            options={contribProfiles ?? []}
-            onChange={setPickedContribId}
-          />
-          <ProfilePicker
-            label="Budget"
-            value={budgetId}
-            options={budgetProfiles ?? []}
-            onChange={setPickedBudgetId}
-          />
-          {availableYears.length > 1 && (
-            <div className="flex items-center gap-2">
-              <span className="text-muted text-xs">Tax Year:</span>
-              <div className="flex gap-1">
-                {availableYears.map((year) => (
-                  <button
-                    key={year}
-                    type="button"
-                    onClick={() => setTaxYear(year)}
-                    className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
-                      taxYear === year
-                        ? "bg-blue-600 text-white"
-                        : "bg-surface-elevated text-muted hover:bg-surface-strong"
-                    }`}
-                  >
-                    {year}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {sandbox.hasEdits && (
-            <button
-              type="button"
-              onClick={sandbox.resetSandbox}
-              className="text-caption text-faint ml-auto hover:text-red-600"
-            >
-              Reset sandbox
-            </button>
-          )}
-        </div>
-      </div>
+      <WhatIfPickers
+        availableYears={availableYears}
+        budgetId={budgetId}
+        budgetProfiles={budgetProfiles}
+        contribId={contribId}
+        contribProfiles={contribProfiles}
+        salaryId={salaryId}
+        salaryProfiles={salaryProfiles}
+        sandbox={sandbox}
+        setPickedBudgetId={setPickedBudgetId}
+        setPickedContribId={setPickedContribId}
+        setPickedSalaryId={setPickedSalaryId}
+        setTaxYear={setTaxYear}
+        taxYear={taxYear}
+      />
 
       {/* ── Step 1: Salary/bonus edits ── */}
-      <WhatIfStep
-        number={1}
-        title={`Paycheck${salaryProfileName ? ` — ${salaryProfileName}` : ""}`}
-        description="Edit salary or bonus to see the resulting take-home pay."
-        headerExtra={
-          netMonthlyIncome != null ? (
-            <span className="text-xs font-semibold text-indigo-700">
-              {formatCurrency(netMonthlyIncome)}/mo net
-            </span>
-          ) : undefined
-        }
-      >
-        {paycheckLoading ? (
-          <Skeleton className="h-40 w-full" />
-        ) : views.length === 0 ? (
-          <p className="text-caption text-faint italic">
-            No active jobs to preview.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            <WhatIfSalaryEditor
-              views={views}
-              entries={sandbox.salaryEntries}
-              onChange={sandbox.setSalaryField}
-            />
-            <WhatIfPaycheckSummary views={views} />
-          </div>
-        )}
-      </WhatIfStep>
+      <WhatIfSalaryStep
+        netMonthlyIncome={netMonthlyIncome}
+        paycheckLoading={paycheckLoading}
+        salaryProfileName={salaryProfileName}
+        sandbox={sandbox}
+        views={views}
+      />
 
       {/* ── Step 2: Contribution accounts + deductions — both resolve via
           the Contribution Profile now (paycheck_deductions carries no
           amount of its own, see DESIGN.md's Salary Profile layer section) ── */}
-      <WhatIfStep
-        number={2}
-        title={`Contributions${contribProfileName ? ` — ${contribProfileName}` : ""}`}
-        description="What you and your employer put toward retirement/savings accounts, and what's deducted from your paycheck."
-        headerExtra={
-          views.length > 0 && contribProfileName ? (
-            <span className="text-xs font-semibold text-indigo-700">
-              {formatCurrency(contribTotals.annual)}/yr you
-              {contribTotals.match > 0 && (
-                <> · {formatCurrency(contribTotals.match)}/yr employer match</>
-              )}
-            </span>
-          ) : undefined
-        }
-      >
-        {paycheckLoading ? (
-          <Skeleton className="h-24 w-full" />
-        ) : views.length === 0 ? (
-          <p className="text-caption text-faint italic">
-            No active jobs to preview.
-          </p>
-        ) : (
-          <WhatIfContributionsEditor
-            views={views}
-            activeFields={sandbox.contribActiveFields}
-            onEdit={sandbox.setContribActiveField}
-            onReset={sandbox.resetContribActiveField}
-            additions={sandbox.contribAdditions}
-            onAddAccount={sandbox.addContribAddition}
-            onUpdateAddition={sandbox.updateContribAddition}
-            onRemoveAddition={sandbox.removeContribAddition}
-            canManagePaycheck={canManagePaycheck}
-            onMakeReal={setMakeRealAddition}
-            makeRealPendingId={contribMakeRealPendingId}
-          />
-        )}
-        {!paycheckLoading && views.length > 0 && (
-          <WhatIfDeductionsEditor
-            views={views}
-            deductionEdits={sandbox.deductionEdits}
-            onEditDeduction={sandbox.setDeductionEdit}
-            onResetDeduction={sandbox.resetDeductionEdit}
-            additions={sandbox.deductionAdditions}
-            onAddDeduction={sandbox.addDeduction}
-            onUpdateAddition={sandbox.updateDeductionAddition}
-            onRemoveAddition={sandbox.removeDeductionAddition}
-            canManagePaycheck={canManagePaycheck}
-            onMakeReal={handleMakeDeductionReal}
-            makeRealPendingId={deductionMakeRealPendingId}
-          />
-        )}
-      </WhatIfStep>
+      <WhatIfContributionsStep
+        canManagePaycheck={canManagePaycheck}
+        contribMakeRealPendingId={contribMakeRealPendingId}
+        contribProfileName={contribProfileName}
+        contribTotals={contribTotals}
+        deductionMakeRealPendingId={deductionMakeRealPendingId}
+        handleMakeDeductionReal={handleMakeDeductionReal}
+        paycheckLoading={paycheckLoading}
+        sandbox={sandbox}
+        setMakeRealAddition={setMakeRealAddition}
+        views={views}
+      />
 
       {/* ── Step 3: Budget vs. net income ── */}
-      <WhatIfStep
-        number={3}
-        title={`Budget${budgetProfileName ? ` — ${budgetProfileName}` : ""}`}
-        description="Edit any amount to see whether take-home pay covers it."
-        headerExtra={
-          <div className="flex flex-wrap items-center gap-3">
-            {cols.length > 1 && (
-              <div className="flex items-center gap-2">
-                <span className="text-muted text-xs">Mode:</span>
-                <div className="flex gap-1">
-                  {cols.map((label, idx) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setActiveColumn(idx)}
-                      className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
-                        activeColumn === idx
-                          ? "bg-blue-600 text-white"
-                          : "bg-surface-elevated text-muted hover:bg-surface-strong"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        }
-      >
-        {leftover != null && (
-          <div
-            className={`mb-3 flex items-center justify-between rounded-md px-3 py-2 text-xs font-semibold ${
-              leftover >= 0
-                ? "bg-green-50 text-green-700"
-                : "bg-red-50 text-red-600"
-            }`}
-          >
-            <span>
-              Net {formatCurrency(netMonthlyIncome ?? 0)}/mo − Budget{" "}
-              {formatCurrency(budgetTotal ?? 0)}/mo
-            </span>
-            <span>
-              {leftover >= 0 ? "" : "−"}
-              {formatCurrency(Math.abs(leftover))}/mo left over
-            </span>
-          </div>
-        )}
-        {budgetIncomeAdjustmentThisMonth != null &&
-          budgetIncomeAdjustmentThisMonth !== 0 && (
-            <p className="text-muted -mt-2 mb-3 text-xs">
-              +{formatCurrency(budgetIncomeAdjustmentThisMonth)} extra paycheck
-              already included in this month&rsquo;s income (not part of Net
-              above).
-            </p>
-          )}
-        {allColumnResults && allColumnResults.length > 0 ? (
-          <div className="border-subtle max-h-[520px] w-full overflow-y-auto rounded-md border">
-            <BudgetPageContext.Provider value={budgetPageContextValue}>
-              <BudgetTable
-                visibleCategories={visibleCategories}
-                hasMoreCategories={hasMoreCategories}
-                categoryNames={categoryNames}
-                getCatTotals={getCatTotals}
-                layout={{
-                  effectiveNameColWidth: nameColWidth,
-                  onResizeStart,
-                  sentinelRef,
-                }}
-                apiActualsMap={apiActualsMap}
-                rowHandlers={{
-                  getDraft: sandbox.getDraft,
-                  setDraft: sandbox.setDraft,
-                  onToggleItemEssential: noop,
-                  onToggleCategoryEssential: noop,
-                  onMoveItem: noop,
-                  onDeleteItem: noop,
-                  onConvertToGoal: noop,
-                  onReorderItem: noop,
-                  onReorderCategory: noop,
-                  onAddItem: noop,
-                  addItemPending: false,
-                  addItemError: null,
-                  matchContrib,
-                  addingItemToCategory: null,
-                  onSetAddingItemToCategory: noop,
-                }}
-              />
-            </BudgetPageContext.Provider>
-          </div>
-        ) : (
-          <Skeleton className="h-40 w-full" />
-        )}
-      </WhatIfStep>
+      <WhatIfBudgetStep
+        activeColumn={activeColumn}
+        allColumnResults={allColumnResults}
+        apiActualsMap={apiActualsMap}
+        budgetIncomeAdjustmentThisMonth={budgetIncomeAdjustmentThisMonth}
+        budgetPageContextValue={budgetPageContextValue}
+        budgetProfileName={budgetProfileName}
+        budgetTotal={budgetTotal}
+        categoryNames={categoryNames}
+        cols={cols}
+        getCatTotals={getCatTotals}
+        hasMoreCategories={hasMoreCategories}
+        leftover={leftover}
+        matchContrib={matchContrib}
+        nameColWidth={nameColWidth}
+        netMonthlyIncome={netMonthlyIncome}
+        noop={noop}
+        onResizeStart={onResizeStart}
+        sandbox={sandbox}
+        sentinelRef={sentinelRef}
+        setActiveColumn={setActiveColumn}
+        visibleCategories={visibleCategories}
+      />
 
       {/* ── Step 4: Savings from what's left over ── */}
-      <WhatIfStep
-        number={4}
-        title="Savings"
-        description="What's left over gets allocated here."
-      >
-        <SavingsAllocationPanel
-          canEdit
-          // No padlock to gate this: sandbox mode writes nothing but local
-          // preview state (via onLocalChange below), so it's always editable.
-          locked={false}
-          sandbox
-          viewingProfileId={budgetId}
-          // The rail's own selection IS the tab's Budget Profile picker —
-          // not a second, independent one.
-          onSelectProfile={setPickedBudgetId}
-          // No onActivateProfile: activating writes global state.
-          livePoolEstimate={leftover}
-          livePoolColumnLabel={cols[activeColumn]}
-          onLocalChange={() => {
-            // Sandbox savings edits are local-only for this preview session
-            // (no downstream consumer needs them yet — the leftover figure
-            // above already reflects the salary/budget sandbox). Accepting
-            // the callback (rather than omitting it) is what keeps the
-            // table's writes redirected away from the real upsert mutation.
-          }}
-        />
-      </WhatIfStep>
+      <WhatIfSavingsStep
+        activeColumn={activeColumn}
+        budgetId={budgetId}
+        cols={cols}
+        leftover={leftover}
+        setPickedBudgetId={setPickedBudgetId}
+      />
 
       {/* ── Save actions ── */}
-      {(canDuplicateProfile || canCreatePlan) && (
-        <section className="border-default bg-surface-sunken/40 space-y-3 rounded-lg border p-4">
-          <h3 className="text-primary text-sm font-semibold">Keep this</h3>
-          {canDuplicateProfile && (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                value={duplicateName}
-                onChange={(e) => setDuplicateName(e.target.value)}
-                placeholder={
-                  budgetProfileName
-                    ? `Copy of ${budgetProfileName}`
-                    : "New profile name"
-                }
-                className="bg-surface-primary w-56 rounded border px-2 py-1 text-xs"
-                aria-label="New budget profile name"
-              />
-              <button
-                type="button"
-                disabled={
-                  budgetId == null ||
-                  !duplicateName.trim() ||
-                  duplicateProfile.isPending
-                }
-                onClick={() =>
-                  duplicateProfile.mutate({
-                    sourceProfileId: budgetId!,
-                    name: duplicateName.trim(),
-                    ...(sandbox.itemAmountActiveFields.length > 0
-                      ? {
-                          itemAmountActiveFields:
-                            sandbox.itemAmountActiveFields,
-                        }
-                      : {}),
-                  })
-                }
-                className="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {duplicateLabel}
-              </button>
-              <span className="text-caption text-faint">
-                Copies modes, items and savings allocations.
-                <HelpTip text="The copy starts inactive, and API-sync links and contribution-account links are intentionally NOT copied — two profiles pushing to the same external category is a real-money hazard. Re-link them on the copy if you want them." />
-              </span>
-              <FormError error={duplicateProfile.error} prefix="Failed" />
-            </div>
-          )}
-          {canCreatePlan && (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                value={planName}
-                onChange={(e) => setPlanName(e.target.value)}
-                placeholder="New Plan name"
-                className="bg-surface-primary w-56 rounded border px-2 py-1 text-xs"
-                aria-label="New Plan name"
-              />
-              <button
-                type="button"
-                disabled={
-                  !planName.trim() || !planProfiles || createPlan.isPending
-                }
-                onClick={() => {
-                  if (planProfiles)
-                    createPlan.mutate({
-                      name: planName.trim(),
-                      ...planProfiles,
-                    });
-                }}
-                className="hover:bg-surface-sunken rounded border px-2.5 py-1 text-xs"
-              >
-                {planLabel}
-              </button>
-              <span className="text-caption text-faint">
-                Saves these profiles, plus your active Retirement profile, as a
-                Plan you can apply from the top bar.
-                {salaryEditCount > 0 && (
-                  <>
-                    {" "}
-                    A Plan holds profiles, not edited amounts — save your salary
-                    edits as a Salary Profile first.
-                  </>
-                )}
-              </span>
-              <FormError error={createPlan.error} prefix="Failed" />
-            </div>
-          )}
-        </section>
-      )}
+      <WhatIfSaveActions
+        budgetId={budgetId}
+        budgetProfileName={budgetProfileName}
+        canCreatePlan={canCreatePlan}
+        canDuplicateProfile={canDuplicateProfile}
+        createPlan={createPlan}
+        duplicateLabel={duplicateLabel}
+        duplicateName={duplicateName}
+        duplicateProfile={duplicateProfile}
+        planLabel={planLabel}
+        planName={planName}
+        planProfiles={planProfiles}
+        salaryEditCount={salaryEditCount}
+        sandbox={sandbox}
+        setDuplicateName={setDuplicateName}
+        setPlanName={setPlanName}
+      />
 
-      <SlidePanel
-        isOpen={makeRealAddition != null}
-        onClose={() => setMakeRealAddition(null)}
-        title="Make Real: Contribution Account"
-      >
-        {makeRealAddition && (
-          <ContribAccountForm
-            initialValues={{
-              personId: makeRealAddition.personId,
-              accountType: makeRealAddition.accountType,
-              parentCategory: getParentCategory(makeRealAddition.accountType),
-              taxTreatment: getDefaultTaxTreatment(
-                makeRealAddition.accountType,
-              ) as "pre_tax" | "tax_free" | "after_tax" | "hsa",
-            }}
-            onSave={handleSaveMakeReal}
-            onCancel={() => setMakeRealAddition(null)}
-            isPending={
-              createContribAccount.isPending || updateContribAccount.isPending
-            }
-          />
-        )}
-      </SlidePanel>
+      <WhatIfMakeRealPanel
+        createContribAccount={createContribAccount}
+        handleSaveMakeReal={handleSaveMakeReal}
+        makeRealAddition={makeRealAddition}
+        setMakeRealAddition={setMakeRealAddition}
+        updateContribAccount={updateContribAccount}
+      />
     </div>
   );
 }

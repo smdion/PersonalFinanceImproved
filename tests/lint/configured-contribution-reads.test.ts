@@ -24,7 +24,7 @@ const ALLOWED: Record<string, { count: number; why: string }> = {
     count: 1,
     why: "auto-max preview: today's setting vs the most it can be",
   },
-  "src/app/(dashboard)/budget/what-if-tab.tsx": {
+  "src/app/(dashboard)/budget/use-what-if-sandbox.ts": {
     count: 1,
     why: "the What-If sandbox: which contribution edits are non-zero",
   },

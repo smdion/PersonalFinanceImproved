@@ -152,22 +152,52 @@
   },
   "src/app/(dashboard)/budget/what-if-tab.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 1
+    }
+  },
+  "src/app/(dashboard)/budget/use-what-if-sandbox.ts": {
+    "max-lines-per-function": {
+      "count": 1
     },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-pickers.tsx": {
     "ratchet/no-raw-button": {
-      "count": 5
+      "count": 2
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-budget-step.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-savings-step.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-save-actions.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
     },
     "ratchet/no-raw-input": {
       "count": 2
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-make-real-panel.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/budget/what-if-step.tsx": {
