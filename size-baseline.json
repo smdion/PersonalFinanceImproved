@@ -133,7 +133,7 @@
     "src/components/retirement-projection/mc-preset-multipliers.tsx": 32,
     "src/components/retirement-projection/mc-scenario-inputs.tsx": 154,
     "src/components/retirement-projection/mc-scenario-section.tsx": 94,
-    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 212,
+    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 157,
     "src/components/retirement-projection/mc-simulation-types.ts": 30,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
@@ -170,6 +170,7 @@
     "src/components/retirement-projection/tooltip-renderer.tsx": 410,
     "src/components/retirement-projection/use-projection-derived.ts": 640,
     "src/components/retirement-projection/use-projection-queries.ts": 977,
+    "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 432,
@@ -693,9 +694,6 @@
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 158
-    },
-    "src/components/retirement-projection/mc-simulation-assumptions.tsx": {
-      "SimulationAssumptions": 193
     },
     "src/components/retirement-projection/overrides-panel.tsx": {
       "OverridesPanel": 668,
