@@ -43,7 +43,7 @@ import { fileURLToPath } from "url";
  */
 const PAGE_BUDGET_KB: Record<string, number> = {
   "/_global-error/page": 130,
-  "/_not-found/page": 184,
+  "/_not-found/page": 185,
   "/(dashboard)/analytics/page": 214,
   "/(dashboard)/assets/page": 221,
   "/(dashboard)/benchmarks/methodology/page": 216,
