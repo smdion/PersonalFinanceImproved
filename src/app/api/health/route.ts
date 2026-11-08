@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db, isPostgres } from "@/lib/db";
 import { sql } from "drizzle-orm";
 
+// Loaded once per process: a build whose app code fails to load reports degraded.
+let appRouterLoad: Promise<unknown> | undefined;
+
 /**
  * Simple health probe for Docker HEALTHCHECK and load balancers.
  * Returns only status + version — no internal state.
@@ -9,6 +12,9 @@ import { sql } from "drizzle-orm";
  */
 export async function GET() {
   try {
+    appRouterLoad ??= import("@/server/routers");
+    await appRouterLoad;
+
     // Database connectivity check
     if (isPostgres()) {
       await db.execute(sql`SELECT 1`);
