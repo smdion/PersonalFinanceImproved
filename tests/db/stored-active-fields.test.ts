@@ -57,4 +57,25 @@ describe("readContributionActiveFields", () => {
       profileId: 3,
     });
   });
+
+  it("reads a root that isn't an object (a hand-edited JSON null) as empty", () => {
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    for (const root of [null, [], "x"])
+      expect(
+        readContributionActiveFields(JSON.parse(JSON.stringify(root)), 41),
+      ).toEqual({ contributionAccounts: {}, deductions: {} });
+    expect(logged).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs a refused row once per profile and issue, not on every read", () => {
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    const stored = {
+      contributionAccounts: { "4": { contributionValue: "7" } },
+    };
+    readContributionActiveFields(stored, 42);
+    readContributionActiveFields(stored, 42);
+    expect(logged).toHaveBeenCalledTimes(1);
+    readContributionActiveFields(stored, 43);
+    expect(logged).toHaveBeenCalledTimes(2);
+  });
 });

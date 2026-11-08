@@ -393,7 +393,7 @@
     "src/server/services/contributions/account-edits.ts": 255,
     "src/server/services/contributions/caps.ts": 346,
     "src/server/services/contributions/live-data.ts": 98,
-    "src/server/services/contributions/profile.ts": 377,
+    "src/server/services/contributions/profile.ts": 376,
     "src/server/services/contributions/summary.ts": 732,
     "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 467,

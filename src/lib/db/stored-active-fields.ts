@@ -29,19 +29,38 @@ export type ContributionActiveFieldsRoot = {
   deductions: Record<string, Record<string, unknown>>;
 };
 
-/** Both buckets, each `{}` when the profile sets nothing in it. */
+const warned = new Set<string>();
+
+/** Logs a refused row once per process, not on every read. */
+function warnOnce(profileId: number | undefined, issues: string[]): void {
+  const key = `${profileId}|${issues.join(";")}`;
+  if (warned.has(key)) return;
+  warned.add(key);
+  log("warn", "contribution_active_fields_unexpected_shape", {
+    profileId,
+    issues,
+  });
+}
+
+/** Both buckets, each `{}` when the profile sets nothing in it; a root that
+ *  isn't an object (a hand-edited JSON null) reads as empty. */
 export function readContributionActiveFields(
   stored: EntityFieldMap,
   profileId?: number,
 ): ContributionActiveFieldsRoot {
+  const root: unknown = stored;
+  if (typeof root !== "object" || root === null || Array.isArray(root)) {
+    warnOnce(profileId, ["root: not an object"]);
+    return { contributionAccounts: {}, deductions: {} };
+  }
   const issues = [contributionActiveFieldsSchema, closedSetValues].flatMap(
     (schema) => schema.safeParse(stored).error?.issues ?? [],
   );
   if (issues.length > 0)
-    log("warn", "contribution_active_fields_unexpected_shape", {
+    warnOnce(
       profileId,
-      issues: issues.map((i) => `${i.path.join(".")}: ${i.message}`),
-    });
+      issues.map((i) => `${i.path.join(".")}: ${i.message}`),
+    );
   return {
     contributionAccounts: stored.contributionAccounts ?? {},
     deductions: stored.deductions ?? {},

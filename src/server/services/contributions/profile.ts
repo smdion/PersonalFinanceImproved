@@ -21,10 +21,8 @@ import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
 /**
  * Resolve a profile against live data, returning effective contribs + salaries.
  *
- * `liveJobSalaries` already reflects whichever Salary Profile is globally
- * active (resolved once by the caller, e.g. loadLiveContribData) —
- * contribution profiles no longer carry salary and there is nothing left
- * to layer on top of it here.
+ * `liveJobSalaries` already reflects the globally active Salary Profile
+ * (resolved once by the caller, e.g. loadLiveContribData).
  *
  * Generic over the row shapes so callers can hand in their own richer row
  * types (e.g. full contribution_accounts rows) and get them back unchanged
@@ -47,7 +45,7 @@ export function resolveProfile<
   profile: Pick<
     typeof schema.contributionProfiles.$inferSelect,
     "contributionActiveFields"
-  >,
+  > & { id?: number },
   liveContribs: C[],
   liveJobs: J[],
   liveJobSalaries: S[],
@@ -55,6 +53,7 @@ export function resolveProfile<
 ) {
   const accountActiveFields = readContributionActiveFields(
     profile.contributionActiveFields,
+    profile.id,
   ).contributionAccounts;
 
   // The merge applyContribActiveFields does: an account with no value in
