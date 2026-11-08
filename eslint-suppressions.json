@@ -751,35 +751,6 @@
       "count": 1
     }
   },
-  "src/components/budget/contribution-profile-manager.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
-    },
-    "max-lines-per-function": {
-      "count": 7
-    },
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 4
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 3
-    },
-    "ratchet/no-raw-button": {
-      "count": 6
-    },
-    "ratchet/no-raw-input": {
-      "count": 13
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 16
-    }
-  },
   "src/components/budget/extra-paycheck-budget-note.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -896,6 +867,85 @@
   "src/components/charts/chart-defaults.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
+    }
+  },
+  "src/components/contributions/profile-manager/contribution-profile-manager.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/components/contributions/profile-manager/match-groups.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-jsx-iife": {
+      "count": 2
+    }
+  },
+  "src/components/contributions/profile-manager/profile-editor.tsx": {
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-input": {
+      "count": 6
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 7
+    }
+  },
+  "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 6
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-jsx-iife": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
+    "ratchet/no-raw-input": {
+      "count": 7
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 9
     }
   },
   "src/components/dashboard/contributions-card.tsx": {

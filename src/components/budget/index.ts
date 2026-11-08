@@ -2,7 +2,7 @@ export { BudgetModeManager } from "./budget-mode-manager";
 export { BudgetSummaryTable } from "./budget-summary-table";
 export { AddItemForm } from "./add-item-form";
 export { AddCategoryForm } from "./add-category-form";
-export { ContributionProfileManager } from "./contribution-profile-manager";
+export { ContributionProfileManager } from "@/components/contributions/profile-manager/contribution-profile-manager";
 export { SalaryProfileManager } from "./salary-profile-manager";
 export { SavingsAllocationPanel } from "./savings-allocation-panel";
 export { BudgetProfileSidebar } from "./budget-profile-sidebar";

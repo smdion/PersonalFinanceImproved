@@ -20,9 +20,14 @@
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
     "src/components/budget/budget-summary-table.tsx": 570,
-    "src/components/budget/contribution-profile-manager.tsx": 2027,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 524,
+    "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 363,
+    "src/components/contributions/profile-manager/match-groups.ts": 51,
+    "src/components/contributions/profile-manager/profile-detail-panel.tsx": 257,
+    "src/components/contributions/profile-manager/profile-editor.tsx": 535,
+    "src/components/contributions/profile-manager/profile-inline-editor.tsx": 819,
+    "src/components/contributions/profile-manager/profile-types.ts": 15,
     "src/components/dashboard/contributions-card.tsx": 653,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
@@ -425,15 +430,6 @@
     "src/components/budget/budget-summary-table.tsx": {
       "BudgetSummaryTable": 517
     },
-    "src/components/budget/contribution-profile-manager.tsx": {
-      "ContributionProfileManager": 332,
-      "ProfileDetailPanel": 246,
-      "ProfileEditor": 517,
-      "ProfileEditor.map()": 211,
-      "ProfileInlineEditor": 784,
-      "ProfileInlineEditor.iife()": 370,
-      "ProfileInlineEditor.iife().map()": 366
-    },
     "src/components/budget/salary-profile-manager.tsx": {
       "ProfileEditPanel": 267,
       "SalaryProfileManager": 198
@@ -444,6 +440,21 @@
     },
     "src/components/budget/use-budget-item-mutations.ts": {
       "useBudgetItemMutations": 182
+    },
+    "src/components/contributions/profile-manager/contribution-profile-manager.tsx": {
+      "ContributionProfileManager": 332
+    },
+    "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
+      "ProfileDetailPanel": 246
+    },
+    "src/components/contributions/profile-manager/profile-editor.tsx": {
+      "ProfileEditor": 517,
+      "ProfileEditor.map()": 211
+    },
+    "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
+      "ProfileInlineEditor": 784,
+      "ProfileInlineEditor.iife()": 370,
+      "ProfileInlineEditor.iife().map()": 366
     },
     "src/components/dashboard/contributions-card.tsx": {
       "ContributionsCardImpl": 529,
