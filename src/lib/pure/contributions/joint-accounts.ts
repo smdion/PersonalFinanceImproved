@@ -25,7 +25,7 @@ import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account
 import type {
   AccountTypeSnapshot,
   PersonSnapshot,
-} from "@/server/services/contributions/summary.types";
+} from "@/lib/pure/contributions/summary.types";
 
 export function jointAccountRows(
   jointContribs: ContribAccountRow[],

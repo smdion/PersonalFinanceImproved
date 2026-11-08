@@ -16,7 +16,7 @@ import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account
 import type {
   AccountTypeSnapshot,
   PerContribData,
-} from "@/server/services/contributions/summary.types";
+} from "@/lib/pure/contributions/summary.types";
 
 export function newCategoryMap() {
   const categoryMap = new Map<

@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
-import { contribAccountsFor } from "@/server/services/contributions/person-snapshot";
+import { contribAccountsFor } from "@/lib/pure/contributions/person-snapshot";
 
 const base: ContribAccountRow = {
   capPassed: true,

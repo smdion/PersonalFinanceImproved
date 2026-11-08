@@ -8614,7 +8614,7 @@
       "count": 1
     }
   },
-  "src/server/services/contributions/account-type-snapshots.ts": {
+  "src/lib/pure/contributions/account-type-snapshots.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
@@ -8656,7 +8656,7 @@
       "count": 1
     }
   },
-  "src/server/services/contributions/joint-accounts.ts": {
+  "src/lib/pure/contributions/joint-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     }
@@ -8678,7 +8678,7 @@
       "count": 1
     }
   },
-  "src/server/services/contributions/person-snapshot.ts": {
+  "src/lib/pure/contributions/person-snapshot.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
@@ -8723,7 +8723,7 @@
       "count": 1
     }
   },
-  "src/server/services/contributions/summary.types.ts": {
+  "src/lib/pure/contributions/summary.types.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     },

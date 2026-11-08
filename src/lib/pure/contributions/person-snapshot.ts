@@ -28,7 +28,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
 import type { ContribAccountsForInput } from "@/lib/pure/contributions/person-snapshot.types";
-import type { PerContribData } from "@/server/services/contributions/summary.types";
+import type { PerContribData } from "@/lib/pure/contributions/summary.types";
 
 export function personPay(
   salaryProfileActiveMap: SalaryProfileActiveMap,

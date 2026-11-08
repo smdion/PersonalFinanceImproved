@@ -38,18 +38,18 @@ import { roundToCents, safeDivide } from "@/lib/utils/math";
 import type {
   AccountTypeSnapshot,
   PersonSnapshot,
-} from "@/server/services/contributions/summary.types";
-import { jointAccountRows } from "@/server/services/contributions/joint-accounts";
+} from "@/lib/pure/contributions/summary.types";
+import { jointAccountRows } from "@/lib/pure/contributions/joint-accounts";
 import {
   contribAccountsFor,
   perContribRows,
   personPay,
-} from "@/server/services/contributions/person-snapshot";
+} from "@/lib/pure/contributions/person-snapshot";
 import {
   accountTypeSnapshots,
   contributionTotals,
   newCategoryMap,
-} from "@/server/services/contributions/account-type-snapshots";
+} from "@/lib/pure/contributions/account-type-snapshots";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContribWindow } from "@/lib/utils/date";
 import { ageOnDate } from "@/lib/pure/household/age";
