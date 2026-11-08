@@ -170,7 +170,7 @@ export function DecumulationRow({
   } = state;
   if (!result) return null;
 
-  // Alias for code extracted from inline — uses `yr` throughout
+  // Alias for code extracted from inline — uses `yearRow` throughout
   const yr = dyr;
 
   // The household-wide discretionary-capacity paragraph

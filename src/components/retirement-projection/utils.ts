@@ -205,7 +205,7 @@ export function filterYearByParentCategory(
   // No individual-account data to filter by at all (MC "Simple" tax mode —
   // see monte-carlo.ts's Simple-mode block — has no per-account/parent-
   // category structure left once it collapses to one fictional bucket).
-  // Filtering by parent category is meaningless here; returning `yr`
+  // Filtering by parent category is meaningless here; returning `yearRow`
   // unchanged is the honest degradation, not zeroing every balance/
   // withdrawal field below to match an empty account list (Rate-Seeded
   // showed $0 balances everywhere because this function was doing exactly

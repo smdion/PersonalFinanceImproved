@@ -187,7 +187,7 @@ function buildRoutingReasonClause(
   // shares describeDiscretionaryCapacityMath with the advisor report so
   // the two can never disagree. Household-wide (not scoped to this
   // account's sourceKind, unlike breakdownClause above), so this uses the
-  // FULL yr.discretionaryTierBreakdown, deflated the same way. Gated to
+  // FULL yearRow.discretionaryTierBreakdown, deflated the same way. Gated to
   // roth/brokerage rows only — this paragraph
   // discusses neither of an HSA row's dollars — AND to `includeCapacityNote`
   // (with 1 Roth + 2 brokerage accounts drawing the
