@@ -130,6 +130,8 @@ git branch -d vX.Y.Z && git push origin --delete vX.Y.Z   # the tag needs the na
 git checkout main && git pull
 pnpm release X.Y.Z --dry-run    # validate — read the output carefully
 pnpm release X.Y.Z              # tag, push, create GitHub release
+# Under 24 h after the last tag: pnpm release X.Y.Z --hotfix "<reason>",
+# with a "Hotfix: <reason>" line in the CHANGELOG entry
 ```
 
 The release script: bumps version (no-op if already done), verifies CHANGELOG entry exists, verifies lockfile sync, runs full tests, runs lint, runs docs freshness, creates git tag, pushes with `--follow-tags`, creates GitHub release with CHANGELOG section extracted automatically.
