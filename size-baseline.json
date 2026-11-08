@@ -114,13 +114,14 @@
     "src/components/retirement-projection/account-notes.ts": 260,
     "src/components/retirement-projection/coast-fire-card.tsx": 408,
     "src/components/retirement-projection/decumulation-config.tsx": 468,
-    "src/components/retirement-projection/index.tsx": 1058,
+    "src/components/retirement-projection/index.tsx": 906,
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": 1071,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
     "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": 84,
     "src/components/retirement-projection/projection-card/compute-controls.tsx": 61,
     "src/components/retirement-projection/projection-card/compute-zone.tsx": 84,
+    "src/components/retirement-projection/projection-card/dollars-pills.tsx": 127,
     "src/components/retirement-projection/projection-card/engine-notices.tsx": 61,
     "src/components/retirement-projection/projection-card/hero-panel.tsx": 37,
     "src/components/retirement-projection/projection-card/person-view-pills.tsx": 54,
@@ -666,8 +667,8 @@
       "DecumulationConfig": 351
     },
     "src/components/retirement-projection/index.tsx": {
-      "ProjectionCard": 996,
-      "ProjectionCard.iife()": 363
+      "ProjectionCard": 843,
+      "ProjectionCard.iife()": 210
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 158
