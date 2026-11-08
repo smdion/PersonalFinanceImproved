@@ -1651,9 +1651,6 @@
     "ratchet/no-guarded-division": {
       "count": 2
     },
-    "ratchet/no-identity-predicate-import": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 5
     }
@@ -2375,9 +2372,6 @@
     "ratchet/no-abbreviation": {
       "count": 14
     },
-    "ratchet/no-identity-predicate-import": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 10
     },
@@ -2609,9 +2603,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 4
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/balance-cell.tsx": {
@@ -3056,9 +3047,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 38
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
@@ -3073,9 +3061,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 2
     }
   },
   "src/components/retirement-projection/projection-table-mc-cell.tsx": {

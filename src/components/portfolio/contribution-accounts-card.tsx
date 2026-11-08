@@ -20,7 +20,7 @@ import {
 } from "@/lib/utils/colors";
 import {
   getAccountTypeConfig,
-  isHsaCategory,
+  nonMedicalPenaltyRate,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
@@ -420,9 +420,8 @@ export function AccountCard({
                           onChange={async (e) => {
                             const checked = e.target.checked;
                             const rate = formatPercent(
-                              isHsaCategory(pa.accountType)
-                                ? HSA_NON_MEDICAL_PENALTY_RATE
-                                : EARLY_WITHDRAWAL_PENALTY_RATE,
+                              nonMedicalPenaltyRate(pa.accountType) ??
+                                EARLY_WITHDRAWAL_PENALTY_RATE,
                               0,
                             );
                             if (

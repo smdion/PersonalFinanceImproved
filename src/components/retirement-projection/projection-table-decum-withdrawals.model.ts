@@ -20,9 +20,9 @@ import {
 import {
   categoriesWithTaxPreference,
   getAccountTypeConfig,
-  isHsaCategory,
-  isIraCategory,
   isOverflowTarget,
+  isQcdEligible,
+  nonMedicalPenaltyRate,
 } from "@/lib/config/account-types";
 import { categoryWithdrawalItems } from "./projection-table-decum-row.model";
 import { ownerAccountLabel } from "./account-notes";
@@ -98,9 +98,9 @@ export function categoryWithdrawalTooltip(
   }
   // QCD: money sent from this account to charity, part of
   // the RMD but not taxable income. Deducted before routing
-  // runs, so no slot line shows it; "ira" only (by law).
+  // runs, so no slot line shows it; `qcdEligible` types only (by law).
   const qcdAmount = yr.qcdAmount ?? 0;
-  if (qcdAmount > 0.01 && isIraCategory(cat)) {
+  if (qcdAmount > 0.01 && isQcdEligible(cat)) {
     items.push({
       label: "QCD to charity (excluded from taxable income)",
       amount: deflate(qcdAmount, yr.year),
@@ -121,7 +121,7 @@ export function categoryWithdrawalTooltip(
   // not the whole household's breakdown.
   const catSourceKinds = new Set<"roth" | "brokerage" | "hsa">();
   if (catCfg.isOverflowTarget) catSourceKinds.add("brokerage");
-  if (isHsaCategory(cat)) catSourceKinds.add("hsa");
+  if (nonMedicalPenaltyRate(cat) !== null) catSourceKinds.add("hsa");
   if (catCfg.supportsRothSplit && (dSlot?.rothWithdrawal ?? 0) > 0.01)
     catSourceKinds.add("roth");
   const catTierBreakdown = yr.discretionaryTierBreakdown?.filter((t) =>

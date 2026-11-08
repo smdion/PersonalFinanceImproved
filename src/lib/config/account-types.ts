@@ -567,9 +567,9 @@ export function hasEarlyAccessRule(category: string, rule: EarlyAccessRule) {
   return CONFIG_BY_TEXT[category]?.earlyAccessRule === rule;
 }
 
-/** A QCD can come from this category (`qcdEligible`). */
-export function isQcdEligible(category: AccountCategory): boolean {
-  return ACCOUNT_TYPE_CONFIG[category].qcdEligible;
+/** A QCD can come from this category (`qcdEligible`); unknown: false. */
+export function isQcdEligible(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.qcdEligible === true;
 }
 
 /** Funded before every other tax-advantaged type (`tripleTaxAdvantaged`). */
@@ -578,10 +578,8 @@ export function isTripleTaxAdvantaged(category: AccountCategory): boolean {
 }
 
 /** The non-medical withdrawal penalty rate, or null where there is none. */
-export function nonMedicalPenaltyRate(
-  category: AccountCategory,
-): number | null {
-  return ACCOUNT_TYPE_CONFIG[category].nonMedicalPenaltyRate;
+export function nonMedicalPenaltyRate(category: string): number | null {
+  return CONFIG_BY_TEXT[category]?.nonMedicalPenaltyRate ?? null;
 }
 
 /** `paysMedicalExpenses`; false for a category not in the config. */

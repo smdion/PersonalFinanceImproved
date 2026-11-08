@@ -24,8 +24,8 @@ import {
   getAccountSegments,
   getAllCategories,
   ACCOUNT_TYPE_CONFIG,
-  isIraCategory,
   isOverflowTarget,
+  isQcdEligible,
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
@@ -571,7 +571,7 @@ export function DecumulationRow({
                 }
               }
               const colQcd = yr.qcdAmount ?? 0;
-              if (colQcd > 0.01 && isIraCategory(catKey)) {
+              if (colQcd > 0.01 && isQcdEligible(catKey)) {
                 decAcctItems.push({
                   label: "QCD to charity (excluded from taxable income)",
                   amount: deflate(colQcd, yr.year),

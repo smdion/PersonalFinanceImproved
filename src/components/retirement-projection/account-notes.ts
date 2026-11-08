@@ -13,7 +13,7 @@ import {
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
-  isHsaCategory,
+  nonMedicalPenaltyRate,
   tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
 import { describeEligibility } from "@/lib/config/eligibility-labels";
@@ -167,12 +167,12 @@ function buildRoutingReasonClause(
         : "";
     return `${targetClause}${orderClause}`;
   }
-  // Any HSA draw says how it's treated, with or without a ranking.
-  const hsaNote = isHsaCategory(ia.category) ? HSA_DRAW_TREATMENT : undefined;
+  const hsaDraw = nonMedicalPenaltyRate(ia.category) !== null;
+  const hsaNote = hsaDraw ? HSA_DRAW_TREATMENT : undefined; // ranked or not
   if (!yr.discretionaryTierBreakdown?.length) return hsaNote;
   let sourceKind: "roth" | "brokerage" | "hsa" | undefined;
   if (catCfg?.isOverflowTarget) sourceKind = "brokerage";
-  else if (isHsaCategory(ia.category)) sourceKind = "hsa";
+  else if (hsaDraw) sourceKind = "hsa";
   else if (catCfg?.supportsRothSplit && isTaxFreeBucket(ia.taxType))
     sourceKind = "roth";
   if (!sourceKind) return undefined;

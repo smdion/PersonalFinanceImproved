@@ -12,10 +12,16 @@ import {
   hasOpenFundChoice,
   isHsaCategory,
   isIraCategory,
+  isQcdEligible,
+  nonMedicalPenaltyRate,
   isRothIncomeLimited,
   isTaxableCategory,
   paysMedical,
 } from "@/lib/config/account-types";
+import {
+  EARLY_WITHDRAWAL_PENALTY_RATE,
+  HSA_NON_MEDICAL_PENALTY_RATE,
+} from "@/lib/constants";
 import type { AccountTypeConfig } from "@/lib/config/account-types.types";
 
 const BY_TEXT: Partial<Record<string, AccountTypeConfig>> = ACCOUNT_TYPE_CONFIG;
@@ -93,4 +99,26 @@ describe("server and sync sites", () => {
     isRothIncomeLimited,
     isIraCategory,
   );
+});
+
+describe("UI sites", () => {
+  sameAt("holdings: the HSA cash buffer", paysMedical, isHsaCategory);
+  sameAt("decumulation table: the QCD line", isQcdEligible, isIraCategory);
+  sameAt(
+    "account notes and decumulation table: the HSA draw note and source",
+    (c) => nonMedicalPenaltyRate(c) !== null,
+    isHsaCategory,
+  );
+  it("contribution card: the penalty rate it names", () => {
+    for (const c of EVERY)
+      expect([
+        c,
+        nonMedicalPenaltyRate(c) ?? EARLY_WITHDRAWAL_PENALTY_RATE,
+      ]).toEqual([
+        c,
+        isHsaCategory(c)
+          ? HSA_NON_MEDICAL_PENALTY_RATE
+          : EARLY_WITHDRAWAL_PENALTY_RATE,
+      ]);
+  });
 });

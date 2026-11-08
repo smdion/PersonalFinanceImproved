@@ -122,7 +122,7 @@
     "src/components/performance/update-performance-form.tsx": 852,
     "src/components/performance/year-row.tsx": 765,
     "src/components/portfolio/account-live-data.tsx": 409,
-    "src/components/portfolio/contribution-accounts-card.tsx": 666,
+    "src/components/portfolio/contribution-accounts-card.tsx": 665,
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": 662,
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 833,
@@ -221,7 +221,7 @@
     "src/components/tools/relocation/projection-table.tsx": 416,
     "src/lib/budget-api/actual-client.ts": 820,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/config/account-types.ts": 857,
+    "src/lib/config/account-types.ts": 855,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 771,
     "src/lib/constants.ts": 370,
@@ -678,7 +678,7 @@
       "AccountBalanceOverview": 238
     },
     "src/components/portfolio/contribution-accounts-card.tsx": {
-      "AccountCard": 617
+      "AccountCard": 616
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
       "AddContribForm": 196,
