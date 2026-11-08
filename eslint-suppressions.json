@@ -2734,13 +2734,13 @@
       "count": 4
     },
     "ratchet/no-raw-button": {
-      "count": 17
+      "count": 12
     },
     "ratchet/no-raw-input": {
-      "count": 6
+      "count": 4
     },
     "ratchet/no-unlabeled-control": {
-      "count": 6
+      "count": 4
     }
   },
   "src/components/savings/fund-card.tsx": {
@@ -7487,6 +7487,17 @@
     },
     "ratchet/no-raw-button": {
       "count": 4
+    }
+  },
+  "src/components/savings/extra-paycheck-growth.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 5
+    },
+    "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   }
 }
