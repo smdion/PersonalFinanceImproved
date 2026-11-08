@@ -40,7 +40,7 @@ import {
 import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
-import { QueryBoundary } from "@/components/ui/query-boundary";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
@@ -140,7 +140,7 @@ export function BrokerageContent() {
     engineInput,
     { enabled: engineReady },
   );
-  const { data, error } = projectionQuery;
+  const { data } = projectionQuery;
   const isLoading =
     projectionQuery.isLoading || (!engineReady && !projectionQuery.data);
   const { data: contribData } =
@@ -153,11 +153,11 @@ export function BrokerageContent() {
   const [isGoalsOpen, setIsGoalsOpen] = useState(false);
   const [dollarMode, setDollarMode] = useState<DollarBasis>("nominal");
 
-  // Waiting on the saved rows shows the skeleton too (no Retry).
-  if (isLoading || error) {
+  // Waiting on the saved rows shows the skeleton; their failure shows.
+  if (isLoading || queryPending([projectionQuery, savedAccumQuery])) {
     return (
       <QueryBoundary
-        query={projectionQuery}
+        query={[projectionQuery, savedAccumQuery]}
         frame={(body) => (
           <div>
             <PageHeader

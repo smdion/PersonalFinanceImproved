@@ -11,7 +11,7 @@ import { useState, useMemo } from "react";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { QueryBoundary } from "@/components/ui/query-boundary";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatCurrency } from "@/lib/utils/format";
@@ -94,7 +94,7 @@ export function RetirementContent() {
     // can still be the input from before settings loaded.
     { placeholderData: (prev) => prev, enabled: queryEnabled },
   );
-  const { data, isFetching, error } = projectionQuery;
+  const { data, isFetching } = projectionQuery;
   // Waiting to run = still loading (a disabled query reports isLoading
   // false, which would read as "no projection").
   const isLoading =
@@ -118,11 +118,11 @@ export function RetirementContent() {
       placeholderData: (prev) => prev,
     });
 
-  // Waiting on the input shows the skeleton too (no Retry: nothing runs).
-  if (isLoading || error) {
+  // Waiting on the input shows the skeleton; a failed input query shows.
+  if (isLoading || queryPending([projectionQuery, plan.gate])) {
     return (
       <QueryBoundary
-        query={projectionQuery}
+        query={[projectionQuery, plan.gate]}
         what="retirement data"
         fallback={
           <div className="space-y-4">

@@ -1213,8 +1213,10 @@ if (queryPending(summary))
   that refetches the failed queries; while they run it is disabled and
   says "Retrying…". A refused demo profile shows its own message without
   Retry; Providers then swap the page for the demo picker.
-- `query` takes one query or a list. A hook that combines queries passes
-  `error`, `isLoading` and a `refetch` for the failed ones.
+- `query` takes one query or a list, which may hold a hook's gate queries
+  (`usePlanEngineInput().gate`: what `ready` waits on), so a failed input
+  shows instead of a wait. A hook that combines queries passes `error`,
+  `isLoading` and a `refetch` for the failed ones.
 - A card passes `frame` to keep both states inside the card
   (`CardQueryBoundary` in `components/dashboard/utils.tsx`).
 - Never `if (isLoading || !data) return <Skeleton />`: a failed query has no

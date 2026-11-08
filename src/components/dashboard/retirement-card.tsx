@@ -44,7 +44,7 @@ import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
 function RetirementCardImpl() {
   const projection = useDashboardProjection();
-  const { engineInput, ready, data } = projection;
+  const { engineInput, ready, data, gate } = projection;
   // The household's checkpoint table and today's figures for Readiness —
   // the same query (and input) the Milestones engine reads.
   const milestoneInputs = trpc.milestones.computeInputs.useQuery(
@@ -76,8 +76,8 @@ function RetirementCardImpl() {
     { ...engineInput, peekOnly: true },
     { staleTime: 0, enabled: ready },
   );
-  if (queryPending(projection))
-    return <CardQueryBoundary title="Retirement" query={projection} />;
+  if (queryPending([projection, gate]))
+    return <CardQueryBoundary title="Retirement" query={[projection, gate]} />;
   if (data && "notConfigured" in data)
     return (
       <Card title="Retirement" href="/retirement">

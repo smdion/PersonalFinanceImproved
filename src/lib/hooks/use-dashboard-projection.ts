@@ -14,13 +14,19 @@ import { milestoneProjectionYears } from "@/lib/pure/advice/milestones/input";
 /** The plan's projection (usePlanEngineInput — the same input the
  *  Retirement page sends, so the dashboard reads the page's cached runs). */
 export function useDashboardProjection() {
-  const { input: engineInput, ready } = usePlanEngineInput();
+  const { input: engineInput, ready, gate } = usePlanEngineInput();
   const query = trpc.projection.computeProjection.useQuery(engineInput, {
     enabled: ready,
   });
   // Not ready = still loading (a disabled query reports isLoading false,
   // which would read as "no projection" for a moment).
-  return { engineInput, ready, ...query, isLoading: query.isLoading || !ready };
+  return {
+    engineInput,
+    ready,
+    gate,
+    ...query,
+    isLoading: query.isLoading || !ready,
+  };
 }
 
 /**

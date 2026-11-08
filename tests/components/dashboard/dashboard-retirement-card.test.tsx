@@ -32,6 +32,7 @@ vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
       decumulationDefaults: { withdrawalTaxPreference: {} },
     },
     ready: true,
+    gate: [],
     ids: {
       contributionProfileId: null,
       salaryProfileId: null,

@@ -11,6 +11,7 @@ vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
       decumulationDefaults: {},
     },
     ready: true,
+    gate: [],
     ids: {
       contributionProfileId: 20,
       salaryProfileId: 10,

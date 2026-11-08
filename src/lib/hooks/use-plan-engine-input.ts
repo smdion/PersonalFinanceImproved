@@ -18,6 +18,7 @@
  * starts from is sent, so its untouched query is byte-identical.
  */
 import { useMemo } from "react";
+import type { BoundaryQuery } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -46,6 +47,8 @@ type PlanEngineInput = {
 export function usePlanEngineInput(): {
   input: PlanEngineInput;
   ready: boolean;
+  /** The queries `ready` waits on, so a failed one shows (QueryBoundary). */
+  gate: readonly BoundaryQuery[];
   /** The resolved ids, for surfaces that show or pass them on. */
   ids: {
     contributionProfileId: number | null;
@@ -60,6 +63,10 @@ export function usePlanEngineInput(): {
   const contribProfiles = trpc.contributionProfile.list.useQuery();
   const salaryProfiles = trpc.salaryProfile.list.useQuery();
   const retirementProfiles = trpc.retirement.retirementProfiles.list.useQuery();
+  // The query usePersistedSetting reads, for its failure.
+  const settings = trpc.settings.appSettings.list.useQuery(undefined, {
+    staleTime: 60_000,
+  });
   const { profileId: contributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
@@ -139,6 +146,7 @@ export function usePlanEngineInput(): {
   return {
     input,
     ready,
+    gate: [contribProfiles, salaryProfiles, retirementProfiles, settings],
     ids: {
       contributionProfileId,
       salaryProfileId,

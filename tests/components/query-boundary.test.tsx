@@ -139,6 +139,28 @@ describe("QueryBoundary", () => {
     expect(ok.refetch).not.toHaveBeenCalled();
   });
 
+  it("a hook's gate queries count too: a failed one shows, not the wait", () => {
+    const waiting = loading({ isFetching: false });
+    const gate = [
+      loading({ isLoading: false, isFetching: false }),
+      loading({
+        error: new Error("profiles broke"),
+        isLoading: false,
+        isFetching: false,
+      }),
+    ];
+    expect(queryPending([waiting, gate])).toBe(true);
+    render(
+      <QueryBoundary query={[waiting, gate]} fallback={<p>skeleton</p>} />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Failed to load: profiles broke",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(gate[1]!.refetch).toHaveBeenCalledTimes(1);
+    expect(waiting.refetch).not.toHaveBeenCalled();
+  });
+
   it("a refused demo profile shows its message and no Retry", () => {
     const error = Object.assign(new Error("Choose a demo profile again."), {
       data: { demoSessionEnded: true },

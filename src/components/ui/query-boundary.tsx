@@ -20,7 +20,9 @@ export type BoundaryQuery = {
   refetch: () => unknown;
 };
 
-type Queries = BoundaryQuery | readonly BoundaryQuery[];
+/** One query, or a list of queries and lists (a hook's gate queries). */
+type Queries =
+  BoundaryQuery | readonly (BoundaryQuery | readonly BoundaryQuery[])[];
 
 export type QueryBoundaryProps = {
   /** One query, or every query the content waits on. */
@@ -34,7 +36,9 @@ export type QueryBoundaryProps = {
 };
 
 const listOf = (query: Queries): readonly BoundaryQuery[] =>
-  "isLoading" in query ? [query] : query;
+  "isLoading" in query
+    ? [query]
+    : query.flatMap((q) => ("isLoading" in q ? [q] : q));
 
 /**
  * True while any query is loading or has failed, so the page shows the
