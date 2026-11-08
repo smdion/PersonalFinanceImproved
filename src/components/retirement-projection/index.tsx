@@ -2,12 +2,7 @@
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import { SlidePanel } from "@/components/ui/slide-panel";
-import { ValidationContent } from "@/components/methodology/validation-content";
 import type { DollarBasis } from "@/lib/config/enum-values";
-import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
-import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanel } from "./overrides-panel";
 import { ReportRoot } from "./report/report-root";
 import {
@@ -19,31 +14,14 @@ import { ComputeControls } from "./projection-card/compute-controls";
 import { DisplayControls } from "./projection-card/display-controls";
 import { RecalculatingBanner } from "./projection-card/recalculating-banner";
 import { ProjectionLoaderStrip } from "./projection-card/loader-strip";
+import { DecumulationPanel } from "./projection-card/decumulation-panel";
+import { ProjectionSlidePanels } from "./projection-card/slide-panels";
 import { ChartArea } from "./projection-card/chart-area";
 import { TableArea } from "./projection-card/table-area";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
 import type { ReportGateFailure } from "@/lib/pure/advice/report/mc-freshness";
 import { ReportGateModal } from "./report/report-gate-modal";
-
-// The methodology write-ups (~1,900 lines of prose) load only when one of
-// their slide panels is opened (closed panels render nothing).
-const MethodologyContent = dynamic(() =>
-  import("@/components/methodology/methodology-content").then((m) => ({
-    default: m.MethodologyContent,
-  })),
-);
-const AccumulationMethodologyContent = dynamic(() =>
-  import("@/components/methodology/accumulation-content").then((m) => ({
-    default: m.AccumulationMethodologyContent,
-  })),
-);
-const DecumulationMethodologyContent = dynamic(() =>
-  import("@/components/methodology/decumulation-content").then((m) => ({
-    default: m.DecumulationMethodologyContent,
-  })),
-);
 import { McResultsSection } from "./projection-mc-results";
-import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import {
   useProjectionState,
   type EngineContribRate,
@@ -457,36 +435,24 @@ export function ProjectionCard(props: {
           />
 
           {/* DECUMULATION DEFAULTS */}
-          <div className="print:hidden">
-            <DecumulationConfig
-              isPersonFiltered={isPersonFiltered}
-              personFilterName={personFilterName}
-              showDecumConfig={showDecumConfig}
-              setShowDecumConfig={setShowDecumConfig}
-              withdrawalRoutingMode={withdrawalRoutingMode}
-              setWithdrawalRoutingMode={setWithdrawalRoutingMode}
-              withdrawalRoutingModeTouched={withdrawalRoutingModeTouched}
-              withdrawalOrder={withdrawalOrder}
-              setWithdrawalOrder={setWithdrawalOrder}
-              withdrawalOrderTouched={withdrawalOrderTouched}
-              persistedWithdrawalOrder={engineSettings?.withdrawalOrder}
-              withdrawalSplits={withdrawalSplits}
-              setWithdrawalSplits={setWithdrawalSplits}
-              withdrawalSplitsTouched={withdrawalSplitsTouched}
-              persistedWithdrawalSplits={engineSettings?.withdrawalSplits}
-              withdrawalTaxPref={withdrawalTaxPref}
-              setWithdrawalTaxPref={setWithdrawalTaxPref}
-              activeSpendingStrategy={engineSettings?.withdrawalStrategy}
-              discretionaryWithdrawalOrder={
-                engineSettings?.discretionaryWithdrawalOrder
-              }
-              persistedWithdrawalRoutingMode={
-                engineSettings?.withdrawalRoutingMode
-              }
-              enableAcaAwareness={engineSettings?.enableAcaAwareness}
-              enableIrmaaAwareness={engineSettings?.enableIrmaaAwareness}
-            />
-          </div>
+          <DecumulationPanel
+            isPersonFiltered={isPersonFiltered}
+            personFilterName={personFilterName}
+            showDecumConfig={showDecumConfig}
+            setShowDecumConfig={setShowDecumConfig}
+            withdrawalRoutingMode={withdrawalRoutingMode}
+            setWithdrawalRoutingMode={setWithdrawalRoutingMode}
+            withdrawalRoutingModeTouched={withdrawalRoutingModeTouched}
+            withdrawalOrder={withdrawalOrder}
+            setWithdrawalOrder={setWithdrawalOrder}
+            withdrawalOrderTouched={withdrawalOrderTouched}
+            engineSettings={engineSettings}
+            withdrawalSplits={withdrawalSplits}
+            setWithdrawalSplits={setWithdrawalSplits}
+            withdrawalSplitsTouched={withdrawalSplitsTouched}
+            withdrawalTaxPref={withdrawalTaxPref}
+            setWithdrawalTaxPref={setWithdrawalTaxPref}
+          />
 
           {/* UNIFIED OVERRIDES */}
           <div className="print:hidden">
@@ -497,72 +463,27 @@ export function ProjectionCard(props: {
           </div>
         </div>
       </div>
-      <SlidePanel
-        isOpen={showMethodology}
-        onClose={() => setShowMethodology(false)}
-        title="Simulation Methodology"
-      >
-        <MethodologyContent />
-      </SlidePanel>
-      <SlidePanel
-        isOpen={showAccumMethodology}
-        onClose={() => setShowAccumMethodology(false)}
-        title="Accumulation Methodology"
-      >
-        <AccumulationMethodologyContent />
-      </SlidePanel>
-      <SlidePanel
-        isOpen={showDecumMethodology}
-        onClose={() => setShowDecumMethodology(false)}
-        title="Decumulation Methodology"
-      >
-        <DecumulationMethodologyContent />
-      </SlidePanel>
-      <SlidePanel
-        isOpen={showValidation}
-        onClose={() => setShowValidation(false)}
-        title="Why Trust These Numbers?"
-      >
-        <ValidationContent />
-      </SlidePanel>
-      <SlidePanel
-        isOpen={showAssumptions}
-        onClose={() => setShowAssumptions(false)}
-        title="Simulation Assumptions"
-      >
-        {mcQuery.data?.result && "simulationInputs" in mcQuery.data && (
-          <SimulationAssumptions
-            inputs={mcQuery.data.simulationInputs}
-            numTrials={mcQuery.data.result.numTrials}
-            onAssetClassOverridesChange={(overrides) => {
-              setMcAssetClassOverrides(overrides);
-              updateAssetClassOverrides.mutate(overrides);
-            }}
-            assetClassOverrides={mcAssetClassOverrides}
-            fanBandRange={fanBandRange}
-            onGlidePathChange={(entries) => updateGlidePath.mutate({ entries })}
-            onInflationRiskChange={(stdDev) =>
-              updateInflationOverrides.mutate({ stdDev })
-            }
-            onClampBoundsChange={(min, max) =>
-              updateClampBounds.mutate({
-                preset: "custom",
-                returnClampMin: min,
-                returnClampMax: max,
-              })
-            }
-            outcomeDistribution={{
-              successRate: mcQuery.data.result.successRate,
-              ...simulationDollars(mcQuery.data.result, dollarMode),
-              sustainableWithdrawalPV:
-                mcQuery.data.result.distributions.sustainableWithdrawalPV,
-              failureAge:
-                mcQuery.data.result.distributions.failureAge ?? undefined,
-              computeTimeMs: mcQuery.data.result.computeTimeMs,
-            }}
-          />
-        )}
-      </SlidePanel>
+      <ProjectionSlidePanels
+        showMethodology={showMethodology}
+        setShowMethodology={setShowMethodology}
+        showAccumMethodology={showAccumMethodology}
+        setShowAccumMethodology={setShowAccumMethodology}
+        showDecumMethodology={showDecumMethodology}
+        setShowDecumMethodology={setShowDecumMethodology}
+        showValidation={showValidation}
+        setShowValidation={setShowValidation}
+        showAssumptions={showAssumptions}
+        setShowAssumptions={setShowAssumptions}
+        mcQuery={mcQuery}
+        setMcAssetClassOverrides={setMcAssetClassOverrides}
+        updateAssetClassOverrides={updateAssetClassOverrides}
+        mcAssetClassOverrides={mcAssetClassOverrides}
+        fanBandRange={fanBandRange}
+        updateGlidePath={updateGlidePath}
+        updateInflationOverrides={updateInflationOverrides}
+        updateClampBounds={updateClampBounds}
+        dollarMode={dollarMode}
+      />
     </>
   );
 }

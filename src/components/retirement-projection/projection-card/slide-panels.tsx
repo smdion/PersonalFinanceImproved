@@ -1,0 +1,138 @@
+import dynamic from "next/dynamic";
+import { SlidePanel } from "@/components/ui/slide-panel";
+import { ValidationContent } from "@/components/methodology/validation-content";
+import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
+import type { DollarBasis } from "@/lib/config/enum-values";
+import { simulationDollars } from "@/lib/pure/simulation/dollars";
+import type { ProjectionState } from "../projection-table-types";
+
+// The methodology write-ups (~1,900 lines of prose) load only when one of
+// their slide panels is opened (closed panels render nothing).
+const MethodologyContent = dynamic(() =>
+  import("@/components/methodology/methodology-content").then((m) => ({
+    default: m.MethodologyContent,
+  })),
+);
+const AccumulationMethodologyContent = dynamic(() =>
+  import("@/components/methodology/accumulation-content").then((m) => ({
+    default: m.AccumulationMethodologyContent,
+  })),
+);
+const DecumulationMethodologyContent = dynamic(() =>
+  import("@/components/methodology/decumulation-content").then((m) => ({
+    default: m.DecumulationMethodologyContent,
+  })),
+);
+
+export function ProjectionSlidePanels({
+  showMethodology,
+  setShowMethodology,
+  showAccumMethodology,
+  setShowAccumMethodology,
+  showDecumMethodology,
+  setShowDecumMethodology,
+  showValidation,
+  setShowValidation,
+  showAssumptions,
+  setShowAssumptions,
+  mcQuery,
+  setMcAssetClassOverrides,
+  updateAssetClassOverrides,
+  mcAssetClassOverrides,
+  fanBandRange,
+  updateGlidePath,
+  updateInflationOverrides,
+  updateClampBounds,
+  dollarMode,
+}: {
+  showMethodology: ProjectionState["showMethodology"];
+  setShowMethodology: ProjectionState["setShowMethodology"];
+  showAccumMethodology: ProjectionState["showAccumMethodology"];
+  setShowAccumMethodology: ProjectionState["setShowAccumMethodology"];
+  showDecumMethodology: ProjectionState["showDecumMethodology"];
+  setShowDecumMethodology: ProjectionState["setShowDecumMethodology"];
+  showValidation: ProjectionState["showValidation"];
+  setShowValidation: ProjectionState["setShowValidation"];
+  showAssumptions: ProjectionState["showAssumptions"];
+  setShowAssumptions: ProjectionState["setShowAssumptions"];
+  mcQuery: ProjectionState["mcQuery"];
+  setMcAssetClassOverrides: ProjectionState["setMcAssetClassOverrides"];
+  updateAssetClassOverrides: ProjectionState["updateAssetClassOverrides"];
+  mcAssetClassOverrides: ProjectionState["mcAssetClassOverrides"];
+  fanBandRange: ProjectionState["fanBandRange"];
+  updateGlidePath: ProjectionState["updateGlidePath"];
+  updateInflationOverrides: ProjectionState["updateInflationOverrides"];
+  updateClampBounds: ProjectionState["updateClampBounds"];
+  dollarMode: DollarBasis;
+}) {
+  return (
+    <>
+      <SlidePanel
+        isOpen={showMethodology}
+        onClose={() => setShowMethodology(false)}
+        title="Simulation Methodology"
+      >
+        <MethodologyContent />
+      </SlidePanel>
+      <SlidePanel
+        isOpen={showAccumMethodology}
+        onClose={() => setShowAccumMethodology(false)}
+        title="Accumulation Methodology"
+      >
+        <AccumulationMethodologyContent />
+      </SlidePanel>
+      <SlidePanel
+        isOpen={showDecumMethodology}
+        onClose={() => setShowDecumMethodology(false)}
+        title="Decumulation Methodology"
+      >
+        <DecumulationMethodologyContent />
+      </SlidePanel>
+      <SlidePanel
+        isOpen={showValidation}
+        onClose={() => setShowValidation(false)}
+        title="Why Trust These Numbers?"
+      >
+        <ValidationContent />
+      </SlidePanel>
+      <SlidePanel
+        isOpen={showAssumptions}
+        onClose={() => setShowAssumptions(false)}
+        title="Simulation Assumptions"
+      >
+        {mcQuery.data?.result && "simulationInputs" in mcQuery.data && (
+          <SimulationAssumptions
+            inputs={mcQuery.data.simulationInputs}
+            numTrials={mcQuery.data.result.numTrials}
+            onAssetClassOverridesChange={(overrides) => {
+              setMcAssetClassOverrides(overrides);
+              updateAssetClassOverrides.mutate(overrides);
+            }}
+            assetClassOverrides={mcAssetClassOverrides}
+            fanBandRange={fanBandRange}
+            onGlidePathChange={(entries) => updateGlidePath.mutate({ entries })}
+            onInflationRiskChange={(stdDev) =>
+              updateInflationOverrides.mutate({ stdDev })
+            }
+            onClampBoundsChange={(min, max) =>
+              updateClampBounds.mutate({
+                preset: "custom",
+                returnClampMin: min,
+                returnClampMax: max,
+              })
+            }
+            outcomeDistribution={{
+              successRate: mcQuery.data.result.successRate,
+              ...simulationDollars(mcQuery.data.result, dollarMode),
+              sustainableWithdrawalPV:
+                mcQuery.data.result.distributions.sustainableWithdrawalPV,
+              failureAge:
+                mcQuery.data.result.distributions.failureAge ?? undefined,
+              computeTimeMs: mcQuery.data.result.computeTimeMs,
+            }}
+          />
+        )}
+      </SlidePanel>
+    </>
+  );
+}
