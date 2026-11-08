@@ -417,7 +417,7 @@
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/services/sync/preview.ts": 455,
-    "src/server/services/sync/sync-all.ts": 264,
+    "src/server/services/sync/sync-all.ts": 259,
     "src/server/trpc.ts": 572
   },
   "functions": {
@@ -1116,8 +1116,7 @@
       "computeSyncPreview": 422
     },
     "src/server/services/sync/sync-all.ts": {
-      "syncAll": 240,
-      "syncAll.assetsPulled.transaction()": 154
+      "syncAll": 234
     }
   }
 }

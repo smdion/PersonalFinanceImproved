@@ -16,6 +16,7 @@ import {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
+import { readCachedMonthBalances } from "@/lib/budget-api/cached-month";
 import { applyPullMapping } from "@/server/services/sync/apply-pull-mapping";
 import { loadSavingsGoalLinks } from "@/server/data/category-links";
 import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
@@ -174,19 +175,13 @@ export async function syncAll(
         for (const entry of priorMonthCaches) {
           // Cache key is "months/YYYY-MM-01" — extract the date portion.
           const monthDate = entry.cacheKey.replace("months/", "");
-          const detail = entry.data as {
-            categories?: { id: string; balance: number }[];
-          };
-          const priorCatMap = new Map<string, number>(
-            (detail.categories ?? [])
-              // A cached month from any version is cast, not parsed.
-              .filter((c) => c.id != null)
-              .map((c) => [c.id, c.balance]),
+          const priorCatMap = readCachedMonthBalances(
+            entry.cacheKey,
+            entry.data,
           );
           for (const goal of linkedGoals) {
             const balance = priorCatMap.get(goal.apiCategoryId!);
-            // An old cached month may hold no number where a figure was missing.
-            if (typeof balance !== "number") continue;
+            if (balance === undefined) continue;
             // Insert only — never overwrite an existing month's recorded balance.
             await tx
               .insert(schema.savingsMonthly)

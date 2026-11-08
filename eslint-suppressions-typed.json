@@ -369,11 +369,6 @@
       "count": 1
     }
   },
-  "src/server/services/sync/sync-all.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/trpc.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 5
