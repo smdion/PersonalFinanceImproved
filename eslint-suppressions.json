@@ -2734,13 +2734,7 @@
       "count": 4
     },
     "ratchet/no-raw-button": {
-      "count": 12
-    },
-    "ratchet/no-raw-input": {
-      "count": 4
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 4
+      "count": 1
     }
   },
   "src/components/savings/fund-card.tsx": {
@@ -7498,6 +7492,28 @@
     },
     "ratchet/no-unlabeled-control": {
       "count": 2
+    }
+  },
+  "src/components/savings/extra-paycheck-rules.tsx": {
+    "ratchet/no-raw-input": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
+    },
+    "ratchet/no-raw-button": {
+      "count": 6
+    }
+  },
+  "src/components/savings/extra-paycheck-month-overrides.tsx": {
+    "ratchet/no-unlabeled-control": {
+      "count": 2
+    },
+    "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   }
 }

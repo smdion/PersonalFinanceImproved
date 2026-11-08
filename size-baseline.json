@@ -85,7 +85,9 @@
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 244,
-    "src/components/savings/extra-paycheck-rules-editor.tsx": 1023,
+    "src/components/savings/extra-paycheck-month-overrides.tsx": 263,
+    "src/components/savings/extra-paycheck-rules-editor.tsx": 666,
+    "src/components/savings/extra-paycheck-rules.tsx": 385,
     "src/components/savings/fund-card-menu.tsx": 143,
     "src/components/savings/fund-card-progress.tsx": 303,
     "src/components/savings/fund-card-sub-goals.tsx": 214,
@@ -732,7 +734,7 @@
       "EmergencyFundDetail": 187
     },
     "src/components/savings/extra-paycheck-rules-editor.tsx": {
-      "ExtraPaycheckJobPanel": 776
+      "ExtraPaycheckJobPanel": 414
     },
     "src/components/savings/fund-card.tsx": {
       "FundCard": 364
