@@ -13,6 +13,7 @@ export function InlineMatchTypeCell({
   return (
     <td className="px-3 py-1.5">
       <select
+        aria-label={`Match Type, ${ad.liveAccountName}`}
         value={effectiveMatchType}
         onChange={(e) =>
           patchAccount(ad.id, {
@@ -53,6 +54,7 @@ export function InlineMatchCell({
             </span>
           )}
           <input
+            aria-label={`Employer Match, ${ad.liveAccountName}`}
             type="number"
             value={drafts[`a${ad.id}:match`] ?? storedMatch}
             onChange={(e) => setDraft(`a${ad.id}:match`, e.target.value)}
@@ -113,6 +115,7 @@ export function InlineCapCell({
       {hasMatch && isPercentMatch ? (
         <div className="flex items-center justify-end gap-0.5">
           <input
+            aria-label={`Match Cap, ${ad.liveAccountName}`}
             type="number"
             value={drafts[`a${ad.id}:cap`] ?? storedCap}
             onChange={(e) => setDraft(`a${ad.id}:cap`, e.target.value)}

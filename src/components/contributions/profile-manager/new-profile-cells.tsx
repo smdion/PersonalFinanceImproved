@@ -89,6 +89,7 @@ function NewProfileNameCell({
       )}
       {!isDisabled && (
         <input
+          aria-label={`Custom name, ${ad.liveAccountName}`}
           type="text"
           value={nameValues[String(ad.id)] ?? ""}
           onChange={(e) =>
@@ -117,6 +118,7 @@ function NewProfileMethodCell({
     <td className="px-1.5 py-1.5">
       {!isDisabled && (
         <select
+          aria-label={`Method, ${ad.liveAccountName}`}
           value={effectiveMethod}
           onChange={(e) =>
             setContribValues((prev) => ({
@@ -155,6 +157,7 @@ function NewProfileValueCell({
             {isPercent ? "" : "$"}
           </span>
           <input
+            aria-label={`Value, ${ad.liveAccountName}`}
             type="number"
             value={contribVal.value ?? ""}
             onChange={(e) =>
@@ -186,6 +189,7 @@ function NewProfileMatchTypeCell({
   return (
     <td className="px-1.5 py-1.5">
       <select
+        aria-label={`Match Type, ${ad.liveAccountName}`}
         value={effectiveMatchType}
         onChange={(e) =>
           setMatchValues((prev) => ({
@@ -225,6 +229,7 @@ function NewProfileMatchCell({
             </span>
           )}
           <input
+            aria-label={`Employer Match, ${ad.liveAccountName}`}
             type="number"
             value={mVal.matchValue ?? ""}
             onChange={(e) =>
@@ -262,6 +267,7 @@ function NewProfileCapCell({
       {hasMatch && isPercentMatch ? (
         <div className="flex items-center justify-end gap-0.5">
           <input
+            aria-label={`Match Cap, ${ad.liveAccountName}`}
             type="number"
             value={mVal.maxMatchPct ?? ""}
             onChange={(e) =>

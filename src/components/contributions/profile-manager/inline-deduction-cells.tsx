@@ -25,6 +25,7 @@ export function InlineDeductionNameCell({
   return (
     <td className="text-secondary py-1.5 pr-3 pl-4">
       <input
+        aria-label={`Deduction, ${personName}`}
         type="text"
         value={drafts[`d${d.id}:name`] ?? storedName}
         onChange={(e) => setDraft(`d${d.id}:name`, e.target.value)}
@@ -66,6 +67,7 @@ export function InlineDeductionPretaxCell({
   return (
     <td className="text-muted px-3 py-1.5">
       <select
+        aria-label={`Pretax, ${d.deductionName}`}
         value={d.isPretax ? "pretax" : "posttax"}
         onChange={(e) =>
           patchDeductionRecord(d, {
@@ -111,6 +113,7 @@ export function InlineDeductionAmountCell({
           $
         </span>
         <input
+          aria-label={`Amount / Period, ${d.deductionName}`}
           type="number"
           value={drafts[`d${d.id}:amount`] ?? storedAmount}
           onChange={(e) => setDraft(`d${d.id}:amount`, e.target.value)}

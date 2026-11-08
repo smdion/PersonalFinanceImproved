@@ -81,6 +81,7 @@ export function InlineNameCell({
       )}
       {!isDisabled && (
         <input
+          aria-label={`Custom name, ${ad.liveAccountName}`}
           type="text"
           value={drafts[`a${ad.id}:name`] ?? storedName}
           onChange={(e) => setDraft(`a${ad.id}:name`, e.target.value)}
@@ -139,6 +140,7 @@ export function InlineMethodCell({
   return (
     <td className="px-3 py-1.5">
       <select
+        aria-label={`Method, ${ad.liveAccountName}`}
         value={effectiveMethod}
         onChange={(e) => {
           const val = e.target.value;
@@ -184,6 +186,7 @@ export function InlineValueCell({
           {isPercent ? "" : "$"}
         </span>
         <input
+          aria-label={`Value, ${ad.liveAccountName}`}
           type="number"
           value={drafts[`a${ad.id}:value`] ?? storedValue}
           onChange={(e) => setDraft(`a${ad.id}:value`, e.target.value)}

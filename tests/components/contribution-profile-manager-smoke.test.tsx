@@ -280,6 +280,33 @@ describe("ContributionProfileManager smoke", () => {
     );
   });
 
+  it("each editor names its row controls by column and account or deduction", () => {
+    renderManager();
+    for (const name of [
+      "Custom name, Dana 401(k)",
+      "Method, Dana 401(k)",
+      "Value, Dana 401(k)",
+      "Match Type, Dana 401(k)",
+      "Employer Match, Dana 401(k)",
+      "Match Cap, Dana 401(k)",
+      "Deduction, Northwind Clinic",
+      "Pretax, Dental",
+      "Amount / Period, Dental",
+    ])
+      expect(screen.getByLabelText(name)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /new/i }));
+    for (const name of [
+      "Custom name, Eli 403(b)",
+      "Method, Eli 403(b)",
+      "Value, Eli 403(b)",
+      "Match Type, Eli 403(b)",
+      "Employer Match, Dana 401(k)",
+      "Match Cap, Dana 401(k)",
+      "Amount / Period, Dental",
+    ])
+      expect(screen.getByLabelText(name)).toBeInTheDocument();
+  });
+
   it("new-profile editor: Create sends a match type, value and cap and a deduction amount", () => {
     setMutationResult("contributionProfile.create", { id: 3 });
     renderManager();

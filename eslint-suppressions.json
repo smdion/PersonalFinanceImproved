@@ -976,9 +976,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/contributions/profile-manager/inline-deduction-cells.tsx": {
@@ -987,17 +984,11 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/contributions/profile-manager/inline-match-cells.tsx": {
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/contributions/profile-manager/inline-sections.tsx": {
@@ -1019,9 +1010,6 @@
   "src/components/contributions/profile-manager/new-profile-cells.tsx": {
     "ratchet/no-raw-input": {
       "count": 5
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 6
     }
   },
   "src/components/contributions/profile-manager/new-profile-sections.tsx": {
@@ -1029,9 +1017,6 @@
       "count": 2
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },

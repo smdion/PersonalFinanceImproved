@@ -212,6 +212,7 @@ export function NewProfileDeductions({
                           $
                         </span>
                         <input
+                          aria-label={`Amount / Period, ${d.deductionName}`}
                           type="number"
                           value={deductionValues[String(d.id)] ?? ""}
                           onChange={(e) =>
