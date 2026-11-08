@@ -89,8 +89,9 @@
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 437,
     "src/components/savings/savings-trajectory-table.tsx": 550,
+    "src/components/savings/transactions/editor.tsx": 366,
     "src/components/savings/transactions/row.tsx": 591,
-    "src/components/savings/transactions/tab.tsx": 1064,
+    "src/components/savings/transactions/tab.tsx": 791,
     "src/components/settings/general.tsx": 450,
     "src/components/settings/integrations-simplefin.tsx": 437,
     "src/components/settings/integrations.tsx": 707,
@@ -757,7 +758,7 @@
       "SavingsTrajectoryTable.map()": 241
     },
     "src/components/savings/transactions/tab.tsx": {
-      "AllTransactionsTab": 1015
+      "AllTransactionsTab": 754
     },
     "src/components/savings/upcoming-goals.tsx": {
       "UpcomingGoals": 187

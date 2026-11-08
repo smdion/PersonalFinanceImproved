@@ -2680,13 +2680,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 6
-    },
-    "ratchet/no-raw-input": {
-      "count": 10
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 11
+      "count": 5
     }
   },
   "src/components/savings/api-category-link-dialog.tsx": {
@@ -7462,6 +7456,17 @@
     },
     "ratchet/no-unlabeled-control": {
       "count": 4
+    }
+  },
+  "src/components/savings/transactions/editor.tsx": {
+    "ratchet/no-raw-input": {
+      "count": 10
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 11
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   }
 }
