@@ -2684,9 +2684,6 @@
   "src/components/retirement/sections/glide-path.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 2
     }
   },
   "src/components/retirement/sections/healthcare.tsx": {

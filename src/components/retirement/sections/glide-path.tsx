@@ -67,29 +67,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
       <div className="text-caption text-faint flex items-center gap-2">
         <span>{returnRateSummary.schedule[0]?.age ?? "—"}</span>
         <div className="bg-surface-strong flex h-2.5 flex-1 overflow-hidden rounded-full">
-          {(() => {
-            const sched = returnRateSummary.schedule;
-            if (sched.length === 0) return null;
-            const minRate = Math.min(...sched.map((s) => s.rate));
-            const maxRate = Math.max(...sched.map((s) => s.rate));
-            const range = maxRate - minRate || 1;
-            const samples = sched.filter(
-              (_, i) => i === 0 || i === sched.length - 1 || i % 5 === 0,
-            );
-            return samples.map((s) => {
-              const intensity = (s.rate - minRate) / range;
-              return (
-                <div
-                  key={s.age}
-                  className="flex-1 transition-all"
-                  style={{
-                    backgroundColor: glidePathHsl(intensity),
-                  }}
-                  title={`Age ${s.age}: ${formatPercent(s.rate, 1)}`}
-                />
-              );
-            });
-          })()}
+          {renderGlidePathBar(returnRateSummary)}
         </div>
         <span>
           {returnRateSummary.schedule[returnRateSummary.schedule.length - 1]
@@ -103,15 +81,40 @@ export function GlidePathSection({ returnRateSummary }: Props) {
             : "—"}
         </span>
         <span>darker = higher return</span>
-        <span>
-          {(() => {
-            const lastRate =
-              returnRateSummary.schedule[returnRateSummary.schedule.length - 1]
-                ?.rate;
-            return lastRate != null ? formatPercent(lastRate, 1) : "—";
-          })()}
-        </span>
+        <span>{finalRateLabel(returnRateSummary)}</span>
       </div>
     </div>
   );
+}
+
+/** The glide path's bar: one shaded segment per sampled age. */
+function renderGlidePathBar(returnRateSummary: ReturnRateSummary) {
+  const sched = returnRateSummary.schedule;
+  if (sched.length === 0) return null;
+  const minRate = Math.min(...sched.map((s) => s.rate));
+  const maxRate = Math.max(...sched.map((s) => s.rate));
+  const range = maxRate - minRate || 1;
+  const samples = sched.filter(
+    (_, i) => i === 0 || i === sched.length - 1 || i % 5 === 0,
+  );
+  return samples.map((s) => {
+    const intensity = (s.rate - minRate) / range;
+    return (
+      <div
+        key={s.age}
+        className="flex-1 transition-all"
+        style={{
+          backgroundColor: glidePathHsl(intensity),
+        }}
+        title={`Age ${s.age}: ${formatPercent(s.rate, 1)}`}
+      />
+    );
+  });
+}
+
+/** The last age's return rate, or a dash. */
+function finalRateLabel(returnRateSummary: ReturnRateSummary) {
+  const lastRate =
+    returnRateSummary.schedule[returnRateSummary.schedule.length - 1]?.rate;
+  return lastRate != null ? formatPercent(lastRate, 1) : "—";
 }
