@@ -39,8 +39,7 @@
  *    play area, not an in-progress save.
  */
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
@@ -56,7 +55,6 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import {
   usePaycheckPersonViews,
   type SandboxSalaryEntries,
-  type PaycheckPersonView,
 } from "@/lib/hooks/use-paycheck-person-views";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -81,115 +79,16 @@ import { WhatIfPaycheckSummary } from "./what-if-paycheck-summary";
 import {
   WhatIfContributionsEditor,
   WhatIfDeductionsEditor,
-  WhatIfPinnedCell,
   type ContribAddition,
   type DeductionAddition,
 } from "./what-if-editors";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
-
-type SandboxSalaryEntry = SandboxSalaryEntries[string];
-
-/** Local picker for one profile axis. */
-function ProfilePicker({
-  label,
-  value,
-  options,
-  onChange,
-  note,
-}: {
-  label: string;
-  value: number | null;
-  options: { id: number; name: string }[];
-  onChange: (id: number) => void;
-  note?: string;
-}) {
-  if (options.length === 0) return null;
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-muted text-xs">{label}:</span>
-      <select
-        className="bg-surface-primary rounded border px-2 py-1 text-xs"
-        value={value ?? ""}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={`${label} profile`}
-      >
-        {options.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-      {note && (
-        <span className="text-caption font-medium text-amber-600">{note}</span>
-      )}
-    </div>
-  );
-}
-
-/**
- * A numbered card for one step of the workflow (Paycheck → Budget →
- * Savings). Gives the tab visual structure instead of one long
- * undifferentiated column — each step is its own bounded region with a
- * clear "what is this for" line, matching how a multi-step form reads.
- *
- * Collapsible rather than a wizard: the whole point of What-If is seeing
- * the cascade (a salary tweak in step 1 changes the leftover figure in
- * step 3) so hiding earlier steps behind "Next" would work against the
- * tool's purpose. Folding a step you're done with just reclaims vertical
- * space — `headerExtra` (each step's key figure) stays visible either way,
- * so a collapsed step still tells you what it resolved to.
- */
-function WhatIfStep({
-  number,
-  title,
-  description,
-  headerExtra,
-  defaultExpanded = true,
-  children,
-}: {
-  number: number;
-  title: string;
-  description?: string;
-  /** Right-aligned content in the header row (mode tabs, leftover figure).
-   *  Rendered outside the collapse toggle, so it stays visible — and its
-   *  own controls (e.g. the mode picker) stay clickable — when folded. */
-  headerExtra?: ReactNode;
-  defaultExpanded?: boolean;
-  children: ReactNode;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  return (
-    <section className="border-default bg-surface-sunken/40 rounded-lg border p-4">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="flex items-start gap-2.5 text-left"
-          aria-expanded={expanded}
-        >
-          <span className="text-micro mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">
-            {number}
-          </span>
-          <div>
-            <h3 className="text-primary flex items-center gap-1 text-sm leading-tight font-semibold">
-              {title}
-              {expanded ? (
-                <ChevronDown className="text-faint h-3.5 w-3.5" />
-              ) : (
-                <ChevronRight className="text-faint h-3.5 w-3.5" />
-              )}
-            </h3>
-            {description && (
-              <p className="text-caption text-faint mt-0.5">{description}</p>
-            )}
-          </div>
-        </button>
-        {headerExtra}
-      </div>
-      {expanded && children}
-    </section>
-  );
-}
+import { ProfilePicker } from "./what-if-profile-picker";
+import { WhatIfStep } from "./what-if-step";
+import {
+  WhatIfSalaryEditor,
+  type SandboxSalaryEntry,
+} from "./what-if-salary-editor";
 
 /**
  * Sandbox-local edit state: salary/bonus entries, deduction edits/
@@ -431,106 +330,6 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
       contribActiveFields.size > 0 ||
       contribAdditions.length > 0,
   };
-}
-
-/** Editable salary/bonus fields per person — writes into the sandbox's
- *  SandboxSalaryEntries, feeding a REAL server recompute (paycheck/
- *  contribution.computeSummary's sandboxSalaryEntries input), not a
- *  client-side estimate. Each cell pre-fills with what the picked Salary
- *  Profile currently resolves to for that person; leaving it alone writes
- *  nothing (stays live), changing it pins that field for this preview. */
-function WhatIfSalaryEditor({
-  views,
-  entries,
-  onChange,
-}: {
-  views: PaycheckPersonView[];
-  entries: SandboxSalaryEntries;
-  onChange: (
-    personId: number,
-    field: keyof SandboxSalaryEntry,
-    value: number | undefined,
-  ) => void;
-}) {
-  if (views.length === 0) return null;
-
-  return (
-    <table className="w-full border-collapse text-xs">
-      <thead>
-        <tr className="border-strong border-b-2">
-          <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
-            Person
-          </th>
-          <th className="text-muted w-32 px-3 py-2 text-right font-medium">
-            Salary
-          </th>
-          <th className="text-muted w-24 px-3 py-2 text-right font-medium">
-            Bonus %
-          </th>
-          <th className="text-muted w-24 px-3 py-2 text-right font-medium">
-            Bonus ×
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {views.map((v, rowIdx) => {
-          const entry = entries[String(v.person.id)] ?? {};
-          return (
-            <tr
-              key={v.person.id}
-              className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
-              }`}
-            >
-              <td className="text-secondary py-1.5 pr-3 pl-4">
-                {v.person.name}
-              </td>
-              <td className="px-3 py-1.5 text-right">
-                <WhatIfPinnedCell
-                  liveValue={v.salary}
-                  pinnedValue={entry.salary}
-                  onCommit={(n) => onChange(v.person.id, "salary", n)}
-                  onReset={() => onChange(v.person.id, "salary", undefined)}
-                  step="1000"
-                  width="w-28"
-                />
-              </td>
-              <td className="px-3 py-1.5 text-right">
-                <WhatIfPinnedCell
-                  liveValue={v.resolvedBonusTerms.bonusPercent * 100}
-                  pinnedValue={
-                    entry.bonusPercent != null
-                      ? entry.bonusPercent * 100
-                      : undefined
-                  }
-                  onCommit={(n) =>
-                    onChange(v.person.id, "bonusPercent", n / 100)
-                  }
-                  onReset={() =>
-                    onChange(v.person.id, "bonusPercent", undefined)
-                  }
-                  step="0.5"
-                  width="w-16"
-                />
-              </td>
-              <td className="px-3 py-1.5 text-right">
-                <WhatIfPinnedCell
-                  liveValue={v.resolvedBonusTerms.bonusMultiplier}
-                  pinnedValue={entry.bonusMultiplier}
-                  onCommit={(n) => onChange(v.person.id, "bonusMultiplier", n)}
-                  onReset={() =>
-                    onChange(v.person.id, "bonusMultiplier", undefined)
-                  }
-                  step="0.1"
-                  width="w-16"
-                />
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
 }
 
 export function WhatIfTab({

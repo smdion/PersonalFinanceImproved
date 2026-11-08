@@ -158,16 +158,29 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 10
     },
     "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-raw-input": {
       "count": 2
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-step.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/app/(dashboard)/budget/what-if-salary-editor.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/contributions/contributions-content.tsx": {
