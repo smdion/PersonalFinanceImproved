@@ -50,7 +50,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 ### Docker Compose (recommended)
 
 ```bash
-git clone <repo-url> && cd ledgr
+git clone https://github.com/smdion/PersonalFinanceImproved.git ledgr && cd ledgr
 
 cp .env.example .env
 # Edit .env: set NEXTAUTH_SECRET, CRON_SECRET and ENCRYPTION_KEY (see below)
@@ -152,6 +152,20 @@ YNAB, Actual Budget, SimpleFIN and Tiingo credentials and the SEC contact are **
 └──────────────────────────────────────────────┘
 ```
 
+**Layers** (one manifest, `.dependency-cruiser.mjs`; `pnpm check:layers` holds the import directions in CI):
+
+| Layer          | Where                                                         | Holds                                                               |
+| -------------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
+| UI             | `src/app/`, `src/components/`, `src/lib/hooks/`               | pages and components; reads through tRPC, never imports server code |
+| Routers        | `src/server/routers/`                                         | parse input, call a service, a read or a pure function, return      |
+| Services       | `src/server/services/`                                        | composition that needs I/O                                          |
+| Data           | `src/server/data/`                                            | shared reads                                                        |
+| Infrastructure | `src/lib/db/`, `src/lib/budget-api/`, `src/lib/simplefin/`, … | database, outside services, crypto                                  |
+| Pure           | `src/lib/pure/<area>/`, engine in `src/lib/pure/engine/`      | every calculation; no I/O                                           |
+| Foundation     | `src/lib/config/`, `src/lib/constants/`, `src/lib/utils/`     | config, constants, small helpers                                    |
+
+**One figure, traced:** the Budget page's take-home pay reads `paycheck.computeSummary` (`src/server/routers/paycheck.ts`), which calls `computePaycheckSummary` (`src/server/services/paycheck/summary.ts`); that loads the active profiles, the people and the year's tax tables (`tax_brackets`, `tax_params`, seeded from `tax-data/us-federal/`) and calls `calculatePaycheck` (`src/lib/pure/paycheck/per-check.ts`), which does the math.
+
 **Key design decisions:**
 
 - **End-to-end type safety** — TypeScript strict mode from the database schema (Drizzle) through the API (tRPC) to the UI (React).
@@ -252,11 +266,13 @@ Migrations are managed by Drizzle Kit: each release line starts from a squashed 
 
 ## Integrations
 
-All three are configured from **Settings → Integrations** — there are no credential environment variables. Only one budget provider (YNAB or Actual) can be active at a time; SimpleFIN runs alongside either.
+All of these are configured from **Settings → Integrations**, by an admin — there are no credential environment variables. Only one budget provider (YNAB or Actual) can be active at a time; SimpleFIN, Tiingo and SEC EDGAR run alongside either.
 
 - **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions. Two-way: category-goal targets and portfolio snapshots can be pushed back.
-- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Any host you enter is used, LAN addresses and Docker service names (such as `http://actual-http-api:5007`) included; the URL must be `http` or `https` with no user name or password in it. Pin the wrapper to `jhonderson/actual-http-api` 26.10.0 (commit 8ef9a0ca), and move it together with `actual-server` to the same version. The wrapper checks its API key only when `NODE_ENV=production` (its Docker image sets it).
-- **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). No budget sync.
+- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Any host you enter is used, LAN addresses and Docker service names (such as `http://actual-http-api:5007`) included; the URL must be `http` or `https` with no user name or password in it. Pin the wrapper to `jhonderson/actual-http-api` 26.10.0 (commit 8ef9a0ca), and move it together with `actual-server` to the same version. The wrapper checks its API key only when `NODE_ENV=production` (its Docker image sets it). Set the wrapper's `TZ` to the household's time zone: it reads the end and cutoff dates Ledgr sends with each list and balance read as its own local dates.
+- **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). A SimpleFIN account linked to a mortgage feeds that loan's balance; while it does, budget pulls leave the loan alone. No budget sync.
+- **Tiingo** — An API key for end-of-day index prices, used for the benchmark comparisons. The host is fixed.
+- **SEC EDGAR** — Fund facts (expense ratios and share classes) from public filings. SEC requires a contact in every request, so you enter an email address: it is sent to SEC with each request and identifies you to them. It is stored encrypted and never logged.
 - **Tax data updates** — Optional, off unless you turn it on (onboarding offers it). Once a week Ledgr checks this project's signed tax-data release on GitHub for new tax figures between Ledgr updates — one plain download from `github.com`, nothing about your household sent. A newer file is verified against a key built into Ledgr and checked, then waits in **Settings → Reference Data** for an admin to review and apply; figures you've changed are never touched. `LEDGR_TAX_DATA_SYNC=off` turns it off for the whole server. Behind a proxy, set `NODE_USE_ENV_PROXY=1`.
 
 The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, every response checked against its endpoint's schema before anything is written, duplicate guards on writes (each push's transactions carry an import id, so a push finds what it posted when a response was lost; a POST is resent only after a rate limit), and drift detection after every sync that surfaces broken account mappings in the UI.

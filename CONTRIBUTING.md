@@ -5,7 +5,7 @@ Thanks for your interest in contributing! Here's how to get started.
 ## Development Setup
 
 1. Fork and clone the repo
-2. Copy `.env.example` to `.env` and set `NEXTAUTH_SECRET` and `CRON_SECRET` (database defaults to SQLite — no config needed). For the local setup wizard, also set `ALLOW_DEV_MODE=true`
+2. Copy `.env.example` to `.env` and set `NEXTAUTH_SECRET` and `CRON_SECRET` (database defaults to SQLite — no config needed). Set `ENCRYPTION_KEY` too (`openssl rand -base64 32`) to save an integration's credentials. For the local setup wizard, also set `ALLOW_DEV_MODE=true`
 3. Install dependencies: `pnpm install`
 4. Run migrations: `pnpm db:migrate`
 5. Start dev server: `pnpm dev`
@@ -73,10 +73,10 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 ## Coding Conventions
 
-- **Pure calculators.** `lib/pure/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/pure/engine/`) — see DESIGN.md § Engine Modularity.
-- **tRPC routers are the bridge.** They fetch from Drizzle, convert decimal strings to numbers via `toNumber()`, call calculators, return results.
-- **tRPC verb prefixes:** `get*` — single stored item or current state; `list*` — collection/array result; `compute*` — derived calculation or aggregation. Never use `get*` for procedures that aggregate or compute.
-- **Variable naming — no abbreviations.** Use full names: `percent` not `pct`, `amount` not `amt`, `account` not `acct`, `year` not `yr`, `index` not `idx`, `month` not `mo`. Existing abbreviations are migrated incrementally when files are touched for other reasons.
+- **Pure logic.** `lib/pure/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/pure/engine/`) — see DESIGN.md § Engine Modularity.
+- **Routers parse, call and return.** A procedure parses its input, calls a read in `server/data/`, a service in `server/services/` or a pure function, and returns the result; decimal strings become numbers through `toNumber()`. No router imports another router (`pnpm check:layers`).
+- **tRPC verb prefixes:** `get*` — single stored item or current state; `list*` — collection/array result; `compute*` — derived calculation or aggregation. Never use `get*` for procedures that aggregate or compute. `tests/lint/procedure-verbs.test.ts` holds today's other names, a list that only shrinks.
+- **Variable naming — no abbreviations** (owner Q7, v0.10.5). Use full words: `percent` not `pct`, `amount` not `amt`, `account` not `acct`, `year` not `yr`, `index` not `idx`, `month` not `mo`, `contribution` not `contrib`, `balance` not `bal`, `simulation` not `mc`, `decumulation` not `dec`, `withdrawal` not `wd`, `inflation` not `infl`, `allocation` not `alloc`, `calculation` not `calc`, `projection` not `proj`, `salary` not `sal`, `estimate` not `est`, `annual` not `ann`. A plural counts (`pcts`), and so does a word inside a longer name (`retAgeMcPct`). `ratchet/no-abbreviation` counts today's names, and the count only falls. Carved out: stored and schema keys, router response keys, browser-storage values and external API fields, listed in `scripts/abbreviation-carve-outs.json` (`scripts/gen-abbreviation-carve-outs.ts` writes it): renaming one changes a shape. A rename sweep is a `Mechanical:` commit with a `Rename: <old> → <new>` list that `check-commit` proves (§ Commit rules, Proven renames).
 - **Type suffix conventions:** `*Props` for React component props; `*Input` / `*Result` for procedure/calculator I/O types; `*Config` / `*Options` for settings and configuration objects; domain nouns (no suffix) for data shapes (e.g. `DeductionLine`, `BudgetMatch`).
 - **Components never import from `server/`, types included.** They consume data via tRPC hooks; a router's result type is `RouterOutputs[...]` from `@/lib/trpc`, never a hand-written copy.
 - **Two state layers:** server state (React Query via tRPC) and local component state (`useState`, which also holds form state — no form library).
@@ -141,6 +141,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
   between `decimal(8,6)` and `decimal(12,6)` depending on the table — both
   safely hold values in `[-1,1]`; there is no single documented convention
   to match, so don't infer one from a neighboring column's comment
+- **Schema workflow:** the PostgreSQL tables in `src/lib/db/pg/*.ts` are the source (a new domain file gets an `export *` line in `schema-pg.ts`). After an edit, `pnpm db:generate` writes the migration and `npx tsx scripts/gen-sqlite-schema.ts` regenerates `src/lib/db/sqlite/` and `schema-sqlite.ts`; never edit those by hand.
 - **Enums:** enum-like columns are `text` typed with `.$type<T>()` and validated by Zod at the app layer — no `pgEnum`, so adding a value needs no migration
 - **JSONB:** Use `.$type<T>()` for type inference
 - **ON DELETE:** Default `RESTRICT`; `CASCADE` only for tightly coupled parent-child
