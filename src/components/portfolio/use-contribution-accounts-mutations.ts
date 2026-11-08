@@ -16,6 +16,8 @@ import type {
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { resentMatchTerms } from "@/lib/pure/contributions/match-display";
+import type { z } from "zod/v4";
+import type { contribAccountActiveFieldsPatchSchema } from "@/lib/db/json-schemas";
 
 type ContribRecord =
   RouterOutputs["settings"]["contributionAccounts"]["list"][number];
@@ -34,7 +36,9 @@ const PROFILE_OWNED_CONTRIB_FIELDS = [
   "employerMatchValue",
   "employerMaxMatchPct",
   "autoMaximize",
-] as const;
+] as const satisfies readonly (keyof z.infer<
+  typeof contribAccountActiveFieldsPatchSchema
+>)[];
 
 export function useContributionAccountsMutations({
   allContribs,
