@@ -6,8 +6,9 @@
  *
  * One invented household (Dana and Eli, two jobs, three contribution
  * accounts, one deduction) with two profiles. Covers the manager (list,
- * summary, activate), the read-only panel, the inline editor (a value
- * commit), and the new-profile editor (create).
+ * summary, activate), the read-only panel, the inline editor (value, match
+ * and cap commits), and the new-profile editor (create, with a match, a cap
+ * and a deduction).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
@@ -245,6 +246,76 @@ describe("ContributionProfileManager smoke", () => {
         },
       ],
     );
+  });
+
+  it("inline editor: the cap shows as a percent and saves as a rate; the match saves as typed", () => {
+    setMutationResult("contributionProfile.setAccountActiveFields", {
+      limitWarning: null,
+    });
+    renderManager();
+    const row = screen.getByText("Dana 401(k)").closest("tr")!;
+    const [, match, cap] = within(row).getAllByRole("spinbutton");
+    // The account's own 50% match, capped at a stored 0.06.
+    expect(match).toHaveValue(50);
+    expect(cap).toHaveValue(6);
+    fireEvent.change(cap!, { target: { value: "5" } });
+    fireEvent.blur(cap!);
+    fireEvent.change(match!, { target: { value: "40" } });
+    fireEvent.blur(match!);
+    expect(mutationCalls("contributionProfile.setAccountActiveFields")).toEqual(
+      [
+        {
+          profileId: 1,
+          accountId: 11,
+          fields: { employerMaxMatchPct: "0.05" },
+          unset: [],
+        },
+        {
+          profileId: 1,
+          accountId: 11,
+          fields: { employerMatchValue: "40" },
+          unset: [],
+        },
+      ],
+    );
+  });
+
+  it("new-profile editor: Create sends a match type, value and cap and a deduction amount", () => {
+    setMutationResult("contributionProfile.create", { id: 3 });
+    renderManager();
+    fireEvent.click(screen.getByRole("button", { name: /new/i }));
+    fireEvent.change(screen.getByPlaceholderText("e.g., Austin Relocation"), {
+      target: { value: "Eli gets a match" },
+    });
+    // Eli's 403(b) has no match of its own: the profile gives it one.
+    const row = screen.getByText("Eli 403(b)").closest("tr")!;
+    fireEvent.change(within(row).getAllByRole("combobox")[1]!, {
+      target: { value: "percent_of_contribution" },
+    });
+    const [value, match, cap] = within(row).getAllByRole("spinbutton");
+    fireEvent.change(value!, { target: { value: "5" } });
+    fireEvent.change(match!, { target: { value: "100" } });
+    fireEvent.change(cap!, { target: { value: "4" } });
+    const dental = screen.getByText("Dental").closest("tr")!;
+    fireEvent.change(within(dental).getByRole("spinbutton"), {
+      target: { value: "80" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    const [sent] = mutationCalls("contributionProfile.create") as {
+      contributionActiveFields: Record<string, unknown>;
+    }[];
+    expect(sent!.contributionActiveFields).toEqual({
+      contributionAccounts: {
+        "12": {
+          contributionValue: "5",
+          contributionMethod: "percent_of_salary",
+          employerMatchType: "percent_of_contribution",
+          employerMatchValue: "100",
+          employerMaxMatchPct: "0.04",
+        },
+      },
+      deductions: { "21": { amountPerPeriod: "80" } },
+    });
   });
 
   it("new-profile editor: Create sends the name and the values entered", () => {
