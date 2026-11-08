@@ -8450,7 +8450,7 @@
   },
   "src/server/routers/projection/_shared.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
+      "count": 4
     },
     "ratchet/max-comment-lines": {
       "count": 5
@@ -8555,7 +8555,7 @@
   },
   "src/server/routers/projection/strategy.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 9
+      "count": 7
     },
     "max-lines-per-function": {
       "count": 2

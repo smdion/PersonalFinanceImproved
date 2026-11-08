@@ -44,6 +44,7 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
 import { calculateProjection } from "@/lib/pure/engine";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
@@ -173,8 +174,7 @@ export const strategyRouter = createTRPCRouter({
       const hasMcData = notConfigured === null;
 
       const userStrategyParams = buildStrategyParams(settings);
-      const activeStrategy =
-        settings.withdrawalStrategy as WithdrawalStrategyType;
+      const activeStrategy = readStoredStrategy(settings.withdrawalStrategy);
 
       // Resolved ONCE for the whole request — every candidate below spreads
       // this and overrides only withdrawalStrategy/strategyParams, so the
@@ -449,8 +449,7 @@ export const strategyRouter = createTRPCRouter({
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
 
-      const activeStrategy =
-        settings.withdrawalStrategy as WithdrawalStrategyType;
+      const activeStrategy = readStoredStrategy(settings.withdrawalStrategy);
       const strategyMeta = getStrategyMeta(activeStrategy);
       const userStrategyParams = buildStrategyParams(settings);
       const activeParams = userStrategyParams[activeStrategy] ?? {};

@@ -11,6 +11,7 @@ import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
+import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { DecumulationDefaults } from "@/lib/pure/engine/types";
@@ -165,7 +166,7 @@ export function buildStrategyParams(
 export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
     withdrawalRate: string | null;
-    withdrawalStrategy: string | null;
+    withdrawalStrategy: string;
     withdrawalRoutingMode?: string | null;
     withdrawalOrder?: string[] | null;
     withdrawalSplits?: Record<string, number> | null;
@@ -186,13 +187,12 @@ export function buildDecumulationDefaults(
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
     // Client override wins when the caller sent one (the Retirement page's
-    // per-session Configure toggle, once the user actively touches it);
-    // otherwise fall back to the household's persisted
-    // `retirement_settings.withdrawal_routing_mode`; "bracket_filling" only
-    // if even that's somehow missing (pre-migration row). This is the ONE
+    // per-session Configure toggle, once the user touches it); otherwise the
+    // persisted `retirement_settings.withdrawal_routing_mode`;
+    // "bracket_filling" only if that's missing (pre-migration row). The ONE
     // place that resolves the mode — every caller (computeProjection,
-    // Monte Carlo, Tax Optimization) goes through this function so they
-    // can't independently drift on which value wins.
+    // Monte Carlo, Tax Optimization) goes through this function, so all
+    // read the same value.
     withdrawalRoutingMode: (clientDefaults.withdrawalRoutingMode ??
       settings.withdrawalRoutingMode ??
       DEFAULT_WITHDRAWAL_ROUTING_MODE) as DecumulationDefaults["withdrawalRoutingMode"],
@@ -212,7 +212,7 @@ export function buildDecumulationDefaults(
       Record<AccountCategory, "traditional" | "roth">
     >,
     distributionTaxRates,
-    withdrawalStrategy: settings.withdrawalStrategy as WithdrawalStrategyType,
+    withdrawalStrategy: readStoredStrategy(settings.withdrawalStrategy),
     strategyParams: buildStrategyParams(settings),
     rmdExcessHandling:
       settings.rmdExcessHandling === "spend" ? "spend" : "reinvest",
