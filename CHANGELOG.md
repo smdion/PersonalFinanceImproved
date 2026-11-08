@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
-## [0.10.4] - unreleased
+## [0.10.4] - 2026-11-08
 
 v0.10.4 gives Ledgr's screens one structure: every dashboard page is a thin server page over its `<route>-content` component, components sit in feature folders, and dialogs, popovers, tabs, option groups, charts and loading states each come from one shared piece instead of a copy per screen. The screens look the same: a test records the text of 17 pages for three households, and it holds through the release. What changes is at the keyboard and for screen readers: every dialog closes with Escape and keeps Tab inside it, the rows, headers and cells that only answered a mouse click now take Tab, Enter and Space, tabs and option groups move with the arrow keys, form labels name their controls, and every chart has a spoken summary. A page whose data fails to load now says why and offers Retry, where it showed a skeleton that never ended. A restore or import checks a backup's saved choices before it writes anything, and an unknown saved withdrawal strategy no longer breaks the Retirement settings page.
 
