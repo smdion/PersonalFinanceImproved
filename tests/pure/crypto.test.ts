@@ -11,9 +11,9 @@ import {
   decryptString,
   encryptJson,
   decryptJson,
-  isEncryptedEnvelope,
   readMaybeEncrypted,
 } from "@/lib/crypto";
+import { isEncryptedEnvelope } from "@/lib/crypto-envelope";
 
 const TEST_KEY = randomBytes(32).toString("base64");
 let originalKey: string | undefined;

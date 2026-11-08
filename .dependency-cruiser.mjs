@@ -34,7 +34,7 @@ const LAYERS = {
   pure: "^src/lib/pure/",
   // The engine's public API is its index.ts, and types/index.ts for types.
   engine: "^src/lib/pure/engine/",
-  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting)\\.ts$)`,
+  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|crypto-envelope|logger|rate-limit|env|error-reporting)\\.ts$)`,
   data: "^src/server/data/",
   services: "^src/server/services/",
   routers: "^src/server/routers/",

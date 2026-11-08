@@ -602,6 +602,10 @@ jobs:
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/integration/backup-fence-postgres.test.ts
 
+      - name: ENCRYPTION_KEY rotation on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/scripts/rotate-encryption-key-postgres.test.ts
+
       - name: Seeded routers and backup round trip on PostgreSQL
         if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))
         run: pnpm test tests/routers/seeded-postgres.test.ts

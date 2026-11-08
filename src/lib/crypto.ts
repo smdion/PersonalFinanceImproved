@@ -28,88 +28,28 @@
 
 import "server-only";
 import {
-  randomBytes,
-  createCipheriv,
-  createDecipheriv,
-  type CipherGCM,
-  type DecipherGCM,
-} from "node:crypto";
-
-const ALGORITHM = "aes-256-gcm";
-const KEY_BYTES = 32; // 256 bits
-const IV_BYTES = 12; // GCM standard
-const FORMAT_VERSION = 1 as const;
-
-interface EncryptedEnvelope {
-  v: typeof FORMAT_VERSION;
-  iv: string; // base64
-  tag: string; // base64
-  ct: string; // base64
-}
-
-/** True if the value looks like an encrypted envelope (has v + iv + tag + ct). */
-export function isEncryptedEnvelope(
-  value: unknown,
-): value is EncryptedEnvelope {
-  if (!value || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  return (
-    v.v === FORMAT_VERSION &&
-    typeof v.iv === "string" &&
-    typeof v.tag === "string" &&
-    typeof v.ct === "string"
-  );
-}
+  decryptStringWithKey,
+  encryptStringWithKey,
+  isEncryptedEnvelope,
+  parseEncryptionKey,
+  type EncryptedEnvelope,
+} from "./crypto-envelope";
 
 let cachedKey: Buffer | null = null;
 
 function getKey(): Buffer {
-  if (cachedKey) return cachedKey;
-  const raw = process.env.ENCRYPTION_KEY;
-  if (!raw) {
-    throw new Error(
-      "ENCRYPTION_KEY env var is not set. Generate one with " +
-        '`node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'` ' +
-        "and set it in the container environment. Required in production.",
-    );
-  }
-  const key = Buffer.from(raw, "base64");
-  if (key.length !== KEY_BYTES) {
-    throw new Error(
-      `ENCRYPTION_KEY must decode to exactly ${KEY_BYTES} bytes (got ${key.length}). ` +
-        "Generate a fresh one with " +
-        '`node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'`.',
-    );
-  }
-  cachedKey = key;
-  return key;
+  cachedKey ??= parseEncryptionKey(process.env.ENCRYPTION_KEY);
+  return cachedKey;
 }
 
 /** Encrypt a UTF-8 string. Throws if ENCRYPTION_KEY is missing/invalid. */
 export function encryptString(plaintext: string): EncryptedEnvelope {
-  const key = getKey();
-  const iv = randomBytes(IV_BYTES);
-  const cipher = createCipheriv(ALGORITHM, key, iv) as CipherGCM;
-  const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return {
-    v: FORMAT_VERSION,
-    iv: iv.toString("base64"),
-    tag: tag.toString("base64"),
-    ct: ct.toString("base64"),
-  };
+  return encryptStringWithKey(getKey(), plaintext);
 }
 
 /** Decrypt an envelope. Throws on auth-tag mismatch or wrong key. */
 export function decryptString(envelope: EncryptedEnvelope): string {
-  const key = getKey();
-  const iv = Buffer.from(envelope.iv, "base64");
-  const tag = Buffer.from(envelope.tag, "base64");
-  const ct = Buffer.from(envelope.ct, "base64");
-  const decipher = createDecipheriv(ALGORITHM, key, iv) as DecipherGCM;
-  decipher.setAuthTag(tag);
-  const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
-  return pt.toString("utf8");
+  return decryptStringWithKey(getKey(), envelope);
 }
 
 /**
