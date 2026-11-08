@@ -22,7 +22,7 @@
     "src/components/budget/budget-summary-table.tsx": 570,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 524,
-    "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 202,
+    "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 154,
     "src/components/contributions/profile-manager/inline-account-cells.tsx": 271,
     "src/components/contributions/profile-manager/inline-deduction-cells.tsx": 168,
     "src/components/contributions/profile-manager/inline-match-cells.tsx": 185,
@@ -38,6 +38,7 @@
     "src/components/contributions/profile-manager/profile-types.ts": 15,
     "src/components/contributions/profile-manager/use-inline-editor.ts": 215,
     "src/components/contributions/profile-manager/use-new-profile-save.ts": 121,
+    "src/components/contributions/profile-manager/use-profile-manager-state.ts": 101,
     "src/components/dashboard/contributions-card.tsx": 653,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
@@ -450,9 +451,6 @@
     },
     "src/components/budget/use-budget-item-mutations.ts": {
       "useBudgetItemMutations": 182
-    },
-    "src/components/contributions/profile-manager/contribution-profile-manager.tsx": {
-      "ContributionProfileManager": 183
     },
     "src/components/dashboard/contributions-card.tsx": {
       "ContributionsCardImpl": 529,
