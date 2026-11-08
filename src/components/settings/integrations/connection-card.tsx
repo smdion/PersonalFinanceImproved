@@ -1,13 +1,12 @@
 "use client";
 
 /**
- * Shared presentational pieces factored out of ServiceCard (integrations.tsx)
- * and SimplefinCard (integrations-simplefin.tsx) — the two connected-status
- * line and success/error result-message patterns were byte-for-byte
- * duplicated across both. Everything else (credential forms, action sets)
- * genuinely differs per service and stays in each card.
+ * Presentational pieces the integration cards share: the connected-status
+ * line, a result message, and the single-secret form and last-synced line
+ * of the SimpleFIN and Tiingo cards. Action sets differ and stay per card.
  */
 import { STATUS_COLORS } from "@/lib/utils/colors";
+import { Button } from "@/components/ui/button";
 
 export function ConnectionStatusLine({
   connected,
@@ -44,4 +43,91 @@ export function ConnectionResultMessage({
 }) {
   const colors = tone === "success" ? STATUS_COLORS.green : STATUS_COLORS.red;
   return <p className={`text-xs ${colors.text}`}>{children}</p>;
+}
+
+/** "Connected" with when the connection last synced, if it has. */
+export function LastSyncedStatus({
+  lastSyncedAt,
+}: {
+  lastSyncedAt: string | Date | null | undefined;
+}) {
+  return (
+    <ConnectionStatusLine
+      connected
+      extra={
+        lastSyncedAt && (
+          <span className="text-caption text-faint">
+            Last synced {new Date(lastSyncedAt).toLocaleString()}
+          </span>
+        )
+      }
+    />
+  );
+}
+
+/** One secret (a token or key) entered to connect, with Connect and, while
+ *  replacing a saved one, Cancel. */
+export function SecretConnectForm({
+  inputId,
+  label,
+  placeholder,
+  value,
+  onChange,
+  onConnect,
+  pending,
+  showCancel,
+  onCancel,
+  errorMessage,
+}: {
+  inputId: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onConnect: () => void;
+  pending: boolean;
+  showCancel: boolean;
+  onCancel: () => void;
+  errorMessage: string | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label
+          htmlFor={inputId}
+          className="text-muted mb-1 block text-xs font-medium"
+        >
+          {label}
+        </label>
+        <input
+          id={inputId}
+          type="password"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="border-strong w-full rounded border px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onConnect}
+          disabled={!value || pending}
+        >
+          {pending ? "Connecting..." : "Connect"}
+        </Button>
+        {showCancel && (
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+      </div>
+      {errorMessage !== null && (
+        <ConnectionResultMessage tone="error">
+          {errorMessage}
+        </ConnectionResultMessage>
+      )}
+    </div>
+  );
 }

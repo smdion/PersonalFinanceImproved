@@ -9,8 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/format";
 import {
-  ConnectionStatusLine,
   ConnectionResultMessage,
+  LastSyncedStatus,
+  SecretConnectForm,
 } from "./integrations/connection-card";
 import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
 import { ReaddedMergePrompt } from "./simplefin-readded-prompt";
@@ -290,61 +291,24 @@ export function SimplefinCard() {
         </p>
 
         {isConnected && (
-          <ConnectionStatusLine
-            connected
-            extra={
-              status?.lastSyncedAt && (
-                <span className="text-caption text-faint">
-                  Last synced {new Date(status.lastSyncedAt).toLocaleString()}
-                </span>
-              )
-            }
-          />
+          <LastSyncedStatus lastSyncedAt={status?.lastSyncedAt} />
         )}
 
         {(!isConnected || showUpdateToken) && (
-          <div className="space-y-3">
-            <div>
-              <label
-                htmlFor="simplefin-setup-token"
-                className="text-muted mb-1 block text-xs font-medium"
-              >
-                Setup Token
-              </label>
-              <input
-                id="simplefin-setup-token"
-                type="password"
-                value={setupToken}
-                onChange={(e) => setSetupToken(e.target.value)}
-                placeholder="One-time setup token from SimpleFIN Bridge"
-                className="border-strong w-full rounded border px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleConnect}
-                disabled={!setupToken || saveTokenMut.isPending}
-              >
-                {saveTokenMut.isPending ? "Connecting..." : "Connect"}
-              </Button>
-              {showUpdateToken && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowUpdateToken(false)}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-            {saveTokenMut.isError && (
-              <ConnectionResultMessage tone="error">
-                {errorText(saveTokenMut.error)}
-              </ConnectionResultMessage>
-            )}
-          </div>
+          <SecretConnectForm
+            inputId="simplefin-setup-token"
+            label="Setup Token"
+            placeholder="One-time setup token from SimpleFIN Bridge"
+            value={setupToken}
+            onChange={setSetupToken}
+            onConnect={handleConnect}
+            pending={saveTokenMut.isPending}
+            showCancel={showUpdateToken}
+            onCancel={() => setShowUpdateToken(false)}
+            errorMessage={
+              saveTokenMut.isError ? errorText(saveTokenMut.error) : null
+            }
+          />
         )}
 
         {isConnected && (

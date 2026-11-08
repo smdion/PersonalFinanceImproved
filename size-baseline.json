@@ -91,7 +91,7 @@
     "src/components/savings/fund-transaction-list.tsx": 413,
     "src/components/savings/savings-trajectory-table.tsx": 550,
     "src/components/settings/general.tsx": 449,
-    "src/components/settings/integrations-simplefin.tsx": 473,
+    "src/components/settings/integrations-simplefin.tsx": 437,
     "src/components/settings/integrations.tsx": 707,
     "src/components/settings/integrations/budget-section.tsx": 691,
     "src/components/settings/integrations/portfolio-mapping-lists.tsx": 353,
@@ -784,10 +784,7 @@
     },
     "src/components/settings/integrations-simplefin.tsx": {
       "AccountRow": 158,
-      "SimplefinCard": 271
-    },
-    "src/components/settings/integrations-tiingo.tsx": {
-      "TiingoCard": 152
+      "SimplefinCard": 234
     },
     "src/components/settings/integrations.tsx": {
       "IntegrationsSettings": 180,
