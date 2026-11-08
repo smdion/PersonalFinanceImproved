@@ -11,14 +11,20 @@ import {
 import type {
   CompositionBucket,
   InvestmentTransactionKind,
+  PayPeriod,
 } from "./enum-values";
+import { isPayPeriod } from "./pay-periods";
 
-export const PAY_PERIOD_LABELS: Record<string, string> = {
+export const PAY_PERIOD_LABELS: Record<PayPeriod, string> = {
   weekly: "Weekly",
   biweekly: "Biweekly",
-  semimonthly: "Semi-Monthly",
+  semimonthly: "Semimonthly",
   monthly: "Monthly",
 };
+/** The label for a stored pay period; an unknown one is shown as stored. */
+export function payPeriodLabel(payPeriod: string): string {
+  return isPayPeriod(payPeriod) ? PAY_PERIOD_LABELS[payPeriod] : payPeriod;
+}
 
 /** "Bonus goes to" choices (Salary Profile entry `bonusDestination`). */
 export const BONUS_DESTINATION_OPTIONS = [

@@ -3,11 +3,9 @@
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { FieldRow } from "@/components/ui/field-row";
 import { HelpTip } from "@/components/ui/help-tip";
-import {
-  PAY_PERIOD_LABELS,
-  PAY_WEEK_LABELS,
-} from "@/lib/config/display-labels";
-import { PAY_PERIOD_VALUES, PAY_WEEK_VALUES } from "@/lib/config/enum-values";
+import { PAY_WEEK_LABELS } from "@/lib/config/display-labels";
+import { PAY_WEEK_VALUES } from "@/lib/config/enum-values";
+import { PayPeriodOptions } from "@/components/ui/pay-period-options";
 import { payPeriodConfig } from "@/lib/config/pay-periods";
 import { DateInput } from "@/components/ui/date-input";
 import { SectionHeader } from "./section-header";
@@ -52,11 +50,7 @@ export function PayScheduleSection({
             disabled={!editable}
             className={selectClass}
           >
-            {PAY_PERIOD_VALUES.map((v) => (
-              <option key={v} value={v}>
-                {PAY_PERIOD_LABELS[v]}
-              </option>
-            ))}
+            <PayPeriodOptions />
           </select>
         </FieldRow>
         {job.payPeriod === "biweekly" && (

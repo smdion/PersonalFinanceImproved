@@ -8,7 +8,7 @@ import {
   formatCurrency,
   maskAmountsInText,
 } from "@/lib/utils/format";
-import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
+import { payPeriodLabel } from "@/lib/config/display-labels";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
@@ -271,7 +271,7 @@ export function PersonPaycheck({
             {/* Computed from the Salary Profile's schedule (edited on the
                 Profiles page) — shown here for reference. */}
             <p className="text-faint text-xs">
-              {PAY_PERIOD_LABELS[job.payPeriod] ?? job.payPeriod}
+              {payPeriodLabel(job.payPeriod)}
               {" · "}
               Next: {paycheck.nextPayDate}
               {" · "}

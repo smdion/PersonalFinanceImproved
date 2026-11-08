@@ -105,7 +105,7 @@
     "src/components/onboarding/admin-step.tsx": 107,
     "src/components/onboarding/done-step.tsx": 38,
     "src/components/onboarding/income-job-list.tsx": 42,
-    "src/components/onboarding/income-step.tsx": 143,
+    "src/components/onboarding/income-step.tsx": 141,
     "src/components/onboarding/oidc-step.tsx": 113,
     "src/components/onboarding/onboarding-wizard.tsx": 167,
     "src/components/onboarding/people-step.tsx": 144,

@@ -1,6 +1,7 @@
 /** The first-run wizard's Income step. */
 import { useState } from "react";
 import { FormError } from "@/components/ui/form-error";
+import { PayPeriodOptions } from "@/components/ui/pay-period-options";
 import type { PersonDraft, JobDraft } from "./wizard-state";
 import { IncomeJobList } from "./income-job-list";
 
@@ -125,10 +126,7 @@ export function IncomeStep({
             }
             className="border-default bg-surface-primary text-primary w-40 self-start rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Biweekly</option>
-            <option value="semimonthly">Semimonthly</option>
-            <option value="monthly">Monthly</option>
+            <PayPeriodOptions />
           </select>
         </div>
         <button

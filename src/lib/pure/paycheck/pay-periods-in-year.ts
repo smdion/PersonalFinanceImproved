@@ -1,6 +1,6 @@
 /** A job's pay calendar: paydays so far this year, the next one, its label. */
 import { MS_PER_DAY } from "../../constants";
-import { PAY_PERIOD_LABELS } from "../../config/display-labels";
+import { payPeriodLabel } from "../../config/display-labels";
 
 /**
  * Walks `anchorPayDate` forward or backward by `intervalDays` until it lands
@@ -262,7 +262,7 @@ export function buildPayFrequencyLabel(
   payPeriod: string,
   payWeek: "even" | "odd" | "na",
 ): string {
-  const base = PAY_PERIOD_LABELS[payPeriod] ?? payPeriod;
+  const base = payPeriodLabel(payPeriod);
   if (payPeriod === "semimonthly") {
     return `${base} (1st & 15th)`;
   }
