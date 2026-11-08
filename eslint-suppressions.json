@@ -8892,7 +8892,7 @@
       "count": 1
     }
   },
-  "src/server/services/paycheck/person-paycheck.ts": {
+  "src/lib/pure/paycheck/person-paycheck.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
     },

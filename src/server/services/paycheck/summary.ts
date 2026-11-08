@@ -63,7 +63,7 @@ import { householdTotals } from "@/server/services/paycheck/household-totals";
 import {
   checkPaychecks,
   yearEarnings,
-} from "@/server/services/paycheck/person-paycheck";
+} from "@/lib/pure/paycheck/person-paycheck";
 
 export const zPaycheckSummaryInput = z
   .object({
