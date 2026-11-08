@@ -1,9 +1,8 @@
 /**
  * The high-income line is never shown wrong or stuck: undefined until the
  * saved setting has loaded (the default arriving first isn't the line when
- * one is saved), and `error` when the default fails with nothing saved —
- * callers gate on `threshold === undefined`, so without it they'd show a
- * skeleton for good.
+ * one is saved), and `error` (the load's own) when the default fails with
+ * nothing saved, so callers show it instead of a skeleton for good.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
@@ -43,7 +42,8 @@ describe("useHighIncomeLine", () => {
     setQuery("contribution.highIncomeLine", DEFAULT);
     const { result } = renderHook(() => useHighIncomeLine());
     expect(result.current.threshold).toBeUndefined();
-    expect(result.current.error).toBe(false);
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(true);
   });
 
   it("uses the saved line once loaded, else the default", () => {
@@ -63,7 +63,8 @@ describe("useHighIncomeLine", () => {
     defaultFails();
     const { result } = renderHook(() => useHighIncomeLine());
     expect(result.current.threshold).toBeUndefined();
-    expect(result.current.error).toBe(true);
+    expect(result.current.error).toEqual(new Error("down"));
+    expect(result.current.isLoading).toBe(false);
   });
 
   it("a saved line doesn't need the default: its failure isn't an error", () => {
@@ -71,6 +72,6 @@ describe("useHighIncomeLine", () => {
     defaultFails();
     const { result } = renderHook(() => useHighIncomeLine());
     expect(result.current.threshold).toBe(150_000);
-    expect(result.current.error).toBe(false);
+    expect(result.current.error).toBeNull();
   });
 });

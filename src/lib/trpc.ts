@@ -1,6 +1,7 @@
 "use client";
 
 import { createTRPCReact } from "@trpc/react-query";
+import type { TRPCClientErrorLike } from "@trpc/client";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/server/routers";
 
@@ -14,3 +15,5 @@ export const trpc = createTRPCReact<AppRouter>();
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 export type RouterInputs = inferRouterInputs<AppRouter>;
+/** A failed query's error, for a hook that reports one of several. */
+export type RouterError = TRPCClientErrorLike<AppRouter>;

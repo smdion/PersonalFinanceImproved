@@ -7,7 +7,7 @@
  * pure engine, so the Milestones page and the Financial Checkup agree.
  */
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterError } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -42,7 +42,8 @@ export function useMilestones(): {
   isLoading: boolean;
   /** Expected dates are still coming (the projection is computing). */
   projectionLoading: boolean;
-  error: boolean;
+  /** The first of its queries' load errors. */
+  error: RouterError | null;
   /** Fetches the failed queries again (a failed load's Retry). */
   refetch: () => void;
   input: MilestoneInput | null;
@@ -81,13 +82,12 @@ export function useMilestones(): {
 
   // The projection and holdings only add expected dates and the investing
   // rows — the rest renders without them.
-  const error = Boolean(
-    inputs.error ||
-    contribs.error ||
-    savings.error ||
-    mortgage.error ||
-    highIncomeError,
-  );
+  const error =
+    inputs.error ??
+    contribs.error ??
+    savings.error ??
+    mortgage.error ??
+    highIncomeError;
   // An error isn't still loading — callers that check loading first would
   // otherwise show a skeleton for good.
   const isLoading =
