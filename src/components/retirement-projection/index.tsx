@@ -3,9 +3,7 @@
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
-import { PillBtn, LabeledPillGroup, ControlZone } from "./pill-btn";
 import { ValidationContent } from "@/components/methodology/validation-content";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { formatPercent } from "@/lib/utils/format";
@@ -20,8 +18,7 @@ import {
 } from "./projection-card/engine-notices";
 import { HeroKpisPanel } from "./projection-card/hero-panel";
 import { ComputeControls } from "./projection-card/compute-controls";
-import { DollarsPills } from "./projection-card/dollars-pills";
-import { DisplaySecondaryRow } from "./projection-card/display-secondary-row";
+import { DisplayControls } from "./projection-card/display-controls";
 import { ChartArea } from "./projection-card/chart-area";
 import { TableArea } from "./projection-card/table-area";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
@@ -504,50 +501,13 @@ export function ProjectionCard(props: {
                           Chart type is the primary control; Dollars rides
                           alongside it since it's the other frequently-
                           touched one. Everything else is secondary. */}
-                      <ControlZone
-                        tone="display"
-                        title="Display"
-                        why="how it's shown"
-                      >
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <LabeledPillGroup
-                            label="Chart"
-                            size="lg"
-                            helpTip={
-                              <HelpTip
-                                maxWidth={380}
-                                lines={[
-                                  "Balance ($): your projected account balances over time, the main chart.",
-                                  'Yearly Income Stability (%): a completely different chart, showing each year\'s spending as a % of a baseline instead of a dollar balance. Pick which baseline with "Compare vs" once selected.',
-                                ]}
-                              />
-                            }
-                          >
-                            <PillBtn
-                              size="lg"
-                              tone="display"
-                              active={chartView === "balance"}
-                              onClick={() => setChartView("balance")}
-                              label="Balance"
-                            />
-                            <PillBtn
-                              size="lg"
-                              tone="display"
-                              active={chartView !== "balance"}
-                              onClick={() => {
-                                if (chartView === "balance")
-                                  setChartView("strategy");
-                              }}
-                              label="Yearly Income Stability"
-                            />
-                          </LabeledPillGroup>
-                          <DollarsPills
-                            dollarMode={dollarMode}
-                            setDollarMode={setDollarMode}
-                          />
-                        </div>
-                        <DisplaySecondaryRow state={state} />
-                      </ControlZone>
+                      <DisplayControls
+                        chartView={chartView}
+                        setChartView={setChartView}
+                        dollarMode={dollarMode}
+                        setDollarMode={setDollarMode}
+                        state={state}
+                      />
                     </div>
                   );
                 })()}
