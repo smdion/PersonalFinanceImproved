@@ -16,7 +16,7 @@ import {
   buildSettledOccurrencesSet,
   occurrenceKey,
 } from "@/lib/pure/savings/savings-projection";
-import type { GoalProjection, PlannedTransaction } from "./types";
+import type { GoalProjection, PlannedTransaction } from "../types";
 
 interface EditForm {
   goalId: number;

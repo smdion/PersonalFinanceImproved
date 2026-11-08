@@ -18,7 +18,7 @@ vi.mock("@/lib/hooks/use-local-storage", () => ({
   ],
 }));
 
-import { AllTransactionsTab } from "@/components/savings/all-transactions-tab";
+import { AllTransactionsTab } from "@/components/savings/transactions/tab";
 import type {
   GoalProjection,
   PlannedTransaction,

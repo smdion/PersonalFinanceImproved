@@ -82,7 +82,6 @@
     "src/components/retirement/assumptions-band.tsx": 432,
     "src/components/retirement/retirement-profile-tab.tsx": 552,
     "src/components/retirement/sections/taxes.tsx": 557,
-    "src/components/savings/all-transactions-tab.tsx": 1442,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1258,
@@ -90,6 +89,7 @@
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 437,
     "src/components/savings/savings-trajectory-table.tsx": 550,
+    "src/components/savings/transactions/tab.tsx": 1442,
     "src/components/settings/general.tsx": 450,
     "src/components/settings/integrations-simplefin.tsx": 437,
     "src/components/settings/integrations.tsx": 707,
@@ -712,10 +712,6 @@
     "src/components/retirement/sections/taxes.tsx": {
       "TaxesSection": 476
     },
-    "src/components/savings/all-transactions-tab.tsx": {
-      "AllTransactionsTab": 1387,
-      "AllTransactionsTab.map()": 325
-    },
     "src/components/savings/api-sync-section.tsx": {
       "ApiSyncSection": 166,
       "useApiSync": 335
@@ -758,6 +754,10 @@
     "src/components/savings/savings-trajectory-table.tsx": {
       "SavingsTrajectoryTable": 518,
       "SavingsTrajectoryTable.map()": 241
+    },
+    "src/components/savings/transactions/tab.tsx": {
+      "AllTransactionsTab": 1387,
+      "AllTransactionsTab.map()": 325
     },
     "src/components/savings/upcoming-goals.tsx": {
       "UpcomingGoals": 187
