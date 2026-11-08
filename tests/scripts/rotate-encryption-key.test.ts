@@ -15,7 +15,11 @@ import {
   decryptStringWithKey,
   encryptStringWithKey,
 } from "@/lib/crypto-envelope";
-import { rotateSqlite } from "../../scripts/rotate-encryption-key";
+import {
+  rotatePostgres,
+  rotateSqlite,
+} from "../../scripts/rotate-encryption-key";
+import type { ClientBase } from "pg";
 import {
   keyRotationCases,
   type RotationDatabase,
@@ -166,5 +170,56 @@ describe("ENCRYPTION_KEY rotation (SQLite)", () => {
     expect(again.status, again.stderr).toBe(0);
     expect(again.stderr).toContain("1 already under the new key");
     expect(decryptStringWithKey(nextKey, stored())).toBe(token);
+  });
+});
+
+describe("ENCRYPTION_KEY rotation on PostgreSQL: the statements it sends", () => {
+  /** A client that answers every query with `rows` and records the SQL. */
+  function recordingClient(rows: (sql: string) => unknown[]) {
+    const sent: string[] = [];
+    const client = {
+      query: async (sql: string) => {
+        sent.push(sql.split(" ").slice(0, 4).join(" "));
+        return { rows: rows(sql) };
+      },
+    };
+    // eslint-disable-next-line no-restricted-syntax -- a stand-in for the pg client: only query() is called
+    return { client: client as unknown as ClientBase, sent };
+  }
+
+  it("closes both tables to writes before reading, and commits", async () => {
+    const keys = { oldKey: randomBytes(32), newKey: randomBytes(32) };
+    const config = encryptStringWithKey(keys.oldKey, "invented");
+    const { client, sent } = recordingClient((sql) =>
+      sql.startsWith("SELECT id, service")
+        ? [{ id: 1, service: "tiingo", config }]
+        : [],
+    );
+
+    await rotatePostgres(client, keys, false);
+    expect(sent).toEqual([
+      "BEGIN",
+      "LOCK TABLE api_connections, state_version_tables",
+      "SELECT id, service, config",
+      "SELECT id, version_id, data",
+      "UPDATE api_connections SET config",
+      "COMMIT",
+    ]);
+  });
+
+  it("rolls back when a credential opens with neither key", async () => {
+    const keys = { oldKey: randomBytes(32), newKey: randomBytes(32) };
+    const config = encryptStringWithKey(randomBytes(32), "invented");
+    const { client, sent } = recordingClient((sql) =>
+      sql.startsWith("SELECT id, service")
+        ? [{ id: 1, service: "tiingo", config }]
+        : [],
+    );
+
+    await expect(rotatePostgres(client, keys, false)).rejects.toThrow(
+      "Nothing was changed",
+    );
+    expect(sent.at(-1)).toBe("ROLLBACK");
+    expect(sent.some((q) => q.startsWith("UPDATE"))).toBe(false);
   });
 });

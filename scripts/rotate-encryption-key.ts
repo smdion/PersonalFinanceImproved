@@ -211,7 +211,7 @@ export function rotateSqlite(
   return rotate.immediate();
 }
 
-/** PostgreSQL: the same in one transaction, rows locked while it runs; a dry run rolls back. */
+/** PostgreSQL: the same in one transaction, the two tables closed to writes while it runs; a dry run rolls back. */
 export async function rotatePostgres(
   client: ClientBase,
   keys: RotationKeys,
@@ -219,14 +219,18 @@ export async function rotatePostgres(
 ): Promise<RotationCounts> {
   await client.query("BEGIN");
   try {
+    // Reads still run; an insert or update (a saved credential, a new version) waits.
+    await client.query(
+      "LOCK TABLE api_connections, state_version_tables IN EXCLUSIVE MODE",
+    );
     const { rows: connections } = await client.query<StoredConnection>(
-      "SELECT id, service, config FROM api_connections ORDER BY id FOR UPDATE",
+      "SELECT id, service, config FROM api_connections ORDER BY id",
     );
     const { rows: versionRows } = await client.query<{
       id: number;
       version_id: number;
       data: unknown;
-    }>(`${VERSION_TABLES_SQL} FOR UPDATE`);
+    }>(VERSION_TABLES_SQL);
     const plan = planRotation(
       connections,
       versionRows.map((r) => ({
