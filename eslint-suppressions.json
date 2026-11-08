@@ -2619,14 +2619,11 @@
     }
   },
   "src/components/portfolio/snapshot-draft.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 3
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1

@@ -28,8 +28,11 @@ export type AccountRow = {
 // not shared across devices/users (accepted limitation, shipped v0.8.2).
 
 const DRAFT_PREFIX = "pf-snapshot-draft:";
+/** The draft shape's stamp; a draft without it is dropped, not read. */
+const DRAFT_VERSION = 1;
 
 export type SnapshotDraft = {
+  version: typeof DRAFT_VERSION;
   snapshotDate: string;
   notes: string;
   /** The `getLatest` snapshot id the rows were prefilled from — lets a
@@ -41,10 +44,9 @@ export type SnapshotDraft = {
     institution: string;
     accountType: string;
     taxType: PortfolioTaxType;
-    /** Absent in drafts saved before v0.8.14 — see draftRowKey. */
-    subType?: string | null;
-    label?: string | null;
-    ownerPersonId?: number | null;
+    subType: string | null;
+    label: string | null;
+    ownerPersonId: number | null;
     amount: string;
   }[];
 };
@@ -53,20 +55,38 @@ function draftKey(date: string) {
   return `${DRAFT_PREFIX}${date}`;
 }
 
+/** Parsed browser storage is any JSON; only a stamped draft is read. */
+function isCurrentDraft(value: unknown): value is SnapshotDraft {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "version" in value &&
+    value.version === DRAFT_VERSION &&
+    "rows" in value &&
+    Array.isArray(value.rows)
+  );
+}
+
 export function readDraft(date: string): SnapshotDraft | null {
   try {
     const raw = window.localStorage.getItem(draftKey(date));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as SnapshotDraft;
-    return parsed && Array.isArray(parsed.rows) ? parsed : null; // Parsed browser storage: any JSON, even null.
+    const parsed: unknown = JSON.parse(raw);
+    if (isCurrentDraft(parsed)) return parsed;
+    window.localStorage.removeItem(draftKey(date));
+    return null;
   } catch {
     return null;
   }
 }
 
-export function writeDraft(d: SnapshotDraft): void {
+export function writeDraft(d: Omit<SnapshotDraft, "version">): void {
   try {
-    window.localStorage.setItem(draftKey(d.snapshotDate), JSON.stringify(d));
+    const stamped: SnapshotDraft = { version: DRAFT_VERSION, ...d };
+    window.localStorage.setItem(
+      draftKey(d.snapshotDate),
+      JSON.stringify(stamped),
+    );
   } catch {
     /* private mode / quota — a lost draft is acceptable */
   }
@@ -82,25 +102,28 @@ export function clearDraft(date: string): void {
 
 type DraftRowIdentity = Pick<
   AccountRow,
-  "performanceAccountId" | "institution" | "accountType" | "taxType"
-> &
-  Partial<Pick<AccountRow, "subType" | "label" | "ownerPersonId">>;
+  | "performanceAccountId"
+  | "institution"
+  | "accountType"
+  | "taxType"
+  | "subType"
+  | "label"
+  | "ownerPersonId"
+>;
 
 /** A row's identity within a snapshot. One account holds several rows
  *  (Traditional / Roth parts, one per owner), so the account id alone
- *  isn't enough. `legacy` = the identity a pre-v0.8.14 draft carries. */
-function draftRowKey(r: DraftRowIdentity, legacy: boolean): string {
+ *  isn't enough. */
+function draftRowKey(r: DraftRowIdentity): string {
   // A linked row is its account's; only an unlinked row needs institution.
-  const base = [
+  return JSON.stringify([
     r.performanceAccountId ?? r.institution,
     r.accountType,
     r.taxType,
-  ];
-  return JSON.stringify(
-    legacy
-      ? base
-      : [...base, r.subType ?? null, r.label ?? null, r.ownerPersonId ?? null],
-  );
+    r.subType,
+    r.label,
+    r.ownerPersonId,
+  ]);
 }
 
 /** Overlay a draft's typed amounts onto a freshly-built row set — keeps
@@ -112,16 +135,13 @@ export function reconcileDraft(
   draft: SnapshotDraft,
 ): AccountRow[] {
   const amounts = new Map<string, string[]>();
-  let legacy = false;
   for (const r of draft.rows) {
-    const isLegacy = !("ownerPersonId" in r);
-    legacy ||= isLegacy;
-    const key = draftRowKey(r, isLegacy);
+    const key = draftRowKey(r);
     amounts.set(key, [...(amounts.get(key) ?? []), r.amount]);
   }
   return base.map((row) => {
     if (row.isClosedAccount) return row; // server zeroes these regardless
-    const draftAmount = amounts.get(draftRowKey(row, legacy))?.shift();
+    const draftAmount = amounts.get(draftRowKey(row))?.shift();
     return draftAmount === undefined ? row : { ...row, amount: draftAmount };
   });
 }

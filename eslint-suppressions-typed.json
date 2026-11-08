@@ -129,11 +129,6 @@
       "count": 1
     }
   },
-  "src/components/portfolio/snapshot-draft.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/components/portfolio/portfolio-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
