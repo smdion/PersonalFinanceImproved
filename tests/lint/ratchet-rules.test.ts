@@ -136,6 +136,59 @@ describe("ratchet/no-raw-chart-container", () => {
   });
 });
 
+describe("ratchet/no-abbreviation", () => {
+  it("counts a declared name with an abbreviated word, a plural included", () => {
+    expect(
+      reported(
+        "no-abbreviation",
+        [
+          "const totalAmt = 1;",
+          "function f(rowIdx) { return rowIdx; }",
+          "const o = { mcRuns: 1 };",
+          "const { indAccts } = x;",
+          "class Yr {}",
+          "import { a as decBal } from 'm';",
+          "try {} catch (wdErr) {}",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("passes full words, words that only contain one, uses, imports and carve-outs", () => {
+    expect(
+      reported(
+        "no-abbreviation",
+        [
+          "const totalAmount = decimal + estimate + month + balance;",
+          "const o = { amount: x.totalAmt, [yrKey]: 1, totalPct };",
+          "f(rowIdx);",
+          "import { mcResult } from 'm';",
+          "const { employerMaxMatchPct } = row;",
+          "const pct = 1;",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("counts type names, enum members and property and method signatures", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const [result] = await eslint.lintText(
+      [
+        "export type AcctRow = { yrEnd: number; calcIt(): void };",
+        "export interface Plan { contribs2: number }",
+        "export enum Mode { WdFirst }",
+        "",
+      ].join("\n"),
+      { filePath: "src/lib/pure/demo/part.ts" },
+    );
+    expect(
+      result!.messages
+        .filter((m) => m.ruleId === "ratchet/no-abbreviation")
+        .map((m) => m.message.split("'")[1]),
+    ).toEqual(["AcctRow", "yrEnd", "calcIt", "contribs2", "WdFirst"]);
+  }, 30_000);
+});
+
 describe("the repo config's scopes (owner Q4, v0.10.4)", () => {
   const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
   /** The rules the repo config reports for `code` written at `file`. */

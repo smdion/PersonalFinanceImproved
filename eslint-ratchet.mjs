@@ -3,6 +3,8 @@
 // goes down (`npx eslint <files> --prune-suppressions` after a cleanup).
 // One rule id per pattern, so a file can't trade one pattern for another.
 
+import { readFileSync } from "node:fs";
+
 const TEXT_FIELD =
   /(?:reason|label|message|note|description|warning|text|name|title|explanation|summary|detail)s?$/i;
 const STRING_TRANSFORMS = new Set(["toLowerCase", "toUpperCase", "trim"]);
@@ -30,6 +32,43 @@ const CLOSED_SET_FIELDS = [
   "taxTreatment",
   "filingStatus",
 ].join("|");
+
+/** Abbreviations a name may not use (CONTRIBUTING § Variable naming; owner
+ *  Q7, v0.10.5): one list, read by the rule and the carve-out generator. */
+export const ABBREVIATIONS = [
+  ...["pct", "amt", "acct", "yr", "idx", "mo"],
+  ...["contrib", "bal", "mc", "dec", "wd", "infl"],
+  ...["alloc", "calc", "proj", "sal", "est", "ann"],
+];
+
+/** Stored, schema and response keys that keep their abbreviation; generated
+ *  by scripts/gen-abbreviation-carve-outs.ts and checked by its test. */
+const ABBREVIATION_CARVE_OUTS = new Set(
+  JSON.parse(
+    readFileSync(
+      new URL("./scripts/abbreviation-carve-outs.json", import.meta.url),
+      "utf8",
+    ),
+  ),
+);
+
+/** The lowercase words of a camelCase, PascalCase or snake_case name. */
+export function nameSegments(name) {
+  return name
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/(\d+)/g, " $1 ")
+    .split(/[\s_$]+/)
+    .filter(Boolean)
+    .map((s) => s.toLowerCase());
+}
+
+/** The first abbreviation `name` uses (a plural counts), if any. */
+export function abbreviationIn(name) {
+  return nameSegments(name).find((s) =>
+    ABBREVIATIONS.some((a) => s === a || s === `${a}s`),
+  );
+}
 
 /** A rule that reports every node a selector matches. */
 function selectorRule(description, selector, message) {
@@ -335,6 +374,61 @@ const customRules = {
       };
     },
   },
+  "no-abbreviation": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "Names are full words, not abbreviations." },
+      schema: [],
+    },
+    create(context) {
+      // A class name is declared in two scopes; it's one name.
+      const seen = new Set();
+      const check = (id) => {
+        if (id?.type !== "Identifier" || seen.has(id)) return;
+        seen.add(id);
+        if (ABBREVIATION_CARVE_OUTS.has(id.name)) return;
+        const word = abbreviationIn(id.name);
+        if (word)
+          context.report({
+            node: id,
+            message: `'${id.name}' abbreviates ('${word}'). Use the full word (CONTRIBUTING § Variable naming).`,
+          });
+      };
+      const declared = (node) => {
+        for (const variable of context.sourceCode.getDeclaredVariables(node))
+          for (const def of variable.defs)
+            if (def.node === node) check(def.name);
+      };
+      const key = (node) => {
+        if (!node.computed) check(node.key);
+      };
+      return {
+        VariableDeclarator: declared,
+        FunctionDeclaration: declared,
+        FunctionExpression: declared,
+        ArrowFunctionExpression: declared,
+        ClassDeclaration: declared,
+        CatchClause: declared,
+        ImportDefaultSpecifier: declared,
+        ImportNamespaceSpecifier: declared,
+        ImportSpecifier(node) {
+          // Only a local alias is named here; the imported name is its module's.
+          if (node.imported.name !== node.local.name) check(node.local);
+        },
+        "TSTypeAliasDeclaration, TSInterfaceDeclaration, TSEnumDeclaration"(
+          node,
+        ) {
+          check(node.id);
+        },
+        TSEnumMember: (node) => check(node.id),
+        "ObjectExpression > Property"(node) {
+          if (!node.shorthand) key(node);
+        },
+        "PropertyDefinition, MethodDefinition, TSPropertySignature, TSMethodSignature":
+          key,
+      };
+    },
+  },
   "no-guarded-division": {
     meta: {
       type: "suggestion",
@@ -479,6 +573,7 @@ export const ratchetConfig = [
       "ratchet/max-comment-lines": "error",
       "ratchet/no-stacked-docblock": "error",
       "ratchet/no-guarded-division": "error",
+      "ratchet/no-abbreviation": "error",
     },
   },
   {
