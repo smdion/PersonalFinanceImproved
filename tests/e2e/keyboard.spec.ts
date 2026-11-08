@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { useOwnRateLimitBucket } from "./rate-limit-bucket";
 
 /**
  * A dialog from the keyboard, through quick search (Ctrl+K opens it on any
@@ -6,11 +7,16 @@ import { test, expect } from "@playwright/test";
  * focus goes back to where it was.
  */
 test.describe("keyboard dialogs", () => {
+  useOwnRateLimitBucket(test, "keyboard");
+
   test("quick search keeps Tab inside, closes on Escape and returns focus", async ({
     page,
   }) => {
     await page.goto("/");
     await expect(page.getByRole("main")).toBeVisible({ timeout: 30_000 });
+    // The first-run wizard opens once its query settles and takes focus, so
+    // wait for the page to settle before choosing the opener.
+    await page.waitForLoadState("networkidle");
     // Whatever the first Tab reaches is the opener.
     await page.keyboard.press("Tab");
     await page.evaluate(() =>
