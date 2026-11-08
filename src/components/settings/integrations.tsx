@@ -128,7 +128,7 @@ function ServiceCard({
   });
   const fetchBudgetsMut = trpc.sync.fetchYnabBudgets.useMutation({
     onSuccess: (data) => {
-      if (data.success) {
+      if (data.ok) {
         setYnabBudgets(data.budgets);
         // Auto-select if only one budget
         const first = data.budgets[0];
@@ -246,12 +246,11 @@ function ServiceCard({
                       {fetchBudgetsMut.isPending ? "Loading..." : "Fetch"}
                     </Button>
                   </div>
-                  {fetchBudgetsMut.isSuccess &&
-                    !fetchBudgetsMut.data.success && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {fetchBudgetsMut.data.error}
-                      </p>
-                    )}
+                  {fetchBudgetsMut.isSuccess && !fetchBudgetsMut.data.ok && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {fetchBudgetsMut.data.error}
+                    </p>
+                  )}
                 </FormField>
               </>
             ) : (
@@ -471,9 +470,9 @@ function ServiceCard({
         {/* Test result */}
         {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
-            tone={testConnectionMut.data.success ? "success" : "error"}
+            tone={testConnectionMut.data.ok ? "success" : "error"}
           >
-            {testConnectionMut.data.success
+            {testConnectionMut.data.ok
               ? `Connected: ${"budgetName" in testConnectionMut.data ? testConnectionMut.data.budgetName : "OK"}`
               : "error" in testConnectionMut.data
                 ? testConnectionMut.data.error

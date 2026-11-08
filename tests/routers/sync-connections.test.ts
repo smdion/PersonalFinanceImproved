@@ -100,7 +100,7 @@ describe("sync connections router", () => {
         service: "ynab",
       });
       expect(result).toMatchObject({
-        success: false,
+        ok: false,
         error: expect.stringContaining("No ynab connection configured"),
       });
     });
@@ -313,7 +313,7 @@ describe("sync.testConnection with client", () => {
     });
 
     const result = await caller.sync.testConnection({ service: "ynab" });
-    expect(result).toMatchObject({ success: true, budgetName: "My Budget" });
+    expect(result).toMatchObject({ ok: true, budgetName: "My Budget" });
   });
 
   it("returns failure when client throws", async () => {
@@ -324,7 +324,7 @@ describe("sync.testConnection with client", () => {
 
     const result = await caller.sync.testConnection({ service: "ynab" });
     expect(result).toMatchObject({
-      success: false,
+      ok: false,
       error: expect.stringContaining("Auth failed"),
     });
   });
@@ -343,7 +343,7 @@ describe("sync.testConnection with client", () => {
     });
 
     expect(await caller.sync.testConnection({ service: "actual" })).toEqual({
-      success: false,
+      ok: false,
       error:
         "Actual sent something Ledgr doesn't understand (data.0.offbudget).",
     });
@@ -355,7 +355,7 @@ describe("sync.testConnection with client", () => {
 
     const result = await caller.sync.testConnection({ service: "actual" });
     expect(result).toMatchObject({
-      success: false,
+      ok: false,
       error: expect.stringContaining("No actual connection configured"),
     });
   });
@@ -540,7 +540,7 @@ describe("sync.fetchYnabBudgets", () => {
       accessToken: "test-token",
     });
     expect(result).toEqual({
-      success: true,
+      ok: true,
       budgets: [
         { id: "b-1", name: "Main Budget", lastModified: "2026-01-01" },
         { id: "b-2", name: "Savings Budget", lastModified: null },
@@ -557,7 +557,7 @@ describe("sync.fetchYnabBudgets", () => {
       accessToken: "bad-token",
     });
     expect(result).toEqual({
-      success: false,
+      ok: false,
       error: "YNAB didn't accept this access token — check it and try again.",
     });
   });
@@ -566,7 +566,7 @@ describe("sync.fetchYnabBudgets", () => {
     ynabAnswers(400, "body-detail-xyz");
     const result = await caller.sync.fetchYnabBudgets({ accessToken: "t" });
     expect(result).toEqual({
-      success: false,
+      ok: false,
       error: "YNAB refused Ledgr's request.",
     });
   });
@@ -575,7 +575,7 @@ describe("sync.fetchYnabBudgets", () => {
     ynabAnswers(200, { data: { plans: [{ id: "b-1", name: "Main" }] } });
     const result = await caller.sync.fetchYnabBudgets({ accessToken: "t" });
     expect(result).toEqual({
-      success: false,
+      ok: false,
       error: "YNAB sent something Ledgr doesn't understand (data.budgets).",
     });
   });
@@ -592,7 +592,7 @@ describe("sync.fetchYnabBudgets", () => {
       await vi.runAllTimersAsync();
       const result = await pending;
       expect(result).toEqual({
-        success: false,
+        ok: false,
         error: "Ledgr couldn't reach YNAB — try again.",
       });
     } finally {
@@ -722,7 +722,7 @@ describe("connection management is admin-only", () => {
         });
         expect(
           await caller.sync.testConnection({ service: input.service }),
-        ).toEqual({ success: true, budgetName: "Household" });
+        ).toEqual({ ok: true, budgetName: "Household" });
         expect(
           await caller.sync.deleteConnection({ service: input.service }),
         ).toEqual({ ok: true });

@@ -44,7 +44,7 @@ describe("tiingo router", () => {
 
   it("testConnection reports not configured without a stored key", async () => {
     const result = await caller.tiingo.testConnection();
-    expect(result.success).toBe(false);
+    expect(result.ok).toBe(false);
   });
 
   it("does not save a key that Tiingo rejects, and says so", async () => {
@@ -117,7 +117,7 @@ describe("tiingo router", () => {
 
     expect(testApiKey).toHaveBeenLastCalledWith("good-key-123");
     expect(result).toEqual({
-      success: true,
+      ok: true,
       ticker: "SPY",
       historyStart: "1993-01-29",
     });
@@ -128,7 +128,7 @@ describe("tiingo router", () => {
       serviceError("Tiingo", "Tiingo: /meta: x", "bad-response"),
     );
     expect(await caller.tiingo.testConnection()).toEqual({
-      success: false,
+      ok: false,
       error: "Tiingo sent something Ledgr doesn't understand.",
     });
   });
@@ -147,7 +147,7 @@ describe("tiingo router", () => {
     const result = await caller.tiingo.testConnection();
 
     expect(result).toEqual({
-      success: false,
+      ok: false,
       error:
         "The saved Tiingo key can't be decrypted (it was saved with a different ENCRYPTION_KEY) — enter the key again.",
     });

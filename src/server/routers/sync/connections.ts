@@ -174,14 +174,14 @@ export const syncConnectionsRouter = createTRPCRouter({
       > => {
         try {
           return {
-            success: true as const,
+            ok: true as const,
             budgets: await listYnabBudgets(input.accessToken),
           };
         } catch (e) {
           // The token isn't saved yet, so an auth failure means this token.
           const auth = e instanceof BudgetApiError && e.code === "auth";
           return {
-            success: false as const,
+            ok: false as const,
             error: auth
               ? "YNAB didn't accept this access token — check it and try again."
               : (userMessageFor(e) ??
@@ -199,7 +199,7 @@ export const syncConnectionsRouter = createTRPCRouter({
         const client = await getClientForService(ctx.db, input.service);
         if (!client) {
           return {
-            success: false,
+            ok: false,
             error: `No ${input.service} connection configured`,
           };
         }
@@ -208,11 +208,11 @@ export const syncConnectionsRouter = createTRPCRouter({
           // Actual's budget name is local, so the budget is asked first.
           await client.testConnection();
           const budgetName = await client.getBudgetName();
-          return { success: true, budgetName };
+          return { ok: true, budgetName };
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Unknown error";
           return {
-            success: false,
+            ok: false,
             error: userMessageFor(e) ?? msg.slice(0, 200),
           };
         }

@@ -68,23 +68,23 @@ export const tiingoRouter = createTRPCRouter({
         apiKey = await getTiingoApiKey(ctx.db);
       } catch {
         // A key saved under another ENCRYPTION_KEY (e.g. a restored backup).
-        return { success: false as const, error: KEY_UNREADABLE };
+        return { ok: false as const, error: KEY_UNREADABLE };
       }
       if (!apiKey) {
         return {
-          success: false as const,
+          ok: false as const,
           error: "No Tiingo connection configured",
         };
       }
       try {
         const meta = await testApiKey(apiKey);
         return {
-          success: true as const,
+          ok: true as const,
           ticker: meta.ticker,
           historyStart: meta.startDate,
         };
       } catch (e) {
-        return { success: false as const, error: describeTiingoError(e) };
+        return { ok: false as const, error: describeTiingoError(e) };
       }
     },
   ),

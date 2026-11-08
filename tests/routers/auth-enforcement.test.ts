@@ -170,7 +170,7 @@ describe("auth enforcement", () => {
         // No connection configured in the test DB: resolves with a
         // "not configured" payload rather than a permission error.
         const result = await caller.simplefin.testConnection();
-        expect(result.success).toBe(false);
+        expect(result.ok).toBe(false);
       } finally {
         cleanup();
       }

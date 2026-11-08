@@ -75,7 +75,7 @@ export const connectionsProcedures = {
       const conn = await getSimplefinConnection(ctx.db);
       if (!conn) {
         return {
-          success: false as const,
+          ok: false as const,
           error: "No SimpleFIN connection configured",
         };
       }
@@ -88,14 +88,14 @@ export const connectionsProcedures = {
         });
         await upsertSimplefinAccounts(ctx.db, accounts);
         return {
-          success: true as const,
+          ok: true as const,
           accountCount: accounts.length,
           providerErrors,
         };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Unknown error";
         return {
-          success: false as const,
+          ok: false as const,
           error: userMessageFor(e) ?? msg.slice(0, 200),
         };
       }

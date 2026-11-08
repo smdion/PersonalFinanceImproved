@@ -65,11 +65,10 @@ export const secRouter = createTRPCRouter({
     async ({ ctx }): Promise<ProbeResult<{ funds: number }>> => {
       try {
         const contact = await getSecContact(ctx.db);
-        if (!contact)
-          return { success: false as const, error: "SEC isn't set up" };
-        return { success: true as const, funds: await testSecContact(contact) };
+        if (!contact) return { ok: false as const, error: "SEC isn't set up" };
+        return { ok: true as const, funds: await testSecContact(contact) };
       } catch (e) {
-        return { success: false as const, error: describe(e) };
+        return { ok: false as const, error: describe(e) };
       }
     },
   ),

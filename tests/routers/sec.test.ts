@@ -109,7 +109,7 @@ describe("sec router", () => {
   it("testConnection words a bad answer as one, not as unreachable", async () => {
     mocks.bad = true;
     expect(await ctx.caller.sec.testConnection()).toEqual({
-      success: false,
+      ok: false,
       error: "SEC sent something Ledgr doesn't understand (fields).",
     });
     mocks.bad = false;

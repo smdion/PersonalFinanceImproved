@@ -529,7 +529,7 @@ describe("simplefin router", () => {
       }));
       try {
         expect(await ctx.caller.simplefin.testConnection()).toMatchObject({
-          success: false,
+          ok: false,
         });
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(log()).toEqual([["/accounts", "error", 503]]);
@@ -571,7 +571,7 @@ describe("simplefin router", () => {
             .run();
         const result = await ctx.caller.simplefin.testConnection();
         expect(result).toEqual({
-          success: false,
+          ok: false,
           error: `Paused: ${SIMPLEFIN_DAILY_REQUEST_LIMIT} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
         });
         expect(fetchMock).not.toHaveBeenCalled();

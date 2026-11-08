@@ -174,10 +174,8 @@ export function SecCard() {
         )}
 
         {testMut.isSuccess && (
-          <ConnectionResultMessage
-            tone={testMut.data.success ? "success" : "error"}
-          >
-            {testMut.data.success
+          <ConnectionResultMessage tone={testMut.data.ok ? "success" : "error"}>
+            {testMut.data.ok
               ? `Connected: SEC lists ${testMut.data.funds.toLocaleString()} fund share classes`
               : testMut.data.error}
           </ConnectionResultMessage>

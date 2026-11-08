@@ -213,7 +213,7 @@
     "src/components/savings/transactions/tab.tsx": 670,
     "src/components/settings/general.tsx": 450,
     "src/components/settings/integrations-simplefin.tsx": 438,
-    "src/components/settings/integrations.tsx": 707,
+    "src/components/settings/integrations.tsx": 706,
     "src/components/settings/integrations/budget-section.tsx": 690,
     "src/components/settings/integrations/portfolio-mapping-lists.tsx": 353,
     "src/components/settings/integrations/portfolio-section.tsx": 337,
@@ -861,7 +861,7 @@
       "PreviewPanel": 222
     },
     "src/components/settings/integrations-sec.tsx": {
-      "SecCard": 188
+      "SecCard": 186
     },
     "src/components/settings/integrations-simplefin.tsx": {
       "AccountRow": 159,
@@ -869,7 +869,7 @@
     },
     "src/components/settings/integrations.tsx": {
       "IntegrationsSettings": 180,
-      "ServiceCard": 455
+      "ServiceCard": 454
     },
     "src/components/settings/integrations/budget-section.tsx": {
       "BudgetSection": 636,

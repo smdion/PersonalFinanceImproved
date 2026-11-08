@@ -1,7 +1,8 @@
 /**
- * One mutation result shape (v0.10.4 Q10). A save acknowledges with
- * `{ ok: true }` (`Ack`); `success` belongs to a check's outcome
- * (`ProbeResult`, lib/http/probe-result.ts), which can come back false.
+ * One mutation result shape. A save acknowledges with `{ ok: true }`
+ * (`Ack`); a check's outcome (`ProbeResult`, lib/http/probe-result.ts) is
+ * `{ ok: true, … } | { ok: false, error }`. `success` is left only in
+ * internal returns (rate-limit).
  *
  * So anywhere in src/, a `success: true` (any object literal, returned or
  * not) must sit in a function that also returns an object with

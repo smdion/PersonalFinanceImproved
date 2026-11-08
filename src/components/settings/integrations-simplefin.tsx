@@ -351,9 +351,9 @@ export function SimplefinCard() {
 
         {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
-            tone={testConnectionMut.data.success ? "success" : "error"}
+            tone={testConnectionMut.data.ok ? "success" : "error"}
           >
-            {testConnectionMut.data.success
+            {testConnectionMut.data.ok
               ? `Connected: ${testConnectionMut.data.accountCount} linked account(s)`
               : testConnectionMut.data.error}
           </ConnectionResultMessage>
