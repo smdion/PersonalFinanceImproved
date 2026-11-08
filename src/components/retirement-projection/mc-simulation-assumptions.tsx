@@ -5,44 +5,12 @@ import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import type { RouterInputs, RouterOutputs } from "@/lib/trpc";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/** The inputs computeMonteCarloProjection reports it ran with. */
-export type SimulationInputs = Extract<
-  RouterOutputs["projection"]["computeMonteCarloProjection"],
-  { simulationInputs: unknown }
->["simulationInputs"];
-
-/** One asset class's return/volatility override, as the query takes it. */
-export type AssetClassOverride = NonNullable<
-  RouterInputs["projection"]["computeMonteCarloProjection"]["assetClassOverrides"]
->[number];
-
-// ---------------------------------------------------------------------------
-// SimulationAssumptions
-// ---------------------------------------------------------------------------
-
-/** In the dollars the page shows (`simulationDollars` — today's are the
- *  Simulation's per-trial deflation), so nothing here is deflated again. */
-type OutcomeDistribution = {
-  successRate: number;
-  medianEndBalance: number;
-  p5EndBalance: number;
-  terminalBalance: {
-    p10: number;
-    p25: number;
-    median: number;
-    p75: number;
-    p90: number;
-  };
-  sustainableWithdrawalPV: { p25: number; p75: number };
-  failureAge?: { median: number };
-  computeTimeMs: number;
-};
+import type {
+  SimulationInputs,
+  AssetClassOverride,
+  OutcomeDistribution,
+} from "./mc-simulation-types";
+import { AssumptionRow } from "./assumption-row";
 
 export function SimulationAssumptions({
   inputs,
@@ -1040,32 +1008,6 @@ export function SimulationAssumptions({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function AssumptionRow({
-  label,
-  value,
-  highlight,
-  tip,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-  tip?: string;
-}) {
-  return (
-    <div className="flex justify-between gap-2">
-      <span className={highlight ? "text-amber-600" : "text-muted"}>
-        {label}
-        {tip && <HelpTip text={tip} />}
-      </span>
-      <span
-        className={`font-medium ${highlight ? "text-amber-800" : "text-primary"}`}
-      >
-        {value}
-      </span>
     </div>
   );
 }
