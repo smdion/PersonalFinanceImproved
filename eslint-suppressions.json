@@ -1491,9 +1491,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/paycheck/contribution-snapshot.tsx": {
@@ -1894,9 +1891,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 6
     }
   },
   "src/components/portfolio/contribution-accounts-create-form.tsx": {
@@ -2788,9 +2782,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/savings/emergency-fund-detail.tsx": {
@@ -2805,9 +2796,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/savings/extra-paycheck-rules-editor.tsx": {
@@ -2903,9 +2891,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 5
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 5
     }
   },
   "src/components/savings/month-override-modal.tsx": {
@@ -2929,9 +2914,6 @@
       "count": 5
     },
     "ratchet/no-raw-input": {
-      "count": 4
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 4
     }
   },

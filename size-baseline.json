@@ -44,7 +44,7 @@
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 464,
     "src/components/onboarding/onboarding-wizard.tsx": 986,
     "src/components/paycheck/contrib-account-form.tsx": 624,
-    "src/components/paycheck/contrib-card.tsx": 539,
+    "src/components/paycheck/contrib-card.tsx": 542,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
     "src/components/paycheck/person-paycheck.tsx": 453,
@@ -52,7 +52,7 @@
     "src/components/performance/year-row.tsx": 749,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 666,
-    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 636,
+    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 662,
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 833,
     "src/components/portfolio/portfolio-chart.tsx": 460,
@@ -84,11 +84,11 @@
     "src/components/retirement/sections/taxes.tsx": 551,
     "src/components/savings/all-transactions-tab.tsx": 1442,
     "src/components/savings/api-sync-section.tsx": 603,
-    "src/components/savings/contribution-grid.tsx": 471,
+    "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1258,
     "src/components/savings/fund-card.tsx": 1036,
     "src/components/savings/fund-management-section.tsx": 658,
-    "src/components/savings/fund-transaction-list.tsx": 413,
+    "src/components/savings/fund-transaction-list.tsx": 437,
     "src/components/savings/savings-trajectory-table.tsx": 550,
     "src/components/settings/general.tsx": 449,
     "src/components/settings/integrations-simplefin.tsx": 437,
@@ -534,7 +534,7 @@
       "ContribAccountForm": 516
     },
     "src/components/paycheck/contrib-card.tsx": {
-      "ContribCard": 503,
+      "ContribCard": 506,
       "ContribCard.iife()": 182
     },
     "src/components/paycheck/contribution-snapshot.tsx": {
@@ -591,7 +591,7 @@
       "AccountCard": 617
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
-      "AddContribForm": 170,
+      "AddContribForm": 196,
       "ContributionRow": 429
     },
     "src/components/portfolio/contribution-accounts-create-form.tsx": {
@@ -721,10 +721,10 @@
     },
     "src/components/savings/contribution-grid.tsx": {
       "ContributionGrid": 221,
-      "DefaultContributionCell": 211
+      "DefaultContributionCell": 213
     },
     "src/components/savings/emergency-fund-detail.tsx": {
-      "EmergencyFundDetail": 184
+      "EmergencyFundDetail": 187
     },
     "src/components/savings/extra-paycheck-rules-editor.tsx": {
       "ExtraPaycheckJobPanel": 776
@@ -743,13 +743,13 @@
     },
     "src/components/savings/fund-transaction-list.tsx": {
       "FundTransactionList": 170,
-      "TransactionRow": 219
+      "TransactionRow": 243
     },
     "src/components/savings/month-override-modal.tsx": {
       "MonthOverrideModal": 333
     },
     "src/components/savings/pool-distribution-editor.tsx": {
-      "PoolDistributionEditor": 298
+      "PoolDistributionEditor": 302
     },
     "src/components/savings/savings-trajectory-chart.tsx": {
       "SavingsTrajectoryChart": 213

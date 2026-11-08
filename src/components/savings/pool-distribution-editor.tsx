@@ -127,6 +127,7 @@ export function PoolDistributionEditor({
           <div className="flex items-center gap-1.5">
             <span className="text-muted">$</span>
             <input
+              aria-label="Monthly pool"
               type="number"
               autoFocus
               value={editValue}
@@ -199,6 +200,7 @@ export function PoolDistributionEditor({
               {/* Slider */}
               <div className="mb-2">
                 <input
+                  aria-label={`${fund.name} share of the pool`}
                   type="range"
                   min="0"
                   max="100"
@@ -220,6 +222,7 @@ export function PoolDistributionEditor({
                 {isEditing({ kind: "percent", goalId: fund.goalId }) ? (
                   <div className="flex items-center gap-1">
                     <input
+                      aria-label={`${fund.name} percent`}
                       type="number"
                       autoFocus
                       value={editValue}
@@ -250,6 +253,7 @@ export function PoolDistributionEditor({
                   <div className="flex items-center gap-1">
                     <span className="text-muted text-xs">$</span>
                     <input
+                      aria-label={`${fund.name} monthly amount`}
                       type="number"
                       autoFocus
                       value={editValue}

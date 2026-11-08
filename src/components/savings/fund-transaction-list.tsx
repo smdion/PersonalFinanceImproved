@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { localDateStr } from "@/lib/utils/date";
@@ -219,6 +219,7 @@ function TransactionRow({
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<PlannedTxForm>(txToForm(tx));
   const [submitting, setSubmitting] = useState(false);
+  const id = useId();
   const isTransfer = !!tx.transferPairId;
 
   let transferLabel: string | null = null;
@@ -232,8 +233,14 @@ function TransactionRow({
         <p className="text-faint mb-2 text-xs font-medium">Edit transaction</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <label className="text-faint mb-1 block text-xs">Date</label>
+            <label
+              htmlFor={`${id}-date`}
+              className="text-faint mb-1 block text-xs"
+            >
+              Date
+            </label>
             <input
+              id={`${id}-date`}
               type="date"
               value={editForm.transactionDate}
               onChange={(e) =>
@@ -243,10 +250,14 @@ function TransactionRow({
             />
           </div>
           <div>
-            <label className="text-faint mb-1 block text-xs">
+            <label
+              htmlFor={`${id}-amount`}
+              className="text-faint mb-1 block text-xs"
+            >
               Amount (negative = spending)
             </label>
             <input
+              id={`${id}-amount`}
               type="number"
               step="0.01"
               value={editForm.amount}
@@ -257,8 +268,14 @@ function TransactionRow({
             />
           </div>
           <div>
-            <label className="text-faint mb-1 block text-xs">Description</label>
+            <label
+              htmlFor={`${id}-description`}
+              className="text-faint mb-1 block text-xs"
+            >
+              Description
+            </label>
             <input
+              id={`${id}-description`}
               type="text"
               value={editForm.description}
               onChange={(e) =>
@@ -268,9 +285,15 @@ function TransactionRow({
             />
           </div>
           <div>
-            <label className="text-faint mb-1 block text-xs">Recurring?</label>
+            <label
+              htmlFor={`${id}-recurring`}
+              className="text-faint mb-1 block text-xs"
+            >
+              Recurring?
+            </label>
             <div className="flex items-center gap-2">
               <input
+                id={`${id}-recurring`}
                 type="checkbox"
                 checked={editForm.isRecurring}
                 onChange={(e) =>
@@ -279,6 +302,7 @@ function TransactionRow({
               />
               {editForm.isRecurring && (
                 <input
+                  aria-label="Recurs every N months"
                   type="number"
                   value={editForm.recurrenceMonths}
                   onChange={(e) =>

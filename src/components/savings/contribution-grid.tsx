@@ -129,6 +129,7 @@ function DefaultContributionCell({
             <div className="flex items-center gap-3">
               <span className="text-muted w-4 shrink-0 text-xs">$</span>
               <input
+                aria-label={`${gp.name} default monthly dollars`}
                 type="number"
                 autoFocus={editing === "dollar"}
                 value={dollarValue}
@@ -151,6 +152,7 @@ function DefaultContributionCell({
             <div className="flex items-center gap-3">
               <span className="text-muted w-4 shrink-0 text-xs">%</span>
               <input
+                aria-label={`${gp.name} default percent of the pool`}
                 type="number"
                 autoFocus={editing === "percent"}
                 value={percentValue}

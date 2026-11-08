@@ -148,6 +148,7 @@ export function ContribCard({
             isEditable={valueEditable}
           />
           <select
+            aria-label="Contribution method"
             disabled={!valueEditable}
             value={c.contributionMethod}
             onChange={(e) =>
@@ -281,6 +282,7 @@ export function ContribCard({
             </>
           )}
           <select
+            aria-label="Employer match type"
             disabled={readOnly}
             value={c.employerMatchType}
             onChange={(e) =>
@@ -304,6 +306,7 @@ export function ContribCard({
             </span>
           )}
           <select
+            aria-label="Add employer match"
             disabled={readOnly}
             value="none"
             onChange={(e) =>

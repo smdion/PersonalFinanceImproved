@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { Card } from "@/components/ui/card";
 import {
   formatCurrency,
@@ -48,6 +48,7 @@ export function EmergencyFundDetail({
   isApiSyncEnabled?: boolean;
 }) {
   const [showReimbursements, setShowReimbursements] = useState(false);
+  const id = useId();
 
   return (
     <Card title="Emergency Fund Detail">
@@ -73,6 +74,7 @@ export function EmergencyFundDetail({
           <p className="text-faint mb-1 text-xs">Target Months</p>
           {onTargetMonthsChange ? (
             <input
+              aria-label="Target months"
               type="number"
               min={1}
               max={24}
@@ -193,8 +195,9 @@ export function EmergencyFundDetail({
       {/* Budget tier selector for e-fund expenses */}
       {budgetTierLabels.length > 1 && (
         <div className="text-faint mt-3 flex items-center gap-2 text-xs">
-          <span>Budget tier for essentials:</span>
+          <label htmlFor={`${id}-tier`}>Budget tier for essentials:</label>
           <select
+            id={`${id}-tier`}
             className="border-strong bg-surface-primary text-secondary rounded border px-1.5 py-0.5 text-xs"
             value={efundTierIndex}
             onChange={(e) => onTierChange(Number(e.target.value))}
