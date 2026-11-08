@@ -25,14 +25,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { gainLossTextColor } from "@/lib/utils/colors";
 import dynamic from "next/dynamic";
-import { InlineEdit } from "@/components/ui/inline-edit";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { ExpandRowButton } from "@/components/ui/expand-row-button";
-import {
-  EditLockToggle,
-  EDIT_LOCK_KEYS,
-  useEditLock,
-} from "@/components/ui/edit-lock-toggle";
+import { EDIT_LOCK_KEYS, useEditLock } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
 import { useSnapshotSyncPending } from "@/components/portfolio/use-snapshot-sync-pending";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
@@ -43,11 +38,8 @@ import { AccountBalanceOverview } from "@/components/portfolio/account-balance-o
 import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { usePortfolioSnapshotMutations } from "@/components/portfolio/use-portfolio-snapshot-mutations";
-import {
-  groupByPerformanceAccount,
-  subRowLabel,
-  SnapshotRowActions,
-} from "./snapshot-rows";
+import { SnapshotRowActions } from "./snapshot-rows";
+import { SnapshotDetailRow } from "./snapshot-detail-row";
 
 // Code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
@@ -558,121 +550,20 @@ export function PortfolioContent() {
                             snap={snap}
                           />
                         </tr>
-                        {isExpanded && (
-                          <tr>
-                            <td colSpan={6} className="px-0 py-0">
-                              <div className="bg-surface-sunken px-8 py-2">
-                                {isLatest && canEdit && (
-                                  <div className="mb-2 space-y-2">
-                                    {/* One padlock for the whole panel — no
-                                            per-value pencils. Locked by default. */}
-                                    <div className="flex items-center gap-2 text-xs">
-                                      <EditLockToggle
-                                        locked={snapshotEditLocked}
-                                        onToggle={toggleSnapshotEditLock}
-                                      />
-                                      <span className="text-muted">
-                                        {snapshotEditLocked
-                                          ? "Balances are locked. Unlock to fix a wrong balance in this snapshot."
-                                          : `Click a balance to fix it — changes save immediately.${
-                                              budgetApiConnected
-                                                ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
-                                                : ""
-                                            }`}
-                                      </span>
-                                    </div>
-                                    {syncPending?.snapshotId === snap.id && (
-                                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-                                        <span className="text-xs font-medium text-amber-900">
-                                          {syncPending.count} balance change
-                                          {syncPending.count === 1
-                                            ? ""
-                                            : "s"}{" "}
-                                          not pushed to {syncServiceLabel} yet.
-                                        </span>
-                                        <button
-                                          type="button"
-                                          disabled={resyncPush.isPending}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            void syncPendingSnapshot(snap.id);
-                                          }}
-                                          className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-                                        >
-                                          {resyncPush.isPending
-                                            ? "Syncing…"
-                                            : `Sync to ${syncServiceLabel}`}
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                {groupByPerformanceAccount(snap.accounts).map(
-                                  (group) => (
-                                    <div
-                                      key={group.key}
-                                      className="mb-2 last:mb-0"
-                                    >
-                                      {/* Group header — performance account name + subtotal */}
-                                      <div className="flex items-baseline justify-between border-b py-1">
-                                        <span className="text-primary text-xs font-semibold">
-                                          {group.perfName}
-                                        </span>
-                                        <span className="text-primary text-xs font-semibold">
-                                          {formatCurrency(group.total)}
-                                        </span>
-                                      </div>
-                                      {/* Sub-rows */}
-                                      {group.accounts.map((a) => {
-                                        const subLabel = subRowLabel(a, group);
-                                        return (
-                                          <div
-                                            key={a.id}
-                                            className="border-subtle flex items-baseline justify-between border-b py-0.5 pl-4"
-                                          >
-                                            <span className="text-muted text-xs">
-                                              {subLabel}
-                                            </span>
-                                            {isLatest &&
-                                            canEdit &&
-                                            !snapshotEditLocked ? (
-                                              <span>
-                                                <InlineEdit
-                                                  value={String(a.amount)}
-                                                  type="number"
-                                                  hideEditIcon
-                                                  className="text-secondary text-xs"
-                                                  formatDisplay={(v) =>
-                                                    formatCurrency(Number(v))
-                                                  }
-                                                  parseInput={(raw) =>
-                                                    raw.replace(/[^0-9.]/g, "")
-                                                  }
-                                                  onSave={(v) =>
-                                                    handleBalanceEdit(
-                                                      a.id,
-                                                      snap.id,
-                                                      snap.snapshotDate,
-                                                      v,
-                                                    )
-                                                  }
-                                                />
-                                              </span>
-                                            ) : (
-                                              <span className="text-secondary text-xs">
-                                                {formatCurrency(a.amount)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                        <SnapshotDetailRow
+                          budgetApiConnected={budgetApiConnected}
+                          canEdit={canEdit}
+                          handleBalanceEdit={handleBalanceEdit}
+                          isExpanded={isExpanded}
+                          isLatest={isLatest}
+                          resyncPush={resyncPush}
+                          snap={snap}
+                          snapshotEditLocked={snapshotEditLocked}
+                          syncPending={syncPending}
+                          syncPendingSnapshot={syncPendingSnapshot}
+                          syncServiceLabel={syncServiceLabel}
+                          toggleSnapshotEditLock={toggleSnapshotEditLock}
+                        />
                       </React.Fragment>
                     );
                   })}

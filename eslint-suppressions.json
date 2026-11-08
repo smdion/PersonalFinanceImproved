@@ -373,19 +373,24 @@
   },
   "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 3
     },
     "ratchet/no-raw-button": {
-      "count": 10
+      "count": 9
     },
     "ratchet/no-raw-input": {
       "count": 2
     },
     "ratchet/no-unlabeled-control": {
       "count": 2
+    }
+  },
+  "src/app/(dashboard)/portfolio/snapshot-detail-row.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/portfolio/snapshot-rows.tsx": {

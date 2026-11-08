@@ -20,7 +20,8 @@
     "src/app/(dashboard)/networth/networth-content.tsx": 460,
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 684,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
-    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 738,
+    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 629,
+    "src/app/(dashboard)/portfolio/snapshot-detail-row.tsx": 148,
     "src/app/(dashboard)/portfolio/snapshot-rows.tsx": 160,
     "src/app/(dashboard)/savings/savings-content.tsx": 918,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-badges.tsx": 42,
@@ -422,8 +423,7 @@
       "PerformanceContent": 808
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 666,
-      "PortfolioContent.map()": 207
+      "PortfolioContent": 565
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
       "RecommendationsContent": 185
