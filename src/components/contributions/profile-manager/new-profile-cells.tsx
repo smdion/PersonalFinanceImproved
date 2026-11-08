@@ -1,0 +1,303 @@
+import type { Dispatch, SetStateAction } from "react";
+import {
+  CONTRIBUTION_METHOD_LABELS,
+  EMPLOYER_MATCH_LABELS,
+  EMPLOYER_MATCH_VALUE_UNIT,
+} from "@/lib/config/display-labels";
+import type {
+  AccountDetail,
+  ContribDraft,
+  MatchDraft,
+} from "./account-row-types";
+
+export function NewProfileEnabledCell({
+  isDisabled,
+  ad,
+  setDisabledAccounts,
+}: {
+  isDisabled: boolean;
+  ad: AccountDetail;
+  setDisabledAccounts: Dispatch<SetStateAction<Record<string, boolean>>>;
+}) {
+  return (
+    <td className="py-1.5 align-top">
+      <input
+        type="checkbox"
+        checked={!isDisabled}
+        disabled={!ad.liveIsActive}
+        onChange={(e) =>
+          setDisabledAccounts((prev) => {
+            const next = { ...prev };
+            if (e.target.checked) delete next[String(ad.id)];
+            else next[String(ad.id)] = true;
+            return next;
+          })
+        }
+        className="border-strong mt-0.5 rounded disabled:cursor-not-allowed disabled:opacity-40"
+        title={
+          !ad.liveIsActive
+            ? "This account isn't a funding target — this checkbox has no effect until it's restored"
+            : isDisabled
+              ? "Disabled in this profile"
+              : "Enabled in this profile"
+        }
+        aria-label={
+          !ad.liveIsActive
+            ? "This account isn't a funding target — this checkbox has no effect until it's restored"
+            : isDisabled
+              ? "Disabled in this profile"
+              : "Enabled in this profile"
+        }
+      />
+    </td>
+  );
+}
+
+export function NewProfileNameCell({
+  isDisabled,
+  ad,
+  nameValues,
+  setNameValues,
+}: {
+  isDisabled: boolean;
+  ad: AccountDetail;
+  nameValues: Record<string, string>;
+  setNameValues: Dispatch<SetStateAction<Record<string, string>>>;
+}) {
+  return (
+    <td className="text-secondary py-1.5">
+      <div className={isDisabled ? "line-through" : ""}>
+        {ad.liveAccountName}
+      </div>
+      {!ad.liveIsActive && (
+        <div
+          className="text-micro font-medium text-amber-500"
+          title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor once this profile is created."
+        >
+          Not a funding target
+        </div>
+      )}
+      {!isDisabled && (
+        <input
+          type="text"
+          value={nameValues[String(ad.id)] ?? ""}
+          onChange={(e) =>
+            setNameValues((prev) => {
+              const next = { ...prev };
+              if (e.target.value) next[String(ad.id)] = e.target.value;
+              else delete next[String(ad.id)];
+              return next;
+            })
+          }
+          placeholder="Custom name..."
+          className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
+        />
+      )}
+    </td>
+  );
+}
+
+export function NewProfileMethodCell({
+  isDisabled,
+  effectiveMethod,
+  setContribValues,
+  ad,
+}: {
+  isDisabled: boolean;
+  effectiveMethod: string;
+  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
+  ad: AccountDetail;
+}) {
+  return (
+    <td className="px-1.5 py-1.5">
+      {!isDisabled && (
+        <select
+          value={effectiveMethod}
+          onChange={(e) =>
+            setContribValues((prev) => ({
+              ...prev,
+              [String(ad.id)]: {
+                ...prev[String(ad.id)],
+                method: e.target.value,
+              },
+            }))
+          }
+          className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
+        >
+          {Object.entries(CONTRIBUTION_METHOD_LABELS).map(([k, label]) => (
+            <option key={k} value={k}>
+              {label}
+            </option>
+          ))}
+        </select>
+      )}
+    </td>
+  );
+}
+
+export function NewProfileValueCell({
+  isDisabled,
+  isPercent,
+  contribVal,
+  setContribValues,
+  ad,
+}: {
+  isDisabled: boolean;
+  isPercent: boolean;
+  contribVal: ContribDraft;
+  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
+  ad: AccountDetail;
+}) {
+  return (
+    <td className="py-1.5 text-right">
+      {!isDisabled && (
+        <div className="flex items-center justify-end gap-0.5">
+          <span className="text-caption text-faint w-3 shrink-0 text-right">
+            {isPercent ? "" : "$"}
+          </span>
+          <input
+            type="number"
+            value={contribVal.value ?? ""}
+            onChange={(e) =>
+              setContribValues((prev) => ({
+                ...prev,
+                [String(ad.id)]: {
+                  ...prev[String(ad.id)],
+                  value: e.target.value,
+                },
+              }))
+            }
+            placeholder="Not set"
+            className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
+          />
+          <span className="text-caption text-faint w-3 shrink-0 text-left">
+            {isPercent ? "%" : ""}
+          </span>
+        </div>
+      )}
+    </td>
+  );
+}
+
+export function NewProfileMatchTypeCell({
+  effectiveMatchType,
+  setMatchValues,
+  ad,
+}: {
+  effectiveMatchType: string;
+  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
+  ad: AccountDetail;
+}) {
+  return (
+    <td className="px-1.5 py-1.5">
+      <select
+        value={effectiveMatchType}
+        onChange={(e) =>
+          setMatchValues((prev) => ({
+            ...prev,
+            [String(ad.id)]: {
+              ...prev[String(ad.id)],
+              matchType: e.target.value,
+            },
+          }))
+        }
+        className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
+      >
+        {Object.entries(EMPLOYER_MATCH_LABELS).map(([k, label]) => (
+          <option key={k} value={k}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </td>
+  );
+}
+
+export function NewProfileMatchCell({
+  hasMatch,
+  effectiveMatchType,
+  mVal,
+  setMatchValues,
+  ad,
+}: {
+  hasMatch: boolean;
+  effectiveMatchType: string;
+  mVal: MatchDraft;
+  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
+  ad: AccountDetail;
+}) {
+  return (
+    <td className="py-1.5 text-right">
+      {hasMatch ? (
+        <div className="flex items-center justify-end gap-0.5">
+          {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] === "$" && (
+            <span className="text-caption text-faint w-3 shrink-0 text-right">
+              $
+            </span>
+          )}
+          <input
+            type="number"
+            value={mVal.matchValue ?? ""}
+            onChange={(e) =>
+              setMatchValues((prev) => ({
+                ...prev,
+                [String(ad.id)]: {
+                  ...prev[String(ad.id)],
+                  matchValue: e.target.value,
+                },
+              }))
+            }
+            placeholder="—"
+            className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs"
+          />
+          {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] === "%" && (
+            <span className="text-caption text-faint">%</span>
+          )}
+        </div>
+      ) : (
+        <span className="text-faint">—</span>
+      )}
+    </td>
+  );
+}
+
+export function NewProfileCapCell({
+  hasMatch,
+  isPercentMatch,
+  mVal,
+  setMatchValues,
+  ad,
+}: {
+  hasMatch: boolean;
+  isPercentMatch: boolean;
+  mVal: MatchDraft;
+  setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
+  ad: AccountDetail;
+}) {
+  return (
+    <td className="py-1.5 text-right">
+      {hasMatch && isPercentMatch ? (
+        <div className="flex items-center justify-end gap-0.5">
+          <input
+            type="number"
+            value={mVal.maxMatchPct ?? ""}
+            onChange={(e) =>
+              setMatchValues((prev) => ({
+                ...prev,
+                [String(ad.id)]: {
+                  ...prev[String(ad.id)],
+                  maxMatchPct: e.target.value,
+                },
+              }))
+            }
+            placeholder="—"
+            className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs"
+          />
+          <span className="text-caption text-faint">%</span>
+        </div>
+      ) : (
+        <span className="text-faint">—</span>
+      )}
+    </td>
+  );
+}

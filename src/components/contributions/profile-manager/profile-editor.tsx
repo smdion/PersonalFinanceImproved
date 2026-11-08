@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import {
-  CONTRIBUTION_METHOD_LABELS,
-  EMPLOYER_MATCH_LABELS,
-  EMPLOYER_MATCH_VALUE_UNIT,
-} from "@/lib/config/display-labels";
 import { matchValueToStore } from "@/lib/pure/contributions/match-display";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 import type { DeductionRow } from "./profile-types";
 import type { ContribDraft, MatchDraft } from "./account-row-types";
+import {
+  NewProfileCapCell,
+  NewProfileEnabledCell,
+  NewProfileMatchCell,
+  NewProfileMatchTypeCell,
+  NewProfileMethodCell,
+  NewProfileNameCell,
+  NewProfileValueCell,
+} from "./new-profile-cells";
 
 /**
  * Create-new form. The one place a batched Save survives: a profile row has
@@ -253,198 +257,49 @@ export function ProfileEditor({
                       key={ad.id}
                       className={`border-subtle border-b ${isDisabled ? "opacity-40" : ""}`}
                     >
-                      <td className="py-1.5 align-top">
-                        <input
-                          type="checkbox"
-                          checked={!isDisabled}
-                          disabled={!ad.liveIsActive}
-                          onChange={(e) =>
-                            setDisabledAccounts((prev) => {
-                              const next = { ...prev };
-                              if (e.target.checked) delete next[String(ad.id)];
-                              else next[String(ad.id)] = true;
-                              return next;
-                            })
-                          }
-                          className="border-strong mt-0.5 rounded disabled:cursor-not-allowed disabled:opacity-40"
-                          title={
-                            !ad.liveIsActive
-                              ? "This account isn't a funding target — this checkbox has no effect until it's restored"
-                              : isDisabled
-                                ? "Disabled in this profile"
-                                : "Enabled in this profile"
-                          }
-                          aria-label={
-                            !ad.liveIsActive
-                              ? "This account isn't a funding target — this checkbox has no effect until it's restored"
-                              : isDisabled
-                                ? "Disabled in this profile"
-                                : "Enabled in this profile"
-                          }
-                        />
-                      </td>
-                      <td className="text-secondary py-1.5">
-                        <div className={isDisabled ? "line-through" : ""}>
-                          {ad.liveAccountName}
-                        </div>
-                        {!ad.liveIsActive && (
-                          <div
-                            className="text-micro font-medium text-amber-500"
-                            title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor once this profile is created."
-                          >
-                            Not a funding target
-                          </div>
-                        )}
-                        {!isDisabled && (
-                          <input
-                            type="text"
-                            value={nameValues[String(ad.id)] ?? ""}
-                            onChange={(e) =>
-                              setNameValues((prev) => {
-                                const next = { ...prev };
-                                if (e.target.value)
-                                  next[String(ad.id)] = e.target.value;
-                                else delete next[String(ad.id)];
-                                return next;
-                              })
-                            }
-                            placeholder="Custom name..."
-                            className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
-                          />
-                        )}
-                      </td>
-                      <td className="px-1.5 py-1.5">
-                        {!isDisabled && (
-                          <select
-                            value={effectiveMethod}
-                            onChange={(e) =>
-                              setContribValues((prev) => ({
-                                ...prev,
-                                [String(ad.id)]: {
-                                  ...prev[String(ad.id)],
-                                  method: e.target.value,
-                                },
-                              }))
-                            }
-                            className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
-                          >
-                            {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
-                              ([k, label]) => (
-                                <option key={k} value={k}>
-                                  {label}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        )}
-                      </td>
-                      <td className="py-1.5 text-right">
-                        {!isDisabled && (
-                          <div className="flex items-center justify-end gap-0.5">
-                            <span className="text-caption text-faint w-3 shrink-0 text-right">
-                              {isPercent ? "" : "$"}
-                            </span>
-                            <input
-                              type="number"
-                              value={contribVal.value ?? ""}
-                              onChange={(e) =>
-                                setContribValues((prev) => ({
-                                  ...prev,
-                                  [String(ad.id)]: {
-                                    ...prev[String(ad.id)],
-                                    value: e.target.value,
-                                  },
-                                }))
-                              }
-                              placeholder="Not set"
-                              className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
-                            />
-                            <span className="text-caption text-faint w-3 shrink-0 text-left">
-                              {isPercent ? "%" : ""}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-1.5 py-1.5">
-                        <select
-                          value={effectiveMatchType}
-                          onChange={(e) =>
-                            setMatchValues((prev) => ({
-                              ...prev,
-                              [String(ad.id)]: {
-                                ...prev[String(ad.id)],
-                                matchType: e.target.value,
-                              },
-                            }))
-                          }
-                          className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
-                        >
-                          {Object.entries(EMPLOYER_MATCH_LABELS).map(
-                            ([k, label]) => (
-                              <option key={k} value={k}>
-                                {label}
-                              </option>
-                            ),
-                          )}
-                        </select>
-                      </td>
-                      <td className="py-1.5 text-right">
-                        {hasMatch ? (
-                          <div className="flex items-center justify-end gap-0.5">
-                            {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
-                              "$" && (
-                              <span className="text-caption text-faint w-3 shrink-0 text-right">
-                                $
-                              </span>
-                            )}
-                            <input
-                              type="number"
-                              value={mVal.matchValue ?? ""}
-                              onChange={(e) =>
-                                setMatchValues((prev) => ({
-                                  ...prev,
-                                  [String(ad.id)]: {
-                                    ...prev[String(ad.id)],
-                                    matchValue: e.target.value,
-                                  },
-                                }))
-                              }
-                              placeholder="—"
-                              className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs"
-                            />
-                            {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
-                              "%" && (
-                              <span className="text-caption text-faint">%</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-faint">—</span>
-                        )}
-                      </td>
-                      <td className="py-1.5 text-right">
-                        {hasMatch && isPercentMatch ? (
-                          <div className="flex items-center justify-end gap-0.5">
-                            <input
-                              type="number"
-                              value={mVal.maxMatchPct ?? ""}
-                              onChange={(e) =>
-                                setMatchValues((prev) => ({
-                                  ...prev,
-                                  [String(ad.id)]: {
-                                    ...prev[String(ad.id)],
-                                    maxMatchPct: e.target.value,
-                                  },
-                                }))
-                              }
-                              placeholder="—"
-                              className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs"
-                            />
-                            <span className="text-caption text-faint">%</span>
-                          </div>
-                        ) : (
-                          <span className="text-faint">—</span>
-                        )}
-                      </td>
+                      <NewProfileEnabledCell
+                        isDisabled={isDisabled}
+                        ad={ad}
+                        setDisabledAccounts={setDisabledAccounts}
+                      />
+                      <NewProfileNameCell
+                        isDisabled={isDisabled}
+                        ad={ad}
+                        nameValues={nameValues}
+                        setNameValues={setNameValues}
+                      />
+                      <NewProfileMethodCell
+                        isDisabled={isDisabled}
+                        effectiveMethod={effectiveMethod}
+                        setContribValues={setContribValues}
+                        ad={ad}
+                      />
+                      <NewProfileValueCell
+                        isDisabled={isDisabled}
+                        isPercent={isPercent}
+                        contribVal={contribVal}
+                        setContribValues={setContribValues}
+                        ad={ad}
+                      />
+                      <NewProfileMatchTypeCell
+                        effectiveMatchType={effectiveMatchType}
+                        setMatchValues={setMatchValues}
+                        ad={ad}
+                      />
+                      <NewProfileMatchCell
+                        hasMatch={hasMatch}
+                        effectiveMatchType={effectiveMatchType}
+                        mVal={mVal}
+                        setMatchValues={setMatchValues}
+                        ad={ad}
+                      />
+                      <NewProfileCapCell
+                        hasMatch={hasMatch}
+                        isPercentMatch={isPercentMatch}
+                        mVal={mVal}
+                        setMatchValues={setMatchValues}
+                        ad={ad}
+                      />
                     </tr>
                   );
                 })}

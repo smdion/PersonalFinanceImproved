@@ -888,6 +888,14 @@
       "count": 1
     }
   },
+  "src/components/contributions/profile-manager/new-profile-cells.tsx": {
+    "ratchet/no-raw-input": {
+      "count": 5
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 6
+    }
+  },
   "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
@@ -906,7 +914,7 @@
   },
   "src/components/contributions/profile-manager/profile-editor.tsx": {
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 3
@@ -918,10 +926,10 @@
       "count": 2
     },
     "ratchet/no-raw-input": {
-      "count": 6
+      "count": 1
     },
     "ratchet/no-unlabeled-control": {
-      "count": 7
+      "count": 1
     }
   },
   "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
