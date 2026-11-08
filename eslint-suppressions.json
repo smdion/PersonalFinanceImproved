@@ -2671,7 +2671,7 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 3
@@ -2680,13 +2680,13 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 9
+      "count": 6
     },
     "ratchet/no-raw-input": {
-      "count": 13
+      "count": 10
     },
     "ratchet/no-unlabeled-control": {
-      "count": 15
+      "count": 11
     }
   },
   "src/components/savings/api-category-link-dialog.tsx": {
@@ -7453,6 +7453,15 @@
   "src/components/savings/transactions/row.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 3
+    },
+    "ratchet/no-raw-input": {
+      "count": 3
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
     }
   }
 }

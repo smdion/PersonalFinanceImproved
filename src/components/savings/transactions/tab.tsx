@@ -3,30 +3,23 @@
 import React, { useState, useRef } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HelpTip } from "@/components/ui/help-tip";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
-import { Badge } from "@/components/ui/badge";
-import { CellButton } from "@/components/ui/cell-button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
-import {
-  buildSettledOccurrencesSet,
-  occurrenceKey,
-} from "@/lib/pure/savings/savings-projection";
+import { buildSettledOccurrencesSet } from "@/lib/pure/savings/savings-projection";
 import type { GoalProjection, PlannedTransaction } from "../types";
-import { balanceAfterCell } from "./row";
-
-interface EditForm {
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: string;
-  isRecurring: boolean;
-  recurrenceMonths: number;
-}
+import {
+  HistoryRowCells,
+  TransactionsTableHead,
+  UpcomingActionsCell,
+  UpcomingAmountCells,
+  UpcomingDateAndDescriptionCells,
+  UpcomingFundCell,
+  type EditForm,
+} from "./row";
 
 type ActiveCellField = "goalId" | "transactionDate" | "description" | "amount";
 const ADD_MODES = [
@@ -908,46 +901,7 @@ export function AllTransactionsTab({
       ) : (
         <div className="overflow-auto rounded-lg border">
           <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 z-10">
-              <tr className="bg-surface-sunken border-b">
-                <th className="text-muted px-3 py-2 text-left font-medium whitespace-nowrap">
-                  Fund
-                </th>
-                <th className="text-muted px-3 py-2 text-left font-medium whitespace-nowrap">
-                  Date
-                </th>
-                <th className="text-muted px-3 py-2 text-left font-medium">
-                  Description
-                </th>
-                <th className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap">
-                  Amount
-                </th>
-                <th
-                  className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap"
-                  title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and month changes (matches the Plan table)"
-                >
-                  After
-                </th>
-                <th className="text-muted px-3 py-2 text-center font-medium whitespace-nowrap">
-                  Recurring
-                </th>
-                {canEdit !== false && (
-                  <th className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap">
-                    <span className="inline-flex items-center">
-                      Settled
-                      <HelpTip
-                        lines={[
-                          "Once a planned deposit or withdrawal has actually happened, settle it instead of deleting it.",
-                          "Settling excludes it from future balance projections — your synced balance already reflects the real activity — while keeping the row for your records.",
-                          "Never automatic: for budget-linked funds a banner may suggest likely-settled items based on real account activity, but nothing settles without a click.",
-                        ]}
-                        maxWidth={260}
-                      />
-                    </span>
-                  </th>
-                )}
-              </tr>
-            </thead>
+            <TransactionsTableHead canEdit={canEdit} />
             <tbody>
               {/* Past (history) rows */}
               {past.map((tx) => {
@@ -976,123 +930,21 @@ export function AllTransactionsTab({
                     key={`hist-${tx.id}`}
                     className="bg-surface-elevated/20 border-b"
                   >
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {isTransfer ? (
-                        <span className="text-caption inline-flex items-center gap-1">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: fundColorMap.get(
-                                fromLeg?.goalId ?? 0,
-                              ),
-                            }}
-                          />
-                          <span className="text-faint">
-                            {fundNameMap.get(fromLeg?.goalId ?? 0) ?? "?"}
-                          </span>
-                          <span className="text-faint/50">→</span>
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: fundColorMap.get(
-                                toLeg?.goalId ?? 0,
-                              ),
-                            }}
-                          />
-                          <span className="text-faint">
-                            {fundNameMap.get(toLeg?.goalId ?? 0) ?? "?"}
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="text-faint font-medium">{name}</span>
-                        </span>
-                      )}
-                    </td>
-                    <td className="text-faint px-3 py-2 whitespace-nowrap tabular-nums">
-                      {formatDate(
-                        new Date(tx.transactionDate + "T00:00:00"),
-                        "short",
-                      )}
-                    </td>
-                    <td className="text-faint px-3 py-2">
-                      {isTransfer && (
-                        <Badge color="blue" case="normal" className="mr-1.5">
-                          transfer
-                        </Badge>
-                      )}
-                      {tx.description}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-right font-medium whitespace-nowrap tabular-nums ${
-                        isTransfer
-                          ? "text-blue-400/70"
-                          : tx.amount < 0
-                            ? "text-red-400/70"
-                            : "text-green-500/70"
-                      }`}
-                    >
-                      {isTransfer
-                        ? formatCurrency(Math.abs(tx.amount))
-                        : `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
-                    </td>
-                    <td className="text-faint/40 px-3 py-2 text-right tabular-nums">
-                      <span className="text-caption">—</span>
-                    </td>
-                    <td className="text-faint/40 px-3 py-2 text-center">
-                      <span className="text-caption">—</span>
-                    </td>
-                    {canEdit !== false && (
-                      <td className="px-3 py-2 text-right whitespace-nowrap">
-                        {!isTransfer &&
-                          (settledOccurrences.has(
-                            occurrenceKey(
-                              tx.id,
-                              tx.transactionDate.slice(0, 7),
-                            ),
-                          ) ? (
-                            <span
-                              title="Settled — excluded from projections"
-                              className="inline-block text-green-600"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5">
-                              {monthsAgo(tx.transactionDate) >=
-                                AGE_NUDGE_MONTHS && (
-                                <span
-                                  title="No matching real activity was found — settle it if it happened, or delete it if it didn't"
-                                  className="text-caption text-amber-600"
-                                >
-                                  {monthsAgo(tx.transactionDate)}mo ago — still
-                                  open?
-                                </span>
-                              )}
-                              <button
-                                onClick={() =>
-                                  settleTx.mutate({
-                                    plannedTxId: tx.id,
-                                    occurrenceMonth: tx.transactionDate.slice(
-                                      0,
-                                      7,
-                                    ),
-                                  })
-                                }
-                                disabled={settleTx.isPending}
-                                title="Mark settled — this happened, exclude it from future projections"
-                                className="text-faint text-xs transition-colors hover:text-green-600 disabled:opacity-50"
-                              >
-                                Settle
-                              </button>
-                            </span>
-                          ))}
-                      </td>
-                    )}
+                    <HistoryRowCells
+                      isTransfer={isTransfer}
+                      fundColorMap={fundColorMap}
+                      fromLeg={fromLeg}
+                      fundNameMap={fundNameMap}
+                      toLeg={toLeg}
+                      color={color}
+                      name={name}
+                      tx={tx}
+                      canEdit={canEdit}
+                      settledOccurrences={settledOccurrences}
+                      monthsAgo={monthsAgo}
+                      AGE_NUDGE_MONTHS={AGE_NUDGE_MONTHS}
+                      settleTx={settleTx}
+                    />
                   </tr>
                 );
               })}
@@ -1147,260 +999,59 @@ export function AllTransactionsTab({
                     key={tx.id}
                     className="hover:bg-surface-elevated/40 border-b transition-colors last:border-0"
                   >
-                    {/* Fund */}
-                    <td
-                      className={`px-3 py-2 whitespace-nowrap${editable ? "cursor-pointer" : ""}`}
-                      onClick={edit("goalId")}
-                    >
-                      {isCellActive(tx.id, "goalId") && editForm ? (
-                        <div className="inline-flex items-center gap-1.5">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: fundColorMap.get(
-                                editForm.goalId,
-                              ),
-                            }}
-                          />
-                          <select
-                            autoFocus
-                            value={editForm.goalId}
-                            onChange={(e) =>
-                              setEditForm({
-                                ...editForm,
-                                goalId: Number(e.target.value),
-                              })
-                            }
-                            onBlur={handlers.onBlur}
-                            onKeyDown={handlers.onKeyDown}
-                            className="border-default bg-surface-primary text-primary rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                          >
-                            {goalProjections.map((gp) => (
-                              <option key={gp.goalId} value={gp.goalId}>
-                                {gp.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ) : isTransfer ? (
-                        <span className="text-caption inline-flex items-center gap-1">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: fundColorMap.get(
-                                fromLeg?.goalId ?? 0,
-                              ),
-                            }}
-                          />
-                          <span className="text-muted">
-                            {fundNameMap.get(fromLeg?.goalId ?? 0) ?? "?"}
-                          </span>
-                          <span className="text-faint">→</span>
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: fundColorMap.get(
-                                toLeg?.goalId ?? 0,
-                              ),
-                            }}
-                          />
-                          <span className="text-muted">
-                            {fundNameMap.get(toLeg?.goalId ?? 0) ?? "?"}
-                          </span>
-                        </span>
-                      ) : (
-                        <CellButton enabled={editable}>
-                          <span className="inline-flex items-center gap-1.5">
-                            <span
-                              className="h-2 w-2 shrink-0 rounded-full"
-                              style={{ backgroundColor: color }}
-                            />
-                            <span className="text-secondary font-medium">
-                              {name}
-                            </span>
-                          </span>
-                        </CellButton>
-                      )}
-                    </td>
+                    <UpcomingFundCell
+                      editable={editable}
+                      edit={edit}
+                      isCellActive={isCellActive}
+                      tx={tx}
+                      editForm={editForm}
+                      fundColorMap={fundColorMap}
+                      setEditForm={setEditForm}
+                      handlers={handlers}
+                      goalProjections={goalProjections}
+                      isTransfer={isTransfer}
+                      fundNameMap={fundNameMap}
+                      fromLeg={fromLeg}
+                      toLeg={toLeg}
+                      color={color}
+                      name={name}
+                    />
 
-                    {/* Date */}
-                    <td
-                      className={`text-muted px-3 py-2 whitespace-nowrap tabular-nums${editable ? "cursor-pointer" : ""}`}
-                      onClick={edit("transactionDate")}
-                    >
-                      {isCellActive(tx.id, "transactionDate") && editForm ? (
-                        <input
-                          autoFocus
-                          type="date"
-                          value={editForm.transactionDate}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              transactionDate: e.target.value,
-                            })
-                          }
-                          onBlur={handlers.onBlur}
-                          onKeyDown={handlers.onKeyDown}
-                          className="border-default bg-surface-primary text-primary rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                        />
-                      ) : (
-                        <CellButton enabled={editable}>
-                          {formatDate(
-                            new Date(tx.transactionDate + "T00:00:00"),
-                            "short",
-                          )}
-                        </CellButton>
-                      )}
-                    </td>
+                    <UpcomingDateAndDescriptionCells
+                      editable={editable}
+                      edit={edit}
+                      isCellActive={isCellActive}
+                      tx={tx}
+                      editForm={editForm}
+                      setEditForm={setEditForm}
+                      handlers={handlers}
+                      isTransfer={isTransfer}
+                      isRuleRow={isRuleRow}
+                    />
 
-                    {/* Description */}
-                    <td
-                      className={`px-3 py-2 text-muted${editable ? "cursor-pointer" : ""}`}
-                      onClick={edit("description")}
-                    >
-                      {isCellActive(tx.id, "description") && editForm ? (
-                        <input
-                          autoFocus
-                          type="text"
-                          value={editForm.description}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              description: e.target.value,
-                            })
-                          }
-                          onBlur={handlers.onBlur}
-                          onKeyDown={handlers.onKeyDown}
-                          className="border-default bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                        />
-                      ) : (
-                        <CellButton enabled={editable}>
-                          {isTransfer && (
-                            <Badge
-                              color="blue"
-                              case="normal"
-                              className="mr-1.5"
-                            >
-                              transfer
-                            </Badge>
-                          )}
-                          {isRuleRow && (
-                            <Badge
-                              color="purple"
-                              case="normal"
-                              className="mr-1.5"
-                            >
-                              extra paycheck
-                            </Badge>
-                          )}
-                          {tx.description}
-                        </CellButton>
-                      )}
-                    </td>
+                    <UpcomingAmountCells
+                      editable={editable}
+                      isTransfer={isTransfer}
+                      tx={tx}
+                      edit={edit}
+                      isCellActive={isCellActive}
+                      editForm={editForm}
+                      setEditForm={setEditForm}
+                      handlers={handlers}
+                      getBalanceAfter={getBalanceAfter}
+                    />
 
-                    {/* Amount */}
-                    <td
-                      className={`px-3 py-2 text-right font-medium tabular-nums whitespace-nowrap${editable ? "cursor-pointer" : ""} ${
-                        isTransfer
-                          ? "text-blue-500"
-                          : tx.amount < 0
-                            ? "text-red-500"
-                            : "text-green-600"
-                      }`}
-                      onClick={edit("amount")}
-                    >
-                      {isCellActive(tx.id, "amount") && editForm ? (
-                        <input
-                          autoFocus
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editForm.amount}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, amount: e.target.value })
-                          }
-                          onBlur={handlers.onBlur}
-                          onKeyDown={handlers.onKeyDown}
-                          className="border-default bg-surface-primary text-primary w-24 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                        />
-                      ) : isTransfer ? (
-                        formatCurrency(Math.abs(tx.amount))
-                      ) : (
-                        <CellButton enabled={editable}>
-                          {`${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
-                        </CellButton>
-                      )}
-                    </td>
-
-                    {/* Balance after — end-of-month projected balance for this fund */}
-                    {balanceAfterCell(isTransfer, getBalanceAfter, tx)}
-
-                    {/* Recurring */}
-                    <td className="text-faint px-3 py-2 text-center">
-                      {tx.isRecurring ? (
-                        <span className="text-caption">
-                          every {tx.recurrenceMonths}mo
-                        </span>
-                      ) : (
-                        <span className="text-caption text-faint/40">—</span>
-                      )}
-                    </td>
-
-                    {/* Actions */}
-                    {canEdit !== false && (
-                      <td className="px-3 py-2">
-                        <div className="flex items-center justify-end gap-2">
-                          {!tx.isRecurring &&
-                            (settledOccurrences.has(
-                              occurrenceKey(
-                                tx.id,
-                                tx.transactionDate.slice(0, 7),
-                              ),
-                            ) ? (
-                              <span
-                                title="Settled — excluded from projections"
-                                className="text-green-600"
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() =>
-                                  settleTx.mutate({
-                                    plannedTxId: tx.id,
-                                    occurrenceMonth: tx.transactionDate.slice(
-                                      0,
-                                      7,
-                                    ),
-                                  })
-                                }
-                                disabled={settleTx.isPending}
-                                title="Mark settled — this happened, exclude it from future projections"
-                                className="text-faint text-xs transition-colors hover:text-green-600 disabled:opacity-50"
-                              >
-                                Settle
-                              </button>
-                            ))}
-                          {!tableLocked && !isRuleRow && (
-                            <button
-                              onClick={() =>
-                                isTransfer && tx.transferPairId
-                                  ? deleteTransfer.mutate({
-                                      transferPairId: tx.transferPairId,
-                                    })
-                                  : deleteTx.mutate({ id: tx.id })
-                              }
-                              disabled={
-                                deleteTx.isPending || deleteTransfer.isPending
-                              }
-                              className="text-faint text-xs transition-colors hover:text-red-600 disabled:opacity-50"
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
+                    <UpcomingActionsCell
+                      canEdit={canEdit}
+                      tx={tx}
+                      settledOccurrences={settledOccurrences}
+                      settleTx={settleTx}
+                      tableLocked={tableLocked}
+                      isRuleRow={isRuleRow}
+                      isTransfer={isTransfer}
+                      deleteTransfer={deleteTransfer}
+                      deleteTx={deleteTx}
+                    />
                   </tr>
                 );
               })}
