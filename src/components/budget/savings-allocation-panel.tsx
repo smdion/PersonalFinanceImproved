@@ -463,6 +463,7 @@ function SavingsAllocationTable({
                   </span>
                 ) : (
                   <input
+                    aria-label={`${r.name} allocation percent`}
                     type="number"
                     value={draftFor(
                       r.goalId,
@@ -493,6 +494,7 @@ function SavingsAllocationTable({
                   </span>
                 ) : (
                   <input
+                    aria-label={`${r.name} monthly contribution`}
                     type="number"
                     value={draftFor(
                       r.goalId,

@@ -77,6 +77,7 @@ export function BudgetModeManager({
               {isWeighted && canWeight && (
                 <div className="flex items-center gap-1">
                   <input
+                    aria-label={`Months for ${label}`}
                     type="number"
                     min={0}
                     step="1"
@@ -156,6 +157,7 @@ export function BudgetModeManager({
       )}
       <div className="mt-3 flex items-center gap-2">
         <input
+          aria-label="New mode name"
           type="text"
           value={newModeName}
           onChange={(e) => setNewModeName(e.target.value)}

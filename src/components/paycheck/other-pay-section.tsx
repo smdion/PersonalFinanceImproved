@@ -175,6 +175,7 @@ export function OtherPaySection({
               className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs"
             >
               <input
+                aria-label="Other pay name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Name as on your stub (e.g. Basic Life/AD&D)"

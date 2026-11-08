@@ -194,6 +194,7 @@ export function BudgetItemRow({
                 ↓
               </button>
               <select
+                aria-label={`Move ${item.subcategory} to category`}
                 value=""
                 onChange={(e) => {
                   if (e.target.value) {
@@ -280,6 +281,7 @@ export function BudgetItemRow({
         return (
           <td key={col} className="px-2 py-1 text-right">
             <input
+              aria-label={`${item.subcategory}, column ${col + 1}`}
               type="number"
               value={draftVal}
               onChange={(e) =>

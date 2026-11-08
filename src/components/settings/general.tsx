@@ -403,6 +403,7 @@ function LivingCostMappingEditor() {
                   {/* Custom entry for categories not in the active budget */}
                   <span className="inline-flex items-center gap-1">
                     <input
+                      aria-label={`Custom category for ${range.name}`}
                       type="text"
                       value={customInput}
                       onChange={(e) => setCustomInput(e.target.value)}

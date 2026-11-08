@@ -4,7 +4,7 @@
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1058,
     "src/app/(dashboard)/budget/budget-content.tsx": 656,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
-    "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
+    "src/app/(dashboard)/budget/what-if-editors.tsx": 574,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 977,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
@@ -22,7 +22,7 @@
     "src/components/budget/budget-summary-table.tsx": 570,
     "src/components/budget/contribution-profile-manager.tsx": 2027,
     "src/components/budget/salary-profile-manager.tsx": 954,
-    "src/components/budget/savings-allocation-panel.tsx": 522,
+    "src/components/budget/savings-allocation-panel.tsx": 524,
     "src/components/dashboard/contributions-card.tsx": 653,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
@@ -90,7 +90,7 @@
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 437,
     "src/components/savings/savings-trajectory-table.tsx": 550,
-    "src/components/settings/general.tsx": 449,
+    "src/components/settings/general.tsx": 450,
     "src/components/settings/integrations-simplefin.tsx": 437,
     "src/components/settings/integrations.tsx": 707,
     "src/components/settings/integrations/budget-section.tsx": 689,
@@ -320,8 +320,8 @@
       "useBudgetPageState": 207
     },
     "src/app/(dashboard)/budget/what-if-editors.tsx": {
-      "WhatIfContributionsEditor": 176,
-      "WhatIfDeductionsEditor": 153
+      "WhatIfContributionsEditor": 180,
+      "WhatIfDeductionsEditor": 156
     },
     "src/app/(dashboard)/budget/what-if-tab.tsx": {
       "useSandboxState": 234,
@@ -333,7 +333,7 @@
       "ContributionsContent.map().map()": 169
     },
     "src/app/(dashboard)/data-browser/data-browser-content.tsx": {
-      "DataBrowserContent": 249
+      "DataBrowserContent": 250
     },
     "src/app/(dashboard)/expenses/expenses-content.tsx": {
       "ExpensesContent": 583
@@ -397,16 +397,16 @@
       "BrokerageGoalsSection": 283
     },
     "src/components/budget/api-category-picker.tsx": {
-      "ApiCategoryPicker": 157
+      "ApiCategoryPicker": 159
     },
     "src/components/budget/budget-category-row.tsx": {
       "BudgetCategoryRow": 184
     },
     "src/components/budget/budget-item-row.tsx": {
-      "BudgetItemRow": 266
+      "BudgetItemRow": 268
     },
     "src/components/budget/budget-mode-manager.tsx": {
-      "BudgetModeManager": 172
+      "BudgetModeManager": 174
     },
     "src/components/budget/budget-summary-bar.tsx": {
       "BudgetSummaryBar": 174
@@ -429,7 +429,7 @@
     },
     "src/components/budget/savings-allocation-panel.tsx": {
       "SavingsAllocationPanel": 201,
-      "SavingsAllocationTable": 290
+      "SavingsAllocationTable": 292
     },
     "src/components/budget/use-budget-item-mutations.ts": {
       "useBudgetItemMutations": 182
@@ -547,7 +547,7 @@
       "ContributionsSection.map()": 168
     },
     "src/components/paycheck/other-pay-section.tsx": {
-      "OtherPaySection": 208
+      "OtherPaySection": 209
     },
     "src/components/paycheck/pay-stub.tsx": {
       "PayStub": 191
@@ -774,7 +774,7 @@
       "FplByHouseholdSettings": 177
     },
     "src/components/settings/general.tsx": {
-      "LivingCostMappingEditor": 233
+      "LivingCostMappingEditor": 234
     },
     "src/components/settings/integrations-preview-panel.tsx": {
       "PreviewPanel": 222

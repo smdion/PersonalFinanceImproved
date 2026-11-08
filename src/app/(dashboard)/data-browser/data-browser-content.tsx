@@ -141,6 +141,7 @@ export function DataBrowserContent() {
         <div className="w-64 shrink-0 overflow-hidden rounded-lg border">
           <div className="bg-surface-sunken border-b px-3 py-2">
             <input
+              aria-label="Filter tables"
               type="text"
               placeholder="Filter tables..."
               value={tableFilter}

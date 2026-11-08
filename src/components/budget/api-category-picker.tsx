@@ -106,6 +106,7 @@ export function ApiCategoryPicker({
 
       <div className="mb-2">
         <select
+          aria-label="Sync direction"
           value={syncDirection}
           onChange={(e) =>
             setSyncDirection(e.target.value as "pull" | "push" | "both")
@@ -119,6 +120,7 @@ export function ApiCategoryPicker({
       </div>
 
       <input
+        aria-label="Search API categories"
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}

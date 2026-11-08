@@ -126,9 +126,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 4
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 6
     }
   },
   "src/app/(dashboard)/budget/what-if-paycheck-summary.tsx": {
@@ -208,9 +205,6 @@
       "count": 4
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -639,9 +633,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/budget/budget-category-row.tsx": {
@@ -676,9 +667,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/budget/budget-mode-manager.tsx": {
@@ -690,9 +678,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/budget/budget-page-context.tsx": {
@@ -856,9 +841,6 @@
       "count": 2
     },
     "ratchet/no-raw-input": {
-      "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -1575,9 +1557,6 @@
       "count": 4
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -3014,9 +2993,6 @@
       "count": 5
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },

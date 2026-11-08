@@ -171,6 +171,7 @@ export function WhatIfPinnedCell({
   onReset,
   step,
   width = "w-24",
+  label,
 }: {
   liveValue: number;
   pinnedValue: number | undefined;
@@ -178,12 +179,14 @@ export function WhatIfPinnedCell({
   onReset: () => void;
   step?: string;
   width?: string;
+  label?: string;
 }) {
   const isPinned = pinnedValue !== undefined;
   const shown = isPinned ? pinnedValue : liveValue;
   return (
     <div className="flex items-center justify-end gap-1">
       <input
+        aria-label={label}
         type="number"
         step={step}
         value={shown}
@@ -296,6 +299,7 @@ export function WhatIfDeductionsEditor({
                     pinnedValue={deductionEdits.get(d.id)}
                     onCommit={(n) => onEditDeduction(d.id, n)}
                     onReset={() => onResetDeduction(d.id)}
+                    label={`${d.deductionName} $/period`}
                     step="10"
                     width="w-24"
                   />
@@ -313,6 +317,7 @@ export function WhatIfDeductionsEditor({
               >
                 <td className="py-1 pr-3 pl-4">
                   <input
+                    aria-label="New deduction name"
                     type="text"
                     value={a.name}
                     onChange={(e) =>
@@ -323,6 +328,7 @@ export function WhatIfDeductionsEditor({
                 </td>
                 <td className="px-3 py-1 text-right">
                   <input
+                    aria-label={`${a.name || "New deduction"} $/period`}
                     type="number"
                     step="10"
                     value={a.amountPerPeriod}
@@ -483,6 +489,7 @@ export function WhatIfContributionsEditor({
                         onReset={() => onReset(c.id)}
                         step={isPercent ? "0.5" : "10"}
                         width="w-20"
+                        label={`${accountDisplayName({ ...c, ownershipType: c.ownership }, v.person.name)} value`}
                       />,
                     )}
                   </td>
@@ -500,6 +507,7 @@ export function WhatIfContributionsEditor({
                   <td className="py-1 pr-3 pl-4">
                     <div className="flex items-center gap-1">
                       <select
+                        aria-label="New contribution account type"
                         value={a.accountType}
                         onChange={(e) =>
                           onUpdateAddition(a.localId, {
@@ -515,6 +523,7 @@ export function WhatIfContributionsEditor({
                         ))}
                       </select>
                       <select
+                        aria-label="New contribution method"
                         value={a.contributionMethod}
                         onChange={(e) =>
                           onUpdateAddition(a.localId, {
@@ -533,6 +542,7 @@ export function WhatIfContributionsEditor({
                     {affix(
                       isPercent,
                       <input
+                        aria-label="New contribution value"
                         type="number"
                         step={isPercent ? "0.5" : "10"}
                         value={a.contributionValue}
