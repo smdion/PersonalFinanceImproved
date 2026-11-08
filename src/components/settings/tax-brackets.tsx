@@ -2,10 +2,11 @@
 
 /** Settings tab for managing federal income tax withholding brackets (IRS Pub 15-T) by tax year, filing status, and W-4 checkbox, with inline editing and year duplication. */
 import { useState } from "react";
+import { AddYearPanel, DeleteYearConfirm } from "./tax-year-actions";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   W4_FILING_STATUS_VALUES,
@@ -39,7 +40,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.taxBrackets.list.useQuery();
+  const query = trpc.settings.taxBrackets.list.useQuery();
   const updateMutation = trpc.settings.taxBrackets.update.useMutation({
     onSuccess: () => utils.settings.taxBrackets.invalidate(),
   });
@@ -56,14 +57,14 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
   // Get unique years, sorted descending (newest first)
-  const years = Array.from(new Set((data ?? []).map((tb) => tb.taxYear))).sort(
-    (a, b) => b - a,
-  );
+  const years = Array.from(
+    new Set((query.data ?? []).map((tb) => tb.taxYear)),
+  ).sort((a, b) => b - a);
   const activeYear = year;
-  const yearData = (data ?? []).filter((tb) => tb.taxYear === activeYear);
+  const yearData = (query.data ?? []).filter((tb) => tb.taxYear === activeYear);
   const hasYearData = yearData.length > 0;
   // A year Ledgr ships can't be deleted (it would come back on restart).
   const yearShipped = yearData.some((tb) => tb.shipped);
@@ -107,7 +108,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
 
     if (effectiveCopyFrom) {
       // Copy brackets from source year
-      const sourceData = (data ?? []).filter(
+      const sourceData = (query.data ?? []).filter(
         (tb) => tb.taxYear === effectiveCopyFrom,
       );
       for (const tb of sourceData) {
@@ -138,7 +139,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   };
 
   const handleDeleteYear = async (yr: number) => {
-    const toDelete = (data ?? []).filter((tb) => tb.taxYear === yr);
+    const toDelete = (query.data ?? []).filter((tb) => tb.taxYear === yr);
     for (const tb of toDelete) {
       await deleteMutation.mutateAsync({ id: tb.id });
     }
@@ -149,37 +150,15 @@ export function TaxBracketsSettings({ year }: { year: number }) {
     return (
       <div>
         <h2 className="mb-4 text-lg font-semibold">Tax Brackets</h2>
-        <div className="rounded-lg border border-dashed p-4 text-center">
-          <p className="text-muted mb-3 text-sm">
-            No tax brackets configured for {activeYear}.
-          </p>
-          {admin && (
-            <div className="flex items-center justify-center gap-3">
-              {years.length > 0 && (
-                <label className="text-secondary text-sm">
-                  Copy from:
-                  <select
-                    value={effectiveCopyFrom ?? ""}
-                    onChange={(e) => setCopyFrom(parseInt(e.target.value))}
-                    className="ml-2 rounded border px-2 py-1 text-sm"
-                  >
-                    {years.map((yr) => (
-                      <option key={yr} value={yr}>
-                        {yr}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <button
-                onClick={handleAddYear}
-                className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-              >
-                Add {activeYear}
-              </button>
-            </div>
-          )}
-        </div>
+        <AddYearPanel
+          message={<>No tax brackets configured for {activeYear}.</>}
+          admin={admin}
+          year={activeYear}
+          years={years}
+          copyFrom={effectiveCopyFrom}
+          onCopyFromChange={setCopyFrom}
+          onAdd={handleAddYear}
+        />
       </div>
     );
   }
@@ -190,25 +169,13 @@ export function TaxBracketsSettings({ year }: { year: number }) {
 
       {/* Delete year confirmation */}
       {confirmDelete === activeYear && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-          <span className="text-sm text-red-800">
-            Delete all {activeYear} brackets? This cannot be undone.
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDeleteYear(activeYear)}
-              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="text-muted hover:text-primary px-3 py-1 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <DeleteYearConfirm
+          message={
+            <>Delete all {activeYear} brackets? This cannot be undone.</>
+          }
+          onDelete={() => handleDeleteYear(activeYear)}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
       <div className="space-y-6">

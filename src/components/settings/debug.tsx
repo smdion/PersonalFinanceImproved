@@ -1,7 +1,7 @@
 "use client";
 
 /** Debug settings tab providing diagnostics mode toggle, data freshness date overrides, and a danger-zone full data reset. */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   usePersistedToggle,
@@ -122,9 +122,11 @@ function DataFreshnessSection() {
   const [balanceDate, setBalanceDate] = useState("");
   const [perfDate, setPerfDate] = useState("");
   const [basisDate, setBasisDate] = useState("");
+  const id = useId();
 
   const fields = [
     {
+      key: "balance",
       label: "Balance last updated",
       current: data?.balanceDate ?? null,
       value: balanceDate,
@@ -132,6 +134,7 @@ function DataFreshnessSection() {
       hint: "From the most recent portfolio snapshot's date.",
     },
     {
+      key: "performance",
       label: "Performance last updated",
       current: data?.performanceDate ?? null,
       value: perfDate,
@@ -139,6 +142,7 @@ function DataFreshnessSection() {
       hint: "Stored as an app setting.",
     },
     {
+      key: "basis",
       label: "Cost basis last updated",
       current: data?.basisDate ?? null,
       value: basisDate,
@@ -162,11 +166,15 @@ function DataFreshnessSection() {
       <div className="max-w-sm space-y-3">
         {fields.map((f) => (
           <div key={f.label}>
-            <label className="text-muted mb-1 block text-xs font-medium">
+            <label
+              htmlFor={`${id}-${f.key}`}
+              className="text-muted mb-1 block text-xs font-medium"
+            >
               {f.label}
             </label>
             <div className="flex items-center gap-2">
               <input
+                id={`${id}-${f.key}`}
                 type="date"
                 value={f.value}
                 onChange={(e) => f.set(e.target.value)}
@@ -240,6 +248,7 @@ function DangerZoneSection() {
             Type <span className="font-mono font-bold">delete</span> to confirm:
           </p>
           <input
+            aria-label="Type delete to confirm"
             type="text"
             value={resetText}
             onChange={(e) => setResetText(e.target.value)}

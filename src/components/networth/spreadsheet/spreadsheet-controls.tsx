@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 /** Settings bar for the spreadsheet view: year selectors + display toggles. */
 
 type SpreadsheetControlsProps = {
@@ -29,6 +31,7 @@ export function SpreadsheetControls({
   showOutdated,
   onToggleShowOutdated,
 }: SpreadsheetControlsProps) {
+  const id = useId();
   const sorted = [...availableYears].sort((a, b) => b - a);
 
   return (
@@ -36,10 +39,14 @@ export function SpreadsheetControls({
       <div className="flex flex-wrap items-center gap-4 text-sm">
         {/* Year selectors */}
         <div className="flex items-center gap-2">
-          <label className="text-muted font-medium whitespace-nowrap">
+          <label
+            htmlFor={`${id}-year-a`}
+            className="text-muted font-medium whitespace-nowrap"
+          >
             Year to Compare
           </label>
           <select
+            id={`${id}-year-a`}
             value={yearA}
             onChange={(e) => onYearAChange(Number(e.target.value))}
             className="bg-surface-primary rounded border px-2 py-1 text-sm"
@@ -51,6 +58,7 @@ export function SpreadsheetControls({
             ))}
           </select>
           <select
+            aria-label="Year to compare against"
             value={yearB}
             onChange={(e) => onYearBChange(Number(e.target.value))}
             className="bg-surface-primary rounded border px-2 py-1 text-sm"

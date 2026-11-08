@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import { useDeepLinkParam } from "@/components/settings/use-deep-link-param";
 import {
   INTEGRATIONS_SECTIONS,
   SETTINGS_SECTION_PARAM,

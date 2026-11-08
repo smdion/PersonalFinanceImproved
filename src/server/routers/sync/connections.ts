@@ -20,6 +20,7 @@ import {
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import { checkOutboundUrl } from "@/lib/http/url-safety";
+import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
 import { BudgetApiError, userMessageFor } from "@/lib/budget-api/errors";
 import { listYnabBudgets } from "@/lib/budget-api/ynab-client";
@@ -126,7 +127,7 @@ export const syncConnectionsRouter = createTRPCRouter({
           set: { config: storedConfig },
         });
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Update just the Actual connection's External URL — the browser-facing
@@ -159,56 +160,64 @@ export const syncConnectionsRouter = createTRPCRouter({
         .set({ config: storedConfigForDb })
         .where(eq(schema.apiConnections.service, "actual"));
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Fetch YNAB budgets list using a raw token (before saving connection) */
   fetchYnabBudgets: adminProcedure
     .input(z.object({ accessToken: z.string().min(1) }))
-    .mutation(async ({ input }) => {
-      try {
-        return {
-          success: true as const,
-          budgets: await listYnabBudgets(input.accessToken),
-        };
-      } catch (e) {
-        // The token isn't saved yet, so an auth failure means this token.
-        const auth = e instanceof BudgetApiError && e.code === "auth";
-        return {
-          success: false as const,
-          error: auth
-            ? "YNAB didn't accept this access token — check it and try again."
-            : (userMessageFor(e) ??
-              "Couldn't load your YNAB budgets — try again."),
-        };
-      }
-    }),
+    .mutation(
+      async ({
+        input,
+      }): Promise<
+        ProbeResult<{ budgets: Awaited<ReturnType<typeof listYnabBudgets>> }>
+      > => {
+        try {
+          return {
+            success: true as const,
+            budgets: await listYnabBudgets(input.accessToken),
+          };
+        } catch (e) {
+          // The token isn't saved yet, so an auth failure means this token.
+          const auth = e instanceof BudgetApiError && e.code === "auth";
+          return {
+            success: false as const,
+            error: auth
+              ? "YNAB didn't accept this access token — check it and try again."
+              : (userMessageFor(e) ??
+                "Couldn't load your YNAB budgets — try again."),
+          };
+        }
+      },
+    ),
 
   /** Test a specific service connection (works before activation) */
   testConnection: adminProcedure
     .input(z.object({ service: serviceEnum }))
-    .mutation(async ({ ctx, input }) => {
-      const client = await getClientForService(ctx.db, input.service);
-      if (!client) {
-        return {
-          success: false,
-          error: `No ${input.service} connection configured`,
-        };
-      }
+    .mutation(
+      async ({ ctx, input }): Promise<ProbeResult<{ budgetName: string }>> => {
+        const client = await getClientForService(ctx.db, input.service);
+        if (!client) {
+          return {
+            success: false,
+            error: `No ${input.service} connection configured`,
+          };
+        }
 
-      try {
-        // Actual's budget name is local, so the budget is asked first.
-        await client.testConnection();
-        const budgetName = await client.getBudgetName();
-        return { success: true, budgetName };
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Unknown error";
-        return {
-          success: false,
-          error: userMessageFor(e) ?? msg.slice(0, 200),
-        };
-      }
-    }),
+        try {
+          // Actual's budget name is local, so the budget is asked first.
+          await client.testConnection();
+          const budgetName = await client.getBudgetName();
+          return { success: true, budgetName };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Unknown error";
+          return {
+            success: false,
+            error: userMessageFor(e) ?? msg.slice(0, 200),
+          };
+        }
+      },
+    ),
 
   /** Delete a connection and clear its cache */
   deleteConnection: adminProcedure
@@ -227,7 +236,7 @@ export const syncConnectionsRouter = createTRPCRouter({
         await upsertSetting(ctx.db, "active_budget_api", "none");
       }
 
-      return { success: true };
+      return { ok: true };
     }),
 
   /** Get sync status for the active API */

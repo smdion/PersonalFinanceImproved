@@ -3,9 +3,11 @@
 import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
-import { Badge, StatusDot } from "@/components/ui/badge";
+import { StatusDot } from "@/components/ui/badge";
 import type { PayrollBreakdown, ColumnResult, SinkingFundLine } from "./types";
-import { computeTotalSinking, computeUnallocated } from "./helpers";
+import { BudgetSummaryHeader } from "./budget-summary-header";
+import { renderSavingsRows } from "./budget-summary-savings";
+import { RowToggle } from "./budget-summary-row-toggle";
 
 type BudgetSummaryTableProps = {
   cols: string[];
@@ -22,21 +24,6 @@ type BudgetSummaryTableProps = {
    *  shown once in the row header rather than repeated per line item. */
   savingsProfileName?: string;
 };
-
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      className={`text-faint h-2.5 w-2.5 transition-transform ${expanded ? "rotate-90" : ""}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
-}
 
 /** Union line items across per-column breakdowns by name. */
 function unionLines(
@@ -137,64 +124,16 @@ export function BudgetSummaryTable({
         className="w-full border-collapse text-xs"
         style={{ tableLayout: "fixed" }}
       >
-        <thead>
-          <tr className="border-strong border-b-2">
-            <th
-              className="text-muted py-1.5 pr-3 text-left font-medium"
-              style={{
-                width: nameColWidth ?? 192,
-                minWidth: 120,
-                maxWidth: 400,
-              }}
-            />
-            {cols.map((label, colIdx) => (
-              <th
-                key={label}
-                className={`min-w-[90px] px-2 py-1.5 text-right font-semibold transition-colors ${
-                  isWeighted
-                    ? "text-primary"
-                    : colIdx === activeColumn
-                      ? "cursor-pointer bg-blue-50 text-blue-700"
-                      : "text-primary cursor-pointer hover:text-blue-600"
-                }`}
-                onClick={
-                  isWeighted ? undefined : () => onSetActiveColumn(colIdx)
-                }
-                title={
-                  isWeighted
-                    ? `${label} — ${columnMonths[colIdx] ?? 0} month${(columnMonths[colIdx] ?? 0) !== 1 ? "s" : ""}`
-                    : colIdx === activeColumn
-                      ? `${label} is the active budget mode`
-                      : `Set ${label} as active mode`
-                }
-              >
-                {label}
-                {!isWeighted && colIdx === activeColumn && (
-                  <span className="text-caption ml-1 align-super text-blue-500">
-                    ●
-                  </span>
-                )}
-                {apiService && apiLinkedColumnIndex === colIdx && (
-                  <Badge
-                    color="blue"
-                    case="normal"
-                    className="ml-1 align-middle"
-                  >
-                    ⇄ {apiService.toUpperCase()}
-                  </Badge>
-                )}
-              </th>
-            ))}
-            {isWeighted && (
-              <th
-                className="text-primary bg-surface-sunken/60 min-w-[90px] px-2 py-1.5 text-right font-semibold"
-                title="Weighted average across modes — what a typical month looks like"
-              >
-                Blended
-              </th>
-            )}
-          </tr>
-        </thead>
+        <BudgetSummaryHeader
+          nameColWidth={nameColWidth}
+          cols={cols}
+          isWeighted={isWeighted}
+          activeColumn={activeColumn}
+          onSetActiveColumn={onSetActiveColumn}
+          columnMonths={columnMonths}
+          apiService={apiService}
+          apiLinkedColumnIndex={apiLinkedColumnIndex}
+        />
         <tbody>
           {hasAnyPayroll && (
             <>
@@ -210,7 +149,7 @@ export function BudgetSummaryTable({
                 <td className="py-1 pr-3 font-medium text-green-800">
                   <span className="flex items-center gap-1.5">
                     {grossDetailLines.length > 1 ? (
-                      <ChevronIcon expanded={showGross} />
+                      <RowToggle open={showGross} row="gross" />
                     ) : (
                       <span className="h-2 w-2 rounded-full bg-green-600" />
                     )}
@@ -267,7 +206,7 @@ export function BudgetSummaryTable({
               >
                 <td className="py-1 pr-3 font-medium text-red-600">
                   <span className="flex items-center gap-1.5">
-                    <ChevronIcon expanded={showTaxes} />
+                    <RowToggle open={showTaxes} row="taxes" />
                     Taxes
                   </span>
                 </td>
@@ -377,7 +316,7 @@ export function BudgetSummaryTable({
                   >
                     <td className="py-1 pr-3 font-medium text-red-600">
                       <span className="flex items-center gap-1.5">
-                        <ChevronIcon expanded={showPreTax} />
+                        <RowToggle open={showPreTax} row="preTax" />
                         Pre-Tax Deductions
                         <HelpTip text="Deducted from your paycheck before taxes, like 401(k), HSA, and health insurance premiums." />
                       </span>
@@ -438,7 +377,7 @@ export function BudgetSummaryTable({
                   >
                     <td className="py-1 pr-3 font-medium text-red-600">
                       <span className="flex items-center gap-1.5">
-                        <ChevronIcon expanded={showPostTax} />
+                        <RowToggle open={showPostTax} row="postTax" />
                         After-Tax Deductions
                         <HelpTip text="Deducted from your paycheck after taxes, like Roth 401(k) contributions." />
                       </span>
@@ -504,7 +443,7 @@ export function BudgetSummaryTable({
                 <td className="py-1 pr-3 font-semibold text-green-700">
                   <span className="flex items-center gap-1.5">
                     {takeHomeDetailLines.length > 1 ? (
-                      <ChevronIcon expanded={showTakeHome} />
+                      <RowToggle open={showTakeHome} row="takeHome" />
                     ) : (
                       <StatusDot color="green" />
                     )}
@@ -610,159 +549,18 @@ export function BudgetSummaryTable({
               </tr>
 
               {/* Savings — combines sinking funds + unallocated remainder */}
-              {(() => {
-                const totalSinking = computeTotalSinking(sinkingFunds);
-                const hasSinkingFunds = sinkingFunds && sinkingFunds.length > 0;
-                return (
-                  <>
-                    <tr
-                      className={`font-bold${hasSinkingFunds ? "hover:bg-surface-sunken cursor-pointer" : ""}`}
-                      onClick={
-                        hasSinkingFunds
-                          ? () => setShowSavings(!showSavings)
-                          : undefined
-                      }
-                    >
-                      <td className="py-1.5 pr-3 text-emerald-700">
-                        <span className="flex items-center gap-1.5">
-                          {hasSinkingFunds ? (
-                            <ChevronIcon expanded={showSavings} />
-                          ) : (
-                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          )}
-                          Savings
-                          {savingsProfileName && (
-                            <span className="text-micro text-faint font-normal">
-                              ({savingsProfileName})
-                            </span>
-                          )}
-                          <HelpTip text="Take-home pay minus all budgeted expenses. Sinking fund commitments and allocations below reflect the budget profile named above. Expanding shows sinking fund commitments and the unallocated remainder." />
-                        </span>
-                      </td>
-                      {allColumnResults.map((r, i) => {
-                        const netMonthly =
-                          payrollBreakdowns[i]?.netMonthly ?? 0;
-                        const totalSavings = netMonthly - r.totalMonthly;
-                        const overage =
-                          payrollBreakdowns[i] !== null
-                            ? totalSinking - totalSavings
-                            : 0;
-                        // In weighted profiles, a single mode running "over"
-                        // (e.g. a one-month travel splurge) doesn't mean
-                        // savings capacity is actually blown for the year —
-                        // only the blended column's warning reflects that.
-                        const isOverCapacity = !isWeighted && overage > 0.01;
-                        return (
-                          <td
-                            key={cols[i]}
-                            className={`px-2 py-1.5 text-right tabular-nums ${totalSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
-                          >
-                            {formatCurrency(totalSavings)}
-                            {isOverCapacity && (
-                              <div className="text-micro mt-0.5 leading-tight text-red-500">
-                                ⚠ {formatCurrency(overage)} over → fix in
-                                Savings
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                      {isWeighted &&
-                        (() => {
-                          const blendedSavings = blended(
-                            allColumnResults.map(
-                              (r, i) =>
-                                (payrollBreakdowns[i]?.netMonthly ?? 0) -
-                                r.totalMonthly,
-                            ),
-                          );
-                          const blendedOverage = totalSinking - blendedSavings;
-                          const isOverCapacity = blendedOverage > 0.01;
-                          return (
-                            <td
-                              className={`${blendedCellClass} ${blendedSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
-                            >
-                              {formatCurrency(blendedSavings)}
-                              {isOverCapacity && (
-                                <div className="text-micro mt-0.5 leading-tight font-normal text-red-500">
-                                  ⚠ {formatCurrency(blendedOverage)} over
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })()}
-                    </tr>
-                    {showSavings && hasSinkingFunds && (
-                      <>
-                        {sinkingFunds.map((fund) => (
-                          <tr
-                            key={fund.id}
-                            className="border-subtle bg-surface-sunken/50 border-b"
-                          >
-                            <td className="text-faint text-caption py-0.5 pr-3 pl-8">
-                              {fund.name}
-                            </td>
-                            {allColumnResults.map((_, i) => (
-                              <td
-                                key={cols[i]}
-                                className="text-caption px-2 py-0.5 text-right text-amber-500 tabular-nums"
-                              >
-                                {formatCurrency(fund.monthlyContribution)}
-                              </td>
-                            ))}
-                            {isWeighted && (
-                              <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-amber-500 tabular-nums">
-                                {formatCurrency(fund.monthlyContribution)}
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                        <tr className="border-subtle bg-surface-sunken/50 border-b">
-                          <td className="text-faint text-caption py-0.5 pr-3 pl-8">
-                            Unallocated
-                          </td>
-                          {allColumnResults.map((r, i) => {
-                            const unallocated = computeUnallocated(
-                              payrollBreakdowns[i]?.netMonthly ?? 0,
-                              r.totalMonthly,
-                              totalSinking,
-                            );
-                            return (
-                              <td
-                                key={cols[i]}
-                                className={`text-caption px-2 py-0.5 text-right tabular-nums ${unallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
-                              >
-                                {formatCurrency(unallocated)}
-                              </td>
-                            );
-                          })}
-                          {isWeighted &&
-                            (() => {
-                              const blendedUnallocated = computeUnallocated(
-                                blended(
-                                  payrollBreakdowns.map(
-                                    (b) => b?.netMonthly ?? 0,
-                                  ),
-                                ),
-                                blended(
-                                  allColumnResults.map((r) => r.totalMonthly),
-                                ),
-                                totalSinking,
-                              );
-                              return (
-                                <td
-                                  className={`text-caption bg-surface-sunken/60 px-2 py-0.5 text-right tabular-nums ${blendedUnallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
-                                >
-                                  {formatCurrency(blendedUnallocated)}
-                                </td>
-                              );
-                            })()}
-                        </tr>
-                      </>
-                    )}
-                  </>
-                );
-              })()}
+              {renderSavingsRows(
+                sinkingFunds,
+                setShowSavings,
+                showSavings,
+                savingsProfileName,
+                allColumnResults,
+                payrollBreakdowns,
+                isWeighted,
+                cols,
+                blended,
+                blendedCellClass,
+              )}
             </>
           )}
         </tbody>

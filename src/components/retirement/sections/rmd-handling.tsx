@@ -21,6 +21,7 @@
  */
 "use client";
 
+import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { trpc } from "@/lib/trpc";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -44,6 +45,7 @@ export function RmdHandlingSection({
   upsertSettings,
   isEditable,
 }: Props) {
+  const id = useId();
   const rmdExcessHandling = settings.rmdExcessHandling;
   const rmdExcessTarget = settings.rmdExcessTargetPerformanceAccountId ?? null;
   // Unspent RMD money is retirement money: only active Retirement
@@ -76,7 +78,7 @@ export function RmdHandlingSection({
       </div>
       <div className="grid grid-cols-1 gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
         <div>
-          <span className="text-muted">
+          <label htmlFor={`${id}-excess`} className="text-muted">
             Excess RMD money
             <HelpTip
               text={
@@ -89,9 +91,10 @@ export function RmdHandlingSection({
                 "or model it as spent (net worth ends up lower, on purpose)."
               }
             />
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-excess`}
               value={rmdExcessHandling}
               onChange={(e) => {
                 upsertSettings.mutate(
@@ -230,6 +233,7 @@ export function RmdHandlingSection({
             </button>
             {rmdSmoothingEnabled && (
               <select
+                aria-label="RMD smoothing bracket ceiling"
                 value={rmdSmoothingMaxBracketTarget}
                 onChange={(e) => {
                   upsertSettings.mutate(

@@ -367,7 +367,7 @@ describe("salaryProfile router", () => {
         // A migration-seeded profile already exists, so this one is deletable.
         const profileId = seedSalaryProfile(db, { name: "Doomed" });
         expect(await caller.salaryProfile.delete({ id: profileId })).toEqual({
-          success: true,
+          ok: true,
         });
         expect(
           await caller.salaryProfile.getById({ id: profileId }),
@@ -424,7 +424,7 @@ describe("salaryProfile router", () => {
         const result = await caller.salaryProfile.setActive({
           id: profileId,
         });
-        expect(result).toEqual({ success: true });
+        expect(result).toEqual({ ok: true });
 
         const settings = await caller.settings.appSettings.list();
         const row = settings.find(
@@ -456,7 +456,7 @@ describe("salaryProfile router", () => {
         const result = await caller.salaryProfile.setActive({
           id: profileId,
         });
-        expect(result).toEqual({ success: true });
+        expect(result).toEqual({ ok: true });
       } finally {
         cleanup();
       }
@@ -475,7 +475,7 @@ describe("salaryProfile router", () => {
         ).toBe(profileId);
 
         const result = await caller.salaryProfile.setActive({ id: null });
-        expect(result).toEqual({ success: true });
+        expect(result).toEqual({ ok: true });
 
         settings = await caller.settings.appSettings.list();
         expect(

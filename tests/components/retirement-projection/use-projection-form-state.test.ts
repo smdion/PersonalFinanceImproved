@@ -1,0 +1,176 @@
+/**
+ * Tests for useProjectionFormState — form/UI state for the projection card,
+ * with a focus on the accumOverrides/decumOverrides DB-vs-local "touched"
+ * merge logic.
+ */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import {
+  getAllCategories,
+  ACCOUNT_TYPE_CONFIG,
+} from "@/lib/config/account-types";
+import { resetTrpcMock, setQuery, type MockOutput } from "../trpc-mock";
+
+type Overrides = MockOutput<"retirement.projectionOverrides.get">;
+let accumQueryData: Overrides | undefined;
+let decumQueryData: Overrides | undefined;
+
+vi.mock("@/lib/hooks/use-simulation-preset", () => ({
+  useSimulationPreset: () => ["default", vi.fn()],
+}));
+
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../trpc-mock")).trpc,
+}));
+
+vi.mock("@/lib/hooks/use-persisted-setting", () => ({
+  usePersistedToggle: (_key: string, defaultValue = false) => [
+    defaultValue,
+    vi.fn(),
+  ],
+}));
+
+beforeEach(() => {
+  accumQueryData = undefined;
+  decumQueryData = undefined;
+  resetTrpcMock();
+  // Read at the first render, after each test has set its rows.
+  // Undefined until a test sets rows (not loaded).
+  setQuery(
+    "retirement.projectionOverrides.get",
+    (input: { overrideType: string }) =>
+      input.overrideType === "accumulation" ? accumQueryData : decumQueryData,
+  );
+});
+
+async function importHook() {
+  const mod =
+    await import("@/components/retirement-projection/use-projection-form-state");
+  return mod.useProjectionFormState;
+}
+
+describe("useProjectionFormState", () => {
+  it("the first edit after a load works on the saved rows (deleting one keeps the others)", async () => {
+    accumQueryData = [
+      { year: 2030, contributionRate: 0.1 },
+      { year: 2035, contributionRate: 0.2 },
+      { year: 2040, contributionRate: 0 },
+    ];
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    act(() =>
+      result.current.setAccumOverrides((prev) =>
+        prev.filter((o) => o.year !== 2035),
+      ),
+    );
+    expect(result.current.accumOverrides.map((o) => o.year)).toEqual([
+      2030, 2040,
+    ]);
+    // A second edit builds on the first, not on the saved rows again.
+    act(() =>
+      result.current.setAccumOverrides(
+        (prev) =>
+          [...prev, { year: 2045, contributionRate: 0.05 }] as typeof prev,
+      ),
+    );
+    expect(result.current.accumOverrides.map((o) => o.year)).toEqual([
+      2030, 2040, 2045,
+    ]);
+  });
+
+  it("initializes withdrawalOrder to the config-driven default decumulation order", async () => {
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    expect(result.current.withdrawalOrder.length).toBeGreaterThan(0);
+    for (const cat of result.current.withdrawalOrder) {
+      expect(getAllCategories()).toContain(cat);
+    }
+  });
+
+  it("initializes withdrawalSplits from each category's configured default split", async () => {
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    for (const cat of getAllCategories()) {
+      expect(result.current.withdrawalSplits[cat]).toBe(
+        ACCOUNT_TYPE_CONFIG[cat].defaultWithdrawalSplit,
+      );
+    }
+  });
+
+  it("defaults dollarMode to 'real' and projectionMode to 'monteCarlo'", async () => {
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    expect(result.current.dollarMode).toBe("real");
+    expect(result.current.projectionMode).toBe("monteCarlo");
+  });
+
+  it("uses DB overrides data when local state has not been touched", async () => {
+    accumQueryData = [{ year: 2030, contributionRate: 0.2 }];
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    expect(result.current.accumOverrides).toEqual([
+      { year: 2030, contributionRate: 0.2 },
+    ]);
+  });
+
+  it("falls back to empty local overrides when DB data is empty and untouched", async () => {
+    accumQueryData = [];
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    expect(result.current.accumOverrides).toEqual([]);
+  });
+
+  it("local state wins over DB data once setAccumOverrides has been called (touched)", async () => {
+    accumQueryData = [{ year: 2030, contributionRate: 0.2 }];
+    const useProjectionFormState = await importHook();
+    const { result, rerender } = renderHook(() => useProjectionFormState());
+
+    act(() => {
+      result.current.setAccumOverrides([{ year: 2031, contributionRate: 0.5 }]);
+    });
+    rerender();
+
+    // Even though DB data still has the 2030 override, local (touched) state
+    // — the 2031 override that replaced it — must win.
+    expect(result.current.accumOverrides).toEqual([
+      { year: 2031, contributionRate: 0.5 },
+    ]);
+  });
+
+  it("setDecumOverrides independently touches only the decum override state", async () => {
+    accumQueryData = [{ year: 2030, contributionRate: 0.2 }];
+    decumQueryData = [{ year: 2060, withdrawalRoutingMode: "waterfall" }];
+    const useProjectionFormState = await importHook();
+    const { result, rerender } = renderHook(() => useProjectionFormState());
+
+    act(() => {
+      result.current.setDecumOverrides([
+        { year: 2061, withdrawalRoutingMode: "percentage" },
+      ]);
+    });
+    rerender();
+
+    // Decum touched -> local wins
+    expect(result.current.decumOverrides).toEqual([
+      { year: 2061, withdrawalRoutingMode: "percentage" },
+    ]);
+    // Accum untouched -> still reflects DB data
+    expect(result.current.accumOverrides).toEqual([
+      { year: 2030, contributionRate: 0.2 },
+    ]);
+  });
+
+  it("isPersonFiltered is false for the default 'all' personFilter and true once set to a person id", async () => {
+    const useProjectionFormState = await importHook();
+    const { result, rerender } = renderHook(() => useProjectionFormState());
+    expect(result.current.isPersonFiltered).toBe(false);
+
+    act(() => {
+      result.current.setPersonFilter(1);
+    });
+    rerender();
+
+    expect(result.current.isPersonFiltered).toBe(true);
+    expect(result.current.personFilter).toBe(1);
+  });
+});

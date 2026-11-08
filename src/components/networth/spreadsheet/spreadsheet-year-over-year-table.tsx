@@ -6,9 +6,8 @@
 
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { parseLocalDateOnly } from "@/lib/utils/date";
 import {
   CASH_BASIS_HELP,
   combineCashBasisGainLoss,
@@ -219,9 +218,7 @@ export function SpreadsheetYearOverYearTable({
 
   function fmtUpdated(iso: string | null): string | null {
     if (!iso) return null;
-    // date-only column — parse in local time, not UTC
-    const d = parseLocalDateOnly(iso);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return formatDate(iso, "monthDay");
   }
 
   return (

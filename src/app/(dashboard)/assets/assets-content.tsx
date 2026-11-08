@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -43,8 +44,8 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
 
 export function AssetsContent() {
   const targeting = useYearEndTargetingInput();
-  const { data, isLoading, error } =
-    trpc.assets.computeSummary.useQuery(targeting);
+  const summary = trpc.assets.computeSummary.useQuery(targeting);
+  const { data } = summary;
   const utils = trpc.useUtils();
 
   const [addingAsset, setAddingAsset] = useState(false);
@@ -72,20 +73,18 @@ export function AssetsContent() {
     onSuccess: invalidateAll,
   });
 
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <SkeletonChart height={256} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load asset data: {error.message}
-      </p>
+      <QueryBoundary
+        query={summary}
+        what="asset data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
 

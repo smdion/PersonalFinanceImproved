@@ -3,7 +3,10 @@
 import { useMemo, useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { DataTable } from "@/components/settings/data-table";
+import {
+  DataTable,
+  DataTableFormActions,
+} from "@/components/settings/data-table";
 import { formatDate } from "@/lib/utils/format";
 import { PERSON_COLORS } from "@/lib/utils/colors";
 
@@ -308,22 +311,12 @@ function JobForm({
           className="mt-1 rounded border px-2 py-1"
         />
       </label>
-      <div className="col-span-full flex gap-2">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {initial ? "Update" : "Create"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="hover:bg-surface-elevated rounded border px-3 py-1.5 text-sm"
-        >
-          Cancel
-        </button>
-      </div>
+      <DataTableFormActions
+        className="col-span-full flex gap-2"
+        editing={initial !== null}
+        isPending={isPending}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

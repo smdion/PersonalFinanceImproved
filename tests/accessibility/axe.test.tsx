@@ -4,16 +4,61 @@
  * Renders key UI components into happy-dom and runs axe-core checks for ARIA /
  * accessibility violations.  These are lightweight smoke tests — they catch
  * missing labels, invalid roles, color-contrast markup issues, etc.
+ *
+ * Pages (v0.10.4 commit 4): every page the screens baseline mounts
+ * (tests/baseline/screens.test.tsx), for its three households, mounted the
+ * same way. Each page's violations, counted by rule in elements, must
+ * equal `axe-baseline.json`, which only shrinks: a fix lowers its count in
+ * the same commit; a new violation is fixed, not recorded. (The file has
+ * eslint-suppressions.json's shape, for check:ratchets to hold once it is
+ * at the merge base.) `color-contrast` stays off: happy-dom can't compute
+ * it.
+ *
+ *   LEDGR_BASELINE_WRITE=1 pnpm test tests/accessibility/axe.test.tsx
+ *
+ * writes the file and prints it between `@@axe` and `@@end` lines (a run
+ * on the test VM writes there, not here).
  */
-import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+// First: the SQLite harness's mocks and the baseline's (for the pages).
+import "../routers/setup-mocks";
+import "../baseline/mocks";
+import { describe, it, expect, afterAll, beforeAll, vi } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { ComponentType, ReactNode } from "react";
+import { cleanup, render } from "@testing-library/react";
 import * as axe from "axe-core";
+import { HOUSEHOLDS } from "../baseline/households";
+import { REGENERATE } from "../baseline/router-suite";
+import {
+  freezeScreenClock,
+  mountPage,
+  openHousehold,
+  screenProviders,
+  type ScreenHousehold,
+} from "../baseline/screen-mount";
+import { SCREEN_HOUSEHOLDS, SCREEN_ROUTES } from "../baseline/screen-routes";
 
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormError } from "@/components/ui/form-error";
+import { Modal } from "@/components/ui/modal";
+import { Popover } from "@/components/ui/popover";
 import { PageHeader } from "@/components/ui/page-header";
 import { Toggle } from "@/components/ui/toggle";
+
+// The pages' tRPC and Simulation seed, as the screens baseline has them.
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../baseline/screen-mount")).screenTrpc(
+    (await import("../components/trpc-mock")).trpc,
+  ),
+}));
+vi.mock("@/server/services/projection/projection-cache", async (orig) => ({
+  ...(await orig<
+    typeof import("@/server/services/projection/projection-cache")
+  >()),
+  generateSeed: () => 31,
+}));
 
 // ---------------------------------------------------------------------------
 // Helper — run axe on a rendered container and return violations
@@ -167,11 +212,105 @@ describe("Accessibility — axe-core", () => {
     expect(violations, formatViolations(violations)).toHaveLength(0);
   });
 
+  it("Modal renders without violations", async () => {
+    const { container } = render(
+      <Modal labelledBy="axe-modal-title" className="p-5" onClose={() => {}}>
+        <h2 id="axe-modal-title">Finalize 2026</h2>
+        <button type="button">Cancel</button>
+      </Modal>,
+    );
+    const violations = await getViolations(container);
+    expect(violations, formatViolations(violations)).toHaveLength(0);
+  });
+
+  it("Popover renders without violations", async () => {
+    const { container } = render(
+      <Popover onClose={() => {}} layer="page" className="fixed border p-2">
+        <button type="button">Last 3 Years</button>
+      </Popover>,
+    );
+    const violations = await getViolations(container);
+    expect(violations, formatViolations(violations)).toHaveLength(0);
+  });
+
   it("Toggle without label renders without violations", async () => {
     const { container } = render(
       <Toggle isChecked={true} onChange={() => {}} title="Dark mode" />,
     );
     const violations = await getViolations(container);
     expect(violations, formatViolations(violations)).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pages: violations by rule, shrink-only (axe-baseline.json)
+// ---------------------------------------------------------------------------
+
+/** `<household>/<page>` → rule → elements, as eslint-suppressions.json. */
+type AxeBaseline = Record<string, Record<string, { count: number }>>;
+
+const AXE_BASELINE = path.join(__dirname, "axe-baseline.json");
+
+function countsByRule(violations: axe.Result[]): AxeBaseline[string] {
+  return Object.fromEntries(
+    violations
+      .map((v) => [v.id, { count: v.nodes.length }] as const)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+  );
+}
+
+describe("axe per page", () => {
+  freezeScreenClock();
+  const recorded = JSON.parse(
+    fs.readFileSync(AXE_BASELINE, "utf8"),
+  ) as AxeBaseline;
+  const found: AxeBaseline = {};
+
+  afterAll(() => {
+    if (!REGENERATE) return;
+    const sorted = Object.fromEntries(
+      Object.entries(found).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    );
+    const text = `${JSON.stringify(sorted, null, 2)}\n`;
+    fs.writeFileSync(AXE_BASELINE, text);
+    console.log(`@@axe\n${text}@@end`);
+  });
+
+  it("has an entry only for a page it mounts", () => {
+    const pages = new Set(
+      SCREEN_HOUSEHOLDS.flatMap((key) =>
+        SCREEN_ROUTES.map((r) => `${key}/${r.file}`),
+      ),
+    );
+    expect(Object.keys(recorded).filter((k) => !pages.has(k))).toEqual([]);
+  });
+
+  describe.each(SCREEN_HOUSEHOLDS.map((key) => [key] as const))("%s", (key) => {
+    let h: ScreenHousehold;
+    let Providers: ComponentType<{ children: ReactNode }>;
+
+    beforeAll(async () => {
+      h = await openHousehold(HOUSEHOLDS.find((x) => x.key === key)!);
+      Providers = await screenProviders();
+    }, 120_000);
+    afterAll(() => h.close());
+
+    it.each(SCREEN_ROUTES.map((r) => [r.route, r] as const))(
+      "%s",
+      async (_route, r) => {
+        const container = await mountPage(h, await r.load(), Providers);
+        const violations = await getViolations(container);
+        cleanup();
+        const page = `${key}/${r.file}`;
+        const counts = countsByRule(violations);
+        if (Object.keys(counts).length > 0) found[page] = counts;
+        if (REGENERATE) return;
+        expect(
+          counts,
+          `${page}: a lower count is a fix (lower axe-baseline.json with it); a higher one is a new violation\n${formatViolations(violations)}`,
+        ).toEqual(recorded[page] ?? {});
+      },
+      60_000,
+    );
   });
 });

@@ -33,11 +33,9 @@ import {
   tablesFromBackup,
 } from "./version-tables";
 import { withInstallationRows } from "./installation-rows";
+import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
-import {
-  REBUILT_ON_RESTORE,
-  transformBackupToCurrentSchema,
-} from "./backup-transforms";
+import { transformBackupToCurrentSchema } from "./backup-transforms";
 
 /**
  * Column list for an INSERT built from a row set — the UNION of every
@@ -209,41 +207,6 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
   }
 }
 
-/**
- * Tables a restore would empty that the backup can't refill: every
- * versioned table the backup has no entry for (it predates the table) and
- * that holds rows now. Restore truncates every versioned table, so this
- * history is lost — synced data such as SimpleFIN holdings and
- * transactions can't be fetched again. An empty entry in the backup is not
- * listed: the table existed and was empty when the backup was taken.
- */
-export async function tablesLostOnRestore(
-  database: NodePgDatabase<typeof schema>,
-  backupTableNames: Iterable<string>,
-  by: { asAdmin: boolean },
-): Promise<{ tableName: string; currentRows: number }[]> {
-  const present = new Set(backupTableNames);
-  const lost: { tableName: string; currentRows: number }[] = [];
-  for (const tableName of tablesFromBackup(VERSION_TABLE_NAMES, by)) {
-    if (present.has(tableName)) continue;
-    // Rebuilt by the restore from a table the backup does carry.
-    const source = REBUILT_ON_RESTORE[tableName];
-    if (source && present.has(source)) continue;
-    let currentRows = 0;
-    try {
-      const rows = await queryRaw<{ n: number | string }>(
-        database,
-        sql.raw(`SELECT COUNT(*) AS n FROM "${tableName}"`),
-      );
-      currentRows = Number(rows[0]?.n ?? 0);
-    } catch {
-      continue; // table doesn't exist yet (migration pending)
-    }
-    if (currentRows > 0) lost.push({ tableName, currentRows });
-  }
-  return lost;
-}
-
 /** Inserts one table's rows, 500 to a statement; returns how many. */
 async function insertRows(
   tx: Parameters<typeof execRaw>[0],
@@ -282,7 +245,7 @@ export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,
   by: { asAdmin: boolean },
-): Promise<{ restoredTables: number; restoredRows: number }> {
+) {
   // Load version metadata
   const [version] = await database
     .select()
@@ -317,8 +280,10 @@ export async function restoreVersion(
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
-  const fenced = await withInstallationRows(database, transformedMap, by);
-  for (const [tableName, data] of Object.entries(fenced))
+  const fenced = checkRestoredValues(
+    await withInstallationRows(database, transformedMap, by),
+  );
+  for (const [tableName, data] of Object.entries(fenced.tables))
     tableDataMap.set(tableName, { data });
 
   // Wrap in a transaction so truncate + inserts are atomic.
@@ -370,7 +335,8 @@ export async function restoreVersion(
   await reconcileReferenceData(database);
 
   const names = tableDatas.map((t) => t.tableName);
-  return { restoredTables: tablesFromBackup(names, by).length, restoredRows };
+  const restoredTables = tablesFromBackup(names, by).length;
+  return { restoredTables, restoredRows, valueNotes: fenced.valueNotes };
 }
 
 export type BackupData = {
@@ -413,7 +379,7 @@ export async function importBackup(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
   by: { asAdmin: boolean },
-): Promise<{ restoredTables: number; restoredRows: number }> {
+) {
   // Transform backup to current schema if needed (supports v0.1.x → v0.2.0+)
   const { tables: transformedTables, transformed } =
     transformBackupToCurrentSchema(
@@ -429,10 +395,13 @@ export async function importBackup(
     });
   }
 
+  const checked = checkImportedValues(
+    await withInstallationRows(database, transformedTables, by),
+  );
   const transformedBackup: BackupData = {
     ...backup,
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    tables: await withInstallationRows(database, transformedTables, by),
+    tables: checked.tables,
   };
 
   // Validate structure — tables present in backup must be arrays
@@ -450,7 +419,7 @@ export async function importBackup(
     : await importBackupSqlite(database, transformedBackup);
   // The backup's reference rows replaced today's (see restoreVersion).
   await reconcileReferenceData(database);
-  return result;
+  return { ...result, valueNotes: checked.valueNotes };
 }
 
 async function importBackupPg(

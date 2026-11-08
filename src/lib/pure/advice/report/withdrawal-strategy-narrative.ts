@@ -1,5 +1,5 @@
 /** "Why this account, why this order" narrative helpers for the retirement
- *  advisor report and, via re-export from components/cards/projection/utils.ts,
+ *  advisor report and, via re-export from components/retirement-projection/utils.ts,
  *  the existing table/chart tooltips — moved here (not duplicated) so both
  *  callers can never drift (RULES.md single-computation-path). Pure
  *  formatters: callers pass already-deflated (real/nominal per the page's

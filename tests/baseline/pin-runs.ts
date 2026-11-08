@@ -7,6 +7,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { vi } from "vitest";
+import type { Db } from "@/lib/db";
 import type { Caller, Household, SeededIds } from "./seed";
 import { PROCEDURES, callProcedure } from "./procedures";
 import { NOT_PINNED, writtenRows, type Rows } from "./table-rows";
@@ -202,18 +203,17 @@ function flows(total: number) {
 export const FINALIZE_YEARS = [2025, 2026];
 
 /**
- * The finalize pin's run on a seeded household: 2025 account rows and
- * salaries, then 2025 and 2026 finalized, each finalize's written rows
- * read through `read`. A call that threw is kept as `{ $threw }`.
+ * A finalize run's first year: an account row for each of `household`'s
+ * accounts (invented from its snapshot total) and each person's salary.
+ * A refused account row is kept in `written` as `{ $threw }`.
  */
-export async function finalizeWrites(
+async function seedFirstYear(
   caller: Caller,
   household: Household,
   ids: SeededIds,
-  read: () => Promise<Rows>,
-): Promise<Record<string, unknown>> {
+  written: Record<string, unknown>,
+): Promise<void> {
   const YEARS = FINALIZE_YEARS;
-  const written: Record<string, unknown> = {};
   for (const account of household.accounts) {
     const total = account.snapshot.reduce(
       (sum, row) => sum + Number(row.amount),
@@ -247,15 +247,120 @@ export async function finalizeWrites(
       salary,
     });
   }
-  for (const year of YEARS) {
-    const before = await read();
-    try {
-      await caller.performance.finalizeYear({ year });
-      written[year] = writtenRows(before, await read());
-    } catch (error) {
-      written[year] = { $threw: (error as Error).message };
-    }
+}
+
+/** One finalize: the rows it wrote, or `{ $threw }` when it threw. */
+async function finalizeOnce(
+  caller: Caller,
+  year: number,
+  read: () => Promise<Rows>,
+): Promise<unknown> {
+  const before = await read();
+  try {
+    await caller.performance.finalizeYear({ year });
+    return writtenRows(before, await read());
+  } catch (error) {
+    return { $threw: (error as Error).message };
   }
+}
+
+/**
+ * The finalize pin's run on a seeded household: 2025 account rows and
+ * salaries, then 2025 and 2026 finalized, each finalize's written rows
+ * read through `read`. A call that threw is kept as `{ $threw }`.
+ */
+export async function finalizeWrites(
+  caller: Caller,
+  household: Household,
+  ids: SeededIds,
+  read: () => Promise<Rows>,
+): Promise<Record<string, unknown>> {
+  const written: Record<string, unknown> = {};
+  await seedFirstYear(caller, household, ids, written);
+  for (const year of FINALIZE_YEARS)
+    written[year] = await finalizeOnce(caller, year, read);
+  return written;
+}
+
+/**
+ * v0.10.4 plan commit 27a (owner Q2: added as pins): the paths the run
+ * above never takes. The base household seeded without a snapshot, so
+ * the year-end tax-location breakdown has none to read.
+ */
+export const FINALIZE_VARIANT = { key: "ws-h3f", base: "ws-h3" };
+
+export function finalizeVariantHousehold(base: Household): Household {
+  return {
+    ...base,
+    key: FINALIZE_VARIANT.key,
+    source: `${base.key} without a snapshot (finalize variant, plan 27a)`,
+    accounts: base.accounts.map((a) => ({ ...a, snapshot: [] })),
+  };
+}
+
+/** The year-end row an earlier version or an import left for 2025
+ *  (no procedure writes one); finalize updates it in place, keeping its
+ *  hand-entered AGI and taxes. Its breakdown isn't empty, so the empty
+ *  one finalize reads with no snapshot shows. */
+const STORED_YEAR_END = {
+  yearEndDate: "2025-12-31",
+  grossIncome: "1",
+  combinedAgi: "98765",
+  taxesPaid: "12345",
+  cash: "1",
+  portfolioTotal: "1",
+  portfolioByTaxLocation: {
+    retirement: { preTax: 1 },
+    portfolio: { afterTax: 1 },
+  },
+};
+
+/**
+ * The variant's run, on `variant` (finalizeVariantHousehold) seeded as
+ * `ids`, its 2025 rows invented from `base`'s snapshot. Before 2025 is
+ * finalized: 2026 already holds the first account's row (edited once, so
+ * its category and Portfolio have 2026 annual rows) and 2025 a stored
+ * year-end row, written through `db`. Then 2025 is finalized twice; the
+ * second is refused (CONFLICT) and writes nothing.
+ */
+export async function finalizeVariantWrites(
+  caller: Caller,
+  base: Household,
+  ids: SeededIds,
+  read: () => Promise<Rows>,
+  db: Db,
+): Promise<Record<string, unknown>> {
+  const [first, second] = FINALIZE_YEARS as [number, number];
+  const written: Record<string, unknown> = {};
+  await seedFirstYear(caller, base, ids, written);
+
+  const account = base.accounts[0]!;
+  const row = await caller.performance.createAccount({
+    year: second,
+    performanceAccountId: ids.perf[account.key]!,
+    ...flows(1000),
+  });
+  await caller.performance.batchUpdateAccounts({
+    accounts: [
+      {
+        id: row!.id,
+        ...flows(1000),
+        distributions: "0",
+        rollovers: "0",
+        fees: "0",
+      },
+    ],
+  });
+  const schema = await import("@/lib/db/schema");
+  await db.insert(schema.netWorthAnnual).values(STORED_YEAR_END);
+
+  written[first] = await finalizeOnce(caller, first, read);
+  const before = await read();
+  const again = (await finalizeOnce(caller, first, read)) as object;
+  written[`${first} again`] = {
+    ...again,
+    wrote: writtenRows(before, await read()),
+  };
   return written;
 }
 
@@ -308,6 +413,39 @@ export async function projectionText(
     projection.input?.({ household, ids }),
   )) as { result?: unknown };
   return textTree(response.result) ?? null;
+}
+
+/** The Simulation and Coast FIRE procedures whose text the second text
+ *  pin keeps (v0.10.4 plan commit 27c). */
+const SIMULATIONS = [
+  "projection.computeCoastFire",
+  "projection.computeCoastFireMC",
+  "projection.computeCoastFireProbe",
+  "projection.computeMonteCarloProjection",
+].map((p) => PROCEDURES.find((procedure) => procedure.path === p)!);
+
+/** The second text pin of a seeded household: each Simulation and Coast
+ *  FIRE response's text and flags, by procedure, called in the router
+ *  baseline's order with its input (one it can't be called with is left
+ *  out). A call
+ *  that threw is kept as `{ $threw }`. */
+export async function simulationText(
+  caller: Caller,
+  household: Household,
+  ids: SeededIds,
+): Promise<TextTree> {
+  const out: Record<string, TextTree> = {};
+  for (const procedure of SIMULATIONS) {
+    const input = procedure.input?.({ household, ids });
+    if (input === null) continue;
+    try {
+      out[procedure.path] =
+        textTree(await callProcedure(caller, procedure, input)) ?? null;
+    } catch (error) {
+      out[procedure.path] = { $threw: (error as Error).message };
+    }
+  }
+  return out;
 }
 
 /** A pin file's JSON, or null when there is none. */

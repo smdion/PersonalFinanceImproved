@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useBoundedPollInterval } from "@/lib/hooks/use-bounded-poll-interval";
+import { useBoundedPollInterval } from "@/components/retirement-projection/use-bounded-poll-interval";
 
 describe("useBoundedPollInterval", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;

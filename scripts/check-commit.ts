@@ -12,8 +12,9 @@
  * sees a rename or code moved between files, and every other changed line is
  * an import, a path rewrite, or code moved in whole top-level statements kept
  * in order, a function body moved whole into a new top-level function and
- * called from where it was, or router procedures moved whole into a new
- * part mounted where they were), and the
+ * called from where it was, router procedures moved whole into a new
+ * part mounted where they were, or a UI cut: an IIFE's body into a named
+ * function, a JSX run into a component), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
@@ -220,8 +221,15 @@ const COMMENT_LINE = /^\s*(\/\/|\/\*|\*\/|\*(\s|$))/;
 const REGISTER_DOC = "docs/CALCULATIONS.md";
 /** A table cell naming code: a backticked `file.ts` or `file.ts:name`. */
 const CODE_REF_CELL = /`[^`|]*\.tsx?(:[^`|]*)?`/;
-/** A changed line and its file. */
-type Line = { file: string; line: string };
+/** A changed line and its file (and, for a comment, where it stands). */
+type Line = {
+  file: string;
+  line: string;
+  at?: number;
+  side?: "old" | "new";
+  /** A comment of a file the change creates or deletes. */
+  whole?: boolean;
+};
 /** A generated count in the docs (docs:verify checks it). */
 const AUTO_GEN_LINE = /<!-- AUTO-GEN:\w+ -->/;
 
@@ -268,6 +276,189 @@ const withoutPaths = (line: string, names?: RegExp) =>
     .split("|")
     .map((cell) => cell.split("; ").sort().join("; "))
     .join("|");
+
+/** A source file's name, its path and line too (`stages/rmd.ts:60`). */
+const FILE_NAME = /[\w@.~$/-]*\.[cm]?[jt]sx?\b(:\d+)?/g;
+/** A comment line with the source files it names read as paths: a move
+ *  rewrites the name of the file its code moved to. */
+const commentPaths = (line: string) =>
+  COMMENT_LINE.test(line) ? line.replace(FILE_NAME, "<path>") : line;
+
+/** RULES' limit on a comment: at most three lines of current reason. */
+const MAX_COMMENT_LINES = 3;
+/** A block comment's delimiter alone on its line (`/**`, `*\/`, `*`). */
+const DELIMITER_ONLY = /^\s*(\/\*\*?|\*\/|\*)\s*$/;
+
+/**
+ * The comment blocks of a side (runs of comment lines) that hold one of
+ * the lines at `at`, each as how many of those it holds (delimiter-only
+ * lines aside): a reworded line of a longer block counts, the rest of the
+ * block, kept as it was, doesn't.
+ */
+function blocksHolding(side: DiffSide, at: Set<number>): number[] {
+  const out: number[] = [];
+  for (let l = 0; l < side.lines.length;) {
+    if (!COMMENT_LINE.test(side.lines[l]!)) {
+      l += 1;
+      continue;
+    }
+    let hit = false;
+    let changed = 0;
+    for (; l < side.lines.length && COMMENT_LINE.test(side.lines[l]!); l++)
+      if (at.has(l)) {
+        hit = true;
+        if (!DELIMITER_ONLY.test(side.lines[l]!)) changed += 1;
+      }
+    if (hit) out.push(changed);
+  }
+  return out;
+}
+
+/**
+ * Why the comment lines a move leaves unexplained aren't rewordings (owner
+ * v0.10.4 Q3), or undefined: no comment block takes more than
+ * MAX_COMMENT_LINES new or reworded lines on the new side, and no more such
+ * blocks than blocks they change on the old side plus the functions the
+ * move made (each may bring its doc comment).
+ */
+function rewordedComments(
+  unexplained: Line[],
+  sidesOf: Map<string, { old: DiffSide; new: DiffSide }>,
+  newFunctions: number,
+): string | undefined {
+  const blocks = { old: [] as number[], new: [] as number[] };
+  for (const [file, sides] of sidesOf)
+    for (const side of ["old", "new"] as const) {
+      const at = new Set(
+        unexplained.flatMap((l) =>
+          l.file === file &&
+          l.side === side &&
+          l.at !== undefined &&
+          COMMENT_LINE.test(l.line)
+            ? [l.at]
+            : [],
+        ),
+      );
+      if (at.size > 0) blocks[side].push(...blocksHolding(sides[side], at));
+    }
+  const long = blocks.new.filter((n) => n > MAX_COMMENT_LINES);
+  if (long.length > 0)
+    return `a reworded or new comment of ${Math.max(...long)} lines (at most ${MAX_COMMENT_LINES}; a longer rewording goes in its own commit)`;
+  const extra = blocks.new.length - blocks.old.length - newFunctions;
+  if (extra > 0)
+    return `${extra} comment block(s) added that reword none the move took away`;
+  return undefined;
+}
+
+/**
+ * The comment blocks of `root` inside `[start, end]` (a block comment, or
+ * adjacent line comments each on its own line), each as its text, spacing
+ * collapsed, and its text lines (delimiters aside), in order.
+ */
+function commentBlocksIn(
+  root: ts.Node,
+  source: ts.SourceFile,
+  start: number,
+  end: number,
+): { text: string; lines: number }[] {
+  const full = source.getFullText();
+  const found = new Map<number, ts.CommentRange>();
+  const add = (ranges: ts.CommentRange[] | undefined) => {
+    for (const r of ranges ?? [])
+      if (r.pos >= start && r.end <= end) found.set(r.pos, r);
+  };
+  const visit = (n: ts.Node) => {
+    const children = n.getChildren(source);
+    if (children.length > 0) children.forEach(visit);
+    else {
+      add(ts.getLeadingCommentRanges(full, n.getFullStart()));
+      add(ts.getTrailingCommentRanges(full, n.getEnd()));
+    }
+  };
+  visit(root);
+  const lineOf = (pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const ownLine = (pos: number) =>
+    BLANK_LINE.test(full.slice(full.lastIndexOf("\n", pos - 1) + 1, pos));
+  const blocks: {
+    text: string[];
+    lines: number;
+    last: number;
+    joins: boolean;
+  }[] = [];
+  for (const r of [...found.values()].sort((a, b) => a.pos - b.pos)) {
+    const raw = full.slice(r.pos, r.end);
+    const single = r.kind === ts.SyntaxKind.SingleLineCommentTrivia;
+    const prev = blocks[blocks.length - 1];
+    if (
+      single &&
+      prev?.joins &&
+      ownLine(r.pos) &&
+      prev.last === lineOf(r.pos) - 1
+    ) {
+      prev.text.push(raw);
+      prev.lines += 1;
+      prev.last = lineOf(r.end);
+      continue;
+    }
+    blocks.push({
+      text: [raw],
+      lines: single
+        ? 1
+        : raw.split("\n").filter(
+            (l) =>
+              l
+                .replace(/^\s*(\/\*\*?|\*(?!\/))?/, "")
+                .replace(/\*\/\s*$/, "")
+                .trim() !== "",
+          ).length,
+      last: lineOf(r.end),
+      joins: single && ownLine(r.pos),
+    });
+  }
+  return blocks.map((b) => ({
+    text: b.text.join(" ").replace(/\s+/g, " "),
+    lines: b.lines,
+  }));
+}
+
+/**
+ * Why the comments inside moved code aren't its old ones (owner v0.10.4
+ * Q3), or undefined: each block as it was, or rewording one that went, in
+ * RULES' three lines at most; none added (one may go with no rewording).
+ */
+function movedCommentsProblem(
+  was: { text: string; lines: number }[],
+  now: { text: string; lines: number }[],
+): string | undefined {
+  const kept = inOrder(
+    was.map((b) => b.text),
+    now.map((b) => b.text),
+  );
+  const keptNow = new Set(kept.map(([, j]) => j));
+  const reworded = now.filter((_, j) => !keptNow.has(j));
+  if (reworded.length > was.length - kept.length)
+    return "a comment is added in the moved code";
+  const long = reworded.find((b) => b.lines > MAX_COMMENT_LINES);
+  if (long)
+    return `a moved comment is reworded to ${long.lines} lines (at most ${MAX_COMMENT_LINES})`;
+  return undefined;
+}
+
+/** The comments of the code between two nodes' ends, as commentBlocksIn reads them. */
+const commentsOfRun = (nodes: readonly ts.Node[], source: ts.SourceFile) =>
+  nodes.length === 0
+    ? []
+    : commentBlocksIn(
+        nodes[0]!.parent,
+        source,
+        nodes[0]!.getStart(source),
+        nodes[nodes.length - 1]!.getEnd(),
+      );
+
+/** The comments inside a function body's braces. */
+const commentsOfBody = (body: ts.Block, source: ts.SourceFile) =>
+  commentBlocksIn(body, source, body.getStart(source), body.getEnd());
 
 /** Enough context that each hunk is its whole file. */
 const FULL_CONTEXT = "-U1000000";
@@ -354,6 +545,23 @@ function parseSide(file: string, side: DiffSide): ts.SourceFile {
   );
 }
 
+/**
+ * A JSX text as React renders it: each line trimmed where it breaks, blank
+ * lines dropped, the rest joined by one space. A re-indent or prettier's
+ * re-fill keeps it; a space lost or gained beside an expression doesn't.
+ */
+function jsxTextValue(text: string): string {
+  const lines = text.split(/\r\n|\n|\r/);
+  return lines
+    .map((line, i) => {
+      let l = i > 0 ? line.replace(/^[ \t]+/, "") : line;
+      if (i < lines.length - 1) l = l.replace(/[ \t]+$/, "");
+      return l;
+    })
+    .filter((l) => l !== "")
+    .join(" ");
+}
+
 const STRING_TOKEN = new Set([
   ts.SyntaxKind.StringLiteral,
   ts.SyntaxKind.NoSubstitutionTemplateLiteral,
@@ -392,8 +600,7 @@ function tokensOf(
         PATH_TOKEN,
         "<path>",
       );
-    else if (n.kind === ts.SyntaxKind.JsxText)
-      text = text.replace(/\s+/g, " ").trim();
+    else if (n.kind === ts.SyntaxKind.JsxText) text = jsxTextValue(text);
     if (text !== "") out.push(text);
   };
   visit(node);
@@ -689,6 +896,13 @@ function cutMovedBodies(
       if (isAsync(from.node) !== isAsync(dest.node)) continue;
       if (from.key.join("\n") !== dest.key.join("\n")) continue;
       const at = code[from.f]!;
+      if (
+        movedCommentsProblem(
+          commentsOfBody(from.node.body, at.oldSource),
+          commentsOfBody(dest.node.body!, to.newSource),
+        ) !== undefined
+      )
+        continue;
       const group = groupOf(
         at.entry.old,
         lineOf(at.oldSource, from.node.getStart(at.oldSource)),
@@ -1153,6 +1367,15 @@ function isReference(id: ts.Identifier): boolean {
   if (ts.isPropertyAccessExpression(p) || ts.isQualifiedName(p))
     return ts.isPropertyAccessExpression(p) ? p.name !== id : p.right !== id;
   if (ts.isBindingElement(p)) return false;
+  // An intrinsic tag (`<div>`) names no binding.
+  if (
+    (ts.isJsxOpeningElement(p) ||
+      ts.isJsxSelfClosingElement(p) ||
+      ts.isJsxClosingElement(p)) &&
+    p.tagName === id &&
+    /^[a-z]/.test(id.text)
+  )
+    return false;
   if (
     (ts.isLabeledStatement(p) || ts.isBreakOrContinueStatement(p)) &&
     p.label === id
@@ -1251,7 +1474,7 @@ function blockNames(statements: readonly ts.Statement[]): string[] {
  * it creates, and whether it returns, yields, awaits or reads its own
  * `this`/`arguments`/`super` (or `new.target`) at its own level.
  */
-function scopeFacts(nodes: readonly ts.Statement[]) {
+function scopeFacts(nodes: readonly ts.Node[]) {
   const refs = new Set<string>();
   const assigned = new Set<string>();
   const inClosure = new Set<string>();
@@ -1440,7 +1663,7 @@ function stageSources(
  * callback (their parameters, and what they declare), and every name
  * assigned anywhere in the outermost one.
  */
-function outerScope(fn: BlockFunction): {
+function outerScope(fn: ts.Node): {
   names: Set<string>;
   assigned: Set<string>;
   outermost: ts.Node | undefined;
@@ -1896,6 +2119,10 @@ function cutMovedStages(
             dest.params,
             dest.returned,
             isAsync(dest.node),
+          ) !== undefined ||
+          movedCommentsProblem(
+            commentsOfRun(body.slice(i, i + keys.length), at.oldSource),
+            commentsOfRun(dest.moved, to.newSource),
           ) !== undefined
         )
           continue;
@@ -1994,6 +2221,588 @@ function cutMovedStages(
         });
         found = true;
       }
+    }
+  }
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    if (spans[f]!.old.length + spans[f]!.new.length === 0) return;
+    const sides = rediff(
+      cutLines(entry.old.lines, oldSource, spans[f]!.old),
+      cutLines(entry.new.lines, newSource, spans[f]!.new),
+      1_000_000 * (f + 1),
+    );
+    entry.old = sides.old;
+    entry.new = sides.new;
+  });
+  return { movedAcross: moved, moves };
+}
+
+/**
+ * A UI cut (owner v0.10.4 Q3): an immediately-invoked arrow inside JSX
+ * whose body moved unchanged into a new top-level function, called in its
+ * place with the names it captured (`kind: "iife"`), or a contiguous run
+ * of JSX children moved unchanged into a new top-level component,
+ * rendered in its place with those names as same-named props (`kind:
+ * "jsx"`). `start` is where the arrow or the run started in the old file,
+ * `wrapper.new` the lines the function adds around what it took,
+ * `wrapper.old` the lines of the call left in its place.
+ */
+export type UiMove = BodyMove & { kind: "iife" | "jsx"; params: string[] };
+
+/** A React hook's name: `use`, `useX`. */
+const HOOK_NAME = /^use([A-Z0-9]|$)/;
+
+/** Whether a node calls a hook (`useX(…)`, `trpc.a.b.useQuery(…)`) anywhere inside. */
+function callsHook(node: ts.Node): boolean {
+  if (ts.isCallExpression(node)) {
+    const callee = node.expression;
+    const name = ts.isIdentifier(callee)
+      ? callee.text
+      : ts.isPropertyAccessExpression(callee)
+        ? callee.name.text
+        : undefined;
+    if (name !== undefined && HOOK_NAME.test(name)) return true;
+  }
+  return ts.forEachChild(node, callsHook) === true;
+}
+
+/** A JSX element's attributes, or undefined for any other node. */
+function jsxAttributes(node: ts.Node): ts.JsxAttributes | undefined {
+  if (ts.isJsxElement(node)) return node.openingElement.attributes;
+  if (ts.isJsxSelfClosingElement(node)) return node.attributes;
+  return undefined;
+}
+
+/** A JSX element with a `key`: React reads it in its parent's list. */
+const hasKey = (node: ts.Node) =>
+  jsxAttributes(node)?.properties.some(
+    (p) =>
+      ts.isJsxAttribute(p) && ts.isIdentifier(p.name) && p.name.text === "key",
+  ) === true;
+
+/** An element's or fragment's children, without whitespace-only text. */
+function jsxChildren(node: ts.JsxElement | ts.JsxFragment): ts.JsxChild[] {
+  return node.children.filter(
+    (c) => !ts.isJsxText(c) || jsxTextValue(c.text) !== "",
+  );
+}
+
+/** `(() => { … })()`: the arrow, with no parameters and a block body. */
+function iifeArrow(
+  node: ts.Node,
+): (ts.ArrowFunction & { body: ts.Block }) | undefined {
+  if (!ts.isCallExpression(node) || node.arguments.length > 0) return undefined;
+  if (node.typeArguments || node.questionDotToken) return undefined;
+  if (!ts.isParenthesizedExpression(node.expression)) return undefined;
+  const fn = node.expression.expression;
+  if (!ts.isArrowFunction(fn) || !ts.isBlock(fn.body)) return undefined;
+  if (fn.parameters.length > 0 || fn.typeParameters || isAsync(fn))
+    return undefined;
+  if (fn.body.statements.length === 0) return undefined;
+  return fn as ts.ArrowFunction & { body: ts.Block };
+}
+
+/** Whether a node sits inside a JSX expression (`{…}`, `attr={…}`). */
+function insideJsx(node: ts.Node): boolean {
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+    if (ts.isJsxExpression(up)) return true;
+  return false;
+}
+
+/** Whether a return of `nodes` (their own, not a nested function's) gives
+ *  an element with a `key`. */
+function returnsKeyed(nodes: readonly ts.Node[]): boolean {
+  const visit = (n: ts.Node): boolean => {
+    if (opensScope(n)) return false;
+    if (ts.isReturnStatement(n) && n.expression) {
+      let e: ts.Expression = n.expression;
+      while (ts.isParenthesizedExpression(e)) e = e.expression;
+      if (hasKey(e)) return true;
+    }
+    return ts.forEachChild(n, visit) === true;
+  };
+  return nodes.some(visit);
+}
+
+/**
+ * Why code cut from where `at` stands can't take exactly `params` as the
+ * names it captures, or undefined when it can: every name it reads from
+ * the functions and blocks around it (not one it declares itself, `own`)
+ * is a parameter, and only those are; it assigns none of them, and no
+ * function it creates reads one that is assigned around it (it would see a
+ * copy); it reads no `this`, awaits or yields nothing, and calls no hook
+ * (a hook moved into a component runs on that component's mount).
+ */
+function capturedProblem(
+  nodes: readonly ts.Node[],
+  at: ts.Node,
+  params: string[],
+  own: Set<string>,
+): string | undefined {
+  const facts = scopeFacts(nodes);
+  if (facts.own) return "reads its own this, arguments or super";
+  if (facts.awaits || facts.yields) return "awaits or yields";
+  if (nodes.some(callsHook)) return "calls a hook";
+  const outer = outerScope(at);
+  const needed = new Set(
+    [...facts.refs].filter((n) => outer.names.has(n) && !own.has(n)),
+  );
+  const passed = new Set(params);
+  for (const n of needed)
+    if (!passed.has(n)) return `reads ${n} without it as a parameter`;
+  for (const n of passed)
+    if (!needed.has(n))
+      return `takes ${n}, which it doesn't read from around it`;
+  for (const n of facts.assigned)
+    if (passed.has(n)) return `assigns its parameter ${n}`;
+  for (const n of facts.inClosure)
+    if (passed.has(n) && outer.assigned.has(n))
+      return `a function it creates reads ${n}, which is assigned around it`;
+  return undefined;
+}
+
+/** A statement alone on its lines from column 0, every line added. */
+function aloneAndAdded(
+  statement: ts.Statement,
+  side: DiffSide,
+  source: ts.SourceFile,
+): boolean {
+  const start = statement.getStart(source);
+  const end = statement.getEnd();
+  const at = (pos: number) => source.getLineAndCharacterOfPosition(pos);
+  if (at(start).character !== 0) return false;
+  if (!BLANK_LINE.test(side.lines[at(end).line]!.slice(at(end).character)))
+    return false;
+  return allChanged(side, source, start, end);
+}
+
+/** The names a file's top-level statements declare, types too. */
+function topLevelNames(source: ts.SourceFile): Set<string> {
+  const out = new Set<string>();
+  for (const s of source.statements) {
+    declaredBy(s).names.forEach((n) => out.add(n));
+    if (ts.isTypeAliasDeclaration(s) || ts.isInterfaceDeclaration(s))
+      out.add(s.name.text);
+  }
+  return out;
+}
+
+type NamedFunction = ts.FunctionDeclaration & {
+  body: ts.Block;
+  name: ts.Identifier;
+};
+
+/** A new top-level function a UI cut may land in: plain or exported, not
+ *  async or a generator, no type parameters, alone on its lines, every
+ *  line added, its name new to the file. */
+function newTopLevelFunction(
+  statement: ts.Statement,
+  side: DiffSide,
+  source: ts.SourceFile,
+  oldNames: Set<string>,
+): NamedFunction | undefined {
+  if (!ts.isFunctionDeclaration(statement)) return undefined;
+  if (!statement.name || !statement.body || statement.asteriskToken)
+    return undefined;
+  if (statement.typeParameters) return undefined;
+  const modifiers = ts.getModifiers(statement) ?? [];
+  if (modifiers.some((m) => m.kind !== ts.SyntaxKind.ExportKeyword))
+    return undefined;
+  if (oldNames.has(statement.name.text)) return undefined;
+  if (!aloneAndAdded(statement, side, source)) return undefined;
+  return statement as NamedFunction;
+}
+
+/** Plain named parameters (types allowed; no default, rest or `?`). */
+function plainParams(
+  params: readonly ts.ParameterDeclaration[],
+): string[] | undefined {
+  const out: string[] = [];
+  for (const p of params) {
+    if (p.initializer || p.dotDotDotToken || p.questionToken) return undefined;
+    if (!ts.isIdentifier(p.name) || p.name.text === "this") return undefined;
+    out.push(p.name.text);
+  }
+  return new Set(out).size === out.length ? out : undefined;
+}
+
+/** A component's props: its one parameter `{ a, b }` (typed or not), or none. */
+function componentProps(fn: ts.FunctionDeclaration): string[] | undefined {
+  if (fn.parameters.length === 0) return [];
+  const [p, ...rest] = fn.parameters;
+  if (!p || rest.length > 0) return undefined;
+  if (p.initializer || p.dotDotDotToken || p.questionToken) return undefined;
+  if (!ts.isObjectBindingPattern(p.name)) return undefined;
+  const out: string[] = [];
+  for (const el of p.name.elements) {
+    if (el.dotDotDotToken || el.propertyName || el.initializer)
+      return undefined;
+    if (!ts.isIdentifier(el.name)) return undefined;
+    out.push(el.name.text);
+  }
+  return new Set(out).size === out.length ? out : undefined;
+}
+
+/** What a component renders, `return <X …/>;` or `return (<>…</>);`, as
+ *  the runs of JSX it may have taken: the element, or a fragment's children. */
+function renderedRuns(fn: NamedFunction): ts.Node[][] {
+  const [only, ...rest] = fn.body.statements;
+  if (!only || rest.length > 0 || !ts.isReturnStatement(only)) return [];
+  let e = only.expression;
+  while (e && ts.isParenthesizedExpression(e)) e = e.expression;
+  if (!e) return [];
+  if (ts.isJsxFragment(e)) return [jsxChildren(e), [e]];
+  if (ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) return [[e]];
+  return [];
+}
+
+/** The props type a new component names, declared new right above it. */
+function propsTypeOf(
+  fn: NamedFunction,
+  source: ts.SourceFile,
+  side: DiffSide,
+  oldNames: Set<string>,
+): ts.Statement | undefined {
+  const type = fn.parameters[0]?.type;
+  if (!type || !ts.isTypeReferenceNode(type) || type.typeArguments)
+    return undefined;
+  if (!ts.isIdentifier(type.typeName)) return undefined;
+  const prev = source.statements[source.statements.indexOf(fn) - 1];
+  if (
+    !prev ||
+    !(ts.isTypeAliasDeclaration(prev) || ts.isInterfaceDeclaration(prev)) ||
+    prev.typeParameters ||
+    prev.name.text !== type.typeName.text ||
+    oldNames.has(prev.name.text)
+  )
+    return undefined;
+  const modifiers = ts.getModifiers(prev) ?? [];
+  if (modifiers.some((m) => m.kind !== ts.SyntaxKind.ExportKeyword))
+    return undefined;
+  return aloneAndAdded(prev, side, source) ? prev : undefined;
+}
+
+/** `fn(a, b)`, its arguments `fn`'s parameters by name, in order. */
+function callsFunction(node: ts.Node, name: string, params: string[]) {
+  return (
+    ts.isCallExpression(node) &&
+    !node.typeArguments &&
+    !node.questionDotToken &&
+    ts.isIdentifier(node.expression) &&
+    node.expression.text === name &&
+    node.arguments.length === params.length &&
+    node.arguments.every((a, i) => ts.isIdentifier(a) && a.text === params[i])
+  );
+}
+
+/** `<Part a={a} b={b} />`: each prop once, by its own name, no `key`. */
+function rendersComponent(node: ts.Node, name: string, props: string[]) {
+  if (!ts.isJsxSelfClosingElement(node) || node.typeArguments) return false;
+  if (!ts.isIdentifier(node.tagName) || node.tagName.text !== name)
+    return false;
+  const given: string[] = [];
+  for (const p of node.attributes.properties) {
+    if (!ts.isJsxAttribute(p) || !ts.isIdentifier(p.name)) return false;
+    const value = p.initializer;
+    if (!value || !ts.isJsxExpression(value) || value.dotDotDotToken)
+      return false;
+    if (!value.expression || !ts.isIdentifier(value.expression)) return false;
+    if (value.expression.text !== p.name.text) return false;
+    given.push(p.name.text);
+  }
+  return (
+    new Set(given).size === given.length &&
+    [...given].sort().join() === [...props].sort().join()
+  );
+}
+
+/**
+ * Finds each UI cut (owner v0.10.4 Q3) and cuts it out of both sides, as
+ * cutMovedStages does a stage: the arrow or run and the call left in its
+ * place become one marker, and the new function (with a component's props
+ * type) goes. An arrow's body moves statement for statement, a run child
+ * for child, token for token (comments and layout aside); capturedProblem
+ * holds what they read. Each file the cuts touch is then diffed again
+ * line by line, so a call left anywhere but where the code was, or
+ * anything else changed, is read as any other changed line. Returns how
+ * many statements or children moved, and each cut.
+ */
+function cutMovedUiParts(
+  files: FileDiff[],
+  names?: RegExp,
+): { movedAcross: number; moves: UiMove[] } {
+  const code = files
+    .map((entry) => ({
+      entry,
+      oldSource: parseSide(entry.file, entry.old),
+      newSource: parseSide(entry.file, entry.new),
+    }))
+    .filter(
+      ({ entry }) =>
+        CODE_FILE.test(entry.file) && !MOVE_BOOKKEEPING.test(entry.file),
+    );
+  const keyOf = (n: ts.Node, source: ts.SourceFile) =>
+    tokensOf(n, source, names).join(" ");
+  const iifes: {
+    f: number;
+    call: ts.CallExpression;
+    arrow: ts.ArrowFunction & { body: ts.Block };
+    keys: string[];
+  }[] = [];
+  const parents: { f: number; children: ts.JsxChild[]; keys: string[] }[] = [];
+  const dests: {
+    f: number;
+    node: NamedFunction;
+    kind: UiMove["kind"];
+    params: string[];
+    runs: { nodes: ts.Node[]; keys: string[] }[];
+    props?: ts.Statement;
+  }[] = [];
+  code.forEach(({ entry, oldSource, newSource }, f) => {
+    const visit = (node: ts.Node) => {
+      const arrow = iifeArrow(node);
+      if (
+        arrow &&
+        insideJsx(node) &&
+        allChanged(
+          entry.old,
+          oldSource,
+          node.getStart(oldSource),
+          node.getEnd(),
+        )
+      )
+        iifes.push({
+          f,
+          call: node as ts.CallExpression,
+          arrow,
+          keys: arrow.body.statements.map((s) => keyOf(s, oldSource)),
+        });
+      if (
+        (ts.isJsxElement(node) || ts.isJsxFragment(node)) &&
+        enclosingFunction(node) !== undefined
+      ) {
+        const children = jsxChildren(node);
+        parents.push({
+          f,
+          children,
+          keys: children.map((c) => keyOf(c, oldSource)),
+        });
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(oldSource);
+    const oldNames = topLevelNames(oldSource);
+    for (const statement of newSource.statements) {
+      const fn = newTopLevelFunction(statement, entry.new, newSource, oldNames);
+      if (!fn) continue;
+      const params = plainParams(fn.parameters);
+      if (params && !isAsync(fn)) {
+        const nodes = [...fn.body.statements];
+        dests.push({
+          f,
+          node: fn,
+          kind: "iife",
+          params,
+          runs: [{ nodes, keys: nodes.map((s) => keyOf(s, newSource)) }],
+        });
+      }
+      const props = componentProps(fn);
+      const runs = renderedRuns(fn).filter((r) => r.length > 0);
+      if (props && runs.length > 0 && !isAsync(fn))
+        dests.push({
+          f,
+          node: fn,
+          kind: "jsx",
+          params: props,
+          runs: runs.map((nodes) => ({
+            nodes,
+            keys: nodes.map((n) => keyOf(n, newSource)),
+          })),
+          props: propsTypeOf(fn, newSource, entry.new, oldNames),
+        });
+    }
+  });
+
+  const spans = code.map(() => ({ old: [] as Span[], new: [] as Span[] }));
+  const lineOf = (source: ts.SourceFile, pos: number) =>
+    source.getLineAndCharacterOfPosition(pos).line;
+  const free = (taken: Span[], source: ts.SourceFile, s: number, e: number) =>
+    taken.every(
+      (t) =>
+        lineOf(source, e) < lineOf(source, t.start) ||
+        lineOf(source, s) > lineOf(source, t.end),
+    );
+  const groupOf = (side: DiffSide, line: number) =>
+    side.changed.find((c) => c.at === line)?.group;
+  const taken = new Set<ts.Node>();
+  const moves: UiMove[] = [];
+  let moved = 0;
+  let marker = 0;
+  for (const dest of dests) {
+    if (taken.has(dest.node)) continue;
+    const to = code[dest.f]!;
+    const name = dest.node.name.text;
+    // Each place the dest's code could have come from: an arrow's body,
+    // or a window of an element's children.
+    const candidates: {
+      f: number;
+      nodes: readonly ts.Node[];
+      span: ts.Node[];
+      run: ts.Node[];
+      arrow?: ts.ArrowFunction & { body: ts.Block };
+    }[] = [];
+    if (dest.kind === "iife") {
+      const keys = dest.runs[0]!.keys.join("\n");
+      for (const s of iifes)
+        if (!taken.has(s.call) && s.keys.join("\n") === keys)
+          candidates.push({
+            f: s.f,
+            nodes: s.arrow.body.statements,
+            span: [s.call],
+            run: dest.runs[0]!.nodes,
+            arrow: s.arrow,
+          });
+    } else
+      for (const run of dest.runs)
+        for (const p of parents)
+          for (let i = 0; i + run.keys.length <= p.keys.length; i++) {
+            if (run.keys.some((k, j) => p.keys[i + j] !== k)) continue;
+            const nodes = p.children.slice(i, i + run.keys.length);
+            if (taken.has(nodes[0]!)) continue;
+            candidates.push({ f: p.f, nodes, span: nodes, run: run.nodes });
+          }
+    for (const c of candidates) {
+      const at = code[c.f]!;
+      const [first, last] = [c.span[0]!, c.span[c.span.length - 1]!];
+      const e = { start: first.getStart(at.oldSource), end: last.getEnd() };
+      if (!allChanged(at.entry.old, at.oldSource, e.start, e.end)) continue;
+      const own = new Set<string>();
+      if (c.arrow) {
+        varNames(c.nodes).forEach((n) => own.add(n));
+        for (const s of c.arrow.body.statements)
+          declaredBy(s).names.forEach((n) => own.add(n));
+        if (returnsKeyed(c.nodes)) continue;
+      } else if (c.nodes.some(hasKey)) continue;
+      if (capturedProblem(c.nodes, first, dest.params, own) !== undefined)
+        continue;
+      if (
+        movedCommentsProblem(
+          c.arrow
+            ? commentsOfBody(c.arrow.body, at.oldSource)
+            : commentsOfRun(c.nodes, at.oldSource),
+          c.arrow
+            ? commentsOfBody(dest.node.body, to.newSource)
+            : commentsOfRun(c.run, to.newSource),
+        ) !== undefined
+      )
+        continue;
+      // The call, in the file the code left; the one in the code's change
+      // group when there are several.
+      const calls: ts.Node[] = [];
+      const look = (n: ts.Node) => {
+        if (
+          !taken.has(n) &&
+          (dest.kind === "iife"
+            ? callsFunction(n, name, dest.params)
+            : rendersComponent(n, name, dest.params)) &&
+          allChanged(
+            at.entry.new,
+            at.newSource,
+            n.getStart(at.newSource),
+            n.getEnd(),
+          )
+        )
+          calls.push(n);
+        ts.forEachChild(n, look);
+      };
+      look(at.newSource);
+      const group = groupOf(at.entry.old, lineOf(at.oldSource, e.start));
+      const call =
+        calls.find(
+          (n) =>
+            groupOf(
+              at.entry.new,
+              lineOf(at.newSource, n.getStart(at.newSource)),
+            ) === group,
+        ) ?? calls[0];
+      if (!call) continue;
+      const r = { start: call.getStart(at.newSource), end: call.getEnd() };
+      const ds = [dest.props, dest.node]
+        .filter((n): n is ts.Statement => n !== undefined)
+        .map((n) => ({ start: n.getStart(to.newSource), end: n.getEnd() }));
+      if (
+        !free(spans[c.f]!.old, at.oldSource, e.start, e.end) ||
+        !free(spans[c.f]!.new, at.newSource, r.start, r.end) ||
+        ds.some(
+          (d) => !free(spans[dest.f]!.new, to.newSource, d.start, d.end),
+        ) ||
+        (c.f === dest.f &&
+          ds.some(
+            (d) =>
+              !(
+                lineOf(to.newSource, r.end) < lineOf(to.newSource, d.start) ||
+                lineOf(to.newSource, r.start) > lineOf(to.newSource, d.end)
+              ),
+          ))
+      )
+        continue;
+      marker += 1;
+      const text = `__movedUi${marker}__`;
+      spans[c.f]!.old.push({ ...e, text });
+      spans[c.f]!.new.push({ ...r, text });
+      for (const d of ds) spans[dest.f]!.new.push({ ...d, text: "" });
+      taken.add(dest.node);
+      taken.add(call);
+      c.span.forEach((n) => taken.add(n));
+      moved += c.nodes.length;
+      const lines = (source: ts.SourceFile, nodes: readonly ts.Node[]) => {
+        const [a, b] = [nodes[0]!, nodes[nodes.length - 1]!];
+        return (
+          lineOf(source, b.getEnd()) - lineOf(source, a.getStart(source)) + 1
+        );
+      };
+      const codeIn = (
+        side: DiffSide,
+        source: ts.SourceFile,
+        nodes: readonly ts.Node[],
+      ) => {
+        const from = lineOf(source, nodes[0]!.getStart(source));
+        return side.lines
+          .slice(from, from + lines(source, nodes))
+          .filter((l) => !BLANK_LINE.test(l)).length;
+      };
+      const all =
+        lineOf(to.newSource, dest.node.getEnd()) -
+        lineOf(to.newSource, dest.node.getStart(to.newSource)) +
+        1;
+      const was = c.arrow
+        ? wrapperAndBody(c.arrow, at.oldSource, at.entry.old.lines)
+        : {
+            body: lines(at.oldSource, c.nodes),
+            bodyCode: codeIn(at.entry.old, at.oldSource, c.nodes),
+          };
+      const now = c.arrow
+        ? wrapperAndBody(dest.node, to.newSource, to.entry.new.lines)
+        : {
+            body: lines(to.newSource, c.run),
+            bodyCode: codeIn(to.entry.new, to.newSource, c.run),
+          };
+      moves.push({
+        from: at.entry.file,
+        to: to.entry.file,
+        start: at.oldSource.getLineAndCharacterOfPosition(
+          (c.arrow ?? first).getStart(at.oldSource),
+        ),
+        name,
+        wrapper: {
+          old: lineOf(at.newSource, r.end) - lineOf(at.newSource, r.start) + 1,
+          new: all - now.body,
+        },
+        body: { old: was.body, new: now.body },
+        bodyCode: { old: was.bodyCode, new: now.bodyCode },
+        kind: dest.kind,
+        params: dest.params,
+      });
+      break;
     }
   }
   code.forEach(({ entry, oldSource, newSource }, f) => {
@@ -2136,8 +2945,8 @@ function unwrapExported(files: FileDiff[], names?: RegExp): void {
 /**
  * The moves a `Mechanical:` commit makes that aren't whole statements: each
  * body moved whole into a new function (cutMovedBodies), each router split
- * (cutMovedProcedures) and each stage cut from a function (cutMovedStages),
- * and every file's lines at both sides before
+ * (cutMovedProcedures), each stage cut from a function (cutMovedStages)
+ * and each UI cut (cutMovedUiParts), and every file's lines at both sides before
  * and after they are cut out. The size ratchet reads these: what is left
  * once they are cut may rise only by its import lines.
  */
@@ -2148,6 +2957,7 @@ export function structuralMoves(
   bodies: BodyMove[];
   routers: RouterMove[];
   stages: StageMove[];
+  ui: UiMove[];
   files: {
     file: string;
     old: string[];
@@ -2162,10 +2972,12 @@ export function structuralMoves(
   const bodies = cutMovedBodies(files, names).moves;
   const routers = cutMovedProcedures(files, names).moves;
   const stages = cutMovedStages(files, names).moves;
+  const ui = cutMovedUiParts(files, names).moves;
   return {
     bodies,
     routers,
     stages,
+    ui,
     files: files.map((e, i) => ({
       file: e.file,
       old: before[i]!.old,
@@ -2388,8 +3200,10 @@ function matchCode(code: { old: CodeSide; new: CodeSide }[]): {
  * arrow or function expression's whole body may move into a new top-level
  * function, its statements compared token by token (cutMovedBodies),
  * whole router procedures into a new part mounted where they were
- * (cutMovedProcedures), and a run of a function's top-level statements
- * into a new top-level function, called where they were (cutMovedStages).
+ * (cutMovedProcedures), a run of a function's top-level statements
+ * into a new top-level function, called where they were (cutMovedStages),
+ * and an IIFE's body or a JSX run into a new function or component, called
+ * or rendered where it was (cutMovedUiParts).
  * A moved statement that gains `export` and is re-wrapped by prettier is
  * compared token by token, at its old layout (unwrapExported). Other
  * lines (docs, data, comments) match by path rewrite as a multiset: first in
@@ -2410,16 +3224,22 @@ export function notAMove(
   const leftRemoved: Line[] = [];
   const movedKey = (line: string) =>
     withoutPaths(
-      line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1"),
+      commentPaths(line.replace(/^(\s*)export\s+(?!\{|\*|default\b)/, "$1")),
       names,
     );
   const code: { old: CodeSide; new: CodeSide }[] = [];
   const files = readDiff(diff);
-  const bodiesAcross =
-    cutMovedBodies(files, names).movedAcross +
-    cutMovedProcedures(files, names).movedAcross +
-    cutMovedStages(files, names).movedAcross;
+  const cuts = [
+    cutMovedBodies(files, names),
+    cutMovedProcedures(files, names),
+    cutMovedStages(files, names),
+    cutMovedUiParts(files, names),
+  ];
+  const bodiesAcross = cuts.reduce((n, c) => n + c.movedAcross, 0);
+  const newFunctions = cuts.reduce((n, c) => n + c.moves.length, 0);
   unwrapExported(files, names);
+  // Each file's sides as read, for the comment blocks a move changes.
+  const sidesOf = new Map<string, { old: DiffSide; new: DiffSide }>();
   for (const entry of files) {
     const { file, wholeFile } = entry;
     if (MOVE_BOOKKEEPING.test(file)) continue;
@@ -2469,10 +3289,11 @@ export function notAMove(
     // Code lines are matched below; the rest (docs, data, comments) here.
     const text = (side: DiffSide, keptLines: { at: number }[]) =>
       keptLines
-        .map(({ at }) => side.lines[at]!)
-        .filter((line) => !isCode || COMMENT_LINE.test(line));
+        .map(({ at }) => ({ at, line: side.lines[at]! }))
+        .filter(({ line }) => !isCode || COMMENT_LINE.test(line));
     const removed = text(entry.old, oldKept);
     const added = text(entry.new, newKept);
+    sidesOf.set(file, { old: entry.old, new: entry.new });
     // The register's code-reference cells change with a move; docs:verify
     // checks each still names a real file and function.
     const keyOf = (line: string) =>
@@ -2482,27 +3303,44 @@ export function notAMove(
               .split("|")
               .map((cell) => (CODE_REF_CELL.test(cell) ? " <refs> " : cell))
               .join("|")
-          : line,
+          : commentPaths(line),
         names,
       );
     const pool = new Map<string, number>();
-    for (const line of removed) {
+    for (const { line } of removed) {
       const key = keyOf(line);
       pool.set(key, (pool.get(key) ?? 0) + 1);
     }
-    for (const line of added) {
+    for (const { line, at } of added) {
       const key = keyOf(line);
       const left = pool.get(key) ?? 0;
       if (left > 0) pool.set(key, left - 1);
-      else if (!IMPORT_LINE.test(line)) leftAdded.push({ file, line });
+      else if (!IMPORT_LINE.test(line))
+        leftAdded.push({ file, line, at, side: "new" });
     }
-    for (const line of removed) {
+    for (const { line, at } of removed) {
       const key = keyOf(line);
       const left = pool.get(key) ?? 0;
       if (left === 0) continue;
       pool.set(key, left - 1);
-      if (!IMPORT_LINE.test(line)) leftRemoved.push({ file, line });
+      if (!IMPORT_LINE.test(line))
+        leftRemoved.push({ file, line, at, side: "old" });
     }
+    // A created or deleted file's comments, matched across files only to
+    // hold a split's moved comments to Q3's rule below.
+    if (wholeFile && isCode)
+      for (const side of ["old", "new"] as const)
+        for (const { at } of entry[side].changed) {
+          const line = entry[side].lines[at]!;
+          if (!COMMENT_LINE.test(line)) continue;
+          (side === "old" ? leftRemoved : leftAdded).push({
+            file,
+            line,
+            at,
+            side,
+            whole: true,
+          });
+        }
   }
   const matchedCode = matchCode(code);
   let unexplained = matchedCode.unexplained;
@@ -2521,16 +3359,30 @@ export function notAMove(
       unexplained.push(entry);
       continue;
     }
-    sourcesOf.splice(i, 1);
-    movedAcross += 1;
+    const [source] = sourcesOf.splice(i, 1);
+    // A whole file's comment, taken along, moves no code.
+    if (!entry.whole && !source!.whole) movedAcross += 1;
   }
   for (const entries of moved.values()) unexplained.push(...entries);
   if (!renamed && movedAcross === 0)
     return "git sees no rename and no code moved between files";
   // A split takes its doc comments with the code and rewords the old header:
-  // comments carry no behavior, and the reviewer still reads them.
-  if (movedAcross > 0)
+  // comments carry no behavior, and the reviewer still reads them. Owner
+  // v0.10.4 Q3: a reworded or new comment stays within RULES' three lines,
+  // and each new comment block rewords one the move took away or documents
+  // a function it made.
+  if (movedAcross > 0) {
+    const created = files.filter(
+      (f) => f.wholeFile && f.old.lines.length === 0,
+    ).length;
+    const problem = rewordedComments(
+      unexplained,
+      sidesOf,
+      newFunctions + created,
+    );
+    if (problem !== undefined) return problem;
     unexplained = unexplained.filter(({ line }) => !COMMENT_LINE.test(line));
+  } else unexplained = unexplained.filter(({ whole }) => !whole);
   const first = (lines: Line[]) =>
     lines
       .slice(0, 3)

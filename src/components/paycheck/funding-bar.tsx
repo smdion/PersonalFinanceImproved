@@ -3,6 +3,9 @@
 import { accountColor, accountMatchColor } from "@/lib/utils/colors";
 import { formatPercent } from "@/lib/utils/format";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
+import { useId } from "react";
+import { ChartSummaryText } from "@/components/charts/chart-summary-text";
+import { fundingBarSummary } from "./funding-bar.summary";
 
 export function FundingBar({
   pct,
@@ -33,13 +36,23 @@ export function FundingBar({
   const matchBarColor = accountType
     ? accountMatchColor(accountType)
     : "bg-blue-300/60";
+  const summaryId = useId();
+  const summary = fundingBarSummary(pct, showMatchBeyond);
+  const named = {
+    role: "img",
+    "aria-label": summary.label,
+    "aria-describedby": summaryId,
+  } as const;
+  const described = <ChartSummaryText id={summaryId} text={summary.text} />;
 
   if (!showMatchBeyond) {
     return (
       <div
         className="bg-surface-strong h-2 w-full rounded-full"
         title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
+        {...named}
       >
+        {described}
         <div
           className={`${color} h-2 rounded-full transition-all`}
           style={{ width: `${employeeClamped * 100}%` }}
@@ -55,7 +68,11 @@ export function FundingBar({
   const limitPosition = 1 * scale * 100; // where 100% IRS limit line falls
 
   return (
-    <div className="bg-surface-strong relative h-2 w-full rounded-full">
+    <div
+      className="bg-surface-strong relative h-2 w-full rounded-full"
+      {...named}
+    >
+      {described}
       {/* Employee contribution bar */}
       <div
         className={`${color} absolute top-0 left-0 h-2 rounded-l-full transition-all`}

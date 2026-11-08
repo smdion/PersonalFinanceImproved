@@ -4,6 +4,7 @@
  *  contribution profile selectors. Stateless — all state flows via props.
  */
 
+import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
@@ -75,6 +76,7 @@ export function RelocationBudgetSelectors({
   const targetMonths = targetProf?.columnMonths ?? null;
   const currentWeighted = currentProf?.weightedAnnualTotal ?? null;
   const targetWeighted = targetProf?.weightedAnnualTotal ?? null;
+  const id = useId();
 
   return (
     <>
@@ -82,12 +84,13 @@ export function RelocationBudgetSelectors({
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 text-sm">
         {/* Current Budget */}
         <div>
-          <label className="text-muted mb-1 block">
+          <label htmlFor={`${id}-current`} className="text-muted mb-1 block">
             Current Budget
             <HelpTip text="Budget profile used for your current living expenses. When a profile has month assignments, the weighted average is used automatically." />
           </label>
           <div className="flex flex-col gap-1">
             <select
+              id={`${id}-current`}
               className="rounded border px-2 py-1 text-sm"
               value={effectiveCurrentProfileId}
               onChange={(e) => {
@@ -117,6 +120,7 @@ export function RelocationBudgetSelectors({
               </Badge>
             ) : (currentProf?.columnLabels ?? []).length >= 2 ? (
               <select
+                aria-label="Current budget column"
                 className="rounded border px-2 py-1 text-sm"
                 value={relocCurrentCol}
                 onChange={(e) => setRelocCurrentCol(Number(e.target.value))}
@@ -134,6 +138,7 @@ export function RelocationBudgetSelectors({
             <div className="flex items-center gap-1">
               <span className="text-caption text-faint">Custom:</span>
               <input
+                aria-label="Current budget custom monthly amount"
                 type="number"
                 className="w-24 rounded border px-2 py-0.5 text-xs"
                 placeholder="$/mo"
@@ -156,12 +161,13 @@ export function RelocationBudgetSelectors({
 
         {/* Relocation Budget */}
         <div>
-          <label className="text-muted mb-1 block">
+          <label htmlFor={`${id}-relocation`} className="text-muted mb-1 block">
             Relocation Budget
             <HelpTip text="Budget profile for projected expenses after relocating. Use the custom field to enter a monthly amount." />
           </label>
           <div className="flex flex-col gap-1">
             <select
+              id={`${id}-relocation`}
               className="rounded border px-2 py-1 text-sm"
               value={effectiveTargetProfileId}
               onChange={(e) => {
@@ -191,6 +197,7 @@ export function RelocationBudgetSelectors({
               </Badge>
             ) : (targetProf?.columnLabels ?? []).length >= 2 ? (
               <select
+                aria-label="Relocation budget column"
                 className="rounded border px-2 py-1 text-sm"
                 value={relocTargetCol}
                 onChange={(e) => setRelocTargetCol(Number(e.target.value))}
@@ -208,6 +215,7 @@ export function RelocationBudgetSelectors({
             <div className="flex items-center gap-1">
               <span className="text-caption text-faint">Custom:</span>
               <input
+                aria-label="Relocation budget custom monthly amount"
                 type="number"
                 className="w-24 rounded border px-2 py-0.5 text-xs"
                 placeholder="$/mo"
@@ -231,11 +239,15 @@ export function RelocationBudgetSelectors({
       {contribProfiles.length > 0 && (
         <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 text-sm">
           <div>
-            <label className="text-muted mb-1 block">
+            <label
+              htmlFor={`${id}-current-contrib`}
+              className="text-muted mb-1 block"
+            >
               Current Contributions
               <HelpTip text="Salary and contribution profile for your current scenario. Managed on the Profiles page." />
             </label>
             <select
+              id={`${id}-current-contrib`}
               className="w-full rounded border px-2 py-1 text-sm"
               value={effectiveCurrentContribProfileId ?? ""}
               onChange={(e) =>
@@ -275,11 +287,15 @@ export function RelocationBudgetSelectors({
           </div>
           <div className="text-faint self-center pt-6">→</div>
           <div>
-            <label className="text-muted mb-1 block">
+            <label
+              htmlFor={`${id}-relocation-contrib`}
+              className="text-muted mb-1 block"
+            >
               Relocation Contributions
               <HelpTip text="Salary and contribution profile for the relocation scenario. Create profiles on the Profiles page." />
             </label>
             <select
+              id={`${id}-relocation-contrib`}
               className="w-full rounded border px-2 py-1 text-sm"
               value={effectiveTargetContribProfileId ?? ""}
               onChange={(e) =>

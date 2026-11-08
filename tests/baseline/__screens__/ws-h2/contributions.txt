@@ -1,0 +1,57 @@
+Contributions
+Household contribution breakdown and savings rates
+Contribution Profile
+[Current (active)]
+Annual
+Monthly
+Per Period
+Your active plan could stop contributing today and retirement would still work, on average returns (the Simulation can be stricter) — see Coast FIRE on Retirement.
+Prior-year contributions: You can designate IRA and HSA contributions for tax year 2025 until April 15, 2026. Set prior-year amounts on individual accounts in the Portfolio settings.
+You're saving 5% of your pay — $3,600.00 a year (employer match included). Next: Taylor 401k: $20,900.00 more reaches the 2026 IRS limit — about $1,100.00 more a paycheck for the 19 left this year.
+Counts
+Employer match
+Portfolio
+High-income line
+$100,000 (Head of household)
+?
+Total Savings
+5%
+$3,600.00/yr
+Retirement
+5%
+$3,600.00/yr
+Portfolio
+0%
+$0.00/yr
+Breakdown — $72,000.00/yr
+Account
+Employee
+Match
+Limit
+Utilization
+401k
+$3,600.00
+—
+$24,500.00
+15%
+Total
+$3,600.00
+$0.00
+Savings rate: 5% (w/ match)
+Profile Comparison
+Metric
+Current
+Profile
+Delta
+Total (w/ match)
+$3,600.00
+$3,600.00
+$0.00
+Retirement
+$3,600.00
+$3,600.00
+$0.00
+Portfolio
+$0.00
+$0.00
+$0.00

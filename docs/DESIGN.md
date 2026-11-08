@@ -60,27 +60,27 @@ This is the architectural foundation. Every data model, UI component, and calcul
 Run `ls src/lib/ src/components/ src/server/routers/` for the live layout.
 Key concept → directory map:
 
-| Concept                 | Directory                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Calculators (pure)      | `src/lib/pure/<area>/`: accounts, advice, budget, contributions, debts, household, investments, net-worth, paycheck, retirement, savings, simulation, sync, tax                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Engine modules          | `src/lib/pure/engine/` (<!-- AUTO-GEN:engineModules -->33<!-- /AUTO-GEN --> modules), with the year handlers' stages in `projection-year-handlers/`, the per-account ledger in `individual-accounts/` and the routing modes in `withdrawal-routing/`                                                                                                                                                                                                                                                                                                                                 |
-| Calculator I/O types    | `src/lib/pure/<area>/*.types.ts` beside each calculator; the engine's in `src/lib/pure/engine/types/` (no barrel)                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Shared utilities        | `src/lib/utils/` (dates, formatting, math; no domain logic)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| DB schema               | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Shared server reads     | `src/server/data/` (one read per table or subject, shared by routers and services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Server services         | `src/server/services/<area>/`: composition that needs I/O (reads, then pure calculators), shared by routers                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->36<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Domain components       | `src/components/{paycheck,budget,savings,networth,performance,mortgage,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->21<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->20<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->22<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->9<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), mortgage (<!-- AUTO-GEN:mortgageComponents -->9<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->31<!-- /AUTO-GEN -->) |
-| Dashboard cards         | `src/components/cards/` (<!-- AUTO-GEN:dashboardCards -->23<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Migrations              | `drizzle/` + `drizzle-sqlite/` (<!-- AUTO-GEN:migrations -->18<!-- /AUTO-GEN --> squashed baseline per release; PG in `drizzle/`, SQLite in `drizzle-sqlite/`)                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Scripts                 | `scripts/` (seed, validate, verify-docs, release)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Tests                   | `tests/` (Vitest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Docs                    | `docs/RULES.md`, `docs/DESIGN.md`, `docs/TESTING.md`, `docs/OPS.md`, [`docs/CALCULATIONS.md`](CALCULATIONS.md) (every calculation: function, authority, tests)                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Concept                 | Directory                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Calculators (pure)      | `src/lib/pure/<area>/`: accounts, advice, budget, contributions, debts, household, investments, net-worth, paycheck, retirement, savings, simulation, sync, tax                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Engine modules          | `src/lib/pure/engine/` (<!-- AUTO-GEN:engineModules -->33<!-- /AUTO-GEN --> modules), with the year handlers' stages in `projection-year-handlers/`, the per-account ledger in `individual-accounts/` and the routing modes in `withdrawal-routing/`                                                                                                                                                                                                                                                                                                                             |
+| Calculator I/O types    | `src/lib/pure/<area>/*.types.ts` beside each calculator; the engine's in `src/lib/pure/engine/types/` (no barrel)                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Shared utilities        | `src/lib/utils/` (dates, formatting, math; no domain logic)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| DB schema               | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Shared server reads     | `src/server/data/` (one read per table or subject, shared by routers and services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Server services         | `src/server/services/<area>/`: composition that needs I/O (reads, then pure calculators), shared by routers                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->43<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Domain components       | `src/components/{paycheck,budget,savings,networth,performance,debts,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->21<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->28<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->29<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->10<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), debts (<!-- AUTO-GEN:mortgageComponents -->10<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->33<!-- /AUTO-GEN -->) |
+| Dashboard cards         | `src/components/dashboard/` (<!-- AUTO-GEN:dashboardCards -->19<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Migrations              | `drizzle/` + `drizzle-sqlite/` (<!-- AUTO-GEN:migrations -->18<!-- /AUTO-GEN --> squashed baseline per release; PG in `drizzle/`, SQLite in `drizzle-sqlite/`)                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Scripts                 | `scripts/` (seed, validate, verify-docs, release)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Tests                   | `tests/` (Vitest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Docs                    | `docs/RULES.md`, `docs/DESIGN.md`, `docs/TESTING.md`, `docs/OPS.md`, [`docs/CALCULATIONS.md`](CALCULATIONS.md) (every calculation: function, authority, tests)                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ---
 
@@ -137,7 +137,7 @@ An eye button in the sidebar hides every dollar amount (Actual Budget's "hide" m
 
 - **Masking.** `formatCurrency` / `compactCurrency` return `maskedAmount()` while a module-level flag is on: `$` plus 3–8 (compact: 2–3) squiggle glyphs. Length and glyphs come from a hash of the value and a per-page-load random salt — stable across re-renders, different after a reload, and never derived from the amount's digits. `maskAmountsInText()` does the same for amounts inside pre-built sentences (engine warnings, report narratives); the engine itself stays pure.
 - **Never set the flag on the server.** The format module is shared by every request there. `PrivacyProvider` (`lib/context/privacy-context.tsx`) sets it during the first browser render, from the cookie the dashboard layout read.
-- **No amounts in server HTML.** Pages that prefetch data for hydration use `prefetchForPage()` (`server/trpc-server.ts`), which skips the prefetch when the cookie is set, so the first HTML has loading states instead of amounts. New prefetching pages must use it, not `createServerHelpers` directly.
+- **No amounts in server HTML.** Pages that prefetch data for hydration use `prefetchForPage()` (`server/trpc-server.ts`), and the dashboard layout prefetches the shell's queries with `prefetchForShell()`; both skip the prefetch when the cookie is set, so the first HTML has loading states instead of amounts. New prefetching pages must use them, not `createServerHelpers` directly.
 - **Toggling remounts the page.** `DashboardShell` keys its content on the privacy state so every formatter re-runs; the React Query cache survives (no refetch) but unsaved inline-edit state on the open page resets.
 - **The squiggle font.** `maskedAmount()` emits Private Use Area characters U+E000–E007, drawn by `src/app/fonts/ledgr-redacted.woff2` (generated by `scripts/gen-redacted-font.py`; family "Ledgr Redacted"). `globals.css` appends that family to Tailwind's `--default-font-family` / `--default-mono-font-family` and the `.font-sans` / `.font-mono` utilities, so it only draws those code points. Not next/font's `fallback` option (it drops the size-adjusted Plex fallback) and not extra faces on the Plex family (Chrome skips faces with different weight descriptors).
 - **Deliberately not masked:** percentages, counts, dates, editable inputs, growth ratios such as the Retirement card's Growth benchmark (`data-privacy-visible`), exports, and the `+` / `-` direction signs components print next to an amount.
@@ -185,6 +185,7 @@ Helpers: `taxTypeTextColor()`, `taxTypeLabel()`; bar fills read `TAX_TYPE_COLORS
 - Account types and tax treatments use distinct hue families — no overlap
 - Generic UI badges (BG, PC, etc.) use indigo or gray to avoid collision
 - **Contrast floor (WCAG 1.4.11):** a data-carrying chart stroke or its legend swatch must clear 3:1 against the card background (and against any fill it's drawn over) in **both** themes. A single `CHART_COLORS` hex often can't — see `chartLinePalette(dark)` in `colors.ts` for the theme-aware escape hatch (mirrors `trajectoryChartPalette`). Decorative reference/zero lines are exempt.
+- **Charts render in `ChartFrame`** (`components/charts/chart-frame.tsx`; `ratchet/no-raw-chart-container` counts a `ResponsiveContainer` anywhere else). It keeps Recharts' keyboard layer on, names the chart `role="img"` and points `aria-describedby` at an sr-only summary, which the chart's pure `<chart>.summary.ts` builds only from values the chart plots, formatted as its tooltip shows them: never a figure it doesn't show. A hand-drawn chart (no Recharts) sets `role="img"` itself and points at the same sr-only `ChartSummaryText`.
 - Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers; `CATEGORY_CHART_HEX` is still a separate table
 - **Portfolio scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ Portfolio.
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
@@ -379,7 +380,7 @@ Every setting can change by year ("Changes by year", resolved in `override-resol
 
 ### Projection Card
 
-The Retirement page's projection (`components/cards/projection/`) reads `projection.computeProjection` plus the simulation queries (`use-projection-queries.ts`); the dashboard reads the same cached runs through `usePlanEngineInput`.
+The Retirement page's projection (`components/retirement-projection/`) reads `projection.computeProjection` plus the simulation queries (`use-projection-queries.ts`); the dashboard reads the same cached runs through `usePlanEngineInput`.
 
 - **Per-person view:** Joint / per-person toggle scales the chart, table and hero figures by each person's share of the contribution specs.
 - **"How contributions are projected":** per-account specs with employer match inline (`+m`, hover for the breakdown).
@@ -391,7 +392,7 @@ Shared helpers: `getAccountTypeConfig()`, `aggregateContributionsByCategory()` a
 ### Tooltip System
 
 Tooltip rendering for the projection card is data-driven and lives in
-`src/components/cards/projection/tooltip-renderer.tsx`. Call sites build a
+`src/components/retirement-projection/tooltip-renderer.tsx`. Call sites build a
 `TooltipData` object (discriminated union: `kind: 'money' | 'info'`) and pass
 it to `renderTooltip()`. The renderer decides _how_ to render — never _what_
 data to show. Section order is fixed; every section is `{d.field && <render>}`.
@@ -464,7 +465,7 @@ brokerage_goals → engine input (brokerageGoals)
 
 **Schema:** `brokerage_goals` (name, target amount, year, priority, active, notes). Basis lives on `performance_accounts.cost_basis`.
 
-**UI:** `components/cards/brokerage-goals.tsx` (cards + summary figures).
+**UI:** `components/brokerage/brokerage-goals.tsx` (cards + summary figures).
 
 ---
 
@@ -934,6 +935,20 @@ whole when a statement is already done or moved past, or when the table has
 a column a later migration adds that the recreate would drop (the database
 is past it); any other error stops the replay.
 
+### A backup's closed-set values
+
+A restore or import checks a backup's rows after the transforms and the
+credentials fence, before anything is written (`checkRestoredValues` and
+`checkImportedValues`, `src/lib/db/closed-set-columns.ts`). The table there lists every text column
+of a versioned table that holds a set the config defines (a test walks the
+schema's union-typed columns). A value outside its set takes the column's
+default where the owner named one (withdrawal strategy, routing mode,
+savings target mode, two parent-category columns, the tax tables' origin,
+budget items' sync direction), with a log line and a note in the
+restore or import result that the Versions page lists. In any other column it refuses the whole restore or
+import, naming each table, column and value, and today's data stays. A row
+without the column is left to the insert.
+
 ### Account Categories
 
 Two `parentCategory` values classify all investment accounts by their goal:
@@ -1142,15 +1157,16 @@ and the status rows on Milestones, Recommendations and Settings.
 
 ### Component Catalog
 
-Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->36<!-- /AUTO-GEN --> components). Each
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->43<!-- /AUTO-GEN --> components). Each
 component exports a `*Props` type with the full prop contract — read the file
 directly rather than maintaining a duplicate table here. Imports are barreled
 via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).
 
 Anchor primitives (covered above): `Button`, `Badge`, `AccountBadge`, `Card`,
 `Skeleton*`, `EmptyState`, `Tooltip`, `HelpTip`, `DataTable`, `PageHeader`,
-`ErrorBoundary`. Imperative dialogs: `confirm()`, `promptText()`. Toast hook:
-`useToasts()`.
+`ErrorBoundary`, `QueryBoundary`, `Modal`, `Popover`, `Tabs`,
+`SegmentedControl`, `ChartFrame` (each in § Layout Patterns). Imperative
+dialogs: `confirm()`, `promptText()`. Toast hook: `useToasts()`.
 
 ### Layout Patterns
 
@@ -1163,30 +1179,123 @@ grid-cols-2 sm:grid-cols-4 gap-4      -- Stat grids
 grid-cols-1 sm:grid-cols-2 gap-x-4    -- Data grids inside cards
 ```
 
-**Page loading:**
+**Page loading** (`components/ui/query-boundary.tsx`):
 
 ```tsx
-if (isLoading)
+const summary = trpc.assets.computeSummary.useQuery(targeting);
+if (queryPending(summary))
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-8 w-1/3" />
-      <SkeletonChart />
-    </div>
-  );
-if (error)
-  return (
-    <p className="text-sm text-red-600">Failed to load: {error.message}</p>
+    <QueryBoundary
+      query={summary}
+      what="asset data"
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-1/3" />
+          <SkeletonChart />
+        </div>
+      }
+    />
   );
 ```
 
+- `queryPending` is true while a query loads or after it fails. A disabled
+  query is neither, so the page renders its no-data branch.
+- While loading, the boundary shows the `fallback` unchanged. After 20 s
+  (`SLOW_LOAD_MS`) it adds a "Still loading…" line, with no Retry: a
+  second request would only repeat the running one.
+- A failure shows "Failed to load <what>: <message>" (`errorText`: a
+  failed service's own sentence when the server wrote one) and a Retry
+  that refetches the failed queries; while they run it is disabled and
+  says "Retrying…". A refused demo profile shows its own message without
+  Retry; Providers then swap the page for the demo picker.
+- `query` takes one query or a list, which may hold a hook's gate queries
+  (`usePlanEngineInput().gate`: what `ready` waits on), so a failed input
+  shows instead of a wait. A hook that combines queries passes `error`,
+  `isLoading` and a `refetch` for the failed ones.
+- A card passes `frame` to keep both states inside the card
+  (`CardQueryBoundary` in `components/dashboard/utils.tsx`).
+- Never `if (isLoading || !data) return <Skeleton />`: a failed query has no
+  data either, and its skeleton never ends. The skeleton-returns finder in
+  `tests/lint/violations.test.ts` fails a new one.
+
+**Dialogs** (`components/ui/modal.tsx`): every dialog renders through
+`Modal`; mounting it opens it. It owns the backdrop (one shade, one layer
+above toasts; the first-run wizard keeps its own shade through
+`layer="firstRun"`), the name (`label` or `labelledBy`), and focus: focus
+moves inside, Tab and Shift+Tab stay there (a Tab from outside goes back in),
+and closing returns it to the opener when the opener is still on the page.
+Only the dialog on top (the highest layer's newest) takes focus. Escape and
+the backdrop click close it unless `closeOnEscape` or `closeOnBackdrop` is
+false: a dialog whose write is running (push, finalize, restore, import)
+passes false while it runs. `placement` docks a side panel (`right`) or a
+command palette (`top`). `ConfirmDialog` (`confirm()`, `promptText()`) and
+`PushPreviewModal` render through it.
+
+**Popovers** (`components/ui/popover.tsx`): a menu or picker that floats
+over a card (`layer="card"`) or the page (`layer="page"`) renders through
+`Popover`. Its click-catcher closes it and swallows the outside click, so
+that click doesn't also act on what's underneath. A hand-built
+`fixed inset-0` overlay is counted by `ratchet/no-fixed-inset-overlay`: only
+the mobile sidebar's drawer backdrop is left.
+
+**Tabs and option groups:** a strip of tabs is `Tabs`
+(`components/ui/tabs.tsx`), a choice among a few options is
+`SegmentedControl` (`components/ui/segmented-control.tsx`). Both take a
+`look` naming today's class set for that strip or group (the look tables
+at the top of each file); a new strip picks an existing look, and a new
+look is a design decision (v0.13 picks one). Both are one Tab stop: arrow
+keys, Home and End move the choice (`moveChoice`,
+`components/ui/arrow-keys.ts`). `Tabs` is a `tablist`; give it `id` when
+the chosen tab's content sits in one element, which spreads
+`tabPanelProps(id, value)`. `SegmentedControl` is a `radiogroup` and needs
+`ariaLabel`. `ratchet/no-raw-tablist` counts a hand-written `role="tab"`,
+`"tablist"` or `"radiogroup"` outside `components/ui`.
+
+**Charts:** every Recharts chart renders in `ChartFrame`
+(`components/charts/chart-frame.tsx`), named as an image and described by an
+sr-only summary of the values it plots (§ Design Rules).
+
+**The primitives:**
+
+| Need                                             | Use                                                                                                      |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| A button                                         | `Button` where its look matches; a raw `<button>` is counted by `ratchet/no-raw-button`                  |
+| A page's or card's loading and failed states     | `QueryBoundary`, `CardQueryBoundary`                                                                     |
+| A dialog or side panel                           | `Modal`                                                                                                  |
+| A floating menu or picker                        | `Popover`                                                                                                |
+| Tabs                                             | `Tabs`                                                                                                   |
+| A choice among a few options                     | `SegmentedControl`; an on/off switch is `Toggle`                                                         |
+| A chart                                          | `ChartFrame`                                                                                             |
+| A row or element that acts on click              | `asButton(onPress, expanded?)` (`components/ui/as-button.ts`): focusable, Enter and Space act as a click |
+| An expanding row's chevron                       | `ExpandRowButton`, inside the row whose `onClick` toggles it                                             |
+| A sorting column header                          | `SortableHeader` (a `th` with `aria-sort`)                                                               |
+| A clickable cell (an inline edit, a mode switch) | `CellButton`                                                                                             |
+| A labelled form control                          | `FormField`, or a `<label htmlFor>` matching the control's `id` (`useId()`); otherwise an `aria-label`   |
+| A date                                           | `formatDate` (`lib/utils/format.ts`) with a preset                                                       |
+
+A clickable element with no keyboard path is counted by
+`jsx-a11y/click-events-have-key-events` and
+`jsx-a11y/no-static-element-interactions`; a control with no accessible name
+by `ratchet/no-unlabeled-control`; a hand date format by
+`ratchet/no-hand-date-format`.
+
 ### File Organization
 
-| Directory                    | Contains                                                 |
-| ---------------------------- | -------------------------------------------------------- |
-| `src/components/ui/`         | Shared primitives (Button, Card, Badge, Skeleton, etc.)  |
-| `src/components/cards/`      | Domain card components (projection, MC, dashboard)       |
-| `src/components/settings/`   | Settings page panels                                     |
-| `src/components/portfolio/`  | Portfolio page components (contribution accounts, chart) |
-| `src/components/historical/` | Historical page components (jobs, cells)                 |
-| `src/components/mortgage/`   | Mortgage/liabilities components                          |
-| `src/components/budget/`     | Budget page components                                   |
+| Directory                               | Contains                                                                                                                                       |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/(dashboard)/<route>/`          | `page.tsx`, a thin server page, and `<route>-content.tsx`, the client component it renders; hooks and parts only that route uses sit beside it |
+| `src/components/ui/`                    | Shared primitives (§ Layout Patterns), and the keyboard helpers `as-button.ts` and `arrow-keys.ts`                                             |
+| `src/components/forms/`                 | `FormField`, `FormInput`, `FormSelect`                                                                                                         |
+| `src/components/charts/`                | `ChartFrame`, the chart summary text and shared chart parts                                                                                    |
+| `src/components/layout/`                | The app shell: sidebar, scenario bar, quick search, data freshness, demo banner                                                                |
+| `src/components/dashboard/`             | The dashboard's cards                                                                                                                          |
+| `src/components/retirement-projection/` | The projection card (`index.tsx`, `projection-card/`), its table rows and their view models, the Simulation and the advisor report             |
+| `src/components/debts/`                 | The mortgage and liabilities cards                                                                                                             |
+| `src/components/help/`, `methodology/`  | The help page's and the methodology pages' content                                                                                             |
+| `src/components/<feature>/`             | One folder per feature (budget, contributions, paycheck, savings, portfolio, performance, settings, …); a large part is a subfolder            |
+
+A component file's chart summary sits beside it as `<chart>.summary.ts`.
+A hook lives in one of three homes, by who uses it: beside
+`<route>-content.tsx` when one route uses it, in `components/<feature>/` when
+one feature shares it, and in `src/lib/hooks/` when two or more features do
+(RULES § Coding Conventions). There are no `hooks/` folders.

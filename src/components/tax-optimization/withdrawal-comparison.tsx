@@ -32,6 +32,7 @@ import type { RouterInputs } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import {
   getDefaultDecumulationOrder,
   isOverflowTarget,
@@ -74,13 +75,19 @@ function ordersMatch(a: readonly string[], b: readonly string[]): boolean {
 
 export function WithdrawalComparison({ selection }: { selection: Selection }) {
   const strategies = presetStrategies();
-  const { data, isLoading } =
-    trpc.projection.compareWithdrawalStrategies.useQuery(
-      { ...selection, strategies },
-      { placeholderData: (prev) => prev },
-    );
+  const comparison = trpc.projection.compareWithdrawalStrategies.useQuery(
+    { ...selection, strategies },
+    { placeholderData: (prev) => prev },
+  );
+  const { data } = comparison;
 
-  if (isLoading) return <Skeleton className="h-40 w-full" />;
+  if (queryPending(comparison))
+    return (
+      <QueryBoundary
+        query={comparison}
+        fallback={<Skeleton className="h-40 w-full" />}
+      />
+    );
   if (data && "notConfigured" in data)
     return <NotConfiguredNotice reason={data.notConfigured} />;
   if (!data || data.strategies.length === 0) {

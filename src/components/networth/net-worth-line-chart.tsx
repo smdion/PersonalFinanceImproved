@@ -11,12 +11,13 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
-  ResponsiveContainer,
 } from "recharts";
+import { ChartFrame } from "@/components/charts/chart-frame";
 import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { compactCurrency, type HistoryRow } from "./types";
+import { netWorthLineSummary } from "./net-worth-line-chart.summary";
 
 export type ChartXAxisMode = "year" | "age";
 
@@ -47,12 +48,12 @@ export function NetWorthLineChart({
       title={
         <>
           Net Worth Over Time{" "}
-          <HelpTip text="Multi-line view: Net Worth (green), Portfolio (red), House (blue), Cash (amber), Liabilities (purple). Current year marked with *." />
+          <HelpTip text="Multi-line view: Net Worth (thick indigo line), Portfolio (red line), House (blue line), Cash (amber line), Liabilities (dashed purple line). Current year marked with *." />
         </>
       }
       className="mb-8"
     >
-      <ResponsiveContainer width="100%" height={350}>
+      <ChartFrame summary={netWorthLineSummary(chartData)} height={350}>
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -150,7 +151,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      </ChartFrame>
     </Card>
   );
 }

@@ -154,7 +154,7 @@ describe("TaxBucketsContent smoke", () => {
 
   it("At Retirement switches to the projected figures and back", () => {
     renderPage();
-    fireEvent.click(screen.getByRole("button", { name: "At Retirement" }));
+    fireEvent.click(screen.getByRole("tab", { name: "At Retirement" }));
     // The projected figures at the household's transition year, never
     // today's.
     const projected = computeTaxBucketProjection({
@@ -168,7 +168,7 @@ describe("TaxBucketsContent smoke", () => {
       formatCurrency(sumBy(projected.entries, (e) => e.balance)),
     );
     expect(document.body).not.toHaveTextContent(formatCurrency(700000));
-    fireEvent.click(screen.getByRole("button", { name: "Now" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Now" }));
     expect(document.body).toHaveTextContent(formatCurrency(700000));
   });
 });

@@ -2,7 +2,7 @@
 
 /** Milestones page body: what's next and what's been reached, the FOO
  *  ladder, then every milestone by group. */
-import { useFirstReached } from "@/lib/hooks/use-first-reached";
+import { useFirstReached } from "@/app/(dashboard)/milestones/use-first-reached";
 import { RaiseHistoryTable } from "@/components/milestones/raise-history-table";
 import { AlwaysBuyingDetail } from "@/components/milestones/always-buying-detail";
 import { useState } from "react";
@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Disclaimer } from "@/components/ui/disclaimer";
-import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
+import { CardQueryBoundary, queryPending } from "@/components/dashboard/utils";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useMilestones } from "@/lib/hooks/use-milestones";
 import {
@@ -25,7 +25,7 @@ import {
   type ColumnItem,
 } from "@/components/ui/balanced-columns";
 import { ChipToggle } from "@/components/ui/chip-toggle";
-import { SavingsRateBreakdown } from "@/components/cards/dashboard/savings-rate-breakdown";
+import { SavingsRateBreakdown } from "@/components/dashboard/savings-rate-breakdown";
 import { FooLadder } from "@/components/milestones/foo-ladder";
 import { MilestonesHero } from "@/components/milestones/milestones-hero";
 import {
@@ -51,8 +51,8 @@ const SOURCES: MilestoneSource[] = [
 export function MilestonesContent() {
   const user = useUser();
   const canEdit = isAdmin(user);
-  const { isLoading, projectionLoading, error, input, results } =
-    useMilestones();
+  const milestones = useMilestones();
+  const { projectionLoading, input, results } = milestones;
   const firstReachedOf = useFirstReached();
   const [source, setSource] = useState<MilestoneSource | null>(null);
   const [hideUnknown, setHideUnknown] = useState(false);
@@ -71,18 +71,12 @@ export function MilestonesContent() {
       </Link>
     </PageHeader>
   );
-  if (isLoading)
+  // No input and no error: a query paused offline, still waiting.
+  if (queryPending(milestones) || !input)
     return (
       <div>
         {header}
-        <LoadingCard title="Milestones" />
-      </div>
-    );
-  if (error || !input)
-    return (
-      <div>
-        {header}
-        <ErrorCard title="Milestones" message="Failed to load" />
+        <CardQueryBoundary title="Milestones" query={milestones} />
       </div>
     );
   if (results.length === 0)

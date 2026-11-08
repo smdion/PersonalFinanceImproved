@@ -97,7 +97,7 @@ export type ContribCardProps = {
   readOnly?: boolean;
   /** Mirrors PersonPaycheck's salary padlock — contributionValue writes into
    *  the viewed Contribution Profile's active fields when unlocked (see
-   *  writeOverride in paycheck/page.tsx), so only that one field gates on
+   *  writeOverride in paycheck/paycheck-content.tsx), so only that one field gates on
    *  it. Delete/toggle/institution edits are unrelated to the profile and
    *  keep gating on `readOnly` alone. */
   contribValueReadOnly?: boolean;

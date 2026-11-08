@@ -22,11 +22,11 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: (u: { role: string }) => u.role === "admin",
 }));
 
-vi.mock("@/components/cards/strategy-guide-panel", () => ({
+vi.mock("@/components/retirement/strategy-guide-panel", () => ({
   StrategyGuideButton: () => null,
 }));
 
-vi.mock("@/components/cards/dashboard/utils", () => ({
+vi.mock("@/components/dashboard/utils", () => ({
   CardBoundary: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),

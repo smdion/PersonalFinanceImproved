@@ -5,6 +5,7 @@
  *  the UI and invokes prop callbacks.
  */
 
+import { useId } from "react";
 import type { RelocationScenarioParams } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 
@@ -59,11 +60,13 @@ export function RelocationScenariosControls({
   setSaveScenarioName,
   onSaveDialogSubmit,
 }: Props) {
+  const id = useId();
   return (
     <>
       {/* Scenario save/load controls */}
       <div className="mb-4 flex items-center gap-2 text-sm">
         <select
+          aria-label="Saved scenario"
           className="min-w-[180px] rounded border px-2 py-1 text-sm"
           value={selectedScenarioId ?? ""}
           onChange={(e) => {
@@ -110,8 +113,11 @@ export function RelocationScenariosControls({
       {/* Save dialog */}
       {showSaveDialog && (
         <div className="bg-surface-sunken mb-4 flex items-center gap-2 rounded border p-3 text-sm">
-          <label className="text-muted">Name:</label>
+          <label htmlFor={`${id}-name`} className="text-muted">
+            Name:
+          </label>
           <input
+            id={`${id}-name`}
             type="text"
             className="flex-1 rounded border px-2 py-1 text-sm"
             placeholder="Scenario name"

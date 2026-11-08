@@ -178,7 +178,83 @@ const isFallbackLiteral = (node) =>
   (node.type === "Identifier" && node.name === "undefined") ||
   (node.type === "UnaryExpression" && node.argument.type === "Literal");
 
+/** Form controls the census counts: raw ones and the form primitives. */
+const CONTROL_TAGS = new Set([
+  "input",
+  "select",
+  "textarea",
+  "FormInput",
+  "FormSelect",
+  "DateInput",
+]);
+/** Elements that name the control inside them. */
+const LABELLING_TAGS = new Set(["label", "FormField", "FieldRow"]);
+
+const jsxTag = (opening) =>
+  opening.name.type === "JSXIdentifier" ? opening.name.name : undefined;
+const jsxAttr = (opening, name) =>
+  opening.attributes.find(
+    (a) => a.type === "JSXAttribute" && a.name.name === name,
+  );
+
 const customRules = {
+  "no-unlabeled-control": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "Every form control has an accessible name." },
+      schema: [],
+    },
+    create(context) {
+      const sourceCode = context.sourceCode;
+      // A static id, or the expression an id or htmlFor is written as.
+      const idOf = (attr) => {
+        const v = attr?.value;
+        if (!v) return undefined;
+        if (v.type === "Literal") return String(v.value);
+        if (v.type === "JSXExpressionContainer")
+          return `{${sourceCode.getText(v.expression)}}`;
+        return undefined;
+      };
+      const insideLabel = (opening) => {
+        for (let p = opening.parent?.parent; p; p = p.parent)
+          if (
+            p.type === "JSXElement" &&
+            LABELLING_TAGS.has(jsxTag(p.openingElement))
+          )
+            return true;
+        return false;
+      };
+      const labelled = new Set();
+      const controls = [];
+      return {
+        JSXOpeningElement(node) {
+          const tag = jsxTag(node);
+          if (tag === "label") {
+            const id = idOf(jsxAttr(node, "htmlFor"));
+            if (id !== undefined) labelled.add(id);
+          }
+          if (!CONTROL_TAGS.has(tag)) return;
+          if (jsxAttr(node, "type")?.value?.value === "hidden") return;
+          if (jsxAttr(node, "aria-label") || jsxAttr(node, "aria-labelledby"))
+            return;
+          // Spread props may carry the name; they can't be read here.
+          if (node.attributes.some((a) => a.type === "JSXSpreadAttribute"))
+            return;
+          if (insideLabel(node)) return;
+          controls.push({ node, id: idOf(jsxAttr(node, "id")) });
+        },
+        "Program:exit"() {
+          for (const { node, id } of controls)
+            if (id === undefined || !labelled.has(id))
+              context.report({
+                node,
+                message:
+                  "Form control with no accessible name. Give it aria-label, a <label htmlFor> matching its id, or a FormField around it.",
+              });
+        },
+      };
+    },
+  },
   "no-history-comment": {
     meta: {
       type: "suggestion",
@@ -287,7 +363,8 @@ const customRules = {
   },
 };
 
-const ratchetPlugin = {
+/** @type {import("eslint").ESLint.Plugin} */
+export const ratchetPlugin = {
   rules: {
     ...customRules,
     "no-jsx-iife": selectorRule(
@@ -304,6 +381,26 @@ const ratchetPlugin = {
       "A field holding a closed set's value is typed by the set, not string.",
       `TSPropertySignature[key.name=/^(${CLOSED_SET_FIELDS})$/] > TSTypeAnnotation > TSStringKeyword`,
       "This field holds a closed set's value: type it by the set (AccountCategory, PortfolioTaxType, ReturnFilingStatus, …), not string.",
+    ),
+    "no-raw-button": selectorRule(
+      "Buttons go through the Button primitive.",
+      "JSXOpeningElement[name.name='button']",
+      "Raw <button>. Use Button from @/components/ui/button where its look matches.",
+    ),
+    "no-raw-tablist": selectorRule(
+      "Tabs and radio groups go through the ui primitives.",
+      "JSXAttribute[name.name='role'][value.value=/^(tab|tablist|radiogroup)$/]",
+      "Hand-built tab strip or radio group. Use the Tabs or SegmentedControl primitive in @/components/ui.",
+    ),
+    "no-hand-date-format": selectorRule(
+      "Dates are formatted by formatDate.",
+      "CallExpression[callee.property.name=/^toLocale(Date|Time)String$/]",
+      "Hand date format. Use formatDate from @/lib/utils/format.",
+    ),
+    "no-raw-chart-container": selectorRule(
+      "Charts sit in the chart primitives.",
+      "JSXOpeningElement[name.name='ResponsiveContainer']",
+      "ResponsiveContainer outside components/charts. Charts go through the chart primitives there.",
     ),
     "no-raw-input": selectorRule(
       "Inputs go through the form primitives.",
@@ -367,6 +464,14 @@ export const ratchetConfig = [
       "ratchet/no-jsx-iife": "error",
       "ratchet/no-text-includes": "error",
       "ratchet/no-raw-input": "error",
+      // Owner Q4 (v0.10.4): counted before the UI work lowers them.
+      "ratchet/no-raw-button": "error",
+      "ratchet/no-unlabeled-control": "error",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-static-element-interactions": "error",
+      "ratchet/no-raw-tablist": "error",
+      "ratchet/no-hand-date-format": "error",
+      "ratchet/no-raw-chart-container": "error",
       "ratchet/no-string-closed-set-field": "error",
       "ratchet/no-config-reach-through": "error",
       "ratchet/no-fixed-inset-overlay": "error",
@@ -384,9 +489,33 @@ export const ratchetConfig = [
   {
     // The primitives themselves.
     files: ["src/components/forms/**", "src/components/ui/**"],
+    rules: { "ratchet/no-raw-input": "off" },
+  },
+  {
+    // The overlay primitives themselves.
+    files: [
+      "src/components/ui/modal.tsx",
+      "src/components/ui/slide-panel.tsx",
+      "src/components/ui/popover.tsx",
+    ],
+    rules: { "ratchet/no-fixed-inset-overlay": "off" },
+  },
+  {
+    // The button, tab and segment primitives themselves.
+    files: ["src/components/ui/**"],
     rules: {
-      "ratchet/no-raw-input": "off",
-      "ratchet/no-fixed-inset-overlay": "off",
+      "ratchet/no-raw-button": "off",
+      "ratchet/no-raw-tablist": "off",
     },
+  },
+  {
+    // formatDate itself.
+    files: ["src/lib/utils/format.ts"],
+    rules: { "ratchet/no-hand-date-format": "off" },
+  },
+  {
+    // The chart primitives.
+    files: ["src/components/charts/**"],
+    rules: { "ratchet/no-raw-chart-container": "off" },
   },
 ];

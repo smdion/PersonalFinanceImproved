@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { AccountCard } from "@/components/portfolio/contribution-accounts-card";
+import { pressKey } from "./keyboard";
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
@@ -86,6 +87,19 @@ describe("AccountCard", () => {
     fireEvent.click(headerRow);
     expect(onToggleExpand).toHaveBeenCalled();
   });
+
+  it.each([["Enter" as const], [" " as const]])(
+    "%j on the header toggles it, as a click does",
+    (key) => {
+      const onToggleExpand = vi.fn();
+      render(<AccountCard {...defaultProps} onToggleExpand={onToggleExpand} />);
+      const header = screen.getByText("Fidelity").closest("[role='button']")!;
+      expect(header).toHaveAttribute("tabindex", "0");
+      expect(header).toHaveAttribute("aria-expanded", "false");
+      pressKey(header as HTMLElement, key);
+      expect(onToggleExpand).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("does not show expanded content when collapsed", () => {
     render(<AccountCard {...defaultProps} isExpanded={false} />);

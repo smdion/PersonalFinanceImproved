@@ -117,9 +117,9 @@ function countUIComponents(): number {
 }
 
 function countDashboardCards(): number {
-  // Count all card .tsx files: cards/dashboard/*.tsx + cards/*.tsx (top-level card components)
+  // Count all card .tsx files: dashboard/*.tsx + cards/*.tsx (top-level card components)
   // Exclude utility files (index.ts, utils.tsx)
-  const dashboardDir = path.join(ROOT, "src/components/cards/dashboard");
+  const dashboardDir = path.join(ROOT, "src/components/dashboard");
   const cardsDir = path.join(ROOT, "src/components/cards");
 
   const dashboardCards = listFiles(dashboardDir, /\.tsx$/).filter(
@@ -158,7 +158,7 @@ function countBudgetComponents(): number {
 }
 
 function countMortgageComponents(): number {
-  return listFiles(path.join(ROOT, "src/components/mortgage"), /\.tsx$/).length;
+  return listFiles(path.join(ROOT, "src/components/debts"), /\.tsx$/).length;
 }
 
 function countSavingsComponents(): number {

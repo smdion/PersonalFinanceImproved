@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import type { LumpSumEvent } from "@/components/cards/projection/types";
+import type { LumpSumEvent } from "@/components/retirement-projection/types";
 
 /**
  * The Brokerage page's planned events (persisted to the DB). Shows the saved

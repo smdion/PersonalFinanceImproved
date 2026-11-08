@@ -8,11 +8,12 @@ import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProgressBar } from "@/components/ui/card";
+import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/dashboard/utils";
 // From config, never @/lib/budget-api: the barrel and the YNAB client are
 // server-only (DB, node:crypto) and once shipped ~430 KB to this page.
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/config/ynab";
@@ -713,20 +714,7 @@ function GroupRows({
       >
         <td className="text-primary py-1.5 pr-3 font-semibold">
           <span className="flex items-center gap-1.5">
-            <svg
-              aria-hidden="true"
-              className={`text-faint h-2.5 w-2.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <ExpandRowButton expanded={isExpanded} label={group.name} />
             <span
               className={`h-2 w-2 flex-shrink-0 rounded-full ${group.isEssential ? essentialColor() : discretionaryColor()}`}
             />

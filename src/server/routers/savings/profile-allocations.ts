@@ -43,7 +43,7 @@ import {
  * monthlyContribution snapshot, not a live paycheck/budget derivation) —
  * they aren't two paths to the same number today. The budget-monthly-total
  * derivation itself goes through deriveBudgetMonthlyTotal — the single
- * computation path for that step, shared with savings/page.tsx's own two
+ * computation path for that step, shared with savings/savings-content.tsx's own two
  * capacity computations.
  */
 async function computeLiveMaxMonthlyFunding(

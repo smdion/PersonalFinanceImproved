@@ -1,0 +1,475 @@
+/**
+ * Tests for the extracted projection sub-components:
+ * - ProjectionHeroKpis (deterministic + MC)
+ * - ProjectionChart + ProjectionChartSkeleton
+ * - McResultsSection
+ *
+ * Strategy: mock useProjectionState return value and render each component with
+ * representative state shapes. Verify correct text/elements appear.
+ */
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+// ---------------------------------------------------------------------------
+// Shared mocks — heavy dependencies that all sub-components import transitively
+// ---------------------------------------------------------------------------
+
+vi.mock("recharts", () => ({
+  ComposedChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="composed-chart">{children}</div>
+  ),
+  Bar: () => <div data-testid="bar" />,
+  Area: () => <div data-testid="area" />,
+  Line: () => <div data-testid="line" />,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+}));
+
+vi.mock("@/components/ui/help-tip", () => ({
+  HelpTip: ({ text }: { text?: string }) => (
+    <span data-testid="help-tip" title={text} />
+  ),
+}));
+
+// McResultsSection's "Clear Cache" button invalidates the client-side
+// query cache directly (2026-08-29 fix — see
+// tests/components/retirement-projection/projection-mc-results-clear-cache.test.tsx), which
+// means it now calls trpc.useUtils() unconditionally on every render, not
+// just when the button is reachable.
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../trpc-mock")).trpc,
+}));
+
+// CoastFireCard uses trpc.projection.computeCoastFire.useQuery internally,
+// which requires a tRPC context we're not providing in this unit test.
+// Mock it out — its rendering is tested elsewhere.
+vi.mock("@/components/retirement-projection/coast-fire-card", () => ({
+  CoastFireCard: () => <div data-testid="coast-fire-card" />,
+}));
+
+// ---------------------------------------------------------------------------
+// Helpers — build minimal mock state matching useProjectionState return
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function baseMockState(overrides: Record<string, unknown> = {}): any {
+  return {
+    // Form state
+    accumOverrides: [],
+    setAccumOverrides: vi.fn(),
+    decumOverrides: [],
+    setDecumOverrides: vi.fn(),
+    showAccumForm: false,
+    setShowAccumForm: vi.fn(),
+    accumForm: {
+      year: "",
+      personName: "",
+      reset: false,
+      contributionRate: "",
+      routingMode: "",
+      accountOrder: ["401k", "ira", "hsa", "brokerage"],
+      accountSplits: {},
+      accountCaps: {},
+      taxSplits: {},
+      taxTypeCaps: { traditional: "", roth: "" },
+      lumpSums: [],
+      notes: "",
+    },
+    setAccumForm: vi.fn(),
+    showDecumForm: false,
+    setShowDecumForm: vi.fn(),
+    decumForm: {
+      year: "",
+      personName: "",
+      reset: false,
+      withdrawalRate: "",
+      rothConversionTarget: "",
+      withdrawalRoutingMode: "",
+      withdrawalOrder: ["401k", "ira", "hsa", "brokerage"],
+      withdrawalSplits: {},
+      withdrawalAccountCaps: {},
+      withdrawalTaxPreference: {},
+      withdrawalTaxTypeCaps: { traditional: "", roth: "" },
+      lumpSums: [],
+      notes: "",
+    },
+    setDecumForm: vi.fn(),
+    showSalaryForm: false,
+    setShowSalaryForm: vi.fn(),
+    salaryForm: {
+      year: "",
+      source: "custom",
+      profileId: "",
+      value: "",
+      notes: "",
+    },
+    setSalaryForm: vi.fn(),
+    showBudgetForm: false,
+    setShowBudgetForm: vi.fn(),
+    budgetForm: {
+      year: "",
+      source: "custom",
+      profileId: "",
+      profileColumn: "0",
+      value: "",
+      notes: "",
+    },
+    setBudgetForm: vi.fn(),
+    showLifeOverrides: false,
+    setShowLifeOverrides: vi.fn(),
+    personFilter: "all",
+    isPersonFiltered: false,
+    personFilterName: "",
+    dbSalaryOverrides: [],
+    dbBudgetOverrides: [],
+    salaryByPerson: {},
+    budgetProfileSummaries: [],
+    enginePeople: [{ id: 1, name: "Alice", birthYear: 1990 }],
+    primaryPersonId: 1,
+    salaryOverridePersonId: 1,
+    combinedSalary: 120000,
+    annualExpenses: 60000,
+    rothBracketPresets: ["0", "0.12", "0.22"],
+    handleAddAccumOverride: vi.fn(),
+    handleAddDecumOverride: vi.fn(),
+    createSalaryOverride: { mutate: vi.fn() },
+    deleteSalaryOverride: { mutate: vi.fn() },
+    createBudgetOverride: { mutate: vi.fn() },
+    deleteBudgetOverride: { mutate: vi.fn() },
+    contribProfileSummaries: [],
+    engineSettings: {
+      retirementAge: 65,
+      endAge: 95,
+      salaryAnnualIncrease: 0.03,
+      annualInflation: 0.025,
+      withdrawalStrategy: "fixed",
+    },
+
+    // Queries
+    engineQuery: { isLoading: false, error: null },
+    mcPrefetchQuery: { data: null, isFetching: false },
+    mcQuery: { data: null, error: null },
+    mcLoading: false,
+    mcBandsByYear: null,
+    mcIsPrefetch: false,
+    mcChartPending: false,
+    coastFireMcQuery: {
+      data: null,
+      isLoading: false,
+      isFetching: false,
+    },
+    coastFireMcResult: null,
+    debouncedBaseInput: null,
+    scenarioView: "baseline",
+
+    // Derived
+    result: null,
+    getPersonYearTotals: () => null,
+    personDepletionInfo: null,
+    visibleColumns: {
+      balanceTaxTypes: new Set(["preTax", "taxFree", "hsa", "afterTax"]),
+      balanceAccts: new Set(["401k_trad"]),
+    },
+    columnLabel: { "401k_trad": "401k Trad" },
+    baseYear: 2026,
+    deflate: (v: number) => v,
+    ageLabel: (age: number) => `Age ${age}`,
+    yearOfAge: (age: number) => 1960 + age,
+    agesInYear: () => [],
+    primaryName: undefined,
+
+    // View state
+    projectionMode: "monteCarlo" as const,
+    setProjectionMode: vi.fn(),
+    mcTrials: 1000,
+    setMcTrials: vi.fn(),
+    mcPreset: "default",
+    setMcPreset: vi.fn(),
+    mcTaxMode: "simple",
+    setMcTaxMode: vi.fn(),
+    dollarMode: "real",
+    setDollarMode: vi.fn(),
+    balanceView: "taxType",
+    setBalanceView: vi.fn(),
+    contribView: "account",
+    setContribView: vi.fn(),
+    showAllYears: false,
+    setShowAllYears: vi.fn(),
+    fanBandRange: "p25-p75",
+    setFanBandRange: vi.fn(),
+    showMethodology: false,
+    setShowMethodology: vi.fn(),
+    showAccumMethodology: false,
+    setShowAccumMethodology: vi.fn(),
+    showDecumMethodology: false,
+    setShowDecumMethodology: vi.fn(),
+    showValidation: false,
+    setShowValidation: vi.fn(),
+    showAssumptions: false,
+    setShowAssumptions: vi.fn(),
+    setPersonFilter: vi.fn(),
+    mcAssetClassOverrides: null,
+    setMcAssetClassOverrides: vi.fn(),
+    showDecumConfig: false,
+    setShowDecumConfig: vi.fn(),
+    withdrawalRoutingMode: "waterfall",
+    setWithdrawalRoutingMode: vi.fn(),
+    withdrawalOrder: ["401k", "ira", "hsa", "brokerage"],
+    setWithdrawalOrder: vi.fn(),
+    withdrawalSplits: {},
+    setWithdrawalSplits: vi.fn(),
+    withdrawalTaxPref: {},
+    setWithdrawalTaxPref: vi.fn(),
+    updateGlidePath: { mutate: vi.fn() },
+    updateInflationRisk: { mutate: vi.fn() },
+    updateClampBounds: { mutate: vi.fn() },
+    updateAssetClassOverrides: { mutate: vi.fn() },
+    updateInflationOverrides: { mutate: vi.fn() },
+
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ProjectionHeroKpis
+// ---------------------------------------------------------------------------
+
+describe("ProjectionHeroKpis", () => {
+  const minResult = {
+    projectionByYear: [
+      {
+        year: 2026,
+        age: 36,
+        allAccountsBalance: 500000,
+        balanceByTaxType: {
+          preTax: 300000,
+          taxFree: 150000,
+          hsa: 50000,
+          afterTax: 0,
+          afterTaxBasis: 0,
+        },
+        balanceByAccount: {},
+        phase: "accumulation",
+      },
+      {
+        year: 2055,
+        age: 65,
+        allAccountsBalance: 2000000,
+        balanceByTaxType: {
+          preTax: 1000000,
+          taxFree: 700000,
+          hsa: 300000,
+          afterTax: 0,
+          afterTaxBasis: 0,
+        },
+        balanceByAccount: {},
+        phase: "decumulation",
+      },
+    ],
+    retirementDepletionAge: null,
+    retirementDepletionYear: null,
+    sustainableWithdrawal: 80000,
+    firstOverflowAge: null,
+  };
+
+  it("renders deterministic hero when no MC data", async () => {
+    const { ProjectionHeroKpis } =
+      await import("@/components/retirement-projection/projection-hero-kpis");
+    const s = baseMockState({ result: minResult });
+    render(<ProjectionHeroKpis state={s} />);
+    expect(screen.getByText("Nest Egg at Retirement")).toBeInTheDocument();
+    expect(screen.getByText("Peak Balance")).toBeInTheDocument();
+    expect(screen.getByText("Funding Duration")).toBeInTheDocument();
+    expect(screen.getByText(/Lasts/)).toBeInTheDocument();
+  });
+
+  it("returns null when result is null", async () => {
+    const { ProjectionHeroKpis } =
+      await import("@/components/retirement-projection/projection-hero-kpis");
+    const { container } = render(
+      <ProjectionHeroKpis state={baseMockState()} />,
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("renders MC hero when MC data available", async () => {
+    const { ProjectionHeroKpis } =
+      await import("@/components/retirement-projection/projection-hero-kpis");
+    const mcData = {
+      result: {
+        successRate: 0.92,
+        percentileBands: [
+          {
+            age: 65,
+            year: 2055,
+            p5: 800000,
+            p10: 1000000,
+            p25: 1500000,
+            p50: 2000000,
+            p75: 2800000,
+            p90: 3500000,
+            p95: 4000000,
+          },
+        ],
+        distributions: {
+          failureAge: null,
+          terminalBalance: { median: 1500000 },
+        },
+        medianEndBalance: 1500000,
+        numTrials: 1000,
+        // The page is in today's dollars ("real"): read per-trial-deflated.
+        today: {
+          percentileBands: [
+            {
+              age: 65,
+              year: 2055,
+              p5: 800000,
+              p10: 1000000,
+              p25: 1500000,
+              p50: 2000000,
+              p75: 2800000,
+              p90: 3500000,
+              p95: 4000000,
+            },
+          ],
+          terminalBalance: { median: 1500000 },
+        },
+      },
+    };
+    const s = baseMockState({
+      result: minResult,
+      mcQuery: { data: mcData, error: null },
+      mcLoading: false,
+    });
+    render(<ProjectionHeroKpis state={s} />);
+    expect(screen.getByText("92%")).toBeInTheDocument();
+    // Labels post v0.5.1 rename — was "Success Rate" / "End Balance" before.
+    // Tailwind's uppercase class styles the display but leaves the DOM text
+    // as-authored, so assertions use title case.
+    expect(screen.getByText("Portfolio Survival")).toBeInTheDocument();
+    expect(screen.getByText("End Balance")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ProjectionChartSkeleton
+// ---------------------------------------------------------------------------
+
+describe("ProjectionChartSkeleton", () => {
+  it("renders loading state", async () => {
+    const { ProjectionChartSkeleton } =
+      await import("@/components/retirement-projection/projection-chart");
+    render(<ProjectionChartSkeleton phase="simulation" />);
+    expect(screen.getByText("Balance Projection")).toBeInTheDocument();
+    expect(screen.getByText(/Simulating/)).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ProjectionChart
+// ---------------------------------------------------------------------------
+
+describe("ProjectionChart", () => {
+  const chartResult = {
+    projectionByYear: Array.from({ length: 10 }, (_, i) => ({
+      year: 2026 + i,
+      age: 36 + i,
+      allAccountsBalance: 500000 + i * 50000,
+      balanceByTaxType: {
+        preTax: 300000 + i * 30000,
+        taxFree: 150000 + i * 15000,
+        hsa: 50000 + i * 5000,
+        afterTax: 0,
+        afterTaxBasis: 0,
+      },
+      balanceByAccount: {},
+      phase: "accumulation",
+    })),
+    retirementDepletionAge: null,
+    retirementDepletionYear: null,
+  };
+
+  it("returns null when result is null", async () => {
+    const { ProjectionChart } =
+      await import("@/components/retirement-projection/projection-chart");
+    const { container } = render(<ProjectionChart state={baseMockState()} />);
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("renders chart with title", async () => {
+    const { ProjectionChart } =
+      await import("@/components/retirement-projection/projection-chart");
+    const s = baseMockState({ result: chartResult });
+    render(<ProjectionChart state={s} />);
+    expect(screen.getByText("Balance Projection")).toBeInTheDocument();
+    expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
+  });
+
+  it("shows person filter name when filtered", async () => {
+    const { ProjectionChart } =
+      await import("@/components/retirement-projection/projection-chart");
+    const s = baseMockState({
+      result: chartResult,
+      isPersonFiltered: true,
+      personFilterName: "Alice",
+    });
+    render(<ProjectionChart state={s} />);
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// McResultsSection
+// ---------------------------------------------------------------------------
+
+describe("McResultsSection", () => {
+  it("returns null when not in MC mode", async () => {
+    const { McResultsSection } =
+      await import("@/components/retirement-projection/projection-mc-results");
+    const { container } = render(
+      <McResultsSection
+        state={baseMockState({ projectionMode: "deterministic" })}
+      />,
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("renders empty while MC is loading (spinner is in ProjectionLoader)", async () => {
+    const { McResultsSection } =
+      await import("@/components/retirement-projection/projection-mc-results");
+    const s = baseMockState({
+      projectionMode: "monteCarlo",
+      mcLoading: true,
+    });
+    const { container } = render(<McResultsSection state={s} />);
+    expect(container.querySelector(".space-y-3")).toBeInTheDocument();
+    expect(screen.queryByText(/simulations/i)).not.toBeInTheDocument();
+  });
+
+  it("shows error message on MC failure", async () => {
+    const { McResultsSection } =
+      await import("@/components/retirement-projection/projection-mc-results");
+    const s = baseMockState({
+      projectionMode: "monteCarlo",
+      mcQuery: { data: null, error: { message: "Timeout" } },
+    });
+    render(<McResultsSection state={s} />);
+    expect(screen.getByText(/Simulation failed: Timeout/)).toBeInTheDocument();
+  });
+
+  it("shows no-data message when no MC results", async () => {
+    const { McResultsSection } =
+      await import("@/components/retirement-projection/projection-mc-results");
+    const s = baseMockState({
+      projectionMode: "monteCarlo",
+      mcQuery: { data: null, error: null },
+    });
+    render(<McResultsSection state={s} />);
+    expect(screen.getByText(/No simulation data/)).toBeInTheDocument();
+  });
+});

@@ -62,7 +62,7 @@ export const accountProcedures = {
         .update(schema.performanceAccounts)
         .set({ costBasis: input.costBasis })
         .where(eq(schema.performanceAccounts.id, input.performanceAccountId));
-      return { success: true };
+      return { ok: true };
     }),
 
   // ---------------------------------------------------------------------------
@@ -252,7 +252,7 @@ export const accountProcedures = {
             .delete(schema.performanceAccounts)
             .where(eq(schema.performanceAccounts.id, input.id));
         });
-        return { success: true };
+        return { ok: true };
       }),
   }),
 };

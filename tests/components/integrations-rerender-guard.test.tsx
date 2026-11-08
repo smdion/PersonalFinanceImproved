@@ -15,8 +15,14 @@
  * one mega-hook fails here rather than silently.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
-import { resetTrpcMock, utilsCalls } from "./trpc-mock";
+import { act, renderHook } from "@testing-library/react";
+import {
+  mutationCalls,
+  resetTrpcMock,
+  utilsCalledPaths,
+  utilsCalls,
+  type MutationPath,
+} from "./trpc-mock";
 
 // Mock tRPC before importing the hooks. trpc-mock's useUtils() returns one
 // stable object across renders, as tRPC's real one does: the
@@ -31,20 +37,20 @@ beforeEach(() => {
 });
 
 describe("integrations per-section mutation hooks — re-render guard", () => {
-  it("useDriftMutations returns the expected 3-mutation shape", async () => {
-    const { useDriftMutations } =
-      await import("@/components/settings/integrations/hooks/use-drift-mutations");
-    const { result } = renderHook(() => useDriftMutations());
+  it("useIntegrationDriftMutations returns the expected 3-mutation shape", async () => {
+    const { useIntegrationDriftMutations } =
+      await import("@/components/settings/integrations/use-integration-drift-mutations");
+    const { result } = renderHook(() => useIntegrationDriftMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       ["setLinkedColumn", "setLinkedProfile", "syncAllNames"].sort(),
     );
   });
 
-  it("useBudgetMutations returns the expected 9-mutation shape", async () => {
-    const { useBudgetIntegrationsMutations } =
-      await import("@/components/settings/integrations/hooks/use-budget-mutations");
-    const { result } = renderHook(() => useBudgetIntegrationsMutations());
+  it("useIntegrationBudgetMutations returns the expected 9-mutation shape", async () => {
+    const { useIntegrationBudgetMutations } =
+      await import("@/components/settings/integrations/use-integration-budget-mutations");
+    const { result } = renderHook(() => useIntegrationBudgetMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       [
@@ -61,10 +67,10 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     );
   });
 
-  it("useSavingsMutations returns the expected 6-mutation shape", async () => {
-    const { useSavingsMutations } =
-      await import("@/components/settings/integrations/hooks/use-savings-mutations");
-    const { result } = renderHook(() => useSavingsMutations());
+  it("useIntegrationSavingsMutations returns the expected 6-mutation shape", async () => {
+    const { useIntegrationSavingsMutations } =
+      await import("@/components/settings/integrations/use-integration-savings-mutations");
+    const { result } = renderHook(() => useIntegrationSavingsMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       [
@@ -78,25 +84,27 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     );
   });
 
-  it("useContribMutations returns the expected 2-mutation shape", async () => {
-    const { useContribMutations } =
-      await import("@/components/settings/integrations/hooks/use-contrib-mutations");
-    const { result } = renderHook(() => useContribMutations());
+  it("useIntegrationContributionAccountMutations returns the expected 2-mutation shape", async () => {
+    const { useIntegrationContributionAccountMutations } =
+      await import("@/components/settings/integrations/use-integration-contribution-account-mutations");
+    const { result } = renderHook(() =>
+      useIntegrationContributionAccountMutations(),
+    );
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["linkContrib", "unlinkContrib"].sort());
   });
 
-  it("usePortfolioMutations returns the expected 2-mutation shape", async () => {
-    const { usePortfolioMutations } =
-      await import("@/components/settings/integrations/hooks/use-portfolio-mutations");
-    const { result } = renderHook(() => usePortfolioMutations());
+  it("useIntegrationPortfolioMutations returns the expected 2-mutation shape", async () => {
+    const { useIntegrationPortfolioMutations } =
+      await import("@/components/settings/integrations/use-integration-portfolio-mutations");
+    const { result } = renderHook(() => useIntegrationPortfolioMutations());
     const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["createAssetAndMap", "updateMappings"].sort());
   });
 
   it("useInvalidatePreview returns a stable callback across re-renders", async () => {
     const { useInvalidatePreview } =
-      await import("@/components/settings/integrations/hooks/use-invalidate-preview");
+      await import("@/components/settings/integrations/use-invalidate-preview");
     const { result, rerender } = renderHook(() => useInvalidatePreview());
     const first = result.current;
     rerender();
@@ -110,13 +118,85 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     expect(utilsCalls("sync.getPreview.invalidate")).toHaveLength(1);
   });
 
+  it("every mutation calls its procedure and invalidates only the preview", async () => {
+    const [drift, budget, savings, contrib, portfolio] = await Promise.all([
+      import("@/components/settings/integrations/use-integration-drift-mutations"),
+      import("@/components/settings/integrations/use-integration-budget-mutations"),
+      import("@/components/settings/integrations/use-integration-savings-mutations"),
+      import("@/components/settings/integrations/use-integration-contribution-account-mutations"),
+      import("@/components/settings/integrations/use-integration-portfolio-mutations"),
+    ]);
+    const table: [() => object, [string, MutationPath][]][] = [
+      [
+        drift.useIntegrationDriftMutations,
+        [
+          ["syncAllNames", "sync.syncAllNames"],
+          ["setLinkedProfile", "sync.setLinkedProfile"],
+          ["setLinkedColumn", "sync.setLinkedColumn"],
+        ],
+      ],
+      [
+        budget.useIntegrationBudgetMutations,
+        [
+          ["linkBudget", "budget.linkToApi"],
+          ["unlinkBudget", "budget.unlinkFromApi"],
+          ["createItem", "budget.createItem"],
+          ["skipCategory", "sync.skipCategory"],
+          ["unskipCategory", "sync.unskipCategory"],
+          ["renameBudgetToApi", "sync.renameBudgetItemToApi"],
+          ["renameBudgetApiName", "sync.renameBudgetItemApiName"],
+          ["moveBudgetToApiGroup", "sync.moveBudgetItemToApiGroup"],
+          ["setBudgetSyncDir", "budget.setSyncDirection"],
+        ],
+      ],
+      [
+        savings.useIntegrationSavingsMutations,
+        [
+          ["linkSavings", "savings.linkGoalToApi"],
+          ["unlinkSavings", "savings.unlinkGoalFromApi"],
+          ["renameSavingsToApi", "sync.renameSavingsGoalToApi"],
+          ["renameSavingsApiName", "sync.renameSavingsGoalApiName"],
+          ["linkReimbursement", "savings.linkReimbursementCategory"],
+          ["createGoal", "savings.savingsGoals.create"],
+        ],
+      ],
+      [
+        contrib.useIntegrationContributionAccountMutations,
+        [
+          ["linkContrib", "budget.linkContributionAccount"],
+          ["unlinkContrib", "budget.unlinkContributionAccount"],
+        ],
+      ],
+      [
+        portfolio.useIntegrationPortfolioMutations,
+        [
+          ["updateMappings", "sync.updateAccountMappings"],
+          ["createAssetAndMap", "sync.createAssetAndMap"],
+        ],
+      ],
+    ];
+    for (const [hook, rows] of table) {
+      for (const [key, path] of rows) {
+        resetTrpcMock();
+        const { result } = renderHook(hook);
+        const mutation = (result.current as Record<string, unknown>)[key] as {
+          mutate: (input: never) => void;
+        };
+        act(() => mutation.mutate({} as never));
+        expect(mutationCalls(path), `${key} → ${path}`).toHaveLength(1);
+        expect(utilsCalledPaths(), key).toEqual(["sync.getPreview.invalidate"]);
+        expect(utilsCalls("sync.getPreview.invalidate"), key).toHaveLength(1);
+      }
+    }
+  });
+
   it("every section hook returns a flat mutation bundle, not a { mutations, invalidate } wrapper", async () => {
     const [drift, budget, savings, contrib, portfolio] = await Promise.all([
-      import("@/components/settings/integrations/hooks/use-drift-mutations"),
-      import("@/components/settings/integrations/hooks/use-budget-mutations"),
-      import("@/components/settings/integrations/hooks/use-savings-mutations"),
-      import("@/components/settings/integrations/hooks/use-contrib-mutations"),
-      import("@/components/settings/integrations/hooks/use-portfolio-mutations"),
+      import("@/components/settings/integrations/use-integration-drift-mutations"),
+      import("@/components/settings/integrations/use-integration-budget-mutations"),
+      import("@/components/settings/integrations/use-integration-savings-mutations"),
+      import("@/components/settings/integrations/use-integration-contribution-account-mutations"),
+      import("@/components/settings/integrations/use-integration-portfolio-mutations"),
     ]);
     // Smoke: every hook exports a factory whose return is flat — each value
     // is a mutation object (has `.mutate`), and neither `mutations` nor

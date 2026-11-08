@@ -33,6 +33,7 @@ import {
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
+import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
 
 export const connectionsProcedures = {
@@ -56,39 +57,50 @@ export const connectionsProcedures = {
         });
       }
       await saveSimplefinConnection(ctx.db, accessUrl);
-      return { success: true as const };
+      return { ok: true as const };
     }),
 
   /** Test the stored connection without writing a snapshot. */
-  testConnection: syncProcedure.mutation(async ({ ctx }) => {
-    const conn = await getSimplefinConnection(ctx.db);
-    if (!conn) {
-      return {
-        success: false as const,
-        error: "No SimpleFIN connection configured",
-      };
-    }
-    try {
-      const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
-      // A test counts against the daily quota like a sync.
-      await stopAtSimplefinQuota(ctx.db);
-      const { accounts, providerErrors } = await getAccounts(accessUrl, {
-        onRequest: simplefinRequestRecorder(ctx.db),
-      });
-      await upsertSimplefinAccounts(ctx.db, accounts);
-      return {
-        success: true as const,
-        accountCount: accounts.length,
-        providerErrors,
-      };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error";
-      return {
-        success: false as const,
-        error: userMessageFor(e) ?? msg.slice(0, 200),
-      };
-    }
-  }),
+  testConnection: syncProcedure.mutation(
+    async ({
+      ctx,
+    }): Promise<
+      ProbeResult<{
+        accountCount: number;
+        providerErrors: Awaited<
+          ReturnType<typeof getAccounts>
+        >["providerErrors"];
+      }>
+    > => {
+      const conn = await getSimplefinConnection(ctx.db);
+      if (!conn) {
+        return {
+          success: false as const,
+          error: "No SimpleFIN connection configured",
+        };
+      }
+      try {
+        const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
+        // A test counts against the daily quota like a sync.
+        await stopAtSimplefinQuota(ctx.db);
+        const { accounts, providerErrors } = await getAccounts(accessUrl, {
+          onRequest: simplefinRequestRecorder(ctx.db),
+        });
+        await upsertSimplefinAccounts(ctx.db, accounts);
+        return {
+          success: true as const,
+          accountCount: accounts.length,
+          providerErrors,
+        };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        return {
+          success: false as const,
+          error: userMessageFor(e) ?? msg.slice(0, 200),
+        };
+      }
+    },
+  ),
 
   /** Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota). */
   syncNow: syncProcedure.mutation(async ({ ctx }) => {
@@ -112,7 +124,7 @@ export const connectionsProcedures = {
       }
     }
     try {
-      return { success: true as const, ...(await runSimplefinSync(ctx.db)) };
+      return { ok: true as const, ...(await runSimplefinSync(ctx.db)) };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       throw new TRPCError({
@@ -126,7 +138,7 @@ export const connectionsProcedures = {
   /** Remove the stored connection (history in simplefin_balance_snapshots is preserved). */
   removeConnection: syncProcedure.mutation(async ({ ctx }) => {
     await removeSimplefinConnection(ctx.db);
-    return { success: true as const };
+    return { ok: true as const };
   }),
 
   /** Connection status for the Settings integrations card and the sidebar's Data Updated tooltip. */

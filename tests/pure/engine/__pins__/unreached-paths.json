@@ -1,0 +1,938 @@
+{
+ "rmd-excess-ss-surplus": [
+  {
+   "year": 2026,
+   "age": 78,
+   "projectedExpenses": 29000,
+   "spending": 29000,
+   "afterTaxNeed": 0,
+   "targetWithdrawal": 0,
+   "totalWithdrawal": 27272.73,
+   "totalTraditionalWithdrawal": 27272.73,
+   "totalRothWithdrawal": 0,
+   "taxCost": 6481.82,
+   "ssTaxCost": 1027.27,
+   "ssIncome": 30000,
+   "taxableSS": 5136.36,
+   "penaltyCost": 0,
+   "rmdAmount": 27272.73,
+   "rmdByPerson": [
+    {
+     "personId": 1,
+     "personName": "Ann",
+     "amount": 27272.73,
+     "divisor": 22,
+     "priorYearEndTradBalance": 600000,
+     "age": 78
+    }
+   ],
+   "rmdOverrodeRouting": true,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 21790.91,
+   "qcdAmount": 0,
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 0,
+   "accounts": [
+    {
+     "name": "Ann IRA",
+     "balance": 572727.27,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 27272.73,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 600000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Ann brokerage",
+     "balance": 71790.91,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 50000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "rmd-two-owners-short-and-met": [
+  {
+   "year": 2026,
+   "age": 78,
+   "projectedExpenses": 40000,
+   "spending": 40000,
+   "afterTaxNeed": 40000,
+   "targetWithdrawal": 50000,
+   "totalWithdrawal": 50000,
+   "totalTraditionalWithdrawal": 50000,
+   "totalRothWithdrawal": 0,
+   "taxCost": 10000,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "rmdAmount": 43824.32,
+   "rmdByPerson": [
+    {
+     "personId": 1,
+     "personName": "Ann",
+     "amount": 22727.27,
+     "divisor": 22,
+     "priorYearEndTradBalance": 500000,
+     "age": 78,
+     "shortfall": 22727.27
+    },
+    {
+     "personId": 2,
+     "personName": "Bo",
+     "amount": 21097.05,
+     "divisor": 23.7,
+     "priorYearEndTradBalance": 500000,
+     "age": 76
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "rmdShortfallAmount": 22727.27,
+   "rmdExcessAmount": 0,
+   "qcdAmount": 0,
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 0,
+   "accounts": [
+    {
+     "name": "Ann IRA",
+     "balance": 500000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Bo 401k",
+     "balance": 450000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 50000,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "rmd-reassigned": [
+  {
+   "year": 2026,
+   "age": 78,
+   "projectedExpenses": 40000,
+   "spending": 40000,
+   "afterTaxNeed": 40000,
+   "targetWithdrawal": 50000,
+   "totalWithdrawal": 50000,
+   "totalTraditionalWithdrawal": 50000,
+   "totalRothWithdrawal": 0,
+   "taxCost": 10000,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "rmdAmount": 22727.27,
+   "rmdByPerson": [
+    {
+     "personId": 1,
+     "personName": "Ann",
+     "amount": 22727.27,
+     "divisor": 22,
+     "priorYearEndTradBalance": 500000,
+     "age": 78
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 0,
+   "rmdReassignedAmount": 22727.27,
+   "qcdAmount": 0,
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 0,
+   "accounts": [
+    {
+     "name": "Ann IRA",
+     "balance": 477272.73,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 22727.27,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Bo 401k",
+     "balance": 472727.27,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 27272.73,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "qcd": [
+  {
+   "year": 2026,
+   "age": 78,
+   "projectedExpenses": 1000,
+   "spending": 1000,
+   "afterTaxNeed": 1000,
+   "targetWithdrawal": 1250,
+   "totalWithdrawal": 21097.05,
+   "totalTraditionalWithdrawal": 21097.05,
+   "totalRothWithdrawal": 0,
+   "taxCost": 4219.41,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "rmdAmount": 43824.32,
+   "rmdByPerson": [
+    {
+     "personId": 1,
+     "personName": "Ann",
+     "amount": 22727.27,
+     "divisor": 22,
+     "priorYearEndTradBalance": 500000,
+     "age": 78
+    },
+    {
+     "personId": 2,
+     "personName": "Bo",
+     "amount": 21097.05,
+     "divisor": 23.7,
+     "priorYearEndTradBalance": 500000,
+     "age": 76
+    }
+   ],
+   "rmdOverrodeRouting": true,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 15877.64,
+   "qcdAmount": 111000,
+   "qcdByPerson": [
+    {
+     "personId": 1,
+     "qcdAmount": 111000
+    }
+   ],
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 0,
+   "accounts": [
+    {
+     "name": "Ann IRA",
+     "balance": 389000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Bo 401k",
+     "balance": 478902.95,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 21097.05,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "irmaa-on-top": [
+  {
+   "year": 2026,
+   "age": 78,
+   "projectedExpenses": 400000,
+   "spending": 387289.6,
+   "afterTaxNeed": 400000,
+   "targetWithdrawal": 500000,
+   "totalWithdrawal": 500000,
+   "totalTraditionalWithdrawal": 500000,
+   "totalRothWithdrawal": 0,
+   "taxCost": 100000,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "rmdAmount": 258314.86,
+   "rmdByPerson": [
+    {
+     "personId": 1,
+     "personName": "Ann",
+     "amount": 136363.64,
+     "divisor": 22,
+     "priorYearEndTradBalance": 3000000,
+     "age": 78
+    },
+    {
+     "personId": 2,
+     "personName": "Bo",
+     "amount": 121951.22,
+     "divisor": 24.6,
+     "priorYearEndTradBalance": 3000000,
+     "age": 75
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 0,
+   "qcdAmount": 0,
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 12710.4,
+   "irmaaPaid": 12710.4,
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 2743097.12,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 256902.88,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 3000000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Bo 401k",
+     "balance": 2756902.88,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 243097.12,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 3000000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Cash",
+     "balance": 500000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  },
+  {
+   "year": 2029,
+   "age": 81,
+   "projectedExpenses": 400000,
+   "spending": 400000.01,
+   "afterTaxNeed": 412710.4,
+   "targetWithdrawal": 515888.01,
+   "totalWithdrawal": 515888.01,
+   "totalTraditionalWithdrawal": 515888.01,
+   "totalRothWithdrawal": 0,
+   "taxCost": 103177.6,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "rmdAmount": 217368.27,
+   "rmdByPerson": [
+    {
+     "personId": 1,
+     "personName": "Ann",
+     "amount": 114611.53,
+     "divisor": 19.4,
+     "priorYearEndTradBalance": 2223463.68,
+     "age": 81
+    },
+    {
+     "personId": 2,
+     "personName": "Bo",
+     "amount": 102756.74,
+     "divisor": 22,
+     "priorYearEndTradBalance": 2260648.31,
+     "age": 78
+    }
+   ],
+   "rmdOverrodeRouting": false,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 0,
+   "qcdAmount": 0,
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 12710.4,
+   "irmaaPaid": 12710.4,
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 1961307.78,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 262155.9,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 2223463.68,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Bo 401k",
+     "balance": 2006916.2,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 253732.11,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 2260648.31,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Cash",
+     "balance": 500000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "conversion-gains-niit": [
+  {
+   "year": 2026,
+   "age": 66,
+   "projectedExpenses": 120000,
+   "spending": 101007.03,
+   "afterTaxNeed": 120000,
+   "targetWithdrawal": 121578.04,
+   "totalWithdrawal": 121578.04,
+   "totalTraditionalWithdrawal": 0,
+   "totalRothWithdrawal": 0,
+   "taxCost": 20571.01,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "unmetNeed": 18992.97,
+   "rmdAmount": 0,
+   "rmdByPerson": [],
+   "rmdOverrodeRouting": false,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 0,
+   "qcdAmount": 0,
+   "rothConversionAmount": 495000,
+   "rothConversionTaxCost": 113020,
+   "niitAmount": 4157.97,
+   "irmaaCost": 0,
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 1505000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 2000000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Joint brokerage",
+     "balance": 1265401.96,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 121578.04,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 1500000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "eligibility-reasons": [
+  {
+   "year": 2026,
+   "age": 52,
+   "projectedExpenses": 60000,
+   "spending": 60000,
+   "afterTaxNeed": 60000,
+   "targetWithdrawal": 75000,
+   "totalWithdrawal": 75000,
+   "totalTraditionalWithdrawal": 75000,
+   "totalRothWithdrawal": 0,
+   "taxCost": 15000,
+   "ssTaxCost": 0,
+   "ssIncome": 0,
+   "taxableSS": 0,
+   "penaltyCost": 0,
+   "rmdAmount": 0,
+   "rmdByPerson": [],
+   "rmdOverrodeRouting": false,
+   "rmdShortfallAmount": 0,
+   "rmdExcessAmount": 0,
+   "qcdAmount": 0,
+   "rothConversionAmount": 0,
+   "rothConversionTaxCost": 0,
+   "niitAmount": 0,
+   "irmaaCost": 0,
+   "accounts": [
+    {
+     "name": "Ann Roth all basis",
+     "balance": 40000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "basis_remaining",
+       "basis": 60000
+      },
+      "penaltyFreeAmount": 40000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     },
+     "roth": {
+      "basisRemaining": 40000,
+      "contributionBasisRemaining": 40000,
+      "conversionBasisRemaining": 0,
+      "basisUncertain": false
+     }
+    },
+    {
+     "name": "Ann Roth part basis",
+     "balance": 200000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "basis_partial",
+       "basis": 50000,
+       "growthLocked": 150000
+      },
+      "penaltyFreeAmount": 50000,
+      "penaltyExposedAmount": 150000,
+      "allowPenalizedWithdrawals": false
+     },
+     "roth": {
+      "basisRemaining": 50000,
+      "contributionBasisRemaining": 50000,
+      "conversionBasisRemaining": 0,
+      "basisUncertain": false
+     }
+    },
+    {
+     "name": "Ann 401k R55",
+     "balance": 225000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 75000,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      },
+      "penaltyFreeAmount": 300000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Ann 401k",
+     "balance": 300000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "locked",
+       "gate": "rule_of_55_or_age",
+       "currentAge": 52
+      },
+      "penaltyFreeAmount": 0,
+      "penaltyExposedAmount": 300000,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Bo 401k",
+     "balance": 300000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "locked",
+       "gate": "rule_of_55_unavailable",
+       "currentAge": 54
+      },
+      "penaltyFreeAmount": 0,
+      "penaltyExposedAmount": 300000,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Joint brokerage",
+     "balance": 400000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 400000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "rate-ceiling-not-biting": [
+  {
+   "year": 2026,
+   "age": 50,
+   "proRateFraction": 0.8333333333333334,
+   "totalEmployee": 13333.33,
+   "totalEmployer": 0,
+   "rateCeilingScale": null,
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 208333.33,
+     "contribution": 8333.33
+    },
+    {
+     "name": "Ann brokerage",
+     "balance": 55000,
+     "contribution": 5000
+    }
+   ]
+  }
+ ],
+ "rate-ceiling-biting-year-0": [
+  {
+   "year": 2026,
+   "age": 50,
+   "proRateFraction": 0.8333333333333334,
+   "totalEmployee": 9166.67,
+   "totalEmployer": 0,
+   "rateCeilingScale": 0.50000060000024,
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 204166.67,
+     "contribution": 4166.67
+    },
+    {
+     "name": "Ann brokerage",
+     "balance": 55000,
+     "contribution": 5000
+    }
+   ]
+  }
+ ],
+ "gap-year-0": [
+  {
+   "year": 2026,
+   "age": 50,
+   "proRateFraction": 0.8333333333333334,
+   "totalEmployee": 0,
+   "totalEmployer": 0,
+   "rateCeilingScale": null,
+   "savingStopped": true,
+   "gapDraw": {
+    "need": 41666.67,
+    "withdrawal": 41666.67,
+    "taxCost": 0,
+    "unmetNeed": 0,
+    "spendingCut": 0,
+    "pay": 0,
+    "ssIncome": 0,
+    "contributions": 0,
+    "taxOnIncome": 0,
+    "spending": 41666.67,
+    "slots": [
+     {
+      "category": "401k",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 41666.67
+     },
+     {
+      "category": "403b",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 41666.67
+     },
+     {
+      "category": "ira",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 41666.67
+     },
+     {
+      "category": "brokerage",
+      "withdrawal": 41666.67,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     },
+     {
+      "category": "hsa",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     }
+    ],
+    "warnings": []
+   },
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 200000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": true,
+      "reason": {
+       "kind": "locked",
+       "gate": "rule_of_55_or_age",
+       "currentAge": 50
+      },
+      "penaltyFreeAmount": 0,
+      "penaltyExposedAmount": 200000,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Ann brokerage",
+     "balance": 258333.33,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 41666.67,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "always_available"
+      },
+      "penaltyFreeAmount": 300000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ],
+ "gap-year-0-unowned": [
+  {
+   "year": 2026,
+   "age": 50,
+   "proRateFraction": 0.8333333333333334,
+   "totalEmployee": 0,
+   "totalEmployer": 0,
+   "rateCeilingScale": null,
+   "savingStopped": true,
+   "gapDraw": {
+    "need": 41666.67,
+    "withdrawal": 52000,
+    "taxCost": 10400,
+    "unmetNeed": 66.67,
+    "spendingCut": 0,
+    "pay": 0,
+    "ssIncome": 0,
+    "contributions": 0,
+    "taxOnIncome": 0,
+    "spending": 41666.67,
+    "slots": [
+     {
+      "category": "401k",
+      "withdrawal": 52000,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 52000,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     },
+     {
+      "category": "403b",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     },
+     {
+      "category": "ira",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     },
+     {
+      "category": "brokerage",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     },
+     {
+      "category": "hsa",
+      "withdrawal": 0,
+      "rothWithdrawal": 0,
+      "traditionalWithdrawal": 0,
+      "cappedByAccount": false,
+      "cappedByTaxType": false,
+      "remainingNeed": 0
+     }
+    ],
+    "warnings": []
+   },
+   "accounts": [
+    {
+     "name": "Ann 401k",
+     "balance": 148000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 52000,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 200000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    },
+    {
+     "name": "Ann brokerage",
+     "balance": 300000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 300000,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
+    }
+   ]
+  }
+ ]
+}

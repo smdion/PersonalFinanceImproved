@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
+import { Tabs } from "@/components/ui/tabs";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { profilesHref } from "@/lib/config/profile-tabs";
 import type { PlanProfileKind } from "@/lib/config/plans";
@@ -128,8 +129,8 @@ export function ScenarioBar() {
     },
   });
 
-  // Warn before a swap silently drops an account's active value — same
-  // treatment as contribution-profile-manager.tsx's handleActivate.
+  // Warn before a swap silently drops an account's active value, as the
+  // contribution profile manager's Activate does.
   const handleActivateContrib = async (id: number) => {
     const outgoing = contribCompareData?.profiles.find(
       (p) => p.id === activeIds.contribution,
@@ -469,28 +470,17 @@ export function ScenarioBar() {
         <span className="text-faint hidden sm:inline" id="view-mode-label">
           View
         </span>
-        <div
-          className="bg-surface-elevated flex rounded-md p-0.5"
-          role="tablist"
-          aria-labelledby="view-mode-label"
-        >
-          {VIEW_MODES.map((v) => (
-            <button
-              key={v.mode}
-              role="tab"
-              aria-selected={viewMode === v.mode}
-              onClick={() => setViewMode(v.mode)}
-              title={v.title}
-              className={`text-label rounded px-2.5 py-1.5 transition-colors ${
-                viewMode === v.mode
-                  ? "bg-surface-primary text-primary shadow-sm"
-                  : "text-muted hover:text-secondary"
-              }`}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          look="tray"
+          ariaLabelledBy="view-mode-label"
+          value={viewMode}
+          onChange={setViewMode}
+          tabs={VIEW_MODES.map((v) => ({
+            value: v.mode,
+            label: v.label,
+            title: v.title,
+          }))}
+        />
       </div>
     </div>
   );

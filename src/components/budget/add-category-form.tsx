@@ -40,6 +40,7 @@ export function AddCategoryForm({ onCreateCategory }: AddCategoryFormProps) {
     <div className="mt-3">
       <div className="flex items-center gap-2">
         <input
+          aria-label="New category name"
           type="text"
           value={name}
           onChange={(e) => {

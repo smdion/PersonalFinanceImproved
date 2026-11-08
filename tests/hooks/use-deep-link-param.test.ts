@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => search,
 }));
 
-import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import { useDeepLinkParam } from "@/components/settings/use-deep-link-param";
 
 const KEYS = ["general", "taxdata", "integrations"];
 

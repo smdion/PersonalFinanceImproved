@@ -21,17 +21,32 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { SavingsMutations } from "./hooks/use-savings-mutations";
+import type { IntegrationSavingsMutations } from "./use-integration-savings-mutations";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,
 } from "./section-summary-badge";
 
+/** One of the savings hook's mutations, as far as this section uses it. */
+type SavingsWrite<K extends keyof IntegrationSavingsMutations> = Pick<
+  IntegrationSavingsMutations[K],
+  "mutate" | "isPending"
+>;
+
+/**
+ * The parent owns the savings hook (the budget section links and creates
+ * goals through it too), so a link made from the budget section shows as
+ * pending here; this section takes only the writes it calls.
+ */
 type Props = {
   service: Service;
   savings: NonNullable<PreviewData["savings"]>;
   allApiCats: ApiCategoryOption[];
-  mutations: SavingsMutations;
+  linkSavings: SavingsWrite<"linkSavings">;
+  unlinkSavings: SavingsWrite<"unlinkSavings">;
+  renameSavingsToApi: SavingsWrite<"renameSavingsToApi">;
+  renameSavingsApiName: SavingsWrite<"renameSavingsApiName">;
+  linkReimbursement: SavingsWrite<"linkReimbursement">;
   savingsOverrides: Record<number, string>;
   setSavingsOverrides: React.Dispatch<
     React.SetStateAction<Record<number, string>>
@@ -42,18 +57,14 @@ export function SavingsSection({
   service,
   savings,
   allApiCats,
-  mutations,
+  linkSavings: linkSavingsMut,
+  unlinkSavings: unlinkSavingsMut,
+  renameSavingsToApi: renameSavingsToApiMut,
+  renameSavingsApiName: renameSavingsApiNameMut,
+  linkReimbursement: linkReimbursementMut,
   savingsOverrides,
   setSavingsOverrides,
 }: Props) {
-  const {
-    linkSavings: linkSavingsMut,
-    unlinkSavings: unlinkSavingsMut,
-    renameSavingsToApi: renameSavingsToApiMut,
-    renameSavingsApiName: renameSavingsApiNameMut,
-    linkReimbursement: linkReimbursementMut,
-  } = mutations;
-
   // Apply a single savings match
   const applySavingsLink = (goalId: number, apiId: string) => {
     const cat = allApiCats.find((c) => c.id === apiId);

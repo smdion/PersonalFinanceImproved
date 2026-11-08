@@ -63,7 +63,7 @@ export interface FundManagementCallbacks {
 interface FundManagementSectionProps {
   /** The real active budget profile — funding (monthlyContribution/
    *  allocationPercent) is per-profile with no shared default, and every
-   *  number on this page reflects the active profile (see savings/page.tsx's
+   *  number on this page reflects the active profile (see savings/savings-content.tsx's
    *  activeProfileId comment), so inline funding edits here write to it. */
   activeProfileId: number | null;
   rawGoals: RawGoal[];

@@ -37,17 +37,31 @@ const listNames = (names: readonly string[]) =>
  *  full name is in the hover text. */
 const shortName = (name: string) => name.split(/\s+/)[0] ?? name;
 
-/** The no-holdings accounts left out of every close shown (said once,
- *  under the list), and the rest (said on the closes they're out of). */
-export function splitUnpriced<U extends Unpriced[number]>(
-  closes: readonly { day: string }[],
+/** The no-holdings accounts left out of every close holding their
+ *  institution's report, at least one (said once, under the list), and the
+ *  rest (said on the closes they're out of). */
+export function splitUnpriced<
+  U extends Pick<UnpricedMove, "label" | "changed" | "institution">,
+>(
+  closes: readonly Close[],
+  target: string | undefined,
+  reports: Reports,
   unpriced: readonly U[],
 ): { always: U[]; varying: U[] } {
-  const always = unpriced.filter(
-    (u) =>
-      closes.length > 0 &&
-      closes.every((c) => u.changed.some((m) => m.day === c.day)),
-  );
+  const notIn = closes.map((c) => {
+    const { late, noReport } = whyMissing(c, target, reports);
+    return {
+      day: c.day,
+      names: [...late, ...noReport.flatMap(([, n]) => [...n])],
+    };
+  });
+  const always = unpriced.filter((u) => {
+    const counted = notIn.filter((c) => !c.names.includes(u.institution));
+    return (
+      counted.length > 0 &&
+      counted.every((c) => u.changed.some((m) => m.day === c.day))
+    );
+  });
   return { always, varying: unpriced.filter((u) => !always.includes(u)) };
 }
 

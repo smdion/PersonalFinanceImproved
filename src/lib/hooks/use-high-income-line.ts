@@ -6,10 +6,10 @@
  * rate, the Checkup and the Milestones read it here. `threshold` is
  * undefined until known — the saved setting loaded, and the default when
  * nothing's saved — so no surface shows a result for the wrong line.
- * `error` is true when it can't become known (the default failed to load
- * and nothing's saved): callers show their error, not a lasting skeleton.
+ * `error` is the default's load error when the line can't become known
+ * (nothing's saved): callers show it, not a lasting skeleton.
  */
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterError } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import {
@@ -23,15 +23,21 @@ export function useHighIncomeLine(): {
   basis: HighIncomeLineBasis | null;
   defaultThreshold: number | undefined;
   setSaved: (value: number | null) => void;
-  error: boolean;
+  error: RouterError | null;
+  /** The line isn't known yet and hasn't failed (QueryBoundary reads these). */
+  isLoading: boolean;
+  refetch: () => void;
 } {
   const [saved, setSaved, loaded] = usePersistedSetting<number | null>(
     SK_HIGH_INCOME_THRESHOLD,
     null,
   );
-  const { data, error } = trpc.contribution.highIncomeLine.useQuery(undefined, {
-    staleTime: 60_000,
-  });
+  const { data, error, refetch } = trpc.contribution.highIncomeLine.useQuery(
+    undefined,
+    {
+      staleTime: 60_000,
+    },
+  );
   const threshold = loaded
     ? effectiveHighIncomeLine(saved, data?.threshold)
     : undefined;
@@ -41,6 +47,8 @@ export function useHighIncomeLine(): {
     basis: isSaved ? null : (data?.basis ?? null),
     defaultThreshold: data?.threshold,
     setSaved,
-    error: threshold === undefined && Boolean(error),
+    error: threshold === undefined ? error : null,
+    isLoading: threshold === undefined && !error,
+    refetch: () => void refetch(),
   };
 }

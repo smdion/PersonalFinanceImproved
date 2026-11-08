@@ -4,7 +4,7 @@
 
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { mergedMatchRate } from "@/lib/pure/contributions/employer-match";
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   TAX_TREATMENT_LABELS as TAX_LABELS,
@@ -492,6 +492,7 @@ export function AddContribForm({
   const [matchType, setMatchType] = useState("none");
   const [matchValue, setMatchValue] = useState("");
   const [maxMatchPct, setMaxMatchPct] = useState("");
+  const id = useId();
 
   const handleSubmit = () => {
     onSave({
@@ -524,8 +525,11 @@ export function AddContribForm({
       </p>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <div>
-          <label className="text-caption text-muted">Owner</label>
+          <label htmlFor={`${id}-owner`} className="text-caption text-muted">
+            Owner
+          </label>
           <select
+            id={`${id}-owner`}
             value={personId}
             onChange={(e) => setPersonId(parseInt(e.target.value, 10))}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
@@ -538,8 +542,11 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-caption text-muted">Job</label>
+          <label htmlFor={`${id}-job`} className="text-caption text-muted">
+            Job
+          </label>
           <select
+            id={`${id}-job`}
             value={jobId ?? ""}
             onChange={(e) =>
               setJobId(e.target.value ? parseInt(e.target.value, 10) : null)
@@ -555,8 +562,11 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-caption text-muted">Tax Treatment</label>
+          <label htmlFor={`${id}-tax`} className="text-caption text-muted">
+            Tax Treatment
+          </label>
           <select
+            id={`${id}-tax`}
             value={taxTreatment}
             onChange={(e) => setTaxTreatment(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
@@ -569,8 +579,14 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-caption text-muted">Match Type</label>
+          <label
+            htmlFor={`${id}-match-type`}
+            className="text-caption text-muted"
+          >
+            Match Type
+          </label>
           <select
+            id={`${id}-match-type`}
             value={matchType}
             onChange={(e) => setMatchType(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
@@ -585,12 +601,16 @@ export function AddContribForm({
         {matchType !== "none" && (
           <>
             <div>
-              <label className="text-caption text-muted">
+              <label
+                htmlFor={`${id}-match-value`}
+                className="text-caption text-muted"
+              >
                 {EMPLOYER_MATCH_VALUE_UNIT[matchType] === "$"
                   ? "Match Amount"
                   : "Match Value"}
               </label>
               <input
+                id={`${id}-match-value`}
                 type="number"
                 value={matchValue}
                 onChange={(e) => setMatchValue(e.target.value)}
@@ -604,8 +624,14 @@ export function AddContribForm({
             </div>
             {matchType === "percent_of_contribution" && (
               <div>
-                <label className="text-caption text-muted">Max Match %</label>
+                <label
+                  htmlFor={`${id}-max-match`}
+                  className="text-caption text-muted"
+                >
+                  Max Match %
+                </label>
                 <input
+                  id={`${id}-max-match`}
                   type="number"
                   value={maxMatchPct}
                   onChange={(e) => setMaxMatchPct(e.target.value)}

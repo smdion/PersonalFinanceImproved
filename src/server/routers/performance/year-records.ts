@@ -86,7 +86,7 @@ export const yearRecordProcedures = {
           updates[key] = value;
         }
       }
-      if (Object.keys(updates).length === 0) return { success: true };
+      if (Object.keys(updates).length === 0) return { ok: true };
 
       // Block edits to lifetime_* fields on immutable rows. Lifetime totals
       // on finalized rows are authoritative and move only with edits to the
@@ -122,7 +122,7 @@ export const yearRecordProcedures = {
         .set(updates)
         .where(eq(schema.annualPerformance.id, id));
       await stampPerformanceUpdated(ctx.db);
-      return { success: true };
+      return { ok: true };
     }),
 
   /**
@@ -144,7 +144,7 @@ export const yearRecordProcedures = {
         Object.entries(fields).filter(([, v]) => v !== undefined), // see above
       ) as AccountEdit;
       if (Object.keys(edit).length === 0 && annualReturnPct === undefined)
-        return { success: true, preview: null };
+        return { ok: true, preview: null };
       const run = async (tx: DbOrTx) => {
         if (annualReturnPct !== undefined)
           await tx
@@ -165,14 +165,14 @@ export const yearRecordProcedures = {
         } catch (e) {
           if (!(e instanceof DryRunRollback)) throw e;
         }
-        return { success: true, preview };
+        return { ok: true, preview };
       }
       const preview = await ctx.db.transaction(async (tx) => {
         const p = await run(tx);
         await stampPerformanceUpdated(tx);
         return p;
       });
-      return { success: true, preview };
+      return { ok: true, preview };
     }),
 
   /**
@@ -239,7 +239,7 @@ export const yearRecordProcedures = {
             acceptedChecks: accepted,
           })
           .where(eq(schema.accountPerformance.id, row.id));
-        return { success: true };
+        return { ok: true };
       });
     }),
 
@@ -313,7 +313,7 @@ export const yearRecordProcedures = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (input.accounts.length === 0) return { success: true };
+      if (input.accounts.length === 0) return { ok: true };
       await ctx.db.transaction(async (tx) => {
         const years = await tx
           .selectDistinct({ year: schema.accountPerformance.year })
@@ -354,6 +354,6 @@ export const yearRecordProcedures = {
         if (input.simplefinFill)
           await recordFill(tx, "performance", input.simplefinFill);
       });
-      return { success: true };
+      return { ok: true };
     }),
 };

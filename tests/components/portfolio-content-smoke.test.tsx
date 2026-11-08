@@ -66,7 +66,7 @@ vi.mock("@/components/investments/holding-history-section", () => ({
 vi.mock("@/components/portfolio/contribution-accounts", () => ({
   ContributionAccountsSettings: () => <div>contrib-accounts</div>,
 }));
-vi.mock("@/components/cards/dashboard/utils", () => ({
+vi.mock("@/components/dashboard/utils", () => ({
   CardBoundary: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),

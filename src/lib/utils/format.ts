@@ -168,41 +168,40 @@ export function formatSavingsRate(value: number): string {
   return formatPercent(value, SAVINGS_RATE_DECIMALS);
 }
 
+/** formatDate's presets: "Jan 2025", "Jan 5, 2025", "January 5, 2025",
+ *  "Jan 5", "Jan 5, 25", "Jan 5, 2025, 03:07 PM" (en-US). */
+const DATE_PRESETS = {
+  short: { month: "short", year: "numeric" },
+  medium: { month: "short", day: "numeric", year: "numeric" },
+  long: { month: "long", day: "numeric", year: "numeric" },
+  monthDay: { month: "short", day: "numeric" },
+  dayShortYear: { month: "short", day: "numeric", year: "2-digit" },
+  dateTime: {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  },
+} as const satisfies Record<string, Intl.DateTimeFormatOptions>;
+
 /**
- * Format a date string for display.
- * Accepts YYYY-MM-DD strings or Date objects.
- *
- * Presets:
- *  - 'short'   → "Jan 2025"       (month + year)
- *  - 'medium'  → "Jan 5, 2025"    (month + day + year)
- *  - 'default' → locale default    (e.g. "1/5/2025")
+ * A date for display: a YYYY-MM-DD string (date-only), or a Date for a
+ * timestamp. 'default' is "1/5/2025"; 'time' is "3:07 PM" in the
+ * browser's locale (a clock readout); the rest are DATE_PRESETS.
  */
 export function formatDate(
   value: string | Date,
-  preset: "short" | "medium" | "long" | "default" = "default",
+  preset: keyof typeof DATE_PRESETS | "time" | "default" = "default",
 ): string {
   const date = typeof value === "string" ? parseLocalDateOnly(value) : value;
-  switch (preset) {
-    case "short":
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      });
-    case "medium":
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    case "long":
-      return date.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    case "default":
-      return date.toLocaleDateString("en-US");
-  }
+  if (preset === "time")
+    return date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  if (preset === "default") return date.toLocaleDateString("en-US");
+  return date.toLocaleDateString("en-US", DATE_PRESETS[preset]);
 }
 
 /**

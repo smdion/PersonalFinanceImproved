@@ -1,6 +1,7 @@
 /**
  * Pure helpers for the sidebar's "Data" freshness indicator.
  */
+import { formatDate } from "@/lib/utils/format";
 import {
   DATA_SOURCES,
   type DataSourceDefinition,
@@ -78,7 +79,7 @@ export function evaluateDataSources(
       // its last day onward counts.
       const coversLastYear = valid >= new Date(now.getFullYear() - 1, 11, 31);
       if (now > due && !coversLastYear)
-        reason = `due ${due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+        reason = `due ${formatDate(due, "monthDay")}`;
     }
     statuses.push({
       source,

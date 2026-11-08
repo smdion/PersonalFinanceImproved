@@ -7,8 +7,9 @@ import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  ConnectionStatusLine,
   ConnectionResultMessage,
+  LastSyncedStatus,
+  SecretConnectForm,
 } from "./integrations/connection-card";
 
 export function TiingoCard() {
@@ -63,61 +64,24 @@ export function TiingoCard() {
         </p>
 
         {isConnected && (
-          <ConnectionStatusLine
-            connected
-            extra={
-              status?.lastSyncedAt && (
-                <span className="text-caption text-faint">
-                  Last synced {new Date(status.lastSyncedAt).toLocaleString()}
-                </span>
-              )
-            }
-          />
+          <LastSyncedStatus lastSyncedAt={status?.lastSyncedAt} />
         )}
 
         {(!isConnected || showUpdateKey) && (
-          <div className="space-y-3">
-            <div>
-              <label
-                htmlFor="tiingo-api-key"
-                className="text-muted mb-1 block text-xs font-medium"
-              >
-                API Key
-              </label>
-              <input
-                id="tiingo-api-key"
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="API token from your Tiingo account"
-                className="border-strong w-full rounded border px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSave}
-                disabled={!apiKey || saveKeyMut.isPending}
-              >
-                {saveKeyMut.isPending ? "Connecting..." : "Connect"}
-              </Button>
-              {showUpdateKey && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowUpdateKey(false)}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-            {saveKeyMut.isError && (
-              <ConnectionResultMessage tone="error">
-                {errorText(saveKeyMut.error)}
-              </ConnectionResultMessage>
-            )}
-          </div>
+          <SecretConnectForm
+            inputId="tiingo-api-key"
+            label="API Key"
+            placeholder="API token from your Tiingo account"
+            value={apiKey}
+            onChange={setApiKey}
+            onConnect={handleSave}
+            pending={saveKeyMut.isPending}
+            showCancel={showUpdateKey}
+            onCancel={() => setShowUpdateKey(false)}
+            errorMessage={
+              saveKeyMut.isError ? errorText(saveKeyMut.error) : null
+            }
+          />
         )}
 
         {isConnected && (

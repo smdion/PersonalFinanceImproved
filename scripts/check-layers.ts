@@ -80,14 +80,15 @@ export function renameMove(
 }
 
 /**
- * Every `Layers-renamed:` trailer since the ref, its paths read at HEAD: a
+ * Every `Layers-renamed:` trailer since the ref, oldest first so a chain
+ * (A => B, then B => C) re-points in order, its paths read at HEAD: a
  * trailer names paths as they were in its own commit, and a later commit can
  * move those files.
  */
 function entryMovesSince(baseRef: string): EntryMove[] {
   const log = execFileSync(
     "git",
-    ["log", "--format=%H%x00%B%x1e", `${baseRef}..HEAD`],
+    ["log", "--reverse", "--format=%H%x00%B%x1e", `${baseRef}..HEAD`],
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   return log

@@ -26,6 +26,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
 import { HelpTip } from "@/components/ui/help-tip";
+import { asButton } from "@/components/ui/as-button";
 import {
   SubAccountRow,
   SubAccountInactiveSection,
@@ -169,11 +170,10 @@ export function AccountCard({
     <div
       className={`overflow-hidden rounded-lg border ${!pa.isActive ? "opacity-50" : ""} ${borderColor}`}
     >
-      {" "}
       {/* Header row — always visible fields */}{" "}
       <div
-        className={`hover:bg-surface-sunken flex cursor-pointer items-center gap-3 px-4 py-2.5 ${isExpanded ? bgLight : "bg-surface-primary"}`}
-        onClick={onToggleExpand}
+        className={`hover:bg-surface-sunken flex cursor-pointer items-center gap-3 px-4 py-2.5 focus-visible:-outline-offset-2 ${isExpanded ? bgLight : "bg-surface-primary"}`}
+        {...asButton(onToggleExpand, isExpanded)}
       >
         {/* Color indicator */}
         <div

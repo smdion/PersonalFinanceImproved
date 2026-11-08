@@ -16,7 +16,7 @@ vi.mock("@/lib/hooks/use-toast", () => ({
   toast: { error: toastError, success: vi.fn(), info: vi.fn() },
 }));
 
-import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
+import { useBudgetSyncMutations } from "@/components/budget/use-budget-sync-mutations";
 import { useApiSync } from "@/components/savings/api-sync-section";
 
 const stopped = new Error("Pushed 2 of 5 categories, then failed");
@@ -29,7 +29,7 @@ beforeEach(() => {
 describe("push reloads on error", () => {
   it("budget push invalidates the summary", () => {
     setMutationError("budget.syncBudgetToApi", stopped);
-    const { result } = renderHook(() => useSyncMutations());
+    const { result } = renderHook(() => useBudgetSyncMutations());
     act(() => result.current.syncToApi.mutate({}));
     expect(
       utilsCalls("budget.computeActiveSummary.invalidate"),

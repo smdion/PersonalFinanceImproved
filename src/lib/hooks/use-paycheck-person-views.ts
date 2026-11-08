@@ -193,14 +193,11 @@ export function usePaycheckPersonViews({
     ],
   );
 
-  const {
-    data: rawData,
-    isLoading,
-    error,
-  } = trpc.paycheck.computeSummary.useQuery(
+  const summary = trpc.paycheck.computeSummary.useQuery(
     Object.keys(queryInput).length > 0 ? queryInput : undefined,
     { placeholderData: (prev) => prev },
   );
+  const { data: rawData, isLoading, error } = summary;
 
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
@@ -223,7 +220,7 @@ export function usePaycheckPersonViews({
   // fields used to be re-applied here client-side via `getOverride("jobs" |
   // "deductions" | "contributionAccounts", ...)`. That was dead code: the
   // only writer of a session-scenario override anywhere in the app writes
-  // entity "people", field "salary" (paycheck/page.tsx's toggleSalaryOverride)
+  // entity "people", field "salary" (paycheck/paycheck-content.tsx's toggleSalaryOverride)
   // — a different entity than any of the keys this block ever read, so
   // every `getOverride` call here always returned its fallback. Removed
   // rather than kept as a misleading no-op.
@@ -391,6 +388,7 @@ export function usePaycheckPersonViews({
     rawData,
     isLoading,
     error,
+    refetch: summary.refetch,
     sharedContribGroupOrder,
   };
 }

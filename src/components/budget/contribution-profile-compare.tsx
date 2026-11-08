@@ -9,15 +9,9 @@
  * a real gap to flag, not a benign fallback, since accounts carry no value
  * of their own (see applyContribActiveFields).
  *
- * Its own file so contribution-profile-manager.tsx doesn't grow (it's in
- * size-baseline.json); that file's `compareData` query is the one data
- * source this and the swap-time diff share.
- *
- * Cell display state (hasActiveFields/value, amber highlight when set,
- * DISABLED badge when isActive:false) is resolved via the same
- * resolveContribFieldDisplayState ProfileDetailPanel's per-account row in
- * contribution-profile-manager.tsx uses — just applied per cell instead of
- * per row-of-one-profile.
+ * `contributionProfile.compareData` is the one data source this and the
+ * swap-time diff share. Each cell resolves its display state (value, amber
+ * when set, DISABLED badge) with resolveContribFieldDisplayState, per cell.
  */
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";

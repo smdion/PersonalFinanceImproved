@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { parseLocalDateOnly } from "@/lib/utils/date";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
@@ -339,15 +338,7 @@ export function PerfEndBalCell({
   snapshotDate: string;
 }) {
   const [showTip, setShowTip] = useState(false);
-  const fmtDate = (iso: string) => {
-    // date-only column — parse in local time, not UTC
-    const d = parseLocalDateOnly(iso);
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  const fmtDate = (iso: string) => formatDate(iso, "medium");
 
   return (
     <td className="px-1.5 py-1.5 text-right">

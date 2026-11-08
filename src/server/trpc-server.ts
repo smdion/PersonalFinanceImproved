@@ -44,10 +44,8 @@ type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>["helpers"];
 /**
  * The no-input queries the dashboard shell loads on every page — the
  * sidebar's data indicator (useDataSourceStatuses), the header's profile
- * pickers (scenario-bar), saved settings (usePersistedSetting). In the
- * browser they're cached before a page's own section hydrates, so a page
- * that reads one while rendering from prefetched data must have it on the
- * server too, or the two renders differ (a hydration mismatch).
+ * pickers (scenario-bar), saved settings (usePersistedSetting). Only the
+ * layout loads them (prefetchForShell), above the shell and the page.
  * tests/lint/shell-prefetch.test.ts keeps this list equal to what the shell
  * actually loads.
  */
@@ -78,26 +76,37 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
  * data would be rendered on the server, where the privacy flag is never set
  * (see setPrivacyMode), so real amounts would reach the first HTML before
  * the browser masks them. Skipping it costs a loading state on first paint.
- *
- * The shell's own queries are always prefetched too (prefetchShellQueries):
- * a page rendered from prefetched data that reads one — a saved choice, the
- * data-freshness dates — would otherwise render it empty on the server and
- * filled in the browser, a hydration mismatch.
+ * The shell's queries come from the layout (prefetchForShell), not here.
  *
  * Prefetch failures never block rendering — any error also yields undefined.
  */
 export async function prefetchForPage(
   prefetch: (helpers: ServerHelpers) => Promise<unknown>,
 ): Promise<DehydratedState | undefined> {
+  return prefetchDehydrated("page.prefetch", prefetch);
+}
+
+/** The shell's queries, hydrated by the dashboard layout above the shell and
+ *  the page, so both render them from the same data on the server and in the
+ *  browser. */
+export async function prefetchForShell(): Promise<DehydratedState | undefined> {
+  return prefetchDehydrated("shell.prefetch", (helpers) =>
+    Promise.all(prefetchShellQueries(helpers)),
+  );
+}
+
+async function prefetchDehydrated(
+  path: string,
+  run: (helpers: ServerHelpers) => Promise<unknown>,
+): Promise<DehydratedState | undefined> {
   const cookieStore = await cookies();
   if (cookieStore.get(PRIVACY_COOKIE)?.value === "1") return undefined;
   try {
     const { ctx, helpers } = await createServerHelpers();
-    // One page load = one request against the user's rate limit; when it's
+    // One load = one request against the user's rate limit; when it's
     // spent, skip the prefetch and let the browser's own fetch report it.
-    if (!(await takeAuthenticatedRateToken(ctx, "page.prefetch")).ok)
-      return undefined;
-    await Promise.all([prefetch(helpers), ...prefetchShellQueries(helpers)]);
+    if (!(await takeAuthenticatedRateToken(ctx, path)).ok) return undefined;
+    await run(helpers);
     return dehydrate(helpers.queryClient);
   } catch {
     return undefined;

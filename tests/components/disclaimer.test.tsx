@@ -27,7 +27,7 @@ vi.mock("@/lib/hooks/use-milestones", () => ({
     results: evaluateMilestones(input),
   }),
 }));
-vi.mock("@/lib/hooks/use-first-reached", () => ({
+vi.mock("@/app/(dashboard)/milestones/use-first-reached", () => ({
   useFirstReached: () => () => null,
 }));
 vi.mock("@/components/milestones/milestone-settings", () => ({
@@ -65,14 +65,15 @@ describe("the shared disclaimer", () => {
   });
 
   it("Plan Health shows it", async () => {
-    const { PlanHealthCard } = await import("@/components/cards/plan-health");
+    const { PlanHealthCard } =
+      await import("@/components/retirement/plan-health");
     render(<PlanHealthCard retirementHorizonYears={30} />);
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();
   });
 
   it("the report's footer shows it and keeps the risk-analysis note", async () => {
     const { ReportFooter } =
-      await import("@/components/cards/projection/report/report-header");
+      await import("@/components/retirement-projection/report/report-header");
     render(<ReportFooter generatedAt={new Date("2026-11-03T12:00:00Z")} />);
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();
     expect(

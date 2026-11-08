@@ -1099,6 +1099,69 @@ describe("checkRatchets: a body or a router split moved whole (owner Q14)", () =
       expect.stringMatching(/functions .*: 909 .*adds 0 lines of import/),
     ]);
   });
+
+  const ROW = "src/row.tsx";
+  const UI_PART = "src/part.tsx";
+  const tds = (from: number, to: number, edit = (l: string) => l) =>
+    Array.from({ length: to - from }, (_, k) =>
+      edit(`<td>{a + ${from + k}}</td>`),
+    );
+  const rowFn = (inner: string[], extraImports: string[] = []) => [
+    ...extraImports,
+    ...(extraImports.length > 0 ? [""] : []),
+    "export function Row({ a }: { a: number }) {",
+    "  return (",
+    "    <tr>",
+    ...inner.map((l) => `      ${l}`),
+    "    </tr>",
+    "  );",
+    "}",
+  ];
+  let longRow = "";
+  const jsxCut = (run = tds(0, 450).map((l) => `      ${l}`), part = 456) => {
+    git("checkout", "-q", "-B", "jsx", longRow);
+    write(
+      ROW,
+      rowFn(
+        ["<Part a={a} />", ...tds(450, 900)],
+        ['import { Part } from "./part";'],
+      ),
+    );
+    write(UI_PART, [
+      "export function Part({ a }: { a: number }) {",
+      "  return (",
+      "    <>",
+      ...run,
+      "    </>",
+      "  );",
+      "}",
+    ]);
+    record([ROW, UI_PART], { [ROW]: { Row: 457 }, [UI_PART]: { Part: part } });
+    commit(
+      "refactor: the first cells are a part\n\nMechanical: JSX run cut\nRatchet-raise: size-baseline.json — src/part.tsx +20; src/part.tsx Part +10, a UI cut",
+    );
+  };
+
+  it("passes a JSX run cut into a component (owner v0.10.4 Q3): imports, its function's lines and the call, its entry its moved lines and those", () => {
+    git("checkout", "-q", "-B", "jsx-base", base);
+    write(ROW, rowFn(tds(0, 900)));
+    record([ROW], { [ROW]: { Row: 906 } });
+    longRow = commit("chore: a long row");
+    jsxCut();
+    const report = checkRatchets(longRow, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining("files src/part.tsx, src/row.tsx"),
+      expect.stringContaining("src/part.tsx Part"),
+    ]);
+
+    // A cell edited on the way: no cut, so only imports.
+    jsxCut(tds(0, 450, (l) => `      ${l.replace("a + 7}", "a + 8}")}`));
+    expect(checkRatchets(longRow, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(/files .*: 915 .*which adds 1 import lines/),
+      expect.stringMatching(/functions .*adds 0 lines of import/),
+    ]);
+  });
 });
 
 describe("checkRatchets: Known-renamed", () => {

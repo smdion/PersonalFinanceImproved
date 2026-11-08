@@ -213,7 +213,8 @@ describe("--record --from: a procedure body moved whole into a service (owner Q1
       wrapper: { computeGardenSummary: 3 },
       total: 2 + 6,
     });
-    // A router that does more than call is no pass-through.
+    // A router that does more than call is no pass-through: only the two
+    // service imports (owner Q13).
     expect(
       carry(
         router([
@@ -222,7 +223,7 @@ describe("--record --from: a procedure body moved whole into a service (owner Q1
           "  ),",
         ]),
       ),
-    ).toEqual({ renames: {}, wrapper: {}, total: 0 });
+    ).toEqual({ renames: {}, wrapper: {}, total: 2 });
   });
 
   it("records the moved function under its new name at its size, and the ones inside it", () => {
@@ -370,6 +371,173 @@ describe("--record --from: stages cut from a long function (owner v0.10.3 Q1)", 
     ).toEqual([
       `${STAGES} vStage(): 500 lines, no entry in ${YEAR} — split it; never raise the baseline`,
       `${YEAR}: the parts and what is left total 902 lines, entry 900 — split it; never raise the baseline`,
+    ]);
+  });
+});
+
+describe("--record --from: a UI cut (owner v0.10.4 Q3)", () => {
+  const ROW = "src/components/row.tsx";
+  const PARTS = "src/components/row-parts.tsx";
+  const was = [
+    'import { Tip } from "./tip";',
+    "",
+    "export function Row({ yr }: Props) {",
+    "  return (",
+    "    <tr>",
+    "      <Tip",
+    "        content={(() => {",
+    "          const n = yr.n;",
+    "          return n * 2;",
+    "        })()}",
+    "      />",
+    "      <td>{yr.a}</td>",
+    "      <td>{yr.b}</td>",
+    "    </tr>",
+    "  );",
+    "}",
+  ].join("\n");
+  const now = [
+    'import { Tip } from "./tip";',
+    'import { Cells, doubled } from "./row-parts";',
+    "",
+    "export function Row({ yr }: Props) {",
+    "  return (",
+    "    <tr>",
+    "      <Tip content={doubled(yr)} />",
+    "      <Cells yr={yr} />",
+    "    </tr>",
+    "  );",
+    "}",
+  ].join("\n");
+  const parts = [
+    "export function doubled(yr: Year) {",
+    "  const n = yr.n;",
+    "  return n * 2;",
+    "}",
+    "",
+    "export function Cells({ yr }: { yr: Year }) {",
+    "  return (",
+    "    <>",
+    "      <td>{yr.a}</td>",
+    "      <td>{yr.b}</td>",
+    "    </>",
+    "  );",
+    "}",
+  ].join("\n");
+  const tree = (files: Record<string, string>) => (f: string) => files[f];
+
+  it("names the component each cut left, and what its function and call add", () => {
+    // doubled: signature and brace (2), its call (1); Cells: signature,
+    // `return (`, `<>`, `</>`, `);` and brace (6), its call (1); one import.
+    expect(
+      bodyCarry(
+        ROW,
+        [PARTS],
+        tree({ [ROW]: now, [PARTS]: parts }),
+        tree({ [ROW]: was }),
+      ),
+    ).toEqual({
+      renames: {},
+      wrapper: {},
+      stages: { doubled: "Row", Cells: "Row" },
+      total: 2 + 1 + 6 + 1 + 1,
+    });
+  });
+});
+
+describe("--record --from: a plain split's import lines (owner Q13)", () => {
+  const DIR = "src/lib/pure/engine/withdrawal-routing/";
+  /** A file of `lines` lines, the first `imports` of them imports. */
+  const file = (lines: number, imports: number) =>
+    Array.from({ length: lines }, (_, i) =>
+      i < imports
+        ? `import { a${i} } from "./m${i}";`
+        : `export const x${i} = a0 + ${i};`,
+    ).join("\n");
+  const tree = (files: Record<string, string>) => (f: string) => files[f];
+  /** v0.10.3 item 15: withdrawal-routing/index.ts (1,435 lines, 28 import
+   *  lines) split into six parts; the seven files total 1,486, the split
+   *  adding 57 import lines and dropping 6 lines of header and banner. */
+  const PARTS: Record<string, [lines: number, imports: number]> = {
+    "waterfall.ts": [158, 14],
+    "percentage.ts": [209, 14],
+    "bracket-filling.ts": [506, 21],
+    "roth-bracket-overlay.ts": [70, 7],
+    "caps.ts": [73, 5],
+    "types.ts": [120, 4],
+  };
+  const INDEX = `${DIR}index.ts`;
+  const split = (extra = 0) => {
+    const sizes = Object.fromEntries(
+      Object.entries(PARTS).map(([f, [lines, imports]]) => [
+        DIR + f,
+        { lines: f === "caps.ts" ? lines + extra : lines, imports },
+      ]),
+    );
+    const parts = Object.keys(sizes);
+    const now = tree({
+      [INDEX]: file(350, 20),
+      ...Object.fromEntries(
+        parts.map((p) => [p, file(sizes[p]!.lines, sizes[p]!.imports)]),
+      ),
+    });
+    const measured: Baseline = {
+      files: {
+        [INDEX]: 350,
+        ...Object.fromEntries(parts.map((p) => [p, sizes[p]!.lines])),
+      },
+      functions: {},
+    };
+    const carry = bodyCarry(
+      INDEX,
+      parts,
+      now,
+      tree({ [INDEX]: file(1435, 28) }),
+    );
+    return recorded(
+      { files: { [INDEX]: 1435 }, functions: {} },
+      measured,
+      parts,
+      INDEX,
+      carry,
+    );
+  };
+
+  it("records item 15's real split, its parts over the entry by the import lines they add", () => {
+    const result = split();
+    expect(result.problems).toEqual([]);
+    expect(result.baseline.files[`${DIR}bracket-filling.ts`]).toBe(506);
+    expect(result.baseline.files[`${DIR}caps.ts`]).toBe(73);
+  });
+
+  it("refuses lines past the import lines: 1,492 passes, 1,493 doesn't", () => {
+    expect(split(6).problems).toEqual([]);
+    expect(split(7).problems).toEqual([
+      `${INDEX}: the parts and what is left total 1493 lines, entry 1435 and +57 for the import lines it adds — split it; never raise the baseline`,
+    ]);
+  });
+
+  it("allows exactly the import lines added, and no more", () => {
+    const OLD = "src/a.ts";
+    const PART = "src/a-part.ts";
+    const was = file(500, 2);
+    const go = (partLines: number) =>
+      recorded(
+        { files: { [OLD]: 500 }, functions: {} },
+        { files: { [OLD]: 300, [PART]: partLines }, functions: {} },
+        [PART],
+        OLD,
+        bodyCarry(
+          OLD,
+          [PART],
+          tree({ [OLD]: file(300, 3), [PART]: file(partLines, 4) }),
+          tree({ [OLD]: was }),
+        ),
+      ).problems;
+    // Five import lines added (one in the old file, four in the part).
+    expect(go(205)).toEqual([]);
+    expect(go(206)).toEqual([
+      `${OLD}: the parts and what is left total 506 lines, entry 500 and +5 for the import lines it adds — split it; never raise the baseline`,
     ]);
   });
 });

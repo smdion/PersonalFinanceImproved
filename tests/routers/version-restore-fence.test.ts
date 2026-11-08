@@ -13,6 +13,7 @@ import {
   adminSession,
   createViewerSessionWithPermissions,
   seedPerson,
+  seedPerformanceAccount,
 } from "./setup";
 import type { Session } from "next-auth";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -115,4 +116,63 @@ describe("version.restore and the connections fence", () => {
       }
     },
   );
+});
+
+describe("version.restore over a value Ledgr doesn't have", () => {
+  /** A version whose performance account holds `accountType`. */
+  async function versionWith(accountType: string) {
+    const ctx = await createTestCaller(adminSession);
+    seedPerformanceAccount(ctx.db, { accountLabel: "Robin 401k" });
+    const version = await ctx.caller.version.create({ name: "odd type" });
+    const entry = ctx.db
+      .select()
+      .from(sqliteSchema.stateVersionTables)
+      .all()
+      .find(
+        (t) =>
+          t.versionId === version.id && t.tableName === "performance_accounts",
+      )!;
+    const rows = (entry.data as Record<string, unknown>[]).map((r) => ({
+      ...r,
+      account_type: accountType,
+    }));
+    ctx.db.run(
+      sql`UPDATE state_version_tables SET data = ${JSON.stringify(rows)} WHERE id = ${entry.id}`,
+    );
+    ctx.db.run(sql`UPDATE performance_accounts SET account_label = 'Today'`);
+    return { ...ctx, versionId: version.id };
+  }
+
+  it("refuses with a BAD_REQUEST naming the value, and keeps today's data", async () => {
+    const ctx = await versionWith("solo401k");
+    try {
+      await expect(
+        ctx.caller.version.restore({ id: ctx.versionId }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: expect.stringMatching(
+          /performance_accounts\.account_type = "solo401k" \(1 row\).*Restore another version/,
+        ),
+      });
+      expect(
+        ctx.db
+          .select()
+          .from(sqliteSchema.performanceAccounts)
+          .all()
+          .map((a) => [a.accountLabel, a.accountType]),
+      ).toEqual([["Today", "401k"]]);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("restores a valid version with no notes", async () => {
+    const ctx = await versionWith("ira");
+    try {
+      const restored = await ctx.caller.version.restore({ id: ctx.versionId });
+      expect(restored.valueNotes).toEqual([]);
+    } finally {
+      ctx.cleanup();
+    }
+  });
 });

@@ -11,6 +11,7 @@ import { useState, useMemo } from "react";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatCurrency } from "@/lib/utils/format";
@@ -22,7 +23,7 @@ import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-pr
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { ProjectionCard } from "@/components/cards/projection";
+import { ProjectionCard } from "@/components/retirement-projection";
 import { AssumptionsBand } from "@/components/retirement/assumptions-band";
 
 // Code-split the recharts-heavy withdrawal comparison card. Loads on
@@ -30,13 +31,15 @@ import { AssumptionsBand } from "@/components/retirement/assumptions-band";
 // Recharts isn't SSR-friendly.
 const WithdrawalComparisonCard = dynamic(
   () =>
-    import("@/components/cards/withdrawal-comparison").then((m) => ({
-      default: m.WithdrawalComparisonCard,
-    })),
+    import("@/components/retirement-projection/withdrawal-comparison").then(
+      (m) => ({
+        default: m.WithdrawalComparisonCard,
+      }),
+    ),
   { loading: () => <SkeletonChart />, ssr: false },
 );
-import { CardBoundary } from "@/components/cards/dashboard/utils";
-import { PlanHealthCard } from "@/components/cards/plan-health";
+import { CardBoundary } from "@/components/dashboard/utils";
+import { PlanHealthCard } from "@/components/retirement/plan-health";
 import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
 
 export function RetirementContent() {
@@ -91,7 +94,7 @@ export function RetirementContent() {
     // can still be the input from before settings loaded.
     { placeholderData: (prev) => prev, enabled: queryEnabled },
   );
-  const { data, isFetching, error } = projectionQuery;
+  const { data, isFetching } = projectionQuery;
   // Waiting to run = still loading (a disabled query reports isLoading
   // false, which would read as "no projection").
   const isLoading =
@@ -115,24 +118,23 @@ export function RetirementContent() {
       placeholderData: (prev) => prev,
     });
 
-  if (isLoading) {
+  // Waiting on the input shows the skeleton; a failed input query shows.
+  if (isLoading || queryPending([projectionQuery, plan.gate])) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load retirement data: {error.message}
-      </p>
+      <QueryBoundary
+        query={[projectionQuery, plan.gate]}
+        what="retirement data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+            </div>
+          </div>
+        }
+      />
     );
   }
 

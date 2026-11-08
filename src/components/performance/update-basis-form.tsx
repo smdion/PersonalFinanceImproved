@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   accountDisplayName,
@@ -50,6 +50,7 @@ export function UpdateBasisForm({
     baselines: Record<string, string>;
     counted: Record<string, string>;
   } | null>(null);
+  const id = useId();
   const rowKey = (r: { performanceAccountId: number; ownerPersonId: number }) =>
     `${r.performanceAccountId}:${r.ownerPersonId}`;
 
@@ -236,7 +237,10 @@ export function UpdateBasisForm({
             )}
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-caption text-muted mb-0.5 block font-medium">
+                <label
+                  htmlFor={`${id}-${rowKey(row)}-contrib`}
+                  className="text-caption text-muted mb-0.5 block font-medium"
+                >
                   Contribution basis
                 </label>
                 <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
@@ -244,6 +248,7 @@ export function UpdateBasisForm({
                     $
                   </span>
                   <input
+                    id={`${id}-${rowKey(row)}-contrib`}
                     type="number"
                     step="0.01"
                     value={row.contributionBasis}
@@ -255,7 +260,10 @@ export function UpdateBasisForm({
                 </div>
               </div>
               <div>
-                <label className="text-caption text-muted mb-0.5 block font-medium">
+                <label
+                  htmlFor={`${id}-${rowKey(row)}-conversion`}
+                  className="text-caption text-muted mb-0.5 block font-medium"
+                >
                   Conversion basis
                 </label>
                 <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
@@ -263,6 +271,7 @@ export function UpdateBasisForm({
                     $
                   </span>
                   <input
+                    id={`${id}-${rowKey(row)}-conversion`}
                     type="number"
                     step="0.01"
                     value={row.conversionBasis}
@@ -274,10 +283,14 @@ export function UpdateBasisForm({
                 </div>
               </div>
               <div>
-                <label className="text-caption text-muted mb-0.5 block font-medium">
+                <label
+                  htmlFor={`${id}-${rowKey(row)}-year`}
+                  className="text-caption text-muted mb-0.5 block font-medium"
+                >
                   Latest conversion year
                 </label>
                 <input
+                  id={`${id}-${rowKey(row)}-year`}
                   type="number"
                   step="1"
                   value={row.latestConversionYear}

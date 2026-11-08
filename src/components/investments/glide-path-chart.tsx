@@ -12,13 +12,14 @@ import {
   CartesianGrid,
   Line,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { glidePathSummary } from "./glide-path-chart.summary";
 import { formatPercent } from "@/lib/utils/format";
 import {
   glidePathSeries,
@@ -67,7 +68,7 @@ export function GlidePathChart({
 
   return (
     <div>
-      <ResponsiveContainer width="100%" height={240}>
+      <ChartFrame summary={glidePathSummary(data, classes, key)} height={240}>
         <AreaChart
           data={data}
           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
@@ -197,7 +198,7 @@ export function GlidePathChart({
             />
           )}
         </AreaChart>
-      </ResponsiveContainer>
+      </ChartFrame>
       <ul className="text-caption text-secondary mt-1 flex flex-wrap gap-x-3 gap-y-1">
         {classes.map((c) => (
           <li key={c.assetClassId} className="flex items-center gap-1">

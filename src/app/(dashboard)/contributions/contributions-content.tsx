@@ -9,9 +9,10 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { PageHeader } from "@/components/ui/page-header";
 import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
-import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
+import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContributionsQueryBoundary } from "./contributions-query-boundary";
+import { queryPending } from "@/components/ui/query-boundary";
 import {
   formatCurrency,
   formatPercent,
@@ -82,9 +83,10 @@ export function ContributionsContent() {
       : {}),
     ...salaryProfileInput,
   };
-  const { data, isLoading } = trpc.contribution.computeSummary.useQuery(
+  const summary = trpc.contribution.computeSummary.useQuery(
     Object.keys(dataInput).length > 0 ? dataInput : undefined,
   );
+  const { data } = summary;
   const setPriorYear =
     trpc.settings.contributionAccounts.setPriorYearAmount.useMutation({
       onSuccess: () => utils.contribution.computeSummary.invalidate(),
@@ -131,22 +133,9 @@ export function ContributionsContent() {
     );
   }
 
-  if (isLoading || highIncomeThreshold === undefined) {
-    return (
-      <div>
-        <PageHeader
-          title="Contributions"
-          subtitle="Household contribution breakdown and savings rates"
-        />
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
-        <Skeleton className="h-64" />
-      </div>
-    );
-  }
+  // The high-income line's own failure has its card above.
+  if (queryPending(summary) || highIncomeThreshold === undefined)
+    return <ContributionsQueryBoundary query={summary} />;
 
   const people = data?.people ?? [];
   const priorYearWindow = data?.priorYearWindow ?? null;

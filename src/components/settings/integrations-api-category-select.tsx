@@ -24,6 +24,7 @@ export function ApiCategorySelect({
 
   return (
     <select
+      aria-label="API category"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="text-label border-strong bg-surface-primary w-full rounded border px-1.5 py-1 focus:ring-1 focus:ring-blue-500"

@@ -65,6 +65,14 @@ function addJob(personIndex: string, employer: string, salary: string) {
 }
 
 describe("OnboardingWizard smoke", () => {
+  it("is a dialog that Escape and its backdrop don't close", () => {
+    render(<OnboardingWizard onComplete={onComplete} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("presentation"));
+    expect(screen.getByRole("dialog", { name: "Set up Ledgr" })).toBeTruthy();
+    expect(screen.getByText("Step 1 of 6")).toBeInTheDocument();
+  });
+
   it("each step renders in order, and the last one saves the household", async () => {
     const { container } = render(<OnboardingWizard onComplete={onComplete} />);
     expect(screen.getByText("Step 1 of 6")).toBeInTheDocument();

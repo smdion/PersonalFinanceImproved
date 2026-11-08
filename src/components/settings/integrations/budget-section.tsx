@@ -30,14 +30,13 @@ import {
   SectionSummaryRow,
 } from "./section-summary-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { BudgetMutations } from "./hooks/use-budget-mutations";
+import { useIntegrationBudgetMutations } from "./use-integration-budget-mutations";
 
 type Props = {
   service: Service;
   budget: NonNullable<PreviewData["budget"]>;
   savings: PreviewData["savings"];
   allApiCats: ApiCategoryOption[];
-  mutations: BudgetMutations;
   onLinkSavings: (goalId: number, apiCategoryId: string) => void;
   onCreateSavingsGoalFromApi: (apiCat: {
     id: string;
@@ -58,7 +57,6 @@ export function BudgetSection({
   budget,
   savings,
   allApiCats,
-  mutations,
   onLinkSavings,
   onCreateSavingsGoalFromApi,
   savingsOverrideCount,
@@ -73,7 +71,7 @@ export function BudgetSection({
     renameBudgetApiName: renameBudgetApiNameMut,
     moveBudgetToApiGroup: moveBudgetToApiGroupMut,
     setBudgetSyncDir: setBudgetSyncDirMut,
-  } = mutations;
+  } = useIntegrationBudgetMutations();
 
   const [expandedBudget, setExpandedBudget] = useState(false);
   const [creatingSavingsFor, setCreatingSavingsFor] = useState<string | null>(
@@ -576,6 +574,7 @@ export function BudgetSection({
                     )) && (
                     <div className="flex items-center gap-1 pl-14">
                       <select
+                        aria-label={`Link to existing, ${c.groupName} › ${c.name}`}
                         value={apiToExisting[c.id] ?? ""}
                         onChange={(e) =>
                           setApiToExisting((prev) => ({

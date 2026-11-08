@@ -1,16 +1,12 @@
 "use client";
 
-import { isGoalMet } from "@/lib/pure/savings/savings-goal-met";
 import React, { useRef, useState } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import dynamic from "next/dynamic";
-import { ChevronRight, ChevronDown } from "lucide-react";
-import { InlineEdit } from "@/components/ui/inline-edit";
-import { Button } from "@/components/ui/button";
-import { confirm } from "@/components/ui/confirm-dialog";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { sumBy, safeDivide } from "@/lib/utils/math";
+import { Popover } from "@/components/ui/popover";
+import { formatCurrency } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 
 // Code-split the per-fund Recharts mini chart. All
 // FundCard instances on the page share a single chunk, so the recharts
@@ -30,6 +26,18 @@ const FundMiniChart = dynamic(
 );
 import { FundTransactionList } from "./fund-transaction-list";
 import { FundOverridesSummary } from "./fund-overrides-summary";
+import { FundCardMenuItems } from "./fund-card-menu";
+import {
+  FundBalanceHeadline,
+  FundMonthlySaving,
+  FundProgressAndTargetDate,
+} from "./fund-card-progress";
+import {
+  AddSubGoal,
+  SubGoalActions,
+  SubGoalProgressAndMove,
+} from "./fund-card-sub-goals";
+import { FundApiSyncPanel, FundSummaryRow } from "./fund-card-summary";
 import {
   GoalProjection,
   PlannedTxForm,
@@ -339,124 +347,24 @@ export function FundCard({
         &#8943;
       </button>
       {showMenu && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(false);
-            }}
+        <Popover
+          onClose={() => setShowMenu(false)}
+          layer="card"
+          className="bg-surface-primary absolute top-full right-0 mt-1 min-w-[130px] rounded-md border py-1 shadow-lg"
+        >
+          <FundCardMenuItems
+            onLinkToApi={onLinkToApi}
+            rawGoal={rawGoal}
+            setShowMenu={setShowMenu}
+            onUnlinkFromApi={onUnlinkFromApi}
+            onGoalUpdate={onGoalUpdate}
+            projection={projection}
+            onGoalUpdateMulti={onGoalUpdateMulti}
+            onConvertToBudgetItem={onConvertToBudgetItem}
+            savingsGoal={savingsGoal}
+            onDeleteGoal={onDeleteGoal}
           />
-          <div className="bg-surface-primary absolute top-full right-0 z-20 mt-1 min-w-[130px] rounded-md border py-1 shadow-lg">
-            {onLinkToApi && !rawGoal.isApiSyncEnabled && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onLinkToApi(rawGoal.id);
-                }}
-                className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-blue-600 transition-colors"
-              >
-                Link to API
-              </button>
-            )}
-            {onUnlinkFromApi && rawGoal.isApiSyncEnabled && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onUnlinkFromApi(rawGoal.id);
-                }}
-                className="text-faint hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Unlink API
-              </button>
-            )}
-            {rawGoal.targetMode !== "fixed" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onGoalUpdate(projection.goalId, "targetMode", "fixed");
-                }}
-                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Set Fixed Target
-              </button>
-            )}
-            {rawGoal.targetMode !== "ongoing" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  if (onGoalUpdateMulti) {
-                    onGoalUpdateMulti(projection.goalId, {
-                      targetMode: "ongoing",
-                      targetAmount: null,
-                      targetDate: null,
-                    });
-                  } else {
-                    onGoalUpdate(projection.goalId, "targetMode", "ongoing");
-                  }
-                }}
-                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Set Ongoing
-              </button>
-            )}
-            {rawGoal.targetMode !== "bucket" && onGoalUpdateMulti && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onGoalUpdateMulti(projection.goalId, {
-                    targetMode: "bucket",
-                    targetAmount: null,
-                    targetDate: null,
-                    monthlyContribution: "0",
-                    allocationPercent: null,
-                  });
-                }}
-                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
-              >
-                Set as Bucket
-              </button>
-            )}
-            {onConvertToBudgetItem && (
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  const goalMet = isGoalMet({
-                    targetMode: rawGoal.targetMode,
-                    target: savingsGoal.target,
-                    current: savingsGoal.current,
-                  });
-                  if (
-                    await confirm(
-                      `${goalMet ? `"${projection.name}" has met its goal. ` : ""}Convert "${projection.name}" to a budget item? Its monthly funding carries over. This will delete the sinking fund and its history.`,
-                    )
-                  )
-                    onConvertToBudgetItem(rawGoal.id, projection.name, goalMet);
-                }}
-                className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-amber-600 transition-colors"
-              >
-                → Budget Item
-              </button>
-            )}
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                setShowMenu(false);
-                if (await confirm(`Delete "${projection.name}"?`))
-                  onDeleteGoal({ id: rawGoal.id });
-              }}
-              className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-red-600 transition-colors"
-            >
-              Delete Fund
-            </button>
-          </div>
-        </>
+        </Popover>
       )}
     </div>
   );
@@ -466,335 +374,63 @@ export function FundCard({
       ref={cardRef}
       className="bg-surface-elevated rounded-lg border shadow-sm transition-shadow hover:shadow-md"
     >
-      {/* ── Compact summary row (always visible) ── */}
-      <div
-        className="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 select-none"
-        onClick={() => setCollapsed(!collapsed)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setCollapsed(!collapsed);
-        }}
-      >
-        {/* Chevron + color dot */}
-        <span className="text-faint shrink-0">
-          {collapsed ? (
-            <ChevronRight className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )}
-        </span>
-        <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: fundColor }}
-        />
-
-        {/* Name — left zone, takes available space */}
-        <span className="text-primary min-w-0 flex-1 truncate text-sm font-semibold">
-          {projection.name}
-        </span>
-
-        {/* Status — fixed width column, colored text only */}
-        <span
-          className={`text-label w-[110px] shrink-0 text-right font-medium ${status.color}`}
-        >
-          {status.label}
-        </span>
-
-        {/* Balance — fixed width column; e-fund shows still-needed instead of raw balance */}
-        <span className="text-primary w-[108px] shrink-0 text-right text-sm font-bold tabular-nums">
-          {rawGoal.isEmergencyFund && efundResult
-            ? efundResult.neededAfterRepay <= 0
-              ? "Fully funded"
-              : formatCurrency(efundResult.neededAfterRepay)
-            : formatCurrency(savingsGoal.current)}
-        </span>
-
-        {/* Monthly — fixed width column, muted when $0 */}
-        <span
-          className={`w-[80px] shrink-0 text-right text-xs font-semibold tabular-nums ${
-            projection.monthlyAllocation > 0 ? "text-green-600" : "text-muted"
-          }`}
-        >
-          {formatCurrency(projection.monthlyAllocation)}/mo
-        </span>
-
-        {/* Menu — fixed-width slot so all rows have identical right padding */}
-        <div className="flex w-6 shrink-0 justify-center">{menuDropdown}</div>
-      </div>
+      <FundSummaryRow
+        setCollapsed={setCollapsed}
+        collapsed={collapsed}
+        fundColor={fundColor}
+        projection={projection}
+        status={status}
+        rawGoal={rawGoal}
+        efundResult={efundResult}
+        savingsGoal={savingsGoal}
+        menuDropdown={menuDropdown}
+      />
 
       {/* ── Expanded body ── */}
       {!collapsed && (
         <div className="border-t px-4 pt-1 pb-4">
-          {/* ── API sync panel (when linked) ── */}
-          {apiBalance && rawGoal.isApiSyncEnabled && (
-            <div className="mt-2 mb-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
-              <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="font-medium text-blue-600">
-                  {rawGoal.apiCategoryName}
-                </span>
-              </div>
-              <div className="text-label space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-500/70">
-                    ↓ Balance from {serviceLabel}
-                  </span>
-                  <span className="font-semibold text-blue-300 tabular-nums">
-                    {formatCurrency(apiBalance.balance)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-500/70">
-                    ↑ Monthly goal pushed to {serviceLabel}
-                  </span>
-                  <span className="text-blue-300 tabular-nums">
-                    {formatCurrency(apiBalance.budgeted)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-500/70">
-                    Spent in {serviceLabel}
-                  </span>
-                  <span className="text-blue-300/70 tabular-nums">
-                    {formatCurrency(apiBalance.activity)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+          <FundApiSyncPanel
+            apiBalance={apiBalance}
+            rawGoal={rawGoal}
+            serviceLabel={serviceLabel}
+          />
 
           {/* ── Goal progress: the main story ── */}
           <div className="bg-surface-sunken border-subtle/50 mt-3 mb-3 rounded-lg border p-3">
-            {/* Balance + upcoming info */}
-            <div className="mb-2 flex items-baseline justify-between">
-              <div className="flex items-baseline gap-2">
-                {rawGoal.isEmergencyFund && efundResult ? (
-                  <>
-                    <div>
-                      <div className="text-caption text-faint mb-0.5">
-                        still needed
-                      </div>
-                      <span className="text-primary text-3xl font-extrabold tabular-nums">
-                        {efundResult.neededAfterRepay <= 0
-                          ? "Fully funded"
-                          : formatCurrency(efundResult.neededAfterRepay)}
-                      </span>
-                    </div>
-                    <span className="text-faint text-lg">/</span>
-                    <div>
-                      <div className="text-caption text-faint mb-0.5">
-                        target
-                      </div>
-                      <span className="text-muted text-xl tabular-nums">
-                        {formatCurrency(efundResult.targetAmount)}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-primary text-3xl font-extrabold tabular-nums">
-                      {formatCurrency(savingsGoal.current)}
-                    </span>
-                    {rawGoal.targetMode === "fixed" && (
-                      <>
-                        <span className="text-faint text-lg">/</span>
-                        {canEdit !== false ? (
-                          <InlineEdit
-                            value={String(savingsGoal.target)}
-                            onSave={(v) =>
-                              onGoalUpdate(projection.goalId, "targetAmount", v)
-                            }
-                            formatDisplay={(v) =>
-                              v === "0"
-                                ? "$0 — set target"
-                                : formatCurrency(Number(v))
-                            }
-                            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                            type="number"
-                            className="text-muted text-xl"
-                          />
-                        ) : (
-                          <span className="text-muted text-xl">
-                            {formatCurrency(savingsGoal.target)}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
+            <FundBalanceHeadline
+              rawGoal={rawGoal}
+              efundResult={efundResult}
+              savingsGoal={savingsGoal}
+              canEdit={canEdit}
+              onGoalUpdate={onGoalUpdate}
+              projection={projection}
+              transactions={transactions}
+            />
 
-              {/* Upcoming expenses */}
-              <div className="text-right">
-                {(() => {
-                  // Date-truncated cutoff — matches the shared
-                  // isFuturePlannedTx predicate's boundary semantics.
-                  const now = new Date();
-                  const today = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate(),
-                  );
-                  const upcomingExpenses = sumBy(
-                    transactions.filter(
-                      (t) =>
-                        t.amount < 0 &&
-                        new Date(t.transactionDate + "T00:00:00") >= today,
-                    ),
-                    (t) => Math.abs(t.amount),
-                  );
-                  if (upcomingExpenses > 0) {
-                    return (
-                      <div>
-                        <div className="text-muted text-xs tabular-nums">
-                          {formatCurrency(upcomingExpenses)} planned
-                        </div>
-                        <div className="text-caption text-muted">
-                          in upcoming expenses
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            </div>
-
-            {/* Progress bar — fixed goals and e-fund only */}
-            {savingsGoal.target > 0 &&
-              (rawGoal.targetMode === "fixed" || rawGoal.isEmergencyFund) && (
-                <div className="relative">
-                  <div className="bg-surface-strong h-3 overflow-hidden rounded-full">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        progress >= 1 ? "bg-green-500" : "bg-blue-500"
-                      }`}
-                      style={{ width: `${Math.min(100, progress * 100)}%` }}
-                    />
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="text-muted text-xs font-semibold tabular-nums">
-                      {progressPct}%
-                    </span>
-                    <span className="text-muted text-xs">
-                      {rawGoal.isEmergencyFund && efundResult
-                        ? efundResult.neededAfterRepay <= 0
-                          ? "Fully funded"
-                          : `${formatCurrency(efundResult.neededAfterRepay)} remaining`
-                        : `${formatCurrency(Math.max(0, savingsGoal.target - savingsGoal.current))} remaining`}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-            {/* Target date — fixed goals only */}
-            {rawGoal.targetMode === "fixed" && !rawGoal.isEmergencyFund && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-muted text-xs">Target date</span>
-                {canEdit !== false ? (
-                  <input
-                    type="date"
-                    value={rawGoal.targetDate ?? ""}
-                    onChange={(e) =>
-                      onGoalUpdate(
-                        projection.goalId,
-                        "targetDate",
-                        e.target.value || "",
-                      )
-                    }
-                    className="border-strong text-secondary border-b bg-transparent px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none"
-                  />
-                ) : (
-                  rawGoal.targetDate && (
-                    <span className="text-secondary text-xs">
-                      {formatDate(
-                        new Date(rawGoal.targetDate + "T00:00:00"),
-                        "short",
-                      )}
-                    </span>
-                  )
-                )}
-                {!rawGoal.targetDate && canEdit === false && (
-                  <span className="text-muted text-xs italic">not set</span>
-                )}
-              </div>
-            )}
-
-            {/* Monthly contribution — inline editable */}
-            <div className="border-subtle/50 mt-2.5 flex items-center gap-2 border-t pt-2">
-              <span className="text-muted text-xs">Saving</span>
-              {canEdit !== false ? (
-                <InlineEdit
-                  value={String(projection.monthlyAllocation)}
-                  onSave={(v) => {
-                    const dollar = v.replace(/[^0-9.]/g, "");
-                    const pool = maxMonthlyFunding;
-                    if (pool && pool > 0 && onGoalUpdateMulti) {
-                      const pct = safeDivide(Number(dollar), pool, 0)! * 100;
-                      onGoalUpdateMulti(projection.goalId, {
-                        monthlyContribution: dollar,
-                        allocationPercent: pct.toFixed(3),
-                      });
-                    } else {
-                      onGoalUpdate(
-                        projection.goalId,
-                        "monthlyContribution",
-                        dollar,
-                      );
-                    }
-                  }}
-                  formatDisplay={(v) => `${formatCurrency(Number(v))}/mo`}
-                  parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                  type="number"
-                  className="text-sm font-bold text-green-600"
-                />
-              ) : (
-                <span className="text-sm font-bold text-green-600">
-                  {formatCurrency(projection.monthlyAllocation)}/mo
-                </span>
-              )}
-              {totalMonthlyAllocation > 0 && (
-                <span className="text-caption text-muted">
-                  ({pct}% of pool)
-                </span>
-              )}
-              {canEdit !== false && rawGoal.allocationPercent != null && (
-                <>
-                  {onLockInAllocationPercent && (
-                    <button
-                      onClick={onLockInAllocationPercent}
-                      disabled={lockInAllocationPercentPending}
-                      className="text-caption text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      title="Keep this goal's dollar amount as-is; just update its % to reflect current income"
-                    >
-                      {lockInAllocationPercentPending
-                        ? "Updating..."
-                        : "Update %"}
-                    </button>
-                  )}
-                  {onRecalculateAllocation && (
-                    <button
-                      onClick={onRecalculateAllocation}
-                      disabled={recalculateAllocationPending}
-                      className="text-caption text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      title={`Recompute this goal's dollar amount from its ${rawGoal.allocationPercent}% allocation and current income`}
-                    >
-                      {recalculateAllocationPending
-                        ? "Pulling in pay..."
-                        : "Pull In Pay"}
-                    </button>
-                  )}
-                </>
-              )}
-              {rawGoal.isApiSyncEnabled && (
-                <span
-                  className="text-micro text-blue-600/70"
-                  title="Monthly contribution pushes to budget API for current + next month"
-                >
-                  → push
-                </span>
-              )}
-            </div>
+            <FundProgressAndTargetDate
+              savingsGoal={savingsGoal}
+              rawGoal={rawGoal}
+              progress={progress}
+              progressPct={progressPct}
+              efundResult={efundResult}
+              canEdit={canEdit}
+              onGoalUpdate={onGoalUpdate}
+              projection={projection}
+            />
+            <FundMonthlySaving
+              canEdit={canEdit}
+              projection={projection}
+              maxMonthlyFunding={maxMonthlyFunding}
+              onGoalUpdateMulti={onGoalUpdateMulti}
+              onGoalUpdate={onGoalUpdate}
+              totalMonthlyAllocation={totalMonthlyAllocation}
+              pct={pct}
+              rawGoal={rawGoal}
+              onLockInAllocationPercent={onLockInAllocationPercent}
+              lockInAllocationPercentPending={lockInAllocationPercentPending}
+              onRecalculateAllocation={onRecalculateAllocation}
+              recalculateAllocationPending={recalculateAllocationPending}
+            />
           </div>
 
           {/* ── Mini Chart: trajectory toward goal ── */}
@@ -869,82 +505,26 @@ export function FundCard({
                               {formatCurrency(childCurrent)} /{" "}
                               {formatCurrency(childTarget)}
                             </span>
-                            {canEdit !== false &&
-                              onUpdateParent &&
-                              availableParents && (
-                                <button
-                                  onClick={() =>
-                                    setReassigningChildId(
-                                      reassigningChildId === child.id
-                                        ? null
-                                        : child.id,
-                                    )
-                                  }
-                                  className="text-xs text-blue-600 transition-colors hover:text-blue-700"
-                                  title="Move to another fund"
-                                >
-                                  &#8596;
-                                </button>
-                              )}
-                            {canEdit !== false && (
-                              <button
-                                onClick={async () => {
-                                  if (await confirm(`Delete "${child.name}"?`))
-                                    onDeleteGoal({ id: child.id });
-                                }}
-                                className="text-faint text-xs transition-colors hover:text-red-600"
-                                title="Delete goal"
-                              >
-                                &times;
-                              </button>
-                            )}
+                            <SubGoalActions
+                              canEdit={canEdit}
+                              onUpdateParent={onUpdateParent}
+                              availableParents={availableParents}
+                              setReassigningChildId={setReassigningChildId}
+                              reassigningChildId={reassigningChildId}
+                              child={child}
+                              onDeleteGoal={onDeleteGoal}
+                            />
                           </div>
                         </div>
-                        <div className="bg-surface-strong mt-0.5 h-1.5 w-full rounded-full">
-                          <div
-                            className={`h-1.5 rounded-full ${childProgress >= 1 ? "bg-green-500" : "bg-indigo-400"}`}
-                            style={{ width: `${childProgress * 100}%` }}
-                          />
-                        </div>
-                        {reassigningChildId === child.id &&
-                          onUpdateParent &&
-                          availableParents && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <select
-                                className="border-default bg-surface-primary text-primary flex-1 rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                                defaultValue=""
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  onUpdateParent(
-                                    child.id,
-                                    val === "" ? null : Number(val),
-                                  );
-                                  setReassigningChildId(null);
-                                }}
-                              >
-                                <option value="" disabled>
-                                  Move to...
-                                </option>
-                                <option value="">None (top-level)</option>
-                                {availableParents
-                                  .filter(
-                                    (p) =>
-                                      p.id !== rawGoal.id && p.id !== child.id,
-                                  )
-                                  .map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                      {p.name}
-                                    </option>
-                                  ))}
-                              </select>
-                              <button
-                                onClick={() => setReassigningChildId(null)}
-                                className="text-xs text-blue-600 transition-colors hover:text-blue-700"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          )}
+                        <SubGoalProgressAndMove
+                          childProgress={childProgress}
+                          reassigningChildId={reassigningChildId}
+                          child={child}
+                          onUpdateParent={onUpdateParent}
+                          availableParents={availableParents}
+                          setReassigningChildId={setReassigningChildId}
+                          rawGoal={rawGoal}
+                        />
                       </div>
                     </div>
                   );
@@ -956,81 +536,15 @@ export function FundCard({
           {/* ── Add sub-goal ── */}
           {canEdit !== false && !rawGoal.isEmergencyFund && (
             <div className="mt-2">
-              {addingSubGoalForFund === rawGoal.id ? (
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newFund.name}
-                    onChange={(e) =>
-                      setNewFund({
-                        ...newFund,
-                        name: e.target.value,
-                        parentGoalId: rawGoal.id,
-                      })
-                    }
-                    placeholder="Goal name..."
-                    className="border-default bg-surface-primary text-primary w-full flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") onCreateFund();
-                      if (e.key === "Escape") setAddingSubGoalForFund(null);
-                    }}
-                  />
-                  <input
-                    type="number"
-                    value={newFund.targetAmount}
-                    onChange={(e) =>
-                      setNewFund({
-                        ...newFund,
-                        targetAmount: e.target.value,
-                        parentGoalId: rawGoal.id,
-                      })
-                    }
-                    placeholder="Target $"
-                    className="border-default bg-surface-primary text-primary w-24 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  />
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={onCreateFund}
-                    disabled={!newFund.name || createGoalPending}
-                  >
-                    Add
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setAddingSubGoalForFund(null);
-                      setNewFund({
-                        name: "",
-                        targetAmount: "",
-                        targetMode: "fixed",
-                        targetDate: "",
-                        parentGoalId: null,
-                      });
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setAddingSubGoalForFund(rawGoal.id);
-                    setNewFund({
-                      name: "",
-                      targetAmount: "",
-                      targetMode: "fixed",
-                      targetDate: "",
-                      parentGoalId: rawGoal.id,
-                    });
-                  }}
-                  className="text-xs text-blue-600 transition-colors hover:text-blue-700"
-                >
-                  + Add goal
-                </button>
-              )}
+              <AddSubGoal
+                addingSubGoalForFund={addingSubGoalForFund}
+                rawGoal={rawGoal}
+                newFund={newFund}
+                setNewFund={setNewFund}
+                onCreateFund={onCreateFund}
+                setAddingSubGoalForFund={setAddingSubGoalForFund}
+                createGoalPending={createGoalPending}
+              />
             </div>
           )}
         </div>

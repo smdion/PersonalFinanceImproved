@@ -786,9 +786,7 @@ export function NewSnapshotForm({
         {draftSavedAt != null && (
           <span className="text-faint text-xs">
             Draft saved on this device ·{" "}
-            {new Date(draftSavedAt).toLocaleTimeString(undefined, {
-              timeStyle: "short",
-            })}
+            {formatDate(new Date(draftSavedAt), "time")}
           </span>
         )}
         <div className="flex-1" />

@@ -20,6 +20,7 @@ import {
   type ProfileTabKey,
 } from "@/lib/config/profile-tabs";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
@@ -31,7 +32,7 @@ import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_BUDGET_NAME_COL_WIDTH,
 } from "@/lib/constants/settings-keys";
-import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
+import { useCloneProfile } from "@/components/budget/use-clone-profile";
 import {
   ContributionProfileManager,
   SalaryProfileManager,
@@ -43,15 +44,16 @@ import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal"
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
 import { ExtraPaycheckBudgetNote } from "@/components/budget/extra-paycheck-budget-note";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
+import { Tabs } from "@/components/ui/tabs";
 import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
 } from "@/components/budget";
-import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutations";
-import { useColumnMutations } from "@/components/budget/hooks/use-column-mutations";
-import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
-import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { useBudgetProfileMutations } from "@/components/budget/use-budget-profile-mutations";
+import { useBudgetColumnMutations } from "@/components/budget/use-budget-column-mutations";
+import { useBudgetSyncMutations } from "@/components/budget/use-budget-sync-mutations";
+import { useBudgetItemMutations } from "@/components/budget/use-budget-item-mutations";
+import { CardBoundary } from "@/components/dashboard/utils";
 import {
   BudgetPageContext,
   type BudgetPageContextValue,
@@ -121,7 +123,7 @@ export function BudgetContent({
     }),
     [activeContribProfileId, activeSalaryProfileIdSetting],
   );
-  const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
+  const summary = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     selection: paySelection,
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
@@ -153,17 +155,17 @@ export function BudgetContent({
     deleteProfile,
     renameProfile,
     duplicateProfile,
-  } = useProfileMutations();
+  } = useBudgetProfileMutations();
   const { clone: cloneProfile } = useCloneProfile(duplicateProfile);
   const handleActivateBudgetProfile = (id: number) => {
     setActiveProfile.mutate({ id });
   };
   const { addColumn, removeColumn, renameColumn, updateColumnMonths } =
-    useColumnMutations();
-  const { syncFromApi, syncToApi } = useSyncMutations();
+    useBudgetColumnMutations();
+  const { syncFromApi, syncToApi } = useBudgetSyncMutations();
 
   // selectedColumnRef lives here to break the circular dep between
-  // useBudgetPageState (needs updateBatch) and useItemMutations (needs the ref).
+  // useBudgetPageState (needs updateBatch) and useBudgetItemMutations (needs the ref).
   const selectedColumnRef = useRef(activeColumn);
   useEffect(() => {
     selectedColumnRef.current = activeColumn;
@@ -179,7 +181,7 @@ export function BudgetContent({
     reorderCategory,
     createItem,
     convertToGoal,
-  } = useItemMutations({ selectedColumnRef });
+  } = useBudgetItemMutations({ selectedColumnRef });
 
   // ---- Local UI state ----
   // Profiles: the tab follows the URL (?tab=), so links and the back button
@@ -238,7 +240,7 @@ export function BudgetContent({
     effectiveNameColWidth,
     onResizeStart,
   } = useBudgetPageState({
-    data,
+    data: summary.data,
     nameColWidth,
     setNameColWidth,
     updateBatch,
@@ -263,7 +265,7 @@ export function BudgetContent({
     buildPushPreviewItems,
     buildPullPreviewItems,
   } = useBudgetDerivedData({
-    data,
+    data: summary.data,
     savingsGoals,
     apiActualsData,
     contribProfileId: activeContribProfileId,
@@ -308,22 +310,21 @@ export function BudgetContent({
   );
 
   // ---- Loading / error / empty states ----
-  if (isLoading) {
+  if (queryPending(summary)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/4" />
-        <SkeletonChart height={256} />
-      </div>
+      <QueryBoundary
+        query={summary}
+        what="budget"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/4" />
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load budget: {error.message}
-      </p>
-    );
-  }
-  if (!data?.result) {
+  if (!summary.data?.result) {
     return (
       <div>
         <PageHeader title="Budget" />
@@ -423,22 +424,14 @@ export function BudgetContent({
                 these, and What-If previews combinations of them, so they
                 come last. */}
             <div className="mb-4 flex items-center justify-between border-b">
-              <div role="tablist" className="flex gap-1 overflow-x-auto">
-                {PROFILE_TABS.filter(
+              <Tabs
+                look="underline-xs"
+                value={profileTab}
+                onChange={setActiveTab}
+                tabs={PROFILE_TABS.filter(
                   (t) => t.key !== "savings" || hasPermission(user, "savings"),
-                ).map((t) => (
-                  <button
-                    key={t.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === t.key}
-                    onClick={() => setActiveTab(t.key)}
-                    className={`border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-colors ${activeTab === t.key ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+                ).map((t) => ({ value: t.key, label: t.label }))}
+              />
               {/* One padlock for every profile tab (EDIT_LOCK_KEYS
                   .profileEditLocked) — locking any one locks them all.
                   What-If is a sandbox with nothing to lock. */}

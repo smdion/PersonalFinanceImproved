@@ -1,0 +1,54 @@
+Portfolio Snapshots
+Last snapshot: 3/1/2026
+Quick Look
+Chart
+New Snapshot
+Account Balances
+$618,000.00
+By Account Type
+401k$405,000.00(65.5%)
+Brokerage$140,000.00(22.7%)
+IRA$45,000.00(7.3%)
+HSA$28,000.00(4.5%)
+Total$618,000.00
+By Institution
+Contoso 401(k) plan$310,000.00(50.2%)
+Schwab$140,000.00(22.7%)
+Fabrikam 401(k) plan$95,000.00(15.4%)
+Vanguard$45,000.00(7.3%)
+HealthEquity$28,000.00(4.5%)
+Total$618,000.00
+Per Person
+Jordan$338,000.00(54.7%)
+Riley$140,000.00(22.7%)
+Joint$140,000.00(22.7%)
+Total$618,000.00
+Tax Bucket
+Traditional$405,000.00(65.5%)
+After-Tax$140,000.00(22.7%)
+Roth$45,000.00(7.3%)
+HSA$28,000.00(4.5%)
+Total$618,000.00
+Per Person Detail
+Jordan Traditional$310,000.00(50.2%)
+Joint After-Tax$140,000.00(22.7%)
+Riley Traditional$95,000.00(15.4%)
+Riley Roth$45,000.00(7.3%)
+Jordan HSA$28,000.00(4.5%)
+Total$618,000.00
+By Account
+Jordan 401k (Contoso 401(k) plan)
+$310,000.00
+Joint Brokerage (Schwab)
+$140,000.00
+Riley 401k (Fabrikam 401(k) plan)
+$95,000.00
+Riley IRA (Vanguard)
+$45,000.00
+Jordan HSA (HealthEquity)
+$28,000.00
+Snapshot History
+(1 snapshot)
+Account & Contribution Settings
+?(5 accounts)
+Holding history

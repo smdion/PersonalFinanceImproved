@@ -91,7 +91,7 @@ test.describe("Sync integration journey (M18)", () => {
 
     // The page may or may not open the integrations tab by default
     // depending on URL handling; if not, click the tab.
-    const tab = page.getByRole("button", { name: /^Integrations$/i });
+    const tab = page.getByRole("tab", { name: /^Integrations$/i });
     if ((await tab.count()) > 0) {
       await tab.click();
     }
@@ -107,7 +107,7 @@ test.describe("Sync integration journey (M18)", () => {
     await page.waitForLoadState("domcontentloaded");
 
     // Click into Integrations tab.
-    const tab = page.getByRole("button", { name: /^Integrations$/i });
+    const tab = page.getByRole("tab", { name: /^Integrations$/i });
     if ((await tab.count()) > 0) {
       await tab.click();
     }

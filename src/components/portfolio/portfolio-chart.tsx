@@ -11,9 +11,9 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
-  ResponsiveContainer,
 } from "recharts";
 import { Card } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   stackedSeries,
   type StackedSnapshot,
@@ -22,6 +22,7 @@ import {
   formatCurrency,
   formatPercent,
   compactCurrency,
+  formatDate,
 } from "@/lib/utils/format";
 import {
   CHART_COLORS,
@@ -32,6 +33,8 @@ import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
 import { localDateStr } from "@/lib/utils/date";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { portfolioSummary, stackedSummary } from "./portfolio-chart.summary";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
 const TIME_FRAMES: TimeFrame[] = ["YTD", "3M", "6M", "1Y", "3Y", "All"];
@@ -44,6 +47,10 @@ type SnapshotPoint = {
 };
 
 type ChartMode = "total" | "account";
+const CHART_MODES = [
+  { value: "total", label: "Total" },
+  { value: "account", label: "By account" },
+] as const;
 
 type ChartPoint = {
   date: string;
@@ -60,12 +67,7 @@ type ChartPoint = {
 /** A day after the latest snapshot: change from it across fully linked accounts. */
 type LivePoint = { date: string; change: number; accounts: number };
 
-const shortLabel = (date: string) =>
-  new Date(date + "T00:00:00").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "2-digit",
-  });
+const shortLabel = (date: string) => formatDate(date, "dayShortYear");
 
 function getTimeFrameCutoff(tf: TimeFrame): string | null {
   if (tf === "All") return null;
@@ -186,38 +188,21 @@ export function PortfolioChart({
             </span>
           </span>
           {canStack && (
-            <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
-              {(["total", "account"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  aria-pressed={mode === m}
-                  className={`text-label rounded px-2 py-0.5 transition-colors ${
-                    mode === m
-                      ? "bg-surface-primary text-primary font-medium shadow-sm"
-                      : "text-muted hover:text-secondary"
-                  }`}
-                >
-                  {m === "total" ? "Total" : "By account"}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              look="tray-label"
+              ariaLabel="Chart view"
+              value={mode}
+              onChange={setMode}
+              options={CHART_MODES}
+            />
           )}
-          <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
-            {TIME_FRAMES.map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeFrame(tf)}
-                className={`text-label rounded px-2 py-0.5 transition-colors ${
-                  timeFrame === tf
-                    ? "bg-surface-primary text-primary font-medium shadow-sm"
-                    : "text-muted hover:text-secondary"
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            look="tray-label"
+            ariaLabel="Time frame"
+            value={timeFrame}
+            onChange={setTimeFrame}
+            options={TIME_FRAMES.map((tf) => ({ value: tf, label: tf }))}
+          />
         </div>
       }
       className="mb-6"
@@ -225,7 +210,7 @@ export function PortfolioChart({
       {mode === "account" && canStack ? (
         <StackedByAccount stacked={stacked} />
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
+        <ChartFrame summary={portfolioSummary(renderData)} height={300}>
           <AreaChart
             data={renderData}
             margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -353,7 +338,7 @@ export function PortfolioChart({
               />
             )}
           </AreaChart>
-        </ResponsiveContainer>
+        </ChartFrame>
       )}
     </Card>
   );
@@ -366,8 +351,7 @@ function StackedByAccount({
   stacked: ReturnType<typeof stackedSeries>;
 }) {
   const colorOf = (i: number) => FUND_COLORS[i % FUND_COLORS.length]!;
-  // The account band under the mouse: drawn stronger, and picked out in the
-  // tooltip and legend.
+  // The hovered account band: drawn stronger, picked out in tooltip and legend.
   const [hovered, setHovered] = useState<string | null>(null);
   const rows: (Record<string, number | string> & {
     date: string;
@@ -375,7 +359,7 @@ function StackedByAccount({
   })[] = stacked.rows.map((r) => ({ ...r, label: shortLabel(r.date) }));
   return (
     <>
-      <ResponsiveContainer width="100%" height={300}>
+      <ChartFrame summary={stackedSummary(rows, stacked.series)} height={300}>
         <AreaChart
           data={rows}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -454,7 +438,7 @@ function StackedByAccount({
             />
           ))}
         </AreaChart>
-      </ResponsiveContainer>
+      </ChartFrame>
       <div className="text-caption text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {stacked.series.map((s, i) => (
           <span

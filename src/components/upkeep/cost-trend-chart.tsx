@@ -10,13 +10,14 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ResponsiveContainer,
   Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { gridProps, axisProps } from "@/components/charts/chart-defaults";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { costTrendSummary } from "./cost-trend-chart.summary";
 
 /** Minimal per-year shape this chart needs — decoupled from the page's
  *  fuller UtilityYearRow. */
@@ -48,7 +49,7 @@ export function CostTrendChart({
 
   return (
     <div className="h-[140px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ChartFrame summary={costTrendSummary(data)}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="year" {...axisProps} />
@@ -84,7 +85,7 @@ export function CostTrendChart({
             ))}
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
+      </ChartFrame>
     </div>
   );
 }

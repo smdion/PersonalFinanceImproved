@@ -394,6 +394,7 @@ function PeriodForm({
       {draft.rows.map((r, i) => (
         <div key={r.key} className="flex items-center gap-2">
           <select
+            aria-label={`Fund ${i + 1}`}
             value={r.securityId ?? ""}
             onChange={(e) => {
               const rows = [...draft.rows];
@@ -448,6 +449,7 @@ function PeriodForm({
           Another fund
         </Button>
         <input
+          aria-label="Ticker"
           value={ticker}
           onChange={(e) => setTicker(e.target.value)}
           placeholder="Ticker"
@@ -462,6 +464,7 @@ function PeriodForm({
           Add by ticker
         </Button>
         <input
+          aria-label="Plan fund name"
           value={fundName}
           onChange={(e) => setFundName(e.target.value)}
           placeholder="Plan fund name (no ticker)"

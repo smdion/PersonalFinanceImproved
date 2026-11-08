@@ -41,7 +41,7 @@ describe("sync config router", () => {
   describe("setActiveBudgetApi", () => {
     it("can set to 'none' without a connection", async () => {
       const result = await caller.sync.setActiveBudgetApi({ value: "none" });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("throws PRECONDITION_FAILED when activating ynab without connection", async () => {

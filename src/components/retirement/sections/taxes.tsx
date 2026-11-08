@@ -16,10 +16,7 @@
  */
 "use client";
 
-import {
-  getStrategyMeta,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import {
   parseReturnFilingStatus,
   RETURN_FILING_STATUS_VALUES,
@@ -28,7 +25,7 @@ import {
   FILING_STATUS_LABELS,
   filingStatusLabel,
 } from "@/lib/config/display-labels";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +74,7 @@ export function TaxesSection({
   isEditable,
   bracketOptimizerResult,
 }: Props) {
+  const id = useId();
   const filingStatus = settings.filingStatus;
 
   // Persisted withdrawal ORDER / SPLITS defaults (this profile's saved
@@ -134,6 +132,7 @@ export function TaxesSection({
           Taxes in Retirement
         </h4>
         <select
+          aria-label="Filing status"
           className="text-caption text-faint hover:border-border focus:border-accent cursor-pointer rounded border border-transparent bg-transparent px-1 py-0.5 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           value={settings.filingStatusExplicit ?? ""}
           disabled={!isEditable}
@@ -260,12 +259,13 @@ export function TaxesSection({
           )}
         </div>
         <div>
-          <span className="text-muted">
+          <label htmlFor={`${id}-ceiling`} className="text-muted">
             Bracket Ceiling
             <HelpTip text="Fill traditional (pre-tax) withdrawals up to this bracket, then use Roth for the rest. Keeps taxable income in cheaper brackets." />
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-ceiling`}
               value={String(rothTargetOf(settings.rothBracketTarget))}
               onChange={(e) => {
                 upsertSettings.mutate(
@@ -335,6 +335,7 @@ export function TaxesSection({
             </button>
             {settings.enableRothConversions && (
               <select
+                aria-label="Roth conversion target bracket"
                 value={String(
                   rothTargetOf(
                     settings.rothConversionTarget ?? settings.rothBracketTarget,
@@ -359,12 +360,13 @@ export function TaxesSection({
           </div>
         </div>
         <div>
-          <span className="text-muted">
+          <label htmlFor={`${id}-order`} className="text-muted">
             Discretionary Withdrawal Order
             <HelpTip text="Beyond your Traditional bracket target, which free source drains first: Roth basis (default) or brokerage's 0%-capital-gains room. Brokerage-first uses up the 0% room sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even when it's taxed at 0% federally — Roth withdrawals never touch MAGI. If you have ACA or IRMAA awareness on, brokerage-first trades subsidy/surcharge risk for using that room sooner." />
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-order`}
               value={settings.discretionaryWithdrawalOrder}
               onChange={(e) => {
                 upsertSettings.mutate(
@@ -392,14 +394,15 @@ export function TaxesSection({
           </div>
         </div>
         <div>
-          <span className="text-muted">
+          <label htmlFor={`${id}-routing`} className="text-muted">
             Withdrawal Routing
             <HelpTip
               text={`WHICH accounts fund a year's withdrawal (separate from your spending strategy above, which decides HOW MUCH). ${WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS.bracket_filling} This is your saved default — the Retirement page's Configure toggle can customize it for one session without changing what's saved here.`}
             />
-          </span>
+          </label>
           <div className="font-medium">
             <select
+              id={`${id}-routing`}
               value={settings.withdrawalRoutingMode}
               onChange={(e) => {
                 upsertSettings.mutate(
@@ -546,10 +549,8 @@ export function TaxesSection({
  *  up then. */
 function withdrawalSized(settings: Settings | undefined): boolean {
   if (!settings) return false;
-  const meta = getStrategyMeta(
-    settings.withdrawalStrategy as WithdrawalStrategyType,
-  );
-  const field = meta.paramFields.find((f) => f.key === "ssInAmount");
+  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const field = meta?.paramFields.find((f) => f.key === "ssInAmount");
   if (!field) return false;
   const stored = (settings as Record<string, unknown>)[field.column];
   return stored == null ? field.default !== true : stored !== true;

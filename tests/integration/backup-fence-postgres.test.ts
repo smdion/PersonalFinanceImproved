@@ -1,7 +1,8 @@
 /**
- * The connections fence on PostgreSQL (the cases are in
- * ./backup-fence-cases, shared with SQLite): ids are reused after a restore
- * resets the sequences, and TRUNCATE ... CASCADE runs over the other tables.
+ * The connections fence and the closed-set check on PostgreSQL (the cases
+ * are in ./backup-fence-cases and ./closed-set-import-cases, shared with
+ * SQLite): ids are reused after a restore resets the sequences, and
+ * TRUNCATE ... CASCADE runs over the other tables.
  *
  * Runs only when TEST_DATABASE_URL names a throwaway database (its name
  * must end in `_test`): each case drops and rebuilds its schemas. CI runs
@@ -18,6 +19,10 @@ import { describe, beforeAll, afterAll } from "vitest";
 import pg from "pg";
 import { runMigrator } from "../routers/fresh-install-cases";
 import { backupFenceCases } from "./backup-fence-cases";
+import {
+  closedSetImportCases,
+  unknownAccountTypeCases,
+} from "./closed-set-import-cases";
 
 describe.skipIf(skipWithoutPostgres)(
   "backup connections fence (PostgreSQL)",
@@ -39,7 +44,7 @@ describe.skipIf(skipWithoutPostgres)(
       restoreEnv();
     });
 
-    backupFenceCases(async () => {
+    const fresh = async () => {
       await dropAllSchemas(admin);
       runMigrator();
       // Imported only after DATABASE_URL points at the test database: the db
@@ -53,6 +58,10 @@ describe.skipIf(skipWithoutPostgres)(
           )
         ).rows.map((r) => r.column_name);
       return { db: db as never, columns, done: () => {} };
-    });
+    };
+
+    backupFenceCases(fresh);
+    closedSetImportCases(fresh);
+    unknownAccountTypeCases(fresh);
   },
 );

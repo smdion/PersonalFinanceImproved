@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
+import { Button } from "@/components/ui/button";
 import { FormField, FormInput } from "@/components/forms";
 import { PlannedTxForm } from "./types";
 
@@ -19,6 +20,7 @@ export function AddTransactionForm({
   createTxPending: boolean;
   onCancel: () => void;
 }) {
+  const id = useId();
   return (
     <div className="bg-surface-primary/50 mt-3 rounded-lg border p-3">
       <p className="text-faint mb-2 text-xs font-medium">
@@ -54,9 +56,15 @@ export function AddTransactionForm({
           />
         </FormField>
         <div>
-          <label className="text-faint mb-1 block text-xs">Recurring?</label>
+          <label
+            htmlFor={`${id}-recurring`}
+            className="text-faint mb-1 block text-xs"
+          >
+            Recurring?
+          </label>
           <div className="flex items-center gap-2">
             <input
+              id={`${id}-recurring`}
               type="checkbox"
               checked={txForm.isRecurring}
               onChange={(e) =>
@@ -65,6 +73,7 @@ export function AddTransactionForm({
             />
             {txForm.isRecurring && (
               <FormInput
+                aria-label="Recurs every N months"
                 type="number"
                 min="1"
                 value={txForm.recurrenceMonths}
@@ -79,13 +88,14 @@ export function AddTransactionForm({
         </div>
       </div>
       <div className="mt-3 flex gap-2">
-        <button
+        <Button
+          size="sm"
           onClick={onAddTx}
           disabled={createTxPending}
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          className="!font-normal"
         >
           {createTxPending ? "Saving..." : "Add"}
-        </button>
+        </Button>
         <button
           onClick={onCancel}
           className="text-faint hover:bg-surface-elevated rounded border px-3 py-1 text-sm"

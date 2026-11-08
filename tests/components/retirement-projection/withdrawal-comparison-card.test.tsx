@@ -1,0 +1,214 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ComponentProps } from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { WithdrawalComparisonCard } from "@/components/retirement-projection/withdrawal-comparison";
+import { resetTrpcMock, setQuery, setQueryState } from "../trpc-mock";
+
+// Smoke test for WithdrawalComparisonCard. Follows the leaf-component smoke
+// pattern used elsewhere (e.g. networth-sections-smoke.test.tsx): mock
+// HelpTip/StrategyGuideButton (noisy) and recharts (heavy, canvas-less in
+// happy-dom).
+
+vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
+vi.mock("@/components/retirement/strategy-guide-panel", () => ({
+  StrategyGuideButton: () => null,
+}));
+
+vi.mock("recharts", () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
+  Line: ({ name }: { name?: string }) => <div data-testid="line">{name}</div>,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  Legend: () => null,
+}));
+
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../trpc-mock")).trpc,
+}));
+
+const ANALYZE = "projection.analyzeStrategy";
+
+const strategies: ComponentProps<
+  typeof WithdrawalComparisonCard
+>["strategies"] = [
+  {
+    strategy: "fixed",
+    label: "Fixed Withdrawal",
+    shortLabel: "Fixed",
+    failureAge: null,
+    failureYear: null,
+    failureReason: null,
+    year1Spending: 52000,
+    avgAnnualSpending: 53000,
+    year1Withdrawal: 40000,
+    avgAnnualWithdrawal: 41000,
+    minAnnualWithdrawal: 38000,
+    maxAnnualWithdrawal: 44000,
+    endRetirementBalance: 500000,
+    legacyAmount: 500000,
+    successRate: 0.95,
+    spendingStabilityRate: 0.9,
+    budgetStabilityRate: 0.85,
+    yearByYear: [
+      {
+        age: 65,
+        year: 2045,
+        withdrawal: 40000,
+        spending: 40000,
+        retirementBalance: 900000,
+      },
+      {
+        age: 66,
+        year: 2046,
+        withdrawal: 41000,
+        spending: 41000,
+        retirementBalance: 870000,
+      },
+    ],
+  },
+  {
+    strategy: "guyton_klinger",
+    label: "Guyton-Klinger Guardrails",
+    shortLabel: "Guardrails",
+    failureAge: 88,
+    failureYear: 2068,
+    failureReason: "depleted" as const,
+    year1Spending: 54000,
+    avgAnnualSpending: 55000,
+    year1Withdrawal: 42000,
+    avgAnnualWithdrawal: 40000,
+    minAnnualWithdrawal: 30000,
+    maxAnnualWithdrawal: 48000,
+    endRetirementBalance: 0,
+    legacyAmount: 0,
+    successRate: 0.6,
+    spendingStabilityRate: null,
+    budgetStabilityRate: null,
+    yearByYear: [
+      {
+        age: 65,
+        year: 2045,
+        withdrawal: 42000,
+        spending: 42000,
+        retirementBalance: 850000,
+      },
+    ],
+  },
+];
+
+function baseProps(
+  overrides: Partial<
+    React.ComponentProps<typeof WithdrawalComparisonCard>
+  > = {},
+) {
+  return {
+    strategies,
+    activeStrategy: "fixed",
+    dollarMode: "nominal" as const,
+    onDollarModeChange: vi.fn(),
+    inflationRate: 0.03,
+    ...overrides,
+  };
+}
+
+describe("WithdrawalComparisonCard", () => {
+  beforeEach(() => {
+    resetTrpcMock();
+  });
+
+  it("renders nothing when there are no strategies", () => {
+    const { container } = render(
+      <WithdrawalComparisonCard {...baseProps({ strategies: [] })} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders without crashing and shows a row per strategy", () => {
+    render(<WithdrawalComparisonCard {...baseProps()} />);
+    expect(
+      screen.getByText("Withdrawal Strategy Comparison"),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Fixed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Guardrails").length).toBeGreaterThan(0);
+    expect(screen.getByText("(active)")).toBeInTheDocument();
+  });
+
+  it("shows 'Never' for a strategy with no depletion age and the age for one that has it", () => {
+    render(<WithdrawalComparisonCard {...baseProps()} />);
+    expect(screen.getByText("Never")).toBeInTheDocument();
+    expect(screen.getByText("2068")).toBeInTheDocument();
+  });
+
+  it("renders an em dash for null stability rates", () => {
+    render(<WithdrawalComparisonCard {...baseProps()} />);
+    // Guardrails row has null spendingStabilityRate/budgetStabilityRate.
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("toggles the chart metric between Portfolio Balance and Annual Withdrawal", () => {
+    render(<WithdrawalComparisonCard {...baseProps()} />);
+    const withdrawalBtn = screen.getByText("Annual Withdrawal");
+    fireEvent.click(withdrawalBtn);
+    expect(withdrawalBtn.className).toContain("bg-blue-600");
+  });
+
+  it("calls onDollarModeChange when switching Today's $/Future $ toggle", () => {
+    const onDollarModeChange = vi.fn();
+    render(<WithdrawalComparisonCard {...baseProps({ onDollarModeChange })} />);
+    fireEvent.click(screen.getByText("Future $"));
+    expect(onDollarModeChange).toHaveBeenCalledWith("nominal");
+  });
+
+  it("opt-in analyzer: shows the 'Analyze My Strategy' button, then loading, then recommendations", () => {
+    const { rerender } = render(
+      <WithdrawalComparisonCard
+        {...baseProps({ analyzerInput: { snapshotId: 1 } })}
+      />,
+    );
+    expect(screen.getByText("Analyze My Strategy →")).toBeInTheDocument();
+
+    setQueryState(ANALYZE, { isLoading: true });
+    fireEvent.click(screen.getByText("Analyze My Strategy →"));
+    rerender(
+      <WithdrawalComparisonCard
+        {...baseProps({ analyzerInput: { snapshotId: 1 } })}
+      />,
+    );
+    expect(
+      screen.getByText("Running scenario analysis..."),
+    ).toBeInTheDocument();
+
+    setQueryState(ANALYZE, { isLoading: false, isError: false });
+    setQuery(ANALYZE, {
+      strategyLabel: "Fixed Withdrawal",
+      baseline: { successRate: 0.9, stabilityRate: 0.8 },
+      recommendations: [
+        {
+          label: "Withdrawal Rate",
+          currentValue: "4%",
+          adjustedValue: "3.5%",
+          successRate: 0.95,
+          successDelta: 0.05,
+          stabilityRate: 0.85,
+          stabilityDelta: 0.05,
+        },
+      ],
+    });
+    rerender(
+      <WithdrawalComparisonCard
+        {...baseProps({ analyzerInput: { snapshotId: 1 } })}
+      />,
+    );
+    expect(
+      screen.getByText("Strategy Analysis — Fixed Withdrawal"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Withdrawal Rate: 4% → 3.5%/)).toBeInTheDocument();
+  });
+});

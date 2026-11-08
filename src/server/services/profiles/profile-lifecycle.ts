@@ -20,6 +20,7 @@ import {
 } from "@/server/services/profiles/plans";
 import { upsertSetting } from "@/server/data/settings";
 import { firstRow } from "@/lib/utils/first-row";
+import type { Ack } from "@/lib/http/probe-result";
 
 export type LifecycleKind = "contribution" | "salary" | "retirement";
 
@@ -321,7 +322,7 @@ export async function deleteProfile(
   db: Db,
   kind: LifecycleKind,
   id: number,
-): Promise<{ success: boolean }> {
+): Promise<Ack> {
   const activeSettingRows = await db
     .select()
     .from(schema.appSettings)
@@ -347,7 +348,7 @@ export async function deleteProfile(
   await assertNoPlanUses(db, kind, id);
 
   await DELETE_ROWS[kind](db, id);
-  return { success: true };
+  return { ok: true };
 }
 
 // ── make active ──
@@ -358,11 +359,11 @@ export async function setActiveProfile(
   db: Db,
   kind: "contribution" | "salary",
   id: number | null,
-): Promise<{ success: boolean }> {
+): Promise<Ack> {
   const key = ACTIVE_SETTING_KEY[kind];
   if (id === null) {
     await db.delete(schema.appSettings).where(eq(schema.appSettings.key, key));
-    return { success: true };
+    return { ok: true };
   }
 
   const table = PROFILE_TABLE[kind];
@@ -377,5 +378,5 @@ export async function setActiveProfile(
     });
 
   await upsertSetting(db, key, id);
-  return { success: true };
+  return { ok: true };
 }

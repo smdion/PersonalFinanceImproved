@@ -1,6 +1,7 @@
 /**
  * Quick search (Cmd/Ctrl-K) from the keyboard: opens, filters, moves,
- * opens the page, and closes — announced as a combobox over a listbox.
+ * opens the page, and closes — announced as a combobox over a listbox,
+ * with Tab kept inside and focus handed back.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -42,7 +43,22 @@ describe("QuickSearch", () => {
       "aria-selected",
       "true",
     );
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(box, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps Tab in the dialog and gives focus back on close", () => {
+    render(<button type="button">Opener</button>);
+    render(<QuickSearch />);
+    const opener = screen.getByRole("button", { name: "Opener" });
+    opener.focus();
+    openWithKeyboard();
+    const box = screen.getByRole("combobox", { name: "Search pages" });
+    expect(box).toHaveFocus();
+    fireEvent.keyDown(box, { key: "Tab" });
+    expect(box).toHaveFocus();
+    fireEvent.click(screen.getByRole("presentation"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(opener).toHaveFocus();
   });
 });

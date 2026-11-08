@@ -11,23 +11,23 @@ import {
 // appear (rendered via the mocked ProjectionCard), and tab switching works.
 // Child components are stubbed so we don't pull in recharts or hit the engine.
 
-vi.mock("@/components/cards/projection", () => ({
+vi.mock("@/components/retirement-projection", () => ({
   ProjectionCard: () => <div data-testid="projection-card" />,
 }));
 
-vi.mock("@/components/cards/withdrawal-comparison", () => ({
+vi.mock("@/components/retirement-projection/withdrawal-comparison", () => ({
   WithdrawalComparisonCard: () => (
     <div data-testid="withdrawal-comparison">Comparison</div>
   ),
 }));
 
-vi.mock("@/components/cards/plan-health", () => ({
+vi.mock("@/components/retirement/plan-health", () => ({
   PlanHealthCard: () => (
     <div data-testid="plan-health">Plan Health Content</div>
   ),
 }));
 
-vi.mock("@/components/cards/strategy-guide-panel", () => ({
+vi.mock("@/components/retirement/strategy-guide-panel", () => ({
   StrategyGuideButton: () => null,
 }));
 
@@ -47,7 +47,7 @@ vi.mock("@/lib/hooks/use-active-retirement-profile", () => ({
   useActiveRetirementProfile: () => [null, vi.fn()],
 }));
 
-vi.mock("@/components/cards/dashboard/utils", () => ({
+vi.mock("@/components/dashboard/utils", () => ({
   CardBoundary: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),
@@ -94,6 +94,7 @@ vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
       decumulationDefaults: { withdrawalTaxPreference: {} },
     },
     ready: true,
+    gate: [],
     ids: {
       contributionProfileId: null,
       salaryProfileId: null,

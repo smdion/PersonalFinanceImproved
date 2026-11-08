@@ -11,7 +11,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   Cell,
   PieChart,
   Pie,
@@ -27,6 +26,9 @@ import {
   legendProps,
 } from "@/components/charts/chart-defaults";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { pieSummary } from "@/components/charts/pie.summary";
+import { budgetVsActualSummary } from "./expenses-charts.summary";
 
 type GroupSummaryRow = {
   name: string;
@@ -47,7 +49,10 @@ export function BudgetVsActualBar({
   data: readonly GroupSummaryRow[];
 }) {
   return (
-    <ResponsiveContainer width="100%" height={Math.max(200, data.length * 40)}>
+    <ChartFrame
+      summary={budgetVsActualSummary(data)}
+      height={Math.max(200, data.length * 40)}
+    >
       <BarChart
         data={[...data]}
         layout="vertical"
@@ -101,13 +106,13 @@ export function BudgetVsActualBar({
           ))}
         </Bar>
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
 
 export function SpendingPie({ data }: { data: readonly SpendingPieSlice[] }) {
   return (
-    <ResponsiveContainer width="100%" height={250}>
+    <ChartFrame summary={pieSummary("Spending breakdown", data)} height={250}>
       <PieChart>
         <Pie
           isAnimationActive={false}
@@ -130,6 +135,6 @@ export function SpendingPie({ data }: { data: readonly SpendingPieSlice[] }) {
         />
         <Legend {...legendProps} iconSize={8} />
       </PieChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }

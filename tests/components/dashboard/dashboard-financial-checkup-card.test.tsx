@@ -1,0 +1,289 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import {
+  evaluateMilestones,
+  type MilestoneInput,
+  type MilestoneResult,
+} from "@/lib/pure/advice/milestones/milestones";
+import { makeInput } from "../../fixtures/milestones";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  type MockOutput,
+} from "../trpc-mock";
+
+// Direct smoke test for
+// src/components/dashboard/financial-checkup-card.tsx: milestone rows
+// come from the Milestones engine (run for real on a synthetic input), the
+// savings-rate row from the contribution summary and the shared switches.
+
+vi.mock("@/components/ui/help-tip", () => ({
+  HelpTip: () => null,
+}));
+vi.mock("@/lib/context/scenario-context", () => ({
+  useScenario: () => ({ viewMode: "projected" as const, isInScenario: false }),
+}));
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),
+  isAdmin: (u: { role: string }) => u.role === "admin",
+  hasPermission: () => true,
+}));
+vi.mock("@/lib/hooks/use-persisted-setting", () => ({
+  usePersistedSetting: (key: string, defaultValue: unknown) => {
+    if (key === "high_income_threshold") return [200000, vi.fn()];
+    return [defaultValue, vi.fn()];
+  },
+}));
+vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
+  useYearEndTargetingInput: () => ({}),
+}));
+
+let milestonesState: {
+  isLoading: boolean;
+  projectionLoading: boolean;
+  error: boolean;
+  input: MilestoneInput | null;
+  results: MilestoneResult[];
+};
+// The Roth IRA recommendation has its own tests (recommendations-roth).
+vi.mock("@/lib/hooks/use-household-income-summary", () => ({
+  // Filing status known — no "set your filing status" item.
+  useHouseholdIncomeSummary: () => ({
+    data: { filingStatus: "MFJ" },
+    isLoading: false,
+  }),
+}));
+vi.mock("@/lib/hooks/use-roth-ira", () => ({
+  useRothIra: () => ({ isLoading: false, view: null }),
+}));
+vi.mock("@/lib/hooks/use-investing-findings", () => ({
+  useInvestingFindings: () => ({
+    isLoading: false,
+    drag: [],
+    hsa: [],
+    harvest: [],
+    cheaper: [],
+  }),
+}));
+vi.mock("@/lib/hooks/use-milestones", () => ({
+  useContributionSummaryInput: () => ({}),
+  useMilestones: () => milestonesState,
+}));
+
+vi.mock("@/lib/hooks/use-high-income-line", () => ({
+  useHighIncomeLine: () => ({
+    threshold: 200_000,
+    basis: "MFJ",
+    defaultThreshold: 200_000,
+    setSaved: vi.fn(),
+  }),
+}));
+
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../trpc-mock")).trpc,
+}));
+
+import { FinancialCheckupCard } from "@/components/dashboard/financial-checkup-card";
+
+/** What contribution.computeSummary answers (loaded, no error). */
+const contribsAre = (data: MockOutput<"contribution.computeSummary">) =>
+  setQuery("contribution.computeSummary", data);
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("settings.appSettings.list", []);
+  holdMutation("settings.appSettings.setDismissal");
+});
+
+const baseContribs = {
+  people: [
+    {
+      person: { id: 1, name: "Alice" },
+      accountTypes: [
+        {
+          accountType: "401k",
+          overBy: 0,
+          capMessages: [] as string[],
+          employerMatch: 3000,
+          parentCategory: "Retirement",
+          employeeContrib: 30000,
+          tradContrib: 20000,
+          taxFreeContrib: 10000,
+          afterTaxContrib: 0,
+          hsaContrib: 0,
+        },
+      ],
+      result: {},
+      totalCompensation: 150000,
+      salary: 150000,
+      totals: {
+        views: {
+          projected: {
+            retirementWithoutMatch: 30000,
+            retirementWithMatch: 33000,
+            portfolioWithoutMatch: 0,
+            portfolioWithMatch: 0,
+            compensation: 150000,
+          },
+        },
+      },
+    },
+  ],
+};
+
+function withMilestones(input: MilestoneInput) {
+  milestonesState = {
+    isLoading: false,
+    projectionLoading: false,
+    error: false,
+    input,
+    results: evaluateMilestones(input),
+  };
+}
+
+describe("FinancialCheckupCard smoke", () => {
+  it("renders a loading card while the milestones are pending", () => {
+    milestonesState = {
+      isLoading: true,
+      projectionLoading: false,
+      error: false,
+      input: null,
+      results: [],
+    };
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("Financial Checkup")).toBeInTheDocument();
+  });
+
+  it("renders an error card when a query errors", () => {
+    milestonesState = {
+      isLoading: false,
+      projectionLoading: false,
+      error: true,
+      input: null,
+      results: [],
+    };
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+  });
+
+  it("shows the emergency fund months from the engine", () => {
+    withMilestones(makeInput({ efundMonths: 4.5 }));
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("Emergency Fund")).toBeInTheDocument();
+    expect(screen.getByText("4.5 mo covered")).toBeInTheDocument();
+  });
+
+  it("shows the shared disclaimer", () => {
+    withMilestones(makeInput({}));
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(
+      screen.getByText(
+        "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the full match as captured", () => {
+    withMilestones(makeInput({ match: { captured: 3000, available: 3000 } }));
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("Employer Match")).toBeInTheDocument();
+    expect(screen.getByText("$3,000.00/yr captured")).toBeInTheDocument();
+  });
+
+  it("flags match left on the table", () => {
+    withMilestones(makeInput({ match: { captured: 2000, available: 3000 } }));
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("$1,000.00/yr missed")).toBeInTheDocument();
+  });
+
+  it("judges high-interest debt, not mortgage prepayment", () => {
+    withMilestones(makeInput());
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("High-Interest Debt")).toBeInTheDocument();
+    expect(
+      screen.getByText("No debt besides the mortgage"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the FI pace from the projection", () => {
+    withMilestones(makeInput());
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("FI Progress")).toBeInTheDocument();
+    expect(screen.getAllByText(/On pace for \d{4}/)[0]).toBeInTheDocument();
+  });
+
+  it("links to Recommendations with the count and counts what's on track", () => {
+    withMilestones(makeInput());
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText(/\/\d+ on track/)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /recommendation/i });
+    expect(link).toHaveAttribute("href", "/recommendations");
+    expect(link.textContent).toMatch(/^\d+ recommendations? →$/);
+  });
+
+  it("a savings rate that rounds to the target is green", () => {
+    withMilestones(makeInput());
+    // 24.96% retirement-only without the match: rounds to 25%.
+    contribsAre({
+      people: [
+        {
+          ...baseContribs.people[0],
+          totals: {
+            views: {
+              projected: {
+                retirementWithoutMatch: 37440,
+                retirementWithMatch: 40440,
+                portfolioWithoutMatch: 0,
+                portfolioWithMatch: 0,
+                compensation: 150000,
+              },
+            },
+          },
+        },
+      ],
+    });
+    render(<FinancialCheckupCard />);
+    fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
+    const row = screen.getByRole("button", { name: /Savings Rate/ });
+    expect(within(row).getByText("25%")).toBeInTheDocument();
+    expect(row.querySelector(".text-green-500")).not.toBeNull();
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
+  });
+
+  it("expands the Savings Rate row into what it's made of", () => {
+    withMilestones(makeInput());
+    contribsAre(baseContribs);
+    render(<FinancialCheckupCard />);
+    // Below the high-income threshold: the match counts by default.
+    expect(screen.getByText("22%")).toBeInTheDocument();
+    expect(screen.queryByText("Employer match")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
+    // The breakdown's match line, plus the "Employer match" switch.
+    expect(screen.getAllByText("Employer match")).toHaveLength(2);
+    expect(screen.getByText("Roth")).toBeInTheDocument();
+    const row = () => screen.getByRole("button", { name: /Savings Rate/ });
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
+    expect(within(row()).getByText("20%")).toBeInTheDocument();
+    // Only the switch is left.
+    expect(screen.getAllByText("Employer match")).toHaveLength(1);
+    // Portfolio toggle: the fixture has no Portfolio money, so the rate holds
+    // and the row says what's counted.
+    fireEvent.click(screen.getByRole("switch", { name: "Portfolio" }));
+    expect(within(row()).getByText("20%")).toBeInTheDocument();
+    expect(screen.getByText("retirement only")).toBeInTheDocument();
+    // The switches are shared app-wide (a module store): put them back.
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Portfolio" }));
+  });
+});

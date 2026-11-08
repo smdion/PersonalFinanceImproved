@@ -1,15 +1,15 @@
 "use client";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
-import { HouseholdIncomeCard } from "@/components/cards/dashboard/household-income-card";
-import { SavingsGoalsCard } from "@/components/cards/dashboard/savings-goals-card";
-import { RetirementCard } from "@/components/cards/dashboard/retirement-card";
-import { NetWorthCard } from "@/components/cards/dashboard/net-worth-card";
-import { LinkedBalanceCard } from "@/components/cards/dashboard/linked-balance-card";
-import { ContributionsCard } from "@/components/cards/dashboard/contributions-card";
-import { FinancialCheckupCard } from "@/components/cards/dashboard/financial-checkup-card";
-import { LivingCostsCard } from "@/components/cards/dashboard/living-costs-card";
+import { CardBoundary } from "@/components/dashboard/utils";
+import { HouseholdIncomeCard } from "@/components/dashboard/household-income-card";
+import { SavingsGoalsCard } from "@/components/dashboard/savings-goals-card";
+import { RetirementCard } from "@/components/dashboard/retirement-card";
+import { NetWorthCard } from "@/components/dashboard/net-worth-card";
+import { LinkedBalanceCard } from "@/components/dashboard/linked-balance-card";
+import { ContributionsCard } from "@/components/dashboard/contributions-card";
+import { FinancialCheckupCard } from "@/components/dashboard/financial-checkup-card";
+import { LivingCostsCard } from "@/components/dashboard/living-costs-card";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { trpc } from "@/lib/trpc";
 

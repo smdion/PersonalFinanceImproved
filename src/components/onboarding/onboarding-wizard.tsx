@@ -1,674 +1,23 @@
 "use client";
 
-import {
-  BLANK_SALARY_ENTRY,
-  type SalaryEntry,
-} from "@/lib/db/salary-entry-defaults";
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { FormError } from "@/components/ui/form-error";
-import { Badge } from "@/components/ui/badge";
-import { localDateStr } from "@/lib/utils/date";
-import { formatCurrency } from "@/lib/utils/format";
-
-// --- Types ---
-
-interface PersonDraft {
-  name: string;
-  dateOfBirth: string;
-  isPrimaryUser: boolean;
-}
-
-interface JobDraft {
-  personIndex: number;
-  employerName: string;
-  annualSalary: string;
-  payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
-}
-
-interface AdminDraft {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import { Modal } from "@/components/ui/modal";
+import {
+  type PersonDraft,
+  type JobDraft,
+  type AdminDraft,
+  STEPS,
+  type Step,
+} from "./wizard-state";
+import { WizardNav } from "./wizard-nav";
+import { restoreFromBackup } from "./wizard-saves";
+import { wizardNavigation } from "./wizard-navigation";
+import { WizardBody } from "./wizard-body";
+import { WizardProgress } from "./wizard-body";
 
 interface OnboardingWizardProps {
   onComplete: () => void;
-}
-
-const STEPS = ["Welcome", "Admin", "OIDC", "People", "Income", "Done"] as const;
-type Step = (typeof STEPS)[number];
-
-// --- Step components ---
-
-function WelcomeStep({
-  onNext,
-  onRestore,
-}: {
-  onNext: () => void;
-  onRestore: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-6 py-8 text-center">
-      <div className="text-primary text-4xl font-bold">Welcome to Ledgr!</div>
-      <p className="text-muted max-w-md text-lg">
-        Let&apos;s set up your financial dashboard. We&apos;ll walk you through
-        a few quick steps to get your household configured.
-      </p>
-      <button
-        onClick={onNext}
-        className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
-      >
-        Get Started
-      </button>
-      <div className="flex w-full max-w-xs items-center gap-3">
-        <div className="bg-surface-strong h-px flex-1" />
-        <span className="text-muted text-sm">or</span>
-        <div className="bg-surface-strong h-px flex-1" />
-      </div>
-      <button
-        onClick={onRestore}
-        className="border-default text-muted hover:text-primary hover:bg-surface-elevated rounded-lg border px-6 py-3 transition-colors"
-      >
-        Restore from Backup
-      </button>
-    </div>
-  );
-}
-
-function AdminStep({
-  admin,
-  setAdmin,
-}: {
-  admin: AdminDraft;
-  setAdmin: (a: AdminDraft) => void;
-}) {
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
-
-  const validate = (field: string, value: string) => {
-    const newErrors = { ...errors };
-    if (field === "name" && !value.trim()) {
-      newErrors.name = "Name is required";
-    } else if (field === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      newErrors.email = "Enter a valid email address";
-    } else if (field === "password" && value.length < 12) {
-      newErrors.password = "Password must be at least 12 characters";
-    } else if (field === "confirmPassword" && value !== admin.password) {
-      newErrors.confirmPassword = "Passwords do not match";
-    } else {
-      newErrors[field] = null;
-    }
-    setErrors(newErrors);
-  };
-
-  const update = (field: keyof AdminDraft, value: string) => {
-    setAdmin({ ...admin, [field]: value });
-    if (errors[field]) validate(field, value);
-  };
-
-  return (
-    <div className="flex flex-col gap-6 py-4">
-      <div className="text-center">
-        <h2 className="text-primary text-2xl font-bold">
-          Create Admin Account
-        </h2>
-        <p className="text-muted mt-1">
-          Set up a local admin account for logging in. This is your primary
-          login and recovery method.
-        </p>
-      </div>
-
-      <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
-        <div>
-          <label className="text-secondary mb-1 block text-sm font-medium">
-            Display Name
-          </label>
-          <input
-            type="text"
-            value={admin.name}
-            onChange={(e) => update("name", e.target.value)}
-            onBlur={(e) => validate("name", e.target.value)}
-            placeholder="Admin"
-            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.name ? "border-red-400" : "border-default"}`}
-          />
-          <FormError message={errors.name ?? null} />
-        </div>
-        <div>
-          <label className="text-secondary mb-1 block text-sm font-medium">
-            Email
-          </label>
-          <input
-            type="email"
-            value={admin.email}
-            onChange={(e) => update("email", e.target.value)}
-            onBlur={(e) => validate("email", e.target.value)}
-            placeholder="admin@example.com"
-            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.email ? "border-red-400" : "border-default"}`}
-          />
-          <FormError message={errors.email ?? null} />
-        </div>
-        <div>
-          <label className="text-secondary mb-1 block text-sm font-medium">
-            Password
-          </label>
-          <input
-            type="password"
-            value={admin.password}
-            onChange={(e) => update("password", e.target.value)}
-            onBlur={(e) => validate("password", e.target.value)}
-            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.password ? "border-red-400" : "border-default"}`}
-          />
-          <FormError message={errors.password ?? null} />
-          <p className="text-muted mt-1 text-xs">Minimum 12 characters</p>
-        </div>
-        <div>
-          <label className="text-secondary mb-1 block text-sm font-medium">
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            value={admin.confirmPassword}
-            onChange={(e) => update("confirmPassword", e.target.value)}
-            onBlur={(e) => validate("confirmPassword", e.target.value)}
-            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.confirmPassword ? "border-red-400" : "border-default"}`}
-          />
-          <FormError message={errors.confirmPassword ?? null} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OidcStep() {
-  const [shouldTest, setShouldTest] = useState(false);
-
-  const testConnection = trpc.settings.testOidcConnection.useQuery(undefined, {
-    enabled: shouldTest,
-  });
-
-  const testResult = testConnection.data ?? null;
-  const testing = testConnection.isFetching;
-
-  const handleTest = () => {
-    if (shouldTest) {
-      testConnection.refetch();
-    } else {
-      setShouldTest(true);
-    }
-  };
-
-  const envVars = [
-    {
-      name: "AUTH_AUTHENTIK_ISSUER",
-      description: "Authentik application OAuth2 issuer URL",
-      example: "https://auth.example.com/application/o/ledgr",
-    },
-    {
-      name: "AUTH_AUTHENTIK_ID",
-      description: "OAuth2 Client ID from the Authentik provider",
-      example: "your-client-id",
-    },
-    {
-      name: "AUTH_AUTHENTIK_SECRET",
-      description: "OAuth2 Client Secret from the Authentik provider",
-      example: "your-client-secret",
-    },
-  ];
-
-  return (
-    <div className="flex flex-col gap-6 py-4">
-      <div className="text-center">
-        <h2 className="text-primary text-2xl font-bold">
-          Connect to Authentik
-        </h2>
-        <p className="text-muted mt-1">
-          Enable SSO for your household. You can set this up later in Settings.
-        </p>
-      </div>
-
-      <div className="bg-surface-secondary rounded-lg p-4 text-sm">
-        <p className="text-secondary mb-3">
-          Set these environment variables in your Docker Compose or container
-          configuration, then restart the container:
-        </p>
-        <div className="space-y-3">
-          {envVars.map((v) => (
-            <div key={v.name}>
-              <code className="font-mono text-xs text-blue-600 dark:text-blue-400">
-                {v.name}
-              </code>
-              <p className="text-muted mt-0.5 text-xs">{v.description}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Test connection */}
-      <div className="flex flex-col items-center gap-3">
-        <button
-          onClick={handleTest}
-          disabled={testing}
-          className="border-default text-primary hover:bg-surface-elevated rounded-lg border px-4 py-2 font-medium transition-colors disabled:opacity-50"
-        >
-          {testing ? "Testing..." : "Test Connection"}
-        </button>
-
-        {testResult && (
-          <div
-            className={`w-full rounded-lg p-3 text-center text-sm ${
-              testResult.configured && testResult.reachable
-                ? "border border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400"
-                : "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-            }`}
-          >
-            {testResult.configured && testResult.reachable && (
-              <>Authentik is connected ({testResult.issuer})</>
-            )}
-            {testResult.configured && !testResult.reachable && (
-              <>
-                Environment variables are set but the issuer is not reachable.
-                Check the URL and try again.
-              </>
-            )}
-            {!testResult.configured && (
-              <>
-                Environment variables are not configured yet. Set them and
-                restart the container, then test again.
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      <p className="text-muted text-center text-xs">
-        After setting environment variables, restart the container for changes
-        to take effect. OIDC can also be configured later from the Settings
-        page.
-      </p>
-    </div>
-  );
-}
-
-function PeopleStep({
-  people,
-  setPeople,
-}: {
-  people: PersonDraft[];
-  setPeople: (p: PersonDraft[]) => void;
-}) {
-  const [name, setName] = useState("");
-  const [birthYear, setBirthYear] = useState("");
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [birthYearError, setBirthYearError] = useState<string | null>(null);
-
-  const addPerson = () => {
-    let hasError = false;
-    setNameError(null);
-    setBirthYearError(null);
-
-    if (!name.trim()) {
-      setNameError("Name is required");
-      hasError = true;
-    }
-
-    if (!birthYear.trim()) {
-      setBirthYearError("Birth year is required");
-      hasError = true;
-    } else {
-      const year = parseInt(birthYear, 10);
-      if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-        setBirthYearError(
-          `Enter a year between 1900 and ${new Date().getFullYear()}`,
-        );
-        hasError = true;
-      }
-    }
-
-    if (hasError) return;
-
-    const year = parseInt(birthYear, 10);
-    const dateOfBirth = `${year}-01-01`;
-    const isPrimary = people.length === 0;
-    setPeople([
-      ...people,
-      { name: name.trim(), dateOfBirth, isPrimaryUser: isPrimary },
-    ]);
-    setName("");
-    setBirthYear("");
-    setNameError(null);
-    setBirthYearError(null);
-  };
-
-  const removePerson = (index: number) => {
-    const updated = people.filter((_, i) => i !== index);
-    // Ensure first person is still primary
-    if (updated.length > 0 && !updated.some((p) => p.isPrimaryUser)) {
-      updated[0] = { ...updated[0]!, isPrimaryUser: true };
-    }
-    setPeople(updated);
-  };
-
-  return (
-    <div className="flex flex-col gap-6 py-4">
-      <div className="text-center">
-        <h2 className="text-primary text-2xl font-bold">Household Members</h2>
-        <p className="text-muted mt-1">
-          Add the people in your household. At least one is required.
-        </p>
-      </div>
-
-      {/* Existing people list */}
-      {people.length > 0 && (
-        <div className="space-y-2">
-          {people.map((person, i) => (
-            <div
-              key={`${person.name}-${person.dateOfBirth}`}
-              className="bg-surface-primary border-default flex items-center justify-between rounded-lg border px-4 py-3"
-            >
-              <div>
-                <span className="text-primary font-medium">{person.name}</span>
-                <span className="text-muted ml-2 text-sm">
-                  (born {person.dateOfBirth.substring(0, 4)})
-                </span>
-                {person.isPrimaryUser && (
-                  <Badge color="blue" size="sm" shape="pill" className="ml-2">
-                    Primary
-                  </Badge>
-                )}
-              </div>
-              <button
-                onClick={() => removePerson(i)}
-                className="text-sm text-red-500 hover:text-red-700"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Add person form */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setNameError(null);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && addPerson()}
-            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${nameError ? "border-red-400" : "border-default"}`}
-          />
-          <FormError message={nameError} />
-        </div>
-        <div>
-          <input
-            type="number"
-            placeholder="Birth year"
-            value={birthYear}
-            onChange={(e) => {
-              setBirthYear(e.target.value);
-              setBirthYearError(null);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && addPerson()}
-            className={`bg-surface-primary text-primary placeholder:text-muted w-32 [appearance:textfield] rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${birthYearError ? "border-red-400" : "border-default"}`}
-          />
-          <FormError message={birthYearError} />
-        </div>
-        <button
-          onClick={addPerson}
-          className="self-start rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          Add Person
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function IncomeStep({
-  people,
-  jobs,
-  setJobs,
-}: {
-  people: PersonDraft[];
-  jobs: JobDraft[];
-  setJobs: (j: JobDraft[]) => void;
-}) {
-  const [personIndex, setPersonIndex] = useState(0);
-  const [employerName, setEmployerName] = useState("");
-  const [annualSalary, setAnnualSalary] = useState("");
-  const [payPeriod, setPayPeriod] = useState<JobDraft["payPeriod"]>("biweekly");
-  const [employerError, setEmployerError] = useState<string | null>(null);
-  const [salaryError, setSalaryError] = useState<string | null>(null);
-
-  const addJob = () => {
-    let hasError = false;
-    setEmployerError(null);
-    setSalaryError(null);
-
-    if (!employerName.trim()) {
-      setEmployerError("Employer name is required");
-      hasError = true;
-    }
-
-    if (!annualSalary.trim()) {
-      setSalaryError("Annual salary is required");
-      hasError = true;
-    } else {
-      const salary = parseFloat(annualSalary);
-      if (isNaN(salary) || salary <= 0) {
-        setSalaryError("Enter a valid salary amount");
-        hasError = true;
-      }
-    }
-
-    if (hasError) return;
-
-    const salary = parseFloat(annualSalary);
-    setJobs([
-      ...jobs,
-      {
-        personIndex,
-        employerName: employerName.trim(),
-        annualSalary: salary.toFixed(2),
-        payPeriod,
-      },
-    ]);
-    setEmployerName("");
-    setAnnualSalary("");
-    setEmployerError(null);
-    setSalaryError(null);
-  };
-
-  const removeJob = (index: number) => {
-    setJobs(jobs.filter((_, i) => i !== index));
-  };
-
-  return (
-    <div className="flex flex-col gap-6 py-4">
-      <div className="text-center">
-        <h2 className="text-primary text-2xl font-bold">Income</h2>
-        <p className="text-muted mt-1">
-          Add employment information. This step is optional -- you can skip it
-          and add jobs later.
-        </p>
-      </div>
-
-      {/* Existing jobs list */}
-      {jobs.length > 0 && (
-        <div className="space-y-2">
-          {jobs.map((job, i) => (
-            <div
-              key={`${job.personIndex}-${job.employerName}`}
-              className="bg-surface-primary border-default flex items-center justify-between rounded-lg border px-4 py-3"
-            >
-              <div>
-                <span className="text-primary font-medium">
-                  {job.employerName}
-                </span>
-                <span className="text-muted ml-2 text-sm">
-                  ({people[job.personIndex]?.name}) --{" "}
-                  {formatCurrency(Number(job.annualSalary))}/{job.payPeriod}
-                </span>
-              </div>
-              <button
-                onClick={() => removeJob(i)}
-                className="text-sm text-red-500 hover:text-red-700"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Add job form */}
-      <div className="flex flex-col gap-3">
-        {people.length > 1 && (
-          <select
-            value={personIndex}
-            onChange={(e) => setPersonIndex(Number(e.target.value))}
-            className="border-default bg-surface-primary text-primary rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          >
-            {people.map((p, i) => (
-              <option key={p.name} value={i}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Employer name"
-              value={employerName}
-              onChange={(e) => {
-                setEmployerName(e.target.value);
-                setEmployerError(null);
-              }}
-              className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${employerError ? "border-red-400" : "border-default"}`}
-            />
-            <FormError message={employerError} />
-          </div>
-          <div>
-            <input
-              type="number"
-              placeholder="Annual salary"
-              value={annualSalary}
-              onChange={(e) => {
-                setAnnualSalary(e.target.value);
-                setSalaryError(null);
-              }}
-              className={`bg-surface-primary text-primary placeholder:text-muted w-40 [appearance:textfield] rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${salaryError ? "border-red-400" : "border-default"}`}
-            />
-            <FormError message={salaryError} />
-          </div>
-          <select
-            value={payPeriod}
-            onChange={(e) =>
-              setPayPeriod(e.target.value as JobDraft["payPeriod"])
-            }
-            className="border-default bg-surface-primary text-primary w-40 self-start rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Biweekly</option>
-            <option value="semimonthly">Semimonthly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
-        <button
-          onClick={addJob}
-          className="self-start rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          Add Job
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function DoneStep({
-  isSaving,
-  taxDataSync,
-  setTaxDataSync,
-}: {
-  isSaving: boolean;
-  taxDataSync: boolean;
-  setTaxDataSync: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-6 py-8 text-center">
-      <div className="text-primary text-4xl font-bold">
-        You&apos;re all set!
-      </div>
-      <p className="text-muted max-w-md text-lg">
-        Your dashboard is ready. You can always add more details from the
-        Settings page.
-      </p>
-      <label className="text-secondary flex max-w-md items-start gap-2 text-left text-sm">
-        <input
-          type="checkbox"
-          checked={taxDataSync}
-          onChange={(e) => setTaxDataSync(e.target.checked)}
-          className="mt-1"
-        />
-        <span>
-          Check weekly for new tax figures (IRS limits, brackets) between Ledgr
-          updates. A plain request to the project&apos;s GitHub — nothing about
-          you is sent, and nothing changes until you review it. You can turn it
-          off later under Integrations.
-        </span>
-      </label>
-      {isSaving && <p className="text-muted text-sm">Saving your data...</p>}
-    </div>
-  );
-}
-
-// --- Step indicator (which wizard step you are on) ---
-
-function StepIndicator({
-  currentStep,
-  steps,
-}: {
-  currentStep: number;
-  steps: readonly string[];
-}) {
-  return (
-    <div className="mb-8 flex items-center justify-center gap-2">
-      {steps.map((label, i) => (
-        <div key={label} className="flex items-center gap-2">
-          <div className="flex flex-col items-center">
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                i < currentStep
-                  ? "bg-blue-600 text-white"
-                  : i === currentStep
-                    ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                    : "bg-surface-strong text-muted"
-              }`}
-            >
-              {i < currentStep ? "\u2713" : i + 1}
-            </div>
-            <span className="text-muted mt-1 hidden text-xs sm:block">
-              {label}
-            </span>
-          </div>
-          {i < steps.length - 1 && (
-            <div
-              className={`h-0.5 w-8 sm:w-12 ${
-                i < currentStep ? "bg-blue-600" : "bg-surface-strong"
-              }`}
-            />
-          )}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 // --- Main wizard ---
@@ -708,44 +57,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsRestoring(true);
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/versions/import", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Import failed");
-      }
-
-      // Sync budget API after restore (silently — may not be configured)
-      try {
-        const activeService = await utils.sync.getActiveBudgetApi.fetch();
-        if (activeService !== "none") {
-          await syncAll.mutateAsync({ service: activeService });
-        }
-      } catch {
-        // No API connection configured or sync failed — not critical
-      }
-
-      // Full page reload to pick up all imported data
-      window.location.reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to restore backup");
-      setIsRestoring(false);
-    }
-  };
+  const { handleFileSelected } = restoreFromBackup(
+    setIsRestoring,
+    setError,
+    utils,
+    syncAll,
+  );
 
   const steps: readonly Step[] = adminNeeded
     ? STEPS
@@ -771,250 +88,80 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     currentStep === "Income";
 
   /** Create the local admin account before advancing past the Admin step */
-  const handleAdminCreate = async () => {
-    if (!adminNeeded) return true;
-    setError(null);
-    try {
-      await createLocalAdmin.mutateAsync({
-        name: admin.name.trim(),
-        email: admin.email.trim(),
-        password: admin.password,
-      });
-      await utils.settings.firstRunState.invalidate();
-      return true;
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Failed to create admin account.",
-      );
-      // Refused because an admin exists already: move past the step.
-      const { data } = await firstRun.refetch();
-      if (data?.adminNeeded === false) {
-        setError(null);
-        setCurrentStep("OIDC");
-      }
-      return false;
-    }
-  };
-
-  const handleFinish = async () => {
-    setIsSaving(true);
-    setError(null);
-    try {
-      // Create all people and collect their IDs
-      const createdPeopleIds: number[] = [];
-      for (const person of people) {
-        const created = await createPerson.mutateAsync(person);
-        createdPeopleIds.push(created!.id);
-      }
-
-      // Create all jobs, mapping personIndex to the real person ID. A job
-      // carries no salary of its own — each one's annualSalary from the
-      // Income step goes into the household's Salary Profile below instead.
-      const today = localDateStr();
-      const jobEntries: Record<
-        string,
-        { salary: number; payPeriod: JobDraft["payPeriod"] }
-      > = {};
-      for (const job of jobs) {
-        const personId = createdPeopleIds[job.personIndex];
-        if (personId === undefined) continue;
-        const created = await createJob.mutateAsync({
-          personId,
-          employerName: job.employerName,
-          startDate: today,
-        });
-        if (created) {
-          jobEntries[String(created.id)] = {
-            salary: Number(job.annualSalary),
-            payPeriod: job.payPeriod,
-          };
-        }
-      }
-
-      // Give each new job a complete entry in the baseline Salary Profile
-      // (migrations always leave exactly one active profile behind, even on
-      // a fresh install) — no bonus assumed, plain on-target terms.
-      if (Object.keys(jobEntries).length > 0) {
-        const profiles = await utils.salaryProfile.list.fetch();
-        const baseline = profiles[0];
-        if (baseline) {
-          const salaries = { ...baseline.salaries } as Record<
-            string,
-            SalaryEntry
-          >;
-          for (const [jobId, entry] of Object.entries(jobEntries)) {
-            salaries[jobId] = {
-              ...BLANK_SALARY_ENTRY,
-              salary: entry.salary,
-              payPeriod: entry.payPeriod,
-            };
-          }
-          await updateSalaryProfile.mutateAsync({
-            id: baseline.id,
-            salaries,
-          });
-        }
-      }
-
-      await setTaxDataSyncEnabled.mutateAsync({ enabled: taxDataSync });
-      // Mark onboarding complete
-      await completeOnboarding.mutateAsync();
-      onComplete();
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Something went wrong. Please try again.",
-      );
-      setIsSaving(false);
-    }
-  };
-
-  const goNext = async () => {
-    // Which steps there are isn't known until the server answers.
-    if (firstRun.isPending) return;
-    if (!canGoNext) {
-      if (currentStep === "People" && people.length === 0) {
-        setStepError("Add at least one household member to continue");
-      }
-      if (currentStep === "Admin" && !isAdminValid()) {
-        setStepError("Complete all fields to continue");
-      }
-      return;
-    }
-    setStepError(null);
-
-    // Admin step: create the account before advancing
-    if (currentStep === "Admin") {
-      const ok = await handleAdminCreate();
-      if (!ok) return;
-      setCurrentStep("OIDC");
-      return;
-    }
-
-    if (currentStep === "Done") {
-      handleFinish();
-      return;
-    }
-    setCurrentStep(steps[step + 1] ?? "Done");
-  };
-
-  const goBack = () => {
-    setStepError(null);
-    setCurrentStep(steps[step - 1] ?? "Welcome");
-  };
-
-  const skipIncome = () => setCurrentStep("Done");
-  const skipOidc = () => setCurrentStep("People");
+  const { goNext, goBack, skipIncome, skipOidc } = wizardNavigation(
+    adminNeeded,
+    setError,
+    createLocalAdmin,
+    admin,
+    utils,
+    firstRun,
+    setCurrentStep,
+    setIsSaving,
+    people,
+    createPerson,
+    jobs,
+    createJob,
+    updateSalaryProfile,
+    setTaxDataSyncEnabled,
+    taxDataSync,
+    completeOnboarding,
+    onComplete,
+    canGoNext,
+    currentStep,
+    setStepError,
+    isAdminValid,
+    steps,
+    step,
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8">
-        <StepIndicator currentStep={step} steps={steps} />
-        <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
-          Step {step + 1} of {steps.length}
-        </div>
+    <Modal
+      onClose={() => {}}
+      label="Set up Ledgr"
+      closeOnEscape={false}
+      closeOnBackdrop={false}
+      layer="firstRun"
+      className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8"
+    >
+      <WizardProgress step={step} steps={steps} />
 
-        {/* Hidden file input for restore */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          className="hidden"
-          onChange={handleFileSelected}
-        />
+      {/* Hidden file input for restore */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
 
-        {/* Step content */}
-        {currentStep === "Welcome" && (
-          <WelcomeStep onNext={goNext} onRestore={handleRestore} />
-        )}
-        {currentStep === "Admin" && (
-          <AdminStep admin={admin} setAdmin={setAdmin} />
-        )}
-        {currentStep === "OIDC" && <OidcStep />}
-        {currentStep === "People" && (
-          <PeopleStep people={people} setPeople={setPeople} />
-        )}
-        {currentStep === "Income" && (
-          <IncomeStep people={people} jobs={jobs} setJobs={setJobs} />
-        )}
-        {currentStep === "Done" && (
-          <DoneStep
-            isSaving={isSaving}
-            taxDataSync={taxDataSync}
-            setTaxDataSync={setTaxDataSync}
-          />
-        )}
+      <WizardBody
+        admin={admin}
+        currentStep={currentStep}
+        error={error}
+        goNext={goNext}
+        handleRestore={handleRestore}
+        isRestoring={isRestoring}
+        isSaving={isSaving}
+        jobs={jobs}
+        people={people}
+        setAdmin={setAdmin}
+        setJobs={setJobs}
+        setPeople={setPeople}
+        setTaxDataSync={setTaxDataSync}
+        stepError={stepError}
+        taxDataSync={taxDataSync}
+      />
 
-        {/* Restoring overlay */}
-        {isRestoring && (
-          <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-            <div className="text-primary text-lg font-medium">
-              Restoring backup...
-            </div>
-            <p className="text-muted text-sm">
-              This may take a moment. Please don&apos;t close this page.
-            </p>
-          </div>
-        )}
-
-        {/* Error display */}
-        {error && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-        {stepError && (
-          <div
-            className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
-            role="alert"
-          >
-            {stepError}
-          </div>
-        )}
-
-        {/* Navigation buttons (Welcome has its own CTA) */}
-        {currentStep !== "Welcome" && (
-          <div className="border-default mt-8 flex items-center justify-between border-t pt-4">
-            <button
-              onClick={goBack}
-              disabled={step === 0 || isSaving}
-              className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              Back
-            </button>
-            <div className="flex gap-3">
-              {currentStep === "OIDC" && (
-                <button
-                  onClick={skipOidc}
-                  className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
-                >
-                  Configure Later
-                </button>
-              )}
-              {currentStep === "Income" && (
-                <button
-                  onClick={skipIncome}
-                  className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
-                >
-                  Skip
-                </button>
-              )}
-              <button
-                onClick={goNext}
-                disabled={isSaving}
-                className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {currentStep === "Done"
-                  ? isSaving
-                    ? "Saving..."
-                    : "Go to Dashboard"
-                  : "Next"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Navigation buttons (Welcome has its own CTA) */}
+      <WizardNav
+        currentStep={currentStep}
+        goBack={goBack}
+        step={step}
+        isSaving={isSaving}
+        skipOidc={skipOidc}
+        skipIncome={skipIncome}
+        goNext={goNext}
+      />
+    </Modal>
   );
 }

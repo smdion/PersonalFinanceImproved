@@ -4,12 +4,12 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/savings/page.tsx": {
+  "src/app/(dashboard)/savings/savings-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/app/(dashboard)/tools/page.tsx": {
+  "src/app/(dashboard)/tools/tools-content.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
@@ -29,62 +29,82 @@
       "count": 1
     }
   },
-  "src/components/budget/contribution-profile-manager.tsx": {
+  "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/components/contributions/profile-manager/use-inline-editor.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/financial-checkup-card.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
   },
-  "src/components/cards/dashboard/financial-checkup-card.tsx": {
+  "src/components/retirement-projection/account-notes.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "src/components/retirement-projection/decumulation-config.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/components/retirement-projection/projection-chart.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/components/retirement-projection/projection-table-accum-balances.model.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/components/retirement-projection/projection-table-accum-row.model.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "src/components/retirement-projection/projection-table-accum-row.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    }
+  },
+  "src/components/retirement-projection/projection-table-decum-balances.model.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
+    }
+  },
+  "src/components/retirement-projection/projection-table-decum-row.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 16
+    }
+  },
+  "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
   },
-  "src/components/cards/projection/decumulation-config.tsx": {
+  "src/components/retirement-projection/spending-stability-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/cards/projection/projection-chart.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/cards/projection/projection-mc-results.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/cards/projection/projection-table-accum-row.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 7
-    }
-  },
-  "src/components/cards/projection/projection-table-decum-row.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 30
-    }
-  },
-  "src/components/cards/projection/spending-stability-chart.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/cards/projection/use-projection-derived.ts": {
+  "src/components/retirement-projection/use-projection-derived.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 8
     }
   },
-  "src/components/cards/projection/utils.ts": {
+  "src/components/retirement-projection/utils.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
   "src/components/investments/glide-path-chart.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/components/layout/quick-search.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
@@ -104,7 +124,7 @@
       "count": 3
     }
   },
-  "src/components/portfolio/hooks/use-snapshot-sync-pending.ts": {
+  "src/components/portfolio/use-snapshot-sync-pending.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

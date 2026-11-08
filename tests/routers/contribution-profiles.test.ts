@@ -202,7 +202,7 @@ describe("contributionProfiles router", () => {
       const result = await caller.contributionProfile.delete({
         id: deletableId,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("deleted profile no longer appears in list", async () => {
@@ -237,7 +237,7 @@ describe("contributionProfiles router", () => {
       const result = await caller.contributionProfile.setActive({
         id: target.id,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
 
       const settings = await caller.settings.appSettings.list();
       const row = settings.find(
@@ -267,7 +267,7 @@ describe("contributionProfiles router", () => {
         const result = await viewerCaller.contributionProfile.setActive({
           id: target.id,
         });
-        expect(result).toEqual({ success: true });
+        expect(result).toEqual({ ok: true });
       } finally {
         viewerCleanup();
       }
@@ -290,7 +290,7 @@ describe("contributionProfiles router", () => {
       const result = await caller.contributionProfile.setActive({
         id: null,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
 
       settings = await caller.settings.appSettings.list();
       expect(

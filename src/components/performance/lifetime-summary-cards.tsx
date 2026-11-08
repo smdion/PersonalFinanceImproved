@@ -3,8 +3,7 @@
 import { COST_KINDS } from "@/lib/config/performance-help";
 import React from "react";
 import { Card, Metric } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/format";
-import { parseLocalDateOnly } from "@/lib/utils/date";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { LifetimeTotals } from "./types";
 
@@ -31,7 +30,7 @@ export function LifetimeSummaryCards({
           value={formatCurrency(totals.endingBalance)}
           label={
             snapshotDate
-              ? `As of ${parseLocalDateOnly(snapshotDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} snapshot`
+              ? `As of ${formatDate(snapshotDate, "monthDay")} snapshot`
               : undefined
           }
         />

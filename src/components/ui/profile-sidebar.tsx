@@ -2,16 +2,9 @@
 
 /**
  * Shared left-rail profile list — the `grid-cols-[240px_1fr]` master-detail
- * shell every profile-manager surface (Budget, Contribution, Salary, and
- * now Retirement) uses, with a list of profiles on the left and the
- * selected one's editor on the right.
- *
- * Extracted from three near-identical, independently-maintained
- * copies (`budget-profile-sidebar.tsx`'s inline row markup, and a
- * `ProfileListItem` locally defined in both `contribution-profile-manager.tsx`
- * and `salary-profile-manager.tsx`) after Retirement Profiles' own manager
- * was built as a one-off flat pill row instead of matching this pattern —
- * the fourth divergent copy was the last straw.
+ * shell every profile-manager surface (Budget, Contribution, Salary and
+ * Retirement) uses, with a list of profiles on the left and the selected
+ * one's editor on the right.
  *
  * Rename is one gesture everywhere: the name renders as a click-to-edit
  * `InlineEdit` — the same always-visible affordance the app
@@ -25,6 +18,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { asButton } from "./as-button";
 
 type ProfileListRowProps = {
   name: string;
@@ -78,15 +72,7 @@ export function ProfileListRow({
   const hasRowActions = onActivate || onClone || onDelete;
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
+      {...asButton(() => onSelect())}
       className={`group w-full cursor-pointer rounded-md px-3 py-2 text-left transition-colors ${
         isSelected
           ? "border border-blue-300 bg-blue-50"
@@ -104,6 +90,7 @@ export function ProfileListRow({
             // the name field is used — same guard the row-actions and
             // meta slots use.
             <span
+              role="presentation"
               className="min-w-0 flex-1"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
@@ -131,6 +118,7 @@ export function ProfileListRow({
         </div>
         {hasRowActions && (
           <div
+            role="presentation"
             className="flex shrink-0 gap-2 md:max-w-0 md:overflow-hidden md:opacity-0 md:transition-all md:group-focus-within:max-w-[13rem] md:group-focus-within:opacity-100 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >

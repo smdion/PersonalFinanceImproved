@@ -5,11 +5,7 @@ import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import type { PreviewData, Service } from "./integrations-types";
-import { useDriftMutations } from "./integrations/hooks/use-drift-mutations";
-import { useBudgetIntegrationsMutations } from "./integrations/hooks/use-budget-mutations";
-import { useSavingsMutations } from "./integrations/hooks/use-savings-mutations";
-import { useContribMutations } from "./integrations/hooks/use-contrib-mutations";
-import { usePortfolioMutations } from "./integrations/hooks/use-portfolio-mutations";
+import { useIntegrationSavingsMutations } from "./integrations/use-integration-savings-mutations";
 import { DriftBanner } from "./integrations/drift-banner";
 import { BudgetSection } from "./integrations/budget-section";
 import { SavingsSection } from "./integrations/savings-section";
@@ -38,14 +34,10 @@ export function PreviewPanel({
   } = preview;
   const cashDiff = cash.api - cash.manual;
 
-  // Per-section mutation hooks — each hook owns a bundle for its section
-  // only so a pending flip in one section will not re-render the other four
-  // once the section components use `React.memo`.
-  const driftMutations = useDriftMutations();
-  const budgetMutations = useBudgetIntegrationsMutations();
-  const savingsMutations = useSavingsMutations();
-  const contribMutations = useContribMutations();
-  const portfolioMutations = usePortfolioMutations();
+  // Each section calls its own mutation hook, except savings: the budget
+  // section links and creates goals through the same savings mutations, so
+  // they live here and the savings section sees those links as pending.
+  const savingsMutations = useIntegrationSavingsMutations();
 
   // `savingsOverrides` lives here (not inside SavingsSection) because
   // BudgetSection's "Apply all suggested matches" counter needs the count.
@@ -127,7 +119,6 @@ export function PreviewPanel({
         service={service}
         profile={profile}
         totalDrifted={totalDrifted}
-        mutations={driftMutations}
       />
 
       {/* Dashboard — compact overview row */}
@@ -219,7 +210,6 @@ export function PreviewPanel({
         budget={budget}
         savings={savings}
         allApiCats={allApiCats}
-        mutations={budgetMutations}
         onLinkSavings={handleLinkSavingsFromBudget}
         onCreateSavingsGoalFromApi={handleCreateSavingsGoalFromApi}
         savingsOverrideCount={savingsOverrideCount}
@@ -229,22 +219,18 @@ export function PreviewPanel({
         service={service}
         savings={savings}
         allApiCats={allApiCats}
-        mutations={savingsMutations}
+        linkSavings={savingsMutations.linkSavings}
+        unlinkSavings={savingsMutations.unlinkSavings}
+        renameSavingsToApi={savingsMutations.renameSavingsToApi}
+        renameSavingsApiName={savingsMutations.renameSavingsApiName}
+        linkReimbursement={savingsMutations.linkReimbursement}
         savingsOverrides={savingsOverrides}
         setSavingsOverrides={setSavingsOverrides}
       />
 
-      <ContribSection
-        budget={budget}
-        contribAccounts={contribAccounts}
-        mutations={contribMutations}
-      />
+      <ContribSection budget={budget} contribAccounts={contribAccounts} />
 
-      <PortfolioSection
-        service={service}
-        portfolio={portfolio}
-        mutations={portfolioMutations}
-      />
+      <PortfolioSection service={service} portfolio={portfolio} />
     </div>
   );
 }

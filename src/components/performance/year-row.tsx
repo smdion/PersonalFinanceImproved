@@ -164,6 +164,7 @@ export function YearRow({
             </td>
             {isEditable ? (
               <EditableCell
+                label={`Total Contributions, ${row.year}`}
                 value={row.totalContributions}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("totalContributions")}
@@ -187,6 +188,7 @@ export function YearRow({
             )}
             {isEditable ? (
               <EditableCell
+                label={`Employer Match, ${row.year}`}
                 value={row.employerContributions}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("employerContributions")}
@@ -210,6 +212,7 @@ export function YearRow({
             )}
             {isEditable ? (
               <EditableCell
+                label={`Distributions, ${row.year}`}
                 value={row.distributions}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("distributions")}
@@ -233,6 +236,7 @@ export function YearRow({
             )}
             {isEditable ? (
               <EditableCell
+                label={`Rollovers, ${row.year}`}
                 value={row.rollovers}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("rollovers")}
@@ -251,6 +255,7 @@ export function YearRow({
             )}
             {isEditable ? (
               <EditableCell
+                label={`Fees, ${row.year}`}
                 value={row.fees}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("fees")}
@@ -269,6 +274,7 @@ export function YearRow({
             )}
             {isEditable ? (
               <EditableCell
+                label={`Gain/Loss, ${row.year}`}
                 value={row.yearlyGainLoss}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("yearlyGainLoss")}
@@ -297,6 +303,7 @@ export function YearRow({
             )}
             {isEditable ? (
               <EditableCell
+                label={`Ending, ${row.year}`}
                 value={row.endingBalance}
                 formatter={formatCurrency}
                 isEditing={isEditingAnnual("endingBalance")}
@@ -383,6 +390,11 @@ export function YearRow({
             a.yearlyGainLoss,
             a.employerContributions,
           );
+          const acctName = accountDisplayName({
+            ...a,
+            accountType: a.accountType ?? undefined,
+          });
+          const acctLabel = `${acctName} ${row.year}`;
           const cashBasisAnnotation = isDiscountBasis ? (
             <HelpTip
               text={`${formatCurrency(cashBasisGainLoss)} ${CASH_BASIS_HELP}`}
@@ -410,12 +422,7 @@ export function YearRow({
               >
                 <td className="text-muted px-4 py-2 pl-10">
                   <span className="flex items-center gap-2">
-                    <span>
-                      {accountDisplayName({
-                        ...a,
-                        accountType: a.accountType ?? undefined,
-                      })}
-                    </span>
+                    <span>{acctName}</span>
                     {!onlyBasis && (
                       <CheckBadge
                         checks={a.checks ?? []}
@@ -430,6 +437,7 @@ export function YearRow({
                   <>
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Beginning, ${acctLabel}`}
                         value={a.beginningBalance}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "beginningBalance")}
@@ -454,6 +462,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Total Contributions, ${acctLabel}`}
                         value={a.totalContributions}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "totalContributions")}
@@ -478,6 +487,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Employer Match, ${acctLabel}`}
                         value={a.employerContributions}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(
@@ -505,6 +515,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Distributions, ${acctLabel}`}
                         value={a.distributions}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "distributions")}
@@ -529,6 +540,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Rollovers, ${acctLabel}`}
                         value={a.rollovers}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "rollovers")}
@@ -548,6 +560,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Fees, ${acctLabel}`}
                         value={a.fees}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "fees")}
@@ -567,6 +580,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Gain/Loss, ${acctLabel}`}
                         value={a.yearlyGainLoss}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "yearlyGainLoss")}
@@ -595,6 +609,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
+                        label={`Ending, ${acctLabel}`}
                         value={a.endingBalance}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "endingBalance")}
@@ -639,6 +654,7 @@ export function YearRow({
                             </td>
                           ) : acctEditable && master ? (
                             <EditableCell
+                              label={`Cost Basis, ${acctLabel}`}
                               value={basis}
                               formatter={formatCurrency}
                               isEditing={

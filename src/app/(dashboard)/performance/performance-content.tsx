@@ -7,6 +7,7 @@
 
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -63,7 +64,8 @@ import {
 export function PerformanceContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "performance");
-  const { data, isLoading, error } = trpc.performance.computeSummary.useQuery();
+  const performance = trpc.performance.computeSummary.useQuery();
+  const { data } = performance;
   const { data: freshness } = trpc.settings.getDataFreshness.useQuery();
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState(PERF_CATEGORY_PORTFOLIO);
@@ -185,20 +187,18 @@ export function PerformanceContent() {
     startEditRaw({ type, id, field }, currentValue);
   };
 
-  if (isLoading) {
+  if (queryPending(performance)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <SkeletonChart height={256} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load performance data: {error.message}
-      </p>
+      <QueryBoundary
+        query={performance}
+        what="performance data"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <SkeletonChart height={256} />
+          </div>
+        }
+      />
     );
   }
 

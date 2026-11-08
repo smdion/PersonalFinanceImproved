@@ -4,7 +4,7 @@
  *  Stateless — all state flows via props.
  */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
@@ -40,6 +40,7 @@ export function RelocationYearAdjustments({
   setRelocAdjForm,
 }: Props) {
   const [showRelocAdjForm, setShowRelocAdjForm] = useState(false);
+  const id = useId();
   return (
     <div className="border-t pt-3">
       <div className="mb-2 flex items-center justify-between">
@@ -94,8 +95,14 @@ export function RelocationYearAdjustments({
         <div className="mb-2 space-y-2 text-sm">
           <div className="flex items-end gap-2">
             <div>
-              <label className="text-muted block text-xs">Year</label>
+              <label
+                htmlFor={`${id}-year`}
+                className="text-muted block text-xs"
+              >
+                Year
+              </label>
               <input
+                id={`${id}-year`}
                 type="number"
                 className="w-20 rounded border px-2 py-1 text-sm"
                 value={relocAdjForm.year}
@@ -105,8 +112,14 @@ export function RelocationYearAdjustments({
               />
             </div>
             <div>
-              <label className="text-muted block text-xs">Source</label>
+              <label
+                htmlFor={`${id}-source`}
+                className="text-muted block text-xs"
+              >
+                Source
+              </label>
               <select
+                id={`${id}-source`}
                 className="rounded border px-2 py-1 text-sm"
                 value={relocAdjMode}
                 onChange={(e) =>
@@ -119,10 +132,14 @@ export function RelocationYearAdjustments({
             </div>
             {relocAdjMode === "manual" ? (
               <div>
-                <label className="text-muted block text-xs">
+                <label
+                  htmlFor={`${id}-monthly`}
+                  className="text-muted block text-xs"
+                >
                   Monthly Expenses
                 </label>
                 <input
+                  id={`${id}-monthly`}
                   type="number"
                   className="w-28 rounded border px-2 py-1 text-sm"
                   placeholder="$"
@@ -138,8 +155,14 @@ export function RelocationYearAdjustments({
             ) : (
               <>
                 <div>
-                  <label className="text-muted block text-xs">Profile</label>
+                  <label
+                    htmlFor={`${id}-profile`}
+                    className="text-muted block text-xs"
+                  >
+                    Profile
+                  </label>
                   <select
+                    id={`${id}-profile`}
                     className="rounded border px-2 py-1 text-sm"
                     value={relocAdjForm.profileId || ""}
                     onChange={(e) => {
@@ -184,10 +207,14 @@ export function RelocationYearAdjustments({
                   if (labels.length >= 2) {
                     return (
                       <div>
-                        <label className="text-muted block text-xs">
+                        <label
+                          htmlFor={`${id}-column`}
+                          className="text-muted block text-xs"
+                        >
                           Column
                         </label>
                         <select
+                          id={`${id}-column`}
                           className="rounded border px-2 py-1 text-sm"
                           value={relocAdjForm.budgetColumn}
                           onChange={(e) =>
@@ -211,8 +238,14 @@ export function RelocationYearAdjustments({
               </>
             )}
             <div>
-              <label className="text-muted block text-xs">Notes</label>
+              <label
+                htmlFor={`${id}-notes`}
+                className="text-muted block text-xs"
+              >
+                Notes
+              </label>
               <input
+                id={`${id}-notes`}
                 type="text"
                 className="w-32 rounded border px-2 py-1 text-sm"
                 placeholder="e.g. Cut dining"

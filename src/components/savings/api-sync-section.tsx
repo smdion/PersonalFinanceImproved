@@ -12,6 +12,10 @@ import {
   PushPreviewModal,
   type PushPreviewItem,
 } from "@/components/ui/push-preview-modal";
+import {
+  ApiCategoryLinkDialog,
+  type ApiCategoryGroup,
+} from "./api-category-link-dialog";
 import type { RawGoal } from "./types";
 import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 
@@ -24,12 +28,6 @@ export interface RecalcIncomeParams {
   salaryProfileId?: number;
   /** The page's budget-summary selection, forwarded to the server's. */
   selection?: PayProfileSelection;
-}
-
-interface ApiCategoryGroup {
-  id: string;
-  name: string;
-  categories: { id: string; name: string }[];
 }
 
 /** The single pushContributionsToApi mutation instance, owned by useApiSync()
@@ -144,52 +142,20 @@ export function ApiSyncSection({
     <>
       {/* API Category Linking Modal */}
       {linkingGoalId !== null && apiCategoriesData?.groups && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface-primary max-h-96 w-80 overflow-y-auto rounded-lg p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-secondary text-sm font-semibold">
-                Link to API Category
-              </h3>
-              <button
-                onClick={() => setLinkingGoalId(null)}
-                className="text-faint hover:text-muted text-xs"
-              >
-                Close
-              </button>
-            </div>
-            {apiCategoriesData.groups.length === 0 ? (
-              <p className="text-faint py-4 text-center text-xs">
-                No categories. Sync budget API first.
-              </p>
-            ) : (
-              apiCategoriesData.groups.map((group) => (
-                <div key={group.id} className="mb-2">
-                  <div className="text-caption text-muted px-1 py-0.5 font-semibold tracking-wider uppercase">
-                    {group.name}
-                  </div>
-                  {group.categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => {
-                        if (!activeService || activeService === "none") return;
-                        linkGoalToApi.mutate({
-                          goalId: linkingGoalId,
-                          service: activeService,
-                          apiCategoryId: cat.id,
-                          apiCategoryName: `${group.name}: ${cat.name}`,
-                        });
-                        setLinkingGoalId(null);
-                      }}
-                      className="text-secondary w-full rounded px-2 py-1 text-left text-xs hover:bg-blue-50"
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <ApiCategoryLinkDialog
+          groups={apiCategoriesData.groups}
+          onClose={() => setLinkingGoalId(null)}
+          onLink={(group, cat) => {
+            if (!activeService || activeService === "none") return;
+            linkGoalToApi.mutate({
+              goalId: linkingGoalId,
+              service: activeService,
+              apiCategoryId: cat.id,
+              apiCategoryName: `${group.name}: ${cat.name}`,
+            });
+            setLinkingGoalId(null);
+          }}
+        />
       )}
 
       {/* Push to API preview modal */}

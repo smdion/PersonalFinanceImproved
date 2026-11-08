@@ -1,0 +1,5790 @@
+{
+ "projection.computeCoastFire": {
+  "result": {
+   "status": "already_coast"
+  }
+ },
+ "projection.computeCoastFireMC": {
+  "result": {
+   "mcResult": {
+    "deterministicProjection": {
+     "accountDepletions": [
+      {
+       "category": "401k",
+       "subType": "traditional"
+      },
+      {
+       "category": "401k",
+       "subType": "roth"
+      },
+      {
+       "category": "403b",
+       "subType": "traditional"
+      },
+      {
+       "category": "403b",
+       "subType": "roth"
+      },
+      {
+       "category": "ira",
+       "subType": "roth"
+      },
+      {
+       "category": "hsa"
+      },
+      {
+       "category": "brokerage"
+      }
+     ],
+     "projectionByYear": [
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation"
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$41,199.96 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$42,435.96 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$43,709.04 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$45,020.31 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$46,370.92 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$47,762.04 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$49,194.91 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$50,670.75 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$52,190.88 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": true,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "locked"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": true,
+       "warnings": [
+        "$53,756.6 withdrawal need unmet — insufficient funds across all accounts"
+       ],
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "ira",
+         "401k",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Blake IRA (Index Funds IRA)",
+         "ownerName": "Blake",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      }
+     ],
+     "warnings": [
+      "Retirement year (2026) is this year or earlier — entire projection will be in decumulation."
+     ]
+    }
+   },
+   "status": "already_coast"
+  }
+ },
+ "projection.computeMonteCarloProjection": {
+  "result": {
+   "deterministicProjection": {
+    "accountDepletions": [
+     {
+      "category": "401k",
+      "subType": "traditional"
+     },
+     {
+      "category": "401k",
+      "subType": "roth"
+     },
+     {
+      "category": "403b",
+      "subType": "traditional"
+     },
+     {
+      "category": "403b",
+      "subType": "roth"
+     },
+     {
+      "category": "ira",
+      "subType": "roth"
+     },
+     {
+      "category": "hsa"
+     },
+     {
+      "category": "brokerage"
+     }
+    ],
+    "projectionByYear": [
+     {
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "accountOrder": [
+        "401k",
+        "403b",
+        "ira",
+        "hsa",
+        "brokerage"
+       ],
+       "routingMode": "waterfall"
+      },
+      "hasBonusAdjustment": false,
+      "hasBudgetOverride": false,
+      "hasSalaryOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "accumulation"
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$41,199.96 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$42,435.96 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$43,709.04 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$45,020.31 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$46,370.92 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$47,762.04 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$49,194.91 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$50,670.75 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$52,190.88 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": true,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "locked"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": true,
+      "warnings": [
+       "$53,756.6 withdrawal need unmet — insufficient funds across all accounts"
+      ],
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       },
+       {
+        "category": "brokerage",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "kind": "no_owner"
+         }
+        },
+        "name": "Retirement brokerage (projected)",
+        "parentCategory": "Retirement",
+        "projectedOnly": true,
+        "taxType": "afterTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": true,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "withdrawalOrder": [
+        "ira",
+        "401k",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Blake IRA (Index Funds IRA)",
+        "ownerName": "Blake",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       },
+       {
+        "category": "brokerage",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "kind": "no_owner"
+         }
+        },
+        "name": "Retirement brokerage (projected)",
+        "parentCategory": "Retirement",
+        "projectedOnly": true,
+        "taxType": "afterTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": true,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     }
+    ],
+    "warnings": [
+     "Retirement year (2026) is this year or earlier — entire projection will be in decumulation."
+    ]
+   }
+  },
+  "simulationInputs": {
+   "assetClasses": [
+    {
+     "name": "US Equities"
+    },
+    {
+     "name": "International Equities"
+    },
+    {
+     "name": "US Bonds"
+    },
+    {
+     "name": "International Bonds"
+    },
+    {
+     "name": "TIPS"
+    },
+    {
+     "name": "Cash"
+    }
+   ],
+   "dbAssetClasses": [
+    {
+     "name": "US Equities"
+    },
+    {
+     "name": "International Equities"
+    },
+    {
+     "name": "US Bonds"
+    },
+    {
+     "name": "International Bonds"
+    },
+    {
+     "name": "TIPS"
+    },
+    {
+     "name": "Cash"
+    }
+   ],
+   "hasAssetClassOverrides": false,
+   "preset": "default",
+   "presetDescription": "Historical returns, standard vol, hybrid FIRE glide path (90%→50% floor). Vanguard TDF + Kitces.",
+   "presetLabel": "Default",
+   "taxMode": "advanced",
+   "withdrawalStrategy": "fixed"
+  }
+ }
+}

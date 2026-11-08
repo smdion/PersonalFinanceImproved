@@ -12,7 +12,6 @@ import {
   Legend,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
@@ -29,6 +28,8 @@ import {
   yAxisProps,
 } from "@/components/charts/chart-defaults";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { ChartFrame } from "@/components/charts/chart-frame";
+import { comparisonSummary } from "./comparison-section.summary";
 import { DEFAULT_BENCHMARK_KEY } from "@/lib/config/benchmarks";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import {
@@ -253,7 +254,7 @@ export function ComparisonSection() {
       )}
 
       <div className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartFrame summary={comparisonSummary(points, shown)}>
           <LineChart data={points} margin={chartMargin}>
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="label" {...axisProps} />
@@ -289,7 +290,7 @@ export function ComparisonSection() {
               />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ChartFrame>
       </div>
 
       <table className="mt-4 w-full text-xs">

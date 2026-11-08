@@ -244,7 +244,7 @@ describe("usePersistedSetting", () => {
   });
 
   it("keeps the optimistic value when writeVia succeeds", async () => {
-    const writeVia = vi.fn().mockResolvedValue({ success: true });
+    const writeVia = vi.fn().mockResolvedValue({ ok: true });
     const { result } = renderHook(() =>
       usePersistedSetting<string>("my_key", "default-value", { writeVia }),
     );

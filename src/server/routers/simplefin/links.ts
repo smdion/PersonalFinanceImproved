@@ -64,7 +64,7 @@ export const linksProcedures = {
       });
       await redactStoredCardSpending(ctx.db, input.keepId);
       return {
-        success: true as const,
+        ok: true as const,
         ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
       };
     }),
@@ -228,7 +228,7 @@ export const linksProcedures = {
       await redactStoredCardSpending(ctx.db, row.id);
 
       return {
-        success: true as const,
+        ok: true as const,
         linkedPerformanceAccountId: row.linkedPerformanceAccountId,
       };
     }),
@@ -310,7 +310,7 @@ export const linksProcedures = {
       });
       await redactStoredCardSpending(ctx.db, feed.id);
       return {
-        success: true as const,
+        ok: true as const,
         ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
       };
     }),

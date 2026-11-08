@@ -28,6 +28,7 @@ import { useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/hooks/use-toast";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -44,12 +45,6 @@ import {
   SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
   SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
 } from "@/lib/constants/settings-keys";
-import {
-  getAllStrategyKeys,
-  getStrategyMeta,
-} from "@/lib/config/withdrawal-strategies";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import { recommendWithdrawalStrategy } from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { HealthcareSection } from "@/components/retirement/sections/healthcare";
@@ -58,6 +53,7 @@ import { GlidePathSection } from "@/components/retirement/sections/glide-path";
 import { TimelineSection } from "@/components/retirement/sections/timeline";
 import { IncomeSection } from "@/components/retirement/sections/income";
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
+import { StrategyPickerSection } from "@/components/retirement/sections/strategy-picker";
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
 import { RaiseAndRateSection } from "@/components/retirement/sections/raise-and-rate";
 import type { UpsertSettingsMutation } from "@/components/retirement/sections/types";
@@ -70,8 +66,8 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { StrategyGuideButton } from "@/components/retirement/strategy-guide-panel";
+import { CardBoundary } from "@/components/dashboard/utils";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 export function RetirementProfileTab({
@@ -158,10 +154,11 @@ export function RetirementProfileTab({
     ],
   );
   const debouncedEngineInput = useDebouncedValue(baseInput, 600);
-  const { data, isLoading, error } =
-    trpc.projection.getProjectionMetadata.useQuery(debouncedEngineInput, {
-      placeholderData: (prev) => prev,
-    });
+  const metadata = trpc.projection.getProjectionMetadata.useQuery(
+    debouncedEngineInput,
+    { placeholderData: (prev) => prev },
+  );
+  const { data } = metadata;
   // Multi-year withdrawal-policy optimizer — queried
   // here (not inside TaxesSection, a documented pure-presentational leaf)
   // so it can be passed down as a plain prop, same pattern as CoastFireCard
@@ -352,24 +349,22 @@ export function RetirementProfileTab({
     [data, upsertPersonRaiseRate],
   );
 
-  if (isLoading) {
+  if (queryPending(metadata)) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-          <SkeletonChart height={128} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-sm text-red-600">
-        Failed to load retirement profile: {error.message}
-      </p>
+      <QueryBoundary
+        query={metadata}
+        what="retirement profile"
+        fallback={
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+              <SkeletonChart height={128} />
+            </div>
+          </div>
+        }
+      />
     );
   }
 
@@ -440,61 +435,12 @@ export function RetirementProfileTab({
                 <StrategyGuideButton />
               </div>
 
-              <div className="grid grid-cols-1 gap-x-4 text-sm sm:grid-cols-3">
-                <div className="col-span-2">
-                  <span className="text-muted">
-                    Strategy
-                    <HelpTip text="How annual spending is determined during retirement. Fixed Real: perfectly predictable income that never changes based on market performance. Dynamic strategies (all others) automatically adjust spending when your portfolio rises or falls — this protects against depletion (higher success rates) but means your income varies year to year. The more a strategy self-corrects, the higher its success rate but the less stable your income. See Full Methodology for detailed guidance on when to use each strategy." />
-                  </span>
-                  <div className="font-medium">
-                    <select
-                      value={settings.withdrawalStrategy}
-                      onChange={(e) => {
-                        upsertSettingsMutation.mutate(
-                          buildSettingsPatch(settings, {
-                            withdrawalStrategy: e.target
-                              .value as WithdrawalStrategyType,
-                          }),
-                        );
-                      }}
-                      disabled={!admin}
-                      className="w-full rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {(() => {
-                        const rec = recommendWithdrawalStrategy({
-                          retirementHorizonYears:
-                            settings.endAge - settings.retirementAge,
-                          hasBudgetLink: !!data.accumulationBudgetProfileId,
-                          hasSocialSecurity:
-                            Number(settings.socialSecurityMonthly) > 0,
-                          mostlyTaxAdvantaged: false,
-                        });
-                        return getAllStrategyKeys().map((key) => {
-                          const meta = getStrategyMeta(key);
-                          const isRecommended = key === rec.strategy;
-                          return (
-                            <option key={key} value={key}>
-                              {isRecommended ? "★ " : ""}
-                              {meta.label}
-                              {isRecommended ? " — Recommended" : ""}
-                            </option>
-                          );
-                        });
-                      })()}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-muted text-caption">
-                    {(() => {
-                      const key =
-                        settings.withdrawalStrategy as WithdrawalStrategyType;
-                      const meta = getStrategyMeta(key);
-                      return meta.description;
-                    })()}
-                  </span>
-                </div>
-              </div>
+              <StrategyPickerSection
+                settings={settings}
+                upsertSettings={upsertSettingsMutation}
+                hasBudgetLink={!!data.accumulationBudgetProfileId}
+                isEditable={admin}
+              />
 
               <PerPhaseBudgetSection
                 settings={settings}

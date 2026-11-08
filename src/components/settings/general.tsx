@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { PeopleSettings } from "@/components/settings/people";
 
-import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import { useDeepLinkParam } from "@/components/settings/use-deep-link-param";
 import {
   GENERAL_SECTIONS,
   SETTINGS_SECTION_PARAM,
@@ -403,6 +403,7 @@ function LivingCostMappingEditor() {
                   {/* Custom entry for categories not in the active budget */}
                   <span className="inline-flex items-center gap-1">
                     <input
+                      aria-label={`Custom category for ${range.name}`}
                       type="text"
                       value={customInput}
                       onChange={(e) => setCustomInput(e.target.value)}

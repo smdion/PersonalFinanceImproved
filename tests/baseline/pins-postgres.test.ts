@@ -2,11 +2,11 @@
  * The pins v0.10.3 added (plan commit 3; owner Q15: on PostgreSQL too), on
  * PostgreSQL against the files SQLite wrote: `sync.getPreview` after the
  * two replayed syncs (`__sync__/<service>.preview.json`), the rows
- * `performance.finalizeYear` writes (`__sync__/finalize/`) and the engine
- * result's text and flags (`__text__/`). Each run is pin-runs.ts's, the
- * same as the SQLite files', on a database migrated from empty by the real
- * migrator; rows are read through the app's PostgreSQL schema
- * (tableRowsPg).
+ * `performance.finalizeYear` writes (`__sync__/finalize/`, its variant
+ * too) and the engine result's text and flags, the Simulation and Coast
+ * FIRE rows' too (`__text__/`). Each run is pin-runs.ts's, the same as the
+ * SQLite files', on a database migrated from empty by the real migrator;
+ * rows are read through the app's PostgreSQL schema (tableRowsPg).
  *
  * Compared as figures, as part c compares (router-baseline-postgres): a
  * number written as text is read as its number (PostgreSQL's numeric
@@ -37,11 +37,15 @@ import { HOUSEHOLDS } from "./households";
 import { BASELINE_NOW } from "./router-suite";
 import { tableRowsPg } from "./table-rows";
 import {
+  FINALIZE_VARIANT,
   PIN_DIRS,
+  finalizeVariantHousehold,
+  finalizeVariantWrites,
   finalizeWrites,
   prepareSync,
   projectionText,
   readPin,
+  simulationText,
   replay,
   runSyncs,
   withoutTimestamps,
@@ -118,7 +122,7 @@ describe.skipIf(skipWithoutPostgres)("the added pins on PostgreSQL", () => {
       session: adminSession,
       demoSchema: null,
     });
-    return { caller, read: () => tableRowsPg(db) };
+    return { caller, db, read: () => tableRowsPg(db) };
   };
 
   beforeAll(async () => {
@@ -182,6 +186,20 @@ describe.skipIf(skipWithoutPostgres)("the added pins on PostgreSQL", () => {
     300_000,
   );
 
+  it(`finalizeYear's writes: ${FINALIZE_VARIANT.key}`, async () => {
+    vi.setSystemTime(BASELINE_NOW);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new Error("network disabled in baseline"))),
+    );
+    const { caller, db, read } = await open();
+    const base = household(FINALIZE_VARIANT.base);
+    const ids = await seedHousehold(caller, finalizeVariantHousehold(base));
+    const written = await finalizeVariantWrites(caller, base, ids, read, db);
+    const file = path.join(PIN_DIRS.finalize, `${FINALIZE_VARIANT.key}.json`);
+    expect(figures(written, true)).toEqual(figures(readPin(file), true));
+  }, 300_000);
+
   it.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
     "the engine result's text and flags: %s",
     async (key, h) => {
@@ -194,6 +212,23 @@ describe.skipIf(skipWithoutPostgres)("the added pins on PostgreSQL", () => {
       const ids = await seedHousehold(caller, h);
       const text = await projectionText(caller, h, ids);
       const file = path.join(PIN_DIRS.text, `${key}.json`);
+      expect(text).toEqual(readPin(file));
+    },
+    300_000,
+  );
+
+  it.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
+    "the Simulation and Coast FIRE rows' text and flags: %s",
+    async (key, h) => {
+      vi.setSystemTime(BASELINE_NOW);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.reject(new Error("network disabled in baseline"))),
+      );
+      const { caller } = await open();
+      const ids = await seedHousehold(caller, h);
+      const text = await simulationText(caller, h, ids);
+      const file = path.join(PIN_DIRS.text, `${key}.simulation.json`);
       expect(text).toEqual(readPin(file));
     },
     300_000,

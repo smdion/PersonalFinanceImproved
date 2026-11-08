@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useOptimisticMutation } from "@/lib/hooks/use-optimistic-mutation";
+import { useOptimisticMutation } from "@/components/budget/use-optimistic-mutation";
 
 vi.mock("@/lib/hooks/use-toast", () => ({
   toast: {

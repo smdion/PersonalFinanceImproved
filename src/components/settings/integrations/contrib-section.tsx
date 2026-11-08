@@ -10,7 +10,7 @@
  * account and at least one linked or unlinked item to show.
  */
 import type { PreviewData } from "../integrations-types";
-import type { ContribMutations } from "./hooks/use-contrib-mutations";
+import { useIntegrationContributionAccountMutations } from "./use-integration-contribution-account-mutations";
 import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
@@ -25,12 +25,11 @@ type ContribAccount = {
 type Props = {
   budget: NonNullable<PreviewData["budget"]>;
   contribAccounts: ContribAccount[];
-  mutations: ContribMutations;
 };
 
-export function ContribSection({ budget, contribAccounts, mutations }: Props) {
+export function ContribSection({ budget, contribAccounts }: Props) {
   const { linkContrib: linkContribMut, unlinkContrib: unlinkContribMut } =
-    mutations;
+    useIntegrationContributionAccountMutations();
 
   if (contribAccounts.length === 0) return null;
 
@@ -145,6 +144,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                 </span>
                 <span className="text-faint">&rarr;</span>
                 <select
+                  aria-label={`Budget item for ${ca.displayLabel}`}
                   value=""
                   onChange={(e) => {
                     if (e.target.value) {

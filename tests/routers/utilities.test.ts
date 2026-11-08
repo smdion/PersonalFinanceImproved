@@ -44,7 +44,7 @@ describe("utilities router", () => {
         usageUnit: "ccf",
         sortOrder: 0,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("listServices returns the new service", async () => {
@@ -107,7 +107,7 @@ describe("utilities router", () => {
         cost: "120.50",
         usage: "800",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ ok: true });
     });
 
     it("upsertReading on the same (serviceId, year, month) updates in place", async () => {

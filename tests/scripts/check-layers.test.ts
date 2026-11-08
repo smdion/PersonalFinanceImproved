@@ -165,6 +165,23 @@ describe("Layers-renamed trailers", () => {
     expect(applyEntryMoves([], known, moves).errors).toHaveLength(1);
   });
 
+  it("re-points a chain of trailers, oldest first", () => {
+    const MID = "src/lib/pure/engine/types/mid.ts";
+    const moves = [
+      ...parseEntryMoves(
+        `Layers-renamed: ${FROM} -> ${BARREL} => ${FROM} -> ${MID}`,
+      ),
+      ...parseEntryMoves(
+        `Layers-renamed: ${FROM} -> ${MID} => ${FROM} -> ${INDEX}`,
+      ),
+    ];
+    const known = [entry(FROM, INDEX)];
+    expect(applyEntryMoves([entry(FROM, BARREL)], known, moves)).toEqual({
+      entries: [entry(FROM, INDEX)],
+      errors: [],
+    });
+  });
+
   it("keeps the rule: a trailer can't turn one rule's entry into another's", () => {
     const base: LayerBase = {
       entries: [entry(FROM, BARREL)],

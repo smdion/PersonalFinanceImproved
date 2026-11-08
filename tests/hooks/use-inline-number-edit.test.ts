@@ -59,6 +59,29 @@ describe("useInlineNumberEdit", () => {
     expect(result.current.editingKey).toBeNull();
   });
 
+  it("an edit commits once: it guards against a second commit from the same render", () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() =>
+      useInlineNumberEdit<CellKey>({ onCommit }),
+    );
+    const key: CellKey = { type: "annual", id: 1, field: "fees" };
+
+    act(() => result.current.startEdit(key, 10));
+    act(() => result.current.setEditValue("12"));
+    const { commit } = result.current;
+    act(() => {
+      commit();
+      commit();
+    });
+    expect(onCommit).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.startEdit(key, 12));
+    act(() => result.current.setEditValue("14"));
+    act(() => result.current.commit());
+    expect(onCommit).toHaveBeenCalledTimes(2);
+    expect(onCommit).toHaveBeenLastCalledWith(key, "14");
+  });
+
   it("commit with a blank draft silently cancels without calling onCommit", () => {
     const onCommit = vi.fn();
     const { result } = renderHook(() =>

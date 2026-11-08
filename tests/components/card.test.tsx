@@ -4,6 +4,7 @@ import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { createPortal } from "react-dom";
+import { pressKey } from "./keyboard";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -260,6 +261,31 @@ describe("Card", () => {
 });
 
 // ── Metric ────────────────────────────────────────────────────────
+
+describe("Card header control", () => {
+  it.each([["Enter" as const], [" " as const]])(
+    "%j on a control in a collapsible card's header acts on it, not the card",
+    (key) => {
+      const onEdit = vi.fn();
+      render(
+        <Card
+          title="Goals"
+          isCollapsible
+          headerRight={
+            <button type="button" onClick={onEdit}>
+              Edit
+            </button>
+          }
+        >
+          Body
+        </Card>,
+      );
+      pressKey(screen.getByRole("button", { name: "Edit" }), key);
+      expect(onEdit).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Body")).toBeInTheDocument();
+    },
+  );
+});
 
 describe("Metric", () => {
   it("renders value", () => {

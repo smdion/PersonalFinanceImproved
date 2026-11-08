@@ -7,7 +7,7 @@
  * pure engine, so the Milestones page and the Financial Checkup agree.
  */
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterError } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -42,7 +42,10 @@ export function useMilestones(): {
   isLoading: boolean;
   /** Expected dates are still coming (the projection is computing). */
   projectionLoading: boolean;
-  error: boolean;
+  /** The first of its queries' load errors. */
+  error: RouterError | null;
+  /** Fetches the failed queries again (a failed load's Retry). */
+  refetch: () => void;
   input: MilestoneInput | null;
   results: MilestoneResult[];
 } {
@@ -54,8 +57,8 @@ export function useMilestones(): {
     SK_EFUND_BUDGET_COLUMN,
     -1,
   );
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncome = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } = highIncome;
   const yearEndTargeting = useYearEndTargetingInput();
 
   const inputs = trpc.milestones.computeInputs.useQuery(yearEndTargeting);
@@ -79,13 +82,12 @@ export function useMilestones(): {
 
   // The projection and holdings only add expected dates and the investing
   // rows — the rest renders without them.
-  const error = Boolean(
-    inputs.error ||
-    contribs.error ||
-    savings.error ||
-    mortgage.error ||
-    highIncomeError,
-  );
+  const error =
+    inputs.error ??
+    contribs.error ??
+    savings.error ??
+    mortgage.error ??
+    highIncomeError;
   // An error isn't still loading — callers that check loading first would
   // otherwise show a skeleton for good.
   const isLoading =
@@ -96,8 +98,20 @@ export function useMilestones(): {
       mortgage.isLoading ||
       highIncomeThreshold === undefined);
   const projectionLoading = projection.isLoading;
+  const refetch = () => {
+    for (const q of [inputs, contribs, savings, mortgage])
+      if (q.error) void q.refetch();
+    if (highIncomeError) highIncome.refetch();
+  };
   if (isLoading || error || !inputs.data || highIncomeThreshold === undefined)
-    return { isLoading, projectionLoading, error, input: null, results: [] };
+    return {
+      isLoading,
+      projectionLoading,
+      error,
+      refetch,
+      input: null,
+      results: [],
+    };
 
   const efund = savings.data?.efund;
   const projectionData = projection.data?.result ? projection.data : null;
@@ -132,6 +146,7 @@ export function useMilestones(): {
     isLoading,
     projectionLoading,
     error,
+    refetch,
     input,
     results: evaluateMilestones(input),
   };

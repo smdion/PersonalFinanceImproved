@@ -143,4 +143,11 @@ describe("BudgetModeManager", () => {
       expect(onRemoveColumn).toHaveBeenCalledWith(0);
     });
   });
+
+  it("names the new-mode field for screen readers", () => {
+    render(<BudgetModeManager {...defaultProps} />);
+    expect(screen.getByRole("textbox", { name: "New mode name" })).toBe(
+      screen.getByPlaceholderText("New mode name..."),
+    );
+  });
 });

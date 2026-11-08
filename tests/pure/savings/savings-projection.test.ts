@@ -4,7 +4,7 @@
  *
  * Highest-priority test gap identified by the audit (Pass 41): this module
  * was written specifically to fix a real bug where two independent
- * implementations (savings/page.tsx and savings-goals-card.tsx) silently
+ * implementations (savings/savings-content.tsx and savings-goals-card.tsx) silently
  * diverged on the "don't double-count this month's YNAB contribution"
  * guard, and it had zero test coverage despite 6 live call sites depending
  * on it. Covers: monthKey, occurrenceKey, buildSettledOccurrencesSet,

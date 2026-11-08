@@ -9,14 +9,18 @@
  * can't regrow to the limit; a part over the limit is refused. With
  * `--from <old>`, the parts' long functions carry the old file's entries, a
  * part of a recorded file may be over the limit, and the parts (with what
- * is left of the old file) together never exceed its entry. A body moved
+ * is left of the old file) together never exceed its entry and the import
+ * lines the split adds (owner Q13). A body moved
  * whole into a part's function (the router now only calls it) hands that
  * function the router arrow's entry, plus its signature lines (owner Q14),
  * and the total may also hold the import, signature, brace and call lines
  * and what the parts held before (bodyCarry). A stage cut from a function
  * into a part (owner v0.10.3 Q1, the function now calls it and reads back
  * what it returns) carries that function's entry, and the total may also
- * hold the stage's signature, return and brace and the call.
+ * hold the stage's signature, return and brace and the call. A UI cut
+ * (owner v0.10.4 Q3: an IIFE's body into a function, a JSX run into a
+ * component) carries the same way, with its function's lines around what
+ * it took.
  */
 import { execFileSync } from "child_process";
 import * as fs from "fs";
@@ -418,10 +422,18 @@ export function recorded(
     const allowed = oldEntry + (carry?.total ?? 0);
     if (total > allowed)
       problems.push(
-        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${carry?.total ? ` and +${carry.total} for the moved bodies` : ""} — ${GROW}`,
+        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${allowance(carry)} — ${GROW}`,
       );
   }
   return { baseline: { files, functions }, problems };
+}
+
+/** What a split's total may hold over the old entry, as the refusal names it. */
+function allowance(carry: BodyCarry | undefined): string {
+  if (!carry?.total) return "";
+  const moved =
+    Object.keys(carry.renames).length + Object.keys(carry.stages ?? {}).length;
+  return ` and +${carry.total} for ${moved > 0 ? "the moved bodies" : "the import lines it adds"}`;
 }
 
 /** A function node's key, as functionEntries names it (unnumbered). */
@@ -520,6 +532,38 @@ export function bodyCarry(
     ts.forEachChild(node, visitStages);
   };
   visitStages(fromSource);
+  // Each UI cut's call (owner v0.10.4 Q3): `<Part … />`, or `fn(…)` inside
+  // JSX, and the function it sits in.
+  const uiCalls = new Map<
+    string,
+    { key: string; lines: number; kind: "jsx" | "iife" }
+  >();
+  const inJsx = (node: ts.Node) => {
+    for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent)
+      if (ts.isJsxExpression(up)) return true;
+    return false;
+  };
+  const visitUi = (node: ts.Node, fn: ts.Node | undefined) => {
+    const here = isFunctionNode(node) ? node : fn;
+    let called: { name: string; kind: "jsx" | "iife" } | undefined;
+    if (ts.isJsxSelfClosingElement(node) && ts.isIdentifier(node.tagName))
+      called = { name: node.tagName.text, kind: "jsx" };
+    else if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      inJsx(node)
+    )
+      called = { name: node.expression.text, kind: "iife" };
+    if (called && here && !uiCalls.has(called.name))
+      uiCalls.set(called.name, {
+        key: keyOf(here),
+        kind: called.kind,
+        lines:
+          fromLine(node.getEnd()) - fromLine(node.getStart(fromSource)) + 1,
+      });
+    ts.forEachChild(node, (child) => visitUi(child, here));
+  };
+  visitUi(fromSource, undefined);
   for (const part of parts) {
     const text = now(part);
     if (text === undefined) continue;
@@ -546,6 +590,16 @@ export function bodyCarry(
         carry.total += all - inner + stage.lines;
         continue;
       }
+      const ui = name === undefined ? undefined : uiCalls.get(name);
+      const took = ui && uiCutLines(statement, statement.body, ui.kind, line);
+      if (name !== undefined && key === undefined && ui && took) {
+        // Its lines around what it took: the signature and `}`, and a
+        // component's `return (`, fragment and `);`.
+        const all = line(statement.getEnd()) - line(statement.getStart(sf)) + 1;
+        carry.stages = { ...carry.stages, [name]: ui.key };
+        carry.total += all - took + ui.lines;
+        continue;
+      }
       if (name === undefined || key === undefined) continue;
       const signature =
         line(statement.body.getStart(sf)) - line(statement.getStart(sf)) + 1;
@@ -554,21 +608,53 @@ export function bodyCarry(
       carry.total += signature + 1 + 1;
     }
   }
-  if (
-    Object.keys(carry.renames).length === 0 &&
-    Object.keys(carry.stages ?? {}).length === 0
-  )
-    return carry;
+  // Owner Q13: the files a split joins may also hold the import lines it
+  // adds, net across them (a plain split never less than its entry), and
+  // what a part already held.
+  let imports = 0;
   for (const file of [from, ...parts]) {
     const [was, is] = [
       importLines(file, before(file)),
       importLines(file, now(file)),
     ];
-    carry.total += is.statements + is.types - was.statements - was.types;
+    imports += is.statements + is.types - was.statements - was.types;
     const held = before(file);
     if (file !== from && held !== undefined) carry.total += countLines(held);
   }
+  const moves =
+    Object.keys(carry.renames).length + Object.keys(carry.stages ?? {}).length;
+  carry.total += moves > 0 ? imports : Math.max(0, imports);
   return carry;
+}
+
+/**
+ * The lines a UI cut's function took (owner v0.10.4 Q3): an IIFE's body
+ * between its braces, or the JSX a component returns (a fragment's
+ * children); undefined when a component returns anything else.
+ */
+function uiCutLines(
+  fn: ts.FunctionDeclaration,
+  body: ts.Block,
+  kind: "jsx" | "iife",
+  line: (pos: number) => number,
+): number | undefined {
+  const sf = fn.getSourceFile();
+  if (kind === "iife")
+    return Math.max(0, line(body.getEnd()) - line(body.getStart(sf)) - 1);
+  const [only, ...rest] = body.statements;
+  if (!only || rest.length > 0 || !ts.isReturnStatement(only)) return undefined;
+  let e = only.expression;
+  while (e && ts.isParenthesizedExpression(e)) e = e.expression;
+  if (!e) return undefined;
+  let run: readonly ts.Node[] = [e];
+  if (ts.isJsxFragment(e))
+    run = e.children.filter(
+      (c) => !ts.isJsxText(c) || !c.containsOnlyTriviaWhiteSpaces,
+    );
+  else if (!ts.isJsxElement(e) && !ts.isJsxSelfClosingElement(e))
+    return undefined;
+  if (run.length === 0) return undefined;
+  return line(run[run.length - 1]!.getEnd()) - line(run[0]!.getStart(sf)) + 1;
 }
 
 function gitShowHead(file: string): string | undefined {

@@ -24,10 +24,12 @@ import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { AssumptionsBand } from "@/components/retirement/assumptions-band";
+import { Tabs, tabPanelProps } from "@/components/ui/tabs";
 import { RothExplorer } from "@/components/tax-optimization/roth-explorer";
 import { WithdrawalComparison } from "@/components/tax-optimization/withdrawal-comparison";
 import { IrmaaCliffAlert } from "@/components/tax-optimization/irmaa-cliff-alert";
@@ -77,13 +79,23 @@ export function TaxOptimizationContent() {
   const bracketYear = taxQuery.data?.meta?.bracketsThroughYear ?? null;
   const rows = taxQuery.data?.rows ?? [];
 
-  if (metaQuery.isLoading || taxQuery.isLoading) {
+  if (queryPending([metaQuery, taxQuery])) {
     return (
-      <div className="space-y-4">
-        <PageHeader title="Roth & conversions" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <QueryBoundary
+        query={[metaQuery, taxQuery]}
+        frame={(body) => (
+          <div className="space-y-4">
+            <PageHeader title="Roth & conversions" />
+            {body}
+          </div>
+        )}
+        fallback={
+          <>
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </>
+        }
+      />
     );
   }
 
@@ -136,18 +148,17 @@ export function TaxOptimizationContent() {
       <IrmaaCliffAlert rows={rows} />
 
       <div className="rounded-lg border">
-        <div className="flex gap-1 border-b px-3 pt-2">
-          <TabButton active={tab === "roth"} onClick={() => setTab("roth")}>
-            Roth conversion explorer
-          </TabButton>
-          <TabButton
-            active={tab === "strategies"}
-            onClick={() => setTab("strategies")}
-          >
-            Withdrawal-strategy comparison
-          </TabButton>
-        </div>
-        <div className="p-3">
+        <Tabs
+          look="folder"
+          id="tax-optimization"
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { value: "roth", label: "Roth conversion explorer" },
+            { value: "strategies", label: "Withdrawal-strategy comparison" },
+          ]}
+        />
+        <div className="p-3" {...tabPanelProps("tax-optimization", tab)}>
           {tab === "roth" ? (
             <RothExplorer selection={selection} />
           ) : (
@@ -156,29 +167,5 @@ export function TaxOptimizationContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-t-md px-3 py-1.5 text-xs font-medium transition-colors ${
-        active
-          ? "bg-surface-primary text-primary border border-b-0"
-          : "text-muted hover:text-secondary"
-      }`}
-    >
-      {children}
-    </button>
   );
 }

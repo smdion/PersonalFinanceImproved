@@ -3,10 +3,12 @@
 /** Settings tab for managing IRS contribution limits, FICA rates, and standard deductions by tax year with inline editing, year duplication, and year-over-year change indicators. */
 import { SourceLinks } from "./source-links";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { DeleteYearConfirm } from "./tax-year-actions";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   taxLimitGroups,
@@ -34,7 +36,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.contributionLimits.list.useQuery();
+  const query = trpc.settings.contributionLimits.list.useQuery();
   const updateMut = trpc.settings.contributionLimits.update.useMutation({
     onSuccess: () => utils.settings.contributionLimits.list.invalidate(),
   });
@@ -53,14 +55,14 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     null,
   );
 
-  if (isLoading) return <Skeleton className="h-6 w-48" />;
+  if (queryPending(query)) return <SettingsQueryBoundary query={query} />;
 
   // Get unique years, sorted descending (newest first)
-  const years = Array.from(new Set((data ?? []).map((l) => l.taxYear))).sort(
-    (a, b) => b - a,
-  );
+  const years = Array.from(
+    new Set((query.data ?? []).map((l) => l.taxYear)),
+  ).sort((a, b) => b - a);
   const activeYear = year;
-  const yearData = (data ?? []).filter((l) => l.taxYear === activeYear);
+  const yearData = (query.data ?? []).filter((l) => l.taxYear === activeYear);
 
   // Build a lookup: type -> record for the active year
   const limitsMap = new Map<
@@ -116,7 +118,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
    *  per-row "+ Set" fallback each group already supports. */
   const handleCopyYear = async () => {
     if (!copyFrom || yearData.length > 0) return;
-    const sourceData = (data ?? []).filter((l) => l.taxYear === copyFrom);
+    const sourceData = (query.data ?? []).filter((l) => l.taxYear === copyFrom);
     for (const l of sourceData) {
       // Carried forward: a release with this year's real figure replaces it.
       await createMut.mutateAsync({
@@ -131,7 +133,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   };
 
   const handleDeleteYear = async (yr: number) => {
-    const toDelete = (data ?? []).filter((l) => l.taxYear === yr);
+    const toDelete = (query.data ?? []).filter((l) => l.taxYear === yr);
     for (const l of toDelete) {
       await deleteMut.mutateAsync({ id: l.id });
     }
@@ -151,7 +153,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   const prevYear = years.find((y) => y < activeYear);
   const prevYearMap = new Map<string, number>();
   if (prevYear) {
-    for (const l of (data ?? []).filter((d) => d.taxYear === prevYear)) {
+    for (const l of (query.data ?? []).filter((d) => d.taxYear === prevYear)) {
       prevYearMap.set(l.limitType, Number(l.value));
     }
   }
@@ -184,37 +186,24 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               ))}
             </select>
           </label>
-          <button
+          <Button
+            size="sm"
             onClick={handleCopyYear}
             disabled={createMut.isPending}
-            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            className="!font-normal"
           >
             Copy
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Delete year confirmation */}
       {confirmDeleteYear === activeYear && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-          <span className="text-sm text-red-800">
-            Delete all {activeYear} limits? This cannot be undone.
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDeleteYear(activeYear)}
-              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setConfirmDeleteYear(null)}
-              className="text-muted hover:text-primary px-3 py-1 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <DeleteYearConfirm
+          message={<>Delete all {activeYear} limits? This cannot be undone.</>}
+          onDelete={() => handleDeleteYear(activeYear)}
+          onCancel={() => setConfirmDeleteYear(null)}
+        />
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -17,6 +17,7 @@ import {
   removeTiingoConnection,
 } from "@/lib/tiingo/connection";
 import { testApiKey } from "@/lib/tiingo/client";
+import type { ProbeResult } from "@/lib/http/probe-result";
 import {
   BudgetApiError,
   externalErrorSentence,
@@ -55,40 +56,46 @@ export const tiingoRouter = createTRPCRouter({
         });
       }
       await saveTiingoConnection(ctx.db, input.apiKey);
-      return { success: true as const };
+      return { ok: true as const };
     }),
 
   /** Test the stored key and report how far back price history goes. */
-  testConnection: syncProcedure.mutation(async ({ ctx }) => {
-    let apiKey: string | null;
-    try {
-      apiKey = await getTiingoApiKey(ctx.db);
-    } catch {
-      // A key saved under another ENCRYPTION_KEY (e.g. a restored backup).
-      return { success: false as const, error: KEY_UNREADABLE };
-    }
-    if (!apiKey) {
-      return {
-        success: false as const,
-        error: "No Tiingo connection configured",
-      };
-    }
-    try {
-      const meta = await testApiKey(apiKey);
-      return {
-        success: true as const,
-        ticker: meta.ticker,
-        historyStart: meta.startDate,
-      };
-    } catch (e) {
-      return { success: false as const, error: describeTiingoError(e) };
-    }
-  }),
+  testConnection: syncProcedure.mutation(
+    async ({
+      ctx,
+    }): Promise<
+      ProbeResult<{ ticker: string; historyStart: string | null }>
+    > => {
+      let apiKey: string | null;
+      try {
+        apiKey = await getTiingoApiKey(ctx.db);
+      } catch {
+        // A key saved under another ENCRYPTION_KEY (e.g. a restored backup).
+        return { success: false as const, error: KEY_UNREADABLE };
+      }
+      if (!apiKey) {
+        return {
+          success: false as const,
+          error: "No Tiingo connection configured",
+        };
+      }
+      try {
+        const meta = await testApiKey(apiKey);
+        return {
+          success: true as const,
+          ticker: meta.ticker,
+          historyStart: meta.startDate,
+        };
+      } catch (e) {
+        return { success: false as const, error: describeTiingoError(e) };
+      }
+    },
+  ),
 
   /** Remove the stored key. */
   removeConnection: syncProcedure.mutation(async ({ ctx }) => {
     await removeTiingoConnection(ctx.db);
-    return { success: true as const };
+    return { ok: true as const };
   }),
 
   /** Connection status for the Settings integrations card. Never returns the key. */

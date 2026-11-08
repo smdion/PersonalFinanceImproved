@@ -22,7 +22,7 @@ interface BudgetMonthlyTotalSource {
 /**
  * Derive one "monthly spend" figure from a budget summary — the single
  * computation path for this derivation, previously re-typed at 3 call
- * sites (savings/page.tsx twice, savings.ts's computeLiveMaxMonthlyFunding
+ * sites (savings/savings-content.tsx twice, savings.ts's computeLiveMaxMonthlyFunding
  * once). Weighted profiles blend to a "typical month" (weightedAnnualTotal
  * / 12); non-weighted profiles use the single column's totalMonthly as-is.
  */

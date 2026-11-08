@@ -1,6 +1,7 @@
 import { auth } from "@/server/auth";
 import type { Permission } from "@/lib/config/permissions";
 import { cookies } from "next/headers";
+import { HydrationBoundary } from "@tanstack/react-query";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardLayout as DashboardLayoutClient } from "@/components/layout/dashboard-layout";
@@ -12,6 +13,7 @@ import { DemoBanner } from "@/components/layout/demo-banner";
 import { getDemoProfile } from "@/lib/demo";
 import { databaseStatus } from "@/server/data/database-status";
 import { devBypass } from "@/server/auth-mode";
+import { prefetchForShell } from "@/server/trpc-server";
 
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
@@ -90,6 +92,10 @@ export default async function DashboardLayout({
     redirect("/demo");
   }
 
+  // Above the shell, so the shell and the page render the shell's queries
+  // from the same data on the server and in the browser (prefetchForShell).
+  const shellState = await prefetchForShell();
+
   return (
     <>
       <a
@@ -110,9 +116,11 @@ export default async function DashboardLayout({
             permissions: user.permissions,
           }}
         >
-          <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
-            <DashboardShell>{children}</DashboardShell>
-          </DashboardLayoutClient>
+          <HydrationBoundary state={shellState}>
+            <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
+              <DashboardShell>{children}</DashboardShell>
+            </DashboardLayoutClient>
+          </HydrationBoundary>
         </UserProvider>
       </PrivacyProvider>
     </>

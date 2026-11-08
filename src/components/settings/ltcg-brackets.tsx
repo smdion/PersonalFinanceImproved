@@ -17,7 +17,7 @@ type LtcgEntry = { threshold: number | null; rate: number };
 export function LtcgBracketsSettings({ year }: { year: number }) {
   const admin = isAdmin(useUser());
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.ltcgBrackets.list.useQuery();
+  const query = trpc.settings.ltcgBrackets.list.useQuery();
   const invalidate = () => utils.settings.ltcgBrackets.invalidate();
   const updateMutation = trpc.settings.ltcgBrackets.update.useMutation({
     onSuccess: invalidate,
@@ -32,7 +32,7 @@ export function LtcgBracketsSettings({ year }: { year: number }) {
     onSuccess: invalidate,
   });
 
-  const rows = (data ?? []) as BracketRow<LtcgEntry>[];
+  const rows = (query.data ?? []) as BracketRow<LtcgEntry>[];
 
   return (
     <BracketTableEditor<LtcgEntry>
@@ -40,7 +40,7 @@ export function LtcgBracketsSettings({ year }: { year: number }) {
       noun="LTCG"
       year={year}
       admin={admin}
-      isLoading={isLoading}
+      query={query}
       rows={rows}
       defaultBrackets={[
         { threshold: 0, rate: 0 },

@@ -2,7 +2,7 @@
 
 /**
  * Account-order reorder control shared by the Retirement page's per-session
- * Withdrawal Routing panel (cards/projection/decumulation-config.tsx) and the
+ * Withdrawal Routing panel (retirement-projection/decumulation-config.tsx) and the
  * Retirement Profile's persisted default in Taxes in Retirement
  * (retirement/sections/taxes.tsx). Both edit the SAME `withdrawalOrder`
  * array the engine reads — the session panel writes a transient override,

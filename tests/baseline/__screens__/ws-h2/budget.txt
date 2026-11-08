@@ -1,0 +1,110 @@
+Budget
+Spends the take-home pay your Salary and Contribution profiles produce; Savings allocates what’s left. Salary, Contribution, Savings and Retirement profiles have their own page.
+View only — unlock to edit
+Your retirement projection spends Household budget · Standard ($43,800.00 a year) until retirement and Household budget · Standard ($43,800.00 a year) in retirement — change these on Retirement.
+ActiveHousehold budget
+Mode: StandardUnallocated: $985.16/moTotal spending + savings: $43,800.00/yr
+Manage Modes
+Profiles
++ New
+Household budget
+ACTIVE
+clone
+$43,800.00/yr1 mode
+Standard●
+Gross Income
+$6,000.00
+Taxes
+−$824.84
+Pre-Tax Deductions?
+−$540.00
+Take-Home Pay?
+$4,635.16
+Essential?
+−$3,400.00
+Discretionary?
+−$250.00
+Savings(Household budget)?
+$985.16
+Category / Item⋮
+Standard
+Housing
+$1,700.00
+Mortgage/Rent+API
+—
+Property Taxes+API
+—
+HOA+API
+—
+Rent+API
+$1,700.00
+Utilities
+$0.00
+Electric+API
+—
+Gas+API
+—
+Water/Sewer+API
+—
+Internet+API
+—
+Cell Phone+API
+—
+Food
+$650.00
+Groceries+API
+$650.00
+Restaurants+API
+—
+Transportation
+$600.00
+Fuel+API
+—
+Car Maintenance+API
+—
+Car payment and gas+API
+$600.00
+Insurance
+$0.00
+Car Insurance+API
+—
+Homeowners Insurance+API
+—
+Life Insurance+API
+—
+House Upkeep
+$0.00
+General Household+API
+—
+Home Improvement+API
+—
+Lawn/Garden+API
+—
+Personal
+$0.00
+Clothing+API
+—
+Self Care+API
+—
+Fun Money
+$0.00
+Subscriptions+API
+—
+Entertainment+API
+—
+Gifts+API
+—
+Not in Emergency Fund
+$0.00
+Giving+API
+—
+Investments+API
+—
+Family
+$450.00
+After-school care+API
+$450.00
+Lifestyle
+$250.00
+Misc+API
+$250.00

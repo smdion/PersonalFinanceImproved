@@ -444,6 +444,6 @@ export async function finalizePerformanceYear(
 
     await stampPerformanceUpdated(tx);
     invalidateYearEndCache();
-    return { success: true, finalizedYear: year, createdYear: nextYear };
+    return { ok: true, finalizedYear: year, createdYear: nextYear };
   }); // end transaction
 }

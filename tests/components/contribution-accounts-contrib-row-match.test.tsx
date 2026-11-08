@@ -6,7 +6,11 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ContributionRow } from "@/components/portfolio/contribution-accounts-contrib-row";
+import {
+  AddContribForm,
+  ContributionRow,
+} from "@/components/portfolio/contribution-accounts-contrib-row";
+import { expectLabelReachesControl } from "./label-click";
 import type { ContribRow } from "@/components/portfolio/contribution-accounts-types";
 import {
   entryWithMergedRate,
@@ -86,5 +90,24 @@ describe("the contribution row's match", () => {
         storedMatchRate(merged.employerMatchRate),
       ),
     ).toMatchObject({ kind: "percent_of_contribution", rate: 0.4 });
+  });
+});
+
+describe("the new contribution form's labels", () => {
+  it("clicking a label reaches its field", () => {
+    render(
+      <AddContribForm
+        accountType="401k"
+        parentCategory="Retirement"
+        performanceAccountId={1}
+        ownerPersonId={1}
+        people={[{ id: 1, name: "Alex" }]}
+        jobs={[{ id: 1, employerName: "Acme" }]}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    for (const name of ["Owner", "Job", "Tax Treatment", "Match Type"])
+      expectLabelReachesControl(name);
   });
 });
