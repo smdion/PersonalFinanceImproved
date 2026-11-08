@@ -12,6 +12,7 @@
  * 2×3 rows/year) — deliberately NOT folded in here.
  */
 import { useState } from "react";
+import { AddYearPanel, DeleteYearConfirm } from "./tax-year-actions";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import type { BoundaryQuery } from "@/components/ui/query-boundary";
@@ -167,37 +168,19 @@ export function BracketTableEditor<TEntry>({
     return (
       <div>
         <h2 className="mb-4 text-lg font-semibold">{title}</h2>
-        <div className="rounded-lg border border-dashed p-4 text-center">
-          <p className="text-muted mb-3 text-sm">
-            No {noun} brackets configured for {year}.
-          </p>
-          {admin && (
-            <div className="flex items-center justify-center gap-3">
-              {years.length > 0 && (
-                <label className="text-secondary text-sm">
-                  Copy from:
-                  <select
-                    value={effectiveCopyFrom ?? ""}
-                    onChange={(e) => setCopyFrom(parseInt(e.target.value))}
-                    className="ml-2 rounded border px-2 py-1 text-sm"
-                  >
-                    {years.map((yr) => (
-                      <option key={yr} value={yr}>
-                        {yr}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <button
-                onClick={handleAddYear}
-                className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-              >
-                Add {year}
-              </button>
-            </div>
-          )}
-        </div>
+        <AddYearPanel
+          message={
+            <>
+              No {noun} brackets configured for {year}.
+            </>
+          }
+          admin={admin}
+          year={year}
+          years={years}
+          copyFrom={effectiveCopyFrom}
+          onCopyFromChange={setCopyFrom}
+          onAdd={handleAddYear}
+        />
       </div>
     );
   }
@@ -208,25 +191,15 @@ export function BracketTableEditor<TEntry>({
       {intro && <div className="text-muted mb-4 text-xs">{intro}</div>}
 
       {confirmDelete === year && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-          <span className="text-sm text-red-800">
-            Delete all {year} {noun} brackets? This cannot be undone.
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={handleDeleteYear}
-              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="text-muted hover:text-primary px-3 py-1 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <DeleteYearConfirm
+          message={
+            <>
+              Delete all {year} {noun} brackets? This cannot be undone.
+            </>
+          }
+          onDelete={handleDeleteYear}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

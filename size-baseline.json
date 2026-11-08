@@ -762,16 +762,16 @@
       "UpcomingGoals": 187
     },
     "src/components/settings/bracket-table-editor.tsx": {
-      "BracketTableEditor": 211
+      "BracketTableEditor": 183
     },
     "src/components/settings/contribution-limits.tsx": {
-      "ContributionLimitsSettings": 333
+      "ContributionLimitsSettings": 320
     },
     "src/components/settings/data-sources.tsx": {
       "DataSourcesSettings": 161
     },
     "src/components/settings/fpl-by-household.tsx": {
-      "FplByHouseholdSettings": 215
+      "FplByHouseholdSettings": 177
     },
     "src/components/settings/general.tsx": {
       "LivingCostMappingEditor": 233
@@ -811,7 +811,7 @@
       "ReturnRatesSettings": 257
     },
     "src/components/settings/tax-brackets.tsx": {
-      "TaxBracketsSettings": 336
+      "TaxBracketsSettings": 302
     },
     "src/components/settings/tax-data.tsx": {
       "TaxDataSettings": 202

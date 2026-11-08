@@ -2,6 +2,7 @@
 
 /** Settings tab for managing federal income tax withholding brackets (IRS Pub 15-T) by tax year, filing status, and W-4 checkbox, with inline editing and year duplication. */
 import { useState } from "react";
+import { AddYearPanel, DeleteYearConfirm } from "./tax-year-actions";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -149,37 +150,15 @@ export function TaxBracketsSettings({ year }: { year: number }) {
     return (
       <div>
         <h2 className="mb-4 text-lg font-semibold">Tax Brackets</h2>
-        <div className="rounded-lg border border-dashed p-4 text-center">
-          <p className="text-muted mb-3 text-sm">
-            No tax brackets configured for {activeYear}.
-          </p>
-          {admin && (
-            <div className="flex items-center justify-center gap-3">
-              {years.length > 0 && (
-                <label className="text-secondary text-sm">
-                  Copy from:
-                  <select
-                    value={effectiveCopyFrom ?? ""}
-                    onChange={(e) => setCopyFrom(parseInt(e.target.value))}
-                    className="ml-2 rounded border px-2 py-1 text-sm"
-                  >
-                    {years.map((yr) => (
-                      <option key={yr} value={yr}>
-                        {yr}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <button
-                onClick={handleAddYear}
-                className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-              >
-                Add {activeYear}
-              </button>
-            </div>
-          )}
-        </div>
+        <AddYearPanel
+          message={<>No tax brackets configured for {activeYear}.</>}
+          admin={admin}
+          year={activeYear}
+          years={years}
+          copyFrom={effectiveCopyFrom}
+          onCopyFromChange={setCopyFrom}
+          onAdd={handleAddYear}
+        />
       </div>
     );
   }
@@ -190,25 +169,13 @@ export function TaxBracketsSettings({ year }: { year: number }) {
 
       {/* Delete year confirmation */}
       {confirmDelete === activeYear && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-          <span className="text-sm text-red-800">
-            Delete all {activeYear} brackets? This cannot be undone.
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDeleteYear(activeYear)}
-              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="text-muted hover:text-primary px-3 py-1 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <DeleteYearConfirm
+          message={
+            <>Delete all {activeYear} brackets? This cannot be undone.</>
+          }
+          onDelete={() => handleDeleteYear(activeYear)}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
       <div className="space-y-6">

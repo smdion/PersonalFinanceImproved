@@ -3050,7 +3050,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 5
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -3064,7 +3064,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 7
+      "count": 4
     }
   },
   "src/components/settings/data-sources.tsx": {
@@ -3105,7 +3105,12 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 5
+      "count": 2
+    }
+  },
+  "src/components/settings/tax-year-actions.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/settings/general.tsx": {
@@ -3380,7 +3385,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 5
+      "count": 2
     }
   },
   "src/components/settings/tax-data-updates.tsx": {

@@ -3,6 +3,8 @@
 /** Settings tab for managing IRS contribution limits, FICA rates, and standard deductions by tax year with inline editing, year duplication, and year-over-year change indicators. */
 import { SourceLinks } from "./source-links";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { DeleteYearConfirm } from "./tax-year-actions";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -184,37 +186,24 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               ))}
             </select>
           </label>
-          <button
+          <Button
+            size="sm"
             onClick={handleCopyYear}
             disabled={createMut.isPending}
-            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            className="!font-normal"
           >
             Copy
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Delete year confirmation */}
       {confirmDeleteYear === activeYear && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-          <span className="text-sm text-red-800">
-            Delete all {activeYear} limits? This cannot be undone.
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDeleteYear(activeYear)}
-              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setConfirmDeleteYear(null)}
-              className="text-muted hover:text-primary px-3 py-1 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <DeleteYearConfirm
+          message={<>Delete all {activeYear} limits? This cannot be undone.</>}
+          onDelete={() => handleDeleteYear(activeYear)}
+          onCancel={() => setConfirmDeleteYear(null)}
+        />
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
