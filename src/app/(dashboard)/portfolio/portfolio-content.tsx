@@ -8,20 +8,17 @@ import { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
-import { errorText } from "@/lib/utils/mutation-error";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useFocusReveal } from "@/lib/hooks/use-focus";
-import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EDIT_LOCK_KEYS, useEditLock } from "@/components/ui/edit-lock-toggle";
-import { toast } from "@/lib/hooks/use-toast";
-import { useSnapshotSyncPending } from "@/components/portfolio/use-snapshot-sync-pending";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { usePortfolioSnapshotMutations } from "@/components/portfolio/use-portfolio-snapshot-mutations";
 import { PortfolioSyncBanner, PortfolioHeader } from "./portfolio-sections";
 import { PortfolioSnapshotHistory } from "./snapshot-history-card";
 import { PortfolioSettingsSections } from "./portfolio-settings-sections";
 import { PortfolioPanels } from "./portfolio-panels";
+import { usePortfolioSync } from "./use-portfolio-sync";
 
 export function PortfolioContent() {
   const user = useUser();
@@ -79,86 +76,14 @@ export function PortfolioContent() {
     invalidateSnapshotQueries,
   } = usePortfolioSnapshotMutations();
 
-  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
-  const budgetApiConnected = !!syncStatus?.connected;
-  const syncServiceLabel = budgetApiServiceLabel(syncStatus?.service ?? "none");
-
   const {
-    pending: syncPendingRaw,
-    markDirty: markDirtyRaw,
-    clear: clearSyncPending,
-  } = useSnapshotSyncPending();
-  // Only a household with a live budget-API connection has anything to
-  // resync — otherwise the balance edit just saves and we're done.
-  const syncPending = budgetApiConnected ? syncPendingRaw : null;
-  const markDirty = useCallback(
-    (snapshotId: number, snapshotDate: string) => {
-      if (budgetApiConnected) markDirtyRaw(snapshotId, snapshotDate);
-    },
-    [budgetApiConnected, markDirtyRaw],
-  );
-
-  /** Inline balance fix on the latest snapshot. Saves + recomputes
-   *  immediately; the budget-API push is NOT automatic — the snapshot is
-   *  marked "not synced" and stays that way (amber banner + row badge +
-   *  in-row "Sync to …" button) until the user pushes it explicitly. One
-   *  push covers every pending edit, so fixing several balances is still
-   *  one resync. */
-  const handleBalanceEdit = useCallback(
-    async (
-      accountId: number,
-      snapshotId: number,
-      snapshotDate: string,
-      rawAmount: string,
-    ) => {
-      const amount = rawAmount.replace(/[^0-9.]/g, "");
-      const n = Number(amount);
-      if (!amount || Number.isNaN(n) || n < 0) {
-        toast.error("Enter a valid balance.");
-        return;
-      }
-      try {
-        const res = await updateAccountBalance.mutateAsync({
-          id: accountId,
-          amount,
-        });
-        markDirty(snapshotId, snapshotDate);
-        if (res.amountEdited && res.performance === "year-finalized")
-          toast.info(
-            `Balance saved. ${snapshotDate.slice(0, 4)} is finalized in Performance, so its figures there didn't change.`,
-          );
-      } catch (e) {
-        toast.error(
-          e instanceof Error ? e.message : "Couldn't update the balance.",
-        );
-      }
-    },
-    [updateAccountBalance, markDirty],
-  );
-
-  /** Push the pending balance edits for one snapshot to the budget API —
-   *  one resync for all of them. Clears the "not synced" flag on success;
-   *  keeps it (banner + badge stay) on failure. */
-  const syncPendingSnapshot = useCallback(
-    async (snapshotId: number) => {
-      try {
-        const r = await resyncPush.mutateAsync({
-          snapshotId,
-          confirmNonLatest: false,
-        });
-        clearSyncPending();
-        toast.success(
-          `Synced to ${syncServiceLabel} — posted ${r.posted}, cleaned ${r.cleaned}.`,
-        );
-      } catch (e) {
-        toast.error(
-          `Sync failed: ${errorText(e, "unknown error").replace(/\.$/, "")}. Your edits are saved — the "Sync to ${syncServiceLabel}" button is still there to retry.`,
-          9000,
-        );
-      }
-    },
-    [resyncPush, clearSyncPending, syncServiceLabel],
-  );
+    budgetApiConnected,
+    syncServiceLabel,
+    clearSyncPending,
+    syncPending,
+    handleBalanceEdit,
+    syncPendingSnapshot,
+  } = usePortfolioSync(updateAccountBalance, resyncPush);
 
   const snapshotDate = data?.snapshotDate;
 

@@ -374,7 +374,9 @@
   "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
+    }
+  },
+  "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

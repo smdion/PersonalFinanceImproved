@@ -20,7 +20,7 @@
     "src/app/(dashboard)/networth/networth-content.tsx": 460,
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 679,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
-    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 280,
+    "src/app/(dashboard)/portfolio/portfolio-content.tsx": 205,
     "src/app/(dashboard)/portfolio/portfolio-panels.tsx": 87,
     "src/app/(dashboard)/portfolio/portfolio-sections.tsx": 127,
     "src/app/(dashboard)/portfolio/portfolio-settings-sections.tsx": 44,
@@ -29,6 +29,7 @@
     "src/app/(dashboard)/portfolio/snapshot-history.tsx": 290,
     "src/app/(dashboard)/portfolio/snapshot-pagination.tsx": 50,
     "src/app/(dashboard)/portfolio/snapshot-rows.tsx": 160,
+    "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": 104,
     "src/app/(dashboard)/savings/savings-content.tsx": 918,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-badges.tsx": 42,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 299,
@@ -447,7 +448,7 @@
       "PerformanceContent": 808
     },
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": {
-      "PortfolioContent": 255
+      "PortfolioContent": 183
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
       "RecommendationsContent": 185
