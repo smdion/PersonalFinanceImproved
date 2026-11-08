@@ -130,7 +130,9 @@ describe("RetirementProfileTab smoke", () => {
       await import("@/components/retirement/retirement-profile-tab");
     render(<RetirementProfileTab />);
     expect(screen.getByText("Projection Assumptions")).toBeInTheDocument();
-    expect(screen.getByText("Decumulation Plan")).toBeInTheDocument();
+    expect(
+      screen.getByText("Retirement budget and strategy"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Plan Assumptions")).toBeInTheDocument();
     expect(screen.getByText("Taxes in Retirement")).toBeInTheDocument();
   });

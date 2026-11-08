@@ -810,7 +810,7 @@ function transformV07xToCurrent(tables: TableData): TableData {
   // function used to stop at step A — empty
   // tables, null profile_id — leaving a restored pre-0032 backup in the
   // migration's INTERMEDIATE state instead of where a live upgrade
-  // actually lands. Real households upgrading get a real "Current Plan"
+  // actually lands. Real households upgrading get a real first Retirement
   // profile via the migration's own backfill; restoring an old backup
   // AFTER upgrading truncated that profile back to nothing with no way to
   // recreate one in-app — retirementProfiles.duplicate is the only
@@ -839,14 +839,14 @@ function transformV07xToCurrent(tables: TableData): TableData {
       string,
       unknown
     >[];
-    // Step 1+2: one "Current Plan" profile, only when settings exist and
+    // Step 1+2: one "Current Retirement" profile, only when settings exist and
     // no profile does yet (idempotent — a backup already at the current
     // shape, or one with no retirement data at all, is a pure pass-through).
     if (settingsRows.length > 0 && profileRows.length === 0) {
       const profileId = 1;
       profileRows.push({
         id: profileId,
-        name: "Current Plan",
+        name: "Current Retirement",
         description:
           "Your existing retirement assumptions, carried over when Retirement Profiles were introduced.",
         created_at: writeStamp().toISOString(),

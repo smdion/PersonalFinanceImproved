@@ -46,7 +46,7 @@ export function RetirementContent() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  // Links to Plan Health or a projection year open their tab.
+  // Links to Projection Health or a projection year open their tab.
   const [pageTab, setPageTab] = useFocusedState("retirementTab", "projection");
   const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
   // Retirement Profile axis (the assumptions band) — the active profile;
@@ -211,7 +211,7 @@ export function RetirementContent() {
               : "text-muted hover:text-secondary"
           }`}
         >
-          Plan Health
+          Projection Health
         </button>
       </div>
 
@@ -251,7 +251,7 @@ export function RetirementContent() {
       )}
 
       {pageTab === "planHealth" ? (
-        /* Plan Health tab — diagnostic callouts derived from plan state.
+        /* Projection Health tab — diagnostic callouts derived from plan state.
            Consumes data.planHealth which the projection router builds
            from contribution accounts and the active glide path. */
         <PlanHealthCard
@@ -336,7 +336,7 @@ export function RetirementContent() {
               src/components/retirement/retirement-profile-tab.tsx. */}
         </>
       )}
-      {/* Plan Health's card carries its own. */}
+      {/* Projection Health's card carries its own. */}
       {pageTab !== "planHealth" && <Disclaimer className="mt-3" />}
     </div>
   );

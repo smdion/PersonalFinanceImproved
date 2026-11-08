@@ -566,7 +566,7 @@ export function TransactionsTableHead({
         </th>
         <th
           className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap"
-          title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and month changes (matches the Plan table)"
+          title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and month changes (matches the Goals table)"
         >
           After
         </th>

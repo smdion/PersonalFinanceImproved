@@ -1,10 +1,10 @@
 /**
  * Per-phase budget profile + column selection.
  *
- * This is the middle child block of Decumulation Plan: it renders the
- * decumulation-phase Budget Source picker (profile dropdown + column picker
- * or weighted summary) alongside the Salary Override inline edit. Returns
- * null if there are no budget profiles at all, matching the IIFE guard.
+ * This is the middle child block of Retirement budget and strategy: it
+ * renders the decumulation-phase Budget Source picker (profile dropdown +
+ * column picker or weighted summary) alongside the Salary Override inline
+ * edit. Returns null if there are no budget profiles at all.
  *
  * The block also shows an amber "strategy X computes spending from ..."
  * banner when the active withdrawal strategy doesn't consume the budget /

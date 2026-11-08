@@ -161,7 +161,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
   if (callouts.length === 0) return null;
 
   return (
-    <Card title="Plan health">
+    <Card title="Projection health">
       <div className="space-y-2">{callouts}</div>
       <StressTestPanel
         userReturnRate={props.returnRate}

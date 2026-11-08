@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * The assumptions band — Retirement Profiles phase 4 (the design plan's
- * §05, "UI and the play loop"). Sits directly above the Retirement
- * Projection chart so the household can "play" with the plan without the
- * multiple clicks back and forth to the Budget page's Retirement Profiles
- * tab that motivated this whole migration.
+ * The assumptions band sits directly above the Retirement Projection
+ * chart so the household can "play" with the projection without going
+ * back and forth to the Budget page's Retirement Profiles tab.
  *
  * Copies the Paycheck page's pattern exactly, per §05's explicit finding
  * that a new mechanism (an unsaved draft, a Play-toggle fork) wasn't
@@ -125,10 +123,9 @@ export function AssumptionsBand({
     trpc.retirement.retirementSettings.upsert.useMutation({
       onSuccess: invalidate,
     });
-  // Same TypeScript inference gap retirement-profile-tab.tsx documents:
-  // tRPC's inferred input uses the specific withdrawalStrategy enum union
-  // and omits null from optional strategy fields; the Settings/
-  // buildSettingsPatch layer mirrors the raw DB shape (string / string|null).
+  // tRPC infers the strategy enum union and omits null from optional
+  // strategy fields; buildSettingsPatch mirrors the raw DB shape (string /
+  // string|null), as in retirement-profile-tab.tsx.
   const upsertSettings = upsertSettingsRaw as unknown as UpsertSettingsMutation; // eslint-disable-line no-restricted-syntax
   const upsertPerson =
     trpc.retirement.retirementProfilePeople.upsertPerson.useMutation({
@@ -171,7 +168,8 @@ export function AssumptionsBand({
           </select>
         ) : (
           <span className="text-xs font-medium">
-            {profiles.find((p) => p.id === profileId)?.name ?? "Current Plan"}
+            {profiles.find((p) => p.id === profileId)?.name ??
+              "Current Retirement"}
           </span>
         )}
         <div className="flex-1" />

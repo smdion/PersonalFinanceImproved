@@ -112,7 +112,7 @@ describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
     },
   );
 
-  it("settings rows with no retirement profile gain a Current Plan profile", async () => {
+  it("settings rows with no retirement profile gain a Current Retirement profile", async () => {
     const tables = await exported(HOUSEHOLDS[0]!);
     expect(tables["retirement_settings"]!.length).toBeGreaterThan(0);
     expect(tables["retirement_profiles"]!.length).toBeGreaterThan(0);
@@ -132,7 +132,7 @@ describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
     expect(added).toEqual([
       {
         id: 1,
-        name: "Current Plan",
+        name: "Current Retirement",
         description: expect.any(String),
         created_at: expect.any(String),
         tax_params_year: null,

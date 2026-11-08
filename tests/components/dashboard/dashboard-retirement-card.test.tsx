@@ -130,7 +130,7 @@ describe("RetirementCard dashboard cache-peek features", () => {
     render(<RetirementCard />);
     expect(screen.queryByText("Simulated success")).toBeNull();
     expect(
-      screen.getByText(/baseline; see Plan Health for simulated/),
+      screen.getByText(/baseline; see Projection Health for simulated/),
     ).toBeInTheDocument();
   });
 
@@ -143,7 +143,7 @@ describe("RetirementCard dashboard cache-peek features", () => {
     render(<RetirementCard />);
     expect(screen.getByText("Simulated success")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
-    // The figure links to where it's explained (Plan Health).
+    // The figure links to where it's explained (Projection Health).
     expect(screen.getByText("92%").closest("a")?.getAttribute("href")).toBe(
       "/retirement?focus=planHealth",
     );

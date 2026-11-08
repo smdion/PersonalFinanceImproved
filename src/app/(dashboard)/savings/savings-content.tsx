@@ -527,14 +527,14 @@ export function SavingsContent() {
         value={masterTab}
         onChange={setMasterTab}
         tabs={[
-          { value: "plan", label: "Plan" },
+          { value: "plan", label: "Goals" },
           { value: "manage", label: "Manage" },
         ]}
       />
 
       {/* ── Plan tab ── */}
       {masterTab === "plan" && (
-        <CardBoundary title="Plan">
+        <CardBoundary title="Goals">
           <section
             {...tabPanelProps("savings-master", "plan")}
             className="bg-surface-primary border-default space-y-4 rounded-lg border p-4 sm:p-5"

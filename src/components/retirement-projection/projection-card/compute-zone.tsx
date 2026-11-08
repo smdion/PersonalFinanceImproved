@@ -23,7 +23,7 @@ export function ScenarioPills({
         <HelpTip
           maxWidth={380}
           lines={[
-            "Active Plan: your plan as configured, with contributions continuing through retirement.",
+            "Baseline: your projection as configured, with contributions continuing through retirement.",
             coastFireAvailable
               ? `Coast FIRE (${state.ageLabel(coastFireAge!)}): contributions zeroed from then on — the earliest year that still passes.`
               : "Coast FIRE: contributions zeroed from your Coast FIRE year on — the earliest year that still passes. Not yet available.",
@@ -39,7 +39,7 @@ export function ScenarioPills({
         tone="compute"
         active={scenarioView === "baseline"}
         onClick={() => setScenarioView("baseline")}
-        label="Active Plan"
+        label="Baseline"
       />
       <PillBtn
         size="lg"

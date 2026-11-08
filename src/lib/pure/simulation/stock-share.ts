@@ -76,7 +76,7 @@ export function stockShareByAge(
   return any ? out : null;
 }
 
-/** Plan Health's stock allocation: the percent (one decimal) of stocks in
+/** Projection Health's stock allocation: the percent (one decimal) of stocks in
  *  the Default preset's glide path at `currentAge`, by the share VPW uses.
  *  Null without a glide path or a mapped class (no glide-path warning). */
 export function computeCurrentStockAllocationPercent(

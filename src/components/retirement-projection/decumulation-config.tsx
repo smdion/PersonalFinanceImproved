@@ -222,7 +222,7 @@ export function DecumulationConfig({
               ? `Withdrawal Routing — ${personFilterName}`
               : "Withdrawal Routing"}
           </h4>
-          <HelpTip text="Determines WHICH accounts fund your spending. The spending amount comes from your strategy in Decumulation Plan above." />
+          <HelpTip text="Determines WHICH accounts fund your spending. The spending amount comes from your strategy in Retirement budget and strategy above." />
           {!showDecumConfig && (
             <span className="text-caption text-faint">
               {modeLabel} · {orderSummary}

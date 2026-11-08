@@ -110,7 +110,7 @@ Contributions$28,000.00/yr(+ $10,100.00 match)
 Tax-advantaged room$29,750.00/yr
 Retirement budget$62,400.00/yr
 Est. Withdrawal (baseline)?$97,178.89/yr(Variable Percentage (VPW), varies)
-Coast FIRE?Already Coast(baseline; see Plan Health for simulated)
+Coast FIRE?Already Coast(baseline; see Projection Health for simulated)
 DurationLasts to 97+
 Readiness?
 [Now — 2026]

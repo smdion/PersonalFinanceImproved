@@ -68,7 +68,7 @@ export function renderCoastFireRow(
       <span className="text-muted">
         Coast FIRE
         <HelpTip
-          text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
+          text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Projection Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
           learnMoreHref={focusHref({ topic: "planHealth" })}
         />
       </span>
@@ -84,7 +84,7 @@ export function renderCoastFireRow(
         <span className="text-caption text-faint ml-1">
           {simLabel
             ? `(simulated: ${simLabel})`
-            : "(baseline; see Plan Health for simulated)"}
+            : "(baseline; see Projection Health for simulated)"}
         </span>
       </FocusLink>
     </div>

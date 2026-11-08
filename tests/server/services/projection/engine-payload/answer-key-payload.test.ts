@@ -232,7 +232,7 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
     // Trace #2: the Retirement budget is set to an amount, 90,000 (the
     // Retirement page's setting, `retirement_dec_expense_override`). The
     // Tax Optimization tabs, Tax Buckets "At Retirement", Brokerage, the
-    // Social Security explorer, Plan Health and Relocation build the
+    // Social Security explorer, Projection Health and Relocation build the
     // payload without forwarding it. Decided: one server-side resolver, so
     // each gets `decumulationAnnualExpenses` 90,000. Today the payload
     // falls back to the Budget, 120,000: 30,000 a year more spending in

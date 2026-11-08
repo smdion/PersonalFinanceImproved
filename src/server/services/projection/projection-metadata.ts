@@ -239,7 +239,7 @@ export function projectionMetadata(data: Run["data"], payload: Payload) {
     rothConversionPresets,
     baseEngineInput,
   } = payload;
-  // Plan health inputs — derived inputs
+  // Projection health inputs — derived inputs
   // the PlanHealthCard needs for contribution-order and glide-path
   // warnings. Implementation lives in accumulation-order.ts and stock-share.ts.
   const accumulationOrder = buildAccumulationOrder(activeContribs);

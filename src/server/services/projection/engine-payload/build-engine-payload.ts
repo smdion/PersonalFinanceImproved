@@ -148,7 +148,7 @@ export async function buildEnginePayload(
 
   // Household assumptions now come from the ACTIVE PROFILE's row, not from
   // whichever person happens to be primary. Same values today (step A's
-  // backfill pointed every existing row at "Current Plan"), but it's what
+  // backfill pointed every existing row at the first profile), but it's what
   // makes profiles swappable — and it removes the trap where a household
   // field edited against a non-primary person wrote successfully and was
   // then never read.

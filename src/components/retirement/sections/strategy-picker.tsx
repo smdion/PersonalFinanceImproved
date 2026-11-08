@@ -1,7 +1,7 @@
 /**
- * The withdrawal strategy pickers: the Decumulation Plan's (with the chosen
- * strategy's description) and the assumptions band's chip. A stored key that
- * names no current strategy shows nothing selected and a note naming it.
+ * The withdrawal strategy pickers: the Retirement budget and strategy
+ * section's and the assumptions band's chip. A stored key naming no
+ * current strategy shows nothing selected and a note naming it.
  */
 "use client";
 

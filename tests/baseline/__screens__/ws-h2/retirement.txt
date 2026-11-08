@@ -1,7 +1,7 @@
 Retirement Projection
 Budget scenario: Standard
 Projection
-Plan Health
+Projection Health
 AssumptionsCurrent Retirement
 View only — unlock to edit
 Retire65Through?92Inflation3.00%Withdrawal Rate4.00%StrategySpending DeclineBracket Ceiling?12%
@@ -55,7 +55,7 @@ Clear Cache
 View Assumptions →
 Compute— what gets run
 Scenario?
-Active Plan
+Baseline
 Coast FIRE (2026 (Taylor, 38))
 Coast FIRE (Today)
 Coast FIRE (Custom)

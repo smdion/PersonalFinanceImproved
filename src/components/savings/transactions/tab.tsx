@@ -188,7 +188,7 @@ export function AllTransactionsTab({
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
 
   // "After" balance: use the pre-computed GoalProjection.balances[] which already
-  // includes contributions, recurring expansion, and overrides — matching the Plan table.
+  // includes contributions, recurring expansion, and overrides — matching the Goals table.
   // Map from goalId for O(1) lookup.
   const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
   // GoalProjection.balances[0] is always the current calendar month — must match

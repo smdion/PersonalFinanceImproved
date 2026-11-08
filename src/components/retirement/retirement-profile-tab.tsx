@@ -384,7 +384,7 @@ export function RetirementProfileTab({
     <CardBoundary title="Projection Assumptions">
       <Card title="Projection Assumptions" className="mb-6">
         <div className="space-y-4">
-          {/* Two-column layout: Timeline+Income (left) | Decumulation Plan (right) */}
+          {/* Two-column layout: Timeline+Income (left) | Retirement budget and strategy (right) */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Left column: Timeline + Income */}
             <div className="bg-surface-sunken space-y-4 rounded-lg p-3">
@@ -424,11 +424,11 @@ export function RetirementProfileTab({
               />
             </div>
 
-            {/* Right column: Decumulation Plan */}
+            {/* Right column: Retirement budget and strategy */}
             <div className="bg-surface-sunken rounded-lg p-3">
               <div className="mb-2 flex items-center gap-2">
                 <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
-                  Decumulation Plan
+                  Retirement budget and strategy
                 </h4>
                 <Badge color="indigo">Baseline + Simulation</Badge>
                 <div className="flex-1 border-t" />

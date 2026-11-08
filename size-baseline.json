@@ -190,7 +190,7 @@
     "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
-    "src/components/retirement/assumptions-band.tsx": 432,
+    "src/components/retirement/assumptions-band.tsx": 430,
     "src/components/retirement/retirement-profile-tab.tsx": 552,
     "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/api-sync-section.tsx": 603,

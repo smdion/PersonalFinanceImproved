@@ -9,7 +9,7 @@ import type { LatestContribution } from "@/lib/pure/investments/deposit-check";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 const STATUS_TEXT: Record<PaceStatus, string> = {
-  met: "Plan met",
+  met: "Target met",
   on_pace: "On pace",
   differs: "Latest deposit differs",
   no_recent: "No recent deposit",
@@ -18,7 +18,7 @@ const STATUS_TEXT: Record<PaceStatus, string> = {
 };
 
 const STATUS_TITLE: Record<PaceStatus, string> = {
-  met: "Saved this year's full plan already",
+  met: "Saved this year's full target already",
   on_pace: "The latest contribution matches today's setup",
   differs: "The latest contribution isn't what today's setup puts in",
   no_recent: "No contribution arrived in the last few months",

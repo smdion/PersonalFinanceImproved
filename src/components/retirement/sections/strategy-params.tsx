@@ -4,9 +4,9 @@
  * Data-driven from the withdrawal strategy registry: given the active
  * strategy, we look up its `paramFields` (boolean / number / percent / the
  * special rollingYears variant) and render the matching editor, reading
- * and writing each field's own column (`paramFields[].column`). Previously lived as an IIFE inside the
- * Decumulation Plan JSX — now a sibling sub-component so Decumulation's
- * orchestrator stays compact.
+ * and writing each field's own column (`paramFields[].column`). A sibling
+ * of the Retirement budget and strategy section, so its orchestrator
+ * stays compact.
  */
 "use client";
 
