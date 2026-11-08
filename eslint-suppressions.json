@@ -3305,6 +3305,17 @@
       "count": 2
     }
   },
+  "src/components/settings/integrations/portfolio-mapping-lists.tsx": {
+    "ratchet/no-unlabeled-control": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 4
+    }
+  },
   "src/components/settings/integrations/portfolio-section.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -3313,16 +3324,13 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 5
+      "count": 3
     },
     "ratchet/no-raw-button": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-unlabeled-control": {
-      "count": 4
+      "count": 3
     }
   },
   "src/components/settings/integrations/savings-section.tsx": {
