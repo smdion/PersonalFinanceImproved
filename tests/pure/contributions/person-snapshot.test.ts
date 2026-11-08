@@ -6,10 +6,10 @@
  * age 52, a 401(k) on their job and an IRA of their own.
  */
 import { describe, expect, it } from "vitest";
-import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
+import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import { contribAccountsFor } from "@/lib/pure/contributions/person-snapshot";
 
-const base: ContribAccountRow = {
+const base: ContributionAccountRow = {
   capPassed: true,
   id: 1,
   personId: 1,
@@ -36,7 +36,7 @@ const base: ContribAccountRow = {
   priorYearContribAmount: "0",
   priorYearContribYear: null,
 };
-const ira: ContribAccountRow = {
+const ira: ContributionAccountRow = {
   ...base,
   id: 2,
   jobId: null,

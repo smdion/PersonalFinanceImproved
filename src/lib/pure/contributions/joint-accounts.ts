@@ -21,14 +21,14 @@ import {
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
-import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
+import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import type {
   AccountTypeSnapshot,
   PersonSnapshot,
 } from "@/lib/pure/contributions/summary.types";
 
 export function jointAccountRows(
-  jointContribs: ContribAccountRow[],
+  jointContribs: ContributionAccountRow[],
   results: PersonSnapshot[],
   perfLabelMap: Map<number, string>,
   asOfDate: Date,

@@ -26,7 +26,7 @@ import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.type
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
-import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
+import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import type { PersonContributionAccountsInput } from "@/lib/pure/contributions/person-snapshot.types";
 import type { PerContribData } from "@/lib/pure/contributions/summary.types";
 
@@ -63,7 +63,7 @@ export function personPay(
   return { dbSalary, pay, salary, totalCompensation };
 }
 
-export function contribAccountsFor<R extends ContribAccountRow>({
+export function contribAccountsFor<R extends ContributionAccountRow>({
   effectiveContributions: effectiveContribs,
   activeJob,
   person,
@@ -140,7 +140,7 @@ export function contribAccountsFor<R extends ContribAccountRow>({
 }
 
 export function perContribRows(
-  rawContribs: ContribAccountRow[],
+  rawContribs: ContributionAccountRow[],
   accounts: ContributionAccountInput[],
   resolveContribLimit: (
     accountType: string,

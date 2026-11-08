@@ -12,7 +12,7 @@ import {
 } from "@/lib/pure/contributions/contribution-caps";
 import { computeViewAwareAccountMetrics } from "@/lib/pure/contributions/view-metrics";
 import { roundToCents, sumBy } from "@/lib/utils/math";
-import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
+import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import type {
   AccountTypeSnapshot,
   PerContribData,
@@ -58,7 +58,7 @@ export function newCategoryMap() {
 }
 
 export function accountTypeSnapshots(
-  rawContribs: ContribAccountRow[],
+  rawContribs: ContributionAccountRow[],
   resolveContribLimit: (
     accountType: string,
     hsaCoverageType: string | null,
@@ -199,7 +199,7 @@ export function accountTypeSnapshots(
 export function contributionTotals(
   accountTypes: AccountTypeSnapshot[],
   perContribData: PerContribData[],
-  rawContribs: ContribAccountRow[],
+  rawContribs: ContributionAccountRow[],
   categoryMap: ReturnType<typeof newCategoryMap>["categoryMap"],
 ) {
   const retirement = accountTypes.filter((a) =>

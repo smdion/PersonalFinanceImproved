@@ -25,13 +25,13 @@ import type {
   TaxBracketInput,
 } from "@/lib/pure/paycheck/paycheck.types";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
-import type { PaycheckContribRow } from "@/lib/pure/contributions/paycheck-contrib-row";
+import type { PaycheckContributionRow } from "@/lib/pure/contributions/paycheck-contribution-row";
 import type { PaycheckYearJob } from "@/lib/pure/paycheck/person-paycheck.types";
 
 export function checkPaychecks(
   paycheckInput: ReturnType<typeof buildPaycheckInputForJob>,
-  jobContribs: (PaycheckContribRow & CapPassed)[],
-  personalContribs: (PaycheckContribRow & CapPassed)[],
+  jobContribs: (PaycheckContributionRow & CapPassed)[],
+  personalContribs: (PaycheckContributionRow & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   limitsRecord: Record<string, number>,

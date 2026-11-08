@@ -10,7 +10,7 @@ import type { GroupableMatchRow } from "./employer-match";
 /** The fields buildContribAccounts reads from a contribution account once a
  *  profile's active fields apply: the services' resolved rows satisfy it
  *  structurally. The match-group fields are GroupableMatchRow's. */
-export type PaycheckContribRow = Pick<
+export type PaycheckContributionRow = Pick<
   GroupableMatchRow,
   "id" | "jobId" | "personId" | "accountType" | "parentCategory"
 > & {
