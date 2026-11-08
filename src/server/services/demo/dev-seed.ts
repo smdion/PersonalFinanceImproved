@@ -12,13 +12,18 @@ import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
 import { loadEnvFile } from "@/lib/db/env-file";
 import { log } from "@/lib/logger";
+import { writeStamp } from "@/lib/utils/clock";
 import { seedProfile } from "@/server/services/demo/demo-seed";
 
 export const DEV_SEED_DEFAULT_HOUSEHOLD = "dual-income-family";
 
 /** Load the demo household `slug` names into an empty database (one that
  *  holds no people), so nothing real is ever mixed in. */
-export async function seedDevDatabase(db: Db, slug: string): Promise<void> {
+export async function seedDevDatabase(
+  db: Db,
+  slug: string,
+  seededOn: Date,
+): Promise<void> {
   const profile = getDemoProfile(slug);
   if (!profile)
     throw new Error(
@@ -44,14 +49,15 @@ export async function seedDevDatabase(db: Db, slug: string): Promise<void> {
     );
   await db.delete(schema.contributionProfiles);
   await db.delete(schema.salaryProfiles);
-  await seedProfile(db, profile);
+  await seedProfile(db, profile, seededOn);
 }
 
 async function main(): Promise<void> {
   loadEnvFile();
   const { db } = await import("@/lib/db");
   const slug = process.argv[2] ?? DEV_SEED_DEFAULT_HOUSEHOLD;
-  await seedDevDatabase(db, slug);
+  // A run outside any request reads the clock once, at its start.
+  await seedDevDatabase(db, slug, writeStamp());
   log("info", "dev_seed_loaded", { household: slug });
 }
 
