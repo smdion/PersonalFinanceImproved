@@ -1178,7 +1178,7 @@
       "count": 2
     },
     "ratchet/no-raw-button": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 4
@@ -2771,7 +2771,7 @@
   },
   "src/components/savings/add-transaction-form.tsx": {
     "ratchet/no-raw-button": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 1
@@ -3080,7 +3080,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/settings/debug.tsx": {
@@ -3335,7 +3335,7 @@
   },
   "src/components/settings/people.tsx": {
     "ratchet/no-raw-button": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 1

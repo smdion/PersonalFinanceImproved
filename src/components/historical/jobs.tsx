@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { DataTable } from "@/components/settings/data-table";
@@ -309,13 +310,14 @@ function JobForm({
         />
       </label>
       <div className="col-span-full flex gap-2">
-        <button
+        <Button
+          size="md"
           type="submit"
           disabled={isPending}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          className="!font-normal"
         >
           {initial ? "Update" : "Create"}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}

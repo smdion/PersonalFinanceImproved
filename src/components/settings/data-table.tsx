@@ -2,6 +2,7 @@
 
 /** Generic CRUD data table component with column rendering, inline add/edit forms, and row deletion — used by settings tabs like People. */
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/ui/confirm-dialog";
 
 type Column<T> = {
@@ -41,15 +42,16 @@ export function DataTable<T extends { id: number }>({
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">{title}</h2>
         {renderForm && (
-          <button
+          <Button
+            size="md"
             onClick={() => {
               setEditing(null);
               setShowForm(true);
             }}
-            className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+            className="!font-normal"
           >
             Add
-          </button>
+          </Button>
         )}
       </div>
 

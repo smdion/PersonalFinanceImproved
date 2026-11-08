@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import { FormField, FormInput } from "@/components/forms";
 import { PlannedTxForm } from "./types";
 
@@ -79,13 +80,14 @@ export function AddTransactionForm({
         </div>
       </div>
       <div className="mt-3 flex gap-2">
-        <button
+        <Button
+          size="sm"
           onClick={onAddTx}
           disabled={createTxPending}
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          className="!font-normal"
         >
           {createTxPending ? "Saving..." : "Add"}
-        </button>
+        </Button>
         <button
           onClick={onCancel}
           className="text-faint hover:bg-surface-elevated rounded border px-3 py-1 text-sm"
