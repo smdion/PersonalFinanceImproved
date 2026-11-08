@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { DataTable } from "@/components/settings/data-table";
+import {
+  DataTable,
+  DataTableFormActions,
+} from "@/components/settings/data-table";
 import { formatDate } from "@/lib/utils/format";
 import { PERSON_COLORS } from "@/lib/utils/colors";
 
@@ -309,23 +311,12 @@ function JobForm({
           className="mt-1 rounded border px-2 py-1"
         />
       </label>
-      <div className="col-span-full flex gap-2">
-        <Button
-          size="md"
-          type="submit"
-          disabled={isPending}
-          className="!font-normal"
-        >
-          {initial ? "Update" : "Create"}
-        </Button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="hover:bg-surface-elevated rounded border px-3 py-1.5 text-sm"
-        >
-          Cancel
-        </button>
-      </div>
+      <DataTableFormActions
+        className="col-span-full flex gap-2"
+        editing={initial !== null}
+        isPending={isPending}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

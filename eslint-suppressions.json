@@ -1177,9 +1177,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-raw-button": {
-      "count": 1
-    },
     "ratchet/no-raw-input": {
       "count": 4
     }
@@ -3080,7 +3077,7 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 2
+      "count": 3
     }
   },
   "src/components/settings/debug.tsx": {
@@ -3326,9 +3323,6 @@
     }
   },
   "src/components/settings/people.tsx": {
-    "ratchet/no-raw-button": {
-      "count": 1
-    },
     "ratchet/no-raw-input": {
       "count": 1
     }

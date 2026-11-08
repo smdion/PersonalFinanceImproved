@@ -136,3 +136,36 @@ export function DataTable<T extends { id: number }>({
     </div>
   );
 }
+
+/** A DataTable form's submit (Create, or Update while editing) and Cancel. */
+export function DataTableFormActions({
+  className,
+  editing,
+  isPending,
+  onCancel,
+}: {
+  className: string;
+  editing: boolean;
+  isPending: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <div className={className}>
+      <Button
+        size="md"
+        type="submit"
+        disabled={isPending}
+        className="!font-normal"
+      >
+        {editing ? "Update" : "Create"}
+      </Button>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="hover:bg-surface-elevated rounded border px-3 py-1.5 text-sm"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}

@@ -2,11 +2,10 @@
 
 /** Settings tab for managing household members (name, date of birth, primary flag) using the generic DataTable with an inline person form. */
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { FormField, FormInput } from "@/components/forms";
-import { DataTable } from "./data-table";
+import { DataTable, DataTableFormActions } from "./data-table";
 
 export function PeopleSettings() {
   const user = useUser();
@@ -115,23 +114,12 @@ function PersonForm({
         />
         Primary User
       </label>
-      <div className="flex gap-2">
-        <Button
-          size="md"
-          type="submit"
-          disabled={isPending}
-          className="!font-normal"
-        >
-          {initial ? "Update" : "Create"}
-        </Button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="hover:bg-surface-elevated rounded border px-3 py-1.5 text-sm"
-        >
-          Cancel
-        </button>
-      </div>
+      <DataTableFormActions
+        className="flex gap-2"
+        editing={initial !== null}
+        isPending={isPending}
+        onCancel={onCancel}
+      />
     </form>
   );
 }
