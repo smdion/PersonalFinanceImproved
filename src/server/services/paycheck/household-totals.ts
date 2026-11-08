@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import type * as schema from "@/lib/db/schema";
-import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
+import { paysMedical, isRothIncomeLimited } from "@/lib/config/account-types";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
@@ -93,8 +93,8 @@ export function householdTotals(
         .filter((c) => c.jobId !== null)
         .map((c) => c.accountType),
       iraRoom:
-        r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)?.cap
-          ?.maxEmployee ?? null,
+        r.rawContribs.find((c) => isRothIncomeLimited(c.accountType) && c.cap)
+          ?.cap?.maxEmployee ?? null,
       rothRoute: rothIraRouteOf(r.rawContribs),
     })),
   });
@@ -107,7 +107,7 @@ export function householdTotals(
       personId: r.person.id,
       hsaCoverageType:
         r.rawContribs.find(
-          (c) => isHsaCategory(c.accountType) && c.hsaCoverageType,
+          (c) => paysMedical(c.accountType) && c.hsaCoverageType,
         )?.hsaCoverageType ?? null,
     })),
   });

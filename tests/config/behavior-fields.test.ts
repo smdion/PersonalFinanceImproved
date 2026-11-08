@@ -14,7 +14,7 @@ import {
   isIraCategory,
   isRothIncomeLimited,
   isTaxableCategory,
-  paysMedicalExpenses,
+  paysMedical,
 } from "@/lib/config/account-types";
 import type { AccountTypeConfig } from "@/lib/config/account-types.types";
 
@@ -55,7 +55,7 @@ describe("lib/pure sites", () => {
     (c) => hasEarlyAccessRule(c, "hsa_non_medical"),
     isHsaCategory,
   );
-  sameAt("cash-positions: HSA cash buffer", paysMedicalExpenses, isHsaCategory);
+  sameAt("cash-positions: HSA cash buffer", paysMedical, isHsaCategory);
   sameAt(
     "cash-positions and roth-ira: the backdoor's IRA",
     isRothIncomeLimited,
@@ -80,4 +80,17 @@ describe("lib/pure sites", () => {
       getAllCategories().find(isIraCategory),
     );
   });
+});
+
+describe("server and sync sites", () => {
+  sameAt(
+    "investments loadAccounts isHsa, ingest card-spending redaction, paycheck HSA coverage",
+    paysMedical,
+    isHsaCategory,
+  );
+  sameAt(
+    "paycheck: the Roth IRA panel's IRA room",
+    isRothIncomeLimited,
+    isIraCategory,
+  );
 });

@@ -17,7 +17,7 @@
 import {
   isPreTaxType,
   isRothIncomeLimited,
-  paysMedicalExpenses,
+  paysMedical,
 } from "@/lib/config/account-types";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import { HDHP_MIN_DEDUCTIBLE_KEY } from "@/lib/config/tax-params";
@@ -75,7 +75,7 @@ export function judgeCashDrag(args: {
   const buckets = new Set(cls.buckets);
   const out: CashFinding[] = [];
   for (const a of args.accounts) {
-    if (a.accountType !== null && paysMedicalExpenses(a.accountType)) continue;
+    if (a.accountType !== null && paysMedical(a.accountType)) continue;
     // A whole-account link has no tax type; while a backdoor is the plan,
     // treat an IRA of unknown type like a traditional one (its cash may be
     // the contribution waiting to convert).
@@ -174,7 +174,7 @@ export function judgeHsaCash(args: {
   const cash = new Set<CompositionBucket>(["cash"]);
   const out: (CashFinding & { buffer: number })[] = [];
   for (const a of args.accounts) {
-    if (a.accountType === null || !paysMedicalExpenses(a.accountType)) continue;
+    if (a.accountType === null || !paysMedical(a.accountType)) continue;
     const buffer = resolveHsaCashBuffer(
       args.bufferSetting,
       args.defaultBuffers,

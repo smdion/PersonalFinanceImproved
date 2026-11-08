@@ -22,7 +22,7 @@ import { planReconcile } from "@/lib/pure/sync/simplefin-reconcile";
 import { classifySimplefinTransaction } from "@/lib/pure/sync/simplefin-transactions";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import { valuationDateFor } from "@/lib/pure/investments/market-calendar";
-import { isHsaCategory } from "@/lib/config/account-types";
+import { paysMedical } from "@/lib/config/account-types";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
 
@@ -354,7 +354,7 @@ function redactsCardSpending(
   linked: boolean,
   accountType: string | undefined,
 ): boolean {
-  return !linked || (accountType !== undefined && isHsaCategory(accountType));
+  return !linked || (accountType !== undefined && paysMedical(accountType));
 }
 
 /** Whether a stored SimpleFIN account's card spending is redacted (see {@link redactsCardSpending}). */

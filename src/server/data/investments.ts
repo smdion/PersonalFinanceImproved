@@ -16,7 +16,7 @@ import {
 } from "drizzle-orm";
 import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
-import { isHsaCategory } from "@/lib/config/account-types";
+import { paysMedical } from "@/lib/config/account-types";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   balanceAsOf,
@@ -257,7 +257,7 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
           label: tracked
             ? `${tracked}${sub ? ` · ${sub.label}` : ""}`
             : feedName,
-          isHsa: r.accountType != null && isHsaCategory(r.accountType),
+          isHsa: r.accountType != null && paysMedical(r.accountType),
           accountType: feeds ? r.accountType : null,
           accountOwnerPersonId: feeds ? r.accountOwnerPersonId : null,
           balance: r.lastBalance === null ? null : toNumber(r.lastBalance),

@@ -585,7 +585,7 @@ export function nonMedicalPenaltyRate(
 }
 
 /** `paysMedicalExpenses`; false for a category not in the config. */
-export function paysMedicalExpenses(category: string): boolean {
+export function paysMedical(category: string): boolean {
   return CONFIG_BY_TEXT[category]?.paysMedicalExpenses === true;
 }
 

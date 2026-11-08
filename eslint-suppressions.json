@@ -5881,6 +5881,17 @@
       "count": 3
     }
   },
+  "src/lib/pure/contributions/account-type-snapshots.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/no-abbreviation": {
+      "count": 8
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/contributions/accumulation-order.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -6024,6 +6035,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/contributions/joint-accounts.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    }
+  },
   "src/lib/pure/contributions/match-display.ts": {
     "ratchet/no-abbreviation": {
       "count": 1
@@ -6043,6 +6059,17 @@
     },
     "ratchet/no-abbreviation": {
       "count": 6
+    }
+  },
+  "src/lib/pure/contributions/person-snapshot.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 3
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 12
     }
   },
   "src/lib/pure/contributions/profile-contrib-data.ts": {
@@ -6093,6 +6120,17 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
+    }
+  },
+  "src/lib/pure/contributions/summary.types.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/lib/pure/contributions/view-metrics.ts": {
@@ -7077,6 +7115,14 @@
       "count": 1
     }
   },
+  "src/lib/pure/paycheck/person-paycheck.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-abbreviation": {
+      "count": 3
+    }
+  },
   "src/lib/pure/paycheck/withholding.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -7529,9 +7575,6 @@
     },
     "ratchet/no-clock-read": {
       "count": 3
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 1
     }
   },
   "src/lib/simplefin/reidentify.ts": {
@@ -7750,9 +7793,6 @@
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-identity-predicate-import": {
       "count": 1
     }
   },
@@ -8592,17 +8632,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/contributions/account-type-snapshots.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/no-abbreviation": {
-      "count": 8
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
   "src/server/services/contributions/caps.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -8634,11 +8663,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/contributions/joint-accounts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    }
-  },
   "src/server/services/contributions/live-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -8654,17 +8678,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
-    }
-  },
-  "src/lib/pure/contributions/person-snapshot.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 12
     }
   },
   "src/server/services/contributions/profile.ts": {
@@ -8699,17 +8712,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    }
-  },
-  "src/lib/pure/contributions/summary.types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
     }
   },
   "src/server/services/debts/other-liabilities.ts": {
@@ -8845,9 +8847,6 @@
   "src/server/services/paycheck/household-totals.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-identity-predicate-import": {
-      "count": 2
     }
   },
   "src/server/services/paycheck/job-net-pay.ts": {
@@ -8868,14 +8867,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    }
-  },
-  "src/lib/pure/paycheck/person-paycheck.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 3
     }
   },
   "src/server/services/paycheck/summary.ts": {
