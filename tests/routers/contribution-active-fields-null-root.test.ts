@@ -34,6 +34,7 @@ async function outcome(run: () => Promise<unknown>): Promise<unknown> {
   }
 }
 
+const AS_OF = new Date("2026-03-07T12:00:00");
 async function underRoot(root: "null" | "{}") {
   const { db, rawDb, sqlite, cleanup } = await createTestCaller(adminSession);
   try {
@@ -52,9 +53,15 @@ async function underRoot(root: "null" | "{}") {
       )
       .run(root, profileId);
     return {
-      netPay: await outcome(() => computeJobNetPayPerCheck(rawDb, jobId)),
+      netPay: await outcome(() =>
+        computeJobNetPayPerCheck(rawDb, jobId, AS_OF),
+      ),
       capCheck: await outcome(() =>
-        assertWithinIrsLimits(rawDb, { profileId: null, touched: [accountId] }),
+        assertWithinIrsLimits(
+          rawDb,
+          { profileId: null, touched: [accountId] },
+          AS_OF,
+        ),
       ),
     };
   } finally {
