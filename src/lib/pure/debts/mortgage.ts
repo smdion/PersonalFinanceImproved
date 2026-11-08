@@ -32,7 +32,7 @@ import type {
   AmortizationEntry,
   MortgageExtraPayment,
 } from "./mortgage.types";
-import { formatPercent } from "../../utils/format";
+import { formatPercent } from "../../utils/percent";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import {
   MONTHS_PER_YEAR,

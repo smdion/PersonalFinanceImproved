@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "@/server/data/people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
-import { accountDisplayName } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/account-name";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { getLimitGroup } from "@/lib/config/account-types";
 import { applyContribActiveFields } from "./profile";

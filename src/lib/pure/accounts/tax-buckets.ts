@@ -25,7 +25,7 @@ import {
   addBalance,
   addBasis,
 } from "@/lib/config/account-balance";
-import { accountDisplayName } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/account-name";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";

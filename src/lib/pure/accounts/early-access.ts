@@ -16,7 +16,7 @@ import {
 } from "@/lib/constants";
 import type { EarlyAccessRule } from "@/lib/config/account-types.types";
 import { assertNever } from "@/lib/utils/assert-never";
-import { formatPercent } from "@/lib/utils/format";
+import { formatPercent } from "@/lib/utils/percent";
 import { roundToCents } from "@/lib/utils/math";
 
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";

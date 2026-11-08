@@ -3,7 +3,7 @@
  * clamps before the year loop reads them.
  */
 import type { ProjectionInput } from "./types/projection-result";
-import { formatPercent } from "../../utils/format";
+import { formatPercent } from "../../utils/percent";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
 import {
   getAccountTypeConfig,

@@ -51,7 +51,7 @@ import {
   interpolateAllocations,
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
-import { formatPercent } from "@/lib/utils/format";
+import { formatPercent } from "@/lib/utils/percent";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";

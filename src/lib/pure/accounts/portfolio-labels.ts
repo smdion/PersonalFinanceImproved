@@ -3,7 +3,7 @@
  * reader labels a jointly-tracked account's per-owner rows the same way
  * (RULES.md Single Computation Path).
  */
-import { accountDisplayName } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/account-name";
 
 type PortfolioLabelAccount = {
   accountType: string;

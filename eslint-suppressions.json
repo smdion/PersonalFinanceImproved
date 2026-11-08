@@ -7624,6 +7624,17 @@
       "count": 1
     }
   },
+  "src/lib/utils/account-name.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
   "src/lib/utils/colors.ts": {
     "ratchet/max-comment-lines": {
       "count": 10
@@ -7655,16 +7666,13 @@
   },
   "src/lib/utils/format.ts": {
     "ratchet/max-comment-lines": {
-      "count": 10
+      "count": 9
     },
     "ratchet/no-clock-read": {
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/utils/math.ts": {
