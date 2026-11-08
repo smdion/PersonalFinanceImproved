@@ -92,7 +92,7 @@ function RetirementCardImpl() {
 
   const {
     settings,
-    result,
+    retirementResult,
     retPortfolio,
     retAge,
     endAge,
@@ -124,7 +124,7 @@ function RetirementCardImpl() {
           <div className="mt-3 space-y-1 text-sm">
             <PlanTimeRows
               yearsToRet={yearsToRet}
-              result={result}
+              result={retirementResult}
               yearOf={yearOf}
               retAge={retAge}
               portfolioTotal={portfolioTotal}
@@ -152,7 +152,7 @@ function RetirementCardImpl() {
         </div>
         <div className="md:border-subtle md:border-l md:pl-8">
           <RetirementBenchmarks
-            data={{ ...data, result }}
+            data={{ ...data, result: retirementResult }}
             currentAge={currentAge}
             retirementSavings={portfolioTotal}
             checkpoint={{
