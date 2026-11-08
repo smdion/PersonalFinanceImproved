@@ -15,6 +15,7 @@ import {
   budgetBlock,
   buildPageChunks,
   pageChunks,
+  overBudget,
   pageSizes,
   parseClientReferenceManifest,
 } from "../../scripts/check-bundle-size";
@@ -190,8 +191,24 @@ describe("check-bundle-size: sizes and budgets", () => {
       firstLoadKb: 600,
       lazyKb: 150,
       totalKb: 750,
+      totalBytes: 750 * 1024,
       budgetKb: 700,
     });
+  });
+
+  it("checks bytes: one byte over a budget fails, and shows as the next KB", () => {
+    const budget = { "/(dashboard)/retirement/page": 750 };
+    const [at] = pageSizes(pages, gz, budget, 460);
+    expect(overBudget(at!)).toBe(false);
+    const [over] = pageSizes(
+      pages,
+      (f) => gz(f) + (f.endsWith("/charts.js") ? 1 : 0),
+      budget,
+      460,
+    );
+    expect(over!.totalBytes).toBe(750 * 1024 + 1);
+    expect(over!.totalKb).toBe(751);
+    expect(overBudget(over!)).toBe(true);
   });
 
   it("uses a page's own budget over the default", () => {
@@ -204,7 +221,7 @@ describe("check-bundle-size: sizes and budgets", () => {
     expect(p!.budgetKb).toBe(750);
   });
 
-  it("--report's budget block lists each page at its measured total", () => {
+  it("--rebase's block is each page's measured bytes + 2 KB, rounded up (owner Q15)", () => {
     const block = budgetBlock([
       ...pageSizes(pages, gz, {}, 460),
       {
@@ -212,14 +229,15 @@ describe("check-bundle-size: sizes and budgets", () => {
         firstLoadKb: 300,
         lazyKb: 0,
         totalKb: 300,
+        totalBytes: 300 * 1024 - 100,
         budgetKb: 460,
       },
     ]);
     expect(block).toBe(
       [
         "const PAGE_BUDGET_KB: Record<string, number> = {",
-        '  "/(dashboard)/budget/page": 300,',
-        '  "/(dashboard)/retirement/page": 750,',
+        '  "/(dashboard)/budget/page": 302,',
+        '  "/(dashboard)/retirement/page": 752,',
         "};",
       ].join("\n"),
     );

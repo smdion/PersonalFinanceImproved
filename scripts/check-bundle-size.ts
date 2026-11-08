@@ -20,13 +20,18 @@
  * Not measured: the sum of every chunk in .next/static/chunks — that grows
  * with every page added and says nothing about what one page costs.
  *
- * Budgets are today's true sizes, set from a real build:
- *   pnpm build && pnpm check:bundle --report
- * prints every page's measured total as a PAGE_BUDGET_KB block to paste.
- * Raise one only with a reason in the commit, never to make a regression
- * pass. Polyfills are nomodule scripts (modern browsers skip them).
+ * Sizes are compared in bytes: a page fails one byte over its budget
+ * (budgets are whole KB, 1 KB = 1024 bytes); nothing rounds a page under.
  *
- * Usage: tsx scripts/check-bundle-size.ts [--report] [--next-dir <dir>]
+ * Headroom rule (owner Q15, v0.10.5): a page's budget is its measured size
+ * at the release plus HEADROOM_KB, rounded up to a whole KB. Budgets are
+ * re-set once per release, in one commit with the owner's OK:
+ *   pnpm build && pnpm check:bundle --rebase
+ * prints the PAGE_BUDGET_KB block to paste. Between re-sets a budget is
+ * never raised: a landing that would pass one stops for the owner.
+ * Polyfills are nomodule scripts (modern browsers skip them).
+ *
+ * Usage: tsx scripts/check-bundle-size.ts [--report | --rebase] [--next-dir <dir>]
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -37,9 +42,8 @@ import { fileURLToPath } from "url";
 /**
  * Per-page budget (gzipped KB, first load + lazy), keyed by the route as
  * the client reference manifest names it ("/(dashboard)/retirement/page").
- * Today's sizes, from `pnpm check:bundle --report` on CI's build of
- * v0.10.0 (2026-11-03). A page over its budget is cut, or its budget is
- * raised in its own visible commit; a page that shrinks may lower it.
+ * Set by the headroom rule above (`--rebase`); a page over its budget is
+ * cut, or waits for the owner.
  */
 const PAGE_BUDGET_KB: Record<string, number> = {
   "/_global-error/page": 130,
@@ -86,6 +90,8 @@ const PAGE_BUDGET_KB: Record<string, number> = {
  * measured size in the commit that adds it.
  */
 const DEFAULT_PAGE_BUDGET_KB = 460;
+/** Owner Q15: a re-set budget is the measured size plus this. */
+export const HEADROOM_KB = 2;
 const CHUNK_ERROR_KB = 500; // raw, any single chunk
 const REPORT_TOP = 8;
 
@@ -180,13 +186,21 @@ export function buildPageChunks(nextDir: string): PageChunks[] {
 
 export interface PageSize {
   route: string;
+  /** Display sizes, whole KB rounded up (a byte over a KB shows the next). */
   firstLoadKb: number;
   lazyKb: number;
   totalKb: number;
+  /** What the budget is checked against. */
+  totalBytes: number;
   budgetKb: number;
 }
 
-/** Sizes in KB from per-file gzipped bytes, each page against its budget. */
+const kbUp = (bytes: number) => Math.ceil(bytes / 1024);
+
+/** Whether a page passes its budget, byte for byte. */
+export const overBudget = (p: PageSize) => p.totalBytes > p.budgetKb * 1024;
+
+/** Sizes from per-file gzipped bytes, each page against its budget. */
 export function pageSizes(
   pages: PageChunks[],
   gzBytes: (file: string) => number,
@@ -199,19 +213,23 @@ export function pageSizes(
     const rest = sum(lazy);
     return {
       route,
-      firstLoadKb: Math.round(first / 1024),
-      lazyKb: Math.round(rest / 1024),
-      totalKb: Math.round((first + rest) / 1024),
+      firstLoadKb: kbUp(first),
+      lazyKb: kbUp(rest),
+      totalKb: kbUp(first + rest),
+      totalBytes: first + rest,
       budgetKb: budgets[route] ?? defaultBudget,
     };
   });
 }
 
-/** The PAGE_BUDGET_KB block for today's sizes, sorted by route. */
+/** The PAGE_BUDGET_KB block the headroom rule gives, sorted by route. */
 export function budgetBlock(sizes: PageSize[]): string {
   const lines = [...sizes]
     .sort((a, b) => a.route.localeCompare(b.route))
-    .map((p) => `  ${JSON.stringify(p.route)}: ${p.totalKb},`);
+    .map(
+      (p) =>
+        `  ${JSON.stringify(p.route)}: ${kbUp(p.totalBytes + HEADROOM_KB * 1024)},`,
+    );
   return `const PAGE_BUDGET_KB: Record<string, number> = {\n${lines.join("\n")}\n};`;
 }
 
@@ -220,6 +238,7 @@ function main() {
   const dirAt = args.indexOf("--next-dir");
   const nextDir = path.resolve(dirAt >= 0 ? args[dirAt + 1]! : ".next");
   const report = args.includes("--report");
+  const rebase = args.includes("--rebase");
 
   if (
     !fs.existsSync(path.join(nextDir, "build-manifest.json")) ||
@@ -246,16 +265,21 @@ function main() {
     console.log("No page manifests found under .next/server/app — FAIL");
     process.exit(1);
   }
-  pages.sort((a, b) => b.totalKb - a.totalKb);
+  pages.sort((a, b) => b.totalBytes - a.totalBytes);
 
   if (report) {
-    console.log("Bundle sizes (gzipped KB: first load + lazy = total):");
+    console.log(
+      "Bundle sizes (gzipped KB rounded up: first load + lazy = total; bytes; budget):",
+    );
     for (const p of pages)
       console.log(
-        `  ${String(p.firstLoadKb).padStart(4)} + ${String(p.lazyKb).padStart(4)} = ${String(p.totalKb).padStart(4)}  ${p.route}`,
+        `  ${String(p.firstLoadKb).padStart(4)} + ${String(p.lazyKb).padStart(4)} = ${String(p.totalKb).padStart(4)}  ${String(p.totalBytes).padStart(7)} B of ${p.budgetKb}  ${p.route}`,
       );
+    return;
+  }
+  if (rebase) {
     console.log(
-      `\nToday's sizes as budgets (scripts/check-bundle-size.ts):\n${budgetBlock(pages)}`,
+      `Budgets at the measured size + ${HEADROOM_KB} KB, rounded up (owner Q15; paste into scripts/check-bundle-size.ts in the release's re-set commit, with the owner's OK):\n${budgetBlock(pages)}`,
     );
     return;
   }
@@ -270,7 +294,7 @@ function main() {
     }))
     .filter((c) => c.kb > CHUNK_ERROR_KB);
 
-  const overPages = pages.filter((p) => p.totalKb > p.budgetKb);
+  const overPages = pages.filter(overBudget);
 
   console.log("Bundle check (JS per page, gzipped: first load + lazy chunks):");
   console.log(
@@ -283,7 +307,7 @@ function main() {
   ];
   for (const p of shown)
     console.log(
-      `  ${p.totalKb > p.budgetKb ? "[OVER]" : "      "} ${String(p.totalKb).padStart(4)} KB (${p.firstLoadKb} + ${p.lazyKb} lazy) of ${p.budgetKb}  ${p.route}`,
+      `  ${overBudget(p) ? "[OVER]" : "      "} ${String(p.totalKb).padStart(4)} KB (${p.firstLoadKb} + ${p.lazyKb} lazy) of ${p.budgetKb}  ${p.route}  ${p.totalBytes} B`,
     );
   for (const c of bigChunks)
     console.log(`  [OVER] chunk ${c.name}: ${c.kb} KB raw`);

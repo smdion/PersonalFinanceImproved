@@ -160,6 +160,7 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
   - `ratchet/no-jsx-iife`: an IIFE in JSX → a named function or a view model.
   - `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`: a click with no keyboard path → `asButton`, `ExpandRowButton`, `SortableHeader` or `CellButton`.
   - A skeleton returned on `isLoading || !data` (`tests/lint/violations.test.ts`, at zero) → `QueryBoundary`.
+- **Page budgets have a stated headroom (owner Q15).** `pnpm check:bundle` compares each page's gzipped bytes with its budget in `scripts/check-bundle-size.ts`; a budget is the page's size at the release + 2 KB, rounded up to a whole KB, re-set once per release in one commit with the owner's OK (`pnpm check:bundle --rebase` prints the block). Between re-sets no budget rises: a landing that would pass one stops for the owner.
 - **Copied code only falls.** `pnpm check:duplicates` (CI) runs jscpd (pinned) over `src/` without generated files, tax data and the schema folders, blocks of 100 tokens and up; `scripts/ratchets/duplicates.json` holds its copied blocks and lines. A new pasted copy fails: call the shared code. A cleanup lowers the counts in the same commit (`--update`).
 
 ### Refactoring: LOC vs per-file size
