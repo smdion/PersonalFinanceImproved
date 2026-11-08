@@ -111,47 +111,41 @@ describe("simplefin router", () => {
       expect(accountsAfter.find((a) => a.id === row.id)?.isIncluded).toBe(true);
     });
 
-    it("rejects a caller without sync permission", async () => {
-      const { caller: viewerCaller, cleanup: viewerCleanup } =
-        await createTestCaller(viewerSession);
-      try {
-        await expect(
-          viewerCaller.simplefin.setAccountIncluded({
-            id: 1,
-            isIncluded: false,
-          }),
-        ).rejects.toThrow(TRPCError);
-      } finally {
-        viewerCleanup();
-      }
-    });
-
-    it("allows a caller with explicit sync permission", async () => {
-      const syncSession = createViewerSessionWithPermissions(["sync"]);
-      const {
-        caller: syncCaller,
-        db: syncDb,
-        cleanup: syncCleanup,
-      } = await createTestCaller(syncSession);
-      try {
-        const row = syncDb
-          .insert(sqliteSchema.simplefinAccounts)
-          .values({
-            externalAccountId: "perm-check-1",
-            orgName: "Bank",
-            accountName: "Perm Check",
-            lastBalance: "10.00",
-          })
-          .returning({ id: sqliteSchema.simplefinAccounts.id })
-          .get();
-
-        const result = await syncCaller.simplefin.setAccountIncluded({
-          id: row.id,
-          isIncluded: false,
-        });
-        expect(result.ok).toBe(true);
-      } finally {
-        syncCleanup();
+    it("rejects a viewer, even one with sync permission, and changes nothing", async () => {
+      for (const session of [
+        viewerSession,
+        createViewerSessionWithPermissions(["sync"]),
+      ]) {
+        const {
+          caller: viewerCaller,
+          db: viewerDb,
+          cleanup: viewerCleanup,
+        } = await createTestCaller(session);
+        try {
+          const row = viewerDb
+            .insert(sqliteSchema.simplefinAccounts)
+            .values({
+              externalAccountId: "perm-check-1",
+              orgName: "Bank",
+              accountName: "Perm Check",
+              lastBalance: "10.00",
+            })
+            .returning({ id: sqliteSchema.simplefinAccounts.id })
+            .get();
+          await expect(
+            viewerCaller.simplefin.setAccountIncluded({
+              id: row.id,
+              isIncluded: false,
+            }),
+          ).rejects.toMatchObject({ code: "FORBIDDEN" });
+          const after = viewerDb
+            .select({ isIncluded: sqliteSchema.simplefinAccounts.isIncluded })
+            .from(sqliteSchema.simplefinAccounts)
+            .all();
+          expect(after).toEqual([{ isIncluded: true }]);
+        } finally {
+          viewerCleanup();
+        }
       }
     });
   });

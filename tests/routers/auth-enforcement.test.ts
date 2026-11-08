@@ -151,24 +151,24 @@ describe("auth enforcement", () => {
     });
   });
 
-  describe("syncProcedure enforcement", () => {
-    it("viewer without sync permission cannot test the SimpleFIN connection", async () => {
-      const session = createViewerSessionWithPermissions(["budget"]);
+  describe("SimpleFIN connection test is admin-only", () => {
+    it("a viewer with sync permission cannot test the SimpleFIN connection", async () => {
+      const session = createViewerSessionWithPermissions(["sync"]);
       const { caller, cleanup } = await createTestCaller(session);
       try {
-        await expect(caller.simplefin.testConnection()).rejects.toThrow();
+        await expect(caller.simplefin.testConnection()).rejects.toMatchObject({
+          code: "FORBIDDEN",
+        });
       } finally {
         cleanup();
       }
     });
 
-    it("viewer with sync permission can call the SimpleFIN connection test", async () => {
-      const session = createViewerSessionWithPermissions(["sync"]);
-      const { caller, cleanup } = await createTestCaller(session);
+    it("an admin can call the SimpleFIN connection test", async () => {
+      const { caller, cleanup } = await createTestCaller();
       try {
-        // No connection configured in the test DB — resolves with a
-        // "not configured" payload rather than throwing. The point here
-        // is that it is not rejected for permission reasons.
+        // No connection configured in the test DB: resolves with a
+        // "not configured" payload rather than a permission error.
         const result = await caller.simplefin.testConnection();
         expect(result.success).toBe(false);
       } finally {

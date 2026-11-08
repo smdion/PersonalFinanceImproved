@@ -3,7 +3,7 @@
 import { z } from "zod/v4";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, syncProcedure } from "../../trpc";
+import { adminProcedure, createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import { getApiConnection } from "@/lib/budget-api";
@@ -33,7 +33,7 @@ function disallowedDirectionMessage(m: AccountMapping): string | null {
 
 export const syncMappingsRouter = createTRPCRouter({
   /** Update account mappings for a service (works pre-activation). */
-  updateAccountMappings: syncProcedure
+  updateAccountMappings: adminProcedure
     .input(
       z.object({
         service: serviceEnum,
@@ -101,7 +101,7 @@ export const syncMappingsRouter = createTRPCRouter({
     }),
 
   /** Create a new Ledgr asset item and add a mapping to a tracking account. */
-  createAssetAndMap: syncProcedure
+  createAssetAndMap: adminProcedure
     .input(
       z.object({
         service: serviceEnum,

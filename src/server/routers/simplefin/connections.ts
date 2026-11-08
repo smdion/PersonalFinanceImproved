@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { and, eq, gte, isNotNull, isNull, or, sql } from "drizzle-orm";
-import { protectedProcedure, syncProcedure } from "../../trpc";
+import { adminProcedure, protectedProcedure, syncProcedure } from "../../trpc";
 import {
   BudgetApiError,
   nothingChanged,
@@ -38,7 +38,7 @@ import { TRPCError } from "@trpc/server";
 
 export const connectionsProcedures = {
   /** Claim a one-time setup token and store the resulting access URL. */
-  saveToken: syncProcedure
+  saveToken: adminProcedure
     .input(z.object({ setupToken: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       let accessUrl: string;
@@ -61,7 +61,7 @@ export const connectionsProcedures = {
     }),
 
   /** Test the stored connection without writing a snapshot. */
-  testConnection: syncProcedure.mutation(
+  testConnection: adminProcedure.mutation(
     async ({
       ctx,
     }): Promise<
@@ -136,7 +136,7 @@ export const connectionsProcedures = {
   }),
 
   /** Remove the stored connection (history in simplefin_balance_snapshots is preserved). */
-  removeConnection: syncProcedure.mutation(async ({ ctx }) => {
+  removeConnection: adminProcedure.mutation(async ({ ctx }) => {
     await removeSimplefinConnection(ctx.db);
     return { ok: true as const };
   }),

@@ -1,15 +1,7 @@
 /**
- * SimpleFIN router — daily linked-balance pulse (Phase 1).
- *
- * Deliberately separate from ./sync (the YNAB/Actual BudgetAPIClient
- * group): SimpleFIN is a read-only bank/brokerage balance aggregator with
- * no budget/category/transaction concepts, so it doesn't implement the
- * BudgetAPIClient interface or go through lib/budget-api/factory.ts.
- *
- * Mutations use syncProcedure (unlike YNAB/Actual's, which are admin-only;
- * its settings page is admin-only too) since they write shared server-side
- * credentials and trigger external syncs. Queries use
- * protectedProcedure — read-only, no reason to gate more tightly.
+ * SimpleFIN: daily linked balances (a read-only aggregator, not a budget API).
+ * Setup and account controls are admin-only, like the Integrations page;
+ * syncNow stays on `sync` for the header's refresh. Queries are protected.
  */
 
 import { createTRPCRouter } from "../../trpc";

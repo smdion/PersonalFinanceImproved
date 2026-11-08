@@ -4,7 +4,7 @@
  *  institution's copy of an older one: offer to merge it into that one. */
 import { trpc } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
-import { hasPermission, useUser } from "@/lib/context/user-context";
+import { isAdmin, useUser } from "@/lib/context/user-context";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 
 export function ReaddedMergePrompt({
@@ -15,7 +15,7 @@ export function ReaddedMergePrompt({
   const { id: copyId, accountName } = account;
   const user = useUser();
   const utils = trpc.useUtils();
-  const canMerge = hasPermission(user, "sync");
+  const canMerge = isAdmin(user);
   const { data } = trpc.simplefin.listReaddedAccounts.useQuery(undefined, {
     enabled: canMerge,
   });

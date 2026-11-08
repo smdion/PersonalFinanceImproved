@@ -1,12 +1,17 @@
 /**
- * SEC router — the contact for SEC's fair-access policy, and the weekly
- * fund-facts refresh. Same permission split as Tiingo: writes and SEC calls
- * use syncProcedure; getStatus is read-only and never returns the contact.
+ * SEC router: the fair-access contact and the weekly fund-facts refresh. The
+ * contact's setup is admin-only, like the Integrations page; refreshNow stays
+ * on `sync`. getStatus never returns the contact.
  */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { isNotNull } from "drizzle-orm";
-import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+  syncProcedure,
+} from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   getSecConnection,
@@ -37,7 +42,7 @@ function describe(e: unknown): string {
 
 export const secRouter = createTRPCRouter({
   /** Check SEC accepts the contact, then store it encrypted. */
-  saveContact: syncProcedure
+  saveContact: adminProcedure
     .input(z.object({ contactEmail: z.email().max(200) }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -56,7 +61,7 @@ export const secRouter = createTRPCRouter({
     }),
 
   /** Test the stored contact. */
-  testConnection: syncProcedure.mutation(
+  testConnection: adminProcedure.mutation(
     async ({ ctx }): Promise<ProbeResult<{ funds: number }>> => {
       try {
         const contact = await getSecContact(ctx.db);
@@ -81,7 +86,7 @@ export const secRouter = createTRPCRouter({
     return syncSecurityFacts(ctx.db, { force: true });
   }),
 
-  removeConnection: syncProcedure.mutation(async ({ ctx }) => {
+  removeConnection: adminProcedure.mutation(async ({ ctx }) => {
     await removeSecConnection(ctx.db);
     return { ok: true as const };
   }),

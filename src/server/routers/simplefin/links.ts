@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
-import { protectedProcedure, syncProcedure } from "../../trpc";
+import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
@@ -41,7 +41,7 @@ export const linksProcedures = {
 
   /** Merge a new copy into the account it duplicates, as the owner
    *  confirmed: no 24-hour wait. */
-  mergeReaddedAccount: syncProcedure
+  mergeReaddedAccount: adminProcedure
     .input(z.object({ copyId: z.number().int(), keepId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.transaction(async (tx) => {
@@ -101,7 +101,7 @@ export const linksProcedures = {
    * Link every unlinked SimpleFIN account to its suggested (sub-)account, and
    * narrow whole-account links to their suggested sub-account.
    */
-  acceptLinkSuggestions: syncProcedure
+  acceptLinkSuggestions: adminProcedure
     .input(z.object({ ids: z.array(z.number().int()).optional() }))
     .mutation(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.simplefinAccounts);
@@ -150,7 +150,7 @@ export const linksProcedures = {
    * comparing against the snapshot, so this intentionally does NOT unlink
    * any other account pointed at the same target.
    */
-  setAccountMapping: syncProcedure
+  setAccountMapping: adminProcedure
     .input(
       z.object({
         id: z.number().int(),
@@ -253,7 +253,7 @@ export const linksProcedures = {
    * stops being an account: it leaves any tracked-account link and the live
    * total, and it's included, or the link would do nothing.
    */
-  setLoanLink: syncProcedure
+  setLoanLink: adminProcedure
     .input(
       z.object({
         id: z.number().int(),

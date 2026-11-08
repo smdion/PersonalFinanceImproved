@@ -9,7 +9,7 @@ vi.mock("@/lib/trpc", async () => ({
 }));
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "admin", permissions: [] }),
-  hasPermission: () => true,
+  isAdmin: () => true,
 }));
 
 import { SimplefinCard } from "@/components/settings/integrations-simplefin";

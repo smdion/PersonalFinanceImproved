@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { asc, desc, eq, gte } from "drizzle-orm";
-import { protectedProcedure, syncProcedure } from "../../trpc";
+import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   recomputeTodaySnapshotFromLocal,
@@ -201,7 +201,7 @@ export const accountsProcedures = {
    * data immediately — no SimpleFIN API call, so this is free to click
    * repeatedly. Does not touch any prior day's snapshot.
    */
-  setAccountIncluded: syncProcedure
+  setAccountIncluded: adminProcedure
     .input(z.object({ id: z.number().int(), isIncluded: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const [row] = await ctx.db

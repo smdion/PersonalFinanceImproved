@@ -8441,11 +8441,6 @@
       "count": 2
     }
   },
-  "src/server/routers/simplefin/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/routers/simplefin/links.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -8492,11 +8487,6 @@
     },
     "ratchet/no-clock-read": {
       "count": 5
-    }
-  },
-  "src/server/routers/tiingo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/routers/utilities.ts": {
