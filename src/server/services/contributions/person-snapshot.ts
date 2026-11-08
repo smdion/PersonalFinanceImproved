@@ -28,7 +28,7 @@ import {
 import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
 import type { PerContribData } from "@/server/services/contributions/summary.types";
 

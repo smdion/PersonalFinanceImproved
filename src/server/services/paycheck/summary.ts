@@ -34,7 +34,7 @@ import { loadAndApplyContribProfile } from "@/server/services/contributions/prof
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";

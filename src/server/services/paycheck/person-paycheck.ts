@@ -25,7 +25,7 @@ import type {
   DeductionLine,
   TaxBracketInput,
 } from "@/lib/pure/paycheck/paycheck.types";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type {
   ContribRowWithActiveFields,
   loadAndApplyContribProfile,

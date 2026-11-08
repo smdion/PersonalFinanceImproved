@@ -17,7 +17,7 @@ import {
   applyContribActiveFields,
   applyDeductionActiveFields,
 } from "@/server/services/contributions/profile";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";

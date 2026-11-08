@@ -8670,7 +8670,7 @@
       "count": 1
     }
   },
-  "src/server/services/contributions/paycheck-accounts.ts": {
+  "src/lib/pure/contributions/paycheck-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },

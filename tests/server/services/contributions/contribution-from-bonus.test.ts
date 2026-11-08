@@ -13,7 +13,7 @@ import {
   applyContribActiveFields,
   type ContribRowWithActiveFields,
 } from "@/server/services/contributions/profile";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
