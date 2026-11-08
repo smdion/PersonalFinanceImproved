@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { CHANGE_DETECTION_THRESHOLD } from "@/lib/constants";
 import { Button } from "./button";
-import { Modal } from "./modal";
+import { Modal, ModalCancel } from "./modal";
 
 export type PushPreviewItem = {
   name: string;
@@ -89,8 +89,7 @@ export function PushPreviewModal({
       onClose={onCancel}
       role="alertdialog"
       labelledBy={titleId}
-      closeOnEscape={!isPending}
-      closeOnBackdrop={!isPending}
+      busy={isPending}
       className="bg-surface-primary mx-4 flex max-h-[80vh] w-full max-w-lg flex-col rounded-lg border p-5 shadow-xl"
     >
       <h3 id={titleId} className="text-primary mb-1 text-sm font-semibold">
@@ -192,18 +191,18 @@ export function PushPreviewModal({
       </div>
 
       <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="ghost"
-          onClick={onCancel}
-          disabled={isPending}
-          title={
-            isPending
-              ? "Already in progress — closing this won't stop it"
-              : undefined
-          }
-        >
-          Cancel
-        </Button>
+        <ModalCancel>
+          <Button
+            variant="ghost"
+            title={
+              isPending
+                ? "Already in progress — closing this won't stop it"
+                : undefined
+            }
+          >
+            Cancel
+          </Button>
+        </ModalCancel>
         <Button
           variant="primary"
           onClick={onConfirm}

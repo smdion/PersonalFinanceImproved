@@ -1,10 +1,14 @@
 "use client";
 
 import {
+  cloneElement,
+  createContext,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
+  type ReactElement,
   type ReactNode,
 } from "react";
 import { focusInto, useFocusTrap } from "@/lib/hooks/use-focus-trap";
@@ -54,6 +58,9 @@ export type ModalProps = ModalName & {
   role?: "dialog" | "alertdialog";
   closeOnEscape?: boolean;
   closeOnBackdrop?: boolean;
+  /** A write is running: Escape, the backdrop and ModalCancel can't close
+   *  it. */
+  busy?: boolean;
   /** `right` docks a full-height panel to the right edge; `top` hangs the
    *  panel below the top, as a command palette. */
   placement?: keyof typeof PLACEMENT;
@@ -61,6 +68,26 @@ export type ModalProps = ModalName & {
   gutter?: boolean;
   layer?: keyof typeof LAYER;
 };
+
+/** The open modal's close, and whether it is busy. */
+const ModalClose = createContext<{ onClose: () => void; busy: boolean } | null>(
+  null,
+);
+
+/** A dialog's Cancel (its one child): closes the modal, and is disabled
+ *  while the modal is busy. */
+export function ModalCancel({
+  children,
+}: {
+  children: ReactElement<{ onClick?: () => void; disabled?: boolean }>;
+}) {
+  const modal = useContext(ModalClose);
+  if (!modal) throw new Error("ModalCancel renders inside a Modal");
+  return cloneElement(children, {
+    onClick: modal.onClose,
+    disabled: modal.busy,
+  });
+}
 
 /**
  * Every dialog's backdrop and layer (above toasts). Mount it to open it.
@@ -73,6 +100,7 @@ export function Modal({
   role = "dialog",
   closeOnEscape = true,
   closeOnBackdrop = true,
+  busy = false,
   placement = "center",
   gutter = false,
   layer = "dialog",
@@ -84,9 +112,9 @@ export function Modal({
     typeof document === "undefined" ? null : document.activeElement,
   );
   const [order] = useState(() => ++rendered);
-  const latest = useRef({ onClose, closeOnEscape });
+  const latest = useRef({ onClose, closeOnEscape, busy });
   useEffect(() => {
-    latest.current = { onClose, closeOnEscape };
+    latest.current = { onClose, closeOnEscape, busy };
   });
 
   // Registered before any modal's focus effect runs, so modals opening in
@@ -109,7 +137,8 @@ export function Modal({
         focusInto(panel, e.shiftKey);
         return;
       }
-      if (e.key !== "Escape" || !latest.current.closeOnEscape) return;
+      const { closeOnEscape: allowed, busy: running } = latest.current;
+      if (e.key !== "Escape" || !allowed || running) return;
       e.preventDefault();
       latest.current.onClose();
     };
@@ -140,7 +169,7 @@ export function Modal({
     <div
       className={`${OVERLAY} ${LAYER[layer]} ${PLACEMENT[placement]} ${gutter ? "p-4" : ""}`}
       onClick={(e) => {
-        if (closeOnBackdrop && e.target === e.currentTarget) onClose();
+        if (closeOnBackdrop && !busy && e.target === e.currentTarget) onClose();
       }}
       role="presentation"
     >
@@ -153,7 +182,9 @@ export function Modal({
         tabIndex={-1}
         className={`${className} outline-none`}
       >
-        {children}
+        <ModalClose.Provider value={{ onClose, busy }}>
+          {children}
+        </ModalClose.Provider>
       </div>
     </div>
   );
