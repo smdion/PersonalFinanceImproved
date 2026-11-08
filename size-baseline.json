@@ -42,7 +42,7 @@
     "src/app/(dashboard)/portfolio/snapshot-rows.tsx": 160,
     "src/app/(dashboard)/portfolio/use-portfolio-page.ts": 143,
     "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": 104,
-    "src/app/(dashboard)/savings/savings-content.tsx": 918,
+    "src/app/(dashboard)/savings/savings-content.tsx": 917,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-badges.tsx": 42,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 299,
     "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": 123,
@@ -488,7 +488,7 @@
       "RetirementContent": 299
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
-      "SavingsContent": 835
+      "SavingsContent": 834
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
       "ToolsContent": 537

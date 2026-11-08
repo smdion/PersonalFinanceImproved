@@ -166,7 +166,6 @@ export function SavingsContent() {
   // other number on this page.
   const activeProfileId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
-  const recalcMaxMonthlyFunding = maxMonthlyFunding;
 
   // The profiles this preview used, threaded into the recalculate and
   // lock-in mutations so their live pool matches it.
@@ -641,7 +640,7 @@ export function SavingsContent() {
                                 onClick={() =>
                                   apiSync.buildLockInAllPreview(
                                     rawGoals,
-                                    recalcMaxMonthlyFunding,
+                                    maxMonthlyFunding,
                                     undefined,
                                     activeProfileId ?? undefined,
                                     recalcIncomeParams,
@@ -661,7 +660,7 @@ export function SavingsContent() {
                                 onClick={() =>
                                   apiSync.buildRecalculateAllPreview(
                                     rawGoals,
-                                    recalcMaxMonthlyFunding,
+                                    maxMonthlyFunding,
                                     undefined,
                                     activeProfileId ?? undefined,
                                     recalcIncomeParams,
