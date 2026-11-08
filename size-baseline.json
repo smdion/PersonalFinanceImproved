@@ -136,8 +136,9 @@
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": 157,
     "src/components/retirement-projection/mc-simulation-types.ts": 30,
     "src/components/retirement-projection/override-forms.tsx": 375,
+    "src/components/retirement-projection/override-items.ts": 174,
     "src/components/retirement-projection/override-options.ts": 67,
-    "src/components/retirement-projection/overrides-panel.tsx": 698,
+    "src/components/retirement-projection/overrides-panel.tsx": 600,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
     "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": 84,
     "src/components/retirement-projection/projection-card/compute-controls.tsx": 61,
@@ -698,8 +699,7 @@
       "LumpSumForm": 158
     },
     "src/components/retirement-projection/overrides-panel.tsx": {
-      "OverridesPanel": 668,
-      "OverridesPanel.allOverrides.useMemo()": 166,
+      "OverridesPanel": 567,
       "OverridesPanel.renderFields": 229
     },
     "src/components/retirement-projection/projection-chart.tsx": {

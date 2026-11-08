@@ -2402,7 +2402,7 @@
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 3
+      "count": 2
     },
     "ratchet/max-comment-lines": {
       "count": 1

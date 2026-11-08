@@ -9,10 +9,9 @@
  */
 import { useState, useMemo } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 import type { AccumOverride, DecumOverride } from "./types";
-import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
 import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 import {
@@ -22,6 +21,10 @@ import {
   BudgetOverrideForm,
 } from "./override-forms";
 import { type OverrideType, OVERRIDE_OPTIONS } from "./override-options";
+import {
+  pushAccumOverrideItems,
+  pushDecumOverrideItems,
+} from "./override-items";
 
 type OverridesPanelProps = {
   state: ProjectionState;
@@ -70,127 +73,26 @@ export function OverridesPanel({
     }[] = [];
 
     // Accumulation overrides
-    for (let i = 0; i < state.accumOverrides.length; i++) {
-      const o = state.accumOverrides[i]!;
-      const parts: string[] = [];
-      if (o.contributionRate != null)
-        parts.push(`Rate: ${formatPercent(o.contributionRate, 1)}`);
-      if (o.routingMode) parts.push(`Mode: ${o.routingMode}`);
-      if (o.lumpSums?.length)
-        parts.push(
-          o.lumpSums
-            .map(
-              (ls) =>
-                `+${formatCurrency(ls.amount)} ${ls.label ?? ""} → ${ls.targetAccountName ?? catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}`,
-            )
-            .join(", "),
-        );
-      if (o.reset) parts.push("Reset to defaults");
-      if (o.notes) parts.push(`(${o.notes})`);
-      const idx = i;
-      items.push({
-        id: `accum-${o.year}-${i}`,
-        year: o.year,
-        phase: "pre",
-        type: o.reset
-          ? "Reset"
-          : o.lumpSums?.length
-            ? "Lump Sum"
-            : o.contributionRate != null
-              ? "Contribution"
-              : "Change",
-        summary: parts.join(" · ") || "Change",
-        color: "emerald",
-        onDelete: () =>
-          state.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
-        onEdit: () => {
-          setSelectedYear(String(o.year));
-          setSelectedType(
-            o.reset
-              ? "reset"
-              : o.lumpSums?.length
-                ? "lump_sum"
-                : o.contributionRate != null
-                  ? "contribution_rate"
-                  : o.routingMode
-                    ? "routing"
-                    : "contribution_rate",
-          );
-          setEditingOverride({
-            phase: "pre",
-            index: idx,
-            deleteFirst: () =>
-              state.setAccumOverrides((prev) =>
-                prev.filter((_, j) => j !== idx),
-              ),
-            initialValue:
-              o.contributionRate != null
-                ? String(o.contributionRate * 100)
-                : undefined,
-          });
-          setWizardStep("fields");
-          setShowWizard(true);
-        },
-      });
-    }
+    pushAccumOverrideItems(
+      state,
+      items,
+      setSelectedYear,
+      setSelectedType,
+      setEditingOverride,
+      setWizardStep,
+      setShowWizard,
+    );
 
     // Decumulation overrides
-    for (let i = 0; i < state.decumOverrides.length; i++) {
-      const o = state.decumOverrides[i]!;
-      const parts: string[] = [];
-      if (o.rothConversionTarget != null)
-        parts.push(
-          `Roth Conv: ${o.rothConversionTarget === 0 ? "Off" : formatPercent(o.rothConversionTarget, 0)}`,
-        );
-      if (o.lumpSums?.length)
-        parts.push(
-          o.lumpSums
-            .map(
-              (ls) =>
-                `+${formatCurrency(ls.amount)} ${ls.label ?? ""} → ${ls.targetAccountName ?? catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}`,
-            )
-            .join(", "),
-        );
-      if (o.reset) parts.push("Reset to defaults");
-      if (o.notes) parts.push(`(${o.notes})`);
-      const idx = i;
-      items.push({
-        id: `decum-${o.year}-${i}`,
-        year: o.year,
-        phase: "post",
-        type: o.reset ? "Reset" : o.lumpSums?.length ? "Lump Sum" : "Change",
-        summary: parts.join(" · ") || "Change",
-        color: "amber",
-        onDelete: () =>
-          state.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
-        onEdit: () => {
-          setSelectedYear(String(o.year));
-          setSelectedType(
-            o.reset
-              ? "reset"
-              : o.lumpSums?.length
-                ? "lump_sum"
-                : o.rothConversionTarget != null
-                  ? "roth_conversion"
-                  : "routing",
-          );
-          setEditingOverride({
-            phase: "post",
-            index: idx,
-            deleteFirst: () =>
-              state.setDecumOverrides((prev) =>
-                prev.filter((_, j) => j !== idx),
-              ),
-            initialValue:
-              o.rothConversionTarget != null
-                ? String(o.rothConversionTarget * 100)
-                : undefined,
-          });
-          setWizardStep("fields");
-          setShowWizard(true);
-        },
-      });
-    }
+    pushDecumOverrideItems(
+      state,
+      items,
+      setSelectedYear,
+      setSelectedType,
+      setEditingOverride,
+      setWizardStep,
+      setShowWizard,
+    );
 
     // Salary overrides
     for (const o of state.dbSalaryOverrides ?? []) {
