@@ -2546,19 +2546,19 @@
   },
   "src/components/portfolio/new-snapshot-form.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
+      "count": 4
     },
     "max-lines-per-function": {
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 1
     },
     "ratchet/no-abbreviation": {
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 1
     },
     "ratchet/no-jsx-iife": {
       "count": 2
@@ -2570,16 +2570,13 @@
       "count": 3
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-text-includes": {
       "count": 1
     },
     "ratchet/no-unlabeled-control": {
       "count": 3
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/components/portfolio/portfolio-chart.tsx": {
@@ -2619,6 +2616,23 @@
     },
     "ratchet/no-raw-button": {
       "count": 2
+    }
+  },
+  "src/components/portfolio/snapshot-draft.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 3
+    },
+    "ratchet/no-history-comment": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
     }
   },
   "src/components/portfolio/summary-table.tsx": {

@@ -129,7 +129,7 @@
       "count": 1
     }
   },
-  "src/components/portfolio/new-snapshot-form.tsx": {
+  "src/components/portfolio/snapshot-draft.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
